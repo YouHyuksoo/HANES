@@ -13,7 +13,7 @@ import { JobOrder } from '../../../entities/job-order.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
-import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
+import { ProcMatStockService } from '../../inventory/services/proc-mat-stock.service';
 
 describe('MatIssueService', () => {
   let target: MatIssueService;
@@ -27,7 +27,7 @@ describe('MatIssueService', () => {
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
   let mockTx: DeepMocked<TransactionService>;
-  let mockWipMatStockService: DeepMocked<WipMatStockService>;
+  let mockProcMatStockService: DeepMocked<ProcMatStockService>;
 
   beforeEach(async () => {
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
@@ -40,7 +40,7 @@ describe('MatIssueService', () => {
     mockQueryRunner = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
     mockTx = createMock<TransactionService>();
-    mockWipMatStockService = createMock<WipMatStockService>();
+    mockProcMatStockService = createMock<ProcMatStockService>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
@@ -62,7 +62,7 @@ describe('MatIssueService', () => {
         { provide: DataSource, useValue: mockDataSource },
         { provide: NumberingService, useValue: mockNumbering },
         { provide: TransactionService, useValue: mockTx },
-        { provide: WipMatStockService, useValue: mockWipMatStockService },
+        { provide: ProcMatStockService, useValue: mockProcMatStockService },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -326,20 +326,11 @@ describe('MatIssueService', () => {
     );
   });
 
-  it('moves stock to the equip WIP_MAT_STOCKS when orderNo resolves an equipCode', async () => {
+  it('moves stock to the process PROC_MAT_STOCKS when processCode is given', async () => {
     const manager = {
       findOne: jest
-        // 1) JobOrder 조회 (createInTx 진입부, 출고루프보다 먼저)
         .fn()
-        .mockResolvedValueOnce({
-          orderNo: 'JO-001',
-          equipCode: 'EQ-01',
-          lineCode: 'L1',
-          processCode: 'PRC1',
-          company: 'HANES',
-          plant: 'P01',
-        } as JobOrder)
-        // 2) LOT 조회
+        // LOT 조회 (출고는 더 이상 JobOrder/설비를 보지 않는다 — processCode 직접 지정)
         .mockResolvedValueOnce({
           matUid: 'MAT-001',
           itemCode: 'ITEM-001',
@@ -364,26 +355,25 @@ describe('MatIssueService', () => {
     };
     (mockQueryRunner as any).manager = manager;
 
-    mockWipMatStockService.addStockInTx.mockResolvedValue(undefined);
+    mockProcMatStockService.addStockInTx.mockResolvedValue(undefined);
 
     mockNumbering.nextInTx
       .mockResolvedValueOnce('ISS-001')
       .mockResolvedValueOnce('TX-001');
     mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot);
     mockPartMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as PartMaster);
-    mockJobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-001' } as JobOrder);
 
     await target.create({
-      orderNo: 'JO-001',
+      processCode: 'PRC1',
       issueType: 'PROD',
       items: [{ matUid: 'MAT-001', issueQty: 5 }],
     } as any, 'HANES', 'P01');
 
-    // 원자재 STOCK_TRANSACTIONS 는 WIP_MOVE(from=원자재창고, qty-)
+    // 원자재 STOCK_TRANSACTIONS 는 PROC_MOVE(from=원자재창고, qty-)
     expect(manager.save).toHaveBeenCalledWith(
       expect.objectContaining({
         transNo: 'TX-001',
-        transType: 'WIP_MOVE',
+        transType: 'PROC_MOVE',
         fromWarehouseId: 'RM_MAIN',
         toWarehouseId: null,
         qty: -5,
@@ -395,17 +385,16 @@ describe('MatIssueService', () => {
       { warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
       { qty: 0, availableQty: 0 },
     );
-    // 공정재고 가산은 WipMatStockService.addStockInTx 로 위임(WIP_MAT_STOCKS)
-    expect(mockWipMatStockService.addStockInTx).toHaveBeenCalledWith(
+    // 공정재고 가산은 ProcMatStockService.addStockInTx 로 위임(PROC_MAT_STOCKS)
+    expect(mockProcMatStockService.addStockInTx).toHaveBeenCalledWith(
       mockQueryRunner,
       expect.objectContaining({
-        equipCode: 'EQ-01',
+        processCode: 'PRC1',
         itemCode: 'ITEM-001',
         matUid: 'MAT-001',
         qty: 5,
-        transType: 'WIP_IN',
+        transType: 'PROC_IN',
         fromWarehouseId: 'RM_MAIN',
-        orderNo: 'JO-001',
         refType: 'MAT_ISSUE',
         refId: 'ISS-001-1',
         company: 'HANES',
@@ -459,7 +448,7 @@ describe('MatIssueService', () => {
       }),
     );
     // 공정재고 가산(addStockInTx)이 호출되지 않아야 한다
-    expect(mockWipMatStockService.addStockInTx).not.toHaveBeenCalled();
+    expect(mockProcMatStockService.addStockInTx).not.toHaveBeenCalled();
   });
 
   it('blocks create when an issue stock row belongs to a different tenant', async () => {
@@ -576,10 +565,10 @@ describe('MatIssueService', () => {
       expect.objectContaining({ transNo: 'CANCEL-001', transType: 'MAT_OUT_CANCEL', qty: 3 }),
     );
     // 설비 미배정 단순출고 취소는 공정재고를 건드리지 않는다.
-    expect(mockWipMatStockService.restoreInTx).not.toHaveBeenCalled();
+    expect(mockProcMatStockService.restoreInTx).not.toHaveBeenCalled();
   });
 
-  it('reverses a WIP_MOVE issue: restores raw warehouse and delegates WIP deduction to restoreInTx', async () => {
+  it('reverses a PROC_MOVE issue: restores raw warehouse and delegates proc stock deduction to restoreInTx', async () => {
     mockMatIssueRepo.findOne.mockResolvedValue({
       issueNo: 'ISS-009',
       seq: 1,
@@ -596,7 +585,7 @@ describe('MatIssueService', () => {
       find: jest.fn().mockResolvedValue([
         {
           transNo: 'TX-001',
-          transType: 'WIP_MOVE',
+          transType: 'PROC_MOVE',
           fromWarehouseId: 'RM_MAIN',
           toWarehouseId: null,
           itemCode: 'ITEM-001',
@@ -615,16 +604,16 @@ describe('MatIssueService', () => {
     };
     (mockQueryRunner as any).manager = manager;
 
-    mockWipMatStockService.restoreInTx.mockResolvedValue([]);
+    mockProcMatStockService.restoreInTx.mockResolvedValue([]);
     mockNumbering.nextInTx.mockResolvedValueOnce('CANCEL-001');
 
     await target.cancel('ISS-009', 1, 'cancel', 'HANES', 'P01');
 
-    // 원자재측 역분개 거래: WIP_MOVE_CANCEL, 원자재창고 복원
+    // 원자재측 역분개 거래: PROC_MOVE_CANCEL, 원자재창고 복원
     expect(manager.save).toHaveBeenCalledWith(
       expect.objectContaining({
         transNo: 'CANCEL-001',
-        transType: 'WIP_MOVE_CANCEL',
+        transType: 'PROC_MOVE_CANCEL',
         fromWarehouseId: 'RM_MAIN',
         toWarehouseId: 'RM_MAIN',
         qty: 5,
@@ -643,15 +632,15 @@ describe('MatIssueService', () => {
       { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
       { status: 'CANCELED' },
     );
-    // 공정재고 차감은 WipMatStockService.restoreInTx(DEDUCT_BACK)로 위임
-    expect(mockWipMatStockService.restoreInTx).toHaveBeenCalledWith(
+    // 공정재고 차감은 ProcMatStockService.restoreInTx(DEDUCT_BACK)로 위임
+    expect(mockProcMatStockService.restoreInTx).toHaveBeenCalledWith(
       mockQueryRunner,
       expect.objectContaining({
         mode: 'DEDUCT_BACK',
         refType: 'MAT_ISSUE',
         refId: 'ISS-009-1',
-        cancelTransType: 'WIP_IN_CANCEL',
-        originTransType: 'WIP_IN',
+        cancelTransType: 'PROC_IN_CANCEL',
+        originTransType: 'PROC_IN',
         orderNo: 'JO-001',
         company: 'HANES',
         plant: 'P01',

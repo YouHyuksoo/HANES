@@ -19,7 +19,7 @@ import { ScanIssueDto } from '../dto/scan-issue.dto';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
-import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
+import { ProcMatStockService } from '../../inventory/services/proc-mat-stock.service';
 
 @Injectable()
 export class MatIssueService {
@@ -39,7 +39,7 @@ export class MatIssueService {
     private readonly dataSource: DataSource,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
-    private readonly wipMatStockService: WipMatStockService,
+    private readonly procMatStockService: ProcMatStockService,
   ) {}
 
   private sortStocksForIssue(stocks: MatStock[], warehouseCode?: string) {
@@ -186,16 +186,10 @@ export class MatIssueService {
     let seqCounter = 1;
     const tenantWhere = this.tenantWhere(company, plant);
 
-    // 작업지시에 설비가 배정돼 있으면 설비(equipCode) 단위 공정재고(WIP_MAT_STOCKS)로 이동한다.
-    // orderNo/equipCode 가 없으면 기존 단순 출고(MAT_OUT)를 유지한다.
-    let equipCode: string | null = null;
-    if (orderNo) {
-      const jobOrder = await queryRunner.manager.findOne(JobOrder, {
-        where: { orderNo, ...tenantWhere },
-      });
-      equipCode = jobOrder?.equipCode ?? null;
-    }
-    const isMove = !!(orderNo && equipCode);
+    // 출고 시 processCode가 지정되면 원자재창고 → 공정재고(PROC_MAT_STOCKS=장착 대기)로 이동한다(ADR 0002).
+    // 설비는 출고 시점에 정하지 않는다(설비 장착은 별도 단계). processCode가 없으면 단순 출고(MAT_OUT) 유지.
+    const processCode = dto.processCode ?? null;
+    const isMove = !!processCode;
 
     for (const item of items) {
       const lot = await queryRunner.manager.findOne(MatLot, {
@@ -255,13 +249,13 @@ export class MatIssueService {
         const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
         const stockTx = queryRunner.manager.create(StockTransaction, {
           transNo,
-          transType: isMove ? 'WIP_MOVE' : 'MAT_OUT',
+          transType: isMove ? 'PROC_MOVE' : 'MAT_OUT',
           fromWarehouseId: stock.warehouseCode,
           toWarehouseId: null,
           itemCode: lot.itemCode,
           matUid: item.matUid,
           qty: -issueQty,
-          remark: remark || (isMove ? `공정이동: ${lot.matUid}` : `자재출고: ${lot.matUid}`),
+          remark: remark || (isMove ? `공정입고: ${lot.matUid}` : `자재출고: ${lot.matUid}`),
           workerId,
           refType: 'MAT_ISSUE',
           refId: `${savedIssue.issueNo}-${savedIssue.seq}`,
@@ -281,16 +275,16 @@ export class MatIssueService {
           },
         );
 
-        // 이동이면 설비 단위 공정재고(WIP_MAT_STOCKS)에 동량 가산
-        if (isMove && equipCode) {
-          await this.wipMatStockService.addStockInTx(queryRunner, {
-            equipCode,
+        // 이동이면 공정 단위 공정재고(PROC_MAT_STOCKS=장착 대기)에 동량 가산
+        if (isMove && processCode) {
+          await this.procMatStockService.addStockInTx(queryRunner, {
+            processCode,
             itemCode: stock.itemCode,
             matUid: item.matUid,
             qty: issueQty,
-            transType: 'WIP_IN',
+            transType: 'PROC_IN',
             fromWarehouseId: stock.warehouseCode,
-            orderNo,
+            orderNo: orderNo ?? null,
             refType: 'MAT_ISSUE',
             refId: `${savedIssue.issueNo}-${savedIssue.seq}`,
             workerId,
@@ -399,15 +393,15 @@ export class MatIssueService {
         this.assertSameTenant('원본 재고거래', originalTx, company, plant);
 
         const restoreQty = Math.abs(originalTx.qty);
-        const isMove = originalTx.transType === 'WIP_MOVE';
+        const isMove = originalTx.transType === 'PROC_MOVE';
         if (isMove) hasMove = true;
         const cancelTransNo = await this.numbering.nextInTx(queryRunner, 'CANCEL_TX');
 
         // 원자재측 역분개 거래(STOCK_TRANSACTIONS): 원자재창고로 복원한다.
-        // 공정재고(WIP_MAT_STOCKS) 차감은 아래 restoreInTx 가 전담한다.
+        // 공정재고(PROC_MAT_STOCKS) 차감은 아래 restoreInTx 가 전담한다.
         const cancelTx = queryRunner.manager.create(StockTransaction, {
           transNo: cancelTransNo,
-          transType: isMove ? 'WIP_MOVE_CANCEL' : 'MAT_OUT_CANCEL',
+          transType: isMove ? 'PROC_MOVE_CANCEL' : 'MAT_OUT_CANCEL',
           fromWarehouseId: originalTx.fromWarehouseId,
           toWarehouseId: originalTx.fromWarehouseId,
           itemCode: originalTx.itemCode,
@@ -471,15 +465,15 @@ export class MatIssueService {
         }
       }
 
-      // 공정이동(WIP_MOVE) 출고였다면 공정재고(WIP_MAT_STOCKS)도 대칭 차감 복원한다.
-      // 원본 WIP_IN 거래(WIP_MAT_TRANSACTIONS)를 찾아 DEDUCT_BACK + WIP_IN_CANCEL 기록.
+      // 공정입고(PROC_MOVE) 출고였다면 공정재고(PROC_MAT_STOCKS)도 대칭 차감 복원한다.
+      // 원본 PROC_IN 거래(PROC_MAT_TRANSACTIONS)를 찾아 DEDUCT_BACK + PROC_IN_CANCEL 기록.
       if (hasMove) {
-        await this.wipMatStockService.restoreInTx(queryRunner, {
+        await this.procMatStockService.restoreInTx(queryRunner, {
           mode: 'DEDUCT_BACK',
           refType: 'MAT_ISSUE',
           refId,
-          cancelTransType: 'WIP_IN_CANCEL',
-          originTransType: 'WIP_IN',
+          cancelTransType: 'PROC_IN_CANCEL',
+          originTransType: 'PROC_IN',
           orderNo: rawIssue.orderNo ?? null,
           remark: reason ?? null,
           company: rawIssue.company,

@@ -25,6 +25,8 @@ import { PhysicalInvCountDetail } from '../../entities/physical-inv-count-detail
 import { BoxMaster } from '../../entities/box-master.entity';
 import { WipMatStock } from '../../entities/wip-mat-stock.entity';
 import { WipMatTransaction } from '../../entities/wip-mat-transaction.entity';
+import { ProcMatStock } from '../../entities/proc-mat-stock.entity';
+import { ProcMatTransaction } from '../../entities/proc-mat-transaction.entity';
 import { InventoryController } from './inventory.controller';
 import { ProductPhysicalInvController } from './controllers/product-physical-inv.controller';
 import { WarehouseLocationController } from './controllers/warehouse-location.controller';
@@ -37,10 +39,11 @@ import { ProductPhysicalInvService } from './services/product-physical-inv.servi
 import { WarehouseLocationService } from './services/warehouse-location.service';
 import { ProductHoldService } from './services/product-hold.service';
 import { WipMatStockService } from './services/wip-mat-stock.service';
+import { ProcMatStockService } from './services/proc-mat-stock.service';
 import { STOCK_MANAGER } from '../../common/interfaces/stock-manager.interface';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MatStock, MatArrivalTransaction, StockTransaction, ProductStock, ProductTransaction, MatLot, Warehouse, PartMaster, InvAdjLog, WarehouseLocation, FgLabel, PhysicalInvSession, PhysicalInvCountDetail, BoxMaster, WipMatStock, WipMatTransaction])],
+  imports: [TypeOrmModule.forFeature([MatStock, MatArrivalTransaction, StockTransaction, ProductStock, ProductTransaction, MatLot, Warehouse, PartMaster, InvAdjLog, WarehouseLocation, FgLabel, PhysicalInvSession, PhysicalInvCountDetail, BoxMaster, WipMatStock, WipMatTransaction, ProcMatStock, ProcMatTransaction])],
   controllers: [InventoryController, ProductPhysicalInvController, WarehouseLocationController, ProductHoldController],
   providers: [
     InventoryService,
@@ -51,8 +54,9 @@ import { STOCK_MANAGER } from '../../common/interfaces/stock-manager.interface';
     WarehouseLocationService,
     ProductHoldService,
     WipMatStockService,
+    ProcMatStockService,
     { provide: STOCK_MANAGER, useExisting: ProductInventoryService },
   ],
-  exports: [TypeOrmModule, InventoryService, InventoryQueryService, WarehouseService, ProductInventoryService, ProductPhysicalInvService, WarehouseLocationService, ProductHoldService, WipMatStockService, STOCK_MANAGER],
+  exports: [TypeOrmModule, InventoryService, InventoryQueryService, WarehouseService, ProductInventoryService, ProductPhysicalInvService, WarehouseLocationService, ProductHoldService, WipMatStockService, ProcMatStockService, STOCK_MANAGER],
 })
 export class InventoryModule {}

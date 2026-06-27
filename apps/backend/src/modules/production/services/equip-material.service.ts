@@ -1,22 +1,22 @@
 /**
  * @file src/modules/production/services/equip-material.service.ts
- * @description 설비 자재 장착/해제 서비스
+ * @description 설비 자재 장착/해제 서비스 (ADR 0002)
  *
  * 초보자 가이드:
- * - 자재 LOT(MAT_LOTS)를 설비 WIP 재고(WIP_MAT_STOCKS)에 장착하거나 해제한다.
- * - 장착(mount): MAT_LOTS 잔량 전량을 설비 WIP로 이동 + MatLot.currentQty=0.
- * - 목록(listMounted): 설비에 장착된 자재 목록 조회(availableQty>0만).
- * - 해제(unmount): 설비 WIP 잔량을 MAT_LOTS로 복원.
- * - 모든 변경은 단일 트랜잭션(this.tx.run) 안에서 수행한다.
- * - 모든 조회/저장에 company/plant 스코프를 적용한다.
+ * - 자재 흐름: 원자재창고 → [출고] → 공정재고(PROC_MAT_STOCKS=장착 대기) → [장착] → 설비재고(WIP_MAT_STOCKS=장착됨).
+ * - 장착(mount): 설비의 공정(EquipMaster.processCode)의 공정재고에서 LOT 잔량을 차감 → 설비재고로 가산.
+ * - 해제(unmount): 설비재고 잔량을 역분개 → 공정재고로 복원.
+ * - MAT_LOTS는 출고 단계에서 이미 차감되었으므로 여기서 건드리지 않는다.
+ * - 모든 변경은 단일 트랜잭션(this.tx.run) 안에서 수행하고, company/plant 스코프를 적용한다.
  */
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { TransactionService } from '../../../shared/transaction.service';
 import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
+import { ProcMatStockService } from '../../inventory/services/proc-mat-stock.service';
 import { WipMatStock } from '../../../entities/wip-mat-stock.entity';
-import { MatLot } from '../../../entities/mat-lot.entity';
+import { EquipMaster } from '../../../entities/equip-master.entity';
 import { PartMaster } from '../../../entities/part-master.entity';
 
 /** 장착된 자재 행 */
@@ -36,18 +36,17 @@ export class EquipMaterialService {
   constructor(
     @InjectRepository(WipMatStock)
     private readonly wipStockRepo: Repository<WipMatStock>,
-    @InjectRepository(MatLot)
-    private readonly matLotRepo: Repository<MatLot>,
     @InjectRepository(PartMaster)
     private readonly partMasterRepo: Repository<PartMaster>,
     private readonly wipMatStockService: WipMatStockService,
+    private readonly procMatStockService: ProcMatStockService,
     private readonly tx: TransactionService,
   ) {}
 
   /**
-   * 자재 LOT를 설비에 장착한다.
-   * - MAT_LOTS 잔량(currentQty) 전량을 설비 WIP(WIP_MAT_STOCKS)로 이동.
-   * - 동일 설비에 동일 matUid가 이미 장착(qty>0)되어 있으면 BadRequest.
+   * 공정재고(장착 대기) LOT를 설비에 장착한다.
+   * - 설비의 공정(EquipMaster.processCode)의 공정재고에서 해당 LOT 가용 전량을 차감 → 설비재고로 이동.
+   * - 공정재고가 없으면(출고 미이행) BadRequest. 동일 설비에 동일 matUid 중복 장착 시 BadRequest.
    */
   async mount(
     equipCode: string,
@@ -57,20 +56,28 @@ export class EquipMaterialService {
     workerId?: string,
   ): Promise<MountedRow> {
     return this.tx.run(async (qr) => {
-      // 1. MAT_LOTS 조회
-      const lot = await qr.manager.findOne(MatLot, {
-        where: { matUid, company, plant },
+      // 1. 설비 → 공정 도출 (설비 1:1 공정, ADR 0003)
+      const equip = await qr.manager.findOne(EquipMaster, {
+        where: { equipCode, company, plant },
       });
-      if (!lot) {
-        throw new NotFoundException(`자재 LOT를 찾을 수 없습니다: ${matUid}`);
+      if (!equip?.processCode) {
+        throw new BadRequestException(`설비에 공정이 지정되지 않았습니다: ${equipCode}`);
       }
-      if (lot.currentQty <= 0) {
-        throw new BadRequestException(`자재 LOT 잔량이 없습니다: ${matUid} (잔량=${lot.currentQty})`);
-      }
+      const processCode = equip.processCode;
 
-      // 2. 동일 설비에 동일 matUid 중복 장착 확인
+      // 2. 공정재고(장착 대기)에서 해당 LOT 조회
+      const procLot = await this.procMatStockService.findLot(processCode, matUid, company, plant);
+      if (!procLot || (procLot.availableQty ?? 0) <= 0) {
+        throw new BadRequestException(
+          `장착할 공정재고가 없습니다: matUid=${matUid} (공정=${processCode}). 자재 출고(공정 입고)가 먼저 필요합니다.`,
+        );
+      }
+      const itemCode = procLot.itemCode;
+      const qty = procLot.availableQty;
+
+      // 3. 동일 설비에 동일 matUid 중복 장착 확인
       const existing = await qr.manager.findOne(WipMatStock, {
-        where: { company, plant, equipCode, itemCode: lot.itemCode, matUid },
+        where: { company, plant, equipCode, itemCode, matUid },
       });
       if (existing && (existing.qty ?? 0) > 0) {
         throw new BadRequestException(
@@ -78,44 +85,49 @@ export class EquipMaterialService {
         );
       }
 
-      const qty = lot.currentQty;
+      // 4. 공정재고 차감 (장착 대기 → 이동)
+      await this.procMatStockService.deductStockInTx(qr, {
+        processCode,
+        itemCode,
+        qty,
+        scannedMatUids: [matUid],
+        transType: 'PROC_MOUNT',
+        refType: 'EQUIP_MOUNT',
+        refId: matUid,
+        equipCode,
+        workerId: workerId ?? null,
+        company,
+        plant,
+      });
 
-      // 3. 설비 WIP 적재
+      // 5. 설비재고 가산 (장착됨)
       await this.wipMatStockService.addStockInTx(qr, {
         equipCode,
-        itemCode: lot.itemCode,
+        itemCode,
         matUid,
         qty,
         transType: 'WIP_IN',
         refType: 'EQUIP_MOUNT',
         refId: matUid,
-        workerId: workerId ?? null,
         fromWarehouseId: null,
         orderNo: null,
+        workerId: workerId ?? null,
         remark: null,
         company,
         plant,
       });
 
-      // 4. MAT_LOTS 잔량 0으로 이동
-      await qr.manager.update(MatLot, { matUid, company, plant }, { currentQty: 0 });
-
-      // 5. 품목명 조회(Best-effort)
+      // 6. 품목명 조회(Best-effort)
       const part = await this.partMasterRepo.findOne({
-        where: { itemCode: lot.itemCode },
+        where: { itemCode },
         select: ['itemCode', 'itemName'],
       });
 
-      this.logger.log(`설비 자재 장착: equipCode=${equipCode} matUid=${matUid} qty=${qty}`);
+      this.logger.log(
+        `설비 자재 장착: equipCode=${equipCode} matUid=${matUid} qty=${qty} (공정=${processCode})`,
+      );
 
-      return {
-        equipCode,
-        itemCode: lot.itemCode,
-        itemName: part?.itemName ?? null,
-        matUid,
-        qty,
-        availableQty: qty,
-      };
+      return { equipCode, itemCode, itemName: part?.itemName ?? null, matUid, qty, availableQty: qty };
     });
   }
 
@@ -135,7 +147,6 @@ export class EquipMaterialService {
     const positive = stocks.filter((s) => (s.availableQty ?? 0) > 0);
     if (positive.length === 0) return [];
 
-    // 품목명 일괄 조회(In)
     const itemCodes = [...new Set(positive.map((s) => s.itemCode))];
     const parts = await this.partMasterRepo.find({
       where: { itemCode: In(itemCodes) },
@@ -154,9 +165,9 @@ export class EquipMaterialService {
   }
 
   /**
-   * 설비에 장착된 자재 LOT를 해제하고 원자재창고(MAT_LOTS)로 복원한다.
+   * 설비에 장착된 자재 LOT를 해제하고 공정재고(장착 대기)로 복원한다.
    * - RESERVED_QTY>0이면 BadRequest(진행 중인 작업 있음).
-   * - restoreInTx로 WIP 차감 + MatLot.currentQty += 잔량.
+   * - 설비재고 역분개(DEDUCT_BACK) → 공정재고 가산 복원(ADD_BACK).
    */
   async unmount(
     equipCode: string,
@@ -165,7 +176,7 @@ export class EquipMaterialService {
     plant: string,
   ): Promise<void> {
     return this.tx.run(async (qr) => {
-      // 1. WIP_MAT_STOCKS 행 조회
+      // 1. 설비재고 행 조회
       const stock = await qr.manager.findOne(WipMatStock, {
         where: { company, plant, equipCode, matUid },
       });
@@ -182,7 +193,7 @@ export class EquipMaterialService {
         );
       }
 
-      // 3. WIP 역분개(DEDUCT_BACK) — 실제 복원량은 반환값 합계 기준(스냅샷 아님)
+      // 3. 설비재고 역분개(DEDUCT_BACK) — 장착됨 차감
       const restored = await this.wipMatStockService.restoreInTx(qr, {
         mode: 'DEDUCT_BACK',
         refType: 'EQUIP_MOUNT',
@@ -194,17 +205,22 @@ export class EquipMaterialService {
       });
       const restoreQty = restored.reduce((sum, r) => sum + r.qty, 0);
 
-      // 4. MAT_LOTS 잔량 복원 (실제 WIP 역분개량만큼)
-      const lot = await qr.manager.findOne(MatLot, { where: { matUid, company, plant } });
-      if (lot) {
-        await qr.manager.update(MatLot, { matUid, company, plant }, {
-          currentQty: (lot.currentQty ?? 0) + restoreQty,
+      // 4. 공정재고 가산 복원(ADD_BACK) — 장착 대기로 되돌림
+      if (restoreQty > 0) {
+        await this.procMatStockService.restoreInTx(qr, {
+          mode: 'ADD_BACK',
+          refType: 'EQUIP_MOUNT',
+          refId: matUid,
+          cancelTransType: 'PROC_MOUNT_CANCEL',
+          originTransType: 'PROC_MOUNT',
+          company,
+          plant,
         });
-      } else {
-        this.logger.warn(`unmount: MAT_LOTS 행 없음 — matUid=${matUid} (복원 생략)`);
       }
 
-      this.logger.log(`설비 자재 해제: equipCode=${equipCode} matUid=${matUid} qty=${restoreQty}`);
+      this.logger.log(
+        `설비 자재 해제: equipCode=${equipCode} matUid=${matUid} qty=${restoreQty}`,
+      );
     });
   }
 }

@@ -40,6 +40,11 @@ export class CreateMatIssueDto {
   @IsString()
   warehouseCode?: string;
 
+  @ApiPropertyOptional({ description: '입고 공정코드 — 지정 시 원자재창고에서 해당 공정의 공정재고(장착 대기)로 이동(ADR 0002). 설비는 출고 시점에 정하지 않는다.' })
+  @IsOptional()
+  @IsString()
+  processCode?: string;
+
   @ApiProperty({ description: '출고 유형 (ComCode ISSUE_TYPE)' })
   @IsString()
   @IsNotEmpty()
