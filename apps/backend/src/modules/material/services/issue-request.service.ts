@@ -255,8 +255,36 @@ export class IssueRequestService {
       .filter((item) => item.requestQty > 0);
   }
 
+  /**
+   * 중복 출고요청 가드: 동일 작업지시의 미완료(REQUESTED/APPROVED/PARTIAL) 요청에
+   * 같은 품목이 이미 있으면 중복 생성을 차단한다. 작업지시 없는 수동요청은 제외.
+   */
+  private async assertNoDuplicateActiveRequest(dto: CreateIssueRequestDto, company?: string, plant?: string) {
+    if (!dto.orderNo) return;
+    const tenantWhere = this.tenantWhere(company, plant);
+    const existing = (await this.requestRepository.find({
+      where: { orderNo: dto.orderNo, ...tenantWhere },
+    })) ?? [];
+    const activeNos = existing
+      .filter((r) => r.status === 'REQUESTED' || r.status === 'APPROVED' || r.status === 'PARTIAL')
+      .map((r) => r.requestNo);
+    if (activeNos.length === 0) return;
+
+    const existingItems = (await this.requestItemRepository.find({
+      where: { requestId: In(activeNos), ...tenantWhere },
+    })) ?? [];
+    const activeItemCodes = new Set(existingItems.map((i) => i.itemCode));
+    const conflicts = [...new Set(dto.items.map((i) => i.itemCode).filter((code) => activeItemCodes.has(code)))];
+    if (conflicts.length > 0) {
+      throw new BadRequestException(
+        `이미 진행 중인 출고요청이 있는 품목입니다(작업지시 ${dto.orderNo}): ${conflicts.join(', ')}`,
+      );
+    }
+  }
+
   /** 출고요청 생성 (헤더 + 품목 일괄 저장) */
   async create(dto: CreateIssueRequestDto, company?: string, plant?: string) {
+    await this.assertNoDuplicateActiveRequest(dto, company, plant);
     const requestNo = await this.tx.run(async (queryRunner) => {
       const requestNo = await this.generateRequestNo(queryRunner);
       const request = queryRunner.manager.create(MatIssueRequest, {

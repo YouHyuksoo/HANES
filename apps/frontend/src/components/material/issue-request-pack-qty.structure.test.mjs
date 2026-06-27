@@ -18,3 +18,18 @@ test('출고요청 작성 그리드는 요청/포장단위/실출고 3값을 표
   assert.match(panel, /material\.request\.minPackQty/, '포장단위 컬럼 헤더를 표시해야 한다');
   assert.match(panel, /material\.request\.issueQtyLabel/, '실출고수량 컬럼 헤더를 표시해야 한다');
 });
+
+test('#1 작성 패널에서 BOM 외 품목을 직접 검색해 추가할 수 있다', () => {
+  assert.match(panel, /searchStockItems/, 'BOM 외 품목 검색 prop을 받아야 한다');
+  assert.match(panel, /addManualItem/, '검색 품목을 직접 추가하는 핸들러가 있어야 한다');
+});
+
+test('#7 실출고 모달은 LOT 입고일(FIFO)과 가용부족 경고를 표시한다', () => {
+  assert.match(modal, /fmtRecvDate/, 'LOT 입고일을 표시해야 한다');
+  assert.match(modal, /shortage/, '선택 LOT 가용재고 부족 경고가 있어야 한다');
+});
+
+test('#8 공정 지정 출고는 공정재고 적재 안내를 표시한다', () => {
+  assert.match(panel, /processStockNotice/, '작성 패널에 공정재고 적재 안내가 있어야 한다');
+  assert.match(modal, /processStockNotice/, '실출고 모달에 공정재고 적재 안내가 있어야 한다');
+});

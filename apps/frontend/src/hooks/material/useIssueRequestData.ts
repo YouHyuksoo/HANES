@@ -61,6 +61,8 @@ export interface StockItem {
   category: string;
   currentStock: number;
   unit: string;
+  /** 포장단위(최소 출고 단위) */
+  minPackQty?: number;
 }
 
 /** 목록 API 응답 */
@@ -89,6 +91,7 @@ interface PartSearchResponse {
     itemType?: string;
     unit?: string;
     currentStock?: number;
+    minPackQty?: number;
   }>;
 }
 
@@ -174,6 +177,7 @@ export function useIssueRequestData() {
         category: p.itemType ?? '',
         currentStock: p.currentStock ?? 0,
         unit: p.unit ?? 'EA',
+        minPackQty: Number(p.minPackQty ?? 0),
       }));
     } catch {
       console.warn('[useIssueRequestData] 품목 검색 실패:', query);

@@ -64,6 +64,7 @@ function IssueRequestPage() {
         isLoadingJobOrders={isLoadingJobOrders}
         loadBomRequestItems={loadBomRequestItems}
         loadRequestsByOrder={loadRequestsByOrder}
+        searchStockItems={searchStockItems}
         woOrderNo={woOrderNo}
         onWoOrderNoChange={setWoOrderNo}
         woModel={woModel}

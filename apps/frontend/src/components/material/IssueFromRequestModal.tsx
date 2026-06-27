@@ -12,7 +12,7 @@
  */
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle, Package, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Package, AlertTriangle, Info } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Modal, Button, Input, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -51,6 +51,8 @@ interface RequestDetail {
   requester: string;
   status: string;
   issueType?: string;
+  /** 출고 대상 공정(지정 시 공정재고로 적재) */
+  processCode?: string | null;
   items: RequestDetailItem[];
 }
 
@@ -73,7 +75,12 @@ interface AvailableStock {
   availableQty?: number;
   qty?: number;
   unit?: string;
+  /** 입고일(FIFO 선입선출 가시화) */
+  recvDate?: string | null;
 }
+
+/** 입고일 표시용 포맷 (YYYY-MM-DD) */
+const fmtRecvDate = (v?: string | null) => (v ? String(v).slice(0, 10) : '-');
 
 export default function IssueFromRequestModal({
   isOpen, onClose, requestId,
@@ -266,9 +273,10 @@ export default function IssueFromRequestModal({
       meta: { filterType: 'none' as const },
       cell: ({ row }) => {
         const item = row.original;
-        const options = (availableStocksByItem[item.itemCode] ?? []).map((stock) => ({
+        // 백엔드가 입고일(FIFO) 오름차순으로 정렬 → 첫 항목이 선입선출 권장 LOT
+        const options = (availableStocksByItem[item.itemCode] ?? []).map((stock, i) => ({
           value: stock.matUid,
-          label: `${stock.matUid} / ${stock.warehouseName ?? stock.warehouseCode} / ${(stock.availableQty ?? stock.qty ?? 0).toLocaleString()}${stock.unit ? ` ${stock.unit}` : ''}`,
+          label: `${i === 0 ? '⭐ ' : ''}${stock.matUid} · ${stock.warehouseName ?? stock.warehouseCode} · ${(stock.availableQty ?? stock.qty ?? 0).toLocaleString()}${stock.unit ? ` ${stock.unit}` : ''} · 📅${fmtRecvDate(stock.recvDate)}`,
         }));
         return (
           <Select
@@ -289,15 +297,29 @@ export default function IssueFromRequestModal({
       meta: { filterType: 'none' as const },
       cell: ({ row }) => {
         const item = row.original;
+        // 선택한 LOT의 가용재고가 출고수량보다 적으면 사전 경고(백엔드도 차단)
+        const selectedStock = (availableStocksByItem[item.itemCode] ?? []).find(
+          (s) => s.matUid === selectedMatUids[item.rowKey],
+        );
+        const availQty = selectedStock?.availableQty ?? selectedStock?.qty ?? 0;
+        const shortage = !!selectedMatUids[item.rowKey] && availQty < item.issueQty;
         return (
-          <Input
-            type="number"
-            value={String(item.issueQty)}
-            onChange={(e) => handleQtyChange(item.rowKey, Number(e.target.value))}
-            className="w-24 text-right"
-            min={0}
-            max={item.packRemainQty}
-          />
+          <div className="flex items-center gap-1">
+            <Input
+              type="number"
+              value={String(item.issueQty)}
+              onChange={(e) => handleQtyChange(item.rowKey, Number(e.target.value))}
+              className={`w-24 text-right ${shortage ? 'border-red-400' : ''}`}
+              min={0}
+              max={item.packRemainQty}
+            />
+            {shortage && (
+              <AlertTriangle
+                className="w-4 h-4 text-red-500 shrink-0"
+                aria-label={t('material.issue.lotShortage', { defaultValue: '선택 LOT 가용재고 부족' })}
+              />
+            )}
+          </div>
         );
       },
     },
@@ -322,6 +344,19 @@ export default function IssueFromRequestModal({
               <span className="text-text-muted">{t('material.col.requester')}:</span>{' '}
               <span className="font-medium text-text">{detail.requester}</span>
             </div>
+          </div>
+        )}
+
+        {/* 공정 지정 출고 안내 (공정재고 적재) */}
+        {detail?.processCode && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 text-primary text-sm">
+            <Info className="w-4 h-4 shrink-0" />
+            <span>
+              {t('material.issue.processStockNotice', {
+                defaultValue: '공정 {{code}}의 공정재고(장착 대기)로 적재됩니다.',
+                code: detail.processCode,
+              })}
+            </span>
           </div>
         )}
 

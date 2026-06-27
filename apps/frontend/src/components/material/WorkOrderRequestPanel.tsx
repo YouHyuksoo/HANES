@@ -12,7 +12,7 @@
  */
 import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, ClipboardList, AlertTriangle, Loader2, Plus, PackageCheck, X, ListChecks, FilePlus2, ChevronLeft } from 'lucide-react';
+import { Search, ClipboardList, AlertTriangle, Loader2, Plus, PackageCheck, X, ListChecks, FilePlus2, ChevronLeft, Info } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, ComCodeBadge } from '@/components/ui';
 import ComCodeSelect from '@/components/shared/ComCodeSelect';
 import ProcessSelect from '@/components/shared/ProcessSelect';
@@ -21,7 +21,7 @@ import { api } from '@/services/api';
 import { useInvalidateQueries } from '@/hooks/useApi';
 import RequestTable from '@/components/material/RequestTable';
 import type { ProductionJobOrderRow } from '@harness/shared';
-import type { IssueRequest, RequestItem } from '@/hooks/material/useIssueRequestData';
+import type { IssueRequest, RequestItem, StockItem } from '@/hooks/material/useIssueRequestData';
 
 type RightMode = 'history' | 'create';
 
@@ -30,6 +30,8 @@ interface WorkOrderRequestPanelProps {
   isLoadingJobOrders?: boolean;
   loadBomRequestItems: (orderNo: string) => Promise<RequestItem[]>;
   loadRequestsByOrder: (orderNo: string) => Promise<IssueRequest[]>;
+  /** BOM 외 품목 직접추가용 검색 */
+  searchStockItems: (query: string) => Promise<StockItem[]>;
   /** 작업지시 조회 필터 (서버 사이드) */
   woOrderNo: string;
   onWoOrderNoChange: (v: string) => void;
@@ -54,6 +56,7 @@ export default function WorkOrderRequestPanel({
   isLoadingJobOrders,
   loadBomRequestItems,
   loadRequestsByOrder,
+  searchStockItems,
   woOrderNo,
   onWoOrderNoChange,
   woModel,
@@ -75,6 +78,10 @@ export default function WorkOrderRequestPanel({
   const [isLoadingWoRequests, setIsLoadingWoRequests] = useState(false);
   // 신규 작성(create) 상태
   const [detailItems, setDetailItems] = useState<RequestItem[]>([]);
+  // BOM 외 품목 직접추가 검색
+  const [manualQuery, setManualQuery] = useState('');
+  const [manualResults, setManualResults] = useState<StockItem[]>([]);
+  const [isSearchingManual, setIsSearchingManual] = useState(false);
   const [reason, setReason] = useState('생산투입');
   const [isLoadingBom, setIsLoadingBom] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -144,6 +151,36 @@ export default function WorkOrderRequestPanel({
     setDetailItems((prev) =>
       prev.map((r) => (r.itemCode === itemCode ? { ...r, requestQty: qty } : r)),
     );
+  };
+
+  // BOM 외 품목 직접 추가 (작업지시 BOM에 없는 자재를 현장 판단으로 추가)
+  const handleManualSearch = useCallback(async () => {
+    if (!manualQuery.trim()) return;
+    setIsSearchingManual(true);
+    try {
+      setManualResults(await searchStockItems(manualQuery));
+    } catch {
+      setManualResults([]);
+    } finally {
+      setIsSearchingManual(false);
+    }
+  }, [manualQuery, searchStockItems]);
+
+  const addManualItem = (item: StockItem) => {
+    setDetailItems((prev) => {
+      if (prev.some((r) => r.itemCode === item.itemCode)) return prev;
+      return [
+        ...prev,
+        {
+          itemCode: item.itemCode,
+          itemName: item.itemName,
+          unit: item.unit,
+          currentStock: item.currentStock,
+          requestQty: 0,
+          minPackQty: item.minPackQty ?? 0,
+        },
+      ];
+    });
   };
 
   const handleSubmit = async () => {
@@ -349,6 +386,13 @@ export default function WorkOrderRequestPanel({
               </div>
             )}
 
+            {mode === 'create' && selectedProcessCode && (
+              <div className="m-3 mb-0 flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 text-primary text-sm">
+                <Info className="w-4 h-4 shrink-0" />
+                <span>{t('material.request.processStockNotice', { defaultValue: '지정 공정의 공정재고(장착 대기)로 적재됩니다. 미지정 시 자재창고로 출고됩니다.' })}</span>
+              </div>
+            )}
+
             {mode === 'history' ? (
               /* 작업지시별 출고요청 내역 (요청건별 그룹 + 품목 상세) */
               <div className="flex-1 min-h-0 overflow-auto p-3 space-y-3">
@@ -418,8 +462,43 @@ export default function WorkOrderRequestPanel({
                 )}
               </div>
             ) : (
-              /* 신규 작성: BOM 상세 그리드 */
-              <div className="flex-1 min-h-0 overflow-auto p-3">
+              /* 신규 작성: BOM 상세 그리드 + 품목 직접추가 */
+              <div className="flex-1 min-h-0 overflow-auto p-3 space-y-3">
+                {/* BOM 외 품목 직접추가 */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder={t('material.request.searchPartPlaceholder')}
+                    value={manualQuery}
+                    onChange={(e) => setManualQuery(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleManualSearch(); }}
+                    leftIcon={<Search className="w-4 h-4" />}
+                    fullWidth
+                  />
+                  <Button size="sm" variant="secondary" onClick={handleManualSearch} disabled={isSearchingManual}>
+                    {isSearchingManual ? <Loader2 className="w-4 h-4 animate-spin" /> : t('common.search')}
+                  </Button>
+                </div>
+                {manualResults.length > 0 && (
+                  <div className="border border-border rounded-lg max-h-32 overflow-auto">
+                    {manualResults.map((item) => {
+                      const added = detailItems.some((r) => r.itemCode === item.itemCode);
+                      return (
+                        <div key={item.itemCode} className="flex items-center gap-2 px-3 py-1.5 text-sm border-t border-border first:border-t-0">
+                          <span className="font-mono text-xs">{item.itemCode}</span>
+                          <span className="flex-1 truncate">{item.itemName}</span>
+                          <button
+                            onClick={() => addManualItem(item)}
+                            disabled={added}
+                            className={`p-1 rounded ${added ? 'text-text-muted opacity-50' : 'text-primary hover:bg-primary/10'}`}
+                            title={added ? t('material.request.alreadyAdded') : t('material.request.addToRequest')}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 {isLoadingBom ? (
                   <div className="flex items-center justify-center h-32 text-primary text-sm gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />

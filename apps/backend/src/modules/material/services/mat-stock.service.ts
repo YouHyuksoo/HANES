@@ -202,6 +202,7 @@ export class MatStockService {
         ...stock,
         itemCode: stock.itemCode, itemName: part?.itemName ?? null,
         unit: part?.unit ?? null, matUid: stock.matUid,
+        recvDate: lot?.recvDate ?? null,
         iqcStatus: lot?.iqcStatus ?? null, lotStatus: lot?.status ?? null,
       };
     }).filter((s) => s.iqcStatus === 'PASS' && s.qty > 0 && s.lotStatus !== 'HOLD');
@@ -212,6 +213,13 @@ export class MatStockService {
         r.itemCode.toLowerCase().includes(s) || (r.itemName ?? '').toLowerCase().includes(s) ||
         r.matUid?.toLowerCase().includes(s));
     }
+
+    // FIFO(선입선출): 입고일(RECV_DATE) 오름차순, 입고일 미상(null)은 뒤로
+    result.sort((a, b) => {
+      const at = a.recvDate ? new Date(a.recvDate).getTime() : Number.POSITIVE_INFINITY;
+      const bt = b.recvDate ? new Date(b.recvDate).getTime() : Number.POSITIVE_INFINITY;
+      return at - bt;
+    });
     return { data: result, total: result.length, page, limit };
   }
 

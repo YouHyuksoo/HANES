@@ -226,6 +226,50 @@ describe('IssueRequestService', () => {
   });
 
   describe('create', () => {
+    it('동일 작업지시·품목에 미완료 출고요청이 있으면 중복 생성을 차단한다', async () => {
+      requestRepo.find.mockResolvedValue([
+        { requestNo: 'REQ-EXIST', orderNo: 'WO-001', status: 'APPROVED', company: 'C1', plant: 'P1' } as MatIssueRequest,
+      ]);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-EXIST', seq: 1, itemCode: 'RM-001' } as unknown as MatIssueRequestItem,
+      ]);
+
+      await expect(
+        service.create({
+          orderNo: 'WO-001',
+          issueType: 'PRODUCTION',
+          items: [{ itemCode: 'RM-001', requestQty: 5 }],
+        } as any, 'C1', 'P1'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(numbering.next).not.toHaveBeenCalled();
+    });
+
+    it('기존 요청이 완료/반려 상태면 같은 품목 재요청을 허용한다', async () => {
+      requestRepo.find.mockResolvedValue([
+        { requestNo: 'REQ-DONE', orderNo: 'WO-001', status: 'COMPLETED', company: 'C1', plant: 'P1' } as MatIssueRequest,
+      ]);
+      requestItemRepo.find
+        .mockResolvedValueOnce([
+          { requestId: 'REQ-DONE', seq: 1, itemCode: 'RM-001' } as unknown as MatIssueRequestItem,
+        ])
+        .mockResolvedValue([]);
+      numbering.next.mockResolvedValue('REQ-002');
+      queryRunner.manager.create.mockImplementation((_entity, value: any) => value);
+      queryRunner.manager.save
+        .mockResolvedValueOnce({ requestNo: 'REQ-002', company: 'C1', plant: 'P1' } as MatIssueRequest)
+        .mockResolvedValueOnce([] as any);
+      requestRepo.findOne.mockResolvedValue({ requestNo: 'REQ-002', company: 'C1', plant: 'P1' } as MatIssueRequest);
+
+      await service.create({
+        orderNo: 'WO-001',
+        issueType: 'PRODUCTION',
+        items: [{ itemCode: 'RM-001', requestQty: 5 }],
+      } as any, 'C1', 'P1');
+
+      expect(numbering.next).toHaveBeenCalled();
+    });
+
     it('ORDER_NO를 orderNo 엔티티 속성으로 저장한다', async () => {
       numbering.next.mockResolvedValue('REQ-001');
       queryRunner.manager.create.mockImplementation((_entity, value: any) => value);

@@ -227,6 +227,38 @@ describe('MatStockService', () => {
         where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
       });
     });
+
+    it('출고 가능 재고를 입고일(recvDate) 오름차순(FIFO)으로 정렬한다', async () => {
+      const newer = createStock({ matUid: 'MAT-NEW', itemCode: 'ITEM-001' });
+      const older = createStock({ matUid: 'MAT-OLD', itemCode: 'ITEM-001' });
+      // repository는 임의 순서로 반환(최신 입고가 먼저)
+      mockMatStockRepo.find.mockResolvedValue([newer, older]);
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-NEW', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001', recvDate: new Date('2026-06-20') } as MatLot,
+        { matUid: 'MAT-OLD', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001', recvDate: new Date('2026-06-10') } as MatLot,
+      ]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAvailable({ page: 1, limit: 10 });
+
+      // 가장 오래 보관된 LOT(MAT-OLD)이 먼저 와야 한다
+      expect(result.data.map((d) => d.matUid)).toEqual(['MAT-OLD', 'MAT-NEW']);
+    });
+
+    it('입고일이 없는(null) LOT은 FIFO 정렬에서 뒤로 보낸다', async () => {
+      const dated = createStock({ matUid: 'MAT-DATED', itemCode: 'ITEM-001' });
+      const undated = createStock({ matUid: 'MAT-NULL', itemCode: 'ITEM-001' });
+      mockMatStockRepo.find.mockResolvedValue([undated, dated]);
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-DATED', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001', recvDate: new Date('2026-06-15') } as MatLot,
+        { matUid: 'MAT-NULL', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001', recvDate: null } as unknown as MatLot,
+      ]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAvailable({ page: 1, limit: 10 });
+
+      expect(result.data.map((d) => d.matUid)).toEqual(['MAT-DATED', 'MAT-NULL']);
+    });
   });
 
   // ─── findByPartAndWarehouse ───
