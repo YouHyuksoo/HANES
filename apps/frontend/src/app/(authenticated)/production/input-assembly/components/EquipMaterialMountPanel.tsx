@@ -20,6 +20,7 @@ export default function EquipMaterialMountPanel({ equipCode }: { equipCode: stri
   const { t } = useTranslation();
 
   const [rows, setRows] = useState<MountedRow[]>([]);
+  const [waitingRows, setWaitingRows] = useState<MountedRow[]>([]);
   const [scanInput, setScanInput] = useState("");
   const [mounting, setMounting] = useState(false);
 
@@ -43,14 +44,32 @@ export default function EquipMaterialMountPanel({ equipCode }: { equipCode: stri
     }
   }, [equipCode, t]);
 
+  // 설비 공정의 장착 대기 공정재고 목록(스캔 없이 선택 장착용)
+  const fetchWaiting = useCallback(async () => {
+    if (!equipCode) {
+      setWaitingRows([]);
+      return;
+    }
+    try {
+      const res = await api.get("/production/equip-material/proc-waiting", {
+        params: { equipCode },
+      });
+      setWaitingRows((res.data?.data as MountedRow[]) ?? []);
+    } catch {
+      setWaitingRows([]);
+    }
+  }, [equipCode]);
+
   useEffect(() => {
     if (!equipCode) {
       setRows([]);
+      setWaitingRows([]);
       setScanInput("");
       return;
     }
     void fetchMounted();
-  }, [equipCode, fetchMounted]);
+    void fetchWaiting();
+  }, [equipCode, fetchMounted, fetchWaiting]);
 
   const mountMaterial = useCallback(
     async (raw: string) => {
@@ -72,6 +91,7 @@ export default function EquipMaterialMountPanel({ equipCode }: { equipCode: stri
         } else {
           await fetchMounted();
         }
+        void fetchWaiting();
         setScanInput("");
         toast.success(t("production.equipMaterial.mountSuccess", "자재가 장착되었습니다."));
       } catch (error: unknown) {
@@ -84,7 +104,7 @@ export default function EquipMaterialMountPanel({ equipCode }: { equipCode: stri
         scanRef.current?.focus();
       }
     },
-    [equipCode, fetchMounted, t],
+    [equipCode, fetchMounted, fetchWaiting, t],
   );
 
   const unmountMaterial = useCallback(
@@ -96,6 +116,7 @@ export default function EquipMaterialMountPanel({ equipCode }: { equipCode: stri
           matUid,
         });
         await fetchMounted();
+        void fetchWaiting();
         toast.success(t("production.equipMaterial.unmountSuccess", "자재가 해제되었습니다."));
       } catch (error: unknown) {
         const message =
@@ -104,7 +125,7 @@ export default function EquipMaterialMountPanel({ equipCode }: { equipCode: stri
         toast.error(message);
       }
     },
-    [equipCode, fetchMounted, t],
+    [equipCode, fetchMounted, fetchWaiting, t],
   );
 
   return (
@@ -129,6 +150,28 @@ export default function EquipMaterialMountPanel({ equipCode }: { equipCode: stri
           disabled={!equipCode || mounting}
           fullWidth
         />
+        {equipCode && waitingRows.length > 0 && (
+          <div className="mt-3">
+            <p className="text-xs text-text-muted mb-1.5">
+              {t("production.equipMaterial.waitingTitle", "장착 대기 (공정재고)")}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {waitingRows.map((w) => (
+                <button
+                  key={w.matUid}
+                  type="button"
+                  disabled={mounting}
+                  onClick={() => mountMaterial(w.matUid)}
+                  title={`${w.itemName ?? w.itemCode} · ${w.availableQty.toLocaleString()}`}
+                  className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-xs text-text hover:border-primary disabled:opacity-50"
+                >
+                  <span className="font-mono">{w.matUid}</span>
+                  <span className="text-text-muted">({w.availableQty.toLocaleString()})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 min-h-0 overflow-auto p-4">

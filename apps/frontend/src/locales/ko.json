@@ -3888,6 +3888,7 @@
     },
     "equipMaterial": {
       "mountTitle": "설비 자재 장착 (지속)",
+      "waitingTitle": "장착 대기 (공정재고)",
       "scanPlaceholder": "자재 바코드 스캔 또는 입력 후 Enter",
       "selectEquipFirst": "설비를 먼저 선택하세요",
       "noMounted": "장착된 자재가 없습니다.",

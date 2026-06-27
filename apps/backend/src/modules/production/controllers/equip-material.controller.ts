@@ -52,6 +52,18 @@ export class EquipMaterialController {
     return ResponseUtil.success(data);
   }
 
+  @Get('proc-waiting')
+  @ApiOperation({ summary: '설비 공정의 장착 대기 공정재고 목록 조회 (availableQty>0)' })
+  @ApiQuery({ name: 'equipCode', required: true, description: '설비 코드' })
+  async listProcWaiting(
+    @Query('equipCode') equipCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.svc.listProcWaiting(equipCode, company, plant);
+    return ResponseUtil.success(data);
+  }
+
   @Post('unmount')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '설비 자재 해제 — WIP_MAT_STOCKS 잔량을 MAT_LOTS로 복원' })

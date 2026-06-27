@@ -303,6 +303,25 @@ export class ProcMatStockService {
       .map((r) => ({ matUid: r.matUid, qty: r.qty ?? 0, availableQty: r.availableQty ?? 0 }));
   }
 
+  /** 특정 공정의 장착 대기 공정재고 목록 (availableQty > 0) — 설비 장착 화면용 */
+  async listWaitingByProcess(
+    processCode: string,
+    company: string,
+    plant: string,
+  ): Promise<{ matUid: string; itemCode: string; qty: number; availableQty: number }[]> {
+    const rows = await this.procStockRepo.find({
+      where: { company, plant, processCode },
+    });
+    return rows
+      .filter((r) => (r.availableQty ?? 0) > 0)
+      .map((r) => ({
+        matUid: r.matUid,
+        itemCode: r.itemCode,
+        qty: r.qty ?? 0,
+        availableQty: r.availableQty ?? 0,
+      }));
+  }
+
   /** 특정 공정의 단일 LOT(matUid) 가용 재고 조회 — 장착 시 itemCode/잔량 확인용 */
   async findLot(
     processCode: string,

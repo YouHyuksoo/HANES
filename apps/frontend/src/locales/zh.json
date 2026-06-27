@@ -3478,6 +3478,7 @@
     },
     "equipMaterial": {
       "mountTitle": "设备物料装载（持续）",
+      "waitingTitle": "待装载（工序库存）",
       "scanPlaceholder": "扫描物料条码或输入后按Enter",
       "selectEquipFirst": "请先选择设备",
       "noMounted": "无已装载物料。",

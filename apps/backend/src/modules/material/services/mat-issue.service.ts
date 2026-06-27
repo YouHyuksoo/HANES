@@ -302,6 +302,14 @@ export class MatIssueService {
       remainingStocks.forEach((stock) => this.assertSameTenant('출고 후 잔여 재고', stock, lot.company, lot.plant));
       const totalRemainingQty = remainingStocks.reduce((sum, stock) => sum + (stock.qty ?? 0), 0);
 
+      // MAT_LOTS.currentQty 정합 — 출고분만큼 LOT 잔량 차감(창고에서 LOT이 나감).
+      // MAT_STOCKS(창고별 재고)와 MAT_LOTS(LOT 총 잔량)는 다른 차원이라 둘 다 차감이 정상(이중 관리 아님).
+      await queryRunner.manager.update(
+        MatLot,
+        { matUid: lot.matUid, ...tenantWhere },
+        { currentQty: Math.max(0, (lot.currentQty ?? 0) - item.issueQty) },
+      );
+
       if (totalRemainingQty <= 0) {
         await queryRunner.manager.update(MatLot, { matUid: lot.matUid, ...tenantWhere }, { status: 'DEPLETED' });
       }
@@ -482,7 +490,13 @@ export class MatIssueService {
       }
 
       if (rawIssue.matUid) {
-        await queryRunner.manager.update(MatLot, { matUid: rawIssue.matUid, ...tenantWhere }, { status: 'NORMAL' });
+        // 출고 취소 — LOT 잔량(currentQty)도 출고량만큼 복원(createInTx 차감의 대칭).
+        const lotRow = await queryRunner.manager.findOne(MatLot, { where: { matUid: rawIssue.matUid, ...tenantWhere } });
+        await queryRunner.manager.update(
+          MatLot,
+          { matUid: rawIssue.matUid, ...tenantWhere },
+          { status: 'NORMAL', currentQty: (lotRow?.currentQty ?? 0) + rawIssue.issueQty },
+        );
       }
 
       return { issueNo, seq, status: 'CANCELED' };

@@ -3478,6 +3478,7 @@
     },
     "equipMaterial": {
       "mountTitle": "Equipment Material Mount (Persistent)",
+      "waitingTitle": "Awaiting Mount (Process Stock)",
       "scanPlaceholder": "Scan material barcode or enter then press Enter",
       "selectEquipFirst": "Please select equipment first",
       "noMounted": "No mounted materials.",

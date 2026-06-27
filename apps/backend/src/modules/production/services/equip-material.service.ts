@@ -165,6 +165,41 @@ export class EquipMaterialService {
   }
 
   /**
+   * 설비의 공정(EquipMaster.processCode)의 장착 대기 공정재고 목록을 조회한다.
+   * - 설비 장착 화면에서 "스캔 없이 목록에서 선택 장착"을 지원한다.
+   * - 설비에 공정이 없으면 빈 목록.
+   */
+  async listProcWaiting(
+    equipCode: string,
+    company: string,
+    plant: string,
+  ): Promise<MountedRow[]> {
+    const equip = await this.wipStockRepo.manager.findOne(EquipMaster, {
+      where: { equipCode, company, plant },
+    });
+    if (!equip?.processCode) return [];
+
+    const rows = await this.procMatStockService.listWaitingByProcess(equip.processCode, company, plant);
+    if (rows.length === 0) return [];
+
+    const itemCodes = [...new Set(rows.map((r) => r.itemCode))];
+    const parts = await this.partMasterRepo.find({
+      where: { itemCode: In(itemCodes) },
+      select: ['itemCode', 'itemName'],
+    });
+    const nameMap = new Map(parts.map((p) => [p.itemCode, p.itemName]));
+
+    return rows.map((r) => ({
+      equipCode,
+      itemCode: r.itemCode,
+      itemName: nameMap.get(r.itemCode) ?? null,
+      matUid: r.matUid,
+      qty: r.qty,
+      availableQty: r.availableQty,
+    }));
+  }
+
+  /**
    * 설비에 장착된 자재 LOT를 해제하고 공정재고(장착 대기)로 복원한다.
    * - RESERVED_QTY>0이면 BadRequest(진행 중인 작업 있음).
    * - 설비재고 역분개(DEDUCT_BACK) → 공정재고 가산 복원(ADD_BACK).
