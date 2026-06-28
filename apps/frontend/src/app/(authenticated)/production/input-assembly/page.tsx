@@ -455,6 +455,7 @@ export default function InputAssemblyPage() {
         }}
         processCode={processCode || undefined}
         itemType="FINISHED"
+        orderKind="OPERATION"
       />
 
       {/* 설비 선택 모달 — input-kiosk 공용. 설비 선택 시 공정 자동 도출. */}

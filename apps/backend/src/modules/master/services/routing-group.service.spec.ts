@@ -321,6 +321,29 @@ describe('RoutingGroupService', () => {
       );
     });
 
+    it('should create a process with job order creation flag', async () => {
+      const dto = {
+        routingCode: 'RG01',
+        seq: 30,
+        processCode: 'P01',
+        jobOrderYn: 'N',
+      } as any;
+      const created = { ...dto, useYn: 'Y' } as RoutingProcess;
+      mockProcessRepo.findOne.mockResolvedValue(null);
+      mockProcessRepo.create.mockReturnValue(created);
+      mockProcessRepo.save.mockResolvedValue(created);
+
+      await target.createProcess(dto, 'C1', 'P1');
+
+      expect(mockProcessRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          jobOrderYn: 'N',
+          company: 'C1',
+          plant: 'P1',
+        }),
+      );
+    });
+
     it('uses PROCESS_MASTERS name when creating a routing process', async () => {
       const dto = {
         routingCode: 'RG01',
@@ -414,6 +437,25 @@ describe('RoutingGroupService', () => {
       expect(mockProcessRepo.update).toHaveBeenCalledWith(
         { routingCode: 'RG01', seq: 10, company: 'C1', plant: 'P1' },
         expect.objectContaining({ executionType: 'SUBCON', subconVendorCode: 'SUB001' }),
+      );
+    });
+
+    it('should update job order creation flag', async () => {
+      const existing = { routingCode: 'RG01', seq: 10, jobOrderYn: 'Y' } as RoutingProcess;
+      mockProcessRepo.findOne.mockResolvedValue(existing);
+      mockProcessRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.updateProcess(
+        'RG01',
+        10,
+        { jobOrderYn: 'N' } as any,
+        'C1',
+        'P1',
+      );
+
+      expect(mockProcessRepo.update).toHaveBeenCalledWith(
+        { routingCode: 'RG01', seq: 10, company: 'C1', plant: 'P1' },
+        expect.objectContaining({ jobOrderYn: 'N' }),
       );
     });
 

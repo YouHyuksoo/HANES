@@ -47,6 +47,10 @@ export class RoutingProcess {
   @Column({ type: 'varchar2', name: 'EXECUTION_TYPE', length: 20, default: 'IN_HOUSE' })
   executionType: 'IN_HOUSE' | 'SUBCON';
 
+  /** 작업지시 생성 여부. N이면 검사/참조 공정으로 보고 OPERATION 작업지시를 만들지 않는다. */
+  @Column({ type: 'varchar2', name: 'JOB_ORDER_YN', length: 1, default: 'Y' })
+  jobOrderYn: string;
+
   @Column({ type: 'varchar2', name: 'SUBCON_VENDOR_CODE', length: 50, nullable: true })
   subconVendorCode: string | null;
 

@@ -28,6 +28,7 @@ export interface RoutingProcessItem {
   processType: string | null;
   equipType: string | null;
   executionType: "IN_HOUSE" | "SUBCON";
+  jobOrderYn: string;
   subconVendorCode: string | null;
   stdTime: number | null;
   setupTime: number | null;

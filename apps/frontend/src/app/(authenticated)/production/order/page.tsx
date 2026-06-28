@@ -34,7 +34,7 @@ import JobOrderPrintModal from "./components/JobOrderPrintModal";
 import type { ProductionJobOrderRow } from "@harness/shared";
 
 type JobOrderItem = ProductionJobOrderRow;
-type AiJobOrderDraft = Partial<JobOrderFormData> & { autoCreateChildren?: boolean };
+type AiJobOrderDraft = Partial<JobOrderFormData>;
 
 /** 트리 데이터를 평탄화 (들여쓰기 depth 포함) */
 function flattenTree(items: JobOrderItem[], depth = 0): (JobOrderItem & { _depth: number })[] {
@@ -308,6 +308,24 @@ export default function JobOrderPage() {
             {depth > 0 && <ChevronRight className="w-3 h-3 text-text-muted" />}
             {row.original.children?.length ? <ChevronDown className="w-3 h-3 text-primary" /> : null}
             <span className="font-mono text-sm">{row.original.orderNo}</span>
+          </span>
+        );
+      },
+    },
+    {
+      id: "orderKind", header: t("production.order.orderKind", "구분"), size: 90,
+      meta: { filterType: "multi" as const, align: "center" as const },
+      accessorFn: (row) => row.orderKind || "ITEM",
+      cell: ({ row, getValue }) => {
+        const kind = getValue() as string;
+        const routingSeq = row.original.routingSeq;
+        const cls = kind === "OPERATION"
+          ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
+          : "border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-700 dark:bg-sky-950/30 dark:text-sky-300";
+        const label = kind === "OPERATION" ? t("production.order.orderKindOperation", "공정") : t("production.order.orderKindItem", "품목");
+        return (
+          <span className={`inline-flex min-w-14 items-center justify-center rounded border px-2 py-0.5 text-xs font-medium ${cls}`}>
+            {routingSeq ? `${label} ${routingSeq}` : label}
           </span>
         );
       },

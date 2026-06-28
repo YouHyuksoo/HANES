@@ -87,6 +87,10 @@ export class CreateRoutingProcessDto {
   @IsOptional() @IsString() @IsIn(['IN_HOUSE', 'SUBCON'])
   executionType?: 'IN_HOUSE' | 'SUBCON';
 
+  @ApiPropertyOptional({ description: '공정 작업지시 생성 여부', enum: ['Y', 'N'], default: 'Y' })
+  @IsOptional() @IsString() @IsIn(['Y', 'N'])
+  jobOrderYn?: string;
+
   @ApiPropertyOptional({ description: '외주처 코드' })
   @IsOptional() @IsString() @MaxLength(50)
   subconVendorCode?: string;

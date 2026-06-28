@@ -233,6 +233,7 @@ export class RoutingGroupService {
       processType: processMaster.processType ?? dto.processType ?? null,
       equipType: dto.equipType ?? null,
       executionType: dto.executionType ?? 'IN_HOUSE',
+      jobOrderYn: dto.jobOrderYn ?? 'Y',
       subconVendorCode: dto.executionType === 'SUBCON' ? dto.subconVendorCode ?? null : null,
       stdTime: dto.stdTime ?? null,
       setupTime: dto.setupTime ?? null,
@@ -271,6 +272,7 @@ export class RoutingGroupService {
       | 'processType'
       | 'equipType'
       | 'executionType'
+      | 'jobOrderYn'
       | 'subconVendorCode'
       | 'stdTime'
       | 'setupTime'
@@ -287,6 +289,7 @@ export class RoutingGroupService {
       ...(!processMaster && dto.processType !== undefined ? { processType: dto.processType } : {}),
       ...(dto.equipType !== undefined ? { equipType: dto.equipType } : {}),
       ...(dto.executionType !== undefined ? { executionType: dto.executionType } : {}),
+      ...(dto.jobOrderYn !== undefined ? { jobOrderYn: dto.jobOrderYn } : {}),
       ...(nextSubconVendorCode !== undefined ? { subconVendorCode: nextSubconVendorCode } : {}),
       ...(dto.stdTime !== undefined ? { stdTime: dto.stdTime } : {}),
       ...(dto.setupTime !== undefined ? { setupTime: dto.setupTime } : {}),

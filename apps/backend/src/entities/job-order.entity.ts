@@ -83,6 +83,14 @@ export class JobOrder {
   @Column({ type: 'varchar2', name: 'PROCESS_CODE', length: 50, nullable: true })
   processCode: string | null;
 
+  /** 작업지시 종류: ITEM(BOM 품목 단위) / OPERATION(라우팅 공정 단위) */
+  @Column({ type: 'varchar2', name: 'ORDER_KIND', length: 20, default: 'ITEM' })
+  orderKind: 'ITEM' | 'OPERATION';
+
+  /** OPERATION 작업지시의 라우팅 공정 순번 */
+  @Column({ name: 'ROUTING_SEQ', type: 'number', nullable: true })
+  routingSeq: number | null;
+
   /** 작업 설비 코드 - 생성 시 null, 이후 수동 배정 */
   @Column({ type: 'varchar2', name: 'EQUIP_CODE', length: 50, nullable: true })
   equipCode: string | null;

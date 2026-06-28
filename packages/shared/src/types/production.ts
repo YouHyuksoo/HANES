@@ -93,6 +93,8 @@ export interface ProductionJobOrderRow {
   routingCode?: string | null;
   routing?: JobOrderRoutingSummary | null;
   processCode?: string | null;
+  orderKind?: 'ITEM' | 'OPERATION' | string | null;
+  routingSeq?: number | null;
   equipCode?: string | null;
   custPoNo?: string | null;
   planQty: number;
@@ -118,6 +120,8 @@ export interface JobOrderSelectItem {
   itemType?: string;
   processType?: string;
   processCode?: string;
+  orderKind?: 'ITEM' | 'OPERATION' | string | null;
+  routingSeq?: number | null;
   planQty: number;
   completedQty: number;
   status: JobOrderStatusValue | string;

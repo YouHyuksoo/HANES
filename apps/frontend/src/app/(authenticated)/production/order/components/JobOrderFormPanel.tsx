@@ -40,7 +40,7 @@ interface RoutingInfo {
 
 interface Props {
   editingOrder: JobOrderFormData | null;
-  draftOrder?: Partial<JobOrderFormData> & { autoCreateChildren?: boolean };
+  draftOrder?: Partial<JobOrderFormData>;
   onClose: () => void;
   onSave: () => void;
   animate?: boolean;
@@ -57,7 +57,6 @@ const INIT_FORM = {
   custPoNo: "",
   priority: "5",
   remark: "",
-  autoCreateChildren: true,
 };
 
 export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, onSave, animate = true }: Props) {
@@ -101,7 +100,6 @@ export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, o
         custPoNo: editingOrder.custPoNo || "",
         priority: String(editingOrder.priority ?? "5"),
         remark: editingOrder.remark || "",
-        autoCreateChildren: false,
       });
       fetchRouting(editingOrder.itemCode);
     } else {
@@ -117,7 +115,6 @@ export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, o
         custPoNo: draftOrder?.custPoNo || "",
         priority: String(draftOrder?.priority ?? "5"),
         remark: draftOrder?.remark || "",
-        autoCreateChildren: draftOrder?.autoCreateChildren ?? true,
       });
       if (draftOrder?.itemCode) {
         fetchRouting(draftOrder.itemCode);
@@ -127,7 +124,7 @@ export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, o
     }
   }, [editingOrder, draftOrder, fetchRouting]);
 
-  const setField = (key: string, value: string | boolean) => {
+  const setField = (key: string, value: string) => {
     setForm(prev => {
       const next = { ...prev, [key]: value };
       if (key === "processCode") next.equipCode = "";
@@ -150,7 +147,6 @@ export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, o
         custPoNo: form.custPoNo || undefined,
         priority: Number(form.priority),
         remark: form.remark || undefined,
-        autoCreateChildren: form.autoCreateChildren,
       };
       if (isEdit && editingOrder?.orderNo) {
         await api.put(`/production/job-orders/${editingOrder.orderNo}`, payload);
@@ -320,15 +316,6 @@ export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, o
               onChange={e => setField("remark", e.target.value)} fullWidth />
           </div>
 
-          {/* BOM 자동생성 (신규 시만) */}
-          {!isEdit && (
-            <label className="flex items-center gap-2 text-xs text-text cursor-pointer p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
-              <input type="checkbox" checked={form.autoCreateChildren}
-                onChange={e => setField("autoCreateChildren", e.target.checked)}
-                className="w-4 h-4 rounded accent-primary" />
-              {t("production.order.autoCreateChildren")}
-            </label>
-          )}
         </div>
 
       </div>

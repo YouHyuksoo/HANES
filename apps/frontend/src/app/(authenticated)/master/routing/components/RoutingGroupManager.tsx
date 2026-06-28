@@ -71,6 +71,7 @@ const EMPTY_PROCESS = {
   sampleInspectYn: "N",
   issueLabelType: "NONE",
   executionType: "IN_HOUSE",
+  jobOrderYn: "Y",
   subconVendorCode: "",
 };
 
@@ -346,6 +347,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
       sampleInspectYn: process.sampleInspectYn || "N",
       issueLabelType: process.issueLabelType || "NONE",
       executionType: process.executionType || "IN_HOUSE",
+      jobOrderYn: process.jobOrderYn || "Y",
       subconVendorCode: process.subconVendorCode || "",
     });
     setProcessModalOpen(true);
@@ -369,6 +371,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
       sampleInspectYn: processForm.sampleInspectYn || "N",
       issueLabelType: processForm.issueLabelType || "NONE",
       executionType: processForm.executionType,
+      jobOrderYn: processForm.jobOrderYn || "Y",
       subconVendorCode: processForm.executionType === "SUBCON" ? processForm.subconVendorCode || undefined : undefined,
       useYn: "Y",
     };
@@ -524,6 +527,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                   <th className="text-left py-2">{t("master.routing.processName")}</th>
                   <th className="text-center py-2 w-28">{t("master.routing.processCode")}</th>
                   <th className="text-center py-2 w-20">{t("master.routing.executionType", "실행유형")}</th>
+                  <th className="text-center py-2 w-20">{t("master.routing.jobOrderYn", "작업지시")}</th>
                   <th className="text-center py-2 w-20">{t("master.routing.sampleInspect")}</th>
                   <th className="text-center py-2 w-24">{t("master.routing.labelIssue")}</th>
                   <th className="text-right py-2 px-2 w-24">{t("common.actions")}</th>
@@ -532,7 +536,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
               <tbody>
                 {processes.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-text-muted dark:text-gray-400">
+                    <td colSpan={8} className="px-4 py-10 text-center text-text-muted dark:text-gray-400">
                       {t("master.routing.noProcessForRouting", "선택한 품목의 라우팅에 등록된 공정이 없습니다.")}
                     </td>
                   </tr>
@@ -553,6 +557,17 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                         ) : (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                             {t("master.routing.executionInHouse", "사내")}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2 text-center">
+                        {process.jobOrderYn !== "N" ? (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                            {t("master.routing.jobOrderCreate", "생성")}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            {t("master.routing.jobOrderSkip", "미생성")}
                           </span>
                         )}
                       </td>
@@ -690,6 +705,22 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
                 {vendorOptions.map((option) => <option key={option.vendorCode} value={option.vendorCode}>[{option.vendorCode}] {option.vendorName}</option>)}
               </select>
             </div>
+          </div>
+          <div>
+            <FieldLabel field="jobOrderYn" label={t("master.routing.jobOrderYn", "작업지시 생성")} />
+            <label className="flex items-center gap-2 h-10 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={processForm.jobOrderYn !== "N"}
+                onChange={(e) => setProcessForm((f) => ({ ...f, jobOrderYn: e.target.checked ? "Y" : "N" }))}
+                className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <span className="text-sm text-text">
+                {processForm.jobOrderYn !== "N"
+                  ? t("master.routing.jobOrderCreate", "생성")
+                  : t("master.routing.jobOrderSkip", "미생성")}
+              </span>
+            </label>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <FieldInput field="stdTime" label={t("master.routing.stdTimeSec")} type="number" step="0.1" value={processForm.stdTime} onChange={(e) => setProcessForm((f) => ({ ...f, stdTime: e.target.value }))} />

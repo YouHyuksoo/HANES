@@ -30,6 +30,8 @@ interface JobOrderSelectModalProps {
   processCode?: string;
   /** 품목유형 필터 — SEMI_PRODUCT | FINISHED 등 (예: 서브공정/조립 화면) */
   itemType?: string;
+  /** 작업지시 종류 필터 — ITEM | OPERATION */
+  orderKind?: 'ITEM' | 'OPERATION';
 }
 
 export default function JobOrderSelectModal({
@@ -40,6 +42,7 @@ export default function JobOrderSelectModal({
   equipCode,
   processCode,
   itemType,
+  orderKind,
 }: JobOrderSelectModalProps) {
   const { t } = useTranslation();
   const [searchText, setSearchText] = useState('');
@@ -62,6 +65,7 @@ export default function JobOrderSelectModal({
           limit: 500,
           ...(processCode ? { processCode } : {}),
           ...(itemType ? { itemType } : {}),
+          ...(orderKind ? { orderKind } : {}),
         },
       });
       const items: JobOrder[] = (res.data?.data ?? []).map((jo: Record<string, unknown>) => {
@@ -74,6 +78,8 @@ export default function JobOrderSelectModal({
           itemType: part?.itemType as string | undefined,
           processType: jo.processType as string | undefined,
           processCode: jo.processCode as string | undefined,
+          orderKind: jo.orderKind as string | undefined,
+          routingSeq: jo.routingSeq as number | undefined,
           planQty: jo.planQty as number,
           completedQty: (jo.goodQty ?? 0) as number,
           status: jo.status as string,
@@ -96,7 +102,7 @@ export default function JobOrderSelectModal({
     } finally {
       setLoading(false);
     }
-  }, [isOpen, statusesKey, equipCode, processCode, itemType]);
+  }, [isOpen, statusesKey, equipCode, processCode, itemType, orderKind]);
 
   useEffect(() => {
     if (isOpen) {

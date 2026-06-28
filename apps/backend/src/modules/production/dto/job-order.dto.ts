@@ -91,7 +91,7 @@ export class CreateJobOrderDto {
   @MaxLength(500)
   remark?: string;
 
-  @ApiPropertyOptional({ description: 'BOM 기반 반제품 작업지시 자동생성 여부', default: false })
+  @ApiPropertyOptional({ description: '호환용 필드. BOM 반제품 작업지시는 항상 생성되므로 서버에서 값을 무시합니다.', default: true })
   @IsOptional()
   autoCreateChildren?: boolean;
 
@@ -106,6 +106,18 @@ export class CreateJobOrderDto {
   @IsString()
   @MaxLength(50)
   equipCode?: string;
+
+  @ApiPropertyOptional({ description: '작업지시 종류', enum: ['ITEM', 'OPERATION'], default: 'ITEM' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['ITEM', 'OPERATION'])
+  orderKind?: 'ITEM' | 'OPERATION';
+
+  @ApiPropertyOptional({ description: '라우팅 공정 순번(OPERATION 작업지시)', minimum: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  routingSeq?: number;
 }
 
 /**
@@ -198,6 +210,12 @@ export class JobOrderQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   statuses?: string;
+
+  @ApiPropertyOptional({ description: '작업지시 종류 필터', enum: ['ITEM', 'OPERATION'] })
+  @IsOptional()
+  @IsString()
+  @IsIn(['ITEM', 'OPERATION'])
+  orderKind?: 'ITEM' | 'OPERATION';
 
   @ApiPropertyOptional({ description: '계획일 시작 (YYYY-MM-DD)' })
   @IsOptional()

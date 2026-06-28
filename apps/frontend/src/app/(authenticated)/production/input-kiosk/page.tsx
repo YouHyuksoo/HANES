@@ -347,6 +347,7 @@ export default function InputKioskPage() {
         onConfirm={handleJobOrderConfirm}
         filterStatus={['WAITING', 'RUNNING']}
         equipCode={selectedEquip?.equipCode}
+        orderKind="OPERATION"
       />
       <WorkerSelectModal
         isOpen={isWorkerOpen}

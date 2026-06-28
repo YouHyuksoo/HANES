@@ -333,6 +333,103 @@ describe('JobOrderService', () => {
       });
     });
 
+    it('creates operation job orders for each routing process under the item job order', async () => {
+      mockNumbering.nextJobOrderNo
+        .mockResolvedValueOnce('JO-ITEM')
+        .mockResolvedValueOnce('JO-OP-10')
+        .mockResolvedValueOnce('JO-OP-20');
+      mockJobOrderRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ orderNo: 'JO-ITEM', company: 'C1', plant: 'P1' } as JobOrder);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'C1', plant: 'P1' } as ItemMaster);
+      mockRoutingGroupRepo.findOne.mockResolvedValue({ routingCode: 'RT-001', itemCode: 'PART-001', company: 'C1', plant: 'P1' } as RoutingGroup);
+      mockRoutingProcessRepo.findOne.mockResolvedValue({ routingCode: 'RT-001', seq: 10, processCode: 'CUT' } as RoutingProcess);
+      mockRoutingProcessRepo.find.mockResolvedValue([
+        { routingCode: 'RT-001', seq: 10, processCode: 'CUT', processName: '절단', useYn: 'Y', jobOrderYn: 'Y' } as RoutingProcess,
+        { routingCode: 'RT-001', seq: 20, processCode: 'CRIMP', processName: '압착', useYn: 'Y', jobOrderYn: 'Y' } as RoutingProcess,
+        { routingCode: 'RT-001', seq: 30, processCode: 'INSP', processName: '검사', useYn: 'Y', jobOrderYn: 'N' } as RoutingProcess,
+      ]);
+      mockBomMasterRepo.find.mockResolvedValue([]);
+      mockQueryRunner.manager.create.mockImplementation((_entity, payload) => payload as any);
+      mockQueryRunner.manager.save.mockImplementation(async (entity: any) => entity);
+
+      await target.create({ ...createDto, orderNo: undefined }, 'C1', 'P1');
+
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
+        JobOrder,
+        expect.objectContaining({ orderNo: 'JO-ITEM', orderKind: 'ITEM', routingCode: 'RT-001', processCode: 'CUT' }),
+      );
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
+        JobOrder,
+        expect.objectContaining({
+          orderNo: 'JO-OP-10',
+          orderKind: 'OPERATION',
+          parentOrderNo: 'JO-ITEM',
+          routingSeq: 10,
+          processCode: 'CUT',
+          itemCode: 'PART-001',
+        }),
+      );
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
+        JobOrder,
+        expect.objectContaining({
+          orderNo: 'JO-OP-20',
+          orderKind: 'OPERATION',
+          parentOrderNo: 'JO-ITEM',
+          routingSeq: 20,
+          processCode: 'CRIMP',
+          itemCode: 'PART-001',
+        }),
+      );
+      expect(mockQueryRunner.manager.create).not.toHaveBeenCalledWith(
+        JobOrder,
+        expect.objectContaining({ processCode: 'INSP', orderKind: 'OPERATION' }),
+      );
+    });
+
+    it('creates item and operation job orders recursively for semi-product BOM children', async () => {
+      mockNumbering.nextJobOrderNo
+        .mockResolvedValueOnce('JO-FG')
+        .mockResolvedValueOnce('JO-FG-OP10')
+        .mockResolvedValueOnce('JO-SEMI')
+        .mockResolvedValueOnce('JO-SEMI-OP10');
+      mockJobOrderRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ orderNo: 'JO-FG', company: 'C1', plant: 'P1' } as JobOrder);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'FG-001', company: 'C1', plant: 'P1' } as ItemMaster);
+      mockRoutingGroupRepo.findOne
+        .mockResolvedValueOnce({ routingCode: 'RT-FG', itemCode: 'FG-001', company: 'C1', plant: 'P1' } as RoutingGroup)
+        .mockResolvedValueOnce({ routingCode: 'RT-SEMI', itemCode: 'SEMI-001', company: 'C1', plant: 'P1' } as RoutingGroup);
+      mockRoutingProcessRepo.findOne
+        .mockResolvedValueOnce({ routingCode: 'RT-FG', seq: 10, processCode: 'ASSY' } as RoutingProcess)
+        .mockResolvedValueOnce({ routingCode: 'RT-SEMI', seq: 10, processCode: 'CUT' } as RoutingProcess);
+      mockRoutingProcessRepo.find
+        .mockResolvedValueOnce([{ routingCode: 'RT-FG', seq: 10, processCode: 'ASSY', processName: '조립', useYn: 'Y', jobOrderYn: 'Y' } as RoutingProcess])
+        .mockResolvedValueOnce([{ routingCode: 'RT-SEMI', seq: 10, processCode: 'CUT', processName: '절단', useYn: 'Y', jobOrderYn: 'Y' } as RoutingProcess]);
+      mockBomMasterRepo.find
+        .mockResolvedValueOnce([{ parentItemCode: 'FG-001', childItemCode: 'SEMI-001', qtyPer: 2, seq: 1, company: 'C1', plant: 'P1' } as BomMaster])
+        .mockResolvedValueOnce([]);
+      const childPartQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([{ itemCode: 'SEMI-001', itemType: 'SEMI_PRODUCT', company: 'C1', plant: 'P1' }]),
+      };
+      mockItemMasterRepo.createQueryBuilder.mockReturnValue(childPartQb as any);
+      mockQueryRunner.manager.create.mockImplementation((_entity, payload) => payload as any);
+      mockQueryRunner.manager.save.mockImplementation(async (entity: any) => entity);
+
+      await target.create({ ...createDto, orderNo: undefined, itemCode: 'FG-001', planQty: 10 }, 'C1', 'P1');
+
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
+        JobOrder,
+        expect.objectContaining({ orderNo: 'JO-SEMI', orderKind: 'ITEM', itemCode: 'SEMI-001', parentOrderNo: 'JO-FG', planQty: 20 }),
+      );
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
+        JobOrder,
+        expect.objectContaining({ orderNo: 'JO-SEMI-OP10', orderKind: 'OPERATION', itemCode: 'SEMI-001', parentOrderNo: 'JO-SEMI', routingSeq: 10, processCode: 'CUT' }),
+      );
+    });
+
     it('should throw ConflictException when orderNo already exists', async () => {
       // Arrange
       const dto = { ...createDto, orderNo: 'JO-EXISTS' };

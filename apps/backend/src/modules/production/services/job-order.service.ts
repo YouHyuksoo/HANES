@@ -41,7 +41,7 @@ import { parseDateStart } from '../../../shared/date.util';
 /** 작업지시 조회 시 공통으로 사용하는 select 필드 */
 const JOB_ORDER_SELECT: FindOptionsSelect<JobOrder> = {
   orderNo: true, planNo: true, itemCode: true, lineCode: true, routingCode: true,
-  processCode: true, equipCode: true,
+  processCode: true, orderKind: true, routingSeq: true, equipCode: true,
   planQty: true, planDate: true, priority: true, status: true,
   erpSyncYn: true, goodQty: true, defectQty: true,
   startAt: true, endAt: true, custPoNo: true, remark: true,
@@ -98,23 +98,6 @@ export class JobOrderService {
     return group?.routingCode ?? null;
   }
 
-  private async resolveFirstProcessCode(
-    routingCode: string | null,
-    company?: string | null,
-    plant?: string | null,
-  ): Promise<string | null> {
-    if (!routingCode) return null;
-    const firstStep = await this.routingProcessRepository.findOne({
-      where: {
-        routingCode,
-        ...(company ? { company } : {}),
-        ...(plant ? { plant } : {}),
-      },
-      order: { seq: 'ASC' },
-    });
-    return firstStep?.processCode ?? null;
-  }
-
   private async findActiveRoutingProcesses(jobOrder: Pick<JobOrder, 'routingCode'>, company?: string, plant?: string) {
     return jobOrder.routingCode
       ? this.routingProcessRepository.find({
@@ -127,6 +110,77 @@ export class JobOrderService {
           order: { seq: 'ASC' },
         })
       : [];
+  }
+
+  private async findRoutingProcessesByCode(
+    routingCode: string | null,
+    company?: string | null,
+    plant?: string | null,
+  ): Promise<RoutingProcess[]> {
+    if (!routingCode) return [];
+    return (await this.routingProcessRepository.find({
+      where: {
+        routingCode,
+        useYn: 'Y',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+      order: { seq: 'ASC' },
+    })) ?? [];
+  }
+
+  private resolveProcessCodeForCreate(
+    requestedProcessCode: string | null | undefined,
+    routingCode: string,
+    routingProcesses: RoutingProcess[],
+  ): string | null {
+    if (!requestedProcessCode) return routingProcesses[0]?.processCode ?? null;
+    if (routingProcesses.length === 0) return requestedProcessCode;
+    const exists = routingProcesses.some((process) => process.processCode === requestedProcessCode);
+    if (!exists) {
+      throw new BadRequestException(
+        `선택한 공정이 라우팅에 포함되어 있지 않습니다. routing=${routingCode}, process=${requestedProcessCode}`,
+      );
+    }
+    return requestedProcessCode;
+  }
+
+  private getJobOrderRoutingProcesses(routingProcesses: RoutingProcess[]): RoutingProcess[] {
+    return routingProcesses.filter((process) => (process.jobOrderYn ?? 'Y') === 'Y');
+  }
+
+  private async createRoutingOperationOrders(
+    queryRunner: QueryRunner,
+    itemOrder: JobOrder,
+    routingProcesses: RoutingProcess[],
+    rootOrderNo: string,
+  ): Promise<void> {
+    for (const process of this.getJobOrderRoutingProcesses(routingProcesses)) {
+      const operationOrderNo = await this.numbering.nextJobOrderNo(queryRunner);
+      await queryRunner.manager.save(
+        queryRunner.manager.create(JobOrder, {
+          orderNo: operationOrderNo,
+          itemCode: itemOrder.itemCode,
+          parentOrderNo: itemOrder.orderNo,
+          rootOrderNo,
+          lineCode: itemOrder.lineCode,
+          routingCode: itemOrder.routingCode,
+          processCode: process.processCode,
+          orderKind: 'OPERATION',
+          routingSeq: process.seq,
+          equipCode: null,
+          planQty: itemOrder.planQty,
+          planDate: itemOrder.planDate,
+          priority: itemOrder.priority,
+          custPoNo: itemOrder.custPoNo,
+          remark: `[공정작업] ${itemOrder.orderNo} ${process.seq}-${process.processName ?? process.processCode}`,
+          status: 'WAITING',
+          erpSyncYn: 'N',
+          company: itemOrder.company,
+          plant: itemOrder.plant,
+        }),
+      );
+    }
   }
 
   private toRoutingProcessSnapshot(process: RoutingProcess | undefined): RoutingProcessSnapshot | null {
@@ -181,6 +235,7 @@ export class JobOrderService {
       page = 1, limit = 50, search, orderNo, itemCode,
       lineCode, equipCode, status, statuses, planDateFrom, planDateTo, erpSyncYn,
       itemType, processCode,
+      orderKind,
     } = query;
     const skip = (page - 1) * limit;
 
@@ -214,6 +269,7 @@ export class JobOrderService {
     if (erpSyncYn) qb.andWhere('jo.erpSyncYn = :erpSyncYn', { erpSyncYn });
     if (itemType) qb.andWhere('part.itemType = :itemType', { itemType });
     if (processCode) qb.andWhere('jo.processCode = :processCode', { processCode });
+    if (orderKind) qb.andWhere('jo.orderKind = :orderKind', { orderKind });
     // 계획일 필터: 범위 내 작업지시 + 계획일 미지정(NULL) 작업지시는 항상 노출
     // (NULL은 범위 비교에서 제외되어 즉시지시/계획일 미입력 건이 숨겨지던 문제 해소)
     if (planDateFrom || planDateTo) {
@@ -302,15 +358,12 @@ export class JobOrderService {
 
   /** 작업지시 생성 (트랜잭션 처리, company/plant 포함) */
   async create(dto: CreateJobOrderDto, company?: string, plant?: string) {
-    // orderNo가 없으면 자동 채번
-    if (!dto.orderNo) {
-      dto.orderNo = await this.numbering.nextJobOrderNo();
-    }
+    const orderNo = dto.orderNo ?? await this.numbering.nextJobOrderNo();
 
     const existing = await this.jobOrderRepository.findOne({
-      where: { orderNo: dto.orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      where: { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
-    if (existing) throw new ConflictException(`이미 존재하는 작업지시번호입니다: ${dto.orderNo}`);
+    if (existing) throw new ConflictException(`이미 존재하는 작업지시번호입니다: ${orderNo}`);
 
     const part = await this.itemMasterRepository.findOne({
       where: { itemCode: dto.itemCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
@@ -327,16 +380,23 @@ export class JobOrderService {
     }
 
     return this.tx.run(async (queryRunner) => {
-      const processCode = dto.processCode ?? await this.resolveFirstProcessCode(routingCode, company, plant);
+      const routingProcesses = await this.findRoutingProcessesByCode(routingCode, company, plant);
+      const processCode = this.resolveProcessCodeForCreate(
+        dto.processCode,
+        routingCode,
+        this.getJobOrderRoutingProcesses(routingProcesses),
+      );
 
       const jobOrder = queryRunner.manager.create(JobOrder, {
-        orderNo: dto.orderNo,
+        orderNo,
         itemCode: dto.itemCode,
         parentOrderNo: dto.parentId || null,
         rootOrderNo: null,
         lineCode: dto.lineCode,
         routingCode,
         processCode,
+        orderKind: 'ITEM',
+        routingSeq: null,
         equipCode: dto.equipCode ?? null,
         planQty: dto.planQty,
         planDate: parseDateStart(dto.planDate),
@@ -350,10 +410,8 @@ export class JobOrderService {
       });
       const saved = await queryRunner.manager.save(jobOrder);
 
-      // BOM 자동전개 기본 ON: autoCreateChildren을 명시적으로 false로 보낸 경우에만 단건 생성
-      if (dto.autoCreateChildren !== false) {
-        await this.createChildOrdersRecursive(queryRunner, saved, dto, saved.orderNo, 0, new Set());
-      }
+      await this.createRoutingOperationOrders(queryRunner, saved, routingProcesses, saved.orderNo);
+      await this.createChildOrdersRecursive(queryRunner, saved, dto, saved.orderNo, 0, new Set());
 
       return this.jobOrderRepository.findOne({
         where: { orderNo: saved.orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
@@ -422,7 +480,12 @@ export class JobOrderService {
           `반제품에 라우팅이 지정되지 않았습니다: ${bom.childItemCode}. 라우팅 없는 반제품 작업지시는 생성할 수 없습니다.`,
         );
       }
-      const childProcessCode = await this.resolveFirstProcessCode(childRoutingCode, parent.company, parent.plant);
+      const childRoutingProcesses = await this.findRoutingProcessesByCode(childRoutingCode, parent.company, parent.plant);
+      const childProcessCode = this.resolveProcessCodeForCreate(
+        null,
+        childRoutingCode,
+        this.getJobOrderRoutingProcesses(childRoutingProcesses),
+      );
 
       const childOrderNo = await this.numbering.nextJobOrderNo(queryRunner);
 
@@ -435,6 +498,8 @@ export class JobOrderService {
           lineCode: dto.lineCode,
           routingCode: childRoutingCode,
           processCode: childProcessCode,
+          orderKind: 'ITEM',
+          routingSeq: null,
           equipCode: null,
           planQty: Math.ceil(parent.planQty * Number(bom.qtyPer)),
           planDate: parseDateStart(dto.planDate),
@@ -447,6 +512,7 @@ export class JobOrderService {
         }),
       );
 
+      await this.createRoutingOperationOrders(queryRunner, child, childRoutingProcesses, rootOrderNo);
       await this.createChildOrdersRecursive(queryRunner, child, dto, rootOrderNo, depth + 1, nextAncestors);
     }
   }
