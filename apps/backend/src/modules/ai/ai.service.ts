@@ -87,7 +87,8 @@ export class AiService {
         return await this.callProvider(provider, model, apiKey, messages);
       } catch (error: unknown) {
         const detail = error instanceof Error ? error.message : String(error);
-        const isRate = /429|rate ?limit|too many/i.test(detail) || (error as { statusCode?: number })?.statusCode === 429;
+        const statusCode = typeof error === 'object' && error !== null ? Reflect.get(error, 'statusCode') : undefined;
+        const isRate = /429|rate ?limit|too many/i.test(detail) || statusCode === 429;
         if (isRate && attempt < 2) {
           await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
           continue;

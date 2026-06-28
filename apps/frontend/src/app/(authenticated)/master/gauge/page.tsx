@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 
@@ -212,7 +213,7 @@ export default function GaugeMasterPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "gaugeType", header: t("master.gauge.gaugeType"), size: 120,
+      accessorKey: "gaugeType", header: () => <StatusHeaderHelp label={t("master.gauge.gaugeType")} codeType="GAUGE_TYPE" align="center" />, size: 120,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
         <ComCodeBadge groupCode="GAUGE_TYPE" code={getValue() as string} />
@@ -238,7 +239,7 @@ export default function GaugeMasterPage() {
       cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) ?? "-",
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 110,
+      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="GAUGE_STATUS" align="center" />, size: 110,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
         <ComCodeBadge groupCode="GAUGE_STATUS" code={getValue() as string} />

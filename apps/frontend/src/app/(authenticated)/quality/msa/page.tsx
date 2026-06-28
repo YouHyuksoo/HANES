@@ -18,6 +18,7 @@ import { RefreshCw, AlertTriangle, Ruler, X, FileSearch } from "lucide-react";
 import { Card, CardContent, Button, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import CalibrationList from "./components/CalibrationList";
 
@@ -96,7 +97,7 @@ export default function MsaPage() {
     },
     { accessorKey: "gaugeName", header: t("master.gauge.gaugeName"), size: 180,
       meta: { filterType: "text" as const } },
-    { accessorKey: "gaugeType", header: t("master.gauge.gaugeType"), size: 120,
+    { accessorKey: "gaugeType", header: () => <StatusHeaderHelp label={t("master.gauge.gaugeType")} codeType="GAUGE_TYPE" align="center" />, size: 120,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
         <ComCodeBadge groupCode="GAUGE_TYPE" code={getValue() as string} />
@@ -110,7 +111,7 @@ export default function MsaPage() {
     { accessorKey: "nextCalibrationDate", header: t("quality.msa.nextCalibration"), size: 120,
       meta: { filterType: "date" as const },
       cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) ?? "-" },
-    { accessorKey: "status", header: t("common.status"), size: 100,
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="GAUGE_STATUS" align="center" />, size: 100,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
         <ComCodeBadge groupCode="GAUGE_STATUS" code={getValue() as string} />

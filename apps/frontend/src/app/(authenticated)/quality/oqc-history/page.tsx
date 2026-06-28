@@ -17,6 +17,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ClipboardCheck, Search, RefreshCw, CheckCircle, XCircle, FileText, BarChart3 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
@@ -118,7 +119,7 @@ export default function OqcHistoryPage() {
       cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
-      accessorKey: "status", header: t("quality.oqc.result"), size: 90,
+      accessorKey: "status", header: () => <StatusHeaderHelp label={t("quality.oqc.result")} codeType="OQC_STATUS" align="center" />, size: 90,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="OQC_STATUS" code={getValue() as string} />,
     },

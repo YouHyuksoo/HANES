@@ -19,6 +19,7 @@ import {
 } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
 import LogDetailModal from "./LogDetailModal";
@@ -114,7 +115,9 @@ export default function SchedulerLogTab() {
       cell: ({ getValue }) => (
         <span className="font-mono text-xs">{fmtDuration(getValue() as number | null)}</span>
       ) },
-    { accessorKey: "status", header: t("common.status"), size: 100,
+    { accessorKey: "status",
+      header: () => <StatusHeaderHelp label={t("common.status")} codeType="SCHED_STATUS" align="center" />,
+      size: 100,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="SCHED_STATUS" code={getValue() as string} /> },
     { accessorKey: "affectedRows", header: t("system.scheduler.affectedRows", "처리건수"), size: 90,

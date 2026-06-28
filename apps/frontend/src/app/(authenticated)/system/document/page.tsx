@@ -22,6 +22,7 @@ import {
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import DocumentFormPanel from "./components/DocumentFormPanel";
 
@@ -122,7 +123,9 @@ export default function DocumentPage() {
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
     { accessorKey: "docTitle", header: t("system.document.docTitle"), size: 220,
       meta: { filterType: "text" as const } },
-    { accessorKey: "docType", header: t("system.document.docType"), size: 120,
+    { accessorKey: "docType",
+      header: () => <StatusHeaderHelp label={t("system.document.docType")} codeType="DOC_TYPE" align="center" />,
+      size: 120,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="DOC_TYPE" code={getValue() as string} /> },
     { accessorKey: "category", header: t("system.document.category"), size: 120,
@@ -133,7 +136,9 @@ export default function DocumentPage() {
     { accessorKey: "revisionDate", header: t("system.document.revisionDate"), size: 110,
       meta: { filterType: "date" as const },
       cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
-    { accessorKey: "status", header: t("common.status"), size: 110,
+    { accessorKey: "status",
+      header: () => <StatusHeaderHelp label={t("common.status")} codeType="DOC_STATUS" align="center" />,
+      size: 110,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="DOC_STATUS" code={getValue() as string} /> },
     { accessorKey: "approvedBy", header: t("system.document.approvedBy"), size: 100,

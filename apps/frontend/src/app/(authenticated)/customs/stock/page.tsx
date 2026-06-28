@@ -16,6 +16,8 @@ import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import api from "@/services/api";
 
 interface CustomsLot {
@@ -31,22 +33,10 @@ interface CustomsLot {
   declarationDate: string;
 }
 
-const statusColors: Record<string, string> = {
-  BONDED: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-  PARTIAL: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
-  RELEASED: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-};
-
 export default function CustomsStockPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<CustomsLot[]>([]);
   const [loading, setLoading] = useState(false);
-
-  const statusLabels: Record<string, string> = useMemo(() => ({
-    BONDED: t("customs.stock.statusBonded"),
-    PARTIAL: t("customs.stock.statusPartial"),
-    RELEASED: t("customs.stock.statusReleased"),
-  }), [t]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -81,11 +71,11 @@ export default function CustomsStockPage() {
       cell: ({ getValue }) => { const val = getValue() as number; return <span className={val === 0 ? "text-text-muted" : "font-semibold text-primary"}>{val.toLocaleString()}</span>; },
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => { const status = getValue() as string; return <span className={`px-2 py-1 text-xs rounded-full ${statusColors[status]}`}>{statusLabels[status]}</span>; },
+      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="CUSTOMS_LOT_STATUS" align="center" />, size: 90, meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => <StatusBadge codeType="CUSTOMS_LOT_STATUS" value={getValue() as string} />,
     },
     { accessorKey: "declarationDate", header: t("customs.entry.declarationDate"), size: 100, meta: { filterType: "date" as const } },
-  ], [t, statusLabels]);
+  ], [t]);
 
   const stats = useMemo(() => {
     const bondedLots = data.filter((d) => d.status !== "RELEASED");

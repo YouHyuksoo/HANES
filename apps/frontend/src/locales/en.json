@@ -3082,7 +3082,7 @@
   "productMgmt": {
     "receive": {
       "title": "Product Receiving",
-      "subtitle": "Process WIP/FG product receiving.",
+      "subtitle": "Process finished goods (FG) receiving.",
       "tabWip": "WIP",
       "tabFg": "FG",
       "fgAutoWarehouse": "Finished goods are auto-received into the default FG warehouse.",
@@ -3137,7 +3137,14 @@
         "typeMismatch": "Box item type does not match the current tab"
       },
       "scanReceive": "Scan Receive",
-      "individualReceive": "Individual Receive"
+      "individualReceive": "Individual Receive",
+      "panel": {
+        "scanTitle": "Scan Receive",
+        "colBox": "Box No.",
+        "receivableEmpty": "No boxes available for receiving",
+        "notReceivable": "Not a receivable box (already received or packing not completed)",
+        "notFound": "Box not found: {{boxNo}}"
+      }
     },
     "receiptCancel": {
       "title": "Product Receipt Cancel",
@@ -3797,6 +3804,8 @@
     "packResult": {
       "title": "Pack Result",
       "description": "View completed packing box results",
+      "boxStatus": "Box Status",
+      "oqcStatus": "OQC",
       "excelDownload": "Excel Download",
       "totalBox": "Total Boxes",
       "totalPackQty": "Total Pack Qty",
@@ -6068,6 +6077,26 @@
     "dashboard": "Dashboard"
   },
   "comCode": {
+    "ARRIVAL_PO_TYPE": { "RM": "Raw Material", "CM": "Consumable" },
+    "ARRIVAL_RESULT_STATUS": { "ARRIVED": "Arrived", "IQC_PROGRESS": "IQC In Progress", "IQC_DONE": "IQC Done", "RECEIVED": "Received", "CANCELED": "Canceled" },
+    "AUDIT_RESULT": { "PASS": "Pass", "MINOR": "Minor NC", "MAJOR": "Major NC", "OFI": "OFI" },
+    "AUDIT_STATUS": { "PLANNED": "Planned", "IN_PROGRESS": "In Progress", "COMPLETED": "Completed", "CLOSED": "Closed" },
+    "AUDIT_TYPE": { "SYSTEM": "System Audit", "PROCESS": "Process Audit", "PRODUCT": "Product Audit", "LAYERED": "Layered Audit" },
+    "FAI_RESULT": { "PASS": "Pass", "FAIL": "Fail", "CONDITIONAL": "Conditional" },
+    "FAI_STATUS": { "REQUESTED": "Requested", "SAMPLING": "Sampling", "INSPECTING": "Inspecting", "PASS": "Pass", "FAIL": "Fail", "CONDITIONAL": "Conditional Pass" },
+    "FAI_TRIGGER_TYPE": { "NEW_PART": "New Part", "ECN": "Design Change", "PROCESS_CHANGE": "Process Change", "LONG_STOP": "Long Stop", "EQUIP_CHANGE": "Equipment Change" },
+    "GAUGE_STATUS": { "ACTIVE": "Active", "EXPIRED": "Calibration Expired", "SCRAPPED": "Scrapped" },
+    "GAUGE_TYPE": { "CALIPER": "Caliper", "MICROMETER": "Micrometer", "DIAL_GAUGE": "Dial Gauge", "HEIGHT_GAUGE": "Height Gauge", "PIN_GAUGE": "Pin Gauge", "RING_GAUGE": "Ring Gauge", "FORCE_GAUGE": "Force Gauge", "OTHER": "Other" },
+    "IQC_INSPECT_TYPE": { "INITIAL": "Initial", "RETEST": "Retest" },
+    "PPAP_REASON": { "NEW_PART": "New Part", "ECN": "Design Change", "TOOLING": "Tooling Change", "CORRECTION": "Correction", "OTHER": "Other" },
+    "PPAP_STATUS": { "DRAFT": "Draft", "SUBMITTED": "Submitted", "APPROVED": "Approved", "REJECTED": "Rejected", "INTERIM": "Interim" },
+    "REWORK_INSPECT_RESULT": { "PASS": "Pass", "FAIL": "Fail", "SCRAP": "Scrap" },
+    "REWORK_PROCESS_STATUS": { "WAITING": "Waiting", "IN_PROGRESS": "In Progress", "COMPLETED": "Completed", "SKIPPED": "Skipped" },
+    "REWORK_STATUS": { "REGISTERED": "Registered", "QC_PENDING": "QC Approval Pending", "QC_APPROVED": "QC Approved", "QC_REJECTED": "QC Rejected", "PROD_PENDING": "Prod Approval Pending", "APPROVED": "Approved", "PROD_REJECTED": "Prod Rejected", "IN_PROGRESS": "In Progress", "INSPECT_PENDING": "Reinspection Pending", "PASS": "Pass", "FAIL": "Fail", "SCRAP": "Scrap" },
+    "SPC_CHART_TYPE": { "XBAR_R": "Xbar-R Chart", "XBAR_S": "Xbar-S Chart", "P": "P Chart", "NP": "NP Chart", "C": "C Chart", "U": "U Chart" },
+    "SPC_STATUS": { "ACTIVE": "Active", "INACTIVE": "Inactive" },
+    "TRAINING_STATUS": { "PLANNED": "Planned", "IN_PROGRESS": "In Progress", "COMPLETED": "Completed", "CANCELLED": "Cancelled" },
+    "TRAINING_TYPE": { "OJT": "OJT", "CLASSROOM": "Classroom", "ONLINE": "Online", "EXTERNAL": "External", "SAFETY": "Safety" },
     "AQL_INSP_LEVEL": {
       "S-1": "Special Level S-1",
       "S-2": "Special Level S-2",

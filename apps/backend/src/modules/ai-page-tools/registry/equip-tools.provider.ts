@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { EquipMasterService } from '../../equipment/services/equip-master.service';
+import { CreateEquipMasterDto, UpdateEquipMasterDto } from '../../equipment/dto/equip-master.dto';
 import { AiPageToolManifest, AiPageToolWriteResult, PageToolContext, PageToolProvider } from '../types';
 
 const EQUIP_TYPES = [
@@ -158,7 +159,7 @@ export class EquipToolsProvider implements PageToolProvider {
     const equipName = this.str(input.equipName);
     if (!equipCode || !equipName) throw new BadRequestException('설비코드·설비명이 필요합니다.');
 
-    const dto: Record<string, unknown> = { equipCode, equipName };
+    const dto: CreateEquipMasterDto = { equipCode, equipName, equipType: 'OTHER' };
     if (input.equipType !== undefined) dto.equipType = this.normalizeEnum('설비유형', input.equipType, EQUIP_TYPES);
     if (input.commType !== undefined) dto.commType = this.normalizeEnum('통신방식', input.commType, COMM_TYPES);
     if (input.status !== undefined) dto.status = this.normalizeEnum('설비상태', input.status, EQUIP_STATUSES);
@@ -171,7 +172,7 @@ export class EquipToolsProvider implements PageToolProvider {
     if (input.installDate !== undefined) dto.installDate = this.str(input.installDate) || undefined;
     if (input.port !== undefined) dto.port = this.parsePort(input.port);
 
-    const saved = await this.equipMasterService.create(dto as never, company, plant);
+    const saved = await this.equipMasterService.create(dto, company, plant);
     return this.result('createEquip', `설비 '${saved.equipName}'(${saved.equipCode})를 등록했습니다.`, {
       equipCode: saved.equipCode,
       equipName: saved.equipName,
@@ -188,7 +189,7 @@ export class EquipToolsProvider implements PageToolProvider {
     const equipCode = this.str(input.equipCode);
     if (!equipCode) throw new BadRequestException('설비코드가 필요합니다.');
 
-    const dto: Record<string, unknown> = {};
+    const dto: UpdateEquipMasterDto = {};
     if (input.equipName !== undefined) dto.equipName = this.str(input.equipName);
     if (input.equipType !== undefined) dto.equipType = this.normalizeEnum('설비유형', input.equipType, EQUIP_TYPES);
     if (input.commType !== undefined) dto.commType = this.normalizeEnum('통신방식', input.commType, COMM_TYPES);
@@ -202,7 +203,7 @@ export class EquipToolsProvider implements PageToolProvider {
     if (input.installDate !== undefined) dto.installDate = this.str(input.installDate) || undefined;
     if (input.port !== undefined) dto.port = this.parsePort(input.port);
 
-    await this.equipMasterService.update(equipCode, dto as never, company, plant);
+    await this.equipMasterService.update(equipCode, dto, company, plant);
     return this.result('updateEquip', `설비 ${equipCode}를 수정했습니다.`, { equipCode });
   }
 

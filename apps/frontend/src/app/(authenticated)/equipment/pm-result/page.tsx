@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 
@@ -36,14 +38,6 @@ interface WoRow {
   remark: string | null;
   equip: { equipCode: string; equipName: string; lineCode: string | null; equipType: string | null } | null;
 }
-
-const statusColors: Record<string, string> = {
-  PLANNED: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-  IN_PROGRESS: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
-  COMPLETED: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-  CANCELLED: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400",
-  OVERDUE: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-};
 
 const resultColors: Record<string, string> = {
   PASS: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
@@ -101,19 +95,10 @@ export default function PmResultPage() {
       cell: ({ row }) => row.original.equip?.equipName || "-",
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 90,
+      accessorKey: "status", size: 90,
+      header: () => <StatusHeaderHelp label={t("common.status")} codeType="PM_WO_STATUS" align="center" />,
       meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const s = getValue() as string;
-        const labels: Record<string, string> = {
-          PLANNED: t("equipment.pmResult.planned", "예정"),
-          IN_PROGRESS: t("equipment.pmResult.inProgress", "진행중"),
-          COMPLETED: t("equipment.pmResult.completed", "완료"),
-          CANCELLED: t("equipment.pmResult.cancelled", "취소"),
-          OVERDUE: t("equipment.pmResult.overdue", "지연"),
-        };
-        return <span className={`px-2 py-0.5 text-xs rounded font-medium ${statusColors[s] || ""}`}>{labels[s] || s}</span>;
-      },
+      cell: ({ getValue }) => <StatusBadge codeType="PM_WO_STATUS" value={getValue() as string} />,
     },
     {
       accessorKey: "overallResult", header: t("equipment.pmResult.result", "결과"), size: 80,

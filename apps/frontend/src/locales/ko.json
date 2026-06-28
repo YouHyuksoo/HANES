@@ -3492,7 +3492,7 @@
   "productMgmt": {
     "receive": {
       "title": "제품입고관리",
-      "subtitle": "반제품/완제품 입고를 처리합니다.",
+      "subtitle": "완제품 입고를 처리합니다.",
       "tabWip": "반제품(WIP)",
       "tabFg": "완제품(FG)",
       "fgAutoWarehouse": "완제품은 양품창고(FG 기본창고)로 자동 입고됩니다.",
@@ -3547,7 +3547,14 @@
         "typeMismatch": "현재 탭의 품목유형과 일치하지 않는 박스입니다"
       },
       "scanReceive": "스캔입고",
-      "individualReceive": "개별입고"
+      "individualReceive": "개별입고",
+      "panel": {
+        "scanTitle": "스캔 입고",
+        "colBox": "박스번호",
+        "receivableEmpty": "입고 가능한 박스가 없습니다",
+        "notReceivable": "입고 대상이 아닙니다 (이미 입고됐거나 포장 미완료 박스)",
+        "notFound": "박스를 찾을 수 없습니다: {{boxNo}}"
+      }
     },
     "receiptCancel": {
       "title": "제품입고취소",
@@ -4211,6 +4218,8 @@
     "packResult": {
       "title": "포장실적조회",
       "description": "포장 완료된 박스 실적을 조회합니다",
+      "boxStatus": "박스상태",
+      "oqcStatus": "OQC검사",
       "excelDownload": "엑셀 다운로드",
       "totalBox": "총 박스 수",
       "totalPackQty": "포장 총수량",
@@ -6072,6 +6081,26 @@
     "dashboard": "대시보드"
   },
   "comCode": {
+    "ARRIVAL_PO_TYPE": { "RM": "원자재", "CM": "소모품" },
+    "ARRIVAL_RESULT_STATUS": { "ARRIVED": "입하완료", "IQC_PROGRESS": "IQC진행중", "IQC_DONE": "IQC완료", "RECEIVED": "입고완료", "CANCELED": "취소" },
+    "AUDIT_RESULT": { "PASS": "적합", "MINOR": "경부적합", "MAJOR": "중부적합", "OFI": "개선권고" },
+    "AUDIT_STATUS": { "PLANNED": "계획", "IN_PROGRESS": "진행중", "COMPLETED": "완료", "CLOSED": "마감" },
+    "AUDIT_TYPE": { "SYSTEM": "시스템심사", "PROCESS": "공정심사", "PRODUCT": "제품심사", "LAYERED": "계층별심사" },
+    "FAI_RESULT": { "PASS": "합격", "FAIL": "불합격", "CONDITIONAL": "조건부" },
+    "FAI_STATUS": { "REQUESTED": "요청", "SAMPLING": "샘플채취", "INSPECTING": "검사중", "PASS": "합격", "FAIL": "불합격", "CONDITIONAL": "조건부합격" },
+    "FAI_TRIGGER_TYPE": { "NEW_PART": "신규품목", "ECN": "설계변경", "PROCESS_CHANGE": "공정변경", "LONG_STOP": "장기중단", "EQUIP_CHANGE": "설비변경" },
+    "GAUGE_STATUS": { "ACTIVE": "사용중", "EXPIRED": "교정만료", "SCRAPPED": "폐기" },
+    "GAUGE_TYPE": { "CALIPER": "캘리퍼스", "MICROMETER": "마이크로미터", "DIAL_GAUGE": "다이얼게이지", "HEIGHT_GAUGE": "하이트게이지", "PIN_GAUGE": "핀게이지", "RING_GAUGE": "링게이지", "FORCE_GAUGE": "포스게이지", "OTHER": "기타" },
+    "IQC_INSPECT_TYPE": { "INITIAL": "초기검사", "RETEST": "재검사" },
+    "PPAP_REASON": { "NEW_PART": "신규부품", "ECN": "설계변경", "TOOLING": "금형변경", "CORRECTION": "시정조치", "OTHER": "기타" },
+    "PPAP_STATUS": { "DRAFT": "작성중", "SUBMITTED": "제출됨", "APPROVED": "승인", "REJECTED": "반려", "INTERIM": "잠정승인" },
+    "REWORK_INSPECT_RESULT": { "PASS": "합격", "FAIL": "불합격", "SCRAP": "폐기" },
+    "REWORK_PROCESS_STATUS": { "WAITING": "대기", "IN_PROGRESS": "진행중", "COMPLETED": "완료", "SKIPPED": "건너뛰기" },
+    "REWORK_STATUS": { "REGISTERED": "등록", "QC_PENDING": "품질승인대기", "QC_APPROVED": "품질승인", "QC_REJECTED": "품질반려", "PROD_PENDING": "생산승인대기", "APPROVED": "승인완료", "PROD_REJECTED": "생산반려", "IN_PROGRESS": "진행중", "INSPECT_PENDING": "재검사대기", "PASS": "합격", "FAIL": "불합격", "SCRAP": "폐기" },
+    "SPC_CHART_TYPE": { "XBAR_R": "Xbar-R 관리도", "XBAR_S": "Xbar-S 관리도", "P": "P 관리도", "NP": "NP 관리도", "C": "C 관리도", "U": "U 관리도" },
+    "SPC_STATUS": { "ACTIVE": "활성", "INACTIVE": "비활성" },
+    "TRAINING_STATUS": { "PLANNED": "예정", "IN_PROGRESS": "진행중", "COMPLETED": "완료", "CANCELLED": "취소" },
+    "TRAINING_TYPE": { "OJT": "현장교육", "CLASSROOM": "집합교육", "ONLINE": "온라인교육", "EXTERNAL": "외부교육", "SAFETY": "안전교육" },
     "AQL_INSP_LEVEL": {
       "S-1": "특별검사수준 S-1",
       "S-2": "특별검사수준 S-2",

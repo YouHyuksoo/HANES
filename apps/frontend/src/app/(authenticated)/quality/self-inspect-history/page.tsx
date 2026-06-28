@@ -14,6 +14,8 @@ import { History, RefreshCw, Search } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button, Card, CardContent, Input, Select } from "@/components/ui";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { getTodayLocal } from "@/utils/date";
 import type { SelectOption } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -58,14 +60,6 @@ export default function SelfInspectHistoryPage() {
   const [orderNo, setOrderNo] = useState("");
   const [processCode, setProcessCode] = useState("");
   const [processOptions, setProcessOptions] = useState<SelectOption[]>([]);
-
-  const statusBadge = (status: string) => {
-    if (status === "PASS")
-      return <span className="px-1.5 py-0.5 rounded text-xs font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700">PASS</span>;
-    if (status === "FAIL")
-      return <span className="px-1.5 py-0.5 rounded text-xs font-bold text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700">FAIL</span>;
-    return <span className="px-1.5 py-0.5 rounded text-xs font-bold text-text-muted border border-border">PENDING</span>;
-  };
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -134,9 +128,9 @@ export default function SelfInspectHistoryPage() {
     },
     {
       accessorKey: "status",
-      header: t("selfInspectHistory.status", "결과"),
+      header: () => <StatusHeaderHelp label={t("selfInspectHistory.status", "결과")} codeType="QUALITY_JUDGMENT" align="center" />,
       size: 70,
-      cell: ({ getValue }) => statusBadge(getValue<string>()),
+      cell: ({ getValue }) => <StatusBadge codeType="QUALITY_JUDGMENT" value={getValue<string>()} />,
     },
     {
       accessorKey: "createdAt",
@@ -176,9 +170,9 @@ export default function SelfInspectHistoryPage() {
     },
     {
       accessorKey: "status",
-      header: t("selfInspectHistory.status", "결과"),
+      header: () => <StatusHeaderHelp label={t("selfInspectHistory.status", "결과")} codeType="QUALITY_JUDGMENT" align="center" />,
       size: 70,
-      cell: ({ getValue }) => statusBadge(getValue<string>()),
+      cell: ({ getValue }) => <StatusBadge codeType="QUALITY_JUDGMENT" value={getValue<string>()} />,
     },
     { accessorKey: "remark", header: t("selfInspectHistory.remark", "비고"), size: 150 },
   ];

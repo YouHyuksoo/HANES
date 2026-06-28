@@ -16,6 +16,8 @@ import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import api from "@/services/api";
 
 interface CustomsEntry {
@@ -32,23 +34,11 @@ interface CustomsEntry {
   lotCount: number;
 }
 
-const statusColors: Record<string, string> = {
-  PENDING: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
-  CLEARED: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-  RELEASED: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-};
-
 export default function CustomsEntryPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<CustomsEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const statusLabels: Record<string, string> = useMemo(() => ({
-    PENDING: t("customs.entry.statusPending"),
-    CLEARED: t("customs.entry.statusCleared"),
-    RELEASED: t("customs.entry.statusReleased"),
-  }), [t]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<CustomsEntry | null>(null);
@@ -125,11 +115,11 @@ export default function CustomsEntryPage() {
     { accessorKey: "hsCode", header: t("customs.entry.hsCode"), size: 90, meta: { filterType: "text" as const } },
     { accessorKey: "totalAmount", header: t("customs.entry.amount"), size: 100, meta: { filterType: "number" as const }, cell: ({ row }) => `${row.original.totalAmount.toLocaleString()} ${row.original.currency}` },
     {
-      accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => { const s = getValue() as string; return <span className={`px-2 py-1 text-xs rounded-full ${statusColors[s]}`}>{statusLabels[s]}</span>; },
+      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="CUSTOMS_ENTRY_STATUS" align="center" />, size: 90, meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => <StatusBadge codeType="CUSTOMS_ENTRY_STATUS" value={getValue() as string} />,
     },
     { accessorKey: "lotCount", header: t("customs.entry.lotCount"), size: 70, meta: { filterType: "number" as const } },
-  ], [t, statusLabels, openEdit]);
+  ], [t, openEdit]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

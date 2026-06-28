@@ -22,6 +22,7 @@ import {
 import { Card, CardContent, Button, Input, Select, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
 import { ComCodeSelect, EquipSelect } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -403,7 +404,9 @@ export default function JobOrderPage() {
       },
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 80,
+      accessorKey: "status",
+      header: () => <StatusHeaderHelp label={t("common.status")} codeType="JOB_ORDER_STATUS" align="center" />,
+      size: 80,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} />,
     },

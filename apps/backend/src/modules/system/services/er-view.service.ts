@@ -536,11 +536,9 @@ export class ErViewService {
     }
 
     if (payload.actionType === 'ADD_FK' || payload.actionType === 'ADD_UK' || payload.actionType === 'DROP_FK') {
-      const queryRunner = this.dataSource.createQueryRunner();
-      await queryRunner.connect();
       const created: Array<{ table: string; constraintName: string }> = [];
       try {
-        await queryRunner.query(preview.sql);
+        await this.dataSource.query(preview.sql);
         if (payload.actionType === 'ADD_FK' || payload.actionType === 'ADD_UK') {
           created.push({
             table: payload.actionType === 'ADD_FK' ? this.normalizeIdentifier(payload.childTable!) : this.normalizeIdentifier(payload.tableName!),
@@ -560,7 +558,7 @@ export class ErViewService {
           const dropSql = `ALTER TABLE ${item.table} DROP CONSTRAINT ${item.constraintName}`;
           compensationSql.push(dropSql);
           try {
-            await queryRunner.query(dropSql);
+            await this.dataSource.query(dropSql);
           } catch {
             this.writeActionLog({ payload, preview, status: 'PARTIAL_FAILED', errorMessage: String(error), compensationSql });
             throw error;
@@ -571,8 +569,6 @@ export class ErViewService {
           throw new BadRequestException('동일한 constraint 또는 참조 제약이 이미 존재합니다. 새로고침 후 현재 물리 제약 상태를 확인하세요.');
         }
         throw error;
-      } finally {
-        await queryRunner.release();
       }
     }
 

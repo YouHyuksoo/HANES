@@ -16,6 +16,8 @@ import { RefreshCw, Search, Eye, RotateCcw, ArrowDownCircle, ArrowUpCircle, Netw
 import { Card, CardContent, Button, Input, Modal, Select } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import api from "@/services/api";
 
 interface InterLog {
@@ -119,9 +121,9 @@ export default function InterfaceLogPage() {
     { accessorKey: "messageType", header: t("interface.log.messageType"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => messageTypeLabels[getValue() as string] || getValue() },
     { accessorKey: "interfaceId", header: t("interface.log.interfaceId"), size: 120, meta: { filterType: "text" as const } },
     {
-      accessorKey: "status", header: t("common.status"), size: 80,
+      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="IF_LOG_STATUS" align="center" />, size: 80,
       meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => { const status = getValue() as string; return <span className={`px-2 py-1 text-xs rounded-full ${statusColors[status]}`}>{statusLabels[status]}</span>; },
+      cell: ({ getValue }) => <StatusBadge codeType="IF_LOG_STATUS" value={getValue() as string} />,
     },
     {
       accessorKey: "retryCount", header: t("interface.log.retryCount"), size: 70,

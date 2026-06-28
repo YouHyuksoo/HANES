@@ -23,6 +23,7 @@ import toast from "react-hot-toast";
 import { FileCheck } from "lucide-react";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { LineSelect, ComCodeSelect, QtyInput } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import api from "@/services/api";
 import ReworkFormPanel from "./components/ReworkFormPanel";
@@ -239,7 +240,7 @@ export default function ReworkPage() {
       cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "defectType", header: t("quality.rework.defectType"), size: 110, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="DEFECT_TYPE" code={getValue() as string} /> },
-    { accessorKey: "status", header: t("common.status"), size: 120, meta: { filterType: "multi" as const },
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="REWORK_STATUS" align="center" />, size: 120, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="REWORK_STATUS" code={getValue() as string} /> },
     { accessorKey: "workerId", header: t("quality.rework.worker"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "createdAt", header: t("common.createdAt"), size: 140, meta: { filterType: "date" as const },

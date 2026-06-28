@@ -35,6 +35,7 @@ import {
 } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { LineSelect, ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
@@ -169,7 +170,7 @@ export default function ReworkHistoryPage() {
       },
       {
         accessorKey: "status",
-        header: t("common.status"),
+        header: () => <StatusHeaderHelp label={t("common.status")} codeType="REWORK_STATUS" align="center" />,
         size: 130,
         meta: { filterType: "multi" as const },
         cell: ({ getValue }) => (

@@ -18,6 +18,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import { EquipSelect } from '@/components/shared';
 import DateRangeFilter from '@/components/shared/DateRangeFilter';
+import StatusHeaderHelp from '@/components/shared/StatusHeaderHelp';
 import api from '@/services/api';
 import { getTodayLocal } from '@/utils/date';
 
@@ -116,7 +117,7 @@ export default function ProgressPage() {
         );
       },
     },
-    { accessorKey: 'status', header: t('production.progress.status'), size: 90, meta: { filterType: 'multi' as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} /> },
+    { accessorKey: 'status', header: () => <StatusHeaderHelp label={t('production.progress.status')} codeType="JOB_ORDER_STATUS" align="center" />, size: 90, meta: { filterType: 'multi' as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} /> },
     { accessorKey: 'planDate', header: t('production.progress.planDate'), size: 100, meta: { filterType: 'date' as const } },
   ], [t]);
 

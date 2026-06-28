@@ -2,23 +2,25 @@
 
 /**
  * @file src/app/(authenticated)/product/receive/page.tsx
- * @description 제품입고관리 페이지 - 박스 스캔 입고 + 개별입고(모달) 지원
+ * @description 제품입고관리 페이지 - 좌측 입고이력 + 우측 박스 스캔/입고 작업 패널
  *
  * 초보자 가이드:
- * 1. 스캔 입고 버튼: 포장 완료 박스를 스캔하여 빠르게 입고
- * 2. 개별입고 버튼: 수동으로 품목/수량 지정하여 입고
- * 3. 완제품(FG)/반제품(WIP) 탭으로 입고 이력 필터링 (FG 기본)
+ * 1. 좌측: 완제품(FG) 입고 이력 그리드
+ * 2. 우측: 상단 고정 스캔영역 + 입고 가능 박스(포장완료·미입고) 목록 → 선택 일괄입고
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { PackageCheck, RefreshCw, Search, ClipboardPlus, ScanLine } from "lucide-react";
+import { PackageCheck, RefreshCw, Search } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
-import BoxScanModal from "./components/BoxScanModal";
-import ReceiveModal from "./components/ReceiveModal";
+import StatusBadge from "@/components/shared/StatusBadge";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import { getTodayLocal } from "@/utils/date";
+import ReceivablePanel from "./components/ReceivablePanel";
 
 interface ProductTransaction {
   id: string;
@@ -35,6 +37,7 @@ interface ProductTransaction {
   remark: string | null;
   part?: { itemCode: string; itemName: string; unit: string } | null;
   toWarehouse?: { warehouseName: string } | null;
+  fromWarehouse?: { warehouseName: string } | null;
 }
 
 function extractTransactions(response: { data?: unknown }): ProductTransaction[] {
@@ -51,55 +54,30 @@ function mergeTransactions(...groups: ProductTransaction[][]): ProductTransactio
   return [...merged.values()].sort((a, b) => String(b.transDate).localeCompare(String(a.transDate)));
 }
 
-function displayReceiveQty(tx: ProductTransaction): number {
-  if (tx.transType === "WIP_OUT") return Math.abs(tx.qty);
-  if (tx.transType === "WIP_OUT_CANCEL") return -Math.abs(tx.qty);
-  return tx.qty;
-}
-
-const statusColors: Record<string, string> = {
-  DONE: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  CANCELED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-};
-
 export default function ProductReceivePage() {
   const { t } = useTranslation();
 
-  // 완제품(FG) 입고가 기본. 반제품(WIP)은 후순위.
-  const [activeTab, setActiveTab] = useState<"SEMI_PRODUCT" | "FINISHED">("FINISHED");
   const [data, setData] = useState<ProductTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isScanOpen, setIsScanOpen] = useState(false);
+  const [fromDate, setFromDate] = useState(() => getTodayLocal());
+  const [toDate, setToDate] = useState(() => getTodayLocal());
 
-  /** 입고 이력 조회 */
+  /** 제품(FG) 입고 이력 조회 — 제품입고만, 선택 기간 내(기본 당일). 공정출고 WIP_OUT은 수불 화면에서 확인 */
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      if (activeTab === "SEMI_PRODUCT") {
-        const res = await api.get("/inventory/product/transactions", {
-          params: { transType: "WIP_IN,WIP_IN_CANCEL", limit: 500 },
-        });
-        setData(extractTransactions(res));
-        return;
-      }
-
-      const [fgRes, boxMoveRes] = await Promise.all([
-        api.get("/inventory/product/transactions", {
-          params: { transType: "FG_IN,FG_IN_CANCEL", limit: 500 },
-        }),
-        api.get("/inventory/product/transactions", {
-          params: { transType: "WIP_OUT,WIP_OUT_CANCEL", refType: "BOX", limit: 500 },
-        }),
-      ]);
-      setData(mergeTransactions(extractTransactions(fgRes), extractTransactions(boxMoveRes)));
+      const params: Record<string, string> = { transType: "FG_IN,FG_IN_CANCEL", limit: "1000" };
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
+      const res = await api.get("/inventory/product/transactions", { params });
+      setData(mergeTransactions(extractTransactions(res)));
     } catch {
       setData([]);
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  }, [fromDate, toDate]);
 
   useEffect(() => {
     fetchData();
@@ -121,9 +99,10 @@ export default function ProductReceivePage() {
         cell: ({ getValue }) => {
           const v = getValue() as string;
           const cancel = v.includes("CANCEL");
+          const label = t(`comCode.TRANSACTION_TYPE.${v}`, { defaultValue: v });
           return (
             <span className={`px-2 py-0.5 rounded text-xs ${cancel ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300" : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"}`}>
-              {v}
+              {label}
             </span>
           );
         },
@@ -140,13 +119,16 @@ export default function ProductReceivePage() {
       },
       {
         id: "warehouse", header: t("productMgmt.receive.col.warehouse"), size: 110,
-        cell: ({ row }) => row.original.toWarehouse?.warehouseName || "-",
+        cell: ({ row }) =>
+          row.original.toWarehouse?.warehouseName ||
+          row.original.fromWarehouse?.warehouseName ||
+          "-",
       },
       {
         accessorKey: "qty", header: t("common.quantity"), size: 90,
         meta: { align: "right" as const },
         cell: ({ row }) => {
-          const q = displayReceiveQty(row.original);
+          const q = row.original.qty;
           const c = q > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
           return (
             <span className={`font-medium ${c}`}>
@@ -161,20 +143,12 @@ export default function ProductReceivePage() {
         cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
       },
       {
-        accessorKey: "status", header: t("common.status"), size: 80,
-        cell: ({ getValue }) => {
-          const s = getValue() as string;
-          return <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>{s}</span>;
-        },
+        accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="PROD_RESULT_STATUS" />, size: 90,
+        cell: ({ getValue }) => <StatusBadge codeType="PROD_RESULT_STATUS" value={getValue() as string} />,
       },
     ],
     [t],
   );
-
-  const tabs = [
-    { key: "FINISHED" as const, label: t("productMgmt.receive.tabFg") },
-    { key: "SEMI_PRODUCT" as const, label: t("productMgmt.receive.tabWip") },
-  ];
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -191,37 +165,13 @@ export default function ProductReceivePage() {
           <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
-          <Button variant="secondary" onClick={() => setIsScanOpen(true)}>
-            <ScanLine className="w-4 h-4 mr-1" />
-            {t("productMgmt.receive.scanReceive")}
-          </Button>
-          <Button onClick={() => setIsModalOpen(true)}>
-            <ClipboardPlus className="w-4 h-4 mr-1" />
-            {t("productMgmt.receive.individualReceive")}
-          </Button>
         </div>
       </div>
 
-      {/* 탭 */}
-      <div className="flex gap-1 border-b border-border flex-shrink-0">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === tab.key
-                ? "border-primary text-primary"
-                : "border-transparent text-text-muted hover:text-text hover:border-border"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* 입고 이력 */}
-      <div className="flex-1 min-h-0 flex">
-        <Card className="w-full min-w-0 flex flex-col overflow-hidden" padding="none">
+      {/* 본문: 좌측 입고이력 + 우측 작업 패널 */}
+      <div className="flex-1 min-h-0 flex gap-4">
+        {/* 좌측: 입고 이력 */}
+        <Card className="flex-1 min-w-0 flex flex-col overflow-hidden" padding="none">
           <CardContent className="h-full p-4">
             <DataGrid
               data={data}
@@ -241,29 +191,25 @@ export default function ProductReceivePage() {
                       fullWidth
                     />
                   </div>
+                  <DateRangeFilter
+                    from={fromDate}
+                    to={toDate}
+                    onFromChange={setFromDate}
+                    onToChange={setToDate}
+                    className="flex-shrink-0"
+                  />
                 </div>
               }
-              sqlQuery={`SELECT *\nFROM PRODUCT_TRANSACTIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\n  AND (\n    TRANS_TYPE IN ('FG_IN', 'FG_IN_CANCEL', 'WIP_IN', 'WIP_IN_CANCEL')\n    OR (REF_TYPE = 'BOX' AND TRANS_TYPE IN ('WIP_OUT', 'WIP_OUT_CANCEL'))\n  )\nORDER BY TRANS_DATE DESC`}
+              sqlQuery={`SELECT *\nFROM PRODUCT_TRANSACTIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\n  AND TRANS_TYPE IN ('FG_IN', 'FG_IN_CANCEL')\nORDER BY TRANS_DATE DESC`}
             />
           </CardContent>
         </Card>
+
+        {/* 우측: 스캔/입고 작업 패널 */}
+        <Card className="w-[420px] flex-shrink-0 flex flex-col overflow-hidden" padding="none">
+          <ReceivablePanel onReceived={fetchData} />
+        </Card>
       </div>
-
-      {/* 스캔 입고 모달 (Method B) */}
-      <BoxScanModal
-        isOpen={isScanOpen}
-        onClose={() => setIsScanOpen(false)}
-        onSuccess={fetchData}
-        itemType={activeTab}
-      />
-
-      {/* 개별입고 모달 */}
-      <ReceiveModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={fetchData}
-        defaultPartType={activeTab}
-      />
     </div>
   );
 }

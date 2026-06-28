@@ -20,6 +20,7 @@ import {
 import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import ControlPlanFormPanel from "./components/ControlPlanFormPanel";
 
@@ -117,7 +118,7 @@ export default function ControlPlanPage() {
     { accessorKey: "phase", header: t("quality.controlPlan.phase"), size: 120,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="CP_PHASE" code={getValue() as string} /> },
-    { accessorKey: "status", header: t("common.status"), size: 110,
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="CP_STATUS" align="center" />, size: 110,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="CP_STATUS" code={getValue() as string} /> },
     { accessorKey: "approvedBy", header: t("quality.controlPlan.approvedBy"), size: 100,

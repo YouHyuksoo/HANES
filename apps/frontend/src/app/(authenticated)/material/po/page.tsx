@@ -20,6 +20,7 @@ import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui"
 import { ComCodeSelect } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
@@ -145,7 +146,7 @@ export default function PoPage() {
       ),
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 100,
+      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="PO_STATUS" align="center" />, size: 100,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const s = getValue() as string;

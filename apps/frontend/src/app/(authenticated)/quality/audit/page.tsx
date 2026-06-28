@@ -21,6 +21,7 @@ import {
 import { Card, CardContent, Button, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import AuditFormPanel from "./components/AuditFormPanel";
 import AuditFindingList from "./components/AuditFindingList";
@@ -105,7 +106,7 @@ export default function AuditPage() {
       },
       {
         accessorKey: "auditType",
-        header: t("quality.audit.auditType"),
+        header: () => <StatusHeaderHelp label={t("quality.audit.auditType")} codeType="AUDIT_TYPE" align="center" />,
         size: 120,
         meta: { filterType: "multi" as const },
         cell: ({ getValue }) => (
@@ -139,7 +140,7 @@ export default function AuditPage() {
       },
       {
         accessorKey: "status",
-        header: t("common.status"),
+        header: () => <StatusHeaderHelp label={t("common.status")} codeType="AUDIT_STATUS" align="center" />,
         size: 110,
         meta: { filterType: "multi" as const },
         cell: ({ getValue }) => (
@@ -148,7 +149,7 @@ export default function AuditPage() {
       },
       {
         accessorKey: "overallResult",
-        header: t("quality.audit.overallResult"),
+        header: () => <StatusHeaderHelp label={t("quality.audit.overallResult")} codeType="AUDIT_RESULT" align="center" />,
         size: 110,
         meta: { filterType: "multi" as const },
         cell: ({ getValue }) => {

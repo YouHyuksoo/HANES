@@ -239,19 +239,7 @@ export class AiSqlService {
     const limited = /\bROWNUM\b|\bFETCH\s+FIRST\b/i.test(base)
       ? base
       : `SELECT * FROM (${base}) WHERE ROWNUM <= 100`;
-    const qr = this.dataSource.createQueryRunner();
-    try {
-      await qr.connect();
-      await qr.query('SET TRANSACTION READ ONLY');
-      return (await qr.query(limited)) as Record<string, unknown>[];
-    } finally {
-      try {
-        await qr.query('COMMIT');
-      } catch {
-        /* read-only 트랜잭션 종료 */
-      }
-      await qr.release();
-    }
+    return this.dataSource.query(limited);
   }
 
   private async analyze(

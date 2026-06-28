@@ -16,6 +16,8 @@ import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/com
 import { QtyInput } from "@/components/shared";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
@@ -34,29 +36,11 @@ interface SubconOrder {
   status: string;
 }
 
-const statusColors: Record<string, string> = {
-  ORDERED: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-  DELIVERED: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
-  PARTIAL_RECV: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
-  RECEIVED: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-  CLOSED: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-  CANCELED: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-};
-
 export default function SubconOrderPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<SubconOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const statusLabels: Record<string, string> = useMemo(() => ({
-    ORDERED: t("outsourcing.order.statusOrdered"),
-    DELIVERED: t("outsourcing.order.statusDelivered"),
-    PARTIAL_RECV: t("outsourcing.order.statusPartialRecv"),
-    RECEIVED: t("outsourcing.order.statusReceived"),
-    CLOSED: t("outsourcing.order.statusClosed"),
-    CANCELED: t("common.cancel"),
-  }), [t]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -116,13 +100,12 @@ export default function SubconOrderPage() {
     { accessorKey: "orderDate", header: t("outsourcing.order.orderDate"), size: 100 },
     { accessorKey: "dueDate", header: t("outsourcing.order.dueDate"), size: 100 },
     {
-      accessorKey: "status", header: t("common.status"), size: 90,
-      cell: ({ getValue }) => {
-        const status = getValue() as string;
-        return <span className={`px-2 py-1 text-xs rounded-full ${statusColors[status]}`}>{statusLabels[status]}</span>;
-      },
+      accessorKey: "status",
+      header: () => <StatusHeaderHelp label={t("common.status")} codeType="SUBCON_ORDER_STATUS" align="center" />,
+      size: 90,
+      cell: ({ getValue }) => <StatusBadge codeType="SUBCON_ORDER_STATUS" value={getValue() as string} />,
     },
-  ], [t, statusLabels]);
+  ], [t]);
 
   const stats = useMemo(() => ({
     ordered: data.filter((d) => d.status === "ORDERED").length,

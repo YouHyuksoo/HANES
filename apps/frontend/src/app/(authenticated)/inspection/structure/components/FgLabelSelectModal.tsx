@@ -2,10 +2,12 @@
 
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, CheckCircle, XCircle } from "lucide-react";
+import { Search } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Modal, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import StatusBadge from "@/components/shared/StatusBadge";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 
 interface FgLabelRow {
@@ -85,13 +87,9 @@ export default function FgLabelSelectModal({
       accessorKey: "status", header: t("common.status", "상태"), size: 100,
     },
     {
-      accessorKey: "inspectPassYn", header: t("quality.inspect.judgement", "판정"), size: 80,
-      cell: ({ getValue }) => {
-        const v = getValue() as string | null;
-        if (v === "Y") return <span className="flex items-center gap-1 text-green-600"><CheckCircle className="w-3 h-3" />PASS</span>;
-        if (v === "N") return <span className="flex items-center gap-1 text-red-500"><XCircle className="w-3 h-3" />FAIL</span>;
-        return <span className="text-text-muted">-</span>;
-      },
+      accessorKey: "inspectPassYn", size: 80,
+      header: () => <StatusHeaderHelp label={t("quality.inspect.judgement", "판정")} codeType="JUDGE_YN" align="center" />,
+      cell: ({ getValue }) => <StatusBadge codeType="JUDGE_YN" value={getValue() as string} />,
     },
   ], [t]);
 

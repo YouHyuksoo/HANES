@@ -17,6 +17,8 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { api } from "@/services/api";
 import UserFormPanel from "./components/UserFormPanel";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 interface User {
   email: string;
@@ -141,20 +143,11 @@ export default function UserPage() {
       },
     },
     {
-      accessorKey: "status", header: t("system.users.status", "상태"), size: 80,
+      accessorKey: "status",
+      header: () => <StatusHeaderHelp label={t("system.users.status", "상태")} codeType="GENERAL_STATUS" align="center" />,
+      size: 80,
       meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const status = getValue() as string;
-        return (
-          <span className={`px-2 py-1 text-xs rounded-full ${
-            status === "ACTIVE"
-              ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-              : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-          }`}>
-            {status === "ACTIVE" ? t("system.users.statusActive", "활성") : t("system.users.statusInactive", "비활성")}
-          </span>
-        );
-      },
+      cell: ({ getValue }) => <StatusBadge codeType="GENERAL_STATUS" value={getValue() as string} />,
     },
     {
       accessorKey: "lastLoginAt", header: t("system.users.lastLogin", "최근 로그인"), size: 150,

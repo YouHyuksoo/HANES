@@ -34,6 +34,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import { ComCodeSelect, ProcessSelect, WorkerSelect } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import RepairFormModal from "./components/RepairFormModal";
 import type { RepairOrderData } from "./components/RepairFormModal";
@@ -224,7 +225,7 @@ export default function RepairPage() {
       },
       {
         accessorKey: "repairResult",
-        header: t("production.repair.repairResult"),
+        header: () => <StatusHeaderHelp label={t("production.repair.repairResult")} codeType="REPAIR_RESULT" align="center" />,
         size: 90,
         meta: { filterType: "select" as const },
         cell: ({ getValue }) => {

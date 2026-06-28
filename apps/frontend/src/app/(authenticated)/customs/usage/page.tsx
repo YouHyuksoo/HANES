@@ -16,6 +16,8 @@ import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/com
 import { QtyInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import api from "@/services/api";
 
 interface UsageReport {
@@ -33,23 +35,11 @@ interface UsageReport {
   workerName: string;
 }
 
-const statusColors: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-  REPORTED: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-  CONFIRMED: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-};
-
 export default function CustomsUsagePage() {
   const { t } = useTranslation();
   const [data, setData] = useState<UsageReport[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const statusLabels: Record<string, string> = useMemo(() => ({
-    DRAFT: t("customs.usage.statusDraft"),
-    REPORTED: t("customs.usage.statusReported"),
-    CONFIRMED: t("customs.usage.statusConfirmed"),
-  }), [t]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -126,11 +116,11 @@ export default function CustomsUsagePage() {
     { accessorKey: "reportDate", header: t("customs.usage.reportDate"), size: 130, meta: { filterType: "date" as const }, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "jobOrderNo", header: t("customs.usage.jobOrder"), size: 110, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
     {
-      accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => { const status = getValue() as string; return <span className={`px-2 py-1 text-xs rounded-full ${statusColors[status]}`}>{statusLabels[status]}</span>; },
+      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="USAGE_REPORT_STATUS" align="center" />, size: 90, meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => <StatusBadge codeType="USAGE_REPORT_STATUS" value={getValue() as string} />,
     },
     { accessorKey: "workerName", header: t("customs.usage.worker"), size: 80, meta: { filterType: "text" as const } },
-  ], [t, statusLabels, handleReport, handleConfirm]);
+  ], [t, handleReport, handleConfirm]);
 
   const stats = useMemo(() => ({
     total: data.length,

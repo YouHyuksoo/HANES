@@ -138,20 +138,20 @@ describe('ActivityLogService', () => {
       await target.findAll({
         page: 1,
         limit: 20,
-        startDate: '2026-01-01',
-        endDate: '2026-01-31',
+        fromDate: '2026-01-01',
+        toDate: '2026-01-31',
       } as any, 'COMPANY', 'PLANT');
 
       // Assert - 테넌트 + 시작/종료일 조건 적용
       expect(qb.andWhere).toHaveBeenCalledWith('al.company = :company', { company: 'COMPANY' });
       expect(qb.andWhere).toHaveBeenCalledWith('al.plant = :plant', { plant: 'PLANT' });
       expect(qb.andWhere).toHaveBeenCalledWith(
-        "al.createdAt >= TO_DATE(:startDate, 'YYYY-MM-DD')",
-        { startDate: '2026-01-01' },
+        "al.createdAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')",
+        { fromDate: '2026-01-01' },
       );
       expect(qb.andWhere).toHaveBeenCalledWith(
-        "al.createdAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY",
-        { endDate: '2026-01-31' },
+        "al.createdAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY",
+        { toDate: '2026-01-31' },
       );
       expect(qb.getManyAndCount).toHaveBeenCalled();
     });
@@ -165,16 +165,16 @@ describe('ActivityLogService', () => {
       await target.findAll({
         page: 1,
         limit: 20,
-        startDate: '2026-01-01',
+        fromDate: '2026-01-01',
       } as any);
 
       // Assert
       expect(qb.andWhere).toHaveBeenCalledWith(
-        "al.createdAt >= TO_DATE(:startDate, 'YYYY-MM-DD')",
-        { startDate: '2026-01-01' },
+        "al.createdAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')",
+        { fromDate: '2026-01-01' },
       );
       expect(qb.andWhere).not.toHaveBeenCalledWith(
-        "al.createdAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY",
+        "al.createdAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY",
         expect.anything(),
       );
       expect(qb.getManyAndCount).toHaveBeenCalled();
@@ -189,16 +189,16 @@ describe('ActivityLogService', () => {
       await target.findAll({
         page: 1,
         limit: 20,
-        endDate: '2026-01-31',
+        toDate: '2026-01-31',
       } as any);
 
       // Assert
       expect(qb.andWhere).toHaveBeenCalledWith(
-        "al.createdAt < TO_DATE(:endDate, 'YYYY-MM-DD') + INTERVAL '1' DAY",
-        { endDate: '2026-01-31' },
+        "al.createdAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY",
+        { toDate: '2026-01-31' },
       );
       expect(qb.andWhere).not.toHaveBeenCalledWith(
-        "al.createdAt >= TO_DATE(:startDate, 'YYYY-MM-DD')",
+        "al.createdAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')",
         expect.anything(),
       );
       expect(qb.getManyAndCount).toHaveBeenCalled();

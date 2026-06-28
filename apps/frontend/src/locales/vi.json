@@ -3082,7 +3082,7 @@
   "productMgmt": {
     "receive": {
       "title": "Nhập kho sản phẩm",
-      "subtitle": "Xử lý nhập kho bán thành phẩm/thành phẩm.",
+      "subtitle": "Xử lý nhập kho thành phẩm.",
       "tabWip": "Bán thành phẩm (WIP)",
       "tabFg": "Thành phẩm (FG)",
       "fgAutoWarehouse": "Thành phẩm được tự động nhập vào kho FG mặc định.",
@@ -3137,7 +3137,14 @@
         "typeMismatch": "Loại sản phẩm của hộp không khớp với tab hiện tại"
       },
       "scanReceive": "Nhập kho quét",
-      "individualReceive": "Nhập kho thủ công"
+      "individualReceive": "Nhập kho thủ công",
+      "panel": {
+        "scanTitle": "Nhập kho quét",
+        "colBox": "Mã hộp",
+        "receivableEmpty": "Không có hộp nào để nhập kho",
+        "notReceivable": "Không phải hộp cần nhập kho (đã nhập kho hoặc chưa đóng gói xong)",
+        "notFound": "Không tìm thấy hộp: {{boxNo}}"
+      }
     },
     "receiptCancel": {
       "title": "Hủy nhập kho sản phẩm",
@@ -3797,6 +3804,8 @@
     "packResult": {
       "title": "Tra cứu thực tích đóng gói",
       "description": "Tra cứu thực tích các thùng đã đóng gói xong",
+      "boxStatus": "Trạng thái thùng",
+      "oqcStatus": "OQC",
       "excelDownload": "Tải Excel",
       "totalBox": "Tổng số thùng",
       "totalPackQty": "Tổng SL đóng gói",
@@ -6068,6 +6077,26 @@
     "dashboard": "Bảng điều khiển"
   },
   "comCode": {
+    "ARRIVAL_PO_TYPE": { "RM": "Nguyên liệu", "CM": "Vật tư tiêu hao" },
+    "ARRIVAL_RESULT_STATUS": { "ARRIVED": "Đã đến", "IQC_PROGRESS": "Đang IQC", "IQC_DONE": "IQC xong", "RECEIVED": "Đã nhập kho", "CANCELED": "Đã hủy" },
+    "AUDIT_RESULT": { "PASS": "Đạt", "MINOR": "Không phù hợp nhẹ", "MAJOR": "Không phù hợp nặng", "OFI": "Khuyến nghị cải tiến" },
+    "AUDIT_STATUS": { "PLANNED": "Đã lên kế hoạch", "IN_PROGRESS": "Đang tiến hành", "COMPLETED": "Hoàn thành", "CLOSED": "Đã đóng" },
+    "AUDIT_TYPE": { "SYSTEM": "Đánh giá hệ thống", "PROCESS": "Đánh giá quá trình", "PRODUCT": "Đánh giá sản phẩm", "LAYERED": "Đánh giá phân tầng" },
+    "FAI_RESULT": { "PASS": "Đạt", "FAIL": "Không đạt", "CONDITIONAL": "Có điều kiện" },
+    "FAI_STATUS": { "REQUESTED": "Đã yêu cầu", "SAMPLING": "Lấy mẫu", "INSPECTING": "Đang kiểm", "PASS": "Đạt", "FAIL": "Không đạt", "CONDITIONAL": "Đạt có điều kiện" },
+    "FAI_TRIGGER_TYPE": { "NEW_PART": "Sản phẩm mới", "ECN": "Thay đổi thiết kế", "PROCESS_CHANGE": "Thay đổi quá trình", "LONG_STOP": "Dừng dài hạn", "EQUIP_CHANGE": "Thay đổi thiết bị" },
+    "GAUGE_STATUS": { "ACTIVE": "Đang dùng", "EXPIRED": "Hết hạn hiệu chuẩn", "SCRAPPED": "Đã hủy" },
+    "GAUGE_TYPE": { "CALIPER": "Thước cặp", "MICROMETER": "Panme", "DIAL_GAUGE": "Đồng hồ so", "HEIGHT_GAUGE": "Thước đo cao", "PIN_GAUGE": "Dưỡng chốt", "RING_GAUGE": "Dưỡng vòng", "FORCE_GAUGE": "Lực kế", "OTHER": "Khác" },
+    "IQC_INSPECT_TYPE": { "INITIAL": "Kiểm tra ban đầu", "RETEST": "Kiểm tra lại" },
+    "PPAP_REASON": { "NEW_PART": "Linh kiện mới", "ECN": "Thay đổi thiết kế", "TOOLING": "Thay đổi khuôn", "CORRECTION": "Hành động khắc phục", "OTHER": "Khác" },
+    "PPAP_STATUS": { "DRAFT": "Nháp", "SUBMITTED": "Đã nộp", "APPROVED": "Đã duyệt", "REJECTED": "Bị từ chối", "INTERIM": "Duyệt tạm" },
+    "REWORK_INSPECT_RESULT": { "PASS": "Đạt", "FAIL": "Không đạt", "SCRAP": "Phế bỏ" },
+    "REWORK_PROCESS_STATUS": { "WAITING": "Chờ", "IN_PROGRESS": "Đang tiến hành", "COMPLETED": "Hoàn thành", "SKIPPED": "Bỏ qua" },
+    "REWORK_STATUS": { "REGISTERED": "Đã đăng ký", "QC_PENDING": "Chờ QC duyệt", "QC_APPROVED": "QC đã duyệt", "QC_REJECTED": "QC từ chối", "PROD_PENDING": "Chờ SX duyệt", "APPROVED": "Đã duyệt", "PROD_REJECTED": "SX từ chối", "IN_PROGRESS": "Đang tiến hành", "INSPECT_PENDING": "Chờ kiểm lại", "PASS": "Đạt", "FAIL": "Không đạt", "SCRAP": "Phế bỏ" },
+    "SPC_CHART_TYPE": { "XBAR_R": "Biểu đồ Xbar-R", "XBAR_S": "Biểu đồ Xbar-S", "P": "Biểu đồ P", "NP": "Biểu đồ NP", "C": "Biểu đồ C", "U": "Biểu đồ U" },
+    "SPC_STATUS": { "ACTIVE": "Hoạt động", "INACTIVE": "Ngừng" },
+    "TRAINING_STATUS": { "PLANNED": "Dự kiến", "IN_PROGRESS": "Đang tiến hành", "COMPLETED": "Hoàn thành", "CANCELLED": "Đã hủy" },
+    "TRAINING_TYPE": { "OJT": "Đào tạo tại chỗ", "CLASSROOM": "Đào tạo tập trung", "ONLINE": "Đào tạo trực tuyến", "EXTERNAL": "Đào tạo bên ngoài", "SAFETY": "Đào tạo an toàn" },
     "AQL_INSP_LEVEL": {
       "S-1": "Mức kiểm tra đặc biệt S-1",
       "S-2": "Mức kiểm tra đặc biệt S-2",

@@ -20,11 +20,12 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Layers, Plus, Search, RefreshCw, Lock, LockOpen,
-  Package, ArrowRight, X, ScanLine, Printer, HelpCircle, Trash2,
+  Package, ArrowRight, X, ScanLine, Printer, Trash2,
 } from "lucide-react";
 import { Card, CardContent, Button, ConfirmModal, Input, Modal, Select } from "@/components/ui";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import OpenIncludedNotice from "@/components/shared/OpenIncludedNotice";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import { getTodayLocal } from "@/utils/date";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -83,32 +84,6 @@ interface ShipOrderSummary {
   palletCount?: number;
   boxCount?: number;
   items: ShipOrderLineSummary[];
-}
-
-const palletStatusHelpText = [
-  "상태전이: OPEN -> CLOSED -> LOADED -> SHIPPED",
-  "OPEN: 팔레트를 생성한 직후 상태입니다. 박스를 적재하거나 제거할 수 있습니다.",
-  "CLOSED: 팔레트 구성이 완료되어 라벨 발행/마감된 상태입니다. 출하 할당 또는 팔레트 출하 대기 상태입니다.",
-  "LOADED: 출하건에 적재된 상태입니다. 아직 최종 출하 확정 전입니다.",
-  "SHIPPED: 출하 확정이 완료된 상태입니다. 제품재고 차감과 출하 이력이 기록됩니다.",
-  "되돌림: CLOSED -> OPEN은 출하에 할당되지 않은 팔레트만 가능합니다. LOADED/SHIPPED는 일반 팔레트 구성 화면에서 되돌릴 수 없습니다.",
-].join("\n");
-
-function PalletStatusHeader() {
-  const { t } = useTranslation();
-
-  return (
-    <div className="flex items-center justify-center gap-1">
-      <span>{t("common.status")}</span>
-      <span
-        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-text-muted hover:bg-surface hover:text-primary"
-        title={palletStatusHelpText}
-        aria-label={palletStatusHelpText}
-      >
-        <HelpCircle className="h-3.5 w-3.5" />
-      </span>
-    </div>
-  );
 }
 
 export default function PalletPage() {
@@ -496,7 +471,7 @@ export default function PalletPage() {
     { accessorKey: "palletNo", header: t("shipping.pallet.palletNo"), size: 160, meta: { filterType: "text" as const } },
     { accessorKey: "boxCount", header: t("shipping.pallet.boxCount"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "status", header: () => <PalletStatusHeader />, size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <PalletStatusBadge status={getValue() as PalletStatus} /> },
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="PALLET_STATUS" align="center" />, size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <PalletStatusBadge status={getValue() as PalletStatus} /> },
     { accessorKey: "shipmentId", header: t("shipping.confirm.shipmentNo"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span> },
     { accessorKey: "createdAt", header: t("common.createdAt"), size: 140, meta: { filterType: "date" as const } },
   ], [t, handleClosePallet, handleReopenPallet, fetchAvailableBoxes, selectPallet, canDeleteEmptyPallet, saving]);

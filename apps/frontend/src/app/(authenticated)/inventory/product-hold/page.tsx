@@ -19,6 +19,8 @@ import { Card, CardContent, Button, Input, Select, Modal, StatCard } from "@/com
 import { ComCodeBadge } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
@@ -34,11 +36,6 @@ interface ProductHoldStock {
   holdReason: string | null;
   holdAt: string | null;
 }
-
-const statusColors: Record<string, string> = {
-  HOLD: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-  NORMAL: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-};
 
 export default function ProductHoldPage() {
   const { t } = useTranslation();
@@ -148,16 +145,11 @@ export default function ProductHoldPage() {
       ),
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 80,
+      accessorKey: "status",
+      header: () => <StatusHeaderHelp label={t("common.status")} codeType="PRODUCT_HOLD_STATUS" align="center" />,
+      size: 80,
       meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const s = getValue() as string;
-        return (
-          <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>
-            {s}
-          </span>
-        );
-      },
+      cell: ({ getValue }) => <StatusBadge codeType="PRODUCT_HOLD_STATUS" value={getValue() as string} />,
     },
     {
       accessorKey: "holdReason", header: t("productHold.holdReason"), size: 160,

@@ -14,33 +14,9 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
-import { Send, HelpCircle } from "lucide-react";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { Send } from "lucide-react";
 import { ProdPlanItem } from "./types";
-
-const prodPlanStatusHelpText = [
-  "DRAFT(초안): 작성 중인 생산계획입니다. 계획 수량·라인·우선순위 등을 수정하거나 삭제할 수 있습니다. '확정' 시 CONFIRMED로 전이됩니다.",
-  "CONFIRMED(확정): 확정된 계획입니다. 더 이상 수정·삭제할 수 없고, 이 상태에서만 작업지시를 발행할 수 있습니다. '확정취소' 시 다시 DRAFT로 돌아갑니다.",
-  "CLOSED(마감): 마감된 계획입니다. 작업지시 발행이 끝나 더 이상 처리하지 않는 종료 상태입니다.",
-  "",
-  "상태 전이: DRAFT → (확정) → CONFIRMED → (마감) → CLOSED",
-  "되돌리기: CONFIRMED → (확정취소) → DRAFT",
-].join("\n");
-
-function PlanStatusHeader() {
-  const { t } = useTranslation();
-  return (
-    <div className="flex items-center justify-center gap-1">
-      <span>{t("common.status")}</span>
-      <span
-        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-text-muted hover:bg-surface hover:text-primary"
-        title={prodPlanStatusHelpText}
-        aria-label={prodPlanStatusHelpText}
-      >
-        <HelpCircle className="h-3.5 w-3.5" />
-      </span>
-    </div>
-  );
-}
 
 interface UsePlanColumnsParams {
   onConfirm?: (item: ProdPlanItem) => void;
@@ -207,7 +183,7 @@ export function usePlanColumns({ onConfirm, onUnconfirm, onIssue }: UsePlanColum
     },
     {
       accessorKey: "status",
-      header: () => <PlanStatusHeader />,
+      header: () => <StatusHeaderHelp label={t("common.status")} codeType="PROD_PLAN_STATUS" align="center" />,
       size: 80,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (

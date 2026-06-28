@@ -21,6 +21,7 @@ import {
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import MoldFormPanel from "./components/MoldFormPanel";
 import MoldUsageList from "./components/MoldUsageList";
@@ -182,7 +183,8 @@ export default function MoldMgmtPage() {
           : "text-green-600 dark:text-green-400";
         return <span className={`font-mono text-right block font-semibold ${color}`}>{rate}%</span>;
       } },
-    { accessorKey: "status", header: t("equipment.mold.status"), size: 100,
+    { accessorKey: "status", size: 100,
+      header: () => <StatusHeaderHelp label={t("equipment.mold.status")} codeType="MOLD_STATUS" align="center" />,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="MOLD_STATUS" code={getValue() as string} /> },
     { accessorKey: "nextMaintenanceDate", header: t("equipment.mold.nextMaint"), size: 110,

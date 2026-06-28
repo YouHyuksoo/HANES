@@ -21,6 +21,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Modal, Button, Input, Select } from '@/components/ui';
 import { QtyInput } from '@/components/shared';
 import DataGrid from '@/components/data-grid/DataGrid';
+import StatusHeaderHelp from '@/components/shared/StatusHeaderHelp';
 import { useWarehouseOptions } from '@/hooks/useMasterOptions';
 import api from '@/services/api';
 import type { ReceivablePO, PoItemForArrival, ArrivalItemInput } from './types';
@@ -141,7 +142,7 @@ export default function PoArrivalModal({ isOpen, onClose, onSuccess }: PoArrival
     },
     {
       accessorKey: 'status',
-      header: t('common.status'),
+      header: () => <StatusHeaderHelp label={t('common.status')} codeType="PO_STATUS" align="center" />,
       size: 90,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {

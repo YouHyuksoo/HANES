@@ -21,6 +21,7 @@ import {
 import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import SpcFormPanel from "./components/SpcFormPanel";
 import SpcChartView from "./components/SpcChartView";
@@ -123,10 +124,10 @@ export default function SpcPage() {
       cell: ({ getValue }) => (getValue() as string) || "-" },
     { accessorKey: "characteristicName", header: t("quality.spc.characteristicName"), size: 180,
       meta: { filterType: "text" as const } },
-    { accessorKey: "chartType", header: t("quality.spc.chartType"), size: 120,
+    { accessorKey: "chartType", header: () => <StatusHeaderHelp label={t("quality.spc.chartType")} codeType="SPC_CHART_TYPE" align="center" />, size: 120,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="SPC_CHART_TYPE" code={getValue() as string} /> },
-    { accessorKey: "status", header: t("common.status"), size: 110,
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="SPC_STATUS" align="center" />, size: 110,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="SPC_STATUS" code={getValue() as string} /> },
     { accessorKey: "createdAt", header: t("common.createdAt"), size: 120,

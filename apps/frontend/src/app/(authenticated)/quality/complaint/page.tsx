@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import api from "@/services/api";
 import ComplaintFormPanel from "./components/ComplaintFormPanel";
@@ -167,7 +168,7 @@ export default function ComplaintPage() {
     { accessorKey: "urgency", header: t("quality.complaint.urgency"), size: 90,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="COMPLAINT_URGENCY" code={getValue() as string} /> },
-    { accessorKey: "status", header: t("common.status"), size: 110,
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="COMPLAINT_STATUS" align="center" />, size: 110,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="COMPLAINT_STATUS" code={getValue() as string} /> },
     { accessorKey: "responsibleCode", header: t("common.manager"), size: 100,

@@ -21,6 +21,7 @@ import {
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import api from "@/services/api";
 import ChangeFormPanel from "./components/ChangeFormPanel";
@@ -133,10 +134,10 @@ export default function ChangeControlPage() {
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="CHANGE_TYPE" code={getValue() as string} /> },
     { accessorKey: "title", header: t("common.title"), size: 250, meta: { filterType: "text" as const } },
-    { accessorKey: "priority", header: t("quality.change.priority"), size: 100,
+    { accessorKey: "priority", header: () => <StatusHeaderHelp label={t("quality.change.priority")} codeType="CHANGE_PRIORITY" align="center" />, size: 100,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="CHANGE_PRIORITY" code={getValue() as string} /> },
-    { accessorKey: "status", header: t("common.status"), size: 120,
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="CHANGE_STATUS" align="center" />, size: 120,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="CHANGE_STATUS" code={getValue() as string} /> },
     { accessorKey: "requestedBy", header: t("common.requester"), size: 100,

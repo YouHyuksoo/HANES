@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
 import ComCodeBadge from "@/components/ui/ComCodeBadge";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -131,16 +133,10 @@ export default function ProductIssuePage() {
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
     {
-      accessorKey: "transType", header: t("common.type"), size: 110,
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        const isCancelType = v.includes("CANCEL");
-        return (
-          <span className={`px-2 py-0.5 rounded text-xs ${isCancelType ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300" : "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"}`}>
-            {v}
-          </span>
-        );
-      },
+      accessorKey: "transType",
+      header: () => <StatusHeaderHelp label={t("common.type")} codeType="TRANSACTION_TYPE" align="center" />,
+      size: 110,
+      cell: ({ getValue }) => <StatusBadge codeType="TRANSACTION_TYPE" value={getValue() as string} />,
     },
     {
       id: "partCode", header: t("common.partCode"), size: 120,
@@ -157,7 +153,9 @@ export default function ProductIssuePage() {
       cell: ({ row }) => row.original.fromWarehouse?.warehouseName || "-",
     },
     {
-      accessorKey: "issueType", header: t("productMgmt.issue.col.issueType"), size: 110,
+      accessorKey: "issueType",
+      header: () => <StatusHeaderHelp label={t("productMgmt.issue.col.issueType")} codeType="ISSUE_TYPE" align="center" />,
+      size: 110,
       cell: ({ getValue }) => {
         const v = getValue() as string | null;
         return v ? <ComCodeBadge groupCode="ISSUE_TYPE" code={v} /> : <span className="text-text-muted">-</span>;

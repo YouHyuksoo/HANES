@@ -15,6 +15,8 @@ import { Plus, RefreshCw, Search, Package, CheckCircle, XCircle, Layers } from "
 import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
 import { QtyInput, ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
@@ -33,23 +35,11 @@ interface SubconReceive {
   workerName: string;
 }
 
-const inspectColors: Record<string, string> = {
-  PASS: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-  PARTIAL: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
-  FAIL: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-};
-
 export default function SubconReceivePage() {
   const { t } = useTranslation();
   const [data, setData] = useState<SubconReceive[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const inspectLabels: Record<string, string> = useMemo(() => ({
-    PASS: t("outsourcing.receive.inspectPass"),
-    PARTIAL: t("outsourcing.receive.inspectPartial"),
-    FAIL: t("outsourcing.receive.inspectFail"),
-  }), [t]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -98,12 +88,14 @@ export default function SubconReceivePage() {
       cell: ({ getValue }) => { const val = getValue() as number; return val > 0 ? <span className="text-red-600 dark:text-red-400">{val.toLocaleString()}</span> : "-"; },
     },
     {
-      accessorKey: "inspectResult", header: t("outsourcing.receive.inspectResult"), size: 90,
-      cell: ({ getValue }) => { const r = getValue() as string; return <span className={`px-2 py-1 text-xs rounded-full ${inspectColors[r]}`}>{inspectLabels[r]}</span>; },
+      accessorKey: "inspectResult",
+      header: () => <StatusHeaderHelp label={t("outsourcing.receive.inspectResult")} codeType="SUBCON_INSPECT_RESULT" align="center" />,
+      size: 90,
+      cell: ({ getValue }) => <StatusBadge codeType="SUBCON_INSPECT_RESULT" value={getValue() as string} />,
     },
     { accessorKey: "receivedAt", header: t("outsourcing.receive.receiveDate"), size: 130 },
     { accessorKey: "workerName", header: t("outsourcing.receive.worker"), size: 80 },
-  ], [t, inspectLabels]);
+  ], [t]);
 
   const stats = useMemo(() => {
     const totalQty = data.reduce((sum, d) => sum + d.qty, 0);

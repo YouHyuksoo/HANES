@@ -19,8 +19,9 @@ import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
+import StatusBadge from "@/components/shared/StatusBadge";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import { ColumnDef } from "@tanstack/react-table";
-import { useComCodeMap } from "@/hooks/useComCode";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
 
@@ -57,11 +58,6 @@ const resultColors: Record<string, string> = {
   FAIL: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 };
 
-const typeColors: Record<string, string> = {
-  INITIAL: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  RETEST: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-};
-
 const formatDateTime = (value?: string | null) => {
   if (!value) return "-";
   const date = new Date(value);
@@ -74,7 +70,6 @@ const getLotNoDisplay = (record: Pick<IqcHistoryItem, "matUid" | "sampleBarcode"
 
 export default function IqcHistoryPage() {
   const { t } = useTranslation();
-  const iqcInspectTypeMap = useComCodeMap("IQC_INSPECT_TYPE");
 
   const [data, setData] = useState<IqcHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -282,22 +277,12 @@ export default function IqcHistoryPage() {
       cell: ({ row }) => row.original.vendorName || "-",
     },
     {
-      accessorKey: "inspectType", header: t("material.iqcHistory.inspectType"), size: 100, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        const label = iqcInspectTypeMap[v]?.codeName ?? (
-          v === "INITIAL" ? t("material.iqcHistory.initial") :
-          v === "RETEST" ? t("material.iqcHistory.retest") : v
-        );
-        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${typeColors[v] || ""}`}>{label}</span>;
-      },
+      accessorKey: "inspectType", header: () => <StatusHeaderHelp label={t("material.iqcHistory.inspectType")} codeType="IQC_INSPECT_TYPE" align="center" />, size: 100, meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => <StatusBadge codeType="IQC_INSPECT_TYPE" value={getValue() as string} />,
     },
     {
-      accessorKey: "result", header: t("material.iqcHistory.result"), size: 80, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const r = getValue() as string;
-        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${resultColors[r] || ""}`}>{r}</span>;
-      },
+      accessorKey: "result", header: () => <StatusHeaderHelp label={t("material.iqcHistory.result")} codeType="INSPECT_RESULT" align="center" />, size: 80, meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => <StatusBadge codeType="INSPECT_RESULT" value={getValue() as string} />,
     },
     {
       accessorKey: "status", header: t("common.status"), size: 90, meta: { filterType: "multi" as const },
@@ -324,7 +309,7 @@ export default function IqcHistoryPage() {
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string) || "-",
     },
-  ], [t, handleCertUpload, uploadingKey, iqcInspectTypeMap]);
+  ], [t, handleCertUpload, uploadingKey]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

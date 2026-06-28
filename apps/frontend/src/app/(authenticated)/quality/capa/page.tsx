@@ -14,6 +14,7 @@ import {
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import api from "@/services/api";
 import CapaFormPanel from "./components/CapaFormPanel";
@@ -157,9 +158,9 @@ export default function CapaPage() {
     { accessorKey: "sourceType", header: t("quality.capa.sourceType"), size: 110,
       cell: ({ getValue }) => <ComCodeBadge groupCode="CAPA_SOURCE_TYPE" code={getValue() as string} /> },
     { accessorKey: "title", header: t("quality.capa.title"), size: 220, meta: { filterType: "text" as const } },
-    { accessorKey: "priority", header: t("common.priority"), size: 90,
+    { accessorKey: "priority", header: () => <StatusHeaderHelp label={t("common.priority")} codeType="CHANGE_PRIORITY" align="center" />, size: 90,
       cell: ({ getValue }) => getValue() ? <ComCodeBadge groupCode="CHANGE_PRIORITY" code={getValue() as string} /> : "-" },
-    { accessorKey: "status", header: t("common.status"), size: 120,
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="CAPA_STATUS" align="center" />, size: 120,
       cell: ({ getValue }) => <ComCodeBadge groupCode="CAPA_STATUS" code={getValue() as string} /> },
     { accessorKey: "responsibleCode", header: t("quality.capa.responsible"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "targetDate", header: t("quality.capa.targetDate"), size: 110,

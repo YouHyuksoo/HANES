@@ -180,7 +180,7 @@ export class ProdResultService {
 
     const toKstDate = (d: Date | null): string => {
       if (!d) return '';
-      const kst = new Date((d as unknown as Date).getTime() + 9 * 3600 * 1000);
+      const kst = new Date(d.getTime() + 9 * 3600 * 1000);
       return kst.toISOString().slice(0, 10);
     };
 
@@ -191,7 +191,7 @@ export class ProdResultService {
       lineName: pr.jobOrder?.lineCode ?? '',
       processType: pr.processCode ?? '',
       equipName: pr.equip?.equipName ?? '',
-      workDate: toKstDate(pr.startAt as unknown as Date | null),
+      workDate: toKstDate(pr.startAt),
       totalQty: (pr.goodQty ?? 0) + (pr.defectQty ?? 0),
       workerName: pr.worker?.workerName ?? null,
       workerDept: (pr.worker as any)?.dept ?? null,

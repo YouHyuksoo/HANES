@@ -15,6 +15,8 @@ import { useTranslation } from "react-i18next";
 import { Tag, Search, RefreshCw, Eye, Layers, CheckCircle, AlertCircle, MinusCircle } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, Modal, StatCard } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import StatusBadge from "@/components/shared/StatusBadge";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
@@ -34,15 +36,6 @@ interface MatLotItem {
   iqcStatus: string;
   status: string;
 }
-
-const getStatusColor = (status: string) => {
-  const c: Record<string, string> = {
-    NORMAL: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-    HOLD: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-    DEPLETED: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-  };
-  return c[status] || "bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300";
-};
 
 const getIqcColor = (status: string) => {
   const c: Record<string, string> = {
@@ -162,18 +155,12 @@ export default function MatLotPage() {
       ),
     },
     {
-      accessorKey: "iqcStatus", header: "IQC", size: 80, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const s = getValue() as string;
-        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${getIqcColor(s)}`}>{s}</span>;
-      },
+      accessorKey: "iqcStatus", header: () => <StatusHeaderHelp label="IQC" codeType="IQC_STATUS" align="center" />, size: 80, meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => <StatusBadge codeType="IQC_STATUS" value={getValue() as string} />,
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 80, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const s = getValue() as string;
-        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(s)}`}>{s}</span>;
-      },
+      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="MAT_LOT_STATUS" align="center" />, size: 80, meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => <StatusBadge codeType="MAT_LOT_STATUS" value={getValue() as string} />,
     },
   ], [t]);
 

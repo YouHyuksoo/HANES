@@ -16,6 +16,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { RefreshCw, ClipboardCheck, Search, FileSearch } from "lucide-react";
 import { Card, CardContent, Button, Input, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import InspectFormPanel from "./components/InspectFormPanel";
 import type { InspectTarget } from "./components/InspectFormPanel";
@@ -97,7 +98,7 @@ export default function ReworkInspectPage() {
     { accessorKey: "workerId", header: t("quality.rework.worker"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "endAt", header: t("quality.rework.complete"), size: 140, meta: { filterType: "date" as const },
       cell: ({ getValue }) => { const v = getValue() as string; return v ? new Date(v).toLocaleString() : "-"; } },
-    { accessorKey: "status", header: t("common.status"), size: 110, meta: { filterType: "multi" as const },
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="REWORK_STATUS" align="center" />, size: 110, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="REWORK_STATUS" code={getValue() as string} /> },
   ], [t, openPanel]);
 

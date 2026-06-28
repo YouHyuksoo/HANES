@@ -16,6 +16,8 @@ import { ColumnDef } from "@tanstack/react-table";
 import { History, Search, RefreshCw, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 
@@ -34,12 +36,6 @@ interface CalibrationRow {
   uncertainty: string | null;
   certificateNo: string | null;
 }
-
-const resultColors: Record<string, string> = {
-  PASS: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-  FAIL: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-  CONDITIONAL: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
-};
 
 export default function CalibrationHistoryPage() {
   const { t } = useTranslation();
@@ -92,12 +88,10 @@ export default function CalibrationHistoryPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "result", header: t("equipment.calibrationHistory.result", "결과"), size: 80,
+      accessorKey: "result", size: 80,
+      header: () => <StatusHeaderHelp label={t("equipment.calibrationHistory.result", "결과")} codeType="CAL_RESULT" align="center" />,
       meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const r = getValue() as string;
-        return <span className={`px-2 py-0.5 text-xs rounded font-medium ${resultColors[r] || ""}`}>{r}</span>;
-      },
+      cell: ({ getValue }) => <StatusBadge codeType="CAL_RESULT" value={getValue() as string} />,
     },
     {
       accessorKey: "calibrationOrg", header: t("equipment.calibrationHistory.org", "교정기관"), size: 120,

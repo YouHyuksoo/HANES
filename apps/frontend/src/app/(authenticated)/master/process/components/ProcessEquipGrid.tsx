@@ -5,6 +5,8 @@ import { useTranslation } from "react-i18next";
 import { Monitor, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, ComCodeBadge, Button } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { ColumnDef } from "@tanstack/react-table";
 
 interface Equipment {
@@ -55,22 +57,15 @@ export default function ProcessEquipGrid({
       { accessorKey: "lineCode", header: t("equipment.master.lineCode", { defaultValue: "라인코드" }), size: 100, cell: ({ getValue }) => (getValue() as string) || "-" },
       {
         accessorKey: "status",
-        header: t("equipment.master.status", { defaultValue: "상태" }),
+        header: () => <StatusHeaderHelp label={t("equipment.master.status", { defaultValue: "상태" })} codeType="EQUIP_STATUS" align="center" />,
         size: 80,
         cell: ({ getValue }) => <ComCodeBadge groupCode="EQUIP_STATUS" code={getValue() as string} />,
       },
       {
         accessorKey: "useYn",
-        header: t("common.useYn", { defaultValue: "사용여부" }),
+        header: () => <StatusHeaderHelp label={t("common.useYn", { defaultValue: "사용여부" })} codeType="USE_YN" align="center" />,
         size: 60,
-        cell: ({ getValue }) => {
-          const v = getValue() as string;
-          return (
-            <span className={`px-1.5 py-0.5 text-xs rounded ${v === "Y" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"}`}>
-              {v}
-            </span>
-          );
-        },
+        cell: ({ getValue }) => <StatusBadge codeType="USE_YN" value={getValue() as string} />,
       },
       {
         id: "actions",

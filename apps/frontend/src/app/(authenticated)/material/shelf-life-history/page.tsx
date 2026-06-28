@@ -14,6 +14,8 @@ import { useTranslation } from "react-i18next";
 import { History, Search, RefreshCw, Eye } from "lucide-react";
 import { Card, CardContent, Button, Input, Select } from "@/components/ui";
 import { PartSelect } from "@/components/shared";
+import StatusBadge from "@/components/shared/StatusBadge";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -119,16 +121,9 @@ export default function ShelfLifeHistoryPage() {
       cell: ({ getValue }) => <span className="font-medium">{(getValue() as number) ?? "-"}</span>,
     },
     {
-      accessorKey: "result", header: t("common.result", "결과"), size: 90,
+      accessorKey: "result", header: () => <StatusHeaderHelp label={t("common.result", "결과")} codeType="INSPECT_RESULT" align="center" />, size: 90,
       meta: { align: "center" as const, filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        const cls = v === "PASS"
-          ? "text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700"
-          : "bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300";
-        const label = v === "PASS" ? t("material.shelfLife.pass", "합격") : t("material.shelfLife.fail", "불합격");
-        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${cls}`}>{label}</span>;
-      },
+      cell: ({ getValue }) => <StatusBadge codeType="INSPECT_RESULT" value={getValue() as string} />,
     },
     {
       accessorKey: "inspectorName", header: t("quality.iqcHistory.inspectorName", "검사자"), size: 110,

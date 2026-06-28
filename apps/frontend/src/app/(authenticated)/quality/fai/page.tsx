@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import api from "@/services/api";
 import FaiFormPanel from "./components/FaiFormPanel";
@@ -104,14 +105,14 @@ export default function FaiPage() {
     },
     { accessorKey: "faiNo", header: t("quality.fai.faiNo"), size: 170, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
-    { accessorKey: "triggerType", header: t("quality.fai.triggerType"), size: 130,
+    { accessorKey: "triggerType", header: () => <StatusHeaderHelp label={t("quality.fai.triggerType")} codeType="FAI_TRIGGER_TYPE" align="center" />, size: 130,
       cell: ({ getValue }) => <ComCodeBadge groupCode="FAI_TRIGGER_TYPE" code={getValue() as string} /> },
     { accessorKey: "itemCode", header: t("common.code"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "sampleQty", header: t("quality.fai.sampleQty"), size: 90,
       cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 120, meta: { filterType: "multi" as const },
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="FAI_STATUS" align="center" />, size: 120, meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="FAI_STATUS" code={getValue() as string} /> },
-    { accessorKey: "result", header: t("quality.fai.result"), size: 100,
+    { accessorKey: "result", header: () => <StatusHeaderHelp label={t("quality.fai.result")} codeType="FAI_RESULT" align="center" />, size: 100,
       cell: ({ getValue }) => { const v = getValue() as string; return v ? <ComCodeBadge groupCode="FAI_RESULT" code={v} /> : "-"; } },
     { accessorKey: "inspectorCode", header: t("quality.fai.inspectorCode"), size: 100 },
     { accessorKey: "createdAt", header: t("common.date"), size: 110, meta: { filterType: "date" as const },

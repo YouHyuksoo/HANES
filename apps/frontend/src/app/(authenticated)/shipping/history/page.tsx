@@ -13,10 +13,12 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
-  History, Search, RefreshCw, Package, Box, Loader2, HelpCircle,
+  History, Search, RefreshCw, Package, Box, Loader2,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
@@ -27,63 +29,6 @@ const formatDateInput = (date: Date) => {
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
-
-const statusBadgeClassMap: Record<string, string> = {
-  DRAFT: "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200",
-  CONFIRMED: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-200",
-  SHIPPING: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200",
-  SHIPPED: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200",
-  CLOSED: "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950/60 dark:text-violet-200",
-};
-
-const statusHelpTextMap: Record<string, string> = {
-  DRAFT: "출하지시 작성 중 상태입니다. 아직 출하 작업 대상이 아닙니다.",
-  CONFIRMED: "출하지시가 확정되어 박스 또는 팔레트 출하 작업을 진행할 수 있습니다.",
-  SHIPPING: "출하 작업이 진행 중인 상태입니다. 일부 물류 처리가 남아 있을 수 있습니다.",
-  SHIPPED: "출하 처리가 완료된 상태입니다. 출하 이력과 수불이 기록되었습니다.",
-  CLOSED: "출하지시 수량이 모두 처리되어 마감된 상태입니다.",
-};
-
-const shipHistoryStatusHelpText = [
-  "DRAFT: 출하지시 작성 중 상태입니다. 아직 출하 작업 대상이 아닙니다.",
-  "CONFIRMED: 출하지시가 확정되어 박스 또는 팔레트 출하 작업을 진행할 수 있습니다.",
-  "SHIPPING: 출하 작업이 진행 중인 상태입니다. 일부 물류 처리가 남아 있을 수 있습니다.",
-  "SHIPPED: 출하 처리가 완료된 상태입니다. 출하 이력과 수불이 기록되었습니다.",
-  "CLOSED: 출하지시 수량이 모두 처리되어 마감된 상태입니다.",
-].join("\n");
-
-function ShipHistoryStatusHeader() {
-  const { t } = useTranslation();
-
-  return (
-    <div className="flex items-center justify-center gap-1">
-      <span>{t("common.status")}</span>
-      <span
-        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-text-muted hover:bg-surface hover:text-primary"
-        title={shipHistoryStatusHelpText}
-        aria-label={shipHistoryStatusHelpText}
-      >
-        <HelpCircle className="h-3.5 w-3.5" />
-      </span>
-    </div>
-  );
-}
-
-function ShipOrderStatusBadge({ status }: { status: string }) {
-  const { t } = useTranslation();
-  const color = statusBadgeClassMap[status] ?? "border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200";
-  const label = t(`comCode.SHIP_ORDER_STATUS.${status}`, status);
-  const helpText = statusHelpTextMap[status] ?? "정의되지 않은 출하 상태입니다.";
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${color}`}
-      title={helpText}
-      aria-label={`${label}: ${helpText}`}
-    >
-      {label}
-    </span>
-  );
-}
 
 interface ShipHistory {
   id: string;
@@ -205,7 +150,7 @@ export default function ShipHistoryPage() {
     { accessorKey: "shipDate", header: t("shipping.history.shipDateCol"), size: 100, meta: { filterType: "date" as const } },
     { accessorKey: "itemCount", header: t("shipping.history.itemCount"), size: 70, meta: { filterType: "number" as const } },
     { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "status", header: () => <ShipHistoryStatusHeader />, size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ShipOrderStatusBadge status={getValue() as string} /> },
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="SHIP_ORDER_STATUS" align="center" />, size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <StatusBadge codeType="SHIP_ORDER_STATUS" value={getValue() as string} /> },
     { accessorKey: "createdAt", header: t("common.createdAt"), size: 100, meta: { filterType: "date" as const } },
   ], [t]);
 

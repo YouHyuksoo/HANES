@@ -14,6 +14,8 @@ import { useTranslation } from "react-i18next";
 import { RefreshCw, AlertTriangle, CheckCircle, XCircle, RotateCcw, Activity, Search, Layers } from "lucide-react";
 import { Card, CardContent, Button, ComCodeBadge, Input } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
@@ -159,17 +161,6 @@ export default function ConsumableLifePage() {
     return "bg-green-500";
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "REPLACE":
-        return <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded">{t("consumables.life.replace")}</span>;
-      case "WARNING":
-        return <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded">{t("consumables.life.warning")}</span>;
-      default:
-        return <span className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">{t("consumables.life.normal")}</span>;
-    }
-  };
-
   const columns = useMemo<ColumnDef<LifeInstance>[]>(() => [
     {
       id: "actions", header: t("common.manage"), size: 70, meta: { align: "center" as const, filterType: "none" as const },
@@ -180,7 +171,7 @@ export default function ConsumableLifePage() {
     { accessorKey: "conUid", header: t("consumables.stock.conUid"), size: 150, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span>,
     },
-    { accessorKey: "status", header: t("common.status"), size: 60, meta: { filterType: "multi" as const }, cell: ({ getValue }) => getStatusBadge(getValue() as string) },
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="CONSUMABLE_LIFE_STATUS" align="center" />, size: 60, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <StatusBadge codeType="CONSUMABLE_LIFE_STATUS" value={getValue() as string} /> },
     { accessorKey: "consumableCode", header: t("consumables.master.code"), size: 110, meta: { filterType: "text" as const } },
     { accessorKey: "consumableName", header: t("consumables.master.name"), size: 140, meta: { filterType: "text" as const } },
     { accessorKey: "category", header: t("consumables.life.categoryLabel"), size: 70, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} /> },

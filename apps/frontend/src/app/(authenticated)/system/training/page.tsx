@@ -21,6 +21,7 @@ import {
 import { Card, CardContent, Button, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import TrainingFormPanel from "./components/TrainingFormPanel";
 import TrainingResultList from "./components/TrainingResultList";
@@ -140,7 +141,7 @@ export default function TrainingPage() {
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "trainingType", header: t("system.training.trainingType"), size: 120,
+      accessorKey: "trainingType", header: () => <StatusHeaderHelp label={t("system.training.trainingType")} codeType="TRAINING_TYPE" align="center" />, size: 120,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
         <ComCodeBadge groupCode="TRAINING_TYPE" code={getValue() as string} />
@@ -165,7 +166,7 @@ export default function TrainingPage() {
       ),
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 120,
+      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="TRAINING_STATUS" align="center" />, size: 120,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (
         <ComCodeBadge groupCode="TRAINING_STATUS" code={getValue() as string} />

@@ -21,6 +21,8 @@ import {
   Card, CardContent, Button, Input, ComCodeBadge,
 } from "@/components/ui";
 import { ComCodeSelect, EquipSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import DataGrid from "@/components/data-grid/DataGrid";
 import Modal from "@/components/ui/Modal";
 import { ColumnDef } from "@tanstack/react-table";
@@ -181,12 +183,12 @@ export default function ConsumableMountPage() {
         );
       },
     },
-    { accessorKey: "operStatus", header: t("consumables.mount.operStatus"), size: 80, meta: { filterType: "multi" as const }, cell: ({ getValue }) => getOperStatusBadge(getValue() as string) },
+    { accessorKey: "operStatus", header: () => <StatusHeaderHelp label={t("consumables.mount.operStatus")} codeType="CONSUMABLE_OPER_STATUS" align="center" />, size: 80, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <StatusBadge codeType="CONSUMABLE_OPER_STATUS" value={getValue() as string} /> },
     { accessorKey: "consumableCode", header: t("consumables.comp.consumableCode"), size: 120, meta: { filterType: "text" as const } },
     { accessorKey: "consumableName", header: t("consumables.comp.consumableName"), size: 150, meta: { filterType: "text" as const } },
     { accessorKey: "category", header: t("consumables.comp.category"), size: 80, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} /> },
     { accessorKey: "mountedEquipCode", header: t("consumables.mount.mountedEquip"), size: 120, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
-    { accessorKey: "status", header: t("consumables.mount.lifeStatus"), size: 80, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_STATUS" code={getValue() as string} /> },
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("consumables.mount.lifeStatus")} codeType="CONSUMABLE_STATUS" align="center" />, size: 80, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_STATUS" code={getValue() as string} /> },
     {
       id: "lifeProgress", header: t("consumables.life.lifeLabel"), size: 100, meta: { filterType: "none" as const },
       cell: ({ row }) => {

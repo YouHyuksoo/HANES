@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, ComCodeBadge } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
@@ -148,7 +149,7 @@ export default function OqcPage() {
       },
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 90,
+      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="OQC_STATUS" align="center" />, size: 90,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="OQC_STATUS" code={getValue() as string} />,
     },

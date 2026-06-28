@@ -17,6 +17,7 @@ import { Plus, X } from "lucide-react";
 import { Button, Input, ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 
 /** 교정 로그 타입 */
@@ -100,7 +101,7 @@ export default function CalibrationList({ gaugeId, onCalibrationAdded }: Props) 
       cell: ({ getValue }) => <ComCodeBadge groupCode="CAL_TYPE" code={getValue() as string} /> },
     { accessorKey: "calibrator", header: t("quality.msa.calibrator"), size: 100 },
     { accessorKey: "calibrationOrg", header: t("quality.msa.calibrationOrg"), size: 120 },
-    { accessorKey: "result", header: t("quality.msa.result"), size: 90,
+    { accessorKey: "result", header: () => <StatusHeaderHelp label={t("quality.msa.result")} codeType="CAL_RESULT" align="center" />, size: 90,
       cell: ({ getValue }) => <ComCodeBadge groupCode="CAL_RESULT" code={getValue() as string} /> },
     { accessorKey: "measuredValue", header: t("quality.msa.measuredValue"), size: 100 },
     { accessorKey: "referenceValue", header: t("quality.msa.referenceValue"), size: 100 },

@@ -21,6 +21,7 @@ import {
 import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal, Badge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import PpapFormPanel from "./components/PpapFormPanel";
 
@@ -135,10 +136,10 @@ export default function PpapPage() {
         <Badge variant="info">Level {getValue() as number}</Badge>
       ),
     },
-    { accessorKey: "reason", header: t("quality.ppap.reason"), size: 120,
+    { accessorKey: "reason", header: () => <StatusHeaderHelp label={t("quality.ppap.reason")} codeType="PPAP_REASON" align="center" />, size: 120,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="PPAP_REASON" code={getValue() as string} /> },
-    { accessorKey: "status", header: t("common.status"), size: 120,
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="PPAP_STATUS" align="center" />, size: 120,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="PPAP_STATUS" code={getValue() as string} /> },
     { accessorKey: "completionRate", header: t("quality.ppap.completionRate"), size: 110,

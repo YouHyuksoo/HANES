@@ -24,6 +24,7 @@ import ComCodeBadge from "@/components/ui/ComCodeBadge";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import { PartnerSelect } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
@@ -386,14 +387,14 @@ export default function ArrivalResultPage() {
     { accessorKey: "serialCount", header: t("material.arrivalResult.col.serialCount", "시리얼"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => <div className="text-center font-semibold">{((getValue() as number) ?? 0).toLocaleString()}</div> },
     {
       accessorKey: "poType",
-      header: t("material.arrivalResult.col.poType", "구분"),
+      header: () => <StatusHeaderHelp label={t("material.arrivalResult.col.poType", "구분")} codeType="ARRIVAL_PO_TYPE" align="center" />,
       size: 70,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="ARRIVAL_PO_TYPE" code={getValue() as string} />,
     },
     {
       accessorKey: "status",
-      header: t("common.status"),
+      header: () => <StatusHeaderHelp label={t("common.status")} codeType="ARRIVAL_RESULT_STATUS" align="center" />,
       size: 95,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="ARRIVAL_RESULT_STATUS" code={getValue() as string} />,

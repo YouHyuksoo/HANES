@@ -19,6 +19,7 @@ import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import FilterBar from "@/components/shared/FilterBar";
 import DataGrid from "@/components/data-grid/DataGrid";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 
@@ -140,7 +141,7 @@ export default function PoStatusPage() {
       },
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 100,
+      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="PO_STATUS" align="center" />, size: 100,
       meta: { filterType: "multi" as const },
       cell: ({ getValue, row }) => {
         const s = getValue() as string;

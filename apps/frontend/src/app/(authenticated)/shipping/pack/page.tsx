@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, Button, ConfirmModal, Input, Modal, Sele
 import PartSelect from "@/components/shared/PartSelect";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import OpenIncludedNotice from "@/components/shared/OpenIncludedNotice";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import { getTodayLocal } from "@/utils/date";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -318,7 +319,7 @@ export default function PackPage() {
         return <span className="font-medium">{(qty ?? 0).toLocaleString()}{boxQty ? <span className="text-text-muted"> / {boxQty.toLocaleString()}</span> : null}</span>;
       },
     },
-    { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <BoxStatusBadge status={getValue() as BoxStatus} /> },
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="BOX_STATUS" align="center" />, size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <BoxStatusBadge status={getValue() as BoxStatus} /> },
     { accessorKey: "closeAt", header: t("shipping.pack.closedAt"), size: 150, meta: { filterType: "date" as const }, cell: ({ getValue }) => (getValue() ? String(getValue()).replace("T", " ").slice(0, 16) : "-") },
   ], [t]);
 

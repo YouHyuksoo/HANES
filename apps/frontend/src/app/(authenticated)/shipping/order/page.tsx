@@ -14,9 +14,10 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import QRCode from "react-qr-code";
 import {
-  ClipboardList, Plus, Search, RefreshCw, Edit2, Trash2, X, Printer, HelpCircle, CheckCircle, RotateCcw,
+  ClipboardList, Plus, Search, RefreshCw, Edit2, Trash2, X, Printer, CheckCircle, RotateCcw,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import QtyInput from "@/components/shared/QtyInput";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import OpenIncludedNotice from "@/components/shared/OpenIncludedNotice";
@@ -53,44 +54,6 @@ interface ShipOrder {
   totalQty: number;
   remark: string;
   items?: ShipOrderLine[];
-}
-
-/** 상태 코드별 설명. 상태명(라벨)은 공통코드(SHIP_ORDER_STATUS)에서 실제 언어로 가져온다. */
-const SHIP_ORDER_STATUS_DESC: Record<string, string> = {
-  DRAFT: "출하지시 작성 중 상태입니다. 품목, 고객사, 출하일을 수정할 수 있습니다.",
-  CONFIRMED: "출하지시가 확정되어 박스 또는 팔레트 출하 작업을 진행할 수 있습니다.",
-  SHIPPING: "출하 작업이 진행 중인 상태입니다. 일부 물류 처리가 남아 있을 수 있습니다.",
-  SHIPPED: "출하 처리가 완료된 상태입니다. 출하 이력과 수불이 기록되었습니다.",
-  CLOSED: "출하지시 수량이 모두 처리되어 마감된 상태입니다.",
-};
-
-function ShipOrderStatusHeader() {
-  const { t } = useTranslation();
-  // 그리드 배지(ComCodeBadge)와 동일하게 공통코드 라벨을 사용 → 툴팁의 상태명이 실제 언어로 그리드와 일치
-  const statusOptions = useComCodeOptions("SHIP_ORDER_STATUS");
-  const helpText = useMemo(
-    () =>
-      statusOptions
-        .map((opt) => {
-          const desc = SHIP_ORDER_STATUS_DESC[opt.value];
-          return desc ? `${opt.label}: ${desc}` : opt.label;
-        })
-        .join("\n"),
-    [statusOptions],
-  );
-
-  return (
-    <div className="flex items-center justify-center gap-1">
-      <span>{t("common.status")}</span>
-      <span
-        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-text-muted hover:bg-surface hover:text-primary"
-        title={helpText}
-        aria-label={helpText}
-      >
-        <HelpCircle className="h-3.5 w-3.5" />
-      </span>
-    </div>
-  );
 }
 
 export default function ShipOrderPage() {
@@ -391,7 +354,7 @@ export default function ShipOrderPage() {
     { accessorKey: "shipDate", header: t("shipping.shipOrder.shipDate"), size: 100, meta: { filterType: "date" as const } },
     { accessorKey: "itemCount", header: t("shipping.shipOrder.itemCount"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
     { accessorKey: "totalQty", header: t("common.totalQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "status", header: () => <ShipOrderStatusHeader />, size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="SHIP_ORDER_STATUS" code={getValue() as string} /> },
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="SHIP_ORDER_STATUS" align="center" />, size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="SHIP_ORDER_STATUS" code={getValue() as string} /> },
   ], [t, openEdit]);
 
   return (

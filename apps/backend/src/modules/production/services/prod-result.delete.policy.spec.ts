@@ -65,10 +65,10 @@ describe('ProdResultService delete policy', () => {
     mockMatIssueRepo.find.mockResolvedValue([]);
   });
 
-  it('allows delete only after cancel', async () => {
+  it('deletes result directly when no downstream progress exists', async () => {
     mockProdResultRepo.findOne.mockResolvedValue({
       resultNo: 'PR-001',
-      status: 'CANCELED',
+      status: 'DONE',
       prdUid: null,
       inspectResults: [],
       defectLogs: [],
@@ -78,14 +78,36 @@ describe('ProdResultService delete policy', () => {
     await expect(target.delete('PR-001')).resolves.toEqual({ resultNo: 'PR-001' });
   });
 
-  it('blocks delete when result is not canceled yet', async () => {
+  it('blocks delete when downstream label already progressed', async () => {
+    const fgLabelRepo = createMock<Repository<any>>();
+    const inspectRepo = createMock<Repository<any>>();
+    const boxRepo = createMock<Repository<any>>();
+    const palletRepo = createMock<Repository<any>>();
+    const shipmentRepo = createMock<Repository<any>>();
+
     mockProdResultRepo.findOne.mockResolvedValue({
       resultNo: 'PR-001',
       status: 'DONE',
-      prdUid: null,
+      prdUid: 'FG-001',
       inspectResults: [],
       defectLogs: [],
     } as any);
+    inspectRepo.find.mockResolvedValue([]);
+    fgLabelRepo.findOne.mockResolvedValue({ fgBarcode: 'FG-001', status: 'PACKED' });
+    boxRepo.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getOne: jest.fn().mockResolvedValue(null),
+    } as any);
+    palletRepo.findOne.mockResolvedValue(null);
+    shipmentRepo.findOne.mockResolvedValue(null);
+    mockDataSource.getRepository
+      .mockReturnValueOnce(fgLabelRepo)
+      .mockReturnValueOnce(inspectRepo)
+      .mockReturnValueOnce(boxRepo)
+      .mockReturnValueOnce(palletRepo)
+      .mockReturnValueOnce(shipmentRepo);
 
     await expect(target.delete('PR-001')).rejects.toThrow(BadRequestException);
   });

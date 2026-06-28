@@ -13,12 +13,14 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { RotateCcw, Search, RefreshCw, XCircle } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, Modal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import StatusBadge from "@/components/shared/StatusBadge";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 
 interface ProductReceiptTx {
   id: string;
@@ -35,6 +37,7 @@ interface ProductReceiptTx {
   orderNo: string | null;
   part?: { itemCode: string; itemName: string; unit: string } | null;
   toWarehouse?: { warehouseName: string } | null;
+  fromWarehouse?: { warehouseName: string } | null;
 }
 
 function extractReceiptTransactions(response: { data?: unknown }): ProductReceiptTx[] {
@@ -50,21 +53,6 @@ function mergeReceiptTransactions(...groups: ProductReceiptTx[][]): ProductRecei
   }
   return [...merged.values()].sort((a, b) => String(b.transDate).localeCompare(String(a.transDate)));
 }
-
-function isReceiptMovement(tx: ProductReceiptTx): boolean {
-  return tx.transType === "WIP_IN" || tx.transType === "FG_IN" || tx.transType === "WIP_OUT";
-}
-
-function displayReceiptQty(tx: ProductReceiptTx): number {
-  if (tx.transType === "WIP_OUT") return Math.abs(tx.qty);
-  if (tx.transType === "WIP_OUT_CANCEL") return -Math.abs(tx.qty);
-  return tx.qty;
-}
-
-const statusColors: Record<string, string> = {
-  DONE: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  CANCELED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-};
 
 export default function ProductReceiptCancelPage() {
   const { t } = useTranslation();
@@ -86,18 +74,11 @@ export default function ProductReceiptCancelPage() {
       const params: Record<string, string> = { limit: "5000" };
       if (fromDate) params.fromDate = fromDate;
       if (toDate) params.toDate = toDate;
-      const [receiptRes, boxMoveRes] = await Promise.all([
-        api.get("/inventory/product/transactions", {
-          params: { ...params, transType: "WIP_IN,FG_IN,WIP_IN_CANCEL,FG_IN_CANCEL" },
-        }),
-        api.get("/inventory/product/transactions", {
-          params: { ...params, transType: "WIP_OUT,WIP_OUT_CANCEL", refType: "BOX" },
-        }),
-      ]);
-      setData(mergeReceiptTransactions(
-        extractReceiptTransactions(receiptRes),
-        extractReceiptTransactions(boxMoveRes),
-      ));
+      // 입고만 표시(공정출고 WIP_OUT 제외). 박스 제품입고는 FG_IN 행에서 취소한다.
+      const receiptRes = await api.get("/inventory/product/transactions", {
+        params: { ...params, transType: "WIP_IN,FG_IN,WIP_IN_CANCEL,FG_IN_CANCEL" },
+      });
+      setData(mergeReceiptTransactions(extractReceiptTransactions(receiptRes)));
     } catch {
       setData([]);
     } finally {
@@ -106,17 +87,6 @@ export default function ProductReceiptCancelPage() {
   }, [fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  /** 통계 */
-  const stats = useMemo(() => ({
-    total: data.filter(isReceiptMovement).length,
-    cancellable: data.filter(
-      (d) => isReceiptMovement(d) && d.status !== "CANCELED" && !d.cancelRefId
-    ).length,
-    canceled: data.filter(
-      (d) => d.status === "CANCELED" || d.transType.includes("CANCEL")
-    ).length,
-  }), [data]);
 
   /** 취소 처리 */
   const handleCancel = useCallback(async () => {
@@ -172,9 +142,10 @@ export default function ProductReceiptCancelPage() {
       cell: ({ getValue }) => {
         const v = getValue() as string;
         const isCancelType = v.includes("CANCEL");
+        const label = t(`comCode.TRANSACTION_TYPE.${v}`, { defaultValue: v });
         return (
           <span className={`px-2 py-0.5 rounded text-xs ${isCancelType ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300" : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"}`}>
-            {v}
+            {label}
           </span>
         );
       },
@@ -191,13 +162,16 @@ export default function ProductReceiptCancelPage() {
     },
     {
       id: "warehouse", header: t("productMgmt.receiptCancel.warehouse"), size: 110,
-      cell: ({ row }) => row.original.toWarehouse?.warehouseName || "-",
+      cell: ({ row }) =>
+        row.original.toWarehouse?.warehouseName ||
+        row.original.fromWarehouse?.warehouseName ||
+        "-",
     },
     {
       accessorKey: "qty", header: t("productMgmt.receiptCancel.qty"), size: 100,
       meta: { align: "right" as const },
       cell: ({ row }) => {
-        const q = displayReceiptQty(row.original);
+        const q = row.original.qty;
         const color = q > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
         return (
           <span className={`font-medium ${color}`}>
@@ -207,11 +181,8 @@ export default function ProductReceiptCancelPage() {
       },
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 80,
-      cell: ({ getValue }) => {
-        const s = getValue() as string;
-        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>{s}</span>;
-      },
+      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="PROD_RESULT_STATUS" />, size: 90,
+      cell: ({ getValue }) => <StatusBadge codeType="PROD_RESULT_STATUS" value={getValue() as string} />,
     },
   ], [t]);
 
@@ -229,13 +200,6 @@ export default function ProductReceiptCancelPage() {
         <Button variant="secondary" size="sm" onClick={fetchData}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
-      </div>
-
-      {/* StatCards */}
-      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
-        <StatCard label={t("productMgmt.receiptCancel.stats.total")} value={stats.total} icon={RotateCcw} color="blue" />
-        <StatCard label={t("productMgmt.receiptCancel.stats.cancellable")} value={stats.cancellable} icon={XCircle} color="yellow" />
-        <StatCard label={t("productMgmt.receiptCancel.stats.canceled")} value={stats.canceled} icon={RotateCcw} color="red" />
       </div>
 
       {/* DataGrid */}
@@ -258,7 +222,7 @@ export default function ProductReceiptCancelPage() {
               />
             </div>
           } 
-          sqlQuery={`SELECT *\nFROM PRODUCT_TRANSACTIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\n  AND (\n    TRANS_TYPE IN ('WIP_IN', 'FG_IN', 'WIP_IN_CANCEL', 'FG_IN_CANCEL')\n    OR (REF_TYPE = 'BOX' AND TRANS_TYPE IN ('WIP_OUT', 'WIP_OUT_CANCEL'))\n  )\nORDER BY TRANS_DATE DESC`}/>
+          sqlQuery={`SELECT *\nFROM PRODUCT_TRANSACTIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\n  AND TRANS_TYPE IN ('WIP_IN', 'FG_IN', 'WIP_IN_CANCEL', 'FG_IN_CANCEL')\nORDER BY TRANS_DATE DESC`}/>
       </CardContent></Card>
 
       {/* 취소 모달 */}
@@ -283,7 +247,7 @@ export default function ProductReceiptCancelPage() {
                 <div>
                   <span className="text-text-muted">{t("productMgmt.receiptCancel.qty")}:</span>{" "}
                   <span className="font-medium text-red-600 dark:text-red-400">
-                    {displayReceiptQty(selectedTx).toLocaleString()} {selectedTx.part?.unit || ""}
+                    {selectedTx.qty.toLocaleString()} {selectedTx.part?.unit || ""}
                   </span>
                 </div>
               </div>

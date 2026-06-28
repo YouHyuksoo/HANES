@@ -17,6 +17,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Plus, RefreshCw, AlertTriangle, Search } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, ComCodeBadge, Select } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeList } from "@/hooks/useComCode";
@@ -162,7 +163,7 @@ const columns = useMemo<ColumnDef<Defect>[]>(() => [
     { accessorKey: "defectCode", header: t("quality.defect.defectCode"), size: 90, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span> },
     { accessorKey: "defectName", header: t("quality.defect.defectName"), size: 120, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
     { accessorKey: "qty", header: t("quality.defect.quantity"), size: 70, meta: { filterType: "number" as const, align: "right" as const }, cell: ({ getValue }) => <span className="font-mono">{(getValue() as number)?.toLocaleString() ?? 0}</span> },
-    { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="DEFECT_LOG_STATUS" code={getValue() as string} /> },
+    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="DEFECT_LOG_STATUS" align="center" />, size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="DEFECT_LOG_STATUS" code={getValue() as string} /> },
     { accessorKey: "operator", header: t("quality.defect.operator"), size: 90, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
     { accessorKey: "cause", header: t("quality.defect.cause"), size: 140, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
   ], [t]);

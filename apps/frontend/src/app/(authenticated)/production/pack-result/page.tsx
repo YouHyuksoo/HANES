@@ -17,6 +17,8 @@ import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import api from '@/services/api';
+import StatusBadge from '@/components/shared/StatusBadge';
+import StatusHeaderHelp from '@/components/shared/StatusHeaderHelp';
 
 interface PackResult {
   boxNo: string;
@@ -80,12 +82,14 @@ export default function PackResultPage() {
     { accessorKey: 'packQty', header: t('production.packResult.packQty'), size: 90,
       meta: { filterType: 'number' as const },
       cell: ({ getValue }) => <span className="font-mono text-right block">{(getValue() as number)?.toLocaleString()}</span> },
-    { accessorKey: 'status', header: t('common.status'), size: 90,
-      meta: { filterType: 'multi' as const } },
+    { accessorKey: 'status', header: () => <StatusHeaderHelp label={t('production.packResult.boxStatus')} codeType="BOX_STATUS" />, size: 110,
+      meta: { filterType: 'multi' as const },
+      cell: ({ getValue }) => <StatusBadge codeType="BOX_STATUS" value={getValue() as string} /> },
     { accessorKey: 'palletNo', header: t('production.packResult.palletNo'), size: 130,
       meta: { filterType: 'text' as const } },
-    { accessorKey: 'oqcStatus', header: 'OQC', size: 90,
-      meta: { filterType: 'multi' as const } },
+    { accessorKey: 'oqcStatus', header: () => <StatusHeaderHelp label={t('production.packResult.oqcStatus')} codeType="OQC_STATUS" />, size: 110,
+      meta: { filterType: 'multi' as const },
+      cell: ({ getValue }) => <StatusBadge codeType="OQC_STATUS" value={getValue() as string} /> },
     { accessorKey: 'packer', header: t('production.packResult.packer'), size: 90,
       meta: { filterType: 'text' as const } },
   ], [t]);
