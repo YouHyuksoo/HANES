@@ -16,26 +16,11 @@ import { useTranslation } from "react-i18next";
 import { Merge, Search, RefreshCw, ScanLine, X, AlertCircle, Plus } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
 import type { PoLineReceiptResponse } from "../arrival/components/types";
-
-interface MergeableLot {
-  matUid: string;
-  itemCode: string;
-  itemName?: string;
-  unit?: string;
-  qty: number;
-  status: string;
-  origin?: string | null;
-  arrivalNo?: string | null;
-  expireDate?: string;
-  vendor?: string;
-  vendorName?: string | null;
-  mfgPartnerCode?: string | null;
-}
+import { createLotMergeGridColumns, type MergeableLot } from "./lotMergeColumns";
 
 export default function LotMergePage() {
   const { t } = useTranslation();
@@ -163,37 +148,7 @@ export default function LotMergePage() {
     }
   }, [canMerge, scanned, fetchData, resolveMfgPartnerName, t]);
 
-  const columns = useMemo<ColumnDef<MergeableLot>[]>(() => [
-    {
-      id: "add", header: "", size: 60, meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <Button size="sm" variant="secondary" disabled={scanned.some((s) => s.matUid === row.original.matUid)}
-          onClick={() => addByBarcode(row.original.matUid)}>
-          <Plus className="w-4 h-4" />
-        </Button>
-      ),
-    },
-    { accessorKey: "matUid", header: t("material.lotMerge.matUid"), size: 160,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
-    },
-    { accessorKey: "itemCode", header: t("common.partCode"), size: 110, meta: { filterType: "text" as const } },
-    { accessorKey: "itemName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },
-    { accessorKey: "qty", header: t("common.quantity"), size: 90,
-      meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue, row }) => (
-        <span className="font-semibold">{((getValue() as number) ?? 0).toLocaleString()} {row.original.unit || "EA"}</span>
-      ),
-    },
-    { accessorKey: "arrivalNo", header: t("material.col.arrivalNo"), size: 150,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="font-mono text-xs text-text-muted">{(getValue() as string) || "-"}</span>,
-    },
-    { accessorKey: "vendor", header: t("material.lotMerge.vendor"), size: 140,
-      meta: { filterType: "text" as const },
-      cell: ({ row }) => row.original.vendorName || row.original.vendor || "-",
-    },
-  ], [t, scanned, addByBarcode]);
+  const columns = useMemo(() => createLotMergeGridColumns({ t, scanned, addByBarcode }), [t, scanned, addByBarcode]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

@@ -14,18 +14,17 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useComCodeMap } from "@/hooks/useComCode";
 import {
-  ShoppingCart, Plus, Edit2, Trash2, Search, RefreshCw,
+  ShoppingCart, Plus, Search, RefreshCw,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
-import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
 import PoFormPanel from "./components/PoFormPanel";
 import type { PurchaseOrder } from "./components/PoFormPanel";
+import { createPoGridColumns } from "./poColumns";
 
 export default function PoPage() {
   const { t } = useTranslation();
@@ -93,71 +92,12 @@ export default function PoPage() {
     }
   }, [deleteTarget, fetchData]);
 
-  const columns = useMemo<ColumnDef<PurchaseOrder>[]>(() => [
-    {
-      id: "actions", header: "", size: 70,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); openEdit(row.original); }}
-            className="p-1 hover:bg-surface rounded">
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }}
-            className="p-1 hover:bg-surface rounded">
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "poNo", header: t("material.po.poNo"), size: 160,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (
-        <span className="font-mono text-sm font-medium">{getValue() as string}</span>
-      ),
-    },
-    {
-      accessorKey: "partnerName", header: t("material.po.partnerName"), size: 130,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "orderDate", header: t("material.po.orderDate"), size: 100,
-      meta: { filterType: "date" as const },
-    },
-    {
-      accessorKey: "dueDate", header: t("material.po.dueDate"), size: 100,
-      meta: { filterType: "date" as const },
-    },
-    {
-      id: "itemCount", header: t("material.po.itemCount", "품목수"), size: 70,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <span className="font-semibold">{row.original.items?.length ?? 0}</span>
-      ),
-    },
-    {
-      accessorKey: "totalAmount", header: t("material.po.totalAmount"), size: 120,
-      meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => (
-        <span className="font-semibold">
-          {(getValue() as number | null)?.toLocaleString() ?? "-"}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="PO_STATUS" align="center" />, size: 100,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const s = getValue() as string;
-        return (
-          <span className={`px-2 py-0.5 rounded text-xs font-medium ${poStatusMap[s]?.attr1 || ""}`}>
-            {poStatusMap[s]?.codeName || s}
-          </span>
-        );
-      },
-    },
-  ], [t, openEdit, poStatusMap]);
+  const columns = useMemo(() => createPoGridColumns({
+    t,
+    poStatusMap,
+    onEditPo: openEdit,
+    onDeletePo: setDeleteTarget,
+  }), [t, openEdit, poStatusMap]);
 
   return (
     <div className="h-full flex overflow-hidden animate-fade-in">

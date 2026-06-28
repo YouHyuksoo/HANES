@@ -18,21 +18,9 @@ import { ComCodeSelect, QtyInput } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useWarehouseOptions } from "@/hooks/useMasterOptions";
-import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
-
-interface MiscReceiptRecord {
-  id: string;
-  transNo: string;
-  itemCode: string;
-  itemName: string;
-  warehouseName: string;
-  qty: number;
-  unit: string;
-  remark: string;
-  transDate: string;
-}
+import { createMiscReceiptGridColumns, MiscReceiptRecord } from "./miscReceiptColumns";
 
 export default function MiscReceiptPage() {
   const { t } = useTranslation();
@@ -115,44 +103,7 @@ export default function MiscReceiptPage() {
   const selectedPart = useMemo(() =>
     partResults.find(p => p.itemCode === form.itemCode), [partResults, form.itemCode]);
 
-  const columns = useMemo<ColumnDef<MiscReceiptRecord>[]>(() => [
-    {
-      accessorKey: "transDate", header: t("material.miscReceipt.transDate"), size: 100,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
-    },
-    {
-      accessorKey: "transNo", header: t("material.miscReceipt.transNo"), size: 150,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
-    },
-    {
-      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
-    },
-    {
-      accessorKey: "itemName", header: t("common.partName"), size: 140,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "warehouseName", header: t("material.miscReceipt.warehouse"), size: 110,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "qty", header: t("material.miscReceipt.qty"), size: 100,
-      meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ row }) => (
-        <span className="text-green-600 dark:text-green-400 font-medium">
-          +{row.original.qty.toLocaleString()} {row.original.unit || ""}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "remark", header: t("material.miscReceipt.remark"), size: 180,
-      meta: { filterType: "text" as const },
-    },
-  ], [t]);
+  const columns = useMemo(() => createMiscReceiptGridColumns({ t }), [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-3 animate-fade-in">

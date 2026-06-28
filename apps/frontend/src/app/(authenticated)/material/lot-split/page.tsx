@@ -17,23 +17,11 @@ import { Scissors, Search, RefreshCw, GitBranch } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
 import { QtyInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
 import type { PoLineReceiptResponse } from "../arrival/components/types";
-
-interface SplittableLot {
-  matUid: string;
-  itemCode?: string;
-  itemName?: string;
-  qty: number;
-  unit?: string;
-  vendor?: string;
-  vendorName?: string | null;
-  mfgPartnerCode?: string | null;
-  status: string;
-}
+import { createLotSplitGridColumns, type SplittableLot } from "./lotSplitColumns";
 
 export default function LotSplitPage() {
   const { t } = useTranslation();
@@ -116,45 +104,17 @@ export default function LotSplitPage() {
     }
   }, [selectedLot, splitForm, fetchData, resolveMfgPartnerName, t]);
 
-  const columns = useMemo<ColumnDef<SplittableLot>[]>(() => [
-    {
-      id: "actions", header: "", size: 90, meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <Button size="sm" variant="secondary" onClick={() => {
-          setSelectedLot(row.original);
-          setSplitForm({ splitQty: "", remark: "" });
-          setErrorMsg(null);
-          setIsModalOpen(true);
-        }}>
-          <Scissors className="w-4 h-4 mr-1" />{t("material.lotSplit.split")}
-        </Button>
-      ),
-    },
-    {
-      accessorKey: "matUid", header: t("material.col.matUid"), size: 160,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
-    },
-    {
-      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
-    },
-    {
-      accessorKey: "itemName", header: t("common.partName"), size: 140,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "qty", header: t("material.lotSplit.currentQty"), size: 120,
-      meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ row }) => <span className="font-semibold">{row.original.qty.toLocaleString()} {row.original.unit || ""}</span>,
-    },
-    {
-      accessorKey: "vendor", header: t("material.lotSplit.vendor"), size: 100,
-      meta: { filterType: "text" as const },
-      cell: ({ row }) => <span>{row.original.vendorName || row.original.vendor || "-"}</span>,
-    },
-  ], [t]);
+  const handleOpenSplit = useCallback((lot: SplittableLot) => {
+    setSelectedLot(lot);
+    setSplitForm({ splitQty: "", remark: "" });
+    setErrorMsg(null);
+    setIsModalOpen(true);
+  }, []);
+
+  const columns = useMemo(() => createLotSplitGridColumns({
+    t,
+    onSplit: handleOpenSplit,
+  }), [t, handleOpenSplit]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

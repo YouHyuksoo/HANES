@@ -16,25 +16,10 @@ import { ClipboardCheck, Search, RefreshCw } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
 import { WarehouseSelect } from "@/components/shared";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
-
-interface InvHistoryItem {
-  id: string;
-  warehouseCode: string;
-  itemCode: string;
-  itemName?: string;
-  unit?: string;
-  matUid?: string;
-  beforeQty: number;
-  afterQty: number;
-  diffQty: number;
-  reason?: string;
-  createdBy?: string;
-  createdAt: string;
-}
+import { createPhysicalInvHistoryGridColumns, type InvHistoryItem } from "./physicalInvHistoryColumns";
 
 export default function PhysicalInvHistoryPage() {
   const { t } = useTranslation();
@@ -71,69 +56,7 @@ export default function PhysicalInvHistoryPage() {
     matched: data.filter(d => d.diffQty === 0).length,
   }), [data]);
 
-  const columns = useMemo<ColumnDef<InvHistoryItem>[]>(() => [
-    {
-      accessorKey: "createdAt", header: t("material.physicalInvHistory.countDate"), size: 140, meta: { filterType: "date" as const },
-      cell: ({ getValue }) => {
-        const d = getValue() as string;
-        return d ? new Date(d).toLocaleString() : "-";
-      },
-    },
-    {
-      accessorKey: "warehouseCode", header: t("material.physicalInvHistory.warehouse"), size: 100,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (
-        <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>
-      ),
-    },
-    {
-      accessorKey: "itemName", header: t("common.partName"), size: 140,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "matUid", header: "LOT No.", size: 150,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (
-        <span className="font-mono text-xs">{(getValue() as string) || "-"}</span>
-      ),
-    },
-    {
-      accessorKey: "beforeQty", header: t("material.physicalInvHistory.systemQty"), size: 100,
-      cell: ({ getValue, row }) => (
-        <span>{((getValue() as number) ?? 0).toLocaleString()} {row.original.unit || ""}</span>
-      ),
-      meta: { filterType: "number" as const, align: "right" as const },
-    },
-    {
-      accessorKey: "afterQty", header: t("material.physicalInvHistory.countedQty"), size: 100,
-      cell: ({ getValue, row }) => (
-        <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()} {row.original.unit || ""}</span>
-      ),
-      meta: { filterType: "number" as const, align: "right" as const },
-    },
-    {
-      accessorKey: "diffQty", header: t("material.physicalInvHistory.diffQty"), size: 90,
-      cell: ({ getValue }) => {
-        const v = getValue() as number;
-        if (v === 0) return <span className="text-green-600">0</span>;
-        const cls = v > 0 ? "text-blue-600 font-medium" : "text-red-600 font-medium";
-        return <span className={cls}>{v > 0 ? "+" : ""}{v.toLocaleString()}</span>;
-      },
-      meta: { filterType: "number" as const, align: "right" as const },
-    },
-    {
-      accessorKey: "reason", header: t("material.physicalInvHistory.reason"), size: 120, meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (getValue() as string) || "-",
-    },
-    {
-      accessorKey: "createdBy", header: t("material.physicalInvHistory.inspector"), size: 90, meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (getValue() as string) || "-",
-    },
-  ], [t]);
+  const columns = useMemo(() => createPhysicalInvHistoryGridColumns({ t }), [t]);
 
   const rowClassName = useCallback((row: InvHistoryItem) => {
     if (row.diffQty > 0) return "!bg-blue-50/50 dark:!bg-blue-950/20";
