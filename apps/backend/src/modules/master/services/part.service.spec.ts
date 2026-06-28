@@ -38,6 +38,48 @@ describe('PartService', () => {
     jest.clearAllMocks();
   });
 
+  describe('findAll', () => {
+    it('should apply IQC and AQL policy filters to the query builder', async () => {
+      const qb = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+        getCount: jest.fn().mockResolvedValue(0),
+      };
+      mockRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await target.findAll({
+        page: 1,
+        limit: 20,
+        iqcYn: 'Y',
+        inspectMethod: 'FULL',
+        iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
+      } as any, 'C1', 'P1');
+
+      expect(qb.andWhere).toHaveBeenCalledWith('p.iqcYn = :iqcYn', { iqcYn: 'Y' });
+      expect(qb.andWhere).toHaveBeenCalledWith('p.inspectMethod = :inspectMethod', { inspectMethod: 'FULL' });
+      expect(qb.andWhere).toHaveBeenCalledWith('p.iqcAqlPolicyCode = :iqcAqlPolicyCode', { iqcAqlPolicyCode: 'AQLP-II-1.0-2.5' });
+    });
+
+    it('should allow filtering parts with no IQC AQL policy', async () => {
+      const qb = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+        getCount: jest.fn().mockResolvedValue(0),
+      };
+      mockRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await target.findAll({ iqcAqlPolicyCode: '__NONE__' } as any, 'C1', 'P1');
+
+      expect(qb.andWhere).toHaveBeenCalledWith('p.iqcAqlPolicyCode IS NULL');
+    });
+  });
+
   // ─── findById ───
   describe('findById', () => {
     it('should return part when found', async () => {

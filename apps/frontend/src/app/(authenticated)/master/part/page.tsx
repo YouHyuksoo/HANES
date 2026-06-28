@@ -13,7 +13,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, Package, RefreshCw, ImageIcon, Download } from "lucide-react";
-import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ConfirmModal, Select } from "@/components/ui";
 import { ComCodeSelect, UseYnSelect } from "@/components/shared";
 import { useComCodeMap, useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -24,6 +24,11 @@ import { Part, PART_TYPE_COLORS } from "./types";
 import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 
 import PartFormPanel from "./components/PartFormPanel";
+
+type IqcAqlPolicyOption = {
+  policyCode: string;
+  policyName?: string | null;
+};
 
 /** 품목 썸네일 — 이미지 로드 실패 시 placeholder 아이콘으로 fallback */
 function PartImageThumb({ src, alt }: { src: string; alt: string }) {
@@ -49,6 +54,13 @@ export default function PartPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [partTypeFilter, setPartTypeFilter] = useState("");
   const [useYnFilter, setUseYnFilter] = useState("");
+  const [iqcYnFilter, setIqcYnFilter] = useState("");
+  const [inspectMethodFilter, setInspectMethodFilter] = useState("");
+  const [aqlPolicyFilter, setAqlPolicyFilter] = useState("");
+  const [aqlPolicyOptions, setAqlPolicyOptions] = useState([
+    { value: "", label: t("master.part.aqlPolicyAll", "AQL 정책: 전체") },
+    { value: "__NONE__", label: t("master.part.aqlPolicyNone", "AQL 정책: 미설정") },
+  ]);
 
   const [erpSyncing, setErpSyncing] = useState(false);
   const [erpSyncConfirmOpen, setErpSyncConfirmOpen] = useState(false);
@@ -64,6 +76,33 @@ export default function PartPage() {
     return () => clearTimeout(timer);
   }, [searchText]);
 
+  useEffect(() => {
+    let cancelled = false;
+    api.get("/quality/aql/policies", { params: { useYn: "Y" } })
+      .then((res) => {
+        if (cancelled) return;
+        const policies: IqcAqlPolicyOption[] = res.data?.data ?? [];
+        setAqlPolicyOptions([
+          { value: "", label: t("master.part.aqlPolicyAll", "AQL 정책: 전체") },
+          { value: "__NONE__", label: t("master.part.aqlPolicyNone", "AQL 정책: 미설정") },
+          ...policies.map((policy) => ({
+            value: policy.policyCode,
+            label: `${t("master.part.iqcAqlPolicyCode", "AQL 정책")}: ${policy.policyCode} - ${policy.policyName || policy.policyCode}`,
+          })),
+        ]);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAqlPolicyOptions([
+            { value: "", label: t("master.part.aqlPolicyAll", "AQL 정책: 전체") },
+            { value: "__NONE__", label: t("master.part.aqlPolicyNone", "AQL 정책: 미설정") },
+          ]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
 
   /** DB에서 품목 목록 조회 */
   const fetchParts = useCallback(async () => {
@@ -72,6 +111,9 @@ export default function PartPage() {
       const params: Record<string, string | number> = { limit: 5000 };
       if (partTypeFilter) params.itemType = partTypeFilter;
       if (useYnFilter) params.useYn = useYnFilter;
+      if (iqcYnFilter) params.iqcYn = iqcYnFilter;
+      if (inspectMethodFilter) params.inspectMethod = inspectMethodFilter;
+      if (aqlPolicyFilter) params.iqcAqlPolicyCode = aqlPolicyFilter;
       if (debouncedSearch) params.search = debouncedSearch;
 
       const partsRes = await api.get("/master/parts", { params });
@@ -85,7 +127,7 @@ export default function PartPage() {
     } finally {
       setLoading(false);
     }
-  }, [partTypeFilter, useYnFilter, debouncedSearch]);
+  }, [partTypeFilter, useYnFilter, iqcYnFilter, inspectMethodFilter, aqlPolicyFilter, debouncedSearch]);
 
   /** 초기 로드 */
   useEffect(() => { fetchParts(); }, [fetchParts]);
@@ -308,7 +350,7 @@ export default function PartPage() {
             onRowClick={(row) => { if (isPanelOpen) setEditingPart(row); }}
             rowClassName={(row) => row.useYn === "N" ? "!text-red-500 dark:!text-red-400" : ""}
             toolbarLeft={
-              <div className="flex gap-3 flex-1 min-w-0">
+              <div className="flex flex-wrap gap-3 flex-1 min-w-0">
                 <div className="flex-1 min-w-0">
                   <Input placeholder={t("master.part.searchPlaceholder")} value={searchText}
                     onChange={e => handleSearch(e.target.value)}
@@ -319,6 +361,15 @@ export default function PartPage() {
                 </div>
                 <div className="w-36 flex-shrink-0">
                   <UseYnSelect value={useYnFilter} onChange={setUseYnFilter} fullWidth />
+                </div>
+                <div className="w-36 flex-shrink-0">
+                  <UseYnSelect value={iqcYnFilter} onChange={setIqcYnFilter} labelPrefix={t("master.part.iqcFlag", "IQC대상")} fullWidth />
+                </div>
+                <div className="w-40 flex-shrink-0">
+                  <ComCodeSelect groupCode="IQC_INSPECT_METHOD" value={inspectMethodFilter} onChange={setInspectMethodFilter} labelPrefix={t("master.part.inspectMethod", "검사구분")} fullWidth />
+                </div>
+                <div className="w-56 flex-shrink-0">
+                  <Select options={aqlPolicyOptions} value={aqlPolicyFilter} onChange={setAqlPolicyFilter} fullWidth />
                 </div>
               </div>
             }

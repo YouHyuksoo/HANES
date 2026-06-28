@@ -42,7 +42,7 @@ export class PartService {
   }
 
   async findAll(query: PartQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 20, itemType, itemTypes, search, useYn } = query;
+    const { page = 1, limit = 20, itemType, itemTypes, search, useYn, iqcYn, inspectMethod, iqcAqlPolicyCode } = query;
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.partRepository.createQueryBuilder('p')
@@ -62,6 +62,22 @@ export class PartService {
 
     if (useYn) {
       queryBuilder.andWhere('p.useYn = :useYn', { useYn });
+    }
+
+    if (iqcYn) {
+      queryBuilder.andWhere('p.iqcYn = :iqcYn', { iqcYn });
+    }
+
+    if (inspectMethod) {
+      queryBuilder.andWhere('p.inspectMethod = :inspectMethod', { inspectMethod });
+    }
+
+    if (iqcAqlPolicyCode) {
+      if (iqcAqlPolicyCode === '__NONE__') {
+        queryBuilder.andWhere('p.iqcAqlPolicyCode IS NULL');
+      } else {
+        queryBuilder.andWhere('p.iqcAqlPolicyCode = :iqcAqlPolicyCode', { iqcAqlPolicyCode });
+      }
     }
 
     if (search) {

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 const panel = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx', 'utf8');
 const modal = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/part/components/PartFormModal.tsx', 'utf8');
+const page = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/part/page.tsx', 'utf8');
 
 test('/master/part requires AQL policy only for IQC inspected parts', () => {
   for (const source of [panel, modal]) {
@@ -19,4 +20,17 @@ test('/master/part treats SKIP and NONE as no-inspection methods for AQL policy 
   for (const source of [panel, modal]) {
     assert.match(source, /const NO_INSPECTION_METHODS = new Set\(\["SKIP", "NONE"\]\)/);
   }
+});
+
+test('/master/part exposes IQC server-side filters', () => {
+  assert.match(page, /const \[iqcYnFilter, setIqcYnFilter\] = useState\(""\)/);
+  assert.match(page, /const \[inspectMethodFilter, setInspectMethodFilter\] = useState\(""\)/);
+  assert.match(page, /const \[aqlPolicyFilter, setAqlPolicyFilter\] = useState\(""\)/);
+  assert.match(page, /if \(iqcYnFilter\) params\.iqcYn = iqcYnFilter/);
+  assert.match(page, /if \(inspectMethodFilter\) params\.inspectMethod = inspectMethodFilter/);
+  assert.match(page, /if \(aqlPolicyFilter\) params\.iqcAqlPolicyCode = aqlPolicyFilter/);
+  assert.match(page, /<UseYnSelect value=\{iqcYnFilter\} onChange=\{setIqcYnFilter\}/);
+  assert.match(page, /<ComCodeSelect groupCode="IQC_INSPECT_METHOD" value=\{inspectMethodFilter\} onChange=\{setInspectMethodFilter\}/);
+  assert.match(page, /<Select options=\{aqlPolicyOptions\} value=\{aqlPolicyFilter\} onChange=\{setAqlPolicyFilter\}/);
+  assert.match(page, /__NONE__/);
 });
