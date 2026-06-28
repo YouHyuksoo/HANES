@@ -189,22 +189,17 @@ export class SensorMonitorService {
         }
       }
 
-      // 3. USAGE_BASED PM 계획 업데이트
-      const usagePlans = await this.pmPlanRepo.find({
-        where: {
+      // 3. USAGE_BASED PM 계획 업데이트 (조건 일치 계획을 단일 update로 일괄 갱신, N+1 방지)
+      await this.pmPlanRepo.update(
+        {
           equipCode,
           pmType: 'USAGE_BASED',
           usageField: sensorType,
           useYn: 'Y',
           ...this.tenantWhere(company, plant),
         },
-      });
-      for (const plan of usagePlans) {
-        await this.pmPlanRepo.update(
-          { planCode: plan.planCode, ...this.tenantWhere(company, plant) },
-          { currentUsage: value },
-        );
-      }
+        { currentUsage: value },
+      );
     }
 
     return { saved: items.length, alerts, warnings, autoWoCreated, interlocked };

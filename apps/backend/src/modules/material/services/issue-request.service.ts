@@ -459,19 +459,34 @@ export class IssueRequestService {
     return this.tx.run(async (queryRunner) => {
       const validatedItems: Array<{ dtoItem: RequestIssueDto['items'][number]; reqItem: MatIssueRequestItem }> = [];
 
+      // 검증에 필요한 항목/품목/LOT를 각각 1회 일괄 조회 후 메모리 매칭(N+1 제거)
+      const reqSeqs = [...new Set(dto.items.map((i) => Number(i.requestItemId)))];
+      const reqItems = reqSeqs.length
+        ? await this.requestItemRepository.find({ where: { requestId: requestNo, seq: In(reqSeqs), ...requestTenantWhere } })
+        : [];
+      const reqItemMap = new Map(reqItems.map((r) => [r.seq, r]));
+
+      const reqItemCodes = [...new Set(reqItems.map((r) => r.itemCode))];
+      const parts = reqItemCodes.length
+        ? await this.itemMasterRepository.find({ where: { itemCode: In(reqItemCodes), ...requestTenantWhere } })
+        : [];
+      const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+
+      const matUids = [...new Set(dto.items.map((i) => i.matUid))];
+      const lots = matUids.length
+        ? await queryRunner.manager.find(MatLot, { where: { matUid: In(matUids), ...requestTenantWhere } })
+        : [];
+      const lotMap = new Map(lots.map((l) => [l.matUid, l]));
+
       for (const dtoItem of dto.items) {
         const reqItemSeq = Number(dtoItem.requestItemId);
-        const reqItem = await this.requestItemRepository.findOne({
-          where: { requestId: requestNo, seq: reqItemSeq, ...requestTenantWhere },
-        });
+        const reqItem = reqItemMap.get(reqItemSeq);
         if (!reqItem) {
           throw new BadRequestException(`출고요청 항목을 찾을 수 없습니다: ${dtoItem.requestItemId}`);
         }
 
         // 포장단위(MIN_PACK_QTY) 올림: 요청 낱개 잔여를 포장단위 배수까지 출고 허용(잔량은 공정재고 재공)
-        const part = await this.itemMasterRepository.findOne({
-          where: { itemCode: reqItem.itemCode, ...requestTenantWhere },
-        });
+        const part = partMap.get(reqItem.itemCode);
         const minPackQty = this.toNumber(part?.minPackQty);
         const remainingQty = reqItem.requestQty - reqItem.issuedQty;
         const allowedQty = this.roundUpToPack(remainingQty, minPackQty);
@@ -481,9 +496,7 @@ export class IssueRequestService {
           );
         }
 
-        const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { matUid: dtoItem.matUid, ...requestTenantWhere },
-        });
+        const lot = lotMap.get(dtoItem.matUid);
         if (!lot) {
           throw new BadRequestException(`LOT를 찾을 수 없습니다: ${dtoItem.matUid}`);
         }

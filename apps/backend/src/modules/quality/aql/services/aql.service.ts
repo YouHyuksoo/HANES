@@ -711,8 +711,22 @@ export class AqlService {
     company?: string,
     plant?: string,
   ) {
-    for (const aqlCode of [majorAqlCode, minorAqlCode].filter(Boolean) as string[]) {
-      const standard = await this.findStandardOrThrow(aqlCode, company, plant);
+    const aqlCodes = [majorAqlCode, minorAqlCode].filter(Boolean) as string[];
+    if (aqlCodes.length === 0) return;
+    // N+1 제거: 코드별 개별 조회 대신 In(...)으로 한 번에 조회 (오류 메시지/검증 순서는 동일하게 유지)
+    const normalizedCodes = [...new Set(aqlCodes.map((c) => this.normalizeCode(c)))];
+    const standards = await this.standardRepo.find({
+      where: {
+        aqlCode: In(normalizedCodes),
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+    const byCode = new Map(standards.map((s) => [s.aqlCode, s]));
+    for (const aqlCode of aqlCodes) {
+      const normCode = this.normalizeCode(aqlCode);
+      const standard = byCode.get(normCode);
+      if (!standard) throw new NotFoundException(`AQL 기준을 찾을 수 없습니다: ${normCode}`);
       if (standard.useYn !== 'Y') throw new BadRequestException(`사용 중지된 AQL 기준입니다: ${standard.aqlCode}`);
     }
   }
@@ -851,14 +865,21 @@ export class AqlService {
   }
 
   private async findFirstStandard(aqlCodes: string[], company?: string, plant?: string) {
+    if (aqlCodes.length === 0) return null;
+    // N+1 제거: 후보 코드별 개별 조회 대신 In(...)으로 한 번에 조회 후 후보 우선순위대로 첫 매칭 반환
+    const standards = await this.standardRepo.find({
+      where: {
+        aqlCode: In(aqlCodes),
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+    const byCode = new Map<string, (typeof standards)[number]>();
+    for (const standard of standards) {
+      if (!byCode.has(standard.aqlCode)) byCode.set(standard.aqlCode, standard);
+    }
     for (const aqlCode of aqlCodes) {
-      const standard = await this.standardRepo.findOne({
-        where: {
-          aqlCode,
-          ...(company ? { company } : {}),
-          ...(plant ? { plant } : {}),
-        },
-      });
+      const standard = byCode.get(aqlCode);
       if (standard) return standard;
     }
     return null;

@@ -1157,18 +1157,19 @@ export class ShipOrderService {
       await qr.manager.save(ret);
 
       let seq = 1;
-      for (const [itemCode, qty] of totalByItem) {
-        await qr.manager.save(
-          qr.manager.create(ShipmentReturnItem, {
-            returnNo,
-            seq: seq++,
-            itemCode,
-            returnQty: qty,
-            disposalType: 'RESTOCK',
-            company,
-            plant,
-          }),
-        );
+      const returnItems = [...totalByItem].map(([itemCode, qty]) =>
+        qr.manager.create(ShipmentReturnItem, {
+          returnNo,
+          seq: seq++,
+          itemCode,
+          returnQty: qty,
+          disposalType: 'RESTOCK',
+          company,
+          plant,
+        }),
+      );
+      if (returnItems.length > 0) {
+        await qr.manager.save(returnItems);
       }
     });
 

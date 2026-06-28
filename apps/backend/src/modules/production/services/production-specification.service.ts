@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
 import { HarnessDrawingMaster } from '../../../entities/harness-drawing-master.entity';
@@ -402,8 +402,10 @@ export class ProductionSpecificationService {
   async delete(drawingId: number, company: string, plant: string) {
     await this.findOne(drawingId, company, plant);
     const revisions = await this.revisionRepo.find({ where: { drawingId, ...this.tenantWhere(company, plant) } });
-    for (const revision of revisions) {
-      await this.circuitRepo.delete({ revisionId: revision.revisionId, ...this.tenantWhere(company, plant) });
+    const revisionIds = revisions.map((revision) => revision.revisionId);
+    if (revisionIds.length > 0) {
+      // N+1 제거: 리비전별 개별 삭제 대신 In(...)으로 일괄 삭제
+      await this.circuitRepo.delete({ revisionId: In(revisionIds), ...this.tenantWhere(company, plant) });
     }
     await this.revisionRepo.delete({ drawingId, ...this.tenantWhere(company, plant) });
     await this.masterRepo.delete({ drawingId, ...this.tenantWhere(company, plant) });

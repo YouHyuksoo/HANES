@@ -95,11 +95,21 @@ export class RoutingGroupService {
     company?: string,
     plant?: string,
   ) {
-    for (const material of materials) {
-      if (material.circuitId == null) continue;
-      const rows = await this.findCircuitOptions(itemCode, [material.childItemCode], company, plant);
-      const found = rows.some((row: { circuitId: number | string }) => Number(row.circuitId) === Number(material.circuitId));
-      if (!found) {
+    // 회로 연결이 지정된 자재만 검증 대상
+    const targets = materials.filter((m) => m.circuitId != null);
+    if (targets.length === 0) return;
+
+    // 자식코드를 모아 한 번의 쿼리로 회로사양 조회 후 메모리에서 매칭(N+1 제거)
+    const childCodes = [...new Set(targets.map((m) => m.childItemCode))];
+    const rows = await this.findCircuitOptions(itemCode, childCodes, company, plant);
+    const valid = new Set(
+      (rows as { circuitId: number | string; wireItemCode: string }[]).map(
+        (r) => `${r.wireItemCode}::${Number(r.circuitId)}`,
+      ),
+    );
+
+    for (const material of targets) {
+      if (!valid.has(`${material.childItemCode}::${Number(material.circuitId)}`)) {
         throw new ConflictException(`라우팅 자재와 연결할 수 없는 회로 사양입니다: ${material.childItemCode}/${material.circuitId}`);
       }
     }

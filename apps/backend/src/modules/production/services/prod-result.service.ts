@@ -923,16 +923,27 @@ export class ProdResultService {
               useYn: 'Y',
             },
           });
-          for (const cmap of consumMaps) {
-            const lots = await queryRunner.manager.find(ConsumableStock, {
+          // N+1 제거: cmap별 개별 조회 대신 consumableCode 목록을 모아 한 번에 조회 후 코드별로 분배
+          const consumableCodes = [...new Set(consumMaps.map((c) => c.consumableCode))];
+          const lotsByCode = new Map<string, ConsumableStock[]>();
+          if (consumableCodes.length > 0) {
+            const allLots = await queryRunner.manager.find(ConsumableStock, {
               where: {
-                consumableCode: cmap.consumableCode,
+                consumableCode: In(consumableCodes),
                 mountedEquipCode: prodResult.equipCode,
                 status: 'MOUNTED',
                 ...(company ? { company } : {}),
                 ...(plant ? { plantCd: plant } : {}),
               },
             });
+            for (const lot of allLots) {
+              const bucket = lotsByCode.get(lot.consumableCode);
+              if (bucket) bucket.push(lot);
+              else lotsByCode.set(lot.consumableCode, [lot]);
+            }
+          }
+          for (const cmap of consumMaps) {
+            const lots = lotsByCode.get(cmap.consumableCode) ?? [];
             for (const lot of lots) {
               const newCount = lot.currentCount + cmap.usagePerUnit * autoTotalQty;
               await queryRunner.manager.update(

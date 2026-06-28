@@ -925,15 +925,17 @@ export class IqcHistoryService {
           ...this.tenantWhere(log.company, log.plant),
         },
       });
-      for (const lot of arrivalLots ?? []) {
+      // 입하건 전체 시리얼의 파괴검사 시료 자동출고 여부를 단일 쿼리로 확인 (N+1 방지)
+      const arrivalMatUids = (arrivalLots ?? []).map((lot) => lot.matUid);
+      if (arrivalMatUids.length > 0) {
         const sampleIssue = await this.stockTransactionRepository.findOne({
           where: {
-            matUid: lot.matUid,
-            itemCode: lot.itemCode,
+            matUid: In(arrivalMatUids),
+            itemCode: log.itemCode,
             refType: 'IQC_DESTRUCT',
             cancelRefId: IsNull(),
             status: 'DONE',
-            ...this.tenantWhere(lot.company, lot.plant),
+            ...this.tenantWhere(log.company, log.plant),
           },
           order: { createdAt: 'DESC' },
         });

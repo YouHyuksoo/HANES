@@ -587,10 +587,15 @@ export class ShipmentService {
 
       // 6. 출하지시 shippedQty 업데이트 (shipOrderNo 연계 시)
       if (shipment.shipOrderNo) {
+        const lines = await queryRunner.manager.find(ShipmentOrderItem, {
+          where: { shipOrderNo: shipment.shipOrderNo, ...this.tenantWhere(company, plant) },
+        });
+        const lineByItem = new Map<string, ShipmentOrderItem>();
+        for (const l of lines) {
+          if (!lineByItem.has(l.itemCode)) lineByItem.set(l.itemCode, l);
+        }
         for (const [itemCode, qty] of itemQtyMap) {
-          const line = await queryRunner.manager.findOne(ShipmentOrderItem, {
-            where: { shipOrderNo: shipment.shipOrderNo, itemCode, ...this.tenantWhere(company, plant) },
-          });
+          const line = lineByItem.get(itemCode);
           if (line) {
             const newShipped = line.shippedQty + qty;
             await queryRunner.manager.update(
@@ -797,10 +802,15 @@ export class ShipmentService {
         itemQtyMap.set(box.itemCode, existingQty + box.qty);
       }
 
+      const lines = await qr.manager.find(ShipmentOrderItem, {
+        where: { shipOrderNo: shipment.shipOrderNo, ...this.tenantWhere(company, plant) },
+      });
+      const lineByItem = new Map<string, ShipmentOrderItem>();
+      for (const l of lines) {
+        if (!lineByItem.has(l.itemCode)) lineByItem.set(l.itemCode, l);
+      }
       for (const [itemCode, qty] of itemQtyMap) {
-        const line = await qr.manager.findOne(ShipmentOrderItem, {
-          where: { shipOrderNo: shipment.shipOrderNo, itemCode, ...this.tenantWhere(company, plant) },
-        });
+        const line = lineByItem.get(itemCode);
         if (line) {
           const newShipped = Math.max(0, line.shippedQty - qty);
           await qr.manager.update(
