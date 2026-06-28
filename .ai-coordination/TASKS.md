@@ -31,27 +31,6 @@ notes:
 
 ## Active Tasks
 
-## T-QUALITY-TRACE-LIVE-QA 추적성 종합 조회 실제 데이터 브라우저 QA
-status: IN_PROGRESS
-owner: codex
-role: operator
-scope:
-- `http://localhost:3002/quality/trace` 실제 데이터 입력/조회 브라우저 검증
-files:
-- tools/hanes-quality-trace-page-scenario-qa.mjs
-- docs/reports/hanes-page-scenario-qa-2026-06-28/
-- .ai-coordination/TASKS.md
-- .ai-coordination/LOCKS.md
-- .ai-coordination/JOURNAL.md
-- .ai-coordination/HANDOFF/codex.md
-verification:
-- `node tools/hanes-quality-trace-page-scenario-qa.mjs`
-- Oracle JSHANES 후보/조회 근거 확인
-review:
-- 사용자 확인
-notes:
-- `T-TRACE-FULL` active lock의 앱 소스는 수정하지 않고, 실행 중 localhost 화면/API/DB 증거만 수집한다.
-
 ## T-CHECKOUT-LOCALHOST-QA localhost checkout 흐름 브라우저 QA
 status: IN_PROGRESS
 owner: codex

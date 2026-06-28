@@ -8,6 +8,30 @@ Use this heading format for every new entry:
 ## YYYY-MM-DD HH:mm Agent
 ```
 
+## 2026-06-28 15:19 Codex
+
+### T-QUALITY-TRACE-LIVE-QA
+- 요청: `http://localhost:3002/quality/trace` 페이지를 실제 데이터 입력으로 테스트.
+- 범위: 앱 소스는 `T-TRACE-FULL` active lock 때문에 수정하지 않고, QA runner/report만 생성했다.
+- 실제 입력값:
+  - 제품 바코드: `FG-N91-X9800-001`
+  - 박스번호: `BX2606260001`
+  - 작업지시번호: `WO-SEED-N91-X9800`
+- 산출물:
+  - runner: `tools/hanes-quality-trace-page-scenario-qa.mjs`
+  - index: `docs/reports/hanes-page-scenario-qa-2026-06-28/index.html`
+  - page: `docs/reports/hanes-page-scenario-qa-2026-06-28/pages/quality-trace.html`
+  - result: `docs/reports/hanes-page-scenario-qa-2026-06-28/quality-trace-result.json`
+- 결과: 5단계 PASS. 제품 바코드 후보/상세, 박스번호 후보 5건/상세, 작업지시번호 후보 5건/상세를 UI/API/Oracle로 확인했다.
+- 참고: 시작 시 3002가 `ERR_CONNECTION_REFUSED`였고 리스너가 없었다. 대체 포트는 쓰지 않고 `@harness/frontend` 기본 script(`next dev --turbopack -p 3002`)로 3002를 복구한 뒤 진행했다. 새 프로세스 로그는 `C:\tmp\hanes-frontend-dev\`.
+
+검증:
+- PASS: `node tools/hanes-quality-trace-page-scenario-qa.mjs`
+- PASS: 결과 JSON/HTML 링크/스크린샷 존재 검증.
+- PASS: JSHANES `TRACEQA-%` 잔여 0건.
+- PASS: `git diff --check -- tools/hanes-quality-trace-page-scenario-qa.mjs .ai-coordination/TASKS.md .ai-coordination/LOCKS.md docs/reports/hanes-page-scenario-qa-2026-06-28/index.html docs/reports/hanes-page-scenario-qa-2026-06-28/pages/quality-trace.html docs/reports/hanes-page-scenario-qa-2026-06-28/quality-trace-result.json`
+- 비업무 요청 실패: `fonts.gstatic.com` 폰트 abort 1건, `http://127.0.0.1:37111/health` local health 거부 1건. 업무 API 실패나 page error는 0건.
+
 ## 2026-06-26 21:44 Codex
 
 ### T-IQC-AQL-SAMPLE-SIZE-NORMALIZE
@@ -3557,3 +3581,20 @@ T-INSPECT-RESULT-CONSUMABLE-MOUNT — `/inspection/result`(통전검사 실적)�
   - PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
   - PASS: 대상 파일 `git diff --check`
   - PASS: 3002 Playwright 로그인 후 `Code Letter 표`/`Sampling Plan 표` 매트릭스 렌더 확인, 캡처 저장 `C:/Users/hsyou/AppData/Local/Temp/aql-code-letter-matrix.png`, `C:/Users/hsyou/AppData/Local/Temp/aql-sampling-plan-matrix.png`
+
+## 2026-06-28 14:22 codex
+
+- `T-AGENTS-GUIDE-CLEANUP` 완료. 사용자 요청에 따라 agent 지침 파일을 점검하고 정리했다.
+- 확인:
+  - 전역/유저 `AGENTS.md`는 현재 없음: `C:\AGENTS.md`, `C:\Users\hsyou\AGENTS.md`, `C:\Users\hsyou\.codex\AGENTS.md`, `C:\Project\AGENTS.md` 모두 미존재.
+  - 실제 공통 프로젝트 지침은 `AGENTS.md`, Claude 전용 보조 지침은 `CLAUDE.md`로 확인.
+- 변경:
+  - `AGENTS.md`를 핵심 규칙 우선 구조로 재작성했다. 적용 범위/우선순위, 작업 시작 절차, coordination, DB/마이그레이션, UI, 검증, 리뷰 판단, 미완료 기록, Windows 도구 경로, AI 도구별 스킬 경로를 앞쪽에 배치했다.
+  - 과거 실수 방지 기록은 뒤쪽으로 이동하고, IQC AQL stale 판단 금지와 jsPDF 한글 폰트 규칙은 유지했다.
+  - `CLAUDE.md`는 `AGENTS.md` 우선 원칙을 명시하고 Claude 전용 협업/검증 보조 지침만 남기도록 축약했다.
+  - `pnpm build` 관련 충돌을 `focused test + tsc 우선`, `dev 서버 중 build 금지`, `build는 요청/필요 시만`으로 통일했다.
+- 검증:
+  - PASS: `git diff --check -- AGENTS.md CLAUDE.md .ai-coordination/TASKS.md .ai-coordination/LOCKS.md`
+  - PASS: 핵심 키워드 확인 `PROTOCOL`, `SEQUENCE.NEXTVAL`, `3002`, `New-Item`, `Get-Command`, 도구별 스킬 경로.
+- 비고:
+  - 기존 무관 dirty file `apps/frontend/src/app/(authenticated)/master/part/page.tsx`, `apps/frontend/src/app/(authenticated)/master/partner/page.tsx`, `apps/frontend/src/components/material/IssueRequestTab.tsx`, `.serena/`는 건드리지 않았다.

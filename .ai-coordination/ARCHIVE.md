@@ -164,3 +164,5 @@ Format:
 - T-IQC-AQL-S1-0015-DATA | 2026-06-26 | codex | JSHANES `AQL-S-1-0.015` 기준과 15개 sampling rule을 추가해 `DLMLS6-3-3`/`VND-001`/LOT 100의 `resolve-iqc-items` 404 원인을 보정 | evidence: JOURNAL 2026-06-26 16:16 Codex
 - T-IQC-AQL-STANDARD-GUARD | 2026-06-26 | codex | `/master/iqc-part-spec` 검사항목 AQL 선택지를 실제 `AQL_STANDARDS` 조합으로 제한하고 저장 API에서도 기준/rule 없는 조합을 차단 | evidence: JOURNAL 2026-06-26 16:41 Codex
 - T-DB-LOCAL-BACKUP-20260626 | 2026-06-26 | codex | `oracle-db` JSHANES 접속 확인 후 classic `exp.exe`로 TEST 스키마 로컬 dump/log/zip 백업 생성 | evidence: JOURNAL 2026-06-26 21:52 Codex
+- T-AGENTS-GUIDE-CLEANUP | 2026-06-28 | codex | `AGENTS.md`를 핵심 규칙 우선 구조로 재정리하고 `CLAUDE.md`를 Claude 전용 보조 지침으로 축약, build/coordination 충돌 정리 | evidence: JOURNAL 2026-06-28 14:22 Codex
+- T-QUALITY-TRACE-LIVE-QA | 2026-06-28 | codex | `/quality/trace` 실제 데이터 입력 QA PASS 5/5, 제품/박스/작업지시 후보와 상세를 UI/API/JSHANES로 검증, 테스트 잔여 0건 | evidence: JOURNAL 2026-06-28 15:19 Codex

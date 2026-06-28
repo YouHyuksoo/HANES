@@ -2,7 +2,7 @@
 
 ## Last Update
 
-2026-06-26 KST
+2026-06-28 KST
 
 ## Current Review
 
@@ -16,6 +16,8 @@
 
 ## Latest Done
 
+- `T-QUALITY-TRACE-LIVE-QA` 완료. `/quality/trace`를 실제 데이터로 브라우저 QA했다. 입력값은 제품 바코드 `FG-N91-X9800-001`, 박스번호 `BX2606260001`, 작업지시번호 `WO-SEED-N91-X9800`이며 5단계 모두 PASS. 산출물: `docs/reports/hanes-page-scenario-qa-2026-06-28/index.html`, `pages/quality-trace.html`, `quality-trace-result.json`, runner `tools/hanes-quality-trace-page-scenario-qa.mjs`. 시작 시 3002가 연결 거부였으나 대체 포트 없이 기본 3002 dev server를 복구해 진행했다. 테스트 데이터 생성 없음, JSHANES `TRACEQA-%` 잔여 0건.
+- `T-AGENTS-GUIDE-CLEANUP` 완료. `AGENTS.md`를 핵심 규칙 우선 구조로 재정리했고, `CLAUDE.md`는 Claude 전용 보조 지침으로 축약했다. 전역/유저 `AGENTS.md`는 현재 없으므로 새로 만들지 않았다. `pnpm build` 규칙은 focused test/tsc 우선, dev 서버 중 build 금지, 요청/필요 시 build로 통일했다. 검증: `git diff --check -- AGENTS.md CLAUDE.md .ai-coordination/TASKS.md .ai-coordination/LOCKS.md` PASS. 무관 dirty frontend 파일과 `.serena/`는 건드리지 않았다.
 - `T-DB-LOCAL-BACKUP-20260626` 완료. `oracle-db` JSHANES 프로필 접속 사용자는 `TEST`, 스키마도 `TEST`로 확인했다. classic Oracle `exp.exe`로 로컬 백업을 생성했고 산출물은 `db_backups/JSHANES_TEST_20260626_213823.dmp`, `.log`, `.zip`이다. zip SHA256은 `B23B9AF920EA896FF16092FF04BDD7BF0A8846BF78006E7C22609581E1086F38`. 로그는 `Export terminated successfully with warnings.`로 끝나며 `ORA-01455`/`ORA-01403` 경고가 있다. 이는 기존 `20260519` 백업 로그와 같은 계열 경고다.
 - `T-PRODUCT-RECEIVE-BX2606260001-CLEANUP` 완료 후 REVIEW. 사용자가 `BX2606260001` 제품입고 후 취소했지만 이미 입고된 박스로 판단된다고 요청해 JSHANES를 확인했다. 원인 행은 `PRODUCT_TRANSACTIONS.PTX2026062600001 / WIP_OUT / REF_TYPE=BOX / REF_ID=BX2606260001 / STATUS=DONE`이며, 이 행이 `receiveFinishedFromWip()` 이중입고 가드에 걸렸다. 신규 SQL `apps/backend/src/migrations/2026-06-26_cleanup_product_receive_bx2606260001.sql`로 해당 전표 및 취소참조 전표를 삭제하고, `FG_MAIN / N91H00-X9800` 5개를 제거한 뒤 `WIP_MAIN / N91H00-X9800` 가용 5개를 복원했다. 박스 `CLOSED / QTY=5`와 FG 라벨 `PACKED / BOX_NO=BX2606260001`은 유지했다. post-check: 정상 BOX 전표 0, duplicate guard count 0, WIP_MAIN 가용 5. 남은 의심: 제품입고 취소가 원본 WIP_OUT을 CANCELED 처리하지 않는 버그가 있어 후속 코드 수정 필요.
 - `T-PRODUCT-RECEIVE-BX2606260001-WIP-SEED` 완료 후 REVIEW. `/product/receive`의 `BX2606260001` 입고 오류 원인은 `POST /inventory/fg/receive`가 `WIP_MAIN / N91H00-X9800` 제품재고를 먼저 `WIP_OUT` 차감하는데 JSHANES `PRODUCT_STOCKS`에 해당 재고가 0건이어서 발생했다. 신규 SQL `apps/backend/src/migrations/2026-06-26_seed_wip_stock_bx2606260001_n91h00.sql`을 적용해 `WIP_MAIN / N91H00-X9800 / QTY=5 / AVAILABLE_QTY=5 / STATUS=NORMAL`과 추적용 `PTX-SEED-BX2606260001-WIP` 전표(`REF_TYPE=SEED`)를 만들었다. `BX2606260001` 정상 BOX 전표는 아직 0건이라 사용자가 UI에서 재시도 가능하다. SQL 적용/재실행, post-check, diff check PASS.
