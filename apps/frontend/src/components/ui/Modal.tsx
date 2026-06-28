@@ -10,10 +10,10 @@
  * 3. **size**: 모달 크기 (sm, md, lg, xl, full)
  * 4. **Portal**: body에 직접 렌더링하여 z-index 문제 방지
  */
-import { useEffect, useCallback, Fragment } from 'react';
+import { useEffect, useCallback, useState, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { X } from 'lucide-react';
+import { X, AlertTriangle, HelpCircle, Copy, Check } from 'lucide-react';
 import Button from './Button';
 
 export interface ModalProps {
@@ -165,23 +165,49 @@ export function ConfirmModal({
   isLoading = false,
 }: ConfirmModalProps) {
   const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
   const actualTitle = title ?? t('common.confirm');
   const actualConfirmText = confirmText ?? t('common.confirm');
   const actualCancelText = cancelText ?? t('common.cancel');
+
+  const isDanger = variant === 'danger';
+  const Icon = isDanger ? AlertTriangle : HelpCircle;
+  const iconColor = isDanger ? 'text-red-500' : 'text-primary';
+  const iconRing = isDanger
+    ? 'border-red-500/30 bg-red-500/10'
+    : 'border-primary/30 bg-primary/10';
+
+  // 메시지가 문자열일 때만 복사 가능
+  const copyText = typeof message === 'string' ? message : null;
+
+  useEffect(() => {
+    if (!isOpen) setCopied(false);
+  }, [isOpen]);
+
+  const handleCopy = useCallback(async () => {
+    if (!copyText) return;
+    try {
+      await navigator.clipboard.writeText(copyText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // 클립보드 접근 불가 시 무시
+    }
+  }, [copyText]);
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={actualTitle}
-      size="sm"
+      size="md"
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={isLoading}>
             {actualCancelText}
           </Button>
           <Button
-            variant={variant === 'danger' ? 'danger' : 'primary'}
+            variant={isDanger ? 'danger' : 'primary'}
             onClick={onConfirm}
             isLoading={isLoading}
           >
@@ -190,7 +216,35 @@ export function ConfirmModal({
         </>
       }
     >
-      <div className="text-text">{message}</div>
+      <div className="flex gap-4">
+        <div
+          className={`flex-shrink-0 w-11 h-11 rounded-full border flex items-center justify-center ${iconRing}`}
+        >
+          <Icon className={`w-6 h-6 ${iconColor}`} />
+        </div>
+        <div className="flex-1 min-w-0 pt-0.5">
+          <div className="text-text leading-relaxed whitespace-pre-line">{message}</div>
+          {copyText && (
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-text transition-colors"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-green-500" />
+                  {t('common.copied', '복사됨')}
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5" />
+                  {t('common.copy', '복사')}
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
     </Modal>
   );
 }

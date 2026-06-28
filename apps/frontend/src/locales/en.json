@@ -63,6 +63,8 @@
     "unsavedTitle": "Unsaved changes",
     "unsavedMessage": "You have unsaved changes. Leaving without saving will discard them. Continue?",
     "discardAndContinue": "Continue",
+    "copy": "Copy",
+    "copied": "Copied",
     "excel": "Excel",
     "total": "Total",
     "all": "All",

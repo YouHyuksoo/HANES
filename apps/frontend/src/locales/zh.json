@@ -63,6 +63,8 @@
     "unsavedTitle": "未保存的更改",
     "unsavedMessage": "您有正在编辑的内容。未保存就离开将丢失更改。是否继续？",
     "discardAndContinue": "继续",
+    "copy": "复制",
+    "copied": "已复制",
     "excel": "Excel",
     "total": "全部",
     "all": "全部",
