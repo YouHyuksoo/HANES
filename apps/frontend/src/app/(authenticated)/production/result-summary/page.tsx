@@ -16,25 +16,10 @@ import { Search, RefreshCw, BarChart3 } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
-
-interface ProductSummary {
-  itemCode: string;
-  itemName: string;
-  itemType: string;
-  lineCode: string;
-  totalPlanQty: number;
-  totalGoodQty: number;
-  totalDefectQty: number;
-  totalQty: number;
-  defectRate: number;
-  yieldRate: number;
-  achieveRate: number;
-  orderCount: number;
-  resultCount: number;
-}
+import { createResultSummaryGridColumns } from "./resultSummaryColumns";
+import type { ProductSummary } from "./types";
 
 export default function ResultSummaryPage() {
   const { t } = useTranslation();
@@ -62,81 +47,7 @@ export default function ResultSummaryPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const rateCell = (value: number, good: boolean) => {
-    const cls = good
-      ? value >= 95 ? "text-green-600 dark:text-green-400" : value >= 80 ? "text-yellow-600 dark:text-yellow-400" : "text-red-600 dark:text-red-400"
-      : value <= 2 ? "text-green-600 dark:text-green-400" : value <= 5 ? "text-yellow-600 dark:text-yellow-400" : "text-red-600 dark:text-red-400";
-    return <span className={`font-medium ${cls}`}>{value}%</span>;
-  };
-
-  const columns = useMemo<ColumnDef<ProductSummary>[]>(() => [
-    {
-      accessorKey: "itemCode", header: t("common.partCode"), size: 120,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
-    },
-    {
-      accessorKey: "itemName", header: t("common.partName"), size: 160,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "itemType", header: t("production.resultSummary.partType"), size: 70,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        const cls = v === "FINISHED" ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-          : v === "SEMI_PRODUCT" ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
-          : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
-        const label = v === "FINISHED" ? t("production.order.itemTypeFG", "완제품")
-          : v === "SEMI_PRODUCT" ? t("production.order.itemTypeWIP", "반제품")
-          : v || "-";
-        return <span className={`px-2 py-0.5 text-xs rounded-full ${cls}`}>{label}</span>;
-      },
-    },
-    {
-      accessorKey: "lineCode", header: t("production.progress.line"), size: 90,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (getValue() as string) || "-",
-    },
-    {
-      accessorKey: "totalPlanQty", header: t("production.resultSummary.planQty"), size: 90,
-      meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => <span>{((getValue() as number) ?? 0).toLocaleString()}</span>,
-    },
-    {
-      accessorKey: "totalGoodQty", header: t("production.resultSummary.goodQty"), size: 90,
-      meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400 font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span>,
-    },
-    {
-      accessorKey: "totalDefectQty", header: t("production.resultSummary.defectQty"), size: 90,
-      meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as number;
-        return <span className={v > 0 ? "text-red-600 dark:text-red-400 font-medium" : "text-text-muted"}>{v.toLocaleString()}</span>;
-      },
-    },
-    {
-      accessorKey: "achieveRate", header: t("production.resultSummary.achieveRate"), size: 90,
-      meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => rateCell(getValue() as number, true),
-    },
-    {
-      accessorKey: "yieldRate", header: t("production.resultSummary.yieldRate"), size: 90,
-      meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => rateCell(getValue() as number, true),
-    },
-    {
-      accessorKey: "defectRate", header: t("production.resultSummary.defectRate"), size: 90,
-      meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => rateCell(getValue() as number, false),
-    },
-    {
-      accessorKey: "orderCount", header: t("production.resultSummary.orderCount"), size: 70,
-      meta: { filterType: "number" as const, align: "center" as const },
-      cell: ({ getValue }) => <span className="text-text-muted">{((getValue() as number) ?? 0).toLocaleString()}</span>,
-    },
-  ], [t]);
+  const columns = useMemo(() => createResultSummaryGridColumns(t), [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

@@ -12,26 +12,12 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { RefreshCw, Search, Eye, RotateCcw, ArrowDownCircle, ArrowUpCircle, Network } from "lucide-react";
+import { RefreshCw, Search, RotateCcw, ArrowDownCircle, ArrowUpCircle, Network } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
-import StatusBadge from "@/components/shared/StatusBadge";
 import api from "@/services/api";
-
-interface InterLog {
-  id: string;
-  direction: string;
-  messageType: string;
-  interfaceId: string;
-  status: string;
-  retryCount: number;
-  errorMsg: string | null;
-  createdAt: string;
-  sendAt: string | null;
-  recvAt: string | null;
-}
+import { createInterfaceLogGridColumns } from "./interfaceLogColumns";
+import type { InterLog } from "./types";
 
 const statusColors: Record<string, string> = {
   SUCCESS: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
@@ -93,50 +79,15 @@ export default function InterfaceLogPage() {
     }
   }, [fetchData]);
 
-  const columns = useMemo<ColumnDef<InterLog>[]>(() => [
-    {
-      id: "actions", header: t("common.manage"), size: 100,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={() => { setSelectedLog(row.original); setIsDetailModalOpen(true); }} className="p-1 hover:bg-surface rounded" title={t("common.detail")}><Eye className="w-4 h-4 text-primary" /></button>
-          {row.original.status === "FAIL" && (
-            <button onClick={() => handleRetry(row.original.id)} className="p-1 hover:bg-surface rounded" title={t("interface.log.retry")}><RotateCcw className="w-4 h-4 text-yellow-500" /></button>
-          )}
-        </div>
-      ),
+  const columns = useMemo(() => createInterfaceLogGridColumns({
+    t,
+    messageTypeLabels,
+    onShowDetail: (log) => {
+      setSelectedLog(log);
+      setIsDetailModalOpen(true);
     },
-    {
-      accessorKey: "direction", header: t("interface.log.direction"), size: 70,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const dir = getValue() as string;
-        return (
-          <div className="flex items-center gap-1">
-            {dir === "IN" ? <><ArrowDownCircle className="w-4 h-4 text-blue-500" /><span className="text-xs">{t("interface.dashboard.inbound")}</span></> : <><ArrowUpCircle className="w-4 h-4 text-purple-500" /><span className="text-xs">{t("interface.dashboard.outbound")}</span></>}
-          </div>
-        );
-      },
-    },
-    { accessorKey: "messageType", header: t("interface.log.messageType"), size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => messageTypeLabels[getValue() as string] || getValue() },
-    { accessorKey: "interfaceId", header: t("interface.log.interfaceId"), size: 120, meta: { filterType: "text" as const } },
-    {
-      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="IF_LOG_STATUS" align="center" />, size: 80,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <StatusBadge codeType="IF_LOG_STATUS" value={getValue() as string} />,
-    },
-    {
-      accessorKey: "retryCount", header: t("interface.log.retryCount"), size: 70,
-      meta: { filterType: "number" as const },
-      cell: ({ getValue }) => { const count = getValue() as number; return count > 0 ? <span className="text-yellow-600 dark:text-yellow-400">{count}{t("common.count")}</span> : "-"; },
-    },
-    { accessorKey: "createdAt", header: t("common.createdAt"), size: 140, meta: { filterType: "date" as const } },
-    {
-      accessorKey: "errorMsg", header: t("interface.log.errorMsg"), size: 150,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => { const msg = getValue() as string | null; return msg ? <span className="text-red-600 dark:text-red-400 text-xs">{msg}</span> : "-"; },
-    },
-  ], [t, statusLabels, messageTypeLabels, handleRetry]);
+    onRetry: handleRetry,
+  }), [t, messageTypeLabels, handleRetry]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

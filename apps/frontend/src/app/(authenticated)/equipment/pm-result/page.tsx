@@ -12,37 +12,16 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import {
   Wrench, Search, RefreshCw,
   CheckCircle, AlertTriangle, Clock, Package,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
-import StatusBadge from "@/components/shared/StatusBadge";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
-
-interface WoRow {
-  workOrderNo: string;
-  pmPlanCode: string;
-  equipCode: string;
-  woType: string;
-  scheduledDate: string;
-  dueDate: string;
-  completedAt: string | null;
-  status: string;
-  priority: string;
-  overallResult: string | null;
-  remark: string | null;
-  equip: { equipCode: string; equipName: string; lineCode: string | null; equipType: string | null } | null;
-}
-
-const resultColors: Record<string, string> = {
-  PASS: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-  FAIL: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-};
+import { createPmResultGridColumns } from "./pmResultColumns";
+import type { WoRow } from "./types";
 
 export default function PmResultPage() {
   const { t } = useTranslation();
@@ -75,66 +54,7 @@ export default function PmResultPage() {
     overdue: data.filter(d => d.status === "OVERDUE").length,
   }), [data]);
 
-  const columns = useMemo<ColumnDef<WoRow>[]>(() => [
-    {
-      accessorKey: "workOrderNo", header: t("equipment.pmResult.woNo", "WO번호"), size: 150,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
-    },
-    {
-      accessorKey: "scheduledDate", header: t("equipment.pmResult.scheduledDate", "예정일"), size: 100,
-      meta: { filterType: "date" as const },
-    },
-    {
-      id: "equipCode", header: t("equipment.pmResult.equipCode", "설비코드"), size: 120,
-      meta: { filterType: "text" as const },
-      cell: ({ row }) => <span className="font-mono text-sm">{row.original.equip?.equipCode || row.original.equipCode}</span>,
-    },
-    {
-      id: "equipName", header: t("equipment.pmResult.equipName", "설비명"), size: 140,
-      cell: ({ row }) => row.original.equip?.equipName || "-",
-    },
-    {
-      accessorKey: "status", size: 90,
-      header: () => <StatusHeaderHelp label={t("common.status")} codeType="PM_WO_STATUS" align="center" />,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <StatusBadge codeType="PM_WO_STATUS" value={getValue() as string} />,
-    },
-    {
-      accessorKey: "overallResult", header: t("equipment.pmResult.result", "결과"), size: 80,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const r = getValue() as string | null;
-        if (!r) return <span className="text-xs text-text-muted">-</span>;
-        return <span className={`px-2 py-0.5 text-xs rounded font-medium ${resultColors[r] || ""}`}>{r}</span>;
-      },
-    },
-    {
-      accessorKey: "priority", header: t("equipment.pmResult.priority", "우선순위"), size: 80,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const p = getValue() as string;
-        const colors: Record<string, string> = {
-          HIGH: "text-red-600 dark:text-red-400",
-          MEDIUM: "text-yellow-600 dark:text-yellow-400",
-          LOW: "text-text-muted",
-        };
-        return <span className={`text-xs font-medium ${colors[p] || ""}`}>{p}</span>;
-      },
-    },
-    {
-      accessorKey: "completedAt", header: t("equipment.pmResult.completedAt", "완료일"), size: 100,
-      cell: ({ getValue }) => {
-        const v = getValue() as string | null;
-        return v ? <span className="text-xs">{v.split("T")[0]}</span> : "-";
-      },
-    },
-    {
-      accessorKey: "remark", header: t("common.remark"), size: 160,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (getValue() as string) || "-",
-    },
-  ], [t]);
+  const columns = useMemo(() => createPmResultGridColumns(t), [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

@@ -14,11 +14,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Wrench, Plus, RefreshCw, Search, Calendar, Edit2, Trash2,
+  Wrench, Plus, RefreshCw, Search, Calendar,
 } from "lucide-react";
 import {
   Button, Input, StatCard,
-  ConfirmModal, ComCodeBadge,
+  ConfirmModal,
 } from "@/components/ui";
 import { Card, CardContent } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -26,29 +26,8 @@ import { ComCodeSelect } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import PmPlanPanel from "./components/PmPlanPanel";
 import api from "@/services/api";
-import type { ColumnDef } from "@tanstack/react-table";
-
-interface PmPlanRow {
-  planCode: string;
-  planName: string;
-  pmType: string;
-  cycleType: string;
-  cycleValue: number;
-  cycleUnit: string;
-  equipId: string;
-  estimatedTime: number | null;
-  description: string;
-  nextDueAt: string | null;
-  useYn: string;
-  itemCount: number;
-  equip: {
-    id: string;
-    equipCode: string;
-    equipName: string;
-    lineCode: string | null;
-    equipType: string | null;
-  } | null;
-}
+import { createPmPlanGridColumns } from "./pmPlanColumns";
+import type { PmPlanRow } from "./types";
 
 export default function PmPlanPage() {
   const { t } = useTranslation();
@@ -115,115 +94,16 @@ export default function PmPlanPage() {
     }
   }, [deleteTarget, fetchData]);
 
-  const columns = useMemo<ColumnDef<PmPlanRow>[]>(() => [
-    {
-      id: "actions", header: t("common.actions"), size: 80,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); panelAnimateRef.current = !isPanelOpen; setEditingPlan(row.original); setIsPanelOpen(true); }} className="p-1 hover:bg-surface rounded">
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }} className="p-1 hover:bg-surface rounded">
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
-        </div>
-      ),
+  const columns = useMemo(() => createPmPlanGridColumns({
+    t,
+    isPanelOpen,
+    onEditPlan: (plan, shouldAnimate) => {
+      panelAnimateRef.current = shouldAnimate;
+      setEditingPlan(plan);
+      setIsPanelOpen(true);
     },
-    {
-      accessorKey: "planCode",
-      header: t("equipment.pmPlan.planCode"),
-      size: 120,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (
-        <span className="font-mono text-xs font-medium">{getValue() as string}</span>
-      ),
-    },
-    {
-      accessorKey: "equip",
-      header: t("equipment.pmPlan.equipCode"),
-      size: 120,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => {
-        const equip = getValue() as PmPlanRow["equip"];
-        return equip ? (
-          <span className="font-mono text-xs">{equip.equipCode}</span>
-        ) : "-";
-      },
-    },
-    {
-      id: "equipName",
-      header: t("equipment.pmPlan.equipName"),
-      size: 140,
-      meta: { filterType: "text" as const },
-      accessorFn: (row) => row.equip?.equipName ?? "-",
-    },
-    {
-      accessorKey: "planName",
-      header: t("equipment.pmPlan.planName"),
-      size: 180,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "pmType",
-      header: t("equipment.pmPlan.pmType"),
-      size: 100,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => (
-        <ComCodeBadge groupCode="PM_TYPE" code={getValue() as string} />
-      ),
-    },
-    {
-      accessorKey: "cycleType",
-      header: t("equipment.pmPlan.cycleType"),
-      size: 100,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => (
-        <ComCodeBadge groupCode="PM_CYCLE_TYPE" code={getValue() as string} />
-      ),
-    },
-    {
-      accessorKey: "itemCount",
-      header: t("equipment.pmPlan.itemsTitle"),
-      size: 80,
-      meta: { align: "center" as const, filterType: "number" as const },
-      cell: ({ getValue }) => {
-        const count = getValue() as number;
-        return (
-          <span className={`inline-flex items-center justify-center min-w-[24px] h-5 px-1.5 rounded-full text-xs font-medium ${
-            count > 0
-              ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-              : "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
-          }`}>
-            {count}
-          </span>
-        );
-      },
-    },
-    {
-      accessorKey: "nextDueAt",
-      header: t("equipment.pmPlan.nextDueAt"),
-      size: 120,
-      meta: { filterType: "date" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string | null;
-        if (!v) return "-";
-        return new Date(v).toLocaleDateString();
-      },
-    },
-    {
-      accessorKey: "useYn",
-      header: t("common.status"),
-      size: 80,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const yn = getValue() as string;
-        return (
-          <span className={`w-2 h-2 rounded-full inline-block ${yn === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
-        );
-      },
-    },
-  ], [t, isPanelOpen]);
+    onDeletePlan: setDeleteTarget,
+  }), [t, isPanelOpen]);
 
   return (
     <div className="flex h-full animate-fade-in">

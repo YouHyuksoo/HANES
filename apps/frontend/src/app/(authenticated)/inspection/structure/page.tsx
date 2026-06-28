@@ -3,15 +3,15 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ScanLine, RefreshCw, Search, CheckCircle, XCircle, List, Maximize2, Minimize2,
+  ScanLine, RefreshCw, Search, List, Maximize2, Minimize2,
 } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import StructureInspectPanel from "./components/StructureInspectPanel";
 import FgLabelSelectModal from "./components/FgLabelSelectModal";
 import type { FgLabelInfo, StructureInspectRecord } from "./types";
+import { createStructureInspectGridColumns } from "./structureInspectColumns";
 
 export default function StructureInspectPage() {
   const { t } = useTranslation();
@@ -93,51 +93,7 @@ export default function StructureInspectPage() {
     openInspectPanel(barcode);
   }, [openInspectPanel]);
 
-  const columns = useMemo<ColumnDef<StructureInspectRecord>[]>(() => [
-    {
-      accessorKey: "inspectAt", header: t("inspection.result.issuedAt", "검사시간"),
-      size: 150,
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return v ? new Date(v).toLocaleString(undefined, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-";
-      },
-    },
-    {
-      accessorKey: "fgBarcode", header: t("inspection.result.fgBarcode", "FG 바코드"),
-      size: 150, meta: { filterType: "text" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string | null;
-        return v ? <span className="font-mono text-xs text-primary">{v}</span> : "-";
-      },
-    },
-    {
-      accessorKey: "passYn", header: t("quality.inspect.judgement", "판정"),
-      size: 80, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return v === "Y"
-          ? <span className="flex items-center gap-1 text-green-600 dark:text-green-400"><CheckCircle className="w-4 h-4" />{t("quality.inspect.pass")}</span>
-          : <span className="flex items-center gap-1 text-red-500 dark:text-red-400"><XCircle className="w-4 h-4" />{t("quality.inspect.fail")}</span>;
-      },
-    },
-    {
-      accessorKey: "errorCode", header: t("inspection.structure.defectType", "불량유형"),
-      size: 120, meta: { filterType: "text" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string | null;
-        return v ? <span className="text-red-500 font-mono text-xs">{v}</span> : <span className="text-text-muted">-</span>;
-      },
-    },
-    {
-      accessorKey: "errorDetail", header: t("quality.inspect.detailReason", "상세사유"),
-      size: 200, meta: { filterType: "text" as const },
-      cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span>,
-    },
-    {
-      accessorKey: "inspectorId", header: t("quality.inspect.inspector", "검사원"),
-      size: 100, cell: ({ getValue }) => getValue() || "-",
-    },
-  ], [t]);
+  const columns = useMemo(() => createStructureInspectGridColumns(t), [t]);
 
   return (
     <div className="flex h-full animate-fade-in">

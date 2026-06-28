@@ -13,37 +13,18 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, Search, Wrench, AlertTriangle,
-  CheckCircle, XCircle, Calendar, Edit2, Trash2,
+  CheckCircle, XCircle, Calendar,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, StatCard, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import MoldFormPanel from "./components/MoldFormPanel";
 import MoldUsageList from "./components/MoldUsageList";
-
-/** 금형 마스터 데이터 타입 */
-interface MoldMaster {
-  moldCode: string;
-  moldName: string;
-  moldType: string;
-  itemCode: string;
-  cavity: number;
-  currentShots: number;
-  guaranteedShots: number;
-  status: string;
-  maintenanceCycle: number;
-  lastMaintenanceDate: string | null;
-  nextMaintenanceDate: string | null;
-  location: string;
-  maker: string;
-  purchaseDate: string | null;
-  remark: string;
-}
+import { createMoldMgmtGridColumns } from "./moldMgmtColumns";
+import type { MoldMaster } from "./types";
 
 export default function MoldMgmtPage() {
   const { t } = useTranslation();
@@ -138,59 +119,14 @@ export default function MoldMgmtPage() {
   }, []);
 
   /* -- 컬럼 정의 -- */
-  const columns = useMemo<ColumnDef<MoldMaster>[]>(() => [
-    { id: "actions", header: t("common.actions"), size: 80,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); setEditTarget(row.original); setIsPanelOpen(true); }}
-            className="p-1 hover:bg-surface rounded" title={t("common.edit")}>
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }}
-            className="p-1 hover:bg-surface rounded" title={t("common.delete")}>
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
-        </div>
-      ),
+  const columns = useMemo(() => createMoldMgmtGridColumns({
+    t,
+    onEditMold: (mold) => {
+      setEditTarget(mold);
+      setIsPanelOpen(true);
     },
-    { accessorKey: "moldCode", header: t("equipment.mold.moldCode"), size: 130,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
-    { accessorKey: "moldName", header: t("equipment.mold.moldName"), size: 160,
-      meta: { filterType: "text" as const } },
-    { accessorKey: "moldType", header: t("equipment.mold.moldType"), size: 110,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="MOLD_TYPE" code={getValue() as string} /> },
-    { accessorKey: "itemCode", header: t("equipment.mold.itemCode"), size: 130,
-      meta: { filterType: "text" as const } },
-    { accessorKey: "cavity", header: t("equipment.mold.cavity"), size: 80,
-      meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{getValue() as number}</span> },
-    { accessorKey: "currentShots", header: t("equipment.mold.currentShots"), size: 100,
-      meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "guaranteedShots", header: t("equipment.mold.guaranteedShots"), size: 100,
-      meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "shotRate", header: t("equipment.mold.shotRate"), size: 90,
-      accessorFn: (row) => row.guaranteedShots > 0
-        ? Math.round((row.currentShots / row.guaranteedShots) * 100) : 0,
-      cell: ({ getValue }) => {
-        const rate = getValue() as number;
-        const color = rate > 100 ? "text-red-600 dark:text-red-400"
-          : rate > 90 ? "text-yellow-600 dark:text-yellow-400"
-          : "text-green-600 dark:text-green-400";
-        return <span className={`font-mono text-right block font-semibold ${color}`}>{rate}%</span>;
-      } },
-    { accessorKey: "status", size: 100,
-      header: () => <StatusHeaderHelp label={t("equipment.mold.status")} codeType="MOLD_STATUS" align="center" />,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="MOLD_STATUS" code={getValue() as string} /> },
-    { accessorKey: "nextMaintenanceDate", header: t("equipment.mold.nextMaint"), size: 110,
-      meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) ?? "-" },
-  ], [t]);
+    onDeleteMold: setDeleteTarget,
+  }), [t]);
 
   return (
     <div className="flex h-full">

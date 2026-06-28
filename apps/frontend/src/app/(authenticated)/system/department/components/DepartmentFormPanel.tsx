@@ -15,17 +15,7 @@ import { useTranslation } from "react-i18next";
 import { Button, Input, Select } from "@/components/ui";
 import { api } from "@/services/api";
 import { useUseYnOptions } from "@/components/shared";
-
-interface Department {
-  deptCode: string;
-  deptName: string;
-  parentDeptCode: string | null;
-  sortOrder: number;
-  managerName: string | null;
-  remark: string | null;
-  useYn: string;
-  createdAt: string;
-}
+import type { Department } from "../types";
 
 interface Props {
   editingDept: Department | null;

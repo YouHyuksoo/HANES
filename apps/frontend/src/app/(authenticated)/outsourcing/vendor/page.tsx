@@ -11,37 +11,19 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit2, RefreshCw, Search, Building2 } from "lucide-react";
+import { Plus, RefreshCw, Search, Building2 } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
-
-interface Vendor {
-  id: string;
-  vendorCode: string;
-  vendorName: string;
-  bizNo: string;
-  ceoName: string;
-  tel: string;
-  email: string;
-  contactPerson: string;
-  vendorType: string;
-  address: string;
-  useYn: string;
-}
+import { createVendorGridColumns } from "./vendorColumns";
+import type { Vendor } from "./types";
 
 export default function VendorPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const vendorTypeLabels: Record<string, string> = useMemo(() => ({
-    SUBCON: t("outsourcing.vendor.typeSubcon"),
-    SUPPLIER: t("outsourcing.vendor.typeSupplier"),
-  }), [t]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Vendor | null>(null);
@@ -93,33 +75,10 @@ export default function VendorPage() {
     }
   }, [selectedItem, form, fetchData]);
 
-  const columns = useMemo<ColumnDef<Vendor>[]>(() => [
-    {
-      id: "actions", header: t("common.manage"), size: 70,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-      ),
-    },
-    { accessorKey: "vendorCode", header: t("outsourcing.vendor.vendorCode"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "vendorName", header: t("outsourcing.vendor.vendorName"), size: 150, meta: { filterType: "text" as const } },
-    {
-      accessorKey: "vendorType", header: t("outsourcing.vendor.type"), size: 70,
-      cell: ({ getValue }) => {
-        const type = getValue() as string;
-        return <span className={`px-2 py-1 text-xs rounded-full ${type === "SUBCON" ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300" : "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"}`}>{vendorTypeLabels[type]}</span>;
-      },
-    },
-    { accessorKey: "bizNo", header: t("outsourcing.vendor.bizNo"), size: 120 },
-    { accessorKey: "ceoName", header: t("outsourcing.vendor.ceoName"), size: 80 },
-    { accessorKey: "contactPerson", header: t("outsourcing.vendor.contactPerson"), size: 80 },
-    { accessorKey: "tel", header: t("outsourcing.vendor.tel"), size: 120 },
-    { accessorKey: "address", header: t("outsourcing.vendor.address"), size: 180 },
-    {
-      accessorKey: "useYn", header: t("outsourcing.vendor.useYn"), size: 60,
-      cell: ({ getValue }) => <span className={getValue() === "Y" ? "text-green-600" : "text-gray-400"}>{getValue() === "Y" ? "●" : "○"}</span>,
-    },
-  ], [t, vendorTypeLabels, openEdit]);
+  const columns = useMemo(() => createVendorGridColumns({
+    t,
+    onEditVendor: openEdit,
+  }), [t, openEdit]);
 
   const stats = useMemo(() => ({
     total: data.length,

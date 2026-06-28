@@ -15,23 +15,9 @@ import { Search, RefreshCw, BoxIcon } from 'lucide-react';
 import { Card, CardContent, Button, Input } from '@/components/ui';
 import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import DataGrid from '@/components/data-grid/DataGrid';
-import { ColumnDef } from '@tanstack/react-table';
 import api from '@/services/api';
-import StatusBadge from '@/components/shared/StatusBadge';
-import StatusHeaderHelp from '@/components/shared/StatusHeaderHelp';
-
-interface PackResult {
-  boxNo: string;
-  itemCode: string;
-  itemName: string;
-  packQty: number;
-  status: string;
-  palletNo: string;
-  oqcStatus: string;
-  packer: string;
-  packDate: string;
-  closeTime: string;
-}
+import { createPackResultGridColumns } from './packResultColumns';
+import type { PackResult } from './types';
 
 /** 로컬 타임존 기준 오늘 날짜(YYYY-MM-DD) */
 const getTodayStr = () => {
@@ -67,32 +53,7 @@ export default function PackResultPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const columns = useMemo<ColumnDef<PackResult>[]>(() => [
-    { accessorKey: 'packDate', header: t('production.packResult.packDate'), size: 120,
-      meta: { filterType: 'date' as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) ?? '-' },
-    { accessorKey: 'boxNo', header: t('production.packResult.boxNo'), size: 170,
-      meta: { filterType: 'text' as const },
-      cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
-    { accessorKey: 'itemCode', header: t('common.partCode'), size: 120,
-      meta: { filterType: 'text' as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span> },
-    { accessorKey: 'itemName', header: t('common.partName'), size: 160,
-      meta: { filterType: 'text' as const } },
-    { accessorKey: 'packQty', header: t('production.packResult.packQty'), size: 90,
-      meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{(getValue() as number)?.toLocaleString()}</span> },
-    { accessorKey: 'status', header: () => <StatusHeaderHelp label={t('production.packResult.boxStatus')} codeType="BOX_STATUS" />, size: 110,
-      meta: { filterType: 'multi' as const },
-      cell: ({ getValue }) => <StatusBadge codeType="BOX_STATUS" value={getValue() as string} /> },
-    { accessorKey: 'palletNo', header: t('production.packResult.palletNo'), size: 130,
-      meta: { filterType: 'text' as const } },
-    { accessorKey: 'oqcStatus', header: () => <StatusHeaderHelp label={t('production.packResult.oqcStatus')} codeType="OQC_STATUS" />, size: 110,
-      meta: { filterType: 'multi' as const },
-      cell: ({ getValue }) => <StatusBadge codeType="OQC_STATUS" value={getValue() as string} /> },
-    { accessorKey: 'packer', header: t('production.packResult.packer'), size: 90,
-      meta: { filterType: 'text' as const } },
-  ], [t]);
+  const columns = useMemo(() => createPackResultGridColumns(t), [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

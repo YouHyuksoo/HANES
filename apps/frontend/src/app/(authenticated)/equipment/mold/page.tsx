@@ -6,16 +6,14 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ColumnDef } from '@tanstack/react-table';
 import { Plus, Search, RefreshCw, Settings2, Package, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import ComCodeSelect from '@/components/shared/ComCodeSelect';
-import StatusHeaderHelp from '@/components/shared/StatusHeaderHelp';
-import StatusBadge from '@/components/shared/StatusBadge';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { useApiQuery } from '@/hooks/useApi';
 import { useFilteredList } from '@/hooks/useFilteredList';
 import { Mold } from '@/types/mold';
+import { createMoldGridColumns } from './moldColumns';
 
 function MoldPage() {
   const { t } = useTranslation();
@@ -37,32 +35,7 @@ function MoldPage() {
   const [selectedMold, setSelectedMold] = useState<Mold | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const columns: ColumnDef<Mold>[] = [
-    { accessorKey: 'moldCode', header: t('crimping.mold.code'), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: 'moldName', header: t('crimping.mold.name'), size: 150, meta: { filterType: "text" as const } },
-    { accessorKey: 'terminalName', header: t('crimping.terminal'), size: 120, meta: { filterType: "text" as const } },
-    {
-      accessorKey: 'currentShots',
-      header: t('crimping.mold.currentShots'),
-      size: 100,
-      meta: { filterType: "number" as const },
-      cell: ({ getValue }) => Number(getValue()).toLocaleString(),
-    },
-    {
-      accessorKey: 'expectedLife',
-      header: t('crimping.mold.expectedLife'),
-      size: 100,
-      meta: { filterType: "number" as const },
-      cell: ({ getValue }) => Number(getValue()).toLocaleString(),
-    },
-    {
-      accessorKey: 'status',
-      header: () => <StatusHeaderHelp label={t('common.status')} codeType="MOLD_LIFE_STATUS" align="center" />,
-      size: 80,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <StatusBadge codeType="MOLD_LIFE_STATUS" value={getValue() as string} />,
-    },
-  ];
+  const columns = createMoldGridColumns(t);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

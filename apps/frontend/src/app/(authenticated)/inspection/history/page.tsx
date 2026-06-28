@@ -13,27 +13,15 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Zap, RefreshCw, Search, CheckCircle, XCircle,
+  Zap, RefreshCw, Search,
 } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import { ComCodeSelect, DateRangeFilter } from "@/components/shared";
 import { getTodayLocal } from "@/utils/date";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
-
-interface InspectHistoryRow {
-  resultNo: string;
-  prodResultNo: string | null;
-  inspectType: string;
-  inspectScope: string | null;
-  passYn: string;
-  fgBarcode: string | null;
-  errorCode: string | null;
-  errorDetail: string | null;
-  inspectAt: string;
-  inspectorId: string | null;
-}
+import { createInspectionHistoryGridColumns } from "./inspectionHistoryColumns";
+import type { InspectHistoryRow } from "./types";
 
 export default function InspectionHistoryPage() {
   const { t } = useTranslation();
@@ -75,87 +63,7 @@ export default function InspectionHistoryPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const inspectTypeLabel = useMemo<Record<string, string>>(() => ({
-    VISUAL: t("inspection.history.typeVisual", "외관검사"),
-    TERMINAL: t("inspection.history.typeTerminal", "단자검사"),
-    CONTINUITY: t("inspection.history.typeContinuity", "통전검사"),
-  }), [t]);
-
-  const inspectTypeClass = useMemo<Record<string, string>>(() => ({
-    VISUAL: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-300",
-    TERMINAL: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
-    CONTINUITY: "border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300",
-  }), []);
-
-  const columns = useMemo<ColumnDef<InspectHistoryRow>[]>(() => [
-    {
-      accessorKey: "inspectAt", header: t("inspection.result.issuedAt", "검사시간"),
-      size: 150,
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return v ? new Date(v).toLocaleString(undefined, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "-";
-      },
-    },
-    {
-      accessorKey: "inspectType", header: t("inspection.history.inspectType", "검사유형"),
-      size: 110, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const v = String(getValue() ?? "").toUpperCase();
-        if (!v) return <span className="text-text-muted">-</span>;
-        return (
-          <span className={`inline-flex h-6 items-center rounded border px-2 text-xs font-medium ${inspectTypeClass[v] ?? "border-border bg-surface text-text"}`}>
-            {inspectTypeLabel[v] ?? v}
-          </span>
-        );
-      },
-    },
-    {
-      accessorKey: "fgBarcode", header: t("inspection.result.fgBarcode", "FG 바코드"),
-      size: 150, meta: { filterType: "text" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string | null;
-        return v
-          ? <span className="font-mono text-xs text-primary">{v}</span>
-          : <span className="text-text-muted">-</span>;
-      },
-    },
-    {
-      accessorKey: "passYn", header: t("quality.inspect.judgement", "판정"),
-      size: 80, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return v === "Y"
-          ? <span className="flex items-center gap-1 text-green-600 dark:text-green-400"><CheckCircle className="w-4 h-4" />{t("quality.inspect.pass")}</span>
-          : <span className="flex items-center gap-1 text-red-500 dark:text-red-400"><XCircle className="w-4 h-4" />{t("quality.inspect.fail")}</span>;
-      },
-    },
-    {
-      accessorKey: "errorCode", header: t("quality.inspect.mainDefectCode", "불량코드"),
-      size: 100, meta: { filterType: "text" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string | null;
-        return v ? <span className="text-red-500 font-mono text-xs">{v}</span> : <span className="text-text-muted">-</span>;
-      },
-    },
-    {
-      accessorKey: "errorDetail", header: t("quality.inspect.detailReason", "상세사유"),
-      size: 200, meta: { filterType: "text" as const },
-      cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span>,
-    },
-    {
-      accessorKey: "inspectorId", header: t("quality.inspect.inspector", "검사원"),
-      size: 100, meta: { filterType: "text" as const },
-      cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span>,
-    },
-    {
-      accessorKey: "inspectScope", header: t("master.part.inspectMethod", "검사구분"),
-      size: 80,
-      cell: ({ getValue }) => {
-        const v = getValue() as string | null;
-        return v === "FULL" ? t("inspection.history.scopeFull", "전수") : v === "SAMPLE" ? t("inspection.history.scopeSample", "샘플") : v || "-";
-      },
-    },
-  ], [inspectTypeClass, inspectTypeLabel, t]);
+  const columns = useMemo(() => createInspectionHistoryGridColumns(t), [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-3 animate-fade-in">

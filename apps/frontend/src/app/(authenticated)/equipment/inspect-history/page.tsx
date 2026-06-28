@@ -12,34 +12,16 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import {
   ScrollText, Search, RefreshCw,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, ComCodeBadge } from "@/components/ui";
+import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import api from "@/services/api";
-
-interface InspectHistory {
-  id: string;
-  equipCode: string;
-  equipName: string;
-  equipType: string;
-  inspectType: string;
-  inspectDate: string;
-  inspectorName: string;
-  overallResult: string;
-  remark: string;
-}
-
-const formatInspectDate = (value: unknown) => {
-  if (!value) return "-";
-  const date = new Date(String(value));
-  if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString();
-};
+import { createInspectHistoryGridColumns } from "./inspectHistoryColumns";
+import type { InspectHistory } from "./types";
 
 const todayStr = () => {
   const d = new Date();
@@ -94,48 +76,7 @@ export default function InspectHistoryPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const columns = useMemo<ColumnDef<InspectHistory>[]>(() => [
-    {
-      accessorKey: "inspectDate",
-      header: t("equipment.inspectHistory.inspectDate"),
-      size: 110,
-      meta: { filterType: "date" as const },
-      cell: ({ getValue }) => formatInspectDate(getValue()),
-    },
-    {
-      accessorKey: "inspectType", header: t("equipment.inspectHistory.inspectType"), size: 80,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_CHECK_TYPE" code={getValue() as string} />,
-    },
-    {
-      accessorKey: "equipCode", header: t("equipment.inspectHistory.equipCode"), size: 130,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
-    },
-    {
-      accessorKey: "equipName", header: t("equipment.inspectHistory.equipName"), size: 140,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "equipType", header: t("equipment.inspectHistory.equipType", "설비유형"), size: 80,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="EQUIP_TYPE" code={getValue() as string} />,
-    },
-    {
-      accessorKey: "inspectorName", header: t("equipment.inspectHistory.inspector"), size: 90,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "overallResult", header: t("equipment.inspectHistory.result"), size: 90,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="INSPECT_JUDGE" code={getValue() as string} />,
-    },
-    {
-      accessorKey: "remark", header: t("common.remark"), size: 180,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (getValue() as string) || "-",
-    },
-  ], [t]);
+  const columns = useMemo(() => createInspectHistoryGridColumns(t), [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

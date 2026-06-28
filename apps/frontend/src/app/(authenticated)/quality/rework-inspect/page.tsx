@@ -12,26 +12,14 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
-import { RefreshCw, ClipboardCheck, Search, FileSearch } from "lucide-react";
-import { Card, CardContent, Button, Input, ComCodeBadge } from "@/components/ui";
+import { RefreshCw, ClipboardCheck, Search } from "lucide-react";
+import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import InspectFormPanel from "./components/InspectFormPanel";
 import type { InspectTarget } from "./components/InspectFormPanel";
-
-/** 재작업 지시 행 타입 */
-interface ReworkOrder {
-  reworkNo: string;
-  itemCode: string;
-  itemName: string;
-  reworkQty: number;
-  resultQty: number;
-  workerId: string;
-  endAt: string;
-  status: string;
-}
+import { createReworkInspectGridColumns } from "./reworkInspectColumns";
+import type { ReworkOrder } from "./types";
 
 export default function ReworkInspectPage() {
   const { t } = useTranslation();
@@ -73,34 +61,10 @@ export default function ReworkInspectPage() {
     fetchData();
   }, [fetchData]);
 
-  /* ── 컬럼 정의 ── */
-  const columns = useMemo<ColumnDef<ReworkOrder>[]>(() => [
-    {
-      id: "actions", header: "", size: 60,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); openPanel(row.original); }}
-          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
-        >
-          <FileSearch className="w-4 h-4 text-primary" />
-        </button>
-      ),
-    },
-    { accessorKey: "reworkNo", header: t("quality.rework.reworkNo"), size: 170, meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
-    { accessorKey: "itemCode", header: t("quality.rework.itemCode"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "itemName", header: t("quality.rework.itemName"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "reworkQty", header: t("quality.rework.reworkQty"), size: 90, meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "resultQty", header: t("quality.rework.resultQty"), size: 90, meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "workerId", header: t("quality.rework.worker"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "endAt", header: t("quality.rework.complete"), size: 140, meta: { filterType: "date" as const },
-      cell: ({ getValue }) => { const v = getValue() as string; return v ? new Date(v).toLocaleString() : "-"; } },
-    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="REWORK_STATUS" align="center" />, size: 110, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="REWORK_STATUS" code={getValue() as string} /> },
-  ], [t, openPanel]);
+  const columns = useMemo(() => createReworkInspectGridColumns({
+    t,
+    onOpenInspectPanel: openPanel,
+  }), [t, openPanel]);
 
   return (
     <div className="flex h-full">

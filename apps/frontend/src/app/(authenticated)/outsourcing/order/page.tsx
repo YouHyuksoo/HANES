@@ -11,30 +11,14 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Eye, RefreshCw, Search, FileText, Truck, Package, CheckCircle } from "lucide-react";
+import { Plus, RefreshCw, Search, FileText, Truck, Package, CheckCircle } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
 import { QtyInput } from "@/components/shared";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
-import StatusBadge from "@/components/shared/StatusBadge";
-import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
-
-interface SubconOrder {
-  id: string;
-  orderNo: string;
-  vendorName: string;
-  itemCode: string;
-  itemName: string;
-  orderQty: number;
-  deliveredQty: number;
-  receivedQty: number;
-  defectQty: number;
-  orderDate: string;
-  dueDate: string;
-  status: string;
-}
+import { createSubconOrderGridColumns } from "./subconOrderColumns";
+import type { SubconOrder } from "./types";
 
 export default function SubconOrderPage() {
   const { t } = useTranslation();
@@ -80,32 +64,13 @@ export default function SubconOrderPage() {
     }
   }, [form, fetchData]);
 
-  const columns = useMemo<ColumnDef<SubconOrder>[]>(() => [
-    {
-      id: "actions", header: t("common.manage"), size: 70,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <button onClick={() => { setSelectedOrder(row.original); setIsDetailModalOpen(true); }} className="p-1 hover:bg-surface rounded">
-          <Eye className="w-4 h-4 text-primary" />
-        </button>
-      ),
+  const columns = useMemo(() => createSubconOrderGridColumns({
+    t,
+    onShowDetail: (order) => {
+      setSelectedOrder(order);
+      setIsDetailModalOpen(true);
     },
-    { accessorKey: "orderNo", header: t("outsourcing.order.orderNo"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "vendorName", header: t("outsourcing.order.vendor"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "itemName", header: t("common.partName"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "orderQty", header: t("outsourcing.order.orderQty"), size: 80, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
-    { accessorKey: "deliveredQty", header: t("outsourcing.order.deliveredQty"), size: 80, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
-    { accessorKey: "receivedQty", header: t("outsourcing.order.receivedQty"), size: 80, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
-    { accessorKey: "orderDate", header: t("outsourcing.order.orderDate"), size: 100 },
-    { accessorKey: "dueDate", header: t("outsourcing.order.dueDate"), size: 100 },
-    {
-      accessorKey: "status",
-      header: () => <StatusHeaderHelp label={t("common.status")} codeType="SUBCON_ORDER_STATUS" align="center" />,
-      size: 90,
-      cell: ({ getValue }) => <StatusBadge codeType="SUBCON_ORDER_STATUS" value={getValue() as string} />,
-    },
-  ], [t]);
+  }), [t]);
 
   const stats = useMemo(() => ({
     ordered: data.filter((d) => d.status === "ORDERED").length,
