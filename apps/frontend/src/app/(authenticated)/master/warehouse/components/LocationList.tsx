@@ -9,14 +9,15 @@
  * 2. 창고별 로케이션 목록 표시 + 모달로 등록/수정
  * 3. 창고 필터 드롭다운으로 특정 창고의 로케이션만 조회
  */
-import { useState, useEffect, useCallback, useMemo, ReactNode } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
 import { FieldInput, FieldSelect } from "./WarehouseFieldHelp";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 
 interface WarehouseLocation {
   warehouseCode: string;
@@ -61,10 +62,12 @@ export default function LocationList({ onHeaderActions }: Props) {
   const [searchText, setSearchText] = useState("");
   const [whFilter, setWhFilter] = useState("");
   const [whOptions, setWhOptions] = useState<WhOption[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<WarehouseLocation | null>(null);
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  const initialFormRef = useRef<FormState>(INITIAL_FORM);
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; compositeKey: string }>({ open: false, compositeKey: "" });
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
 
   const fetchWarehouses = useCallback(async () => {
     try {
@@ -110,13 +113,15 @@ export default function LocationList({ onHeaderActions }: Props) {
 
   const openCreate = useCallback(() => {
     setEditingItem(null);
-    setForm({ ...INITIAL_FORM, warehouseCode: whFilter || "" });
-    setIsModalOpen(true);
+    const init = { ...INITIAL_FORM, warehouseCode: whFilter || "" };
+    setForm(init);
+    initialFormRef.current = init;
+    setIsPanelOpen(true);
   }, [whFilter]);
 
   const openEdit = useCallback((item: WarehouseLocation) => {
     setEditingItem(item);
-    setForm({
+    const init: FormState = {
       warehouseCode: item.warehouseCode,
       locationCode: item.locationCode,
       locationName: item.locationName,
@@ -125,9 +130,18 @@ export default function LocationList({ onHeaderActions }: Props) {
       colNo: item.colNo || "",
       levelNo: item.levelNo || "",
       remark: item.remark || "",
-    });
-    setIsModalOpen(true);
+    };
+    setForm(init);
+    initialFormRef.current = init;
+    setIsPanelOpen(true);
   }, []);
+
+  // 작성 중(저장 안 됨) 여부 계산 후 보고 — 행 전환 시 유실 방어
+  const dirty = useMemo(
+    () => isPanelOpen && JSON.stringify(form) !== JSON.stringify(initialFormRef.current),
+    [isPanelOpen, form],
+  );
+  useEffect(() => { markDirty(dirty); }, [dirty, markDirty]);
 
   const handleSave = useCallback(async () => {
     if (!form.warehouseCode || !form.locationCode || !form.locationName) return;
@@ -145,14 +159,15 @@ export default function LocationList({ onHeaderActions }: Props) {
       } else {
         await api.post("/inventory/warehouse-locations", form);
       }
-      setIsModalOpen(false);
+      markDirty(false);
+      setIsPanelOpen(false);
       fetchData();
     } catch (e) {
       console.error("Save failed:", e);
     } finally {
       setSaving(false);
     }
-  }, [editingItem, form, fetchData]);
+  }, [editingItem, form, fetchData, markDirty]);
 
   const handleDelete = useCallback(async () => {
     try {
@@ -171,18 +186,18 @@ export default function LocationList({ onHeaderActions }: Props) {
         <Button variant="secondary" size="sm" onClick={fetchData}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
-        <Button size="sm" onClick={openCreate}>
+        <Button size="sm" onClick={() => guard(openCreate)}>
           <Plus className="w-4 h-4 mr-1" />{t("inventory.location.addLocation")}
         </Button>
       </>
     );
-  }, [onHeaderActions, fetchData, openCreate, loading, t]);
+  }, [onHeaderActions, fetchData, openCreate, guard, loading, t]);
 
   const columns = useMemo<ColumnDef<WarehouseLocation>[]>(() => [
     { id: "actions", header: "", size: 80, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
       <div className="flex gap-1">
-        <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-        <button onClick={() => setConfirmModal({ open: true, compositeKey: `${row.original.warehouseCode}::${row.original.locationCode}` })} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
+        <button onClick={(e) => { e.stopPropagation(); guard(() => openEdit(row.original)); }} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
+        <button onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, compositeKey: `${row.original.warehouseCode}::${row.original.locationCode}` }); }} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
       </div>
     )},
     { accessorKey: "warehouseCode", header: t("inventory.warehouse.warehouseCode"), size: 100, meta: { filterType: "text" as const } },
@@ -197,50 +212,63 @@ export default function LocationList({ onHeaderActions }: Props) {
       <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
     )},
     { accessorKey: "remark", header: t("common.remark"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
-  ], [t, openEdit]);
+  ], [t, openEdit, guard]);
 
   return (
-    <div className="h-full flex flex-col">
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid
-          data={filtered}
-          columns={columns}
-          isLoading={loading}
-          enableColumnFilter
-          enableExport
-          exportFileName={t("inventory.location.title")}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t("inventory.location.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+    <div className="h-full flex overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col">
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
+          <DataGrid
+            data={filtered}
+            columns={columns}
+            isLoading={loading}
+            enableColumnFilter
+            enableExport
+            exportFileName={t("inventory.location.title")}
+            onRowClick={(row) => { if (isPanelOpen) guard(() => openEdit(row)); }}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input placeholder={t("inventory.location.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                </div>
+                <div className="w-56 flex-shrink-0">
+                  <Select options={filterOptions} value={whFilter} onChange={setWhFilter} fullWidth />
+                </div>
               </div>
-              <div className="w-56 flex-shrink-0">
-                <Select options={filterOptions} value={whFilter} onChange={setWhFilter} fullWidth />
-              </div>
-            </div>
-          }
-        
-        sqlQuery={`SELECT *\nFROM WAREHOUSE_LOCATIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
-      </CardContent></Card>
+            }
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t("inventory.location.editLocation") : t("inventory.location.addLocation")} size="lg">
-        <div className="grid grid-cols-2 gap-4">
-          <FieldSelect field="locationWarehouse" label={t("inventory.warehouse.warehouseName")} options={whOptions} value={form.warehouseCode} onChange={(v) => setForm((p) => ({ ...p, warehouseCode: v }))} disabled={!!editingItem} required />
-          <FieldInput field="locationCode" label={t("inventory.location.locationCode")} value={form.locationCode} onChange={(e) => setForm((p) => ({ ...p, locationCode: e.target.value }))} disabled={!!editingItem} required />
-          <FieldInput field="locationName" label={t("inventory.location.locationName")} value={form.locationName} onChange={(e) => setForm((p) => ({ ...p, locationName: e.target.value }))} required wrapperClassName="col-span-2" />
-          <FieldInput field="zone" label={t("inventory.location.zone")} value={form.zone} onChange={(e) => setForm((p) => ({ ...p, zone: e.target.value }))} />
-          <FieldInput field="rowNo" label={t("inventory.location.rowNo")} value={form.rowNo} onChange={(e) => setForm((p) => ({ ...p, rowNo: e.target.value }))} />
-          <FieldInput field="colNo" label={t("inventory.location.colNo")} value={form.colNo} onChange={(e) => setForm((p) => ({ ...p, colNo: e.target.value }))} />
-          <FieldInput field="levelNo" label={t("inventory.location.levelNo")} value={form.levelNo} onChange={(e) => setForm((p) => ({ ...p, levelNo: e.target.value }))} />
-          <FieldInput field="locationRemark" label={t("common.remark")} value={form.remark} onChange={(e) => setForm((p) => ({ ...p, remark: e.target.value }))} wrapperClassName="col-span-2" />
+          sqlQuery={`SELECT *\nFROM WAREHOUSE_LOCATIONS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+        </CardContent></Card>
+      </div>
+
+      {isPanelOpen && (
+        <div className="w-[440px] ml-4 border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs animate-slide-in-right">
+          <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
+            <h2 className="text-sm font-bold text-text">
+              {editingItem ? t("inventory.location.editLocation") : t("inventory.location.addLocation")}
+            </h2>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={() => guard(() => setIsPanelOpen(false))}>{t("common.cancel")}</Button>
+              <Button size="sm" onClick={handleSave} disabled={saving || !form.warehouseCode || !form.locationCode || !form.locationName}>{saving ? t("common.saving") : t("common.save", "저장")}</Button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <FieldSelect field="locationWarehouse" label={t("inventory.warehouse.warehouseName")} options={whOptions} value={form.warehouseCode} onChange={(v) => setForm((p) => ({ ...p, warehouseCode: v }))} disabled={!!editingItem} required />
+              <FieldInput field="locationCode" label={t("inventory.location.locationCode")} value={form.locationCode} onChange={(e) => setForm((p) => ({ ...p, locationCode: e.target.value }))} disabled={!!editingItem} required />
+              <FieldInput field="locationName" label={t("inventory.location.locationName")} value={form.locationName} onChange={(e) => setForm((p) => ({ ...p, locationName: e.target.value }))} required wrapperClassName="col-span-2" />
+              <FieldInput field="zone" label={t("inventory.location.zone")} value={form.zone} onChange={(e) => setForm((p) => ({ ...p, zone: e.target.value }))} />
+              <FieldInput field="rowNo" label={t("inventory.location.rowNo")} value={form.rowNo} onChange={(e) => setForm((p) => ({ ...p, rowNo: e.target.value }))} />
+              <FieldInput field="colNo" label={t("inventory.location.colNo")} value={form.colNo} onChange={(e) => setForm((p) => ({ ...p, colNo: e.target.value }))} />
+              <FieldInput field="levelNo" label={t("inventory.location.levelNo")} value={form.levelNo} onChange={(e) => setForm((p) => ({ ...p, levelNo: e.target.value }))} />
+              <FieldInput field="locationRemark" label={t("common.remark")} value={form.remark} onChange={(e) => setForm((p) => ({ ...p, remark: e.target.value }))} wrapperClassName="col-span-2" />
+            </div>
+          </div>
         </div>
-        <div className="flex justify-end gap-2 pt-6">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? t("common.saving") : t("common.save", "저장")}</Button>
-        </div>
-      </Modal>
+      )}
 
       <ConfirmModal isOpen={confirmModal.open} onClose={() => setConfirmModal({ open: false, compositeKey: "" })} onConfirm={handleDelete} title={t("inventory.location.deleteLocation")} message={t("inventory.location.deleteConfirm")} variant="danger" />
+      <ConfirmModal {...guardModalProps} />
     </div>
   );
 }

@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 // X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
 import { Button } from "@/components/ui";
@@ -34,6 +34,8 @@ interface Props {
   onClose: () => void;
   onSave: () => void;
   animate?: boolean;
+  /** 작성 중(저장 안 됨) 여부를 부모에 보고 — 행 전환 시 유실 방어용 */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 const MATCH_TYPE_OPTIONS = [
@@ -44,37 +46,43 @@ const MATCH_TYPE_OPTIONS = [
 
 export type { VendorBarcodeMapping };
 
-export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, animate = true }: Props) {
+/** editingItem으로부터 폼 초기값 생성 — useState 초기화와 prop 변경 리셋에서 공용 */
+const buildForm = (editingItem: VendorBarcodeMapping | null) => ({
+  vendorBarcode: editingItem?.vendorBarcode || "",
+  itemCode: editingItem?.itemCode || "",
+  itemName: editingItem?.itemName || "",
+  vendorCode: editingItem?.vendorCode || "",
+  vendorName: editingItem?.vendorName || "",
+  matchType: editingItem?.matchType || "EXACT",
+  mappingRule: editingItem?.mappingRule || "",
+  remark: editingItem?.remark || "",
+  useYn: editingItem?.useYn || "Y",
+});
+
+export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, animate = true, onDirtyChange }: Props) {
   const { t } = useTranslation();
   const isEdit = !!editingItem;
   const useYnOptions = useUseYnOptions(false);
 
-  const [form, setForm] = useState({
-    vendorBarcode: editingItem?.vendorBarcode || "",
-    itemCode: editingItem?.itemCode || "",
-    itemName: editingItem?.itemName || "",
-    vendorCode: editingItem?.vendorCode || "",
-    vendorName: editingItem?.vendorName || "",
-    matchType: editingItem?.matchType || "EXACT",
-    mappingRule: editingItem?.mappingRule || "",
-    remark: editingItem?.remark || "",
-    useYn: editingItem?.useYn || "Y",
-  });
+  const [form, setForm] = useState(() => buildForm(editingItem));
+  const initialFormRef = useRef(form);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setForm({
-      vendorBarcode: editingItem?.vendorBarcode || "",
-      itemCode: editingItem?.itemCode || "",
-      itemName: editingItem?.itemName || "",
-      vendorCode: editingItem?.vendorCode || "",
-      vendorName: editingItem?.vendorName || "",
-      matchType: editingItem?.matchType || "EXACT",
-      mappingRule: editingItem?.mappingRule || "",
-      remark: editingItem?.remark || "",
-      useYn: editingItem?.useYn || "Y",
-    });
+    const init = buildForm(editingItem);
+    setForm(init);
+    initialFormRef.current = init;
   }, [editingItem]);
+
+  // 작성 중(저장 안 됨) 여부 계산 후 부모에 보고 — 행 전환 시 유실 방어
+  const dirty = useMemo(
+    () => JSON.stringify(form) !== JSON.stringify(initialFormRef.current),
+    [form],
+  );
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
   const setField = (key: string, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -89,6 +97,7 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
       } else {
         await api.post("/master/vendor-barcode-mappings", form);
       }
+      onDirtyChange?.(false);
       onSave();
       onClose();
     } catch {

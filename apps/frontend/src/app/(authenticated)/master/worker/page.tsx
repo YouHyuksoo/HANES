@@ -21,6 +21,7 @@ import { WorkerAvatar } from "@/components/worker/WorkerSelector";
 import { Worker } from "./types";
 import { api } from "@/services/api";
 import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import WorkerFormPanel from "./components/WorkerFormPanel";
 
 export default function WorkerPage() {
@@ -35,6 +36,7 @@ export default function WorkerPage() {
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Worker | null>(null);
   const panelAnimateRef = useRef(true);
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -74,13 +76,21 @@ export default function WorkerPage() {
     fetchData();
   }, [fetchData]);
 
+  const openEdit = useCallback((worker: Worker) => {
+    guard(() => { panelAnimateRef.current = !isPanelOpen; setEditingWorker(worker); setIsPanelOpen(true); });
+  }, [guard, isPanelOpen]);
+
+  const openCreate = useCallback(() => {
+    guard(() => { panelAnimateRef.current = !isPanelOpen; setEditingWorker(null); setIsPanelOpen(true); });
+  }, [guard, isPanelOpen]);
+
   const columns = useMemo<ColumnDef<Worker>[]>(() => [
     {
       id: "actions", header: t("common.actions"), size: 80,
       meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); panelAnimateRef.current = !isPanelOpen; setEditingWorker(row.original); setIsPanelOpen(true); }} className="p-1 hover:bg-surface rounded">
+          <button onClick={(e) => { e.stopPropagation(); openEdit(row.original); }} className="p-1 hover:bg-surface rounded">
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
           <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }} className="p-1 hover:bg-surface rounded">
@@ -116,7 +126,7 @@ export default function WorkerPage() {
         );
       },
     },
-  ], [t, isPanelOpen]);
+  ], [t, isPanelOpen, openEdit]);
 
   return (
     <div className="flex h-full animate-fade-in">
@@ -132,7 +142,7 @@ export default function WorkerPage() {
             <Button variant="secondary" size="sm" onClick={fetchData}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
             </Button>
-            <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingWorker(null); setIsPanelOpen(true); }}>
+            <Button size="sm" onClick={openCreate}>
               <Plus className="w-4 h-4 mr-1" />{t("master.worker.addWorker", "작업자 추가")}
             </Button>
           </div>
@@ -149,7 +159,7 @@ export default function WorkerPage() {
               enableColumnFilter
               enableExport
               exportFileName={t("master.worker.title", "작업자 관리")}
-              onRowClick={(row) => { if (isPanelOpen) setEditingWorker(row); }}
+              onRowClick={(row) => { if (isPanelOpen) guard(() => setEditingWorker(row)); }}
               toolbarLeft={
                 <div className="flex gap-2 items-center">
                   <Input
@@ -171,13 +181,15 @@ export default function WorkerPage() {
 
       {isPanelOpen && (
         <WorkerFormPanel
-          key={editingWorker?.workerCode ?? "__new__"}
           editingWorker={editingWorker}
-          onClose={handlePanelClose}
+          onClose={() => guard(handlePanelClose)}
           onSave={handlePanelSave}
           animate={panelAnimateRef.current}
+          onDirtyChange={markDirty}
         />
       )}
+
+      <ConfirmModal {...guardModalProps} />
 
       <ConfirmModal
         isOpen={!!deleteTarget}

@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 // X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
 import { Button } from "@/components/ui";
@@ -30,49 +30,56 @@ interface Props {
   onClose: () => void;
   onSave: () => void;
   animate?: boolean;
+  /** 작성 중(저장 안 됨) 여부를 부모에 보고 — 행 전환 시 유실 방어용 */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
-export default function WorkerFormPanel({ editingWorker, onClose, onSave, animate = true }: Props) {
+/** editingWorker로부터 폼 초기값 생성 — useState 초기화와 prop 변경 리셋에서 공용 */
+const buildForm = (editingWorker: Worker | null) => ({
+  workerCode: editingWorker?.workerCode ?? "",
+  workerName: editingWorker?.workerName ?? "",
+  engName: editingWorker?.engName ?? "",
+  dept: editingWorker?.dept ?? "",
+  position: editingWorker?.position ?? "",
+  phone: editingWorker?.phone ?? "",
+  email: editingWorker?.email ?? "",
+  hireDate: editingWorker?.hireDate ?? "",
+  quitDate: editingWorker?.quitDate ?? "",
+  qrCode: editingWorker?.qrCode ?? "",
+  remark: editingWorker?.remark ?? "",
+  useYn: editingWorker?.useYn ?? "Y",
+});
+
+export default function WorkerFormPanel({ editingWorker, onClose, onSave, animate = true, onDirtyChange }: Props) {
   const { t } = useTranslation();
   const isEdit = !!editingWorker;
   const useYnOptions = useUseYnOptions(false);
 
-  const [form, setForm] = useState({
-    workerCode: editingWorker?.workerCode ?? "",
-    workerName: editingWorker?.workerName ?? "",
-    engName: editingWorker?.engName ?? "",
-    dept: editingWorker?.dept ?? "",
-    position: editingWorker?.position ?? "",
-    phone: editingWorker?.phone ?? "",
-    email: editingWorker?.email ?? "",
-    hireDate: editingWorker?.hireDate ?? "",
-    quitDate: editingWorker?.quitDate ?? "",
-    qrCode: editingWorker?.qrCode ?? "",
-    remark: editingWorker?.remark ?? "",
-    useYn: editingWorker?.useYn ?? "Y",
-  });
+  const [form, setForm] = useState(() => buildForm(editingWorker));
+  const initialFormRef = useRef(form);
   const [photoUrl, setPhotoUrl] = useState<string | null>(editingWorker?.photoUrl ?? null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
-    setForm({
-      workerCode: editingWorker?.workerCode ?? "",
-      workerName: editingWorker?.workerName ?? "",
-      engName: editingWorker?.engName ?? "",
-      dept: editingWorker?.dept ?? "",
-      position: editingWorker?.position ?? "",
-      phone: editingWorker?.phone ?? "",
-      email: editingWorker?.email ?? "",
-      hireDate: editingWorker?.hireDate ?? "",
-      quitDate: editingWorker?.quitDate ?? "",
-      qrCode: editingWorker?.qrCode ?? "",
-      remark: editingWorker?.remark ?? "",
-      useYn: editingWorker?.useYn ?? "Y",
-    });
+    const init = buildForm(editingWorker);
+    setForm(init);
+    initialFormRef.current = init;
     setPhotoUrl(editingWorker?.photoUrl ?? null);
     setFormError("");
   }, [editingWorker]);
+
+  // 작성 중(저장 안 됨) 여부 계산 후 부모에 보고 — 행 전환 시 유실 방어
+  const dirty = useMemo(
+    () =>
+      JSON.stringify(form) !== JSON.stringify(initialFormRef.current) ||
+      photoUrl !== (editingWorker?.photoUrl ?? null),
+    [form, photoUrl, editingWorker],
+  );
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
   const setField = (key: string, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -106,6 +113,7 @@ export default function WorkerFormPanel({ editingWorker, onClose, onSave, animat
       } else {
         await api.post("/master/workers", payload);
       }
+      onDirtyChange?.(false);
       onSave();
       onClose();
     } catch (err: unknown) {

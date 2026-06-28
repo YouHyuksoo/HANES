@@ -52,7 +52,7 @@ test("master side-panel forms mark required save-blocking fields", () => {
 
 test("master modal forms mark required save-blocking fields", () => {
   const cases = [
-    ["./code/components/CodeFormModal.tsx", "code", ["detailCode", "codeName"]],
+    ["./code/components/CodeFormPanel.tsx", "code", ["detailCode", "codeName"]],
     ["./bom/components/BomFormModal.tsx", "bom", ["childSearch", "qtyPer", "revision"]],
     ["./iqc-item/components/IqcItemFormPanel.tsx", "iqc-item-pool", ["itemCode", "itemName"]],
     ["./routing/components/RoutingGroupManager.tsx", "routing", ["routingCode", "routingName", "itemCode", "processCode", "processName"]],

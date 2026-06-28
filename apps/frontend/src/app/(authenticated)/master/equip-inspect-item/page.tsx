@@ -13,6 +13,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { resolveBackendFileUrl } from "@/utils/file-url";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 
 type ItemType = "VISUAL" | "MEASURE";
 type InspectType = "DAILY" | "PERIODIC" | "PM" | "WORKER";
@@ -109,6 +110,8 @@ export default function EquipInspectItemPage() {
   const [editing, setEditing] = useState<InspectItemPoolRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<InspectItemPoolRow | null>(null);
   const [form, setForm] = useState<InspectItemForm>(() => emptyForm());
+  const initialFormRef = useRef<InspectItemForm>(emptyForm());
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageError, setImageError] = useState(false);
@@ -203,14 +206,16 @@ export default function EquipInspectItemPage() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm(emptyForm());
+    const blank = emptyForm();
+    setForm(blank);
+    initialFormRef.current = blank;
     resetImageState(null);
     setPanelOpen(true);
   };
 
   const openEdit = (item: InspectItemPoolRow) => {
     setEditing(item);
-    setForm({
+    const nextForm: InspectItemForm = {
       itemCode: item.itemCode,
       equipType: item.equipType || "",
       itemName: item.itemName,
@@ -223,10 +228,24 @@ export default function EquipInspectItemPage() {
       uslValue: item.uslValue != null ? String(item.uslValue) : "",
       useYn: item.useYn || "Y",
       remark: item.remark || "",
-    });
+    };
+    setForm(nextForm);
+    initialFormRef.current = nextForm;
     resetImageState(item.imageUrl || null);
     setPanelOpen(true);
   };
+
+  // 작성 중(저장 안 됨) 여부 계산 후 가드에 보고 — 행 전환 시 유실 방어
+  const dirty = useMemo(
+    () =>
+      panelOpen &&
+      (JSON.stringify(form) !== JSON.stringify(initialFormRef.current) ||
+        previewUrl !== (editing?.imageUrl ?? null)),
+    [panelOpen, form, previewUrl, editing],
+  );
+  useEffect(() => {
+    markDirty(dirty);
+  }, [dirty, markDirty]);
 
   const closePanel = () => {
     setPanelOpen(false);
@@ -313,7 +332,7 @@ export default function EquipInspectItemPage() {
       meta: { align: "center" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.edit")}>
+          <button onClick={() => guard(() => openEdit(row.original))} className="p-1 hover:bg-surface rounded" title={t("common.edit")}>
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
           <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.delete")}>
@@ -398,7 +417,7 @@ export default function EquipInspectItemPage() {
         ? <span className="text-green-600 dark:text-green-400 font-medium">Y</span>
         : <span className="text-red-500 font-medium">N</span>,
     },
-  ], [t, inspectTypeLabels, cycleLabels, itemTypeLabels]);
+  ], [t, inspectTypeLabels, cycleLabels, itemTypeLabels, guard]);
 
   return (
     <div className="h-full flex overflow-hidden animate-fade-in">
@@ -415,7 +434,7 @@ export default function EquipInspectItemPage() {
             <Button variant="secondary" size="sm" onClick={fetchData}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
             </Button>
-            <Button size="sm" onClick={openCreate}>
+            <Button size="sm" onClick={() => guard(openCreate)}>
               <Plus className="w-4 h-4 mr-1" />{t("common.register", "등록")}
             </Button>
           </div>
@@ -426,6 +445,7 @@ export default function EquipInspectItemPage() {
             <DataGrid data={items} columns={columns} isLoading={loading} enableColumnFilter enableExport
               exportFileName={t("master.equipInspectItem.title", "점검항목마스터")}
               emptyMessage={t("master.equipInspect.noItems")}
+              onRowClick={(row) => { if (panelOpen) guard(() => openEdit(row)); }}
               toolbarLeft={
                 <div className="flex gap-3 flex-1 min-w-0">
                   <div className="flex-1 min-w-0">
@@ -452,7 +472,7 @@ export default function EquipInspectItemPage() {
               {editing ? t("master.equipInspect.editItem") : t("common.register", "등록")}
             </h2>
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="secondary" onClick={closePanel}>{t("common.cancel")}</Button>
+              <Button size="sm" variant="secondary" onClick={() => guard(closePanel)}>{t("common.cancel")}</Button>
               <Button size="sm" onClick={handleSave} disabled={saving || !form.itemCode.trim() || !form.itemName.trim()}>
                 {saving ? t("common.saving", "저장 중") : (editing ? t("common.save") : t("common.register", "등록"))}
               </Button>
@@ -550,6 +570,8 @@ export default function EquipInspectItemPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal {...guardModalProps} />
 
       <ConfirmModal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDeleteConfirm}
         title={t("common.delete")} message={t("common.confirmDelete")} variant="danger" />

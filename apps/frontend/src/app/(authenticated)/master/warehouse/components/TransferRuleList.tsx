@@ -7,14 +7,17 @@
  * 2. 출발창고 → 도착창고 이동 허용 여부 관리
  * 3. 창고 목록은 /inventory/warehouses에서 동적 로드
  */
-import { useState, useEffect, useCallback, useMemo, ReactNode } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw, ArrowRightLeft } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, Select, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
 import { FieldInput, FieldSelect } from "./WarehouseFieldHelp";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
+
+const EMPTY_RULE_FORM = { fromWarehouseId: "", toWarehouseId: "", allowYn: "Y", remark: "" };
 
 interface TransferRule {
   fromWarehouseId: string;
@@ -39,11 +42,13 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<TransferRule | null>(null);
   const [warehouseOptions, setWarehouseOptions] = useState<WarehouseOption[]>([]);
-  const [form, setForm] = useState({ fromWarehouseId: "", toWarehouseId: "", allowYn: "Y", remark: "" });
+  const [form, setForm] = useState(EMPTY_RULE_FORM);
+  const initialFormRef = useRef(EMPTY_RULE_FORM);
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; fromId: string; toId: string }>({ open: false, fromId: "", toId: "" });
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
 
   const fetchWarehouses = useCallback(async () => {
     try {
@@ -74,15 +79,25 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
 
   const openCreate = useCallback(() => {
     setEditingItem(null);
-    setForm({ fromWarehouseId: "", toWarehouseId: "", allowYn: "Y", remark: "" });
-    setIsModalOpen(true);
+    setForm(EMPTY_RULE_FORM);
+    initialFormRef.current = EMPTY_RULE_FORM;
+    setIsPanelOpen(true);
   }, []);
 
   const openEdit = useCallback((item: TransferRule) => {
     setEditingItem(item);
-    setForm({ fromWarehouseId: item.fromWarehouseId, toWarehouseId: item.toWarehouseId, allowYn: item.allowYn, remark: item.remark || "" });
-    setIsModalOpen(true);
+    const init = { fromWarehouseId: item.fromWarehouseId, toWarehouseId: item.toWarehouseId, allowYn: item.allowYn, remark: item.remark || "" };
+    setForm(init);
+    initialFormRef.current = init;
+    setIsPanelOpen(true);
   }, []);
+
+  // 작성 중(저장 안 됨) 여부 계산 후 보고 — 행 전환 시 유실 방어
+  const dirty = useMemo(
+    () => isPanelOpen && JSON.stringify(form) !== JSON.stringify(initialFormRef.current),
+    [isPanelOpen, form],
+  );
+  useEffect(() => { markDirty(dirty); }, [dirty, markDirty]);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -92,14 +107,15 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
       } else {
         await api.post("/master/transfer-rules", form);
       }
-      setIsModalOpen(false);
+      markDirty(false);
+      setIsPanelOpen(false);
       fetchData();
     } catch (e) {
       console.error("Save failed:", e);
     } finally {
       setSaving(false);
     }
-  }, [editingItem, form, fetchData]);
+  }, [editingItem, form, fetchData, markDirty]);
 
   const handleDelete = useCallback(async () => {
     try {
@@ -118,18 +134,18 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
         <Button variant="secondary" size="sm" onClick={fetchData}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
-        <Button size="sm" onClick={openCreate}>
+        <Button size="sm" onClick={() => guard(openCreate)}>
           <Plus className="w-4 h-4 mr-1" />{t("master.transferRule.addRule")}
         </Button>
       </>
     );
-  }, [onHeaderActions, fetchData, openCreate, loading, t]);
+  }, [onHeaderActions, fetchData, openCreate, guard, loading, t]);
 
   const columns = useMemo<ColumnDef<TransferRule>[]>(() => [
     { id: "actions", header: "", size: 80, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
       <div className="flex gap-1">
-        <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
-        <button onClick={() => setConfirmModal({ open: true, fromId: row.original.fromWarehouseId, toId: row.original.toWarehouseId })} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
+        <button onClick={(e) => { e.stopPropagation(); guard(() => openEdit(row.original)); }} className="p-1 hover:bg-surface rounded"><Edit2 className="w-4 h-4 text-primary" /></button>
+        <button onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, fromId: row.original.fromWarehouseId, toId: row.original.toWarehouseId }); }} className="p-1 hover:bg-surface rounded"><Trash2 className="w-4 h-4 text-red-500" /></button>
       </div>
     )},
     { accessorKey: "fromWarehouseCode", header: t("master.transferRule.fromWarehouseCode"), size: 120, meta: { filterType: "text" as const } },
@@ -143,43 +159,56 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
       </span>
     )},
     { accessorKey: "remark", header: t("common.remark"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
-  ], [t, openEdit]);
+  ], [t, openEdit, guard]);
 
   return (
-    <div className="h-full flex flex-col">
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid
-          data={data}
-          columns={columns}
-          isLoading={loading}
-          enableColumnFilter
-          enableExport
-          exportFileName={t("master.transferRule.title")}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t("master.transferRule.searchPlaceholder")} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+    <div className="h-full flex overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col">
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
+          <DataGrid
+            data={data}
+            columns={columns}
+            isLoading={loading}
+            enableColumnFilter
+            enableExport
+            exportFileName={t("master.transferRule.title")}
+            onRowClick={(row) => { if (isPanelOpen) guard(() => openEdit(row)); }}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input placeholder={t("master.transferRule.searchPlaceholder")} value={searchText} onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                </div>
               </div>
-            </div>
-          }
-        
-        sqlQuery={`SELECT *\nFROM WAREHOUSE_TRANSFER_RULES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
-      </CardContent></Card>
+            }
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? t("master.transferRule.editRule") : t("master.transferRule.addRule")} size="lg">
-        <div className="grid grid-cols-2 gap-4">
-          <FieldSelect field="fromWarehouse" label={t("master.transferRule.fromWarehouse")} options={warehouseOptions} value={form.fromWarehouseId} onChange={(v) => setForm(p => ({ ...p, fromWarehouseId: v }))} />
-          <FieldSelect field="toWarehouse" label={t("master.transferRule.toWarehouse")} options={warehouseOptions} value={form.toWarehouseId} onChange={(v) => setForm(p => ({ ...p, toWarehouseId: v }))} />
-          <FieldSelect field="allowYn" label={t("master.transferRule.allowYn")} options={[{ value: "Y", label: t("master.transferRule.allowed") }, { value: "N", label: t("master.transferRule.denied") }]} value={form.allowYn} onChange={(v) => setForm(p => ({ ...p, allowYn: v }))} />
-          <FieldInput field="ruleRemark" label={t("common.remark")} value={form.remark} onChange={(e) => setForm(p => ({ ...p, remark: e.target.value }))} />
+          sqlQuery={`SELECT *\nFROM WAREHOUSE_TRANSFER_RULES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+        </CardContent></Card>
+      </div>
+
+      {isPanelOpen && (
+        <div className="w-[440px] ml-4 border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs animate-slide-in-right">
+          <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
+            <h2 className="text-sm font-bold text-text">
+              {editingItem ? t("master.transferRule.editRule") : t("master.transferRule.addRule")}
+            </h2>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={() => guard(() => setIsPanelOpen(false))}>{t("common.cancel")}</Button>
+              <Button size="sm" onClick={handleSave} disabled={saving}>{saving ? t("common.saving") : t("common.save", "저장")}</Button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <FieldSelect field="fromWarehouse" label={t("master.transferRule.fromWarehouse")} options={warehouseOptions} value={form.fromWarehouseId} onChange={(v) => setForm(p => ({ ...p, fromWarehouseId: v }))} />
+              <FieldSelect field="toWarehouse" label={t("master.transferRule.toWarehouse")} options={warehouseOptions} value={form.toWarehouseId} onChange={(v) => setForm(p => ({ ...p, toWarehouseId: v }))} />
+              <FieldSelect field="allowYn" label={t("master.transferRule.allowYn")} options={[{ value: "Y", label: t("master.transferRule.allowed") }, { value: "N", label: t("master.transferRule.denied") }]} value={form.allowYn} onChange={(v) => setForm(p => ({ ...p, allowYn: v }))} />
+              <FieldInput field="ruleRemark" label={t("common.remark")} value={form.remark} onChange={(e) => setForm(p => ({ ...p, remark: e.target.value }))} wrapperClassName="col-span-2" />
+            </div>
+          </div>
         </div>
-        <div className="flex justify-end gap-2 pt-6">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? t("common.saving") : t("common.save", "저장")}</Button>
-        </div>
-      </Modal>
+      )}
 
       <ConfirmModal isOpen={confirmModal.open} onClose={() => setConfirmModal({ open: false, fromId: "", toId: "" })} onConfirm={handleDelete} title={t("master.transferRule.deleteRule")} message={t("master.transferRule.deleteConfirm")} variant="danger" />
+      <ConfirmModal {...guardModalProps} />
     </div>
   );
 }

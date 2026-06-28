@@ -8,14 +8,15 @@
  * 1. API: GET/POST/PUT/DELETE /master/prod-lines
  * 2. DataGrid로 목록 표시 + 모달로 등록/수정
  */
-import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, RefreshCw } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { FieldInput } from "@/app/(authenticated)/master/prod-line/components/ProdLineFieldHelp";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 
 interface ProdLine {
   lineCode: string;
@@ -37,11 +38,14 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
   const [lines, setLines] = useState<ProdLine[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingLine, setEditingLine] = useState<ProdLine | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProdLine | null>(null);
   const [formData, setFormData] = useState<Partial<ProdLine>>({});
   const [saving, setSaving] = useState(false);
+  const initialFormRef = useRef<Partial<ProdLine>>({});
+  const panelAnimateRef = useRef(true);
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
 
   const fetchLines = useCallback(async () => {
     setLoading(true);
@@ -59,10 +63,21 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
 
   useEffect(() => { fetchLines(); }, [fetchLines]);
 
-  const openCreateModal = useCallback(() => {
+  const openCreate = useCallback(() => {
+    panelAnimateRef.current = true;
+    const init: Partial<ProdLine> = { useYn: "Y" };
     setEditingLine(null);
-    setFormData({ useYn: "Y" });
-    setIsModalOpen(true);
+    setFormData(init);
+    initialFormRef.current = init;
+    setIsPanelOpen(true);
+  }, []);
+
+  const openEdit = useCallback((line: ProdLine) => {
+    setEditingLine(line);
+    const init = { ...line };
+    setFormData(init);
+    initialFormRef.current = init;
+    setIsPanelOpen(true);
   }, []);
 
   useEffect(() => {
@@ -71,18 +86,19 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
         <Button variant="secondary" size="sm" onClick={fetchLines}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
-        <Button size="sm" onClick={openCreateModal}>
+        <Button size="sm" onClick={() => guard(openCreate)}>
           <Plus className="w-4 h-4 mr-1" />{t("master.prodLine.addLine")}
         </Button>
       </>
     );
-  }, [onHeaderActions, fetchLines, openCreateModal, loading, t]);
+  }, [onHeaderActions, fetchLines, openCreate, guard, loading, t]);
 
-  const openEditModal = useCallback((line: ProdLine) => {
-    setEditingLine(line);
-    setFormData({ ...line });
-    setIsModalOpen(true);
-  }, []);
+  // 작성 중(저장 안 됨) 여부 계산 후 보고 — 행 전환 시 유실 방어
+  const dirty = useMemo(
+    () => isPanelOpen && JSON.stringify(formData) !== JSON.stringify(initialFormRef.current),
+    [isPanelOpen, formData],
+  );
+  useEffect(() => { markDirty(dirty); }, [dirty, markDirty]);
 
   const handleSave = useCallback(async () => {
     if (!formData.lineCode || !formData.lineName) return;
@@ -93,14 +109,15 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
       } else {
         await api.post("/master/prod-lines", formData);
       }
-      setIsModalOpen(false);
+      markDirty(false);
+      setIsPanelOpen(false);
       fetchLines();
     } catch (e: any) {
       console.error("Save failed:", e);
     } finally {
       setSaving(false);
     }
-  }, [formData, editingLine, fetchLines]);
+  }, [formData, editingLine, fetchLines, markDirty]);
 
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
@@ -118,7 +135,7 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
       meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); openEditModal(row.original); }} className="p-1 hover:bg-surface rounded">
+          <button onClick={(e) => { e.stopPropagation(); guard(() => openEdit(row.original)); }} className="p-1 hover:bg-surface rounded">
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
           <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }} className="p-1 hover:bg-surface rounded">
@@ -155,59 +172,73 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
         <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
       ),
     },
-  ], [t, openEditModal, handleDelete]);
+  ], [t, openEdit, guard, handleDelete]);
 
   return (
-    <>
-      <Card>
-        <CardContent>
-          <DataGrid
-      sqlQuery={`SELECT *\nFROM PROD_LINE_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
-            data={lines}
-            columns={columns}
-            isLoading={loading}
-            enableColumnFilter
-            enableExport
-            exportFileName={t("master.prodLine.title", "생산라인")}
-            toolbarLeft={
-              <div className="flex gap-3 flex-1 min-w-0">
-                <div className="flex-1 min-w-0">
-                  <Input placeholder={t("master.prodLine.searchPlaceholder")} value={searchText}
-                    onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+    <div className="h-full flex overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col">
+        <Card className="flex-1 min-h-0 overflow-hidden">
+          <CardContent className="h-full">
+            <DataGrid
+        sqlQuery={`SELECT *\nFROM PROD_LINE_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
+              data={lines}
+              columns={columns}
+              isLoading={loading}
+              enableColumnFilter
+              enableExport
+              exportFileName={t("master.prodLine.title", "생산라인")}
+              onRowClick={(row) => { if (isPanelOpen) guard(() => openEdit(row)); }}
+              toolbarLeft={
+                <div className="flex gap-3 flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
+                    <Input placeholder={t("master.prodLine.searchPlaceholder")} value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                  </div>
                 </div>
-              </div>
-            }
-          />
-        </CardContent>
-      </Card>
+              }
+            />
+          </CardContent>
+        </Card>
+      </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
-        title={editingLine ? t("master.prodLine.editLine") : t("master.prodLine.addLine")} size="lg">
-        <div className="grid grid-cols-2 gap-4">
-          <FieldInput field="lineCode" label={t("master.prodLine.lineCode")} placeholder="P2001"
-            value={formData.lineCode || ""} onChange={(e) => setFormData((p) => ({ ...p, lineCode: e.target.value }))}
-            disabled={!!editingLine} />
-          <FieldInput field="lineName" label={t("master.prodLine.lineName")} placeholder={t("master.prodLine.lineName")}
-            value={formData.lineName || ""} onChange={(e) => setFormData((p) => ({ ...p, lineName: e.target.value }))} />
-          <FieldInput field="oper" label={t("master.prodLine.oper")} placeholder="#0100"
-            value={formData.oper || ""} onChange={(e) => setFormData((p) => ({ ...p, oper: e.target.value }))} />
-          <FieldInput field="lineType" label={t("master.prodLine.lineType")} placeholder="PACKING"
-            value={formData.lineType || ""} onChange={(e) => setFormData((p) => ({ ...p, lineType: e.target.value }))} />
-          <FieldInput field="whLoc" label={t("master.prodLine.whLoc")} placeholder="LOC002"
-            value={formData.whLoc || ""} onChange={(e) => setFormData((p) => ({ ...p, whLoc: e.target.value }))} />
-          <FieldInput field="erpCode" label={t("master.prodLine.erpCode")} placeholder="ERP Code"
-            value={formData.erpCode || ""} onChange={(e) => setFormData((p) => ({ ...p, erpCode: e.target.value }))} />
-          <FieldInput field="remark" label={t("master.prodLine.remark")} placeholder={t("master.prodLine.remark")}
-            value={formData.remark || ""} onChange={(e) => setFormData((p) => ({ ...p, remark: e.target.value }))}
-            wrapperClassName="col-span-2" />
+      {isPanelOpen && (
+        <div className={`w-[440px] ml-4 border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${panelAnimateRef.current ? "animate-slide-in-right" : ""}`}>
+          <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
+            <h2 className="text-sm font-bold text-text">
+              {editingLine ? t("master.prodLine.editLine") : t("master.prodLine.addLine")}
+            </h2>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={() => guard(() => setIsPanelOpen(false))}>
+                {t("common.cancel")}
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={saving || !formData.lineCode || !formData.lineName}>
+                {saving ? t("common.saving") : t("common.save", "저장")}
+              </Button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <FieldInput field="lineCode" label={t("master.prodLine.lineCode")} placeholder="P2001"
+                value={formData.lineCode || ""} onChange={(e) => setFormData((p) => ({ ...p, lineCode: e.target.value }))}
+                disabled={!!editingLine} />
+              <FieldInput field="lineName" label={t("master.prodLine.lineName")} placeholder={t("master.prodLine.lineName")}
+                value={formData.lineName || ""} onChange={(e) => setFormData((p) => ({ ...p, lineName: e.target.value }))} />
+              <FieldInput field="oper" label={t("master.prodLine.oper")} placeholder="#0100"
+                value={formData.oper || ""} onChange={(e) => setFormData((p) => ({ ...p, oper: e.target.value }))} />
+              <FieldInput field="lineType" label={t("master.prodLine.lineType")} placeholder="PACKING"
+                value={formData.lineType || ""} onChange={(e) => setFormData((p) => ({ ...p, lineType: e.target.value }))} />
+              <FieldInput field="whLoc" label={t("master.prodLine.whLoc")} placeholder="LOC002"
+                value={formData.whLoc || ""} onChange={(e) => setFormData((p) => ({ ...p, whLoc: e.target.value }))} />
+              <FieldInput field="erpCode" label={t("master.prodLine.erpCode")} placeholder="ERP Code"
+                value={formData.erpCode || ""} onChange={(e) => setFormData((p) => ({ ...p, erpCode: e.target.value }))} />
+              <FieldInput field="remark" label={t("master.prodLine.remark")} placeholder={t("master.prodLine.remark")}
+                value={formData.remark || ""} onChange={(e) => setFormData((p) => ({ ...p, remark: e.target.value }))}
+                wrapperClassName="col-span-2" />
+            </div>
+          </div>
         </div>
-        <div className="flex justify-end gap-2 pt-6">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? t("common.saving") : editingLine ? t("common.edit") : t("common.add")}
-          </Button>
-        </div>
-      </Modal>
+      )}
+
       <ConfirmModal
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
@@ -217,6 +248,7 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
         confirmText={t("common.delete")}
         variant="danger"
       />
-    </>
+      <ConfirmModal {...guardModalProps} />
+    </div>
   );
 }

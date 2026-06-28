@@ -28,7 +28,40 @@ interface Props {
   onSave: () => void;
   /** 슬라이드 인 애니메이션 적용 여부 (기본: true) */
   animate?: boolean;
+  /** 작성 중(저장 안 됨) 여부를 부모에 보고 — 행 전환 시 유실 방어용 */
+  onDirtyChange?: (dirty: boolean) => void;
 }
+
+/** editingPart로부터 폼 초기값 생성 — useState 초기화와 prop 변경 리셋에서 공용 */
+const buildForm = (editingPart: Part | null) => ({
+  itemCode: editingPart?.itemCode || "",
+  itemName: editingPart?.itemName || "",
+  itemNo: editingPart?.itemNo || "",
+  custPartNo: editingPart?.custPartNo || "",
+  itemType: (editingPart?.itemType || "RAW_MATERIAL") as Part["itemType"],
+  productType: editingPart?.productType || "",
+  modelName: editingPart?.modelName || "",
+  defectModelGroup: editingPart?.defectModelGroup || "",
+  spec: editingPart?.spec || "",
+  rev: editingPart?.rev || "",
+  markingText: editingPart?.markingText || "",
+  unit: editingPart?.unit || "EA",
+  color: editingPart?.color || "",
+  boxQty: editingPart?.boxQty ?? 0,
+  minPackQty: editingPart?.minPackQty ?? 0,
+  lotUnitQty: editingPart?.lotUnitQty ?? 0,
+  safetyStock: editingPart?.safetyStock ?? 0,
+  expiryDate: editingPart?.expiryDate ?? 0,
+  expiryExtDays: editingPart?.expiryExtDays ?? 0,
+  iqcYn: editingPart?.iqcYn || "Y",
+  inspectMethod: editingPart?.inspectMethod || "",
+  sampleQty: editingPart?.sampleQty ?? 0,
+  iqcAqlPolicyCode: editingPart?.iqcAqlPolicyCode || "",
+  useYn: editingPart?.useYn || "Y",
+  packUnit: editingPart?.packUnit ?? 0,
+  storageLocation: editingPart?.storageLocation || "",
+  remark: editingPart?.remark || "",
+});
 
 const PACKAGING_QTY_OPTIONS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 const NO_INSPECTION_METHODS = new Set(["SKIP", "NONE"]);
@@ -40,7 +73,7 @@ type IqcAqlPolicyOption = {
   minorAqlCode?: string | null;
 };
 
-export default function PartFormPanel({ editingPart, onClose, onSave, animate = true }: Props) {
+export default function PartFormPanel({ editingPart, onClose, onSave, animate = true, onDirtyChange }: Props) {
   const { t } = useTranslation();
   const isEdit = !!editingPart;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -85,35 +118,8 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     };
   }, []);
 
-  const [form, setForm] = useState(() => ({
-    itemCode: editingPart?.itemCode || "",
-    itemName: editingPart?.itemName || "",
-    itemNo: editingPart?.itemNo || "",
-    custPartNo: editingPart?.custPartNo || "",
-    itemType: (editingPart?.itemType || "RAW_MATERIAL") as Part["itemType"],
-    productType: editingPart?.productType || "",
-    modelName: editingPart?.modelName || "",
-    defectModelGroup: editingPart?.defectModelGroup || "",
-    spec: editingPart?.spec || "",
-    rev: editingPart?.rev || "",
-    markingText: editingPart?.markingText || "",
-    unit: editingPart?.unit || "EA",
-    color: editingPart?.color || "",
-    boxQty: editingPart?.boxQty ?? 0,
-    minPackQty: editingPart?.minPackQty ?? 0,
-    lotUnitQty: editingPart?.lotUnitQty ?? 0,
-    safetyStock: editingPart?.safetyStock ?? 0,
-    expiryDate: editingPart?.expiryDate ?? 0,
-    expiryExtDays: editingPart?.expiryExtDays ?? 0,
-    iqcYn: editingPart?.iqcYn || "Y",
-    inspectMethod: editingPart?.inspectMethod || "",
-    sampleQty: editingPart?.sampleQty ?? 0,
-    iqcAqlPolicyCode: editingPart?.iqcAqlPolicyCode || "",
-    useYn: editingPart?.useYn || "Y",
-    packUnit: editingPart?.packUnit ?? 0,
-    storageLocation: editingPart?.storageLocation || "",
-    remark: editingPart?.remark || "",
-  }));
+  const [form, setForm] = useState(() => buildForm(editingPart));
+  const initialFormRef = useRef(form);
   const [saving, setSaving] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(editingPart?.imageUrl ?? null);
@@ -131,39 +137,26 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     if (previewUrl?.startsWith("blob:")) {
       URL.revokeObjectURL(previewUrl);
     }
-    setForm({
-      itemCode: editingPart?.itemCode || "",
-      itemName: editingPart?.itemName || "",
-      itemNo: editingPart?.itemNo || "",
-      custPartNo: editingPart?.custPartNo || "",
-      itemType: (editingPart?.itemType || "RAW_MATERIAL") as Part["itemType"],
-      productType: editingPart?.productType || "",
-      modelName: editingPart?.modelName || "",
-      defectModelGroup: editingPart?.defectModelGroup || "",
-      spec: editingPart?.spec || "",
-      rev: editingPart?.rev || "",
-      markingText: editingPart?.markingText || "",
-      unit: editingPart?.unit || "EA",
-      color: editingPart?.color || "",
-      boxQty: editingPart?.boxQty ?? 0,
-      minPackQty: editingPart?.minPackQty ?? 0,
-      lotUnitQty: editingPart?.lotUnitQty ?? 0,
-      safetyStock: editingPart?.safetyStock ?? 0,
-      expiryDate: editingPart?.expiryDate ?? 0,
-      expiryExtDays: editingPart?.expiryExtDays ?? 0,
-      iqcYn: editingPart?.iqcYn || "Y",
-      inspectMethod: editingPart?.inspectMethod || "",
-      sampleQty: editingPart?.sampleQty ?? 0,
-      iqcAqlPolicyCode: editingPart?.iqcAqlPolicyCode || "",
-      useYn: editingPart?.useYn || "Y",
-      packUnit: editingPart?.packUnit ?? 0,
-      storageLocation: editingPart?.storageLocation || "",
-      remark: editingPart?.remark || "",
-    });
+    const init = buildForm(editingPart);
+    setForm(init);
+    initialFormRef.current = init;
     setSelectedImageFile(null);
     setPreviewUrl(editingPart?.imageUrl ?? null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingPart]);
+
+  // 작성 중(저장 안 됨) 여부 계산 후 부모에 보고 — 행 전환 시 유실 방어
+  const dirty = useMemo(
+    () =>
+      JSON.stringify(form) !== JSON.stringify(initialFormRef.current) ||
+      previewUrl !== (editingPart?.imageUrl ?? null),
+    [form, previewUrl, editingPart],
+  );
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+  // 언마운트 시 dirty 해제
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
   useEffect(() => {
     setImageError(false);
@@ -251,6 +244,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
           await uploadImage(form.itemCode, selectedImageFile);
         }
       }
+      onDirtyChange?.(false);
       onSave();
       onClose();
     } catch {

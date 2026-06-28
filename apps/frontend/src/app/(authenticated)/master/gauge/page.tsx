@@ -10,7 +10,7 @@
  * 3. **ComCodeBadge**: GAUGE_TYPE(유형), GAUGE_STATUS(상태) 코드값 표시
  * 4. API: GET/POST /quality/msa/gauges, PUT/DELETE /quality/msa/gauges/:gaugeCode
  */
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
@@ -20,6 +20,7 @@ import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal } from "@/
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 
 /** 계측기 데이터 타입 */
 interface Gauge {
@@ -75,7 +76,9 @@ export default function GaugeMasterPage() {
   const [editing, setEditing] = useState<Gauge | null>(null);
   const [selectedRow, setSelectedRow] = useState<Gauge | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const initialFormRef = useRef<FormState>(EMPTY_FORM);
   const [deleteTarget, setDeleteTarget] = useState<Gauge | null>(null);
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
 
   /* -- 데이터 조회 -- */
   const fetchData = useCallback(async () => {
@@ -99,12 +102,13 @@ export default function GaugeMasterPage() {
   const openCreate = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
+    initialFormRef.current = EMPTY_FORM;
     setPanelOpen(true);
   };
 
   const openEdit = (gauge: Gauge) => {
     setEditing(gauge);
-    setForm({
+    const nextForm: FormState = {
       gaugeCode: gauge.gaugeCode,
       gaugeName: gauge.gaugeName,
       gaugeType: gauge.gaugeType,
@@ -119,9 +123,20 @@ export default function GaugeMasterPage() {
       status: gauge.status ?? "ACTIVE",
       location: gauge.location ?? "",
       responsiblePerson: gauge.responsiblePerson ?? "",
-    });
+    };
+    setForm(nextForm);
+    initialFormRef.current = nextForm;
     setPanelOpen(true);
   };
+
+  // 작성 중(저장 안 됨) 여부 계산 후 가드에 보고 — 행 전환 시 유실 방어
+  const dirty = useMemo(
+    () => panelOpen && JSON.stringify(form) !== JSON.stringify(initialFormRef.current),
+    [panelOpen, form],
+  );
+  useEffect(() => {
+    markDirty(dirty);
+  }, [dirty, markDirty]);
 
   const handleSave = async () => {
     try {
@@ -173,7 +188,7 @@ export default function GaugeMasterPage() {
       meta: { align: "center" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={() => openEdit(row.original)}
+          <button onClick={() => guard(() => openEdit(row.original))}
             className="p-1 hover:bg-surface rounded">
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
@@ -229,7 +244,7 @@ export default function GaugeMasterPage() {
       ),
     },
     { accessorKey: "location", header: t("master.gauge.location"), size: 120 },
-  ], [t]);
+  ], [t, guard]);
 
   const setField = (key: keyof FormState, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -253,7 +268,7 @@ export default function GaugeMasterPage() {
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
               {t("common.refresh")}
             </Button>
-            <Button size="sm" onClick={openCreate}>
+            <Button size="sm" onClick={() => guard(openCreate)}>
               <Plus className="w-4 h-4 mr-1" />{t("common.add")}
             </Button>
           </div>
@@ -267,8 +282,11 @@ export default function GaugeMasterPage() {
               exportFileName={t("master.gauge.title")}
               onRowClick={(row) => {
                 const gauge = row as Gauge;
-                setSelectedRow(gauge);
-                if (panelOpen) openEdit(gauge);
+                if (panelOpen) {
+                  guard(() => { setSelectedRow(gauge); openEdit(gauge); });
+                } else {
+                  setSelectedRow(gauge);
+                }
               }}
               getRowId={(row) => (row as Gauge).gaugeCode}
               selectedRowId={selectedRow?.gaugeCode}
@@ -297,7 +315,7 @@ export default function GaugeMasterPage() {
               {editing ? t("common.edit") : t("common.add")}
             </h2>
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="secondary" onClick={() => { setPanelOpen(false); setEditing(null); }}>
+              <Button size="sm" variant="secondary" onClick={() => guard(() => { setPanelOpen(false); setEditing(null); })}>
                 {t("common.cancel")}
               </Button>
               <Button size="sm" onClick={handleSave}
@@ -361,6 +379,8 @@ export default function GaugeMasterPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal {...guardModalProps} />
 
       {/* 삭제 확인 */}
       <ConfirmModal isOpen={!!deleteTarget}

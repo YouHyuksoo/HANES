@@ -3,7 +3,7 @@
  * @description 창고 등록/수정 모달 폼
  */
 import { useTranslation } from 'react-i18next';
-import { Button, Modal } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { HelpTooltip } from '@/components/shared';
 import { FieldInput, FieldLineSelect, FieldProcessSelect, FieldSelect, WAREHOUSE_FIELD_HELP } from './WarehouseFieldHelp';
 
@@ -18,21 +18,32 @@ interface WarehouseFormData {
 }
 
 interface WarehouseFormProps {
-  isOpen: boolean;
   isEdit: boolean;
   formData: WarehouseFormData;
   typeOptions: { value: string; label: string }[];
   onClose: () => void;
   onChange: (data: WarehouseFormData) => void;
   onSave: () => void;
+  saving?: boolean;
 }
 
-export default function WarehouseForm({ isOpen, isEdit, formData, typeOptions, onClose, onChange, onSave }: WarehouseFormProps) {
+export default function WarehouseForm({ isEdit, formData, typeOptions, onClose, onChange, onSave, saving }: WarehouseFormProps) {
   const { t } = useTranslation();
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? t('inventory.warehouse.editWarehouse') : t('inventory.warehouse.addWarehouse')}>
-      <div className="space-y-4">
+    <div className="w-[440px] ml-4 border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs animate-slide-in-right">
+      <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
+        <h2 className="text-sm font-bold text-text">
+          {isEdit ? t('inventory.warehouse.editWarehouse') : t('inventory.warehouse.addWarehouse')}
+        </h2>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button size="sm" onClick={onSave} disabled={saving || !formData.warehouseCode || !formData.warehouseName}>
+            {saving ? t('common.saving') : t('common.save')}
+          </Button>
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
         <FieldInput
           field="warehouseCode"
           label={t('inventory.warehouse.warehouseCode')}
@@ -80,11 +91,7 @@ export default function WarehouseForm({ isOpen, isEdit, formData, typeOptions, o
             />
           </label>
         </div>
-        <div className="flex justify-end gap-2 pt-4">
-          <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button onClick={onSave}>{t('common.save')}</Button>
-        </div>
       </div>
-    </Modal>
+    </div>
   );
 }

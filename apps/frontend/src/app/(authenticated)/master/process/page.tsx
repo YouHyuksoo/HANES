@@ -9,11 +9,12 @@
  * 2. 우측(9칸): 선택된 공정에 배치된 설비 DataGrid
  * 3. 공정 CRUD는 모달로 처리
  */
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Workflow, RefreshCw } from "lucide-react";
 import { Button, Modal, Select, ConfirmModal } from "@/components/ui";
 import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import api from "@/services/api";
 import ProcessList, { type Process } from "./components/ProcessList";
 import ProcessEquipGrid from "./components/ProcessEquipGrid";
@@ -47,11 +48,14 @@ export default function ProcessPage() {
     {},
   );
 
-  /* ── 모달 상태 ── */
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  /* ── 패널 상태 ── */
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Process | null>(null);
   const [formData, setFormData] = useState<Partial<Process>>({});
   const [saving, setSaving] = useState(false);
+  const initialFormRef = useRef<Partial<Process>>({});
+  const panelAnimateRef = useRef(true);
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
   const [deleteTarget, setDeleteTarget] = useState<Process | null>(null);
   const [removeEquipmentTarget, setRemoveEquipmentTarget] = useState<Equipment | null>(null);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
@@ -145,16 +149,32 @@ export default function ProcessPage() {
 
   /* ── CRUD 핸들러 ── */
   const handleAdd = useCallback(() => {
-    setEditingItem(null);
-    setFormData({ useYn: "Y", sortOrder: 0 });
-    setIsModalOpen(true);
-  }, []);
+    guard(() => {
+      panelAnimateRef.current = true;
+      const init: Partial<Process> = { useYn: "Y", sortOrder: 0 };
+      setEditingItem(null);
+      setFormData(init);
+      initialFormRef.current = init;
+      setIsPanelOpen(true);
+    });
+  }, [guard]);
 
   const handleEdit = useCallback((item: Process) => {
-    setEditingItem(item);
-    setFormData({ ...item });
-    setIsModalOpen(true);
-  }, []);
+    guard(() => {
+      const init = { ...item };
+      setEditingItem(item);
+      setFormData(init);
+      initialFormRef.current = init;
+      setIsPanelOpen(true);
+    });
+  }, [guard]);
+
+  // 작성 중(저장 안 됨) 여부 계산 후 보고 — 항목 전환 시 유실 방어
+  const dirty = useMemo(
+    () => isPanelOpen && JSON.stringify(formData) !== JSON.stringify(initialFormRef.current),
+    [isPanelOpen, formData],
+  );
+  useEffect(() => { markDirty(dirty); }, [dirty, markDirty]);
 
   const handleSave = useCallback(async () => {
     if (!formData.processCode || !formData.processName || !formData.processType)
@@ -169,14 +189,15 @@ export default function ProcessPage() {
       } else {
         await api.post("/master/processes", formData);
       }
-      setIsModalOpen(false);
+      markDirty(false);
+      setIsPanelOpen(false);
       fetchProcesses();
     } catch (e: any) {
       console.error("Save failed:", e);
     } finally {
       setSaving(false);
     }
-  }, [formData, editingItem, fetchProcesses]);
+  }, [formData, editingItem, fetchProcesses, markDirty]);
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
@@ -266,121 +287,110 @@ export default function ProcessPage() {
         </div>
       </div>
 
-      {/* 본문: 좌측 공정 + 우측 설비 */}
-      <div className="grid grid-cols-12 gap-6 min-h-0 flex-1">
-        <div className="col-span-7 flex flex-col min-h-0">
-          <ProcessList
-            processes={processes}
-            selectedCode={selectedCode}
-            onSelect={setSelectedCode}
-            isLoading={loading}
-            equipCounts={allEquipCounts}
-            onAdd={handleAdd}
-            onEdit={handleEdit}
-            onDelete={setDeleteTarget}
-          />
+      {/* 본문: 좌측 공정 + 우측 설비 + 슬라이드 패널 */}
+      <div className="flex-1 min-h-0 flex overflow-hidden">
+        <div className="flex-1 min-w-0 grid grid-cols-12 gap-6">
+          <div className="col-span-7 flex flex-col min-h-0">
+            <ProcessList
+              processes={processes}
+              selectedCode={selectedCode}
+              onSelect={setSelectedCode}
+              isLoading={loading}
+              equipCounts={allEquipCounts}
+              onAdd={handleAdd}
+              onEdit={handleEdit}
+              onDelete={setDeleteTarget}
+            />
+          </div>
+          <div className="col-span-5 flex flex-col min-h-0">
+            <ProcessEquipGrid
+              processCode={selectedCode}
+              processName={selectedProcess?.processName ?? ""}
+              equipments={equipments}
+              isLoading={equipLoading}
+              onAdd={handleOpenAssign}
+              onRemove={setRemoveEquipmentTarget}
+            />
+          </div>
         </div>
-        <div className="col-span-5 flex flex-col min-h-0">
-          <ProcessEquipGrid
-            processCode={selectedCode}
-            processName={selectedProcess?.processName ?? ""}
-            equipments={equipments}
-            isLoading={equipLoading}
-            onAdd={handleOpenAssign}
-            onRemove={setRemoveEquipmentTarget}
-          />
-        </div>
-      </div>
 
-      {/* 공정 추가/수정 모달 */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={
-          editingItem
-            ? t("master.process.editProcess")
-            : t("master.process.addProcess")
-        }
-        size="lg"
-      >
-        <div className="grid grid-cols-2 gap-4">
-          <FieldInput
-            field="processCode"
-            label={t("master.process.processCode")}
-            value={formData.processCode || ""}
-            onChange={(e) =>
-              setFormData((p) => ({ ...p, processCode: e.target.value }))
-            }
-            disabled={!!editingItem}
-            required
-          />
-          <FieldComCodeSelect
-            field="processType"
-            groupCode="PROCESS_TYPE"
-            includeAll={false}
-            label={t("master.process.processType")}
-            value={formData.processType || ""}
-            onChange={(v) => setFormData((p) => ({ ...p, processType: v }))}
-            required
-          />
-          <FieldInput
-            field="processName"
-            label={t("master.process.processName")}
-            value={formData.processName || ""}
-            onChange={(e) =>
-              setFormData((p) => ({ ...p, processName: e.target.value }))
-            }
-            required
-            wrapperClassName="col-span-2"
-          />
-          <FieldComCodeSelect
-            field="processCategory"
-            groupCode="PROCESS_CATEGORY"
-            includeAll={false}
-            label={t("master.process.processCategory")}
-            value={formData.processCategory || ""}
-            onChange={(v) =>
-              setFormData((p) => ({ ...p, processCategory: v }))
-            }
-          />
-          <FieldComCodeSelect
-            field="lineType"
-            label={t("master.process.lineType", { defaultValue: "라인구분" })}
-            groupCode="LINE_TYPE"
-            includeAll={false}
-            value={formData.lineType || ""}
-            onChange={(v) => setFormData((p) => ({ ...p, lineType: v }))}
-          />
-          <FieldInput
-            field="sortOrder"
-            label={t("master.process.sortOrder")}
-            type="number"
-            value={formData.sortOrder?.toString() || "0"}
-            onChange={(e) =>
-              setFormData((p) => ({
-                ...p,
-                sortOrder: parseInt(e.target.value) || 0,
-              }))
-            }
-          />
-          <FieldInput
-            field="remark"
-            label={t("common.remark")}
-            value={formData.remark || ""}
-            onChange={(e) =>
-              setFormData((p) => ({ ...p, remark: e.target.value }))
-            }
-          />
-        </div>
-        <div className="flex justify-end gap-2 pt-6">
-          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
-            {t("common.cancel")}
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? t("common.saving") : t("common.save", "저장")}
-          </Button>
-        </div>
-      </Modal>
+        {/* 공정 추가/수정 슬라이드 패널 */}
+        {isPanelOpen && (
+          <div className={`w-[440px] ml-4 border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs ${panelAnimateRef.current ? "animate-slide-in-right" : ""}`}>
+            <div className="px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0">
+              <h2 className="text-sm font-bold text-text">
+                {editingItem ? t("master.process.editProcess") : t("master.process.addProcess")}
+              </h2>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="secondary" onClick={() => guard(() => setIsPanelOpen(false))}>
+                  {t("common.cancel")}
+                </Button>
+                <Button size="sm" onClick={handleSave} disabled={saving || !formData.processCode || !formData.processName || !formData.processType}>
+                  {saving ? t("common.saving") : t("common.save", "저장")}
+                </Button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <FieldInput
+                  field="processCode"
+                  label={t("master.process.processCode")}
+                  value={formData.processCode || ""}
+                  onChange={(e) => setFormData((p) => ({ ...p, processCode: e.target.value }))}
+                  disabled={!!editingItem}
+                  required
+                />
+                <FieldComCodeSelect
+                  field="processType"
+                  groupCode="PROCESS_TYPE"
+                  includeAll={false}
+                  label={t("master.process.processType")}
+                  value={formData.processType || ""}
+                  onChange={(v) => setFormData((p) => ({ ...p, processType: v }))}
+                  required
+                />
+                <FieldInput
+                  field="processName"
+                  label={t("master.process.processName")}
+                  value={formData.processName || ""}
+                  onChange={(e) => setFormData((p) => ({ ...p, processName: e.target.value }))}
+                  required
+                  wrapperClassName="col-span-2"
+                />
+                <FieldComCodeSelect
+                  field="processCategory"
+                  groupCode="PROCESS_CATEGORY"
+                  includeAll={false}
+                  label={t("master.process.processCategory")}
+                  value={formData.processCategory || ""}
+                  onChange={(v) => setFormData((p) => ({ ...p, processCategory: v }))}
+                />
+                <FieldComCodeSelect
+                  field="lineType"
+                  label={t("master.process.lineType", { defaultValue: "라인구분" })}
+                  groupCode="LINE_TYPE"
+                  includeAll={false}
+                  value={formData.lineType || ""}
+                  onChange={(v) => setFormData((p) => ({ ...p, lineType: v }))}
+                />
+                <FieldInput
+                  field="sortOrder"
+                  label={t("master.process.sortOrder")}
+                  type="number"
+                  value={formData.sortOrder?.toString() || "0"}
+                  onChange={(e) => setFormData((p) => ({ ...p, sortOrder: parseInt(e.target.value) || 0 }))}
+                />
+                <FieldInput
+                  field="remark"
+                  label={t("common.remark")}
+                  value={formData.remark || ""}
+                  onChange={(e) => setFormData((p) => ({ ...p, remark: e.target.value }))}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* 삭제 확인 */}
       <Modal
@@ -429,6 +439,7 @@ export default function ProcessPage() {
         confirmText={t("common.delete")}
         variant="danger"
       />
+      <ConfirmModal {...guardModalProps} />
     </div>
   );
 }

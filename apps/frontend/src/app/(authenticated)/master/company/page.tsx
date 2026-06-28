@@ -15,6 +15,7 @@ import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui"
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import CompanyFormPanel from "./components/CompanyForm";
 import { Company, getCompanyKey } from "./types";
 
@@ -27,6 +28,7 @@ function CompanyPage() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const panelAnimateRef = useRef(true);
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
 
   const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
 
@@ -64,6 +66,14 @@ function CompanyPage() {
     panelAnimateRef.current = true;
   }, []);
 
+  const openEdit = useCallback((company: Company) => {
+    guard(() => { panelAnimateRef.current = !isPanelOpen; setEditingCompany(company); setIsPanelOpen(true); });
+  }, [guard, isPanelOpen]);
+
+  const openCreate = useCallback(() => {
+    guard(() => { panelAnimateRef.current = !isPanelOpen; setEditingCompany(null); setIsPanelOpen(true); });
+  }, [guard, isPanelOpen]);
+
   const handlePanelSave = useCallback(() => {
     fetchCompanies();
   }, [fetchCompanies]);
@@ -74,7 +84,7 @@ function CompanyPage() {
       meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); panelAnimateRef.current = !isPanelOpen; setEditingCompany(row.original); setIsPanelOpen(true); }} className="p-1 hover:bg-surface rounded">
+          <button onClick={(e) => { e.stopPropagation(); openEdit(row.original); }} className="p-1 hover:bg-surface rounded">
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
           <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }} className="p-1 hover:bg-surface rounded">
@@ -97,7 +107,7 @@ function CompanyPage() {
         <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
       ),
     },
-  ], [t, isPanelOpen]);
+  ], [t, isPanelOpen, openEdit]);
 
   return (
     <div className="flex h-full animate-fade-in">
@@ -113,7 +123,7 @@ function CompanyPage() {
             <Button variant="secondary" size="sm" onClick={fetchCompanies}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
             </Button>
-            <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingCompany(null); setIsPanelOpen(true); }}>
+            <Button size="sm" onClick={openCreate}>
               <Plus className="w-4 h-4 mr-1" />{t("master.company.addCompany")}
             </Button>
           </div>
@@ -128,7 +138,7 @@ function CompanyPage() {
             enableColumnFilter
             enableExport
             exportFileName={t("master.company.title")}
-            onRowClick={(row) => { if (isPanelOpen) setEditingCompany(row); }}
+            onRowClick={(row) => { if (isPanelOpen) guard(() => setEditingCompany(row)); }}
             toolbarLeft={
               <Input placeholder={t("master.company.searchPlaceholder")}
                 value={searchText} onChange={(e) => setSearchText(e.target.value)}
@@ -141,13 +151,15 @@ function CompanyPage() {
 
       {isPanelOpen && (
         <CompanyFormPanel
-          key={editingCompany?.companyCode ?? "__new__"}
           editingCompany={editingCompany}
-          onClose={handlePanelClose}
+          onClose={() => guard(handlePanelClose)}
           onSave={handlePanelSave}
           animate={panelAnimateRef.current}
+          onDirtyChange={markDirty}
         />
       )}
+
+      <ConfirmModal {...guardModalProps} />
 
       <ConfirmModal
         isOpen={!!deleteTarget}

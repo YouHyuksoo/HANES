@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Upload, FileImage, FileText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui";
@@ -38,9 +38,21 @@ interface Props {
   onClose: () => void;
   onSave: () => void;
   animate?: boolean;
+  /** 작성 중(저장 안 됨) 여부를 부모에 보고 — 행 전환 시 유실 방어용 */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 export type { WorkInstruction };
+
+/** editingItem으로부터 폼 초기값 생성 */
+const buildForm = (editingItem: WorkInstruction | null) => ({
+  itemCode: editingItem?.itemCode || "",
+  processCode: editingItem?.processCode || "",
+  title: editingItem?.title || "",
+  revision: editingItem?.revision || "",
+  imageUrl: editingItem?.imageUrl || "",
+  content: "",
+});
 
 /** 파일 확장자 판별 */
 const getFilePath = (url: string) => url.split(/[?#]/)[0] ?? url;
@@ -54,33 +66,32 @@ const resolveFileUrl = (url: string) =>
     ? `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/api(?:\/v1)?$/, "") || ""}${url}`
     : url;
 
-export default function WorkInstructionFormPanel({ editingItem, onClose, onSave, animate = true }: Props) {
+export default function WorkInstructionFormPanel({ editingItem, onClose, onSave, animate = true, onDirtyChange }: Props) {
   const { t } = useTranslation();
   const isEdit = !!editingItem;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState({
-    itemCode: editingItem?.itemCode || "",
-    processCode: editingItem?.processCode || "",
-    title: editingItem?.title || "",
-    revision: editingItem?.revision || "",
-    imageUrl: editingItem?.imageUrl || "",
-    content: "",
-  });
+  const [form, setForm] = useState(() => buildForm(editingItem));
+  const initialFormRef = useRef(form);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
-    setForm({
-      itemCode: editingItem?.itemCode || "",
-      processCode: editingItem?.processCode || "",
-      title: editingItem?.title || "",
-      revision: editingItem?.revision || "",
-      imageUrl: editingItem?.imageUrl || "",
-      content: "",
-    });
+    const init = buildForm(editingItem);
+    setForm(init);
+    initialFormRef.current = init;
   }, [editingItem]);
+
+  // 작성 중(저장 안 됨) 여부 계산 후 부모에 보고 — 행 전환 시 유실 방어
+  const dirty = useMemo(
+    () => JSON.stringify(form) !== JSON.stringify(initialFormRef.current),
+    [form],
+  );
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
   const setField = (key: string, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -129,6 +140,7 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
       } else {
         await api.post("/master/work-instructions", form);
       }
+      onDirtyChange?.(false);
       onSave();
       onClose();
     } catch {

@@ -18,6 +18,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import PartnerFormPanel, { type Partner } from "./components/PartnerFormPanel";
 
 type PanelMode = "create" | "edit";
@@ -34,9 +35,9 @@ function PartnerPage() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
   const [panelMode, setPanelMode] = useState<PanelMode>("create");
-  const [panelKey, setPanelKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<Partner | null>(null);
   const panelAnimateRef = useRef(true);
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
 
   /** API에서 거래처 목록 조회 */
   const fetchPartners = useCallback(async () => {
@@ -70,37 +71,40 @@ function PartnerPage() {
   }, [deleteTarget, fetchPartners]);
 
   const handlePanelClose = useCallback(() => {
-    setIsPanelOpen(false);
-    setEditingPartner(null);
-    setPanelMode("create");
-    panelAnimateRef.current = true;
-  }, []);
+    guard(() => {
+      setIsPanelOpen(false);
+      setEditingPartner(null);
+      setPanelMode("create");
+      panelAnimateRef.current = true;
+    });
+  }, [guard]);
 
   const handlePanelSave = useCallback(() => {
     fetchPartners();
   }, [fetchPartners]);
 
   const openCreatePanel = useCallback(() => {
-    panelAnimateRef.current = !isPanelOpen;
-    setEditingPartner(null);
-    setPanelMode("create");
-    setPanelKey(k => k + 1);
-    setIsPanelOpen(true);
-  }, [isPanelOpen]);
+    guard(() => {
+      panelAnimateRef.current = !isPanelOpen;
+      setEditingPartner(null);
+      setPanelMode("create");
+      setIsPanelOpen(true);
+    });
+  }, [isPanelOpen, guard]);
 
   const openEditPanel = useCallback((partner: Partner) => {
-    panelAnimateRef.current = !isPanelOpen;
-    setEditingPartner(partner);
-    setPanelMode("edit");
-    setPanelKey(k => k + 1);
-    setIsPanelOpen(true);
-  }, [isPanelOpen]);
+    guard(() => {
+      panelAnimateRef.current = !isPanelOpen;
+      setEditingPartner(partner);
+      setPanelMode("edit");
+      setIsPanelOpen(true);
+    });
+  }, [isPanelOpen, guard]);
 
   const handleRowClick = useCallback((partner: Partner) => {
     if (!isPanelOpen || panelMode !== "edit") return;
-    setEditingPartner(partner);
-    setPanelKey(k => k + 1);
-  }, [isPanelOpen, panelMode]);
+    guard(() => setEditingPartner(partner));
+  }, [isPanelOpen, panelMode, guard]);
 
   const columns = useMemo<ColumnDef<Partner>[]>(() => [
     {
@@ -196,14 +200,16 @@ function PartnerPage() {
 
       {isPanelOpen && (
         <PartnerFormPanel
-          key={`${panelMode}-${panelKey}`}
           mode={panelMode}
           editingPartner={editingPartner}
           onClose={handlePanelClose}
           onSave={handlePanelSave}
           animate={panelAnimateRef.current}
+          onDirtyChange={markDirty}
         />
       )}
+
+      <ConfirmModal {...guardModalProps} />
 
       <ConfirmModal
         isOpen={!!deleteTarget}

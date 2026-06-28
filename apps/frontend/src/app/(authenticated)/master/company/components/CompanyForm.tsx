@@ -11,7 +11,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Plus, Trash2, MapPin } from "lucide-react";
 import { Button, Input, ConfirmModal } from "@/components/ui";
@@ -23,23 +23,29 @@ interface Props {
   onClose: () => void;
   onSave: () => void;
   animate?: boolean;
+  /** 작성 중(저장 안 됨) 여부를 부모에 보고 — 행 전환 시 유실 방어용 */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
-export default function CompanyFormPanel({ editingCompany, onClose, onSave, animate = true }: Props) {
+/** editingCompany로부터 폼 초기값 생성 — useState 초기화와 prop 변경 리셋에서 공용 */
+const buildForm = (editingCompany: Company | null) => ({
+  companyCode: editingCompany?.companyCode || "",
+  companyName: editingCompany?.companyName || "",
+  bizNo: editingCompany?.bizNo || "",
+  ceoName: editingCompany?.ceoName || "",
+  address: editingCompany?.address || "",
+  tel: editingCompany?.tel || "",
+  fax: editingCompany?.fax || "",
+  email: editingCompany?.email || "",
+  remark: editingCompany?.remark || "",
+});
+
+export default function CompanyFormPanel({ editingCompany, onClose, onSave, animate = true, onDirtyChange }: Props) {
   const { t } = useTranslation();
   const isEdit = !!editingCompany;
 
-  const [form, setForm] = useState({
-    companyCode: editingCompany?.companyCode || "",
-    companyName: editingCompany?.companyName || "",
-    bizNo: editingCompany?.bizNo || "",
-    ceoName: editingCompany?.ceoName || "",
-    address: editingCompany?.address || "",
-    tel: editingCompany?.tel || "",
-    fax: editingCompany?.fax || "",
-    email: editingCompany?.email || "",
-    remark: editingCompany?.remark || "",
-  });
+  const [form, setForm] = useState(() => buildForm(editingCompany));
+  const initialFormRef = useRef(form);
   const [saving, setSaving] = useState(false);
 
   // 사업장 관련 상태
@@ -49,20 +55,22 @@ export default function CompanyFormPanel({ editingCompany, onClose, onSave, anim
   const [deletePlantTarget, setDeletePlantTarget] = useState<Plant | null>(null);
 
   useEffect(() => {
-    setForm({
-      companyCode: editingCompany?.companyCode || "",
-      companyName: editingCompany?.companyName || "",
-      bizNo: editingCompany?.bizNo || "",
-      ceoName: editingCompany?.ceoName || "",
-      address: editingCompany?.address || "",
-      tel: editingCompany?.tel || "",
-      fax: editingCompany?.fax || "",
-      email: editingCompany?.email || "",
-      remark: editingCompany?.remark || "",
-    });
+    const init = buildForm(editingCompany);
+    setForm(init);
+    initialFormRef.current = init;
     setNewPlant({ plantCode: "", plantName: "" });
     setAddingPlant(false);
   }, [editingCompany]);
+
+  // 작성 중(저장 안 됨) 여부 계산 후 부모에 보고 — 행 전환 시 유실 방어
+  const dirty = useMemo(
+    () => JSON.stringify(form) !== JSON.stringify(initialFormRef.current),
+    [form],
+  );
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
   /** 사업장 목록 조회 */
   const fetchPlants = useCallback(async () => {
@@ -106,6 +114,7 @@ export default function CompanyFormPanel({ editingCompany, onClose, onSave, anim
       } else {
         await api.post("/master/companies", payload);
       }
+      onDirtyChange?.(false);
       onSave();
       onClose();
     } catch {

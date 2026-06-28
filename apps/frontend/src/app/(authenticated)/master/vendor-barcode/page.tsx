@@ -18,6 +18,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import VendorBarcodeFormPanel, { type VendorBarcodeMapping } from "./components/VendorBarcodeFormPanel";
 
 const MATCH_TYPE_OPTIONS = [
@@ -45,6 +46,7 @@ export default function VendorBarcodeMappingPage() {
   const [editingItem, setEditingItem] = useState<VendorBarcodeMapping | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<VendorBarcodeMapping | null>(null);
   const panelAnimateRef = useRef(true);
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -94,6 +96,14 @@ export default function VendorBarcodeMappingPage() {
     fetchData();
   }, [fetchData]);
 
+  const openEdit = useCallback((item: VendorBarcodeMapping) => {
+    guard(() => { panelAnimateRef.current = !isPanelOpen; setEditingItem(item); setIsPanelOpen(true); });
+  }, [guard, isPanelOpen]);
+
+  const openCreate = useCallback(() => {
+    guard(() => { panelAnimateRef.current = !isPanelOpen; setEditingItem(null); setIsPanelOpen(true); });
+  }, [guard, isPanelOpen]);
+
   const matchTypeOptions = useMemo(() => [
     { value: "", label: t("master.vendorBarcode.matchType", "매칭유형") + ": " + t("common.all") },
     ...MATCH_TYPE_OPTIONS.map(o => ({
@@ -108,7 +118,7 @@ export default function VendorBarcodeMappingPage() {
       meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); panelAnimateRef.current = !isPanelOpen; setEditingItem(row.original); setIsPanelOpen(true); }} className="p-1 hover:bg-surface rounded">
+          <button onClick={(e) => { e.stopPropagation(); openEdit(row.original); }} className="p-1 hover:bg-surface rounded">
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
           <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }} className="p-1 hover:bg-surface rounded">
@@ -143,7 +153,7 @@ export default function VendorBarcodeMappingPage() {
         <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
       ),
     },
-  ], [t, isPanelOpen]);
+  ], [t, isPanelOpen, openEdit]);
 
   return (
     <div className="flex h-full animate-fade-in">
@@ -160,7 +170,7 @@ export default function VendorBarcodeMappingPage() {
             <Button variant="secondary" size="sm" onClick={fetchData}>
               <RefreshCw className="w-4 h-4 mr-1" />{t('common.refresh')}
             </Button>
-            <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingItem(null); setIsPanelOpen(true); }}>
+            <Button size="sm" onClick={openCreate}>
               <Plus className="w-4 h-4 mr-1" />{t("master.vendorBarcode.addMapping", "매핑 추가")}
             </Button>
           </div>
@@ -168,7 +178,7 @@ export default function VendorBarcodeMappingPage() {
 
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
           <DataGrid data={filteredData} columns={columns} isLoading={loading} enableColumnPinning enableColumnFilter enableExport exportFileName={t("master.vendorBarcode.title")}
-            onRowClick={(row) => { if (isPanelOpen) setEditingItem(row); }}
+            onRowClick={(row) => { if (isPanelOpen) guard(() => setEditingItem(row)); }}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
                 <div className="flex-1 min-w-0">
@@ -187,13 +197,15 @@ export default function VendorBarcodeMappingPage() {
 
       {isPanelOpen && (
         <VendorBarcodeFormPanel
-          key={editingItem?.vendorBarcode ?? "__new__"}
           editingItem={editingItem}
-          onClose={handlePanelClose}
+          onClose={() => guard(handlePanelClose)}
           onSave={handlePanelSave}
           animate={panelAnimateRef.current}
+          onDirtyChange={markDirty}
         />
       )}
+
+      <ConfirmModal {...guardModalProps} />
 
       <ConfirmModal
         isOpen={!!deleteTarget}

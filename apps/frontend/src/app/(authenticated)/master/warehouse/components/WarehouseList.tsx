@@ -7,7 +7,7 @@
  * 2. 창고유형별 필터링 + 검색 지원
  * 3. 기본창고 지정, 소프트 삭제
  */
-import { useState, useEffect, useCallback, useMemo, ReactNode } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, Check, Search, RefreshCw } from "lucide-react";
 import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
@@ -18,6 +18,12 @@ import { ColumnDef } from "@tanstack/react-table";
 import { WarehouseData, WAREHOUSE_TYPE_COLORS } from "../types";
 import WarehouseForm from "./WarehouseForm";
 import api from "@/services/api";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
+
+const EMPTY_WAREHOUSE_FORM = {
+  warehouseCode: "", warehouseName: "", warehouseType: "RAW",
+  plantCode: "", lineCode: "", processCode: "", isDefault: false,
+};
 
 interface Props {
   onHeaderActions?: (actions: ReactNode) => void;
@@ -28,10 +34,11 @@ export default function WarehouseList({ onHeaderActions }: Props) {
   const [warehouses, setWarehouses] = useState<WarehouseData[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<WarehouseData | null>(null);
   const [filterType, setFilterType] = useState("");
   const [searchText, setSearchText] = useState("");
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
 
   const typeOptions = useComCodeOptions("WAREHOUSE_TYPE_DTO", false);
   const getTypeLabel = useCallback(
@@ -39,10 +46,8 @@ export default function WarehouseList({ onHeaderActions }: Props) {
     [typeOptions],
   );
 
-  const [formData, setFormData] = useState({
-    warehouseCode: "", warehouseName: "", warehouseType: "RAW",
-    plantCode: "", lineCode: "", processCode: "", isDefault: false,
-  });
+  const [formData, setFormData] = useState(EMPTY_WAREHOUSE_FORM);
+  const initialFormRef = useRef(EMPTY_WAREHOUSE_FORM);
 
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({
     open: false, title: "", message: "", onConfirm: () => {},
@@ -74,19 +79,29 @@ export default function WarehouseList({ onHeaderActions }: Props) {
 
   const handleCreate = useCallback(() => {
     setEditingWarehouse(null);
-    setFormData({ warehouseCode: "", warehouseName: "", warehouseType: "RAW", plantCode: "", lineCode: "", processCode: "", isDefault: false });
-    setModalOpen(true);
+    setFormData(EMPTY_WAREHOUSE_FORM);
+    initialFormRef.current = EMPTY_WAREHOUSE_FORM;
+    setIsPanelOpen(true);
   }, []);
 
-  const handleEdit = (warehouse: WarehouseData) => {
+  const handleEdit = useCallback((warehouse: WarehouseData) => {
     setEditingWarehouse(warehouse);
-    setFormData({
+    const init = {
       warehouseCode: warehouse.warehouseCode, warehouseName: warehouse.warehouseName,
       warehouseType: warehouse.warehouseType, plantCode: warehouse.plantCode || "",
       lineCode: warehouse.lineCode || "", processCode: warehouse.processCode || "", isDefault: warehouse.isDefault,
-    });
-    setModalOpen(true);
-  };
+    };
+    setFormData(init);
+    initialFormRef.current = init;
+    setIsPanelOpen(true);
+  }, []);
+
+  // 작성 중(저장 안 됨) 여부 계산 후 보고 — 행 전환 시 유실 방어
+  const dirty = useMemo(
+    () => isPanelOpen && JSON.stringify(formData) !== JSON.stringify(initialFormRef.current),
+    [isPanelOpen, formData],
+  );
+  useEffect(() => { markDirty(dirty); }, [dirty, markDirty]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -96,7 +111,8 @@ export default function WarehouseList({ onHeaderActions }: Props) {
       } else {
         await api.post("/inventory/warehouses", formData);
       }
-      setModalOpen(false);
+      markDirty(false);
+      setIsPanelOpen(false);
       fetchData();
     } catch (e) {
       console.error("Save failed:", e);
@@ -127,18 +143,18 @@ export default function WarehouseList({ onHeaderActions }: Props) {
         <Button variant="secondary" size="sm" onClick={fetchData}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
-        <Button size="sm" onClick={handleCreate}>
+        <Button size="sm" onClick={() => guard(handleCreate)}>
           <Plus className="w-4 h-4 mr-1" />{t("inventory.warehouse.newWarehouse")}
         </Button>
       </>
     );
-  }, [onHeaderActions, fetchData, handleCreate, loading, t]);
+  }, [onHeaderActions, fetchData, handleCreate, guard, loading, t]);
 
   const columns: ColumnDef<WarehouseData>[] = useMemo(() => [
     { id: "actions", header: "", size: 100, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
       <div className="flex gap-1">
-        <button onClick={() => handleEdit(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.edit")}><Pencil className="w-4 h-4 text-primary" /></button>
-        <button onClick={() => handleDelete(row.original.warehouseCode)} className="p-1 hover:bg-surface rounded" title={t("common.delete")}><Trash2 className="w-4 h-4 text-red-500" /></button>
+        <button onClick={(e) => { e.stopPropagation(); guard(() => handleEdit(row.original)); }} className="p-1 hover:bg-surface rounded" title={t("common.edit")}><Pencil className="w-4 h-4 text-primary" /></button>
+        <button onClick={(e) => { e.stopPropagation(); handleDelete(row.original.warehouseCode); }} className="p-1 hover:bg-surface rounded" title={t("common.delete")}><Trash2 className="w-4 h-4 text-red-500" /></button>
       </div>
     )},
     { accessorKey: "warehouseCode", header: t("inventory.warehouse.warehouseCode"), size: 120, meta: { filterType: "text" as const } },
@@ -154,35 +170,49 @@ export default function WarehouseList({ onHeaderActions }: Props) {
       const v = getValue() as string;
       return <span className={`px-2 py-1 rounded text-xs ${v === "Y" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}`}>{v}</span>;
     }},
-  ], [t, getTypeLabel]);
+  ], [t, getTypeLabel, guard, handleEdit]);
 
   return (
-    <div className="h-full flex flex-col">
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid
-          data={filtered}
-          columns={columns}
-          isLoading={loading}
-          enableColumnFilter
-          enableExport
-          exportFileName={t("inventory.warehouse.title")}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t("inventory.warehouse.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+    <div className="h-full flex overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col">
+        <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
+          <DataGrid
+            data={filtered}
+            columns={columns}
+            isLoading={loading}
+            enableColumnFilter
+            enableExport
+            exportFileName={t("inventory.warehouse.title")}
+            onRowClick={(row) => { if (isPanelOpen) guard(() => handleEdit(row)); }}
+            toolbarLeft={
+              <div className="flex gap-3 flex-1 min-w-0">
+                <div className="flex-1 min-w-0">
+                  <Input placeholder={t("inventory.warehouse.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                </div>
+                <div className="w-40 flex-shrink-0">
+                  <ComCodeSelect groupCode="WAREHOUSE_TYPE_DTO" labelPrefix={t("inventory.warehouse.warehouseType")} value={filterType} onChange={(v) => setFilterType(v)} fullWidth />
+                </div>
               </div>
-              <div className="w-40 flex-shrink-0">
-                <ComCodeSelect groupCode="WAREHOUSE_TYPE_DTO" labelPrefix={t("inventory.warehouse.warehouseType")} value={filterType} onChange={(v) => setFilterType(v)} fullWidth />
-              </div>
-            </div>
-          }
-        
-        sqlQuery={`SELECT *\nFROM WAREHOUSES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
-      </CardContent></Card>
+            }
+
+          sqlQuery={`SELECT *\nFROM WAREHOUSES\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
+        </CardContent></Card>
+      </div>
+
+      {isPanelOpen && (
+        <WarehouseForm
+          isEdit={!!editingWarehouse}
+          formData={formData}
+          typeOptions={typeOptions}
+          onClose={() => guard(() => setIsPanelOpen(false))}
+          onChange={setFormData}
+          onSave={handleSave}
+          saving={saving}
+        />
+      )}
 
       <ConfirmModal isOpen={confirmModal.open} onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))} onConfirm={confirmModal.onConfirm} title={confirmModal.title} message={confirmModal.message} variant="danger" />
-
-      <WarehouseForm isOpen={modalOpen} isEdit={!!editingWarehouse} formData={formData} typeOptions={typeOptions} onClose={() => setModalOpen(false)} onChange={setFormData} onSave={handleSave} />
+      <ConfirmModal {...guardModalProps} />
     </div>
   );
 }

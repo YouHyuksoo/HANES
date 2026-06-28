@@ -21,6 +21,7 @@ import { Card, CardContent, Button, Input, Modal, ConfirmModal } from "@/compone
 import DataGrid from "@/components/data-grid/DataGrid";
 import { EquipMaster, EquipType, CommType, COMM_TYPE_COLORS, COMM_TYPE_LABELS } from "../types";
 import api from "@/services/api";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import { ComCodeSelect, LineSelect } from '@/components/shared';
 import { FieldInput, FieldComCodeSelect, FieldLineSelect } from "./EquipFieldHelp";
 
@@ -85,6 +86,8 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
   const [panelOpen, setPanelOpen] = useState(false);
   const [editing, setEditing] = useState<EquipMaster | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const initialFormRef = useRef<FormState>(EMPTY_FORM);
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
   const [deleteTarget, setDeleteTarget] = useState<EquipMaster | null>(null);
   const [alertModal, setAlertModal] = useState({ open: false, title: '', message: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -122,6 +125,7 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
   const openCreate = useCallback(() => {
     setEditing(null);
     setForm(EMPTY_FORM);
+    initialFormRef.current = EMPTY_FORM;
     setSelectedImageFile(null);
     setPreviewUrl(null);
     setImageError(false);
@@ -130,7 +134,7 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
 
   const openEdit = (equip: EquipMaster) => {
     setEditing(equip);
-    setForm({
+    const nextForm: FormState = {
       equipCode: equip.equipCode,
       equipName: equip.equipName,
       equipType: equip.equipType,
@@ -145,12 +149,26 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
       serialPort: "",
       baudRate: "9600",
       useYn: equip.useYn,
-    });
+    };
+    setForm(nextForm);
+    initialFormRef.current = nextForm;
     setSelectedImageFile(null);
     setPreviewUrl(equip.imageUrl || null);
     setImageError(false);
     setPanelOpen(true);
   };
+
+  // 작성 중(저장 안 됨) 여부 계산 후 가드에 보고 — 행 전환 시 유실 방어
+  const dirty = useMemo(
+    () =>
+      panelOpen &&
+      (JSON.stringify(form) !== JSON.stringify(initialFormRef.current) ||
+        previewUrl !== (editing?.imageUrl ?? null)),
+    [panelOpen, form, previewUrl, editing],
+  );
+  useEffect(() => {
+    markDirty(dirty);
+  }, [dirty, markDirty]);
 
   useEffect(() => {
     if (previewUrl?.startsWith("blob:")) {
@@ -246,14 +264,14 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
           {t("common.refresh", "새로고침")}
         </Button>
-        <Button size="sm" onClick={openCreate}>
+        <Button size="sm" onClick={() => guard(openCreate)}>
           <Plus className="w-4 h-4 mr-1" />
           {t("master.equip.addEquip", "설비 추가")}
         </Button>
       </>,
     );
     return () => onHeaderActionsChange(null);
-  }, [fetchEquipments, loading, onHeaderActionsChange, openCreate, t]);
+  }, [fetchEquipments, loading, onHeaderActionsChange, openCreate, guard, t]);
 
   const columns = useMemo<ColumnDef<EquipMaster>[]>(() => [
     {
@@ -261,7 +279,7 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
       meta: { align: "center" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded">
+          <button onClick={() => guard(() => openEdit(row.original))} className="p-1 hover:bg-surface rounded">
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
           <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded">
@@ -329,7 +347,7 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
         <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
       ),
     },
-  ], [t]);
+  ], [t, guard]);
 
   return (
     <div className="h-full flex overflow-hidden">
@@ -337,7 +355,7 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
         <Card className="flex-1 min-h-0 overflow-hidden">
           <CardContent className="h-full">
             <DataGrid data={equipments} columns={columns} pageSize={10} isLoading={loading} enableColumnPinning enableColumnFilter enableExport exportFileName={t("master.equip.title", "설비관리")}
-              onRowClick={(row) => { if (panelOpen) openEdit(row); }}
+              onRowClick={(row) => { if (panelOpen) guard(() => openEdit(row)); }}
               toolbarLeft={
                 <div className="flex gap-3 flex-1 min-w-0">
                   <div className="flex-1 min-w-0">
@@ -366,7 +384,7 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
               {editing ? t("master.equip.editEquip", "설비 수정") : t("master.equip.addEquip", "설비 추가")}
             </h2>
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="secondary" onClick={() => setPanelOpen(false)}>
+              <Button size="sm" variant="secondary" onClick={() => guard(() => setPanelOpen(false))}>
                 {t("common.cancel", "취소")}
               </Button>
               <Button size="sm" onClick={handleSave} disabled={!form.equipCode.trim() || !form.equipName.trim()}>
@@ -473,6 +491,8 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
           </div>
         </div>
       )}
+
+      <ConfirmModal {...guardModalProps} />
 
       <ConfirmModal
         isOpen={!!deleteTarget}

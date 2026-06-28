@@ -20,6 +20,7 @@ import api from "@/services/api";
 import WorkInstructionFormPanel, { getWorkInstructionKey, type WorkInstruction } from "./components/WorkInstructionFormPanel";
 import WorkInstructionPreviewPanel from "./components/WorkInstructionPreviewPanel";
 import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 
 type PanelMode = "none" | "preview" | "edit";
 
@@ -36,6 +37,7 @@ export default function WorkInstructionPage() {
   const [deleteTarget, setDeleteTarget] = useState<WorkInstruction | null>(null);
   const [deleting, setDeleting] = useState(false);
   const panelAnimateRef = useRef(true);
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -73,30 +75,34 @@ export default function WorkInstructionPage() {
     setPanelMode("edit");
   }, []);
 
-  /** 행 클릭: 미리보기 열기 (편집 모드면 편집 항목 전환) */
+  /** 행 클릭: 미리보기 열기 (편집 모드면 편집 항목 전환 — 작성 중이면 가드) */
   const handleRowClick = useCallback((row: WorkInstruction) => {
     if (panelMode === "edit") {
-      setEditingItem(row);
+      guard(() => setEditingItem(row));
     } else {
       panelAnimateRef.current = panelMode === "none";
       setSelectedItem(row);
       setPanelMode("preview");
     }
-  }, [panelMode]);
+  }, [panelMode, guard]);
 
   /** 편집 아이콘 클릭 */
   const handleEditClick = useCallback((row: WorkInstruction) => {
-    panelAnimateRef.current = panelMode === "none";
-    setEditingItem(row);
-    setPanelMode("edit");
-  }, [panelMode]);
+    guard(() => {
+      panelAnimateRef.current = panelMode === "none";
+      setEditingItem(row);
+      setPanelMode("edit");
+    });
+  }, [panelMode, guard]);
 
   /** 추가 버튼 클릭 */
   const handleAddClick = useCallback(() => {
-    panelAnimateRef.current = panelMode === "none";
-    setEditingItem(null);
-    setPanelMode("edit");
-  }, [panelMode]);
+    guard(() => {
+      panelAnimateRef.current = panelMode === "none";
+      setEditingItem(null);
+      setPanelMode("edit");
+    });
+  }, [panelMode, guard]);
 
   /** 삭제 확인 실행 */
   const handleDeleteConfirm = useCallback(async () => {
@@ -199,13 +205,15 @@ export default function WorkInstructionPage() {
 
       {panelMode === "edit" && (
         <WorkInstructionFormPanel
-          key={editingItem ? getWorkInstructionKey(editingItem) : "__new__"}
           editingItem={editingItem}
-          onClose={handlePanelClose}
+          onClose={() => guard(handlePanelClose)}
           onSave={handlePanelSave}
           animate={panelAnimateRef.current}
+          onDirtyChange={markDirty}
         />
       )}
+
+      <ConfirmModal {...guardModalProps} />
 
       <ConfirmModal
         isOpen={!!deleteTarget}

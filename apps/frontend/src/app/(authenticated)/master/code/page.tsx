@@ -16,7 +16,8 @@ import { Button, ConfirmModal } from "@/components/ui";
 import { useApiQuery, useApiMutation, useInvalidateQueries } from "@/hooks/useApi";
 import GroupList from "./components/GroupList";
 import CodeDetailGrid from "./components/CodeDetailGrid";
-import CodeFormModal from "./components/CodeFormModal";
+import CodeFormPanel from "./components/CodeFormPanel";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import type { ComCodeGroup, ComCodeDetail, ComCodeFormData } from "./types";
 
 function ComCodePage() {
@@ -24,9 +25,10 @@ function ComCodePage() {
   const invalidate = useInvalidateQueries();
 
   const [selectedGroup, setSelectedGroup] = useState<string>("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingCode, setEditingCode] = useState<ComCodeDetail | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ComCodeDetail | null>(null);
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
 
   /* ── 그룹 목록 조회 ── */
   const { data: groupsData, isLoading: groupsLoading } = useApiQuery<ComCodeGroup[]>(
@@ -55,7 +57,8 @@ function ComCodePage() {
     {
       onSuccess: () => {
         invalidate(["com-codes"]);
-        setIsModalOpen(false);
+        markDirty(false);
+        setIsPanelOpen(false);
       },
     },
   );
@@ -67,7 +70,8 @@ function ComCodePage() {
     {
       onSuccess: () => {
         invalidate(["com-codes"]);
-        setIsModalOpen(false);
+        markDirty(false);
+        setIsPanelOpen(false);
         setEditingCode(null);
       },
     },
@@ -98,9 +102,16 @@ function ComCodePage() {
   );
 
   const handleEdit = useCallback((code: ComCodeDetail) => {
-    setEditingCode(code);
-    setIsModalOpen(true);
-  }, []);
+    guard(() => {
+      setEditingCode(code);
+      setIsPanelOpen(true);
+    });
+  }, [guard]);
+
+  const handleRowClick = useCallback((code: ComCodeDetail) => {
+    if (!isPanelOpen) return;
+    guard(() => setEditingCode(code));
+  }, [isPanelOpen, guard]);
 
   const handleDelete = useCallback((code: ComCodeDetail) => {
     setDeleteTarget(code);
@@ -127,49 +138,58 @@ function ComCodePage() {
           </Button>
           <Button
             size="sm"
-            onClick={() => {
-              setEditingCode(null);
-              setIsModalOpen(true);
-            }}
+            onClick={() =>
+              guard(() => {
+                setEditingCode(null);
+                setIsPanelOpen(true);
+              })
+            }
           >
             <Plus className="w-4 h-4 mr-1" /> {t("master.code.addCode")}
           </Button>
         </div>
       </div>
 
-      {/* 본문: 좌측 그룹 + 우측 상세 */}
-      <div className="grid grid-cols-12 gap-6 min-h-0 flex-1">
-        <div className="col-span-3 flex flex-col min-h-0">
-          <GroupList
-            groups={groups}
-            selectedGroup={selectedGroup}
-            onSelect={setSelectedGroup}
-            isLoading={groupsLoading}
-          />
+      {/* 본문: 좌측 그룹 + 우측 상세 + 슬라이드 패널 */}
+      <div className="flex-1 min-h-0 flex overflow-hidden">
+        <div className="flex-1 min-w-0 grid grid-cols-12 gap-6">
+          <div className="col-span-3 flex flex-col min-h-0">
+            <GroupList
+              groups={groups}
+              selectedGroup={selectedGroup}
+              onSelect={setSelectedGroup}
+              isLoading={groupsLoading}
+            />
+          </div>
+          <div className="col-span-9 flex flex-col min-h-0">
+            <CodeDetailGrid
+              groupCode={selectedGroup}
+              codes={codes}
+              isLoading={codesLoading}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onRowClick={handleRowClick}
+            />
+          </div>
         </div>
-        <div className="col-span-9 flex flex-col min-h-0">
-          <CodeDetailGrid
-            groupCode={selectedGroup}
-            codes={codes}
-            isLoading={codesLoading}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        </div>
-      </div>
 
-      {/* 추가/수정 모달 */}
-      <CodeFormModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingCode(null);
-        }}
-        onSubmit={handleSubmit}
-        editingCode={editingCode}
-        selectedGroup={selectedGroup}
-        isSubmitting={createMutation.isPending || updateMutation.isPending}
-      />
+        {/* 추가/수정 슬라이드 패널 */}
+        {isPanelOpen && (
+          <CodeFormPanel
+            onClose={() =>
+              guard(() => {
+                setIsPanelOpen(false);
+                setEditingCode(null);
+              })
+            }
+            onSubmit={handleSubmit}
+            editingCode={editingCode}
+            selectedGroup={selectedGroup}
+            isSubmitting={createMutation.isPending || updateMutation.isPending}
+            onDirtyChange={markDirty}
+          />
+        )}
+      </div>
 
       {/* 삭제 확인 모달 */}
       <ConfirmModal
@@ -182,6 +202,7 @@ function ComCodePage() {
         variant="danger"
         isLoading={deleteMutation.isPending}
       />
+      <ConfirmModal {...guardModalProps} />
     </div>
   );
 }

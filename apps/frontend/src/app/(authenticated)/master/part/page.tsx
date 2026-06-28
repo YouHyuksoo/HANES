@@ -22,6 +22,7 @@ import api from "@/services/api";
 import { createPartColumns, createUnitColumn } from "@/lib/table-utils";
 import { Part, PART_TYPE_COLORS } from "./types";
 import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
+import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 
 import PartFormPanel from "./components/PartFormPanel";
 
@@ -69,6 +70,7 @@ export default function PartPage() {
   const [editingPart, setEditingPart] = useState<Part | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Part | null>(null);
   const panelAnimateRef = useRef(true);
+  const { markDirty, guard, guardModalProps } = useUnsavedGuard();
 
   /** 검색어 디바운스 (300ms) */
   useEffect(() => {
@@ -179,7 +181,7 @@ export default function PartPage() {
       meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingPart(row.original); setIsPanelOpen(true); }} className="p-1 hover:bg-surface rounded">
+          <button onClick={(e) => { e.stopPropagation(); guard(() => { panelAnimateRef.current = !isPanelOpen; setEditingPart(row.original); setIsPanelOpen(true); }); }} className="p-1 hover:bg-surface rounded">
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
           <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }} className="p-1 hover:bg-surface rounded">
@@ -281,7 +283,7 @@ export default function PartPage() {
         );
       },
     },
-  ], [t, typeLabels, productTypeLabels, defectModelGroupLabels, unitMap, iqcInspectMethodMap, isPanelOpen]);
+  ], [t, typeLabels, productTypeLabels, defectModelGroupLabels, unitMap, iqcInspectMethodMap, isPanelOpen, guard]);
 
   const handlePanelClose = useCallback(() => {
     setIsPanelOpen(false);
@@ -332,7 +334,7 @@ export default function PartPage() {
             <Button variant="secondary" size="sm" onClick={() => { fetchParts(); }}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
             </Button>
-            <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingPart(null); setIsPanelOpen(true); }}>
+            <Button size="sm" onClick={() => guard(() => { panelAnimateRef.current = !isPanelOpen; setEditingPart(null); setIsPanelOpen(true); })}>
               <Plus className="w-4 h-4 mr-1" />{t("master.part.addPart")}
             </Button>
           </div>
@@ -347,7 +349,7 @@ export default function PartPage() {
             enableExport
             enableColumnPinning
             exportFileName={t("master.part.title")}
-            onRowClick={(row) => { if (isPanelOpen) setEditingPart(row); }}
+            onRowClick={(row) => { if (isPanelOpen) guard(() => setEditingPart(row)); }}
             rowClassName={(row) => row.useYn === "N" ? "!text-red-500 dark:!text-red-400" : ""}
             toolbarLeft={
               <div className="flex flex-wrap gap-3 flex-1 min-w-0">
@@ -382,13 +384,15 @@ export default function PartPage() {
       {/* 우측: 품목 추가/수정 슬라이드 패널 */}
       {isPanelOpen && (
         <PartFormPanel
-          key={editingPart?.itemCode ?? "__new__"}
           editingPart={editingPart}
-          onClose={handlePanelClose}
+          onClose={() => guard(handlePanelClose)}
           onSave={handlePanelSave}
           animate={panelAnimateRef.current}
+          onDirtyChange={markDirty}
         />
       )}
+
+      <ConfirmModal {...guardModalProps} />
 
       <ConfirmModal
         isOpen={!!deleteTarget}
