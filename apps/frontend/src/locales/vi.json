@@ -6076,6 +6076,420 @@
     "login": "Đăng nhập",
     "dashboard": "Bảng điều khiển"
   },
+  "comCodeDesc": {
+    "APPROVAL_STATUS": {
+      "PENDING": "Đã gửi yêu cầu, đang chờ phê duyệt",
+      "APPROVED": "Đã duyệt, có thể tiến hành xử lý tiếp",
+      "REJECTED": "Bị từ chối, cần sửa và gửi lại"
+    },
+    "ARRIVAL_RESULT_STATUS": {
+      "ARRIVED": "Hàng đã đến và đăng ký, chờ kiểm tra",
+      "IQC_PROGRESS": "Đang kiểm tra IQC hàng đã đến",
+      "IQC_DONE": "Đã kiểm tra xong, chờ nhập kho",
+      "RECEIVED": "Đã nhập kho và cập nhật tồn kho",
+      "CANCELED": "Việc nhập hàng đã hủy, vô hiệu"
+    },
+    "AUDIT_RESULT": {
+      "PASS": "Kết quả đánh giá phù hợp",
+      "MINOR": "Có điểm không phù hợp nhẹ",
+      "MAJOR": "Có điểm không phù hợp nặng",
+      "OFI": "Cơ hội cải tiến, không phải lỗi"
+    },
+    "AUDIT_STATUS": {
+      "PLANNED": "Đã lên kế hoạch đánh giá, chờ thực hiện",
+      "IN_PROGRESS": "Đang tiến hành đánh giá",
+      "COMPLETED": "Đã đánh giá xong, đang tổng hợp",
+      "CLOSED": "Đã đóng đánh giá sau khi xử lý xong"
+    },
+    "BOX_STATUS": {
+      "OPEN": "Thùng đang mở, có thể tiếp tục cho sản phẩm vào",
+      "CLOSED": "Thùng đã đóng, không thể thêm, sẵn sàng nhập kho/xuất hàng",
+      "SHIPPED": "Thùng đã xuất hàng và rời khỏi nhà máy"
+    },
+    "CAL_RESULT": {
+      "PASS": "Kết quả hiệu chuẩn đạt yêu cầu",
+      "FAIL": "Kết quả hiệu chuẩn không đạt",
+      "CONDITIONAL": "Đạt có điều kiện kèm giới hạn sử dụng"
+    },
+    "CAPA_ACTION_STATUS": {
+      "PENDING": "Hạng mục hành động đang chờ, chưa bắt đầu",
+      "IN_PROGRESS": "Hạng mục hành động đang thực hiện",
+      "DONE": "Hạng mục hành động đã hoàn tất"
+    },
+    "CAPA_STATUS": {
+      "OPEN": "Hồ sơ CAPA đã tiếp nhận, đăng ký",
+      "ANALYZING": "Đang phân tích nguyên nhân gốc",
+      "ACTION_PLANNED": "Đã lập kế hoạch hành động khắc phục",
+      "IN_PROGRESS": "Đang thực hiện hành động khắc phục",
+      "VERIFYING": "Đang kiểm chứng hiệu quả biện pháp",
+      "CLOSED": "Hồ sơ CAPA đã kết thúc sau kiểm chứng"
+    },
+    "CHANGE_STATUS": {
+      "DRAFT": "Yêu cầu thay đổi đang ở bản nháp",
+      "SUBMITTED": "Yêu cầu thay đổi đã được gửi",
+      "REVIEWING": "Yêu cầu thay đổi đang được xem xét",
+      "APPROVED": "Yêu cầu thay đổi đã được phê duyệt",
+      "REJECTED": "Yêu cầu thay đổi đã bị từ chối",
+      "IN_PROGRESS": "Thay đổi đã duyệt đang được thực hiện",
+      "COMPLETED": "Việc thực hiện thay đổi đã hoàn tất",
+      "CLOSED": "Yêu cầu thay đổi đã kết thúc"
+    },
+    "COMPLAINT_STATUS": {
+      "RECEIVED": "Khiếu nại khách hàng đã được tiếp nhận",
+      "INVESTIGATING": "Đang điều tra nội dung khiếu nại",
+      "RESPONDING": "Đang xử lý phản hồi cho khách hàng",
+      "RESOLVED": "Khiếu nại đã được giải quyết",
+      "CLOSED": "Khiếu nại đã kết thúc sau khi giải quyết"
+    },
+    "CONNECTION_STATUS": {
+      "CONNECTED": "Kết nối tới đối tượng đang bình thường",
+      "DISCONNECTED": "Kết nối đã bị ngắt",
+      "ERROR": "Đã xảy ra lỗi kết nối"
+    },
+    "CONSUMABLE_LIFE_STATUS": {
+      "NORMAL": "Bình thường, tuổi thọ còn nhiều",
+      "WARNING": "Cảnh báo, tuổi thọ còn ít, cần chú ý",
+      "REPLACE": "Đã hết tuổi thọ, cần thay thế"
+    },
+    "CONSUMABLE_OPER_STATUS": {
+      "WAREHOUSE": "Lưu trong kho, chờ lắp đặt",
+      "MOUNTED": "Đã lắp lên thiết bị, đang vận hành",
+      "REPAIR": "Đang sửa chữa do hỏng hoặc bảo trì"
+    },
+    "CONSUMABLE_STATUS": {
+      "NORMAL": "Bình thường, tuổi thọ còn đủ",
+      "WARNING": "Sắp đến ngưỡng tuổi thọ, cần chú ý",
+      "REPLACE": "Hết tuổi thọ, cần thay thế"
+    },
+    "CON_STOCK_STATUS": {
+      "PENDING": "Vật tư tiêu hao chưa nhập kho",
+      "ACTIVE": "Đã nhập kho, sẵn sàng sử dụng",
+      "MOUNTED": "Đã lắp lên thiết bị và đang dùng",
+      "REPAIR": "Đã tháo ra và đang sửa chữa",
+      "SCRAPPED": "Đã thanh lý do hết tuổi thọ"
+    },
+    "CP_STATUS": {
+      "DRAFT": "Đang soạn kế hoạch kiểm soát",
+      "REVIEW": "Kế hoạch kiểm soát đang xem xét",
+      "APPROVED": "Kế hoạch kiểm soát đã duyệt, hiệu lực",
+      "OBSOLETE": "Kế hoạch kiểm soát đã hủy/thay thế"
+    },
+    "CUSTOMER_PO_PROGRESS": {
+      "IN_PROGRESS": "Việc thực hiện đơn đang tiến hành bình thường",
+      "PARTIAL_SHIP": "Tiến độ mới xuất một phần so với đơn",
+      "COMPLETED": "Đã hoàn tất thực hiện đơn hàng",
+      "OVERDUE": "Quá hạn giao, việc thực hiện bị trễ"
+    },
+    "CUSTOMER_PO_STATUS": {
+      "RECEIVED": "Đã nhận đơn khách nhưng chưa xác nhận",
+      "CONFIRMED": "Đơn đã duyệt và xác nhận, sẵn sàng sản xuất",
+      "IN_PRODUCTION": "Đang sản xuất cho số lượng đơn hàng",
+      "PARTIAL_SHIP": "Mới xuất một phần số lượng đơn hàng",
+      "SHIPPED": "Đã xuất toàn bộ số lượng đơn hàng",
+      "CLOSED": "Đơn hàng đã đóng, không xử lý thêm"
+    },
+    "CUSTOMS_ENTRY_STATUS": {
+      "PENDING": "Đang chờ xử lý thông quan",
+      "CLEARED": "Đã thông quan, sẵn sàng xuất kho",
+      "RELEASED": "Đã xuất khỏi khu bảo thuế sau thông quan"
+    },
+    "CUSTOMS_LOT_STATUS": {
+      "BONDED": "Lô đang ở chế độ bảo thuế, chưa xuất",
+      "PARTIAL": "Mới xuất một phần khỏi lô bảo thuế",
+      "RELEASED": "Đã xuất toàn bộ lô bảo thuế"
+    },
+    "DEFECT_DISPOSITION": {
+      "REPAIR": "Quyết định xử lý lỗi bằng sửa chữa",
+      "REWORK": "Quyết định xử lý lỗi bằng làm lại",
+      "SCRAP": "Quyết định loại bỏ hàng lỗi",
+      "CONCESSION": "Quyết định chấp nhận lỗi theo diện đặc cách"
+    },
+    "DEFECT_LOG_STATUS": {
+      "WAIT": "Nhật ký lỗi đã ghi, chờ xử lý",
+      "REPAIR": "Lỗi được xử lý bằng sửa chữa",
+      "REWORK": "Lỗi được xử lý bằng làm lại",
+      "SCRAP": "Lỗi được xử lý bằng loại bỏ",
+      "DONE": "Xử lý nhật ký lỗi đã hoàn tất"
+    },
+    "DEFECT_STATUS": {
+      "PENDING": "Lỗi đã ghi nhận, chờ xử lý sửa chữa",
+      "REPAIRING": "Đang sửa chữa hàng lỗi",
+      "COMPLETED": "Xử lý lỗi đã hoàn tất",
+      "SCRAPPED": "Hàng lỗi đã được loại bỏ"
+    },
+    "DOC_STATUS": {
+      "DRAFT": "Tài liệu đang soạn, chưa được xem xét",
+      "REVIEW": "Tài liệu đang trong giai đoạn xem xét",
+      "APPROVED": "Tài liệu đã duyệt và chính thức có hiệu lực",
+      "OBSOLETE": "Tài liệu đã hủy, không còn hiệu lực"
+    },
+    "EQUIP_STATUS": {
+      "NORMAL": "Thiết bị đang vận hành bình thường",
+      "MAINT": "Thiết bị đang được bảo trì hoặc kiểm tra",
+      "STOP": "Thiết bị đang dừng, không vận hành",
+      "INTERLOCK": "Thiết bị bị khóa liên động do điều kiện an toàn"
+    },
+    "FAI_RESULT": {
+      "PASS": "Kết quả FAI xác nhận đạt",
+      "FAIL": "Kết quả FAI xác nhận không đạt",
+      "CONDITIONAL": "Kết quả FAI đạt kèm điều kiện"
+    },
+    "FAI_STATUS": {
+      "REQUESTED": "Đã yêu cầu kiểm tra mẫu đầu (FAI)",
+      "SAMPLING": "Đang lấy mẫu đầu cho FAI",
+      "INSPECTING": "Đang kiểm tra mẫu đầu đã lấy",
+      "PASS": "FAI đạt; có thể vào sản xuất hàng loạt",
+      "FAIL": "FAI không đạt; chưa thể sản xuất loạt",
+      "CONDITIONAL": "FAI đạt có điều kiện"
+    },
+    "FINDING_STATUS": {
+      "OPEN": "Đã ghi nhận nhưng chưa xử lý",
+      "IN_PROGRESS": "Đang thực hiện khắc phục điểm phát hiện",
+      "CLOSED": "Đã khắc phục, xác minh và đóng"
+    },
+    "GAUGE_STATUS": {
+      "ACTIVE": "Dụng cụ đo còn hiệu lực hiệu chuẩn, đang dùng",
+      "EXPIRED": "Dụng cụ đo đã hết hạn hiệu chuẩn",
+      "SCRAPPED": "Dụng cụ đo đã bị loại bỏ"
+    },
+    "GENERAL_STATUS": {
+      "ACTIVE": "Đang hoạt động và sử dụng bình thường",
+      "INACTIVE": "Ngừng sử dụng, không áp dụng"
+    },
+    "IF_LOG_STATUS": {
+      "PENDING": "Nhật ký giao tiếp đang chờ xử lý",
+      "SUCCESS": "Xử lý giao tiếp thành công",
+      "FAIL": "Xử lý giao tiếp thất bại",
+      "RETRY": "Đang xử lý lại sau khi thất bại"
+    },
+    "INSPECT_JUDGE": {
+      "PASS": "Kiểm tra viên phán định đạt",
+      "FAIL": "Kiểm tra viên phán định không đạt",
+      "CONDITIONAL": "Phán định đạt có điều kiện"
+    },
+    "INSPECT_RESULT": {
+      "PASS": "Đạt tiêu chí kiểm tra và được ghi nhận đạt",
+      "FAIL": "Không đạt tiêu chí kiểm tra; bị loại"
+    },
+    "INTERFACE_STATUS": {
+      "PENDING": "Đang chờ gửi sang hệ thống bên ngoài",
+      "SENT": "Đã gửi sang hệ thống bên ngoài",
+      "FAILED": "Gửi dữ liệu thất bại",
+      "CONFIRMED": "Hệ thống đối tác đã xác nhận nhận"
+    },
+    "IQC_STATUS": {
+      "PENDING": "Vật tư nhập chờ kiểm tra đầu vào (IQC)",
+      "PASS": "Đạt IQC; có thể nhập kho và sử dụng",
+      "FAIL": "Không đạt IQC; phải trả lại hoặc cách ly",
+      "HOLD": "Tạm giữ chờ xem xét; chưa dùng được"
+    },
+    "ISSUE_STATUS": {
+      "PENDING": "Yêu cầu xuất kho đã đăng ký, chờ xử lý",
+      "IN_PROGRESS": "Đang tiến hành xuất kho",
+      "COMPLETED": "Đã xuất kho xong, tồn kho đã trừ",
+      "APPROVED": "Nội dung xuất kho đã được phê duyệt"
+    },
+    "JOB_ORDER_STATUS": {
+      "WAITING": "Lệnh sản xuất đã tạo, chờ đưa vào chuyền",
+      "RUNNING": "Lệnh sản xuất đã vào chuyền và đang sản xuất",
+      "HOLD": "Tạm dừng lệnh sản xuất do phát sinh vấn đề",
+      "DONE": "Đã sản xuất đủ số lượng, lệnh hoàn tất",
+      "CANCELED": "Lệnh sản xuất bị hủy, không sản xuất"
+    },
+    "JUDGE_YN": {
+      "Y": "Cho biết kết quả phán định là đạt",
+      "N": "Cho biết kết quả phán định là không đạt"
+    },
+    "MAT_LOT_STATUS": {
+      "NORMAL": "Lô vật tư bình thường, đã qua kiểm tra và sẵn sàng sử dụng",
+      "HOLD": "Lô bị giữ tạm, ngưng sử dụng chờ xác nhận chất lượng",
+      "DEPLETED": "Lô đã dùng hết, không còn số lượng tồn",
+      "SPLIT": "Đã tách thành nhiều lô con, lô gốc kết thúc",
+      "MERGED": "Đã gộp vào lô khác, lô gốc kết thúc"
+    },
+    "MOLD_LIFE_STATUS": {
+      "NORMAL": "Tuổi thọ khuôn bấm cốt còn tốt",
+      "WARNING": "Tuổi thọ khuôn gần ngưỡng, cảnh báo",
+      "REPLACE": "Khuôn hết tuổi thọ, cần thay thế",
+      "MAINT": "Khuôn đang được kiểm tra bảo dưỡng"
+    },
+    "MOLD_STATUS": {
+      "ACTIVE": "Khuôn đang được sử dụng",
+      "INACTIVE": "Khuôn đang lưu kho, không sử dụng",
+      "REPAIR": "Khuôn đang được sửa chữa",
+      "SCRAPPED": "Khuôn đã bị loại bỏ"
+    },
+    "OQC_STATUS": {
+      "PENDING": "Chờ kiểm tra xuất hàng cuối (OQC)",
+      "IN_PROGRESS": "Đang tiến hành kiểm tra xuất hàng",
+      "PASS": "Đạt OQC; sẵn sàng xuất hàng",
+      "FAIL": "Không đạt OQC; bị giữ lại không xuất"
+    },
+    "PALLET_STATUS": {
+      "OPEN": "Pallet đang mở, có thể tiếp tục xếp thùng lên",
+      "CLOSED": "Pallet đã đóng, không thể xếp thêm thùng",
+      "LOADED": "Pallet đã được xếp lên xe/container để xuất hàng",
+      "SHIPPED": "Pallet đã xuất hàng và rời khỏi nhà máy"
+    },
+    "PM_STATUS": {
+      "SCHEDULED": "Bảo trì phòng ngừa đã lên lịch, chờ thực hiện",
+      "IN_PROGRESS": "Đang thực hiện bảo trì phòng ngừa",
+      "COMPLETED": "Bảo trì phòng ngừa đã hoàn tất",
+      "OVERDUE": "Quá hạn so với ngày dự kiến chưa thực hiện"
+    },
+    "PM_WO_STATUS": {
+      "PLANNED": "Lệnh công việc bảo trì đã lập, chờ thực hiện",
+      "IN_PROGRESS": "Lệnh công việc đang được thực hiện",
+      "COMPLETED": "Lệnh công việc đã hoàn tất",
+      "OVERDUE": "Lệnh công việc quá hạn chưa hoàn tất",
+      "CANCELLED": "Lệnh công việc đã bị hủy"
+    },
+    "PO_LINE_STATUS": {
+      "OPEN": "Dòng đặt hàng chưa nhập hàng nào",
+      "PARTIAL": "Mới nhập một phần, còn số lượng tồn lại",
+      "CLOSE": "Dòng đã đóng, nhập hàng hoàn tất"
+    },
+    "PO_STATUS": {
+      "DRAFT": "Đơn mua hàng nháp, chưa xác nhận",
+      "CONFIRMED": "Đơn mua đã xác nhận, chờ nhập hàng",
+      "PARTIAL": "Mới nhập một phần số lượng đặt hàng",
+      "RECEIVED": "Đã nhập đủ toàn bộ số lượng đặt",
+      "CLOSED": "Đã đóng, không nhập thêm"
+    },
+    "PPAP_STATUS": {
+      "DRAFT": "Đang soạn hồ sơ PPAP",
+      "SUBMITTED": "Đã nộp hồ sơ PPAP cho khách",
+      "APPROVED": "Khách duyệt PPAP; được sản xuất",
+      "REJECTED": "PPAP bị từ chối; cần nộp lại",
+      "INTERIM": "Duyệt tạm thời chờ duyệt chính thức"
+    },
+    "PRODUCT_HOLD_STATUS": {
+      "NORMAL": "Sản phẩm bình thường, có thể dùng hoặc xuất",
+      "HOLD": "Sản phẩm bị giữ lại, chặn xuất hàng"
+    },
+    "PROD_PLAN_STATUS": {
+      "DRAFT": "Kế hoạch sản xuất đang ở bản nháp",
+      "CONFIRMED": "Kế hoạch đã xác nhận và sẵn sàng thực hiện",
+      "CLOSED": "Kỳ kế hoạch kết thúc và đã đóng"
+    },
+    "PROD_RESULT_STATUS": {
+      "RUNNING": "Kết quả sản xuất đã ghi nhận, đang thực hiện",
+      "DONE": "Kết quả sản xuất đã hoàn tất và chốt",
+      "CANCELED": "Kết quả sản xuất bị hủy do ghi nhận sai"
+    },
+    "QUALITY_JUDGMENT": {
+      "PASS": "Phán định đạt; có thể sang bước tiếp theo",
+      "FAIL": "Phán định không đạt; cần cách ly xử lý",
+      "PENDING": "Đã kiểm tra nhưng chưa có phán định",
+      "CONDITIONAL": "Đạt có điều kiện theo yêu cầu cụ thể"
+    },
+    "RECEIVE_STATUS": {
+      "PENDING": "Đã nhập hàng, đang chờ kiểm tra IQC",
+      "IQC_IN_PROGRESS": "Đang tiến hành kiểm tra chất lượng IQC",
+      "PASSED": "Đạt IQC, đủ điều kiện nhập kho",
+      "FAILED": "Không đạt IQC, bị chặn nhập kho"
+    },
+    "REPAIR_DISPOSITION": {
+      "SCRAP": "Quyết định loại bỏ hàng sửa",
+      "REUSE": "Quyết định tái sử dụng hàng ngay",
+      "REINSPECT": "Quyết định tái sử dụng sau khi tái kiểm",
+      "PENDING": "Chưa đưa ra phán định xử lý, đang chờ"
+    },
+    "REPAIR_RESULT": {
+      "COMPLETED": "Sửa xong, kết quả xử lý hoàn tất",
+      "PASS": "Đạt kiểm tra sau khi sửa",
+      "FAIL": "Không đạt kiểm tra sau khi sửa",
+      "IMPOSSIBLE": "Không thể sửa do lỗi nghiêm trọng",
+      "SCRAP": "Phán định loại bỏ thay vì sửa",
+      "IN_PROGRESS": "Công việc sửa chữa vẫn đang thực hiện"
+    },
+    "REPAIR_STATUS": {
+      "RECEIVED": "Hàng cần sửa đã nhận và tiếp nhận",
+      "IN_REPAIR": "Đang sửa chữa hàng đã tiếp nhận",
+      "COMPLETED": "Công việc sửa chữa đã hoàn tất"
+    },
+    "REWORK_INSPECT_RESULT": {
+      "PASS": "Kết quả kiểm tra làm lại đạt",
+      "FAIL": "Kết quả kiểm tra làm lại không đạt",
+      "SCRAP": "Kết quả kiểm tra phán định loại bỏ"
+    },
+    "REWORK_PROCESS_STATUS": {
+      "WAITING": "Công đoạn làm lại chờ bắt đầu",
+      "IN_PROGRESS": "Công đoạn làm lại đang thực hiện",
+      "COMPLETED": "Công đoạn làm lại đã hoàn tất",
+      "SKIPPED": "Công đoạn làm lại bị bỏ qua"
+    },
+    "REWORK_STATUS": {
+      "REGISTERED": "Đối tượng làm lại vừa được đăng ký",
+      "QC_PENDING": "Chờ QC phê duyệt việc làm lại",
+      "QC_APPROVED": "QC đã phê duyệt việc làm lại",
+      "QC_REJECTED": "QC đã từ chối việc làm lại",
+      "PROD_PENDING": "Chờ sản xuất phê duyệt việc làm lại",
+      "APPROVED": "Đã được QC và sản xuất phê duyệt đầy đủ",
+      "PROD_REJECTED": "Sản xuất đã từ chối việc làm lại",
+      "IN_PROGRESS": "Việc làm lại đã duyệt đang thực hiện",
+      "INSPECT_PENDING": "Chờ tái kiểm sau khi làm lại",
+      "PASS": "Đạt tái kiểm sau khi làm lại",
+      "FAIL": "Không đạt tái kiểm sau khi làm lại",
+      "SCRAP": "Phán định loại bỏ vì không thể làm lại"
+    },
+    "SCHED_STATUS": {
+      "SUCCESS": "Tác vụ định kỳ chạy thành công",
+      "FAIL": "Tác vụ định kỳ thất bại do lỗi",
+      "RUNNING": "Tác vụ định kỳ đang chạy",
+      "RETRYING": "Đang thử lại sau khi thất bại",
+      "TIMEOUT": "Dừng do vượt quá thời gian cho phép",
+      "SKIPPED": "Bỏ qua thực thi do không đủ điều kiện"
+    },
+    "SEMI_PRODUCT_STATUS": {
+      "WAITING": "Bán thành phẩm chờ công đoạn tiếp theo",
+      "IN_PROGRESS": "Bán thành phẩm đang được gia công",
+      "COMPLETED": "Bán thành phẩm đã hoàn tất công đoạn",
+      "MOVED": "Bán thành phẩm đã chuyển sang công đoạn/kho kế tiếp"
+    },
+    "SHIPMENT_STATUS": {
+      "PREPARING": "Đang gom hàng và chuẩn bị lô xuất",
+      "LOADED": "Lô hàng đã được xếp lên xe",
+      "SHIPPED": "Xe đã rời nhà máy, bắt đầu vận chuyển",
+      "DELIVERED": "Hàng đã đến và giao xong cho khách",
+      "CANCELED": "Lô xuất đã bị hủy, không thực hiện"
+    },
+    "SHIP_ORDER_STATUS": {
+      "DRAFT": "Lệnh xuất đang soạn, chưa xác nhận",
+      "CONFIRMED": "Lệnh xuất đã xác nhận, có thể bắt đầu xuất kho",
+      "SHIPPING": "Đang xuất hàng theo lệnh",
+      "SHIPPED": "Đã xuất toàn bộ số lượng của lệnh",
+      "CLOSED": "Lệnh xuất đã đóng, không xử lý thêm"
+    },
+    "SPC_STATUS": {
+      "ACTIVE": "Mục SPC đang được theo dõi (kích hoạt)",
+      "INACTIVE": "SPC ngừng theo dõi (vô hiệu)"
+    },
+    "SUBCON_INSPECT_RESULT": {
+      "PASS": "Lô gia công ngoài đạt toàn bộ",
+      "FAIL": "Lô gia công ngoài không đạt",
+      "PARTIAL": "Chỉ một phần lô gia công đạt"
+    },
+    "SUBCON_ORDER_STATUS": {
+      "ORDERED": "Đã đặt gia công ngoài, chờ giao hàng",
+      "DELIVERED": "Nhà gia công đã giao hàng",
+      "PARTIAL_RECV": "Mới nhập một phần từ nhà gia công",
+      "RECEIVED": "Đã nhập đủ toàn bộ số lượng gia công",
+      "CLOSED": "Đơn gia công đã đóng, kết thúc",
+      "CANCELED": "Đơn gia công đã hủy, vô hiệu"
+    },
+    "TRAINING_STATUS": {
+      "PLANNED": "Đào tạo đã được lên kế hoạch",
+      "IN_PROGRESS": "Đào tạo đang diễn ra",
+      "COMPLETED": "Đào tạo đã hoàn thành",
+      "CANCELLED": "Đào tạo đã bị hủy"
+    },
+    "USAGE_REPORT_STATUS": {
+      "DRAFT": "Báo cáo sử dụng dạng nháp, chưa nộp",
+      "REPORTED": "Đã nộp báo cáo sử dụng, chờ xác nhận",
+      "CONFIRMED": "Báo cáo sử dụng đã được xác nhận"
+    }
+  },
   "comCode": {
     "MOLD_LIFE_STATUS": { "NORMAL": "Tốt", "WARNING": "Cảnh báo", "REPLACE": "Cần thay", "MAINT": "Đang bảo trì" },
     "REPAIR_STATUS": { "RECEIVED": "Đã nhận", "IN_REPAIR": "Đang sửa", "COMPLETED": "Hoàn thành" },

@@ -6076,6 +6076,420 @@
     "login": "登录",
     "dashboard": "仪表盘"
   },
+  "comCodeDesc": {
+    "APPROVAL_STATUS": {
+      "PENDING": "已提交申请，等待审批",
+      "APPROVED": "已批准，可进行后续处理",
+      "REJECTED": "已退回，需修改后重新申请"
+    },
+    "ARRIVAL_RESULT_STATUS": {
+      "ARRIVED": "物料已入厂登记、等待检验",
+      "IQC_PROGRESS": "入厂物料的来料检验进行中",
+      "IQC_DONE": "来料检验完成、待办理入库",
+      "RECEIVED": "入库完成、已计入库存",
+      "CANCELED": "入厂处理已取消、作废"
+    },
+    "AUDIT_RESULT": {
+      "PASS": "审核判定为符合",
+      "MINOR": "发现轻微不符合(轻不符)",
+      "MAJOR": "发现严重不符合(重不符)",
+      "OFI": "改进机会非不符合项"
+    },
+    "AUDIT_STATUS": {
+      "PLANNED": "审核已计划等待实施",
+      "IN_PROGRESS": "审核正在进行中",
+      "COMPLETED": "审核已完成待整理结果",
+      "CLOSED": "整改完成审核已结案"
+    },
+    "BOX_STATUS": {
+      "OPEN": "箱子处于打开状态，可继续装入产品",
+      "CLOSED": "箱子已封箱，无法再装入，可入库或出货",
+      "SHIPPED": "箱子已出货并离开工厂"
+    },
+    "CAL_RESULT": {
+      "PASS": "校正结果合格",
+      "FAIL": "校正结果不合格",
+      "CONDITIONAL": "在限制条件下有条件合格"
+    },
+    "CAPA_ACTION_STATUS": {
+      "PENDING": "措施项待开始",
+      "IN_PROGRESS": "措施项执行中",
+      "DONE": "措施项已完成"
+    },
+    "CAPA_STATUS": {
+      "OPEN": "纠正措施已受理登记",
+      "ANALYZING": "正在进行原因分析",
+      "ACTION_PLANNED": "已制定纠正措施计划",
+      "IN_PROGRESS": "纠正措施正在执行中",
+      "VERIFYING": "正在验证措施有效性",
+      "CLOSED": "纠正措施已验证完成并关闭"
+    },
+    "CHANGE_STATUS": {
+      "DRAFT": "变更请求草拟中",
+      "SUBMITTED": "变更请求已提交",
+      "REVIEWING": "变更内容审查中",
+      "APPROVED": "变更已批准",
+      "REJECTED": "变更已驳回",
+      "IN_PROGRESS": "已批准的变更执行中",
+      "COMPLETED": "变更已实施完成",
+      "CLOSED": "变更已确认完成并关闭"
+    },
+    "COMPLAINT_STATUS": {
+      "RECEIVED": "客户投诉已受理",
+      "INVESTIGATING": "正在调查投诉内容",
+      "RESPONDING": "正在对客户进行处理回应",
+      "RESOLVED": "投诉已解决",
+      "CLOSED": "投诉已确认解决并关闭"
+    },
+    "CONNECTION_STATUS": {
+      "CONNECTED": "与对象通信连接正常",
+      "DISCONNECTED": "通信连接已断开",
+      "ERROR": "通信发生错误"
+    },
+    "CONSUMABLE_LIFE_STATUS": {
+      "NORMAL": "使用寿命充裕、状态正常",
+      "WARNING": "寿命余量减少、需注意",
+      "REPLACE": "寿命已耗尽、需要更换"
+    },
+    "CONSUMABLE_OPER_STATUS": {
+      "WAREHOUSE": "存放于仓库、等待装配",
+      "MOUNTED": "已装配到设备、运行中",
+      "REPAIR": "因故障或检修、维修中"
+    },
+    "CONSUMABLE_STATUS": {
+      "NORMAL": "寿命余量充足、状态正常",
+      "WARNING": "接近寿命阈值、需注意",
+      "REPLACE": "寿命已尽、需要更换"
+    },
+    "CON_STOCK_STATUS": {
+      "PENDING": "耗材尚未入库",
+      "ACTIVE": "已入库、可使用的耗材库存",
+      "MOUNTED": "已装配到设备、使用中",
+      "REPAIR": "已拆下、维修中",
+      "SCRAPPED": "已报废的耗材"
+    },
+    "CP_STATUS": {
+      "DRAFT": "控制计划正在编制中",
+      "REVIEW": "控制计划审核中",
+      "APPROVED": "控制计划已批准可执行",
+      "OBSOLETE": "控制计划已作废被替代"
+    },
+    "CUSTOMER_PO_PROGRESS": {
+      "IN_PROGRESS": "订单履行正常进行中",
+      "PARTIAL_SHIP": "相对订单已部分出货的进度",
+      "COMPLETED": "订单履行已全部完成",
+      "OVERDUE": "已超过交期，履行延迟"
+    },
+    "CUSTOMER_PO_STATUS": {
+      "RECEIVED": "已接收客户订单，尚未确认",
+      "CONFIRMED": "订单已审核确认，可安排生产",
+      "IN_PRODUCTION": "订单数量正在生产中",
+      "PARTIAL_SHIP": "订单数量已部分出货",
+      "SHIPPED": "订单数量已全部出货",
+      "CLOSED": "订单已结案，不再处理"
+    },
+    "CUSTOMS_ENTRY_STATUS": {
+      "PENDING": "等待办理通关手续",
+      "CLEARED": "通关完成、可办理放行",
+      "RELEASED": "通关后已从保税区放行"
+    },
+    "CUSTOMS_LOT_STATUS": {
+      "BONDED": "保税状态、放行前存放的批次",
+      "PARTIAL": "保税批次中仅部分数量放行",
+      "RELEASED": "保税批次已全部放行"
+    },
+    "DEFECT_DISPOSITION": {
+      "REPAIR": "决定对不良品进行维修的处置",
+      "REWORK": "决定对不良品进行返工的处置",
+      "SCRAP": "决定对不良品进行报废的处置",
+      "CONCESSION": "决定以特采方式接受不良品的处置"
+    },
+    "DEFECT_LOG_STATUS": {
+      "WAIT": "不良履历已登记，等待处理",
+      "REPAIR": "该不良通过维修处理",
+      "REWORK": "该不良通过返工处理",
+      "SCRAP": "该不良通过报废处理",
+      "DONE": "不良履历处理完成"
+    },
+    "DEFECT_STATUS": {
+      "PENDING": "不良已登记，等待维修处理",
+      "REPAIRING": "不良品正在维修中",
+      "COMPLETED": "不良处理完成",
+      "SCRAPPED": "不良品已报废"
+    },
+    "DOC_STATUS": {
+      "DRAFT": "文档编制中，尚未审阅",
+      "REVIEW": "文档处于审阅确认阶段",
+      "APPROVED": "文档已批准并正式生效",
+      "OBSOLETE": "文档已作废，不再有效"
+    },
+    "EQUIP_STATUS": {
+      "NORMAL": "设备正常运行状态",
+      "MAINT": "设备正在点检或保养中",
+      "STOP": "设备已停机未运行",
+      "INTERLOCK": "因安全条件未满足触发联锁锁定"
+    },
+    "FAI_RESULT": {
+      "PASS": "首件检验结果确认合格",
+      "FAIL": "首件检验结果确认不合格",
+      "CONDITIONAL": "在满足条件下合格的检验结果"
+    },
+    "FAI_STATUS": {
+      "REQUESTED": "已申请首件检验(FAI)",
+      "SAMPLING": "正为FAI抽取首件样品",
+      "INSPECTING": "正在检验抽取的首件",
+      "PASS": "首件检验合格可量产",
+      "FAIL": "首件检验不合格不可量产",
+      "CONDITIONAL": "首件检验有条件通过"
+    },
+    "FINDING_STATUS": {
+      "OPEN": "已开立但尚未处理的发现项",
+      "IN_PROGRESS": "发现项整改进行中",
+      "CLOSED": "整改完成并验证已关闭"
+    },
+    "GAUGE_STATUS": {
+      "ACTIVE": "量具在校正有效期内使用中",
+      "EXPIRED": "量具校正已过期",
+      "SCRAPPED": "量具已报废"
+    },
+    "GENERAL_STATUS": {
+      "ACTIVE": "处于启用并正常使用的状态",
+      "INACTIVE": "已停用，不再适用"
+    },
+    "IF_LOG_STATUS": {
+      "PENDING": "接口处理等待中",
+      "SUCCESS": "接口处理成功",
+      "FAIL": "接口处理失败",
+      "RETRY": "失败后正在重新处理"
+    },
+    "INSPECT_JUDGE": {
+      "PASS": "检验员最终判定为合格",
+      "FAIL": "检验员最终判定为不合格",
+      "CONDITIONAL": "判定为条件合格"
+    },
+    "INSPECT_RESULT": {
+      "PASS": "符合检验标准并判定为合格",
+      "FAIL": "未达检验标准被判定为不合格"
+    },
+    "INTERFACE_STATUS": {
+      "PENDING": "等待向外部系统传输",
+      "SENT": "已传输至外部系统",
+      "FAILED": "传输失败",
+      "CONFIRMED": "对方系统已确认接收"
+    },
+    "IQC_STATUS": {
+      "PENDING": "来料等待进料检验(IQC)",
+      "PASS": "进料检验合格可入库使用",
+      "FAIL": "进料检验不合格需退货或隔离",
+      "HOLD": "暂扣待进一步审查暂不可用"
+    },
+    "ISSUE_STATUS": {
+      "PENDING": "出库申请已登记、等待处理",
+      "IN_PROGRESS": "出库作业进行中",
+      "COMPLETED": "出库完成、库存已扣减",
+      "APPROVED": "出库内容已审批通过"
+    },
+    "JOB_ORDER_STATUS": {
+      "WAITING": "工单已生成，等待投入产线",
+      "RUNNING": "工单已投入产线，生产进行中",
+      "HOLD": "因问题等原因暂停作业",
+      "DONE": "指示数量生产完成，作业结束",
+      "CANCELED": "决定不生产，工单已取消"
+    },
+    "JUDGE_YN": {
+      "Y": "表示判定结果为合格",
+      "N": "表示判定结果为不合格"
+    },
+    "MAT_LOT_STATUS": {
+      "NORMAL": "已通过检验、可正常使用出库的物料批次",
+      "HOLD": "因质量待确认而暂时保留、禁止使用的批次",
+      "DEPLETED": "余量已全部用尽、库存为零的批次",
+      "SPLIT": "已拆分为多个批次、原批次终结",
+      "MERGED": "已与其他批次合并、原批次终结"
+    },
+    "MOLD_LIFE_STATUS": {
+      "NORMAL": "压接模具寿命状态良好",
+      "WARNING": "模具寿命接近临界值预警",
+      "REPLACE": "模具已达寿命需更换",
+      "MAINT": "模具正在点检维护中"
+    },
+    "MOLD_STATUS": {
+      "ACTIVE": "模具当前使用中",
+      "INACTIVE": "模具闲置未使用",
+      "REPAIR": "模具正在维修中",
+      "SCRAPPED": "模具已报废"
+    },
+    "OQC_STATUS": {
+      "PENDING": "等待出货前最终检验(OQC)",
+      "IN_PROGRESS": "出货检验正在进行中",
+      "PASS": "出货检验合格可出货",
+      "FAIL": "出货检验不合格出货被暂停"
+    },
+    "PALLET_STATUS": {
+      "OPEN": "托盘处于打开状态，可继续码放箱子",
+      "CLOSED": "托盘已封盘，无法再码放箱子",
+      "LOADED": "托盘已装上车辆/集装箱待出货",
+      "SHIPPED": "托盘已出货并离开工厂"
+    },
+    "PM_STATUS": {
+      "SCHEDULED": "预防保养已排程待执行",
+      "IN_PROGRESS": "预防保养正在执行中",
+      "COMPLETED": "预防保养已完成",
+      "OVERDUE": "已超过预定日期仍未执行"
+    },
+    "PM_WO_STATUS": {
+      "PLANNED": "保养工单已计划待执行",
+      "IN_PROGRESS": "工单正在现场执行中",
+      "COMPLETED": "工单已完成",
+      "OVERDUE": "工单已逾期未完成",
+      "CANCELLED": "工单已取消"
+    },
+    "PO_LINE_STATUS": {
+      "OPEN": "尚未开始入厂的采购明细行",
+      "PARTIAL": "采购数量中仅部分入厂、尚有余量",
+      "CLOSE": "该明细行入厂完成、已结清"
+    },
+    "PO_STATUS": {
+      "DRAFT": "尚未确认的采购单草稿",
+      "CONFIRMED": "采购单已确认、等待入库",
+      "PARTIAL": "采购数量中仅部分入库",
+      "RECEIVED": "采购数量已全部入库",
+      "CLOSED": "已结案、不再入库"
+    },
+    "PPAP_STATUS": {
+      "DRAFT": "正在编制生产件批准(PPAP)资料",
+      "SUBMITTED": "PPAP资料已提交客户",
+      "APPROVED": "客户批准PPAP可量产",
+      "REJECTED": "PPAP被退回需重新提交",
+      "INTERIM": "暂定批准待正式批准"
+    },
+    "PRODUCT_HOLD_STATUS": {
+      "NORMAL": "产品正常，可出货或使用",
+      "HOLD": "因质量等原因被保留，禁止出货"
+    },
+    "PROD_PLAN_STATUS": {
+      "DRAFT": "生产计划编制中的草案状态",
+      "CONFIRMED": "计划已确定，可执行",
+      "CLOSED": "计划周期结束并已结案"
+    },
+    "PROD_RESULT_STATUS": {
+      "RUNNING": "生产实绩已登记，作业进行中",
+      "DONE": "该实绩生产完成并结案",
+      "CANCELED": "登记有误，实绩已取消"
+    },
+    "QUALITY_JUDGMENT": {
+      "PASS": "质量判定合格可进入下一步",
+      "FAIL": "质量判定不合格需隔离处理",
+      "PENDING": "检验完成但尚未作出判定",
+      "CONDITIONAL": "在满足特定条件下有条件合格"
+    },
+    "RECEIVE_STATUS": {
+      "PENDING": "已入厂登记、等待来料检验",
+      "IQC_IN_PROGRESS": "来料质量检验进行中",
+      "PASSED": "通过来料检验、可办理入库",
+      "FAILED": "来料检验不合格、暂停入库"
+    },
+    "REPAIR_DISPOSITION": {
+      "SCRAP": "决定将维修品报废的处置",
+      "REUSE": "决定直接再使用维修品的处置",
+      "REINSPECT": "决定再检验后再使用的处置",
+      "PENDING": "尚未做出处置判定的待定状态"
+    },
+    "REPAIR_RESULT": {
+      "COMPLETED": "维修结束，处理完成的结果",
+      "PASS": "维修后检验合格的结果",
+      "FAIL": "维修后检验不合格的结果",
+      "IMPOSSIBLE": "缺陷过大，无法维修的结果",
+      "SCRAP": "判定为报废而非维修的结果",
+      "IN_PROGRESS": "维修作业仍在进行中"
+    },
+    "REPAIR_STATUS": {
+      "RECEIVED": "维修品已入库并受理",
+      "IN_REPAIR": "已受理产品正在维修中",
+      "COMPLETED": "维修作业完成"
+    },
+    "REWORK_INSPECT_RESULT": {
+      "PASS": "返工检验判定合格的结果",
+      "FAIL": "返工检验判定不合格的结果",
+      "SCRAP": "检验结果判定为报废"
+    },
+    "REWORK_PROCESS_STATUS": {
+      "WAITING": "返工工序开始前等待中",
+      "IN_PROGRESS": "返工工序进行中",
+      "COMPLETED": "返工工序已完成",
+      "SKIPPED": "该返工工序被跳过"
+    },
+    "REWORK_STATUS": {
+      "REGISTERED": "返工对象已登记的初始状态",
+      "QC_PENDING": "等待质量部门返工审批",
+      "QC_APPROVED": "质量部门已批准返工",
+      "QC_REJECTED": "质量部门已驳回返工",
+      "PROD_PENDING": "等待生产部门返工审批",
+      "APPROVED": "质量与生产审批均已完成",
+      "PROD_REJECTED": "生产部门已驳回返工",
+      "IN_PROGRESS": "已批准的返工正在进行中",
+      "INSPECT_PENDING": "返工后等待再检验",
+      "PASS": "返工后再检验合格",
+      "FAIL": "返工后再检验不合格",
+      "SCRAP": "无法返工，判定为报废"
+    },
+    "SCHED_STATUS": {
+      "SUCCESS": "调度任务执行成功",
+      "FAIL": "调度任务执行失败",
+      "RUNNING": "调度任务正在执行中",
+      "RETRYING": "失败后正在重试中",
+      "TIMEOUT": "因超时而中断",
+      "SKIPPED": "因条件未满足而跳过执行"
+    },
+    "SEMI_PRODUCT_STATUS": {
+      "WAITING": "半成品等待下一道工序",
+      "IN_PROGRESS": "半成品正在工序中加工",
+      "COMPLETED": "半成品工序已完成",
+      "MOVED": "完成的半成品已转移到下一工序或仓库"
+    },
+    "SHIPMENT_STATUS": {
+      "PREPARING": "正在归集货物并准备发运",
+      "LOADED": "发运货物已装车完毕",
+      "SHIPPED": "车辆已离厂，运输开始",
+      "DELIVERED": "货物已送达客户，配送完成",
+      "CANCELED": "发运已取消，未执行"
+    },
+    "SHIP_ORDER_STATUS": {
+      "DRAFT": "出货指示编制中，尚未确定",
+      "CONFIRMED": "出货指示已确定，可开始出库作业",
+      "SHIPPING": "正按指示进行出货",
+      "SHIPPED": "指示数量已全部出货",
+      "CLOSED": "出货指示已结案，不再处理"
+    },
+    "SPC_STATUS": {
+      "ACTIVE": "该SPC管控项处于启用监控中",
+      "INACTIVE": "该SPC管控已停用不监控"
+    },
+    "SUBCON_INSPECT_RESULT": {
+      "PASS": "外协来料检验全部合格",
+      "FAIL": "外协来料检验不合格",
+      "PARTIAL": "外协来料部分合格"
+    },
+    "SUBCON_ORDER_STATUS": {
+      "ORDERED": "已向外协下单、等待交货",
+      "DELIVERED": "外协方已交货",
+      "PARTIAL_RECV": "外协订单中仅部分入库",
+      "RECEIVED": "外协订单数量已全部入库",
+      "CLOSED": "外协订单处理完成、已结案",
+      "CANCELED": "外协订单已取消、作废"
+    },
+    "TRAINING_STATUS": {
+      "PLANNED": "培训已计划排程",
+      "IN_PROGRESS": "培训正在进行中",
+      "COMPLETED": "培训已完成",
+      "CANCELLED": "培训已取消"
+    },
+    "USAGE_REPORT_STATUS": {
+      "DRAFT": "尚未提交的使用量报告草稿",
+      "REPORTED": "使用量报告已提交、等待确认",
+      "CONFIRMED": "使用量报告已最终确认"
+    }
+  },
   "comCode": {
     "MOLD_LIFE_STATUS": { "NORMAL": "良好", "WARNING": "警告", "REPLACE": "需更换", "MAINT": "检修中" },
     "REPAIR_STATUS": { "RECEIVED": "已入库", "IN_REPAIR": "维修中", "COMPLETED": "完成" },

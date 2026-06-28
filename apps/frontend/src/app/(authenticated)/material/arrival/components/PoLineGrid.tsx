@@ -16,6 +16,7 @@ import { Truck } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
 import ComCodeBadge from '@/components/ui/ComCodeBadge';
+import StatusHeaderHelp from '@/components/shared/StatusHeaderHelp';
 import type { PoLineRow } from './types';
 
 interface PoLineGridProps {
@@ -121,8 +122,8 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
     },
     {
       accessorKey: 'lineStatus',
-      header: t('common.status'),
-      size: 80,
+      header: () => <StatusHeaderHelp label={t('common.status')} codeType="PO_LINE_STATUS" />,
+      size: 90,
       meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="PO_LINE_STATUS" code={getValue() as string} />,
     },

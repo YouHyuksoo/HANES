@@ -6076,6 +6076,420 @@
     "login": "Login",
     "dashboard": "Dashboard"
   },
+  "comCodeDesc": {
+    "APPROVAL_STATUS": {
+      "PENDING": "Awaiting approval after request submitted",
+      "APPROVED": "Approved; follow-up processing can proceed",
+      "REJECTED": "Rejected; needs revision and resubmission"
+    },
+    "ARRIVAL_RESULT_STATUS": {
+      "ARRIVED": "Goods arrived and registered, awaiting inspection",
+      "IQC_PROGRESS": "Incoming inspection of arrived goods in progress",
+      "IQC_DONE": "Inspection done; pending warehouse receipt",
+      "RECEIVED": "Received into stock and reflected in inventory",
+      "CANCELED": "Arrival canceled and voided"
+    },
+    "AUDIT_RESULT": {
+      "PASS": "Audit result conforms to criteria",
+      "MINOR": "Minor nonconformity found",
+      "MAJOR": "Major nonconformity found",
+      "OFI": "Opportunity for improvement, not a nonconformity"
+    },
+    "AUDIT_STATUS": {
+      "PLANNED": "Audit scheduled and awaiting execution",
+      "IN_PROGRESS": "Audit currently being conducted",
+      "COMPLETED": "Audit fieldwork completed, results pending wrap-up",
+      "CLOSED": "Audit closed after all findings resolved"
+    },
+    "BOX_STATUS": {
+      "OPEN": "Box open; items can still be added",
+      "CLOSED": "Box closed; no more items can be added, ready for receipt/shipment",
+      "SHIPPED": "Box has been shipped out of the plant"
+    },
+    "CAL_RESULT": {
+      "PASS": "Calibration result passed within tolerance",
+      "FAIL": "Calibration result failed out of tolerance",
+      "CONDITIONAL": "Conditionally accepted with usage restrictions"
+    },
+    "CAPA_ACTION_STATUS": {
+      "PENDING": "Action item is pending and not yet started",
+      "IN_PROGRESS": "Action item is in progress",
+      "DONE": "Action item has been completed"
+    },
+    "CAPA_STATUS": {
+      "OPEN": "CAPA case has been opened and registered",
+      "ANALYZING": "Root cause is being analyzed",
+      "ACTION_PLANNED": "Corrective action plan has been established",
+      "IN_PROGRESS": "Corrective actions are being carried out",
+      "VERIFYING": "Effectiveness of actions is being verified",
+      "CLOSED": "CAPA case has been closed after verification"
+    },
+    "CHANGE_STATUS": {
+      "DRAFT": "Change request is being drafted",
+      "SUBMITTED": "Change request has been submitted",
+      "REVIEWING": "Change request is under review",
+      "APPROVED": "Change request has been approved",
+      "REJECTED": "Change request has been rejected",
+      "IN_PROGRESS": "Approved change is being implemented",
+      "COMPLETED": "Change implementation has been completed",
+      "CLOSED": "Change request has been closed"
+    },
+    "COMPLAINT_STATUS": {
+      "RECEIVED": "Customer complaint has been received",
+      "INVESTIGATING": "Complaint is being investigated",
+      "RESPONDING": "Responding to the customer is in progress",
+      "RESOLVED": "Complaint has been resolved",
+      "CLOSED": "Complaint has been closed after resolution"
+    },
+    "CONNECTION_STATUS": {
+      "CONNECTED": "Connection to the target is established",
+      "DISCONNECTED": "Connection has been lost or closed",
+      "ERROR": "A connection error has occurred"
+    },
+    "CONSUMABLE_LIFE_STATUS": {
+      "NORMAL": "Normal; ample remaining service life",
+      "WARNING": "Caution; remaining life running low",
+      "REPLACE": "Service life exhausted; replacement required"
+    },
+    "CONSUMABLE_OPER_STATUS": {
+      "WAREHOUSE": "In warehouse, awaiting mounting",
+      "MOUNTED": "Mounted on equipment and operating",
+      "REPAIR": "Under repair due to fault or maintenance"
+    },
+    "CONSUMABLE_STATUS": {
+      "NORMAL": "Normal; remaining life sufficient",
+      "WARNING": "Approaching life threshold; attention needed",
+      "REPLACE": "End of life; replacement required"
+    },
+    "CON_STOCK_STATUS": {
+      "PENDING": "Consumable not yet received into stock",
+      "ACTIVE": "In stock and available for use",
+      "MOUNTED": "Mounted on equipment and in use",
+      "REPAIR": "Removed and under repair",
+      "SCRAPPED": "Scrapped after end of life"
+    },
+    "CP_STATUS": {
+      "DRAFT": "Control Plan being drafted",
+      "REVIEW": "Control Plan under review",
+      "APPROVED": "Control Plan approved and effective",
+      "OBSOLETE": "Control Plan obsolete, superseded or retired"
+    },
+    "CUSTOMER_PO_PROGRESS": {
+      "IN_PROGRESS": "PO fulfillment is progressing normally",
+      "PARTIAL_SHIP": "Partially shipped relative to the order",
+      "COMPLETED": "PO fulfillment fully completed",
+      "OVERDUE": "Past due date; fulfillment is delayed"
+    },
+    "CUSTOMER_PO_STATUS": {
+      "RECEIVED": "Customer PO received but not yet confirmed",
+      "CONFIRMED": "PO reviewed and confirmed, ready for production",
+      "IN_PRODUCTION": "Production underway for the PO quantity",
+      "PARTIAL_SHIP": "Only part of the PO quantity has shipped",
+      "SHIPPED": "Full PO quantity has been shipped",
+      "CLOSED": "PO closed; no further processing"
+    },
+    "CUSTOMS_ENTRY_STATUS": {
+      "PENDING": "Awaiting customs clearance processing",
+      "CLEARED": "Customs cleared and ready for release",
+      "RELEASED": "Released from bonded area after clearance"
+    },
+    "CUSTOMS_LOT_STATUS": {
+      "BONDED": "Bonded lot held before release",
+      "PARTIAL": "Partially released from bonded lot",
+      "RELEASED": "Entire bonded lot released"
+    },
+    "DEFECT_DISPOSITION": {
+      "REPAIR": "Disposition to repair the defective item",
+      "REWORK": "Disposition to rework the defective item",
+      "SCRAP": "Disposition to scrap the defective item",
+      "CONCESSION": "Disposition to accept the defect under concession"
+    },
+    "DEFECT_LOG_STATUS": {
+      "WAIT": "Defect log registered and awaiting action",
+      "REPAIR": "Defect being handled through repair",
+      "REWORK": "Defect being handled through rework",
+      "SCRAP": "Defect being handled through scrap",
+      "DONE": "Defect log processing completed"
+    },
+    "DEFECT_STATUS": {
+      "PENDING": "Defect registered and waiting for repair",
+      "REPAIRING": "Defective item currently being repaired",
+      "COMPLETED": "Defect handling completed",
+      "SCRAPPED": "Defective item scrapped"
+    },
+    "DOC_STATUS": {
+      "DRAFT": "Document being drafted, not yet reviewed",
+      "REVIEW": "Document under review for verification",
+      "APPROVED": "Document approved and officially in effect",
+      "OBSOLETE": "Document obsolete and no longer valid"
+    },
+    "EQUIP_STATUS": {
+      "NORMAL": "Equipment is operating normally",
+      "MAINT": "Equipment is under maintenance or inspection",
+      "STOP": "Equipment is stopped and not running",
+      "INTERLOCK": "Equipment locked out by an interlock condition"
+    },
+    "FAI_RESULT": {
+      "PASS": "FAI result confirmed as pass",
+      "FAIL": "FAI result confirmed as fail",
+      "CONDITIONAL": "FAI result accepted subject to conditions"
+    },
+    "FAI_STATUS": {
+      "REQUESTED": "First Article Inspection requested and logged",
+      "SAMPLING": "Sampling first articles for FAI",
+      "INSPECTING": "Inspecting the sampled first articles",
+      "PASS": "FAI passed; mass production can proceed",
+      "FAIL": "FAI failed; mass production blocked",
+      "CONDITIONAL": "FAI passed conditionally"
+    },
+    "FINDING_STATUS": {
+      "OPEN": "Finding raised but not yet addressed",
+      "IN_PROGRESS": "Corrective action for the finding in progress",
+      "CLOSED": "Finding resolved and verified, closed"
+    },
+    "GAUGE_STATUS": {
+      "ACTIVE": "Gauge is calibrated and in active use",
+      "EXPIRED": "Gauge calibration has expired",
+      "SCRAPPED": "Gauge has been scrapped"
+    },
+    "GENERAL_STATUS": {
+      "ACTIVE": "Active and in normal use",
+      "INACTIVE": "Inactive and not in use"
+    },
+    "IF_LOG_STATUS": {
+      "PENDING": "Interface log is pending processing",
+      "SUCCESS": "Interface processed successfully",
+      "FAIL": "Interface processing failed",
+      "RETRY": "Interface is being retried after failure"
+    },
+    "INSPECT_JUDGE": {
+      "PASS": "Inspector judged the item as pass",
+      "FAIL": "Inspector judged the item as fail",
+      "CONDITIONAL": "Judged conditional pass pending conditions met"
+    },
+    "INSPECT_RESULT": {
+      "PASS": "Met inspection criteria and recorded as pass",
+      "FAIL": "Failed to meet inspection criteria; rejected"
+    },
+    "INTERFACE_STATUS": {
+      "PENDING": "Waiting to be sent to the external system",
+      "SENT": "Data has been sent to the external system",
+      "FAILED": "Transmission to the external system failed",
+      "CONFIRMED": "Receipt confirmed by the counterpart system"
+    },
+    "IQC_STATUS": {
+      "PENDING": "Incoming material awaiting IQC inspection",
+      "PASS": "Passed IQC; available for stock and use",
+      "FAIL": "Failed IQC; subject to return or quarantine",
+      "HOLD": "Held pending further review; not usable yet"
+    },
+    "ISSUE_STATUS": {
+      "PENDING": "Issue request registered and awaiting processing",
+      "IN_PROGRESS": "Issue currently being processed",
+      "COMPLETED": "Issue completed; stock deducted",
+      "APPROVED": "Issue reviewed and approved"
+    },
+    "JOB_ORDER_STATUS": {
+      "WAITING": "Job order created and waiting to be released to the line",
+      "RUNNING": "Job order released to line and in production",
+      "HOLD": "Job order temporarily suspended due to an issue",
+      "DONE": "Ordered quantity produced and the job is finished",
+      "CANCELED": "Job order canceled and will not be produced"
+    },
+    "JUDGE_YN": {
+      "Y": "Indicates the judgment outcome is pass",
+      "N": "Indicates the judgment outcome is fail"
+    },
+    "MAT_LOT_STATUS": {
+      "NORMAL": "Normal lot, passed inspection and available for use",
+      "HOLD": "On hold; use suspended pending quality review",
+      "DEPLETED": "Fully consumed; no remaining quantity left",
+      "SPLIT": "Split into child lots; original lot closed",
+      "MERGED": "Merged into another lot; original lot closed"
+    },
+    "MOLD_LIFE_STATUS": {
+      "NORMAL": "Crimp mold life is within a healthy range",
+      "WARNING": "Mold life is nearing its limit, warning",
+      "REPLACE": "Mold has reached end of life and needs replacement",
+      "MAINT": "Mold is under inspection for life management"
+    },
+    "MOLD_STATUS": {
+      "ACTIVE": "Mold is currently in use",
+      "INACTIVE": "Mold is stored and not in use",
+      "REPAIR": "Mold is under repair",
+      "SCRAPPED": "Mold has been scrapped and retired"
+    },
+    "OQC_STATUS": {
+      "PENDING": "Awaiting final outgoing quality check (OQC)",
+      "IN_PROGRESS": "Outgoing quality check currently in progress",
+      "PASS": "Passed OQC; ready to ship",
+      "FAIL": "Failed OQC; shipment is held"
+    },
+    "PALLET_STATUS": {
+      "OPEN": "Pallet open; boxes can still be loaded onto it",
+      "CLOSED": "Pallet closed; no more boxes can be loaded",
+      "LOADED": "Pallet loaded onto vehicle/container for shipping",
+      "SHIPPED": "Pallet has been shipped out of the plant"
+    },
+    "PM_STATUS": {
+      "SCHEDULED": "Preventive maintenance is scheduled and pending",
+      "IN_PROGRESS": "Preventive maintenance is being performed",
+      "COMPLETED": "Preventive maintenance has been completed",
+      "OVERDUE": "Maintenance is past its due date and overdue"
+    },
+    "PM_WO_STATUS": {
+      "PLANNED": "Maintenance work order is planned and pending",
+      "IN_PROGRESS": "Work order is currently in progress",
+      "COMPLETED": "Work order has been completed",
+      "OVERDUE": "Work order is overdue past its deadline",
+      "CANCELLED": "Work order has been cancelled"
+    },
+    "PO_LINE_STATUS": {
+      "OPEN": "Open line; no goods received yet",
+      "PARTIAL": "Partially received; remaining quantity still open",
+      "CLOSE": "Line closed; receipt for item complete"
+    },
+    "PO_STATUS": {
+      "DRAFT": "Draft purchase order, not yet confirmed",
+      "CONFIRMED": "Purchase order confirmed and awaiting receipt",
+      "PARTIAL": "Partially received; some quantity still open",
+      "RECEIVED": "Full ordered quantity received",
+      "CLOSED": "Closed; no further receipts expected"
+    },
+    "PPAP_STATUS": {
+      "DRAFT": "PPAP package being drafted",
+      "SUBMITTED": "PPAP package submitted to customer",
+      "APPROVED": "PPAP approved by customer; production allowed",
+      "REJECTED": "PPAP rejected; resubmission required",
+      "INTERIM": "Interim approval granted pending full approval"
+    },
+    "PRODUCT_HOLD_STATUS": {
+      "NORMAL": "Product is normal and available for use or shipment",
+      "HOLD": "Product put on hold and blocked from shipment"
+    },
+    "PROD_PLAN_STATUS": {
+      "DRAFT": "Production plan still being drafted",
+      "CONFIRMED": "Production plan confirmed and ready to execute",
+      "CLOSED": "Plan period ended and closed out"
+    },
+    "PROD_RESULT_STATUS": {
+      "RUNNING": "Production result registered and work in progress",
+      "DONE": "Production for this result completed and closed",
+      "CANCELED": "Production result canceled after being voided"
+    },
+    "QUALITY_JUDGMENT": {
+      "PASS": "Judged conforming; may proceed to next step",
+      "FAIL": "Judged nonconforming; requires hold or disposition",
+      "PENDING": "Inspection done but final judgment not yet decided",
+      "CONDITIONAL": "Conditionally accepted subject to specific conditions"
+    },
+    "RECEIVE_STATUS": {
+      "PENDING": "Arrived and awaiting incoming quality inspection",
+      "IQC_IN_PROGRESS": "Incoming quality inspection in progress",
+      "PASSED": "Passed IQC; cleared for warehouse receipt",
+      "FAILED": "Failed IQC; receipt blocked for disposition"
+    },
+    "REPAIR_DISPOSITION": {
+      "SCRAP": "Disposition to scrap the repair item",
+      "REUSE": "Disposition to reuse the item as is",
+      "REINSPECT": "Disposition to reuse after re-inspection",
+      "PENDING": "Disposition decision still pending"
+    },
+    "REPAIR_RESULT": {
+      "COMPLETED": "Repair finished and processed as complete",
+      "PASS": "Passed inspection after repair",
+      "FAIL": "Failed inspection after repair",
+      "IMPOSSIBLE": "Repair not possible due to the defect",
+      "SCRAP": "Judged for scrap instead of repair",
+      "IN_PROGRESS": "Repair work still in progress"
+    },
+    "REPAIR_STATUS": {
+      "RECEIVED": "Repair item received and registered",
+      "IN_REPAIR": "Received item currently being repaired",
+      "COMPLETED": "Repair work finished and completed"
+    },
+    "REWORK_INSPECT_RESULT": {
+      "PASS": "Rework inspection passed",
+      "FAIL": "Rework inspection failed",
+      "SCRAP": "Inspection result judged for scrap"
+    },
+    "REWORK_PROCESS_STATUS": {
+      "WAITING": "Rework process waiting to start",
+      "IN_PROGRESS": "Rework process in progress",
+      "COMPLETED": "Rework process completed",
+      "SKIPPED": "Rework process skipped"
+    },
+    "REWORK_STATUS": {
+      "REGISTERED": "Rework item registered as initial state",
+      "QC_PENDING": "Waiting for QC approval of the rework",
+      "QC_APPROVED": "Rework approved by quality control",
+      "QC_REJECTED": "Rework rejected by quality control",
+      "PROD_PENDING": "Waiting for production approval of the rework",
+      "APPROVED": "Rework fully approved by QC and production",
+      "PROD_REJECTED": "Rework rejected by production",
+      "IN_PROGRESS": "Approved rework currently in progress",
+      "INSPECT_PENDING": "Waiting for re-inspection after rework",
+      "PASS": "Passed re-inspection after rework",
+      "FAIL": "Failed re-inspection after rework",
+      "SCRAP": "Judged for scrap as rework is not viable"
+    },
+    "SCHED_STATUS": {
+      "SUCCESS": "Scheduled job finished successfully",
+      "FAIL": "Scheduled job failed with an error",
+      "RUNNING": "Scheduled job is currently running",
+      "RETRYING": "Job is retrying after a failure",
+      "TIMEOUT": "Job stopped after exceeding the time limit",
+      "SKIPPED": "Job execution was skipped"
+    },
+    "SEMI_PRODUCT_STATUS": {
+      "WAITING": "Semi-product waiting for the next process",
+      "IN_PROGRESS": "Semi-product being processed in the line",
+      "COMPLETED": "Semi-product processing completed",
+      "MOVED": "Completed semi-product moved to next process or store"
+    },
+    "SHIPMENT_STATUS": {
+      "PREPARING": "Gathering items and preparing the shipment",
+      "LOADED": "Shipment fully loaded onto the vehicle",
+      "SHIPPED": "Vehicle has left the plant; transport started",
+      "DELIVERED": "Shipment arrived and delivered to the customer",
+      "CANCELED": "Shipment was canceled and not carried out"
+    },
+    "SHIP_ORDER_STATUS": {
+      "DRAFT": "Ship order being drafted, not yet confirmed",
+      "CONFIRMED": "Ship order confirmed; picking can begin",
+      "SHIPPING": "Shipping in progress against the order",
+      "SHIPPED": "All ordered quantity has been shipped",
+      "CLOSED": "Ship order closed; no further processing"
+    },
+    "SPC_STATUS": {
+      "ACTIVE": "SPC monitoring is active for this item",
+      "INACTIVE": "SPC monitoring is inactive/disabled"
+    },
+    "SUBCON_INSPECT_RESULT": {
+      "PASS": "Subcontractor lot fully passed inspection",
+      "FAIL": "Subcontractor lot failed inspection",
+      "PARTIAL": "Only part of the subcontractor lot passed"
+    },
+    "SUBCON_ORDER_STATUS": {
+      "ORDERED": "Subcontract order placed, awaiting delivery",
+      "DELIVERED": "Goods delivered by the subcontractor",
+      "PARTIAL_RECV": "Partially received from subcontractor",
+      "RECEIVED": "Full subcontract quantity received",
+      "CLOSED": "Subcontract order closed and finalized",
+      "CANCELED": "Subcontract order canceled and voided"
+    },
+    "TRAINING_STATUS": {
+      "PLANNED": "Training is planned and scheduled",
+      "IN_PROGRESS": "Training is currently in progress",
+      "COMPLETED": "Training has been completed",
+      "CANCELLED": "Planned training has been cancelled"
+    },
+    "USAGE_REPORT_STATUS": {
+      "DRAFT": "Draft usage report, not yet submitted",
+      "REPORTED": "Usage report submitted, awaiting confirmation",
+      "CONFIRMED": "Usage report confirmed and finalized"
+    }
+  },
   "comCode": {
     "MOLD_LIFE_STATUS": { "NORMAL": "Good", "WARNING": "Warning", "REPLACE": "Replace", "MAINT": "Maintenance" },
     "REPAIR_STATUS": { "RECEIVED": "Received", "IN_REPAIR": "In Repair", "COMPLETED": "Completed" },

@@ -35,14 +35,17 @@ export default function StatusHeaderHelp({ label, codeType, only, align = "cente
   const anchorRef = useRef<HTMLSpanElement>(null);
   const [coords, setCoords] = useState<{ left: number; top: number } | null>(null);
 
-  // DB 공통코드(useComCodeList)를 출처로, 라벨은 i18n comCode.{codeType}.{code} 우선·DB codeName 폴백.
+  // DB 공통코드(useComCodeList)를 출처로:
+  // - 라벨: i18n comCode.{codeType}.{code} 우선 · DB codeName 폴백
+  // - 의미설명: i18n comCodeDesc.{codeType}.{code} 우선 · DB codeDesc 폴백 (없으면 라벨만)
   const list = useComCodeList(codeType);
   const entries = list
     .filter((c) => !only || only.includes(c.detailCode))
-    .map(
-      (c) =>
-        [c.detailCode, t(`comCode.${codeType}.${c.detailCode}`, { defaultValue: c.codeName })] as [string, string],
-    );
+    .map((c) => ({
+      code: c.detailCode,
+      label: t(`comCode.${codeType}.${c.detailCode}`, { defaultValue: c.codeName }),
+      desc: t(`comCodeDesc.${codeType}.${c.detailCode}`, { defaultValue: c.codeDesc ?? "" }),
+    }));
 
   const open = useCallback(() => {
     const el = anchorRef.current;
@@ -85,11 +88,14 @@ export default function StatusHeaderHelp({ label, codeType, only, align = "cente
                   <div className="border-b border-slate-700/80 bg-slate-950/60 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-slate-600/70 dark:bg-slate-900/60">
                     {label}
                   </div>
-                  <ul className="space-y-1 px-3.5 py-2.5 text-left text-[12px] leading-relaxed">
-                    {entries.map(([code, text]) => (
-                      <li key={code} className="flex items-baseline gap-2">
-                        <code className="shrink-0 font-mono text-[10px] font-medium text-emerald-300">{code}</code>
-                        <span className="text-slate-100">{text}</span>
+                  <ul className="space-y-1.5 px-3.5 py-2.5 text-left text-[12px] leading-relaxed">
+                    {entries.map((e) => (
+                      <li key={e.code} className="flex flex-col gap-0.5">
+                        <div className="flex items-baseline gap-2">
+                          <code className="shrink-0 font-mono text-[10px] font-medium text-emerald-300">{e.code}</code>
+                          <span className="font-medium text-slate-100">{e.label}</span>
+                        </div>
+                        {e.desc && <span className="pl-1 text-[11px] leading-snug text-slate-300">{e.desc}</span>}
                       </li>
                     ))}
                   </ul>
