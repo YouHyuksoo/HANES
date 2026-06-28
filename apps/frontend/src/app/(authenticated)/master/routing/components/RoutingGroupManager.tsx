@@ -12,6 +12,7 @@ import type { RoutingGroupItem, RoutingProcessItem, SelectedProcess } from "../t
 interface Props {
   selectedProcess: SelectedProcess | null;
   onSelectProcess: (process: SelectedProcess | null) => void;
+  layoutFocus?: "center" | "detail";
 }
 
 interface ProcessOption {
@@ -81,7 +82,7 @@ const partTypeIcon = (itemType?: string) => {
   return CircleDot;
 };
 
-export default function RoutingGroupManager({ selectedProcess, onSelectProcess }: Props) {
+export default function RoutingGroupManager({ selectedProcess, onSelectProcess, layoutFocus = "center" }: Props) {
   const { t } = useTranslation();
   const processTypeOptions = useComCodeOptions("PROCESS_TYPE");
   const equipTypeOptions = useComCodeOptions("EQUIP_TYPE");
@@ -430,7 +431,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
 
   return (
     <div className="grid grid-cols-12 gap-4 h-full min-h-0">
-      <Card padding="none" className="col-span-4 flex flex-col min-h-0 min-w-0 rounded-lg">
+      <Card padding="none" className={`${layoutFocus === "center" ? "col-span-3" : "col-span-4"} flex flex-col min-h-0 min-w-0 rounded-lg transition-[grid-column] duration-200`}>
         <CardContent className="flex flex-col min-h-0 h-full p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm font-semibold text-text dark:text-gray-100">{t("master.routing.routingGroupList")}</div>
@@ -464,7 +465,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess }
         </CardContent>
       </Card>
 
-      <div className="col-span-8 grid grid-rows-[minmax(0,1fr)_260px] gap-3 min-h-0 min-w-0 overflow-hidden">
+      <div className={`${layoutFocus === "center" ? "col-span-9" : "col-span-8"} grid grid-rows-[minmax(0,1fr)_260px] gap-3 min-h-0 min-w-0 overflow-hidden transition-[grid-column] duration-200`}>
         <Card padding="none" className="flex flex-col min-h-0 min-w-0 rounded-lg">
           <CardContent className="flex-1 min-h-0 p-3 overflow-auto">
             {selectedGroup ? (

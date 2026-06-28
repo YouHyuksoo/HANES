@@ -18,6 +18,7 @@ interface PreviewRow {
   parentItemCode: string;
   childItemCode: string;
   validFrom: string | null;
+  validTo: string | null;
   qtyPer: number | null;
   revision: string;
   status: "new" | "duplicate_db" | "duplicate_file" | "error";
@@ -195,6 +196,7 @@ export default function BomUploadModal({ isOpen, onClose, onComplete }: BomUploa
                     <th className="px-2 py-2 text-left">{t("master.bom.colParentItem", "상위품목")}</th>
                     <th className="px-2 py-2 text-left">{t("master.bom.colChildItem", "하위품목")}</th>
                     <th className="px-2 py-2 text-center w-24">{t("master.bom.colValidFrom", "적용일자")}</th>
+                    <th className="px-2 py-2 text-center w-24">{t("master.bom.colValidTo", "완료일자")}</th>
                     <th className="px-2 py-2 text-center w-8">{t("common.quantity", "수량")}</th>
                     <th className="px-2 py-2 text-center w-20">{t("common.status", "상태")}</th>
                   </tr>
@@ -208,6 +210,7 @@ export default function BomUploadModal({ isOpen, onClose, onComplete }: BomUploa
                         <td className="px-2 py-1.5 font-mono truncate max-w-[120px]" title={r.parentItemCode}>{r.parentItemCode}</td>
                         <td className="px-2 py-1.5 font-mono truncate max-w-[120px]" title={r.childItemCode}>{r.childItemCode}</td>
                         <td className="px-2 py-1.5 text-center text-text-muted">{r.validFrom ?? "-"}</td>
+                        <td className="px-2 py-1.5 text-center text-text-muted">{r.validTo ?? "-"}</td>
                         <td className="px-2 py-1.5 text-center">{r.qtyPer ?? "-"}</td>
                         <td className="px-2 py-1.5 text-center">
                           <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-medium ${s.bg}`} title={r.message}>

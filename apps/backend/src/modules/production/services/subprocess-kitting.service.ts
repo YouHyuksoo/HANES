@@ -12,7 +12,7 @@
  */
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, QueryRunner } from 'typeorm';
+import { In, LessThanOrEqual, MoreThanOrEqual, QueryRunner, Repository } from 'typeorm';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
@@ -29,7 +29,6 @@ import { ProdResult } from '../../../entities/prod-result.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { RoutingMaterial } from '../../../entities/routing-material.entity';
 import { ConfirmAssemblyDto, ConfirmSubKitDto } from '../dto/subprocess-kitting.dto';
-import { In } from 'typeorm';
 import { ProductionSpecificationService } from './production-specification.service';
 import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
 
@@ -218,7 +217,12 @@ export class SubprocessKittingService {
       }
 
       const bomRows = await qr.manager.find(BomMaster, {
-        where: { parentItemCode: jobOrder.itemCode, useYn: 'Y', ...tenantWhere },
+        where: {
+          parentItemCode: jobOrder.itemCode,
+          useYn: 'Y',
+          ...this.bomEffectiveWhere(jobOrder),
+          ...tenantWhere,
+        },
       });
       if (bomRows.length === 0) {
         throw new BadRequestException(`완제품 BOM이 없습니다: ${jobOrder.itemCode}`);
@@ -532,7 +536,12 @@ export class SubprocessKittingService {
       }
 
       const bomRows = await qr.manager.find(BomMaster, {
-        where: { parentItemCode: jobOrder.itemCode, useYn: 'Y', ...tenantWhere },
+        where: {
+          parentItemCode: jobOrder.itemCode,
+          useYn: 'Y',
+          ...this.bomEffectiveWhere(jobOrder),
+          ...tenantWhere,
+        },
       });
       if (bomRows.length === 0) {
         throw new BadRequestException(`반제품 BOM이 없습니다: ${jobOrder.itemCode}`);
@@ -777,7 +786,12 @@ export class SubprocessKittingService {
     }
 
     const bomRows = await this.bomMasterRepository.find({
-      where: { parentItemCode: jobOrder.itemCode, useYn: 'Y', ...tenantWhere },
+      where: {
+        parentItemCode: jobOrder.itemCode,
+        useYn: 'Y',
+        ...this.bomEffectiveWhere(jobOrder),
+        ...tenantWhere,
+      },
     });
 
     const childCodes = [...new Set(bomRows.map((b) => b.childItemCode))];
@@ -810,6 +824,30 @@ export class SubprocessKittingService {
       planQty: Number(jobOrder.planQty),
       components,
     };
+  }
+
+  private bomEffectiveWhere(jobOrder: JobOrder) {
+    const effectiveDate = this.resolveBomEffectiveDate(jobOrder);
+    return {
+      validFrom: LessThanOrEqual(effectiveDate),
+      validTo: MoreThanOrEqual(effectiveDate),
+    };
+  }
+
+  private resolveBomEffectiveDate(jobOrder: JobOrder): Date {
+    if (!jobOrder.planDate) {
+      throw new BadRequestException(
+        `작업지시 계획일이 없어 BOM 기준일을 결정할 수 없습니다: ${jobOrder.orderNo}`,
+      );
+    }
+
+    const date = new Date(jobOrder.planDate);
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException(
+        `작업지시 계획일이 올바르지 않아 BOM 기준일을 결정할 수 없습니다: ${jobOrder.orderNo}`,
+      );
+    }
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
   /** SG 라벨 단건 조회 (tenant). 없으면 NotFound. */

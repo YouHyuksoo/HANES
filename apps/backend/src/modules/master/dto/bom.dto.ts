@@ -60,15 +60,13 @@ export class CreateBomDto {
   @MaxLength(50)
   ecoNo?: string;
 
-  @ApiPropertyOptional({ description: '유효 시작일' })
-  @IsOptional()
+  @ApiProperty({ description: '유효 시작일' })
   @IsDateString()
-  validFrom?: string;
+  validFrom: string;
 
-  @ApiPropertyOptional({ description: '유효 종료일' })
-  @IsOptional()
+  @ApiProperty({ description: '유효 종료일' })
   @IsDateString()
-  validTo?: string;
+  validTo: string;
 
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()

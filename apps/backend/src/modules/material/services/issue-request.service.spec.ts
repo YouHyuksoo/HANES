@@ -2,7 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource, QueryRunner, Repository } from 'typeorm';
+import { DataSource, LessThanOrEqual, MoreThanOrEqual, QueryRunner, Repository } from 'typeorm';
 import { IssueRequestService } from './issue-request.service';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
@@ -369,6 +369,7 @@ describe('IssueRequestService', () => {
   });
 
   describe('buildBomRequestItems', () => {
+    const bomEffectiveDate = new Date(2026, 3, 15);
     const createQueryBuilder = (rows: Array<Record<string, unknown>>) => {
       const qb: any = {
         select: jest.fn().mockReturnThis(),
@@ -387,6 +388,7 @@ describe('IssueRequestService', () => {
         orderNo: 'WO-001',
         itemCode: 'FG-001',
         planQty: 10,
+        planDate: bomEffectiveDate,
         company: 'C1',
         plant: 'P1',
       } as JobOrder);
@@ -409,7 +411,14 @@ describe('IssueRequestService', () => {
         where: { orderNo: 'WO-001', company: 'C1', plant: 'P1' },
       });
       expect(bomRepo.find).toHaveBeenCalledWith({
-        where: { parentItemCode: 'FG-001', useYn: 'Y', company: 'C1', plant: 'P1' },
+        where: {
+          parentItemCode: 'FG-001',
+          useYn: 'Y',
+          validFrom: LessThanOrEqual(bomEffectiveDate),
+          validTo: MoreThanOrEqual(bomEffectiveDate),
+          company: 'C1',
+          plant: 'P1',
+        },
         order: { seq: 'ASC' },
       });
       expect(result).toEqual([
@@ -425,6 +434,21 @@ describe('IssueRequestService', () => {
           minPackQty: 5,
         }),
       ]);
+    });
+
+    it('작업지시 계획일이 없으면 BOM 기준 출고예정 품목을 산출하지 않는다', async () => {
+      jobOrderRepo.findOne.mockResolvedValue({
+        orderNo: 'WO-001',
+        itemCode: 'FG-001',
+        planQty: 10,
+        company: 'C1',
+        plant: 'P1',
+      } as JobOrder);
+
+      await expect(service.buildBomRequestItems('WO-001', 'C1', 'P1')).rejects.toThrow(
+        '작업지시 계획일이 없어 BOM 기준일을 결정할 수 없습니다',
+      );
+      expect(bomRepo.find).not.toHaveBeenCalled();
     });
   });
 

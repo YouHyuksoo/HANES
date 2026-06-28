@@ -21,8 +21,8 @@ export const BOM_MASTER_TOOL_MANIFEST: AiPageToolManifest = {
       label: 'BOM 행 등록',
       description:
         '상위 품목(parentItemCode) 아래에 하위 품목(childItemCode)을 BOM 구성으로 등록한다. ' +
-        'parentItemCode·childItemCode·qtyPer(단위 소요량) 필요. revision(리비전, 미입력 시 A), seq(순서), ' +
-        'processCode(공정코드), side(사이드 N/L/R), validFrom·validTo(유효기간 YYYY-MM-DD), remark(비고)는 선택. ' +
+        'parentItemCode·childItemCode·qtyPer(단위 소요량)·validFrom·validTo(유효기간 YYYY-MM-DD) 필요. revision(리비전, 미입력 시 A), seq(순서), ' +
+        'processCode(공정코드), side(사이드 N/L/R), remark(비고)는 선택. ' +
         '상위와 하위 품목이 같을 수 없고, 동일 (상위·하위·리비전) 조합은 중복 등록할 수 없다.',
       riskLevel: 'write',
       source: 'backend',
@@ -34,8 +34,8 @@ export const BOM_MASTER_TOOL_MANIFEST: AiPageToolManifest = {
         seq: { type: 'number', required: false },
         processCode: { type: 'string', required: false },
         side: { type: 'string', required: false },
-        validFrom: { type: 'string', required: false },
-        validTo: { type: 'string', required: false },
+        validFrom: { type: 'string', required: true },
+        validTo: { type: 'string', required: true },
         remark: { type: 'string', required: false },
       },
       requiresConfirmation: true,
@@ -136,6 +136,11 @@ export class BomToolsProvider implements PageToolProvider {
     if (input.qtyPer === undefined || input.qtyPer === null || this.str(input.qtyPer) === '') {
       throw new BadRequestException('단위 소요량(qtyPer)이 필요합니다.');
     }
+    const validFrom = this.str(input.validFrom);
+    const validTo = this.str(input.validTo);
+    if (!validFrom || !validTo) {
+      throw new BadRequestException('유효시작일(validFrom)·유효종료일(validTo)이 필요합니다.');
+    }
     const qtyPer = this.num(input.qtyPer);
     const revision = this.str(input.revision) || 'A';
     const dto = {
@@ -143,11 +148,11 @@ export class BomToolsProvider implements PageToolProvider {
       childItemCode,
       qtyPer,
       revision,
+      validFrom,
+      validTo,
       ...(input.seq !== undefined ? { seq: this.num(input.seq) } : {}),
       ...(this.str(input.processCode) ? { processCode: this.str(input.processCode) } : {}),
       ...(this.str(input.side) ? { side: this.str(input.side).toUpperCase() } : {}),
-      ...(this.str(input.validFrom) ? { validFrom: this.str(input.validFrom) } : {}),
-      ...(this.str(input.validTo) ? { validTo: this.str(input.validTo) } : {}),
       ...(this.str(input.remark) ? { remark: this.str(input.remark) } : {}),
     };
     const saved = await this.bomService.create(dto, company, plant);

@@ -12,7 +12,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, FindOptionsWhere } from 'typeorm';
+import { Repository, In, FindOptionsWhere, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
@@ -207,10 +207,13 @@ export class IssueRequestService {
 
     const effectiveCompany = jobOrder.company ?? company;
     const effectivePlant = jobOrder.plant ?? plant;
+    const bomEffectiveDate = this.resolveBomEffectiveDate(jobOrder);
     const bomRows = await this.bomRepository.find({
       where: {
         parentItemCode: jobOrder.itemCode,
         useYn: 'Y',
+        validFrom: LessThanOrEqual(bomEffectiveDate),
+        validTo: MoreThanOrEqual(bomEffectiveDate),
         ...this.tenantWhere(effectiveCompany, effectivePlant),
       },
       order: { seq: 'ASC' },
@@ -253,6 +256,22 @@ export class IssueRequestService {
         };
       })
       .filter((item) => item.requestQty > 0);
+  }
+
+  private resolveBomEffectiveDate(jobOrder: JobOrder): Date {
+    if (!jobOrder.planDate) {
+      throw new BadRequestException(
+        `작업지시 계획일이 없어 BOM 기준일을 결정할 수 없습니다: ${jobOrder.orderNo}`,
+      );
+    }
+
+    const date = new Date(jobOrder.planDate);
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException(
+        `작업지시 계획일이 올바르지 않아 BOM 기준일을 결정할 수 없습니다: ${jobOrder.orderNo}`,
+      );
+    }
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
   /**

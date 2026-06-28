@@ -115,7 +115,7 @@ export default function RoutingMaterialEditor({ selectedProcess }: { selectedPro
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-auto min-h-0">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <RefreshCw className="w-6 h-6 text-primary animate-spin" />
@@ -125,16 +125,16 @@ export default function RoutingMaterialEditor({ selectedProcess }: { selectedPro
             {t("master.routing.noBomMaterial", { defaultValue: "이 라우팅 품목에 등록된 BOM 자재가 없습니다." })}
           </div>
         ) : (
-          <table className="w-full text-xs border-collapse">
+          <table className="min-w-[760px] w-full text-xs border-collapse">
             <thead className="sticky top-0 z-10 bg-surface dark:bg-gray-800">
               <tr className="border-b border-border dark:border-gray-600">
-                <th className="py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-10">{t("common.select")}</th>
-                <th className="text-left py-2 px-2 font-medium text-text-muted dark:text-gray-400 min-w-[170px]">{t("master.bom.childItem", { defaultValue: "자재" })}</th>
-                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[80px]">{t("master.bom.qtyPer", { defaultValue: "BOM수량" })}</th>
-                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 min-w-[150px]">{t("master.routing.circuitSpec", { defaultValue: "회로사양" })}</th>
-                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[120px]">{t("master.routing.cutStripSpec", { defaultValue: "길이/Strip" })}</th>
-                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[90px]">{t("master.routing.allocQty", { defaultValue: "투입수량" })}</th>
-                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[110px]">{t("master.routing.issueMethod", { defaultValue: "투입방식" })}</th>
+                <th className="py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-14 whitespace-nowrap">{t("common.select")}</th>
+                <th className="text-left py-2 px-2 font-medium text-text-muted dark:text-gray-400 min-w-[170px] whitespace-nowrap">{t("master.bom.childItem", { defaultValue: "자재" })}</th>
+                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[80px] whitespace-nowrap">{t("master.bom.qtyPer", { defaultValue: "BOM수량" })}</th>
+                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 min-w-[150px] whitespace-nowrap">{t("master.routing.circuitSpec", { defaultValue: "회로사양" })}</th>
+                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[120px] whitespace-nowrap">{t("master.routing.cutStripSpec", { defaultValue: "길이/Strip" })}</th>
+                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[90px] whitespace-nowrap">{t("master.routing.allocQty", { defaultValue: "투입수량" })}</th>
+                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[110px] whitespace-nowrap">{t("master.routing.issueMethod", { defaultValue: "투입방식" })}</th>
               </tr>
             </thead>
             <tbody>

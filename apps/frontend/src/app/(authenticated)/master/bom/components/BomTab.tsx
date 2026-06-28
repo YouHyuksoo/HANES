@@ -95,6 +95,8 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
     unit: selectedParent.unit || "EA",
     revision: selectedParent.revisions?.[0] || "-",
     seq: 0,
+    validFrom: selectedParent.validFrom ?? undefined,
+    validTo: selectedParent.validTo ?? undefined,
     useYn: "Y",
     children: bomTree,
     isRoot: true,

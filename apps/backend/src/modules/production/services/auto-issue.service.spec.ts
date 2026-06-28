@@ -39,6 +39,7 @@ describe('AutoIssueService', () => {
   let mockTx: DeepMocked<TransactionService>;
   let mockWipMatStockService: DeepMocked<WipMatStockService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
+  const bomEffectiveDate = new Date(2026, 3, 15);
 
   beforeEach(async () => {
     mockBomRepo = createMock<Repository<BomMaster>>();
@@ -125,7 +126,7 @@ describe('AutoIssueService', () => {
     it('should skip when no BOM found', async () => {
       // Arrange
       mockSysConfigService.getValue.mockResolvedValue('ON_CREATE');
-      mockQueryRunner.manager.findOne.mockResolvedValue({ orderNo: 'JO-001', itemCode: 'PART-001' });
+      mockQueryRunner.manager.findOne.mockResolvedValue({ orderNo: 'JO-001', itemCode: 'PART-001', planDate: bomEffectiveDate });
       mockQueryRunner.manager.query.mockResolvedValue([]); // no BOM
 
       // Act
@@ -135,6 +136,42 @@ describe('AutoIssueService', () => {
       expect(result.skipped).toBe(true);
       expect(mockTx.run).not.toHaveBeenCalled();
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it('should use job order planDate as the required BOM effective date', async () => {
+      // Arrange
+      mockSysConfigService.getValue.mockResolvedValue('ON_CREATE');
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        orderNo: 'JO-001',
+        itemCode: 'PART-001',
+        company: 'C1',
+        plant: 'P1',
+        planDate: bomEffectiveDate,
+      });
+      mockQueryRunner.manager.query.mockResolvedValue([]);
+
+      // Act
+      await target.execute('ON_CREATE', '1', 'JO-001', 50, mockQueryRunner);
+
+      // Assert
+      const [sql, params] = mockQueryRunner.manager.query.mock.calls[0];
+      expect(sql).toContain("b.VALID_FROM <= TO_DATE(:2, 'YYYY-MM-DD')");
+      expect(sql).toContain("b.VALID_TO   >= TO_DATE(:3, 'YYYY-MM-DD')");
+      expect(sql).not.toContain('VALID_FROM IS NULL');
+      expect(sql).not.toContain('VALID_TO   IS NULL');
+      expect(params).toEqual(['PART-001', '2026-04-15', '2026-04-15', 'C1', 'P1']);
+    });
+
+    it('should reject BOM-based issue when job order has no planDate', async () => {
+      // Arrange
+      mockSysConfigService.getValue.mockResolvedValue('ON_CREATE');
+      mockQueryRunner.manager.findOne.mockResolvedValue({ orderNo: 'JO-001', itemCode: 'PART-001' });
+
+      // Act + Assert
+      await expect(
+        target.execute('ON_CREATE', '1', 'JO-001', 50, mockQueryRunner),
+      ).rejects.toThrow('작업지시 계획일이 없어 BOM 기준일을 결정할 수 없습니다');
+      expect(mockQueryRunner.manager.query).not.toHaveBeenCalled();
     });
   });
 
@@ -151,7 +188,7 @@ describe('AutoIssueService', () => {
       const ownQR = createMock<QueryRunner>();
       mockTx.run.mockImplementationOnce(async (callback) => callback(ownQR));
 
-      ownQR.manager.findOne.mockResolvedValue({ orderNo: 'JO-001', itemCode: 'PART-001' });
+      ownQR.manager.findOne.mockResolvedValue({ orderNo: 'JO-001', itemCode: 'PART-001', planDate: bomEffectiveDate });
       ownQR.manager.query.mockResolvedValue([]); // no BOM
 
       // Act
@@ -197,7 +234,7 @@ describe('AutoIssueService', () => {
         .mockResolvedValueOnce('BLOCK');     // stock check policy
 
       mockQueryRunner.manager.findOne.mockResolvedValue({
-        orderNo: 'JO-001', itemCode: 'FG-001',
+        orderNo: 'JO-001', itemCode: 'FG-001', planDate: bomEffectiveDate,
       });
 
       mockQueryRunner.manager.query.mockResolvedValue([
@@ -232,6 +269,7 @@ describe('AutoIssueService', () => {
         itemCode: 'FG-001',
         company: 'C1',
         plant: 'P1',
+        planDate: bomEffectiveDate,
       });
       mockQueryRunner.manager.query.mockResolvedValue([
         { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 1, useYn: 'Y' },
@@ -268,6 +306,7 @@ describe('AutoIssueService', () => {
         itemCode: 'FG-001',
         company: 'C1',
         plant: 'P1',
+        planDate: bomEffectiveDate,
       });
       mockQueryRunner.manager.query.mockResolvedValue([
         { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 1, useYn: 'Y' },
@@ -298,6 +337,7 @@ describe('AutoIssueService', () => {
         itemCode: 'FG-001',
         company: 'C1',
         plant: 'P1',
+        planDate: bomEffectiveDate,
       });
       mockQueryRunner.manager.query.mockResolvedValue([
         { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 1, useYn: 'Y' },
@@ -334,6 +374,7 @@ describe('AutoIssueService', () => {
         itemCode: 'FG-001',
         company: 'C1',
         plant: 'P1',
+        planDate: bomEffectiveDate,
       });
       mockQueryRunner.manager.query.mockResolvedValue([
         { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 1, useYn: 'Y' },
@@ -379,6 +420,7 @@ describe('AutoIssueService', () => {
         equipCode: 'EQ-1',
         lineCode: 'L1',
         processCode: 'OP10',
+        planDate: bomEffectiveDate,
       });
 
       mockQueryRunner.manager.query.mockResolvedValue([
@@ -443,6 +485,7 @@ describe('AutoIssueService', () => {
         company: 'C1',
         plant: 'P1',
         equipCode: 'EQ-1',
+        planDate: bomEffectiveDate,
       });
 
       mockQueryRunner.manager.query.mockResolvedValue([
@@ -481,7 +524,7 @@ describe('AutoIssueService', () => {
         .mockResolvedValueOnce('BLOCK');
 
       mockQueryRunner.manager.findOne.mockResolvedValue({
-        orderNo: 'JO-001', itemCode: 'FG-001', company: 'C1', plant: 'P1', equipCode: 'EQ-1',
+        orderNo: 'JO-001', itemCode: 'FG-001', company: 'C1', plant: 'P1', equipCode: 'EQ-1', planDate: bomEffectiveDate,
       });
       mockQueryRunner.manager.query.mockResolvedValue([
         { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 2, useYn: 'Y' },
@@ -510,6 +553,7 @@ describe('AutoIssueService', () => {
         company: 'C1',
         plant: 'P1',
         equipCode: null, // 설비 미배정
+        planDate: bomEffectiveDate,
       });
 
       mockQueryRunner.manager.query.mockResolvedValue([

@@ -35,6 +35,7 @@ export default function BomPage() {
   const [activeDetailTab, setActiveDetailTab] = useState<"conditions" | "materials">("conditions");
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState("FINISHED");
+  const [bomDateMode, setBomDateMode] = useState<"effective" | "all">("effective");
   const [effectiveDate, setEffectiveDate] = useState(getToday());
   const [loadingParents, setLoadingParents] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -58,7 +59,7 @@ export default function BomPage() {
     try {
       const params: Record<string, string> = {};
       if (searchText) params.search = searchText;
-      if (effectiveDate) params.effectiveDate = effectiveDate;
+      if (bomDateMode === "effective" && effectiveDate) params.effectiveDate = effectiveDate;
       const res = await api.get("/master/boms/parents", { params });
       const data: ParentPart[] = res.data?.success ? res.data.data || [] : [];
       setParents(data);
@@ -72,7 +73,7 @@ export default function BomPage() {
     } finally {
       setLoadingParents(false);
     }
-  }, [effectiveDate, searchText]);
+  }, [bomDateMode, effectiveDate, searchText]);
 
   const fetchRoutingByBomItem = useCallback(async () => {
     if (!routingPanelOpen || !selectedBomItem?.itemCode) {
@@ -183,6 +184,26 @@ export default function BomPage() {
             <FileSpreadsheet className="w-4 h-4 mr-1" />
             {t("master.bom.excelUpload")}
           </Button>
+          <div className="flex items-center rounded-lg border border-border bg-surface p-0.5">
+            <button
+              type="button"
+              onClick={() => setBomDateMode("effective")}
+              className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                bomDateMode === "effective" ? "bg-primary text-white" : "text-text-muted hover:text-text"
+              }`}
+            >
+              {t("master.bom.effectiveLookup", "기준일")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setBomDateMode("all")}
+              className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                bomDateMode === "all" ? "bg-primary text-white" : "text-text-muted hover:text-text"
+              }`}
+            >
+              {t("master.bom.allHistoryLookup", "전체이력")}
+            </button>
+          </div>
           <div className="flex items-center gap-2 bg-surface border border-border rounded-lg px-3 py-1.5">
             <Calendar className="w-4 h-4 text-primary" />
             <span className="text-sm text-text-muted whitespace-nowrap">{t("master.bom.effectiveDate")}:</span>
@@ -190,6 +211,7 @@ export default function BomPage() {
               type="date"
               value={effectiveDate}
               onChange={(e) => setEffectiveDate(e.target.value)}
+              disabled={bomDateMode === "all"}
               className="bg-transparent text-sm text-text font-medium border-none outline-none cursor-pointer"
             />
           </div>
@@ -290,7 +312,7 @@ export default function BomPage() {
                   selectedItemCode={selectedBomItem?.itemCode}
                   onSelectItem={setSelectedBomItem}
                   onViewRouting={openRoutingPanel}
-                  effectiveDate={effectiveDate}
+                  effectiveDate={bomDateMode === "effective" ? effectiveDate : undefined}
                   compact
                 />
               </div>

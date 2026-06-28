@@ -11,7 +11,7 @@
  */
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -51,6 +51,7 @@ export class KioskMaterialService {
     if (!effectiveEquip) {
       throw new BadRequestException('장착 대상 설비가 지정되지 않았습니다. (작업지시 설비 필요)');
     }
+    const bomEffectiveDate = this.resolveBomEffectiveDate(jobOrder);
 
     // 1. 스캔 LOT 조회 — 실제 품목 확인
     const lot = await this.matLotRepo.findOne({
@@ -66,6 +67,8 @@ export class KioskMaterialService {
         parentItemCode: jobOrder.itemCode,
         childItemCode: lot.itemCode,
         useYn: 'Y',
+        validFrom: LessThanOrEqual(bomEffectiveDate),
+        validTo: MoreThanOrEqual(bomEffectiveDate),
         company,
         plant,
       },
@@ -78,5 +81,21 @@ export class KioskMaterialService {
 
     // 3. 설비 장착(WIP 적재 + MAT_LOTS 차감 + 이력)은 공용 서비스에 위임
     return this.equipMaterialService.mount(effectiveEquip, matUid, company, plant);
+  }
+
+  private resolveBomEffectiveDate(jobOrder: JobOrder): Date {
+    if (!jobOrder.planDate) {
+      throw new BadRequestException(
+        `작업지시 계획일이 없어 BOM 기준일을 결정할 수 없습니다: ${jobOrder.orderNo}`,
+      );
+    }
+
+    const date = new Date(jobOrder.planDate);
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException(
+        `작업지시 계획일이 올바르지 않아 BOM 기준일을 결정할 수 없습니다: ${jobOrder.orderNo}`,
+      );
+    }
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 }

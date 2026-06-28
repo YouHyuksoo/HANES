@@ -160,9 +160,9 @@ export class AutoIssueService {
     }
     const tenant: TenantContext = { company: jobOrder.company, plant: jobOrder.plant };
 
-    /* ── 4. BOM 조회 (유효 기간 & useYn) ──────────── */
-    const today = new Date();
-    const fullBomList = await this.findValidBom(qr, jobOrder.itemCode, today, tenant);
+    /* ── 4. BOM 조회 (작업지시 계획일 기준 유효 기간 & useYn) ──────────── */
+    const bomEffectiveDate = this.resolveBomEffectiveDate(jobOrder);
+    const fullBomList = await this.findValidBom(qr, jobOrder.itemCode, bomEffectiveDate, tenant);
     if (fullBomList.length === 0) {
       this.logger.warn(`BOM 없음 — itemCode: ${jobOrder.itemCode}`);
       result.skipped = true;
@@ -281,10 +281,10 @@ export class AutoIssueService {
   private async findValidBom(
     qr: QueryRunner,
     parentItemCode: string,
-    today: Date,
+    effectiveDate: Date,
     tenant: TenantContext,
   ): Promise<BomComponentRow[]> {
-    const dateStr = today.toISOString().slice(0, 10);
+    const dateStr = this.formatDateOnly(effectiveDate);
     const tenantClauses: string[] = [];
     const params = [parentItemCode, dateStr, dateStr];
     if (tenant.company) {
@@ -313,12 +313,35 @@ export class AutoIssueService {
          FROM BOM_MASTERS b
         WHERE b.PARENT_ITEM_CODE = :1
           AND b.USE_YN = 'Y'
-          AND (b.VALID_FROM IS NULL OR b.VALID_FROM <= TO_DATE(:2, 'YYYY-MM-DD'))
-          AND (b.VALID_TO   IS NULL OR b.VALID_TO   >= TO_DATE(:3, 'YYYY-MM-DD'))
+          AND b.VALID_FROM <= TO_DATE(:2, 'YYYY-MM-DD')
+          AND b.VALID_TO   >= TO_DATE(:3, 'YYYY-MM-DD')
 ${tenantSql}
         ORDER BY b.SEQ ASC`,
       params,
     );
     return rows;
+  }
+
+  private resolveBomEffectiveDate(jobOrder: JobOrder): Date {
+    if (!jobOrder.planDate) {
+      throw new BadRequestException(
+        `작업지시 계획일이 없어 BOM 기준일을 결정할 수 없습니다: ${jobOrder.orderNo}`,
+      );
+    }
+
+    const date = new Date(jobOrder.planDate);
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException(
+        `작업지시 계획일이 올바르지 않아 BOM 기준일을 결정할 수 없습니다: ${jobOrder.orderNo}`,
+      );
+    }
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  private formatDateOnly(date: Date): string {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 }

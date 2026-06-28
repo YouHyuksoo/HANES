@@ -10,8 +10,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, ConflictException } from '@nestjs/common';
+import { validate } from 'class-validator';
 import { Repository } from 'typeorm';
+import * as XLSX from 'xlsx';
 import { BomService } from './bom.service';
+import { CreateBomDto } from '../dto/bom.dto';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -36,6 +39,22 @@ describe('BomService', () => {
       .compile();
 
     target = module.get<BomService>(BomService);
+  });
+
+  describe('CreateBomDto validation', () => {
+    it('should require validFrom and validTo when creating BOM rows', async () => {
+      const dto = Object.assign(new CreateBomDto(), {
+        parentItemCode: 'P01',
+        childItemCode: 'C01',
+        qtyPer: 1,
+      });
+
+      const errors = await validate(dto);
+      const properties = errors.map((error) => error.property);
+
+      expect(properties).toContain('validFrom');
+      expect(properties).toContain('validTo');
+    });
   });
 
   afterEach(() => {
@@ -223,6 +242,46 @@ describe('BomService', () => {
 
       // Assert
       expect(result[0].revisions).toEqual([]);
+    });
+
+    it('should select parent BOM valid date range for root row display', async () => {
+      mockBomRepo.query.mockResolvedValue([
+        { itemCode: 'P01', bomCount: '1', revisions: 'A', validFrom: new Date('2026-06-01'), validTo: new Date('2099-12-31') },
+      ]);
+
+      await target.findParents(undefined, '2026-06-29', '40', '1000');
+
+      const [sql] = mockBomRepo.query.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain('MIN(b.VALID_FROM)');
+      expect(sql).toContain('MAX(b.VALID_TO)');
+      expect(sql).toContain('validFrom');
+      expect(sql).toContain('validTo');
+    });
+  });
+
+  describe('previewUpload', () => {
+    it('should reject upload rows without validFrom or validTo', async () => {
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet([
+        {
+          상위품목코드: 'P01',
+          하위품목코드: 'C01',
+          소요량: 1,
+          리비전: 'A',
+          유효시작일: '',
+          유효종료일: '',
+        },
+      ]);
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'BOM');
+      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
+
+      const result = await target.previewUpload(buffer, '40', '1000');
+
+      expect(result.errorCount).toBe(1);
+      expect(result.rows[0].status).toBe('error');
+      expect(result.rows[0].message).toContain('유효시작일');
+      expect(result.rows[0].message).toContain('유효종료일');
+      expect(mockBomRepo.find).not.toHaveBeenCalled();
     });
   });
 

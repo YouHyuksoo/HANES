@@ -31,6 +31,7 @@ export interface BomPreviewRow {
   parentItemCode: string;
   childItemCode: string;
   validFrom: string | null;
+  validTo: string | null;
   qtyPer: number | null;
   revision: string;
   status: 'new' | 'duplicate_db' | 'duplicate_file' | 'error';
@@ -55,6 +56,8 @@ type BomParentRow = {
   remark: string | null;
   bomCount: string | number;
   revisions: string | null;
+  validFrom: Date | null;
+  validTo: Date | null;
 };
 
 type BomChildRow = {
@@ -164,6 +167,8 @@ export class BomService {
                 p.UNIT        AS "unit",
                 p.REMARK     AS "remark",
                 COUNT(*)      AS "bomCount",
+                MIN(b.VALID_FROM) AS "validFrom",
+                MAX(b.VALID_TO) AS "validTo",
                 LISTAGG(DISTINCT b.REVISION, ',') WITHIN GROUP (ORDER BY b.REVISION) AS "revisions"
            FROM BOM_MASTERS b
            JOIN ITEM_MASTERS p ON p.ITEM_CODE = b.PARENT_ITEM_CODE
@@ -564,28 +569,33 @@ export class BomService {
       const qtyRaw = r['소요량'];
       const revision = str(r['리비전']) || 'A';
       const validFrom = fmtDate(r['유효시작일']);
+      const validTo = fmtDate(r['유효종료일']);
 
       if (!parentCode || !childCode) {
-        rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, qtyPer: null, revision, status: 'error', message: '상위/하위품목코드 필수' });
+        rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, validTo, qtyPer: null, revision, status: 'error', message: '상위/하위품목코드 필수' });
+        continue;
+      }
+      if (!validFrom || !validTo) {
+        rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, validTo, qtyPer: qtyRaw === '' || qtyRaw === null || isNaN(Number(qtyRaw)) ? null : Number(qtyRaw), revision, status: 'error', message: '유효시작일, 유효종료일 필수' });
         continue;
       }
       if (qtyRaw === '' || qtyRaw === null || isNaN(Number(qtyRaw))) {
-        rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, qtyPer: null, revision, status: 'error', message: '소요량 누락 또는 숫자 아님' });
+        rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, validTo, qtyPer: null, revision, status: 'error', message: '소요량 누락 또는 숫자 아님' });
         continue;
       }
       if (parentCode === childCode) {
-        rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, qtyPer: Number(qtyRaw), revision, status: 'error', message: '상위=하위 불가' });
+        rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, validTo, qtyPer: Number(qtyRaw), revision, status: 'error', message: '상위=하위 불가' });
         continue;
       }
 
       const fileKey = `${parentCode}::${childCode}::${validFrom ?? ''}`;
       if (fileKeySet.has(fileKey)) {
-        rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, qtyPer: Number(qtyRaw), revision, status: 'duplicate_file', message: '파일 내 중복' });
+        rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, validTo, qtyPer: Number(qtyRaw), revision, status: 'duplicate_file', message: '파일 내 중복' });
         continue;
       }
       fileKeySet.add(fileKey);
       dbKeys.push({ parentItemCode: parentCode, childItemCode: childCode, validFrom: validFrom ? new Date(validFrom) : null });
-      rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, qtyPer: Number(qtyRaw), revision, status: 'new' });
+      rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, validTo, qtyPer: Number(qtyRaw), revision, status: 'new' });
     }
 
     // DB 중복 확인 (모+자+유효시작일)
@@ -671,9 +681,12 @@ export class BomService {
       const childCode = str(row['하위품목코드']);
       const qtyRaw = row['소요량'];
       const revision = str(row['리비전']) || 'A';
+      const validFrom = str(row['유효시작일']);
+      const validTo = str(row['유효종료일']);
 
       if (!parentCode || !childCode) { result.errors.push({ row: rowNum, message: '상위품목코드, 하위품목코드는 필수입니다.' }); continue; }
       if (qtyRaw === '' || qtyRaw === null || qtyRaw === undefined || isNaN(Number(qtyRaw))) { result.errors.push({ row: rowNum, message: '소요량이 누락되었거나 숫자가 아닙니다.' }); continue; }
+      if (!validFrom || !validTo) { result.errors.push({ row: rowNum, message: '유효시작일, 유효종료일은 필수입니다.' }); continue; }
       if (parentCode === childCode) { result.errors.push({ row: rowNum, message: '상위 품목과 하위 품목이 같을 수 없습니다.' }); continue; }
       if (!validCodes.has(parentCode)) { result.errors.push({ row: rowNum, message: `상위품목코드 [${parentCode}]가 품목마스터에 없습니다.` }); continue; }
       if (!validCodes.has(childCode)) { result.errors.push({ row: rowNum, message: `하위품목코드 [${childCode}]가 품목마스터에 없습니다.` }); continue; }
@@ -687,8 +700,8 @@ export class BomService {
           qtyPer: Number(qtyRaw), seq: Number(row['순서'] ?? 0) || 0,
           bomGrp: str(row['BOM그룹']) || null, processCode: str(row['공정코드']) || null,
           side: str(row['사이드']) || null, ecoNo: str(row['ECO번호']) || null,
-          validFrom: row['유효시작일'] ? new Date(String(row['유효시작일'])) : null,
-          validTo: row['유효종료일'] ? new Date(String(row['유효종료일'])) : null,
+          validFrom: new Date(validFrom),
+          validTo: new Date(validTo),
           remark: str(row['비고']) || null, useYn: 'Y',
           company: company ?? null, plant: plant ?? null,
           createdBy: userId ?? null, updatedBy: userId ?? null,

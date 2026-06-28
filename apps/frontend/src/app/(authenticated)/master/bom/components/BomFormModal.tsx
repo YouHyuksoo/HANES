@@ -17,6 +17,9 @@ import api from "@/services/api";
 import { BomTreeItem, getBomKey } from "../types";
 import { Field, FieldLabel, FieldInput, FieldComCodeSelect, FieldProcessSelect } from "./BomFieldHelp";
 
+const getToday = () => new Date().toISOString().split("T")[0];
+const DEFAULT_VALID_TO = "2099-12-31";
+
 interface BomFormModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -65,7 +68,7 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
       setRemark("");
     } else {
       setSelectedChild(null); setChildSearch(""); setQtyPer("1"); setSeq("0");
-      setRevision("A"); setProcessCode(""); setSide(""); setValidFrom(""); setValidTo(""); setRemark("");
+      setRevision("A"); setProcessCode(""); setSide(""); setValidFrom(getToday()); setValidTo(DEFAULT_VALID_TO); setRemark("");
     }
   }, [isOpen, editingItem]);
 
@@ -90,14 +93,14 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
   };
 
   const handleSave = async () => {
-    if (!selectedChild) return;
+    if (!selectedChild || !validFrom || !validTo) return;
     setSaving(true);
     try {
       const body = {
         parentItemCode, childItemCode: selectedChild.itemCode,
         qtyPer: Number(qtyPer), seq: Number(seq), revision,
         processCode: processCode || undefined, side: side || undefined,
-        validFrom: validFrom || undefined, validTo: validTo || undefined,
+        validFrom, validTo,
         remark: remark || undefined, useYn: "Y",
       };
       if (editingItem) {
@@ -154,13 +157,13 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
           <FieldInput field="remark" label={t("master.bom.remark")} value={remark} onChange={(e) => setRemark(e.target.value)} />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <FieldInput field="validFrom" label={t("master.bom.validFrom")} type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
-          <FieldInput field="validTo" label={t("master.bom.validTo")} type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} />
+          <FieldInput field="validFrom" label={t("master.bom.validFrom")} type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} required />
+          <FieldInput field="validTo" label={t("master.bom.validTo")} type="date" value={validTo} onChange={(e) => setValidTo(e.target.value)} required />
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-6">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleSave} disabled={saving || !selectedChild}>
+        <Button onClick={handleSave} disabled={saving || !selectedChild || !validFrom || !validTo}>
           {saving ? t("common.loading") : t("common.save", "저장")}
         </Button>
       </div>

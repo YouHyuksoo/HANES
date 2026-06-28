@@ -17,6 +17,7 @@ export default function RoutingPage() {
   const [selectedProcess, setSelectedProcess] = useState<SelectedProcess | null>(null);
   const [activeDetailTab, setActiveDetailTab] = useState<"conditions" | "materials" | "selfinspect">("conditions");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [layoutFocus, setLayoutFocus] = useState<"center" | "detail">("center");
 
   const handleRefresh = useCallback(() => {
     setRefreshKey((key) => key + 1);
@@ -42,15 +43,22 @@ export default function RoutingPage() {
       </div>
 
       <div className="grid grid-cols-12 gap-4 min-h-0 flex-1">
-        <div className="col-span-8 flex flex-col min-h-0 min-w-0 overflow-hidden">
+        <div
+          className={`${layoutFocus === "detail" ? "col-span-7" : "col-span-9"} flex flex-col min-h-0 min-w-0 overflow-hidden transition-[grid-column] duration-200`}
+          onMouseDownCapture={() => setLayoutFocus("center")}
+        >
           <RoutingGroupManager
             key={refreshKey}
             selectedProcess={selectedProcess}
             onSelectProcess={setSelectedProcess}
+            layoutFocus={layoutFocus}
           />
         </div>
 
-        <div className="col-span-4 flex flex-col min-h-0 min-w-0 overflow-hidden">
+        <div
+          className={`${layoutFocus === "detail" ? "col-span-5" : "col-span-3"} flex flex-col min-h-0 min-w-0 overflow-hidden transition-[grid-column] duration-200`}
+          onMouseDownCapture={() => setLayoutFocus("detail")}
+        >
           <Card padding="none" className="flex-1 flex flex-col min-h-0 rounded-lg">
             <CardContent className="flex-1 flex flex-col min-h-0 p-4">
               {selectedProcess ? (
