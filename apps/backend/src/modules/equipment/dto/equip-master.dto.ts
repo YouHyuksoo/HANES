@@ -23,6 +23,7 @@ import {
   IsInt,
   IsDateString,
   IsJSON,
+  IsNotEmpty,
   Min,
   Max,
   MaxLength,
@@ -48,15 +49,15 @@ export class CreateEquipMasterDto {
   @MaxLength(200)
   equipName: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: '설비 유형',
     enum: EQUIP_TYPE_VALUES,
     example: 'AUTO_CRIMP',
   })
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   @IsIn([...EQUIP_TYPE_VALUES])
-  equipType?: string;
+  equipType: string;
 
   @ApiPropertyOptional({ description: '모델명', maxLength: 100 })
   @IsOptional()

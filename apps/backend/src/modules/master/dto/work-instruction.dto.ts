@@ -39,11 +39,11 @@ export class CreateWorkInstructionDto {
   @MaxLength(500)
   imageUrl?: string;
 
-  @ApiPropertyOptional({ description: '리비전', default: 'A' })
-  @IsOptional()
+  @ApiProperty({ description: '리비전', default: 'A' })
+  @IsNotEmpty()
   @IsString()
   @MaxLength(10)
-  revision?: string;
+  revision: string;
 
   @ApiPropertyOptional({ description: '사용 여부', default: 'Y' })
   @IsOptional()

@@ -29,12 +29,12 @@ export class ProcessMaster {
   @Column({ name: 'PROCESS_TYPE', length: 255 })
   processType: string;
 
-  @Column({ type: 'varchar2', name: 'PROCESS_CATEGORY', length: 50, nullable: true })
-  processCategory: string | null;
+  @Column({ type: 'varchar2', name: 'PROCESS_CATEGORY', length: 50 })
+  processCategory: string;
 
   /** 공정 라인구분: LV=저전압 HV=고전압 CM=공통 (PDF 제조공정 흐름도 기준) */
-  @Column({ type: 'varchar2', name: 'LINE_TYPE', length: 2, nullable: true })
-  lineType: string | null;
+  @Column({ type: 'varchar2', name: 'LINE_TYPE', length: 2 })
+  lineType: string;
 
   @Column({ name: 'SORT_ORDER', type: 'int', default: 0 })
   sortOrder: number;

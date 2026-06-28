@@ -132,7 +132,7 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
   }, [handleFileUpload]);
 
   const handleSubmit = async () => {
-    if (!form.itemCode.trim() || !form.processCode.trim() || !form.title.trim()) return;
+    if (!form.itemCode.trim() || !form.processCode.trim() || !form.title.trim() || !form.revision.trim()) return;
     setSaving(true);
     try {
       if (isEdit && editingItem?.itemCode && editingItem?.processCode) {
@@ -158,7 +158,7 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
         </h2>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.processCode.trim() || !form.title.trim()}>
+          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.itemCode.trim() || !form.processCode.trim() || !form.title.trim() || !form.revision.trim()}>
             {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>
@@ -178,7 +178,7 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
             <FieldInput field="title" label={t("master.workInstruction.docTitle")} required
               wrapperClassName="col-span-2"
               value={form.title} onChange={e => setField("title", e.target.value)} />
-            <FieldInput field="revision" label={t("master.workInstruction.revision")}
+            <FieldInput field="revision" label={t("master.workInstruction.revision")} required
               value={form.revision} onChange={e => setField("revision", e.target.value)}
               readOnly={isEdit} disabled={isEdit} placeholder="A" />
           </div>

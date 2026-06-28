@@ -204,6 +204,7 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
   };
 
   const handleSave = async () => {
+    if (!form.equipCode.trim() || !form.equipName.trim() || !form.equipType) return;
     try {
       const body = {
         equipCode: form.equipCode,
@@ -387,7 +388,7 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
               <Button size="sm" variant="secondary" onClick={() => guard(() => setPanelOpen(false))}>
                 {t("common.cancel", "취소")}
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={!form.equipCode.trim() || !form.equipName.trim()}>
+              <Button size="sm" onClick={handleSave} disabled={!form.equipCode.trim() || !form.equipName.trim() || !form.equipType}>
                 {t("common.save", "저장")}
               </Button>
             </div>
@@ -398,7 +399,7 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
               <div className="grid grid-cols-2 gap-3">
                 <FieldInput field="equipCode" label={t("master.equip.equipCode", "설비코드")} value={form.equipCode} onChange={(e) => setForm({ ...form, equipCode: e.target.value })} disabled={!!editing} required />
                 <FieldInput field="equipName" label={t("master.equip.equipName", "설비명")} value={form.equipName} onChange={(e) => setForm({ ...form, equipName: e.target.value })} required />
-                <FieldComCodeSelect field="equipType" groupCode="EQUIP_TYPE" includeAll={false} label={t("master.equip.type", "유형")} value={form.equipType} onChange={(v) => setForm({ ...form, equipType: v as EquipType })} />
+                <FieldComCodeSelect field="equipType" groupCode="EQUIP_TYPE" includeAll={false} label={t("master.equip.type", "유형")} value={form.equipType} onChange={(v) => setForm({ ...form, equipType: v as EquipType })} required />
                 <FieldComCodeSelect field="commType" groupCode="COMM_TYPE" includeAll={false} label={t("master.equip.commType", "통신방식")} value={form.commType} onChange={(v) => setForm({ ...form, commType: v as CommType })} />
                 <FieldLineSelect field="lineCode" label={t("master.equip.line", "라인")} value={form.lineCode} onChange={(v) => setForm({ ...form, lineCode: v })} wrapperClassName="col-span-2" />
               </div>

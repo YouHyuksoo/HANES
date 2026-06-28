@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsIn, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
@@ -31,11 +31,11 @@ export class CreateEquipInspectItemPoolDto {
   @MaxLength(500)
   criteria?: string;
 
-  @ApiPropertyOptional({ description: '주기', enum: ['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'SEMI_ANNUAL', 'ANNUAL'] })
-  @IsOptional()
+  @ApiProperty({ description: '주기', enum: ['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'SEMI_ANNUAL', 'ANNUAL'] })
+  @IsNotEmpty()
   @IsString()
   @MaxLength(20)
-  cycle?: string;
+  cycle: string;
 
   @ApiPropertyOptional({ description: '사용여부', default: 'Y' })
   @IsOptional()

@@ -134,21 +134,21 @@ export class ProcessToolsProvider implements PageToolProvider {
     const processCode = this.str(input.processCode);
     const processName = this.str(input.processName);
     const processType = this.str(input.processType);
-    if (!processCode || !processName || !processType) {
-      throw new BadRequestException('공정코드·공정명·공정유형이 필요합니다.');
+    const processCategory = this.str(input.processCategory);
+    if (!processCode || !processName || !processType || !processCategory || input.lineType === undefined) {
+      throw new BadRequestException('공정코드·공정명·공정유형·공정카테고리·라인유형이 필요합니다.');
     }
+    const lineType = this.normalizeLineType(input.lineType);
     const dto: {
       processCode: string;
       processName: string;
       processType: string;
-      processCategory?: string;
-      lineType?: string;
+      processCategory: string;
+      lineType: string;
       sortOrder?: number;
       remark?: string;
       useYn?: string;
-    } = { processCode, processName, processType };
-    if (input.processCategory !== undefined) dto.processCategory = this.str(input.processCategory) || undefined;
-    if (input.lineType !== undefined) dto.lineType = this.normalizeLineType(input.lineType);
+    } = { processCode, processName, processType, processCategory, lineType };
     if (input.sortOrder !== undefined) dto.sortOrder = this.toSortOrder(input.sortOrder);
     if (input.remark !== undefined) dto.remark = this.str(input.remark);
     if (input.useYn !== undefined) dto.useYn = this.normalizeUseYn(input.useYn);

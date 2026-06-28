@@ -36,8 +36,8 @@ export class ProdLineMaster {
   @Column({ type: 'varchar2', name: 'OPER', length: 255, nullable: true })
   oper: string | null;
 
-  @Column({ type: 'varchar2', name: 'LINE_TYPE', length: 255, nullable: true })
-  lineType: string | null;
+  @Column({ type: 'varchar2', name: 'LINE_TYPE', length: 255 })
+  lineType: string;
 
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;

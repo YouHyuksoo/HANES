@@ -161,17 +161,18 @@ export class PartToolsProvider implements PageToolProvider {
     const itemCode = this.str(input.itemCode);
     const itemName = this.str(input.itemName);
     const itemNo = this.str(input.itemNo);
-    if (!itemCode || !itemName || !itemNo) {
-      throw new BadRequestException('품목코드·품목명·품번이 필요합니다.');
+    const productType = this.str(input.productType);
+    if (!itemCode || !itemName || !itemNo || !productType) {
+      throw new BadRequestException('품목코드·품목명·품번·품목그룹(productType)이 필요합니다.');
     }
     const dto: CreatePartDto = {
       itemCode,
       itemName,
       itemNo,
       itemType: this.normalizeItemType(input.itemType),
+      productType,
     };
     if (input.custPartNo !== undefined) dto.custPartNo = this.str(input.custPartNo);
-    if (input.productType !== undefined) dto.productType = this.str(input.productType);
     if (input.modelName !== undefined) dto.modelName = this.str(input.modelName);
     if (input.spec !== undefined) dto.spec = this.str(input.spec);
     if (input.rev !== undefined) dto.rev = this.str(input.rev);

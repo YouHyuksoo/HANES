@@ -31,8 +31,8 @@ export class ItemMaster {
   @Column({ name: 'ITEM_TYPE', length: 50 })
   itemType: string;
 
-  @Column({ type: 'varchar2', name: 'PRODUCT_TYPE', length: 50, nullable: true })
-  productType: string | null;
+  @Column({ type: 'varchar2', name: 'PRODUCT_TYPE', length: 50 })
+  productType: string;
 
   @Column({ type: 'varchar2', name: 'MODEL_NAME', length: 100, nullable: true })
   modelName: string | null;

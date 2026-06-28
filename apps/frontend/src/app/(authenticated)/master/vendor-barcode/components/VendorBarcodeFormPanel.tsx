@@ -89,7 +89,7 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
   };
 
   const handleSubmit = async () => {
-    if (!form.vendorBarcode.trim()) return;
+    if (!form.vendorBarcode.trim() || !form.itemCode.trim() || !form.vendorCode.trim()) return;
     setSaving(true);
     try {
       if (isEdit && editingItem?.vendorBarcode) {
@@ -115,7 +115,7 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
         </h2>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.vendorBarcode.trim()}>
+          <Button size="sm" onClick={handleSubmit} disabled={saving || !form.vendorBarcode.trim() || !form.itemCode.trim() || !form.vendorCode.trim()}>
             {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>
@@ -140,11 +140,11 @@ export default function VendorBarcodeFormPanel({ editingItem, onClose, onSave, a
         <div>
           <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.vendorBarcode.sectionPart", "품목 매핑")}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <FieldInput field="partCode" label={t("master.vendorBarcode.partCode", "품번")}
+            <FieldInput field="partCode" label={t("master.vendorBarcode.partCode", "품번")} required
               value={form.itemCode} onChange={e => setField("itemCode", e.target.value)} />
             <FieldInput field="partName" label={t("master.vendorBarcode.partName", "품명")}
               value={form.itemName} onChange={e => setField("itemName", e.target.value)} />
-            <FieldInput field="vendorCode" label={t("master.vendorBarcode.vendorCode", "제조사 코드")}
+            <FieldInput field="vendorCode" label={t("master.vendorBarcode.vendorCode", "제조사 코드")} required
               value={form.vendorCode} onChange={e => setField("vendorCode", e.target.value)} />
             <FieldInput field="vendorName" label={t("master.vendorBarcode.vendorName", "제조사명")}
               value={form.vendorName} onChange={e => setField("vendorName", e.target.value)} />

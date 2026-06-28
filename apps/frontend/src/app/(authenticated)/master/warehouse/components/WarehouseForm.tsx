@@ -38,7 +38,7 @@ export default function WarehouseForm({ isEdit, formData, typeOptions, onClose, 
         </h2>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button size="sm" onClick={onSave} disabled={saving || !formData.warehouseCode || !formData.warehouseName}>
+          <Button size="sm" onClick={onSave} disabled={saving || !formData.warehouseCode || !formData.warehouseName || !formData.warehouseType}>
             {saving ? t('common.saving') : t('common.save')}
           </Button>
         </div>
@@ -63,6 +63,7 @@ export default function WarehouseForm({ isEdit, formData, typeOptions, onClose, 
           value={formData.warehouseType}
           onChange={(v) => onChange({ ...formData, warehouseType: v })}
           options={typeOptions}
+          required
         />
         {formData.warehouseType === 'FLOOR' && (
           <>

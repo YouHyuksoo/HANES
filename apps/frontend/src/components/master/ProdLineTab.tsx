@@ -101,7 +101,7 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
   useEffect(() => { markDirty(dirty); }, [dirty, markDirty]);
 
   const handleSave = useCallback(async () => {
-    if (!formData.lineCode || !formData.lineName) return;
+    if (!formData.lineCode || !formData.lineName || !formData.lineType) return;
     setSaving(true);
     try {
       if (editingLine) {
@@ -211,7 +211,7 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
               <Button size="sm" variant="secondary" onClick={() => guard(() => setIsPanelOpen(false))}>
                 {t("common.cancel")}
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={saving || !formData.lineCode || !formData.lineName}>
+              <Button size="sm" onClick={handleSave} disabled={saving || !formData.lineCode || !formData.lineName || !formData.lineType}>
                 {saving ? t("common.saving") : t("common.save", "저장")}
               </Button>
             </div>
@@ -226,7 +226,7 @@ export default function ProdLineTab({ onHeaderActions }: Props) {
               <FieldInput field="oper" label={t("master.prodLine.oper")} placeholder="#0100"
                 value={formData.oper || ""} onChange={(e) => setFormData((p) => ({ ...p, oper: e.target.value }))} />
               <FieldInput field="lineType" label={t("master.prodLine.lineType")} placeholder="PACKING"
-                value={formData.lineType || ""} onChange={(e) => setFormData((p) => ({ ...p, lineType: e.target.value }))} />
+                value={formData.lineType || ""} onChange={(e) => setFormData((p) => ({ ...p, lineType: e.target.value }))} required />
               <FieldInput field="whLoc" label={t("master.prodLine.whLoc")} placeholder="LOC002"
                 value={formData.whLoc || ""} onChange={(e) => setFormData((p) => ({ ...p, whLoc: e.target.value }))} />
               <FieldInput field="erpCode" label={t("master.prodLine.erpCode")} placeholder="ERP Code"

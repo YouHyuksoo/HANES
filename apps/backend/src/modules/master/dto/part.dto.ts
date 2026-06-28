@@ -37,12 +37,12 @@ export class CreatePartDto {
   @MaxLength(100)
   custPartNo?: string;
 
-  @ApiPropertyOptional({ description: '제품유형 코드', example: 'HARNESS', enum: PRODUCT_TYPE_VALUES })
-  @IsOptional()
+  @ApiProperty({ description: '제품유형 코드', example: 'HARNESS', enum: PRODUCT_TYPE_VALUES })
+  @IsNotEmpty()
   @IsString()
   @IsIn([...PRODUCT_TYPE_VALUES])
   @MaxLength(20)
-  productType?: string;
+  productType: string;
 
   @ApiPropertyOptional({ description: '차종', example: 'CN7' })
   @IsOptional()

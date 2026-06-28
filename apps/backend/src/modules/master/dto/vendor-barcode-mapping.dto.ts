@@ -9,7 +9,7 @@
  * 4. ScanDto: 바코드 스캔 시 매칭 요청
  */
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsString, IsOptional, MaxLength, IsIn, IsInt, Min, Max } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, MaxLength, IsIn, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
@@ -32,11 +32,11 @@ export class CreateVendorBarcodeMappingDto {
   @MaxLength(100)
   itemName?: string;
 
-  @ApiPropertyOptional({ description: '제조사 코드' })
-  @IsOptional()
+  @ApiProperty({ description: '제조사 코드' })
+  @IsNotEmpty()
   @IsString()
   @MaxLength(50)
-  vendorCode?: string;
+  vendorCode: string;
 
   @ApiPropertyOptional({ description: '제조사명' })
   @IsOptional()

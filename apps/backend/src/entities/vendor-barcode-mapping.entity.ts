@@ -34,8 +34,8 @@ export class VendorBarcodeMapping {
   itemName: string | null;
 
   /** 제조사 코드 (VENDOR_MASTERS 참조) */
-  @Column({ type: 'varchar2', name: 'VENDOR_CODE', length: 50, nullable: true })
-  vendorCode: string | null;
+  @Column({ type: 'varchar2', name: 'VENDOR_CODE', length: 50 })
+  vendorCode: string;
 
   /** 제조사명 (조회 편의용) */
   @Column({ type: 'varchar2', name: 'VENDOR_NAME', length: 100, nullable: true })

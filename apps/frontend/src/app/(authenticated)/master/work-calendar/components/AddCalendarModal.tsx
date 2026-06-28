@@ -52,6 +52,7 @@ export default function AddCalendarModal({ isOpen, onClose, onSave, processes }:
     setForm((p) => ({ ...p, [key]: value }));
 
   const handleSave = () => {
+    if (!form.calendarId.trim() || !form.calendarYear.trim()) return;
     onSave(form);
     setForm(INIT);
   };
@@ -72,6 +73,7 @@ export default function AddCalendarModal({ isOpen, onClose, onSave, processes }:
           label={t("master.workCalendar.calendarId")}
           value={form.calendarId}
           onChange={(e) => setF("calendarId", e.target.value)}
+          required
         />
         <FieldInput
           field="calendarYear"
@@ -79,6 +81,7 @@ export default function AddCalendarModal({ isOpen, onClose, onSave, processes }:
           value={form.calendarYear}
           onChange={(e) => setF("calendarYear", e.target.value)}
           maxLength={4}
+          required
         />
         <Field field="processCd" label={t("master.workCalendar.processCd")}>
           <select value={form.processCd} onChange={(e) => setF("processCd", e.target.value)} className={selectCls}>
@@ -116,7 +119,7 @@ export default function AddCalendarModal({ isOpen, onClose, onSave, processes }:
       </div>
       <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-border dark:border-gray-700">
         <Button variant="secondary" onClick={handleClose}>{t("common.cancel")}</Button>
-        <Button variant="primary" onClick={handleSave}>{t("common.save")}</Button>
+        <Button variant="primary" onClick={handleSave} disabled={!form.calendarId.trim() || !form.calendarYear.trim()}>{t("common.save")}</Button>
       </div>
     </Modal>
   );

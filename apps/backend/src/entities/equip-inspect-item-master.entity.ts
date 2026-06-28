@@ -35,8 +35,8 @@ export class EquipInspectItemMaster {
   @Column({ type: 'varchar2', name: 'CRITERIA', length: 500, nullable: true })
   criteria: string | null;
 
-  @Column({ type: 'varchar2', name: 'CYCLE', length: 20, nullable: true })
-  cycle: string | null;
+  @Column({ type: 'varchar2', name: 'CYCLE', length: 20 })
+  cycle: string;
 
   @Column({ type: 'varchar2', name: 'UNIT', length: 20, nullable: true })
   unit: string | null;

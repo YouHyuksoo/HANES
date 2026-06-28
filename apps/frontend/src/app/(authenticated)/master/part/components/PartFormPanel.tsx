@@ -130,6 +130,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
     && !!form.itemCode.trim()
     && !!form.itemNo.trim()
     && !!form.itemName.trim()
+    && !!form.productType
     && (!requiresIqcAqlPolicy || !!form.iqcAqlPolicyCode);
 
   // editingPart 변경 시 폼 리셋
@@ -300,7 +301,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
               fullWidth required />
             <FieldComCodeSelect field="productType" groupCode="PRODUCT_TYPE" includeAll={false}
               label={t("master.part.productType", "품목그룹")}
-              value={form.productType} onChange={v => setField("productType", v)} fullWidth />
+              value={form.productType} onChange={v => setField("productType", v)} fullWidth required />
             <FieldInput field="modelName" label={t("master.part.modelName", "차종")}
               value={form.modelName} onChange={e => setField("modelName", e.target.value)} fullWidth />
             <FieldComCodeSelect field="defectModelGroup" groupCode="DEFECT_MODEL_GROUP" includeAll={false}

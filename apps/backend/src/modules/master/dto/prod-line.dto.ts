@@ -4,7 +4,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 import { USE_YN_VALUES } from '@harness/shared';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
@@ -38,11 +38,11 @@ export class CreateProdLineDto {
   @MaxLength(10)
   oper?: string;
 
-  @ApiPropertyOptional({ description: '라인 유형' })
-  @IsOptional()
+  @ApiProperty({ description: '라인 유형' })
+  @IsNotEmpty()
   @IsString()
   @MaxLength(30)
-  lineType?: string;
+  lineType: string;
 
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()

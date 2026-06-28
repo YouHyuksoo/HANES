@@ -276,7 +276,7 @@ export default function EquipInspectItemPage() {
   };
 
   const handleSave = async () => {
-    if (!form.itemCode.trim() || !form.itemName.trim()) return;
+    if (!form.itemCode.trim() || !form.itemName.trim() || !form.inspectType || !form.cycle) return;
     setSaving(true);
     const isMeasure = form.itemType === "MEASURE";
     const payload = {
@@ -473,7 +473,7 @@ export default function EquipInspectItemPage() {
             </h2>
             <div className="flex items-center gap-2">
               <Button size="sm" variant="secondary" onClick={() => guard(closePanel)}>{t("common.cancel")}</Button>
-              <Button size="sm" onClick={handleSave} disabled={saving || !form.itemCode.trim() || !form.itemName.trim()}>
+              <Button size="sm" onClick={handleSave} disabled={saving || !form.itemCode.trim() || !form.itemName.trim() || !form.inspectType || !form.cycle}>
                 {saving ? t("common.saving", "저장 중") : (editing ? t("common.save") : t("common.register", "등록"))}
               </Button>
             </div>
@@ -492,11 +492,11 @@ export default function EquipInspectItemPage() {
                     onChange={e => setField("itemName", e.target.value)} fullWidth required />
                 </div>
                 <Select label={t("master.equipInspect.inspectType")} options={typeOptions}
-                  value={form.inspectType} onChange={v => setField("inspectType", v as InspectType)} fullWidth />
+                  value={form.inspectType} onChange={v => setField("inspectType", v as InspectType)} fullWidth required />
                 <Select label={t("master.equipInspect.itemType", "판정구분")} options={itemTypeOptions}
                   value={form.itemType} onChange={v => setField("itemType", v as ItemType)} fullWidth />
                 <Select label={t("master.equipInspect.cycle")} options={cycleOptions}
-                  value={form.cycle} onChange={v => setField("cycle", v)} fullWidth />
+                  value={form.cycle} onChange={v => setField("cycle", v)} fullWidth required />
                 <UseYnSelect includeAll={false} label={t("common.useYn", "사용")}
                   value={form.useYn} onChange={v => setField("useYn", v)} fullWidth />
               </div>

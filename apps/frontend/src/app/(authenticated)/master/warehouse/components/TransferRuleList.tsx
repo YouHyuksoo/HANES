@@ -100,6 +100,7 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
   useEffect(() => { markDirty(dirty); }, [dirty, markDirty]);
 
   const handleSave = useCallback(async () => {
+    if (!form.fromWarehouseId || !form.toWarehouseId) return;
     setSaving(true);
     try {
       if (editingItem) {
@@ -193,13 +194,13 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
             </h2>
             <div className="flex items-center gap-2">
               <Button size="sm" variant="secondary" onClick={() => guard(() => setIsPanelOpen(false))}>{t("common.cancel")}</Button>
-              <Button size="sm" onClick={handleSave} disabled={saving}>{saving ? t("common.saving") : t("common.save", "저장")}</Button>
+              <Button size="sm" onClick={handleSave} disabled={saving || !form.fromWarehouseId || !form.toWarehouseId}>{saving ? t("common.saving") : t("common.save", "저장")}</Button>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <FieldSelect field="fromWarehouse" label={t("master.transferRule.fromWarehouse")} options={warehouseOptions} value={form.fromWarehouseId} onChange={(v) => setForm(p => ({ ...p, fromWarehouseId: v }))} />
-              <FieldSelect field="toWarehouse" label={t("master.transferRule.toWarehouse")} options={warehouseOptions} value={form.toWarehouseId} onChange={(v) => setForm(p => ({ ...p, toWarehouseId: v }))} />
+              <FieldSelect field="fromWarehouse" label={t("master.transferRule.fromWarehouse")} options={warehouseOptions} value={form.fromWarehouseId} onChange={(v) => setForm(p => ({ ...p, fromWarehouseId: v }))} required />
+              <FieldSelect field="toWarehouse" label={t("master.transferRule.toWarehouse")} options={warehouseOptions} value={form.toWarehouseId} onChange={(v) => setForm(p => ({ ...p, toWarehouseId: v }))} required />
               <FieldSelect field="allowYn" label={t("master.transferRule.allowYn")} options={[{ value: "Y", label: t("master.transferRule.allowed") }, { value: "N", label: t("master.transferRule.denied") }]} value={form.allowYn} onChange={(v) => setForm(p => ({ ...p, allowYn: v }))} />
               <FieldInput field="ruleRemark" label={t("common.remark")} value={form.remark} onChange={(e) => setForm(p => ({ ...p, remark: e.target.value }))} wrapperClassName="col-span-2" />
             </div>

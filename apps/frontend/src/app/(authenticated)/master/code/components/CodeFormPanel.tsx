@@ -87,7 +87,7 @@ export default function CodeFormPanel({
   };
 
   const handleSubmit = () => {
-    if (!form.detailCode.trim() || !form.codeName.trim()) return;
+    if (!form.groupCode.trim() || !form.detailCode.trim() || !form.codeName.trim()) return;
     onSubmit(form);
   };
 
@@ -106,7 +106,7 @@ export default function CodeFormPanel({
           <Button
             size="sm"
             onClick={handleSubmit}
-            disabled={isSubmitting || !form.detailCode.trim() || !form.codeName.trim()}
+            disabled={isSubmitting || !form.groupCode.trim() || !form.detailCode.trim() || !form.codeName.trim()}
           >
             {isSubmitting ? t("common.saving", { defaultValue: "저장중..." }) : t("common.save", "저장")}
           </Button>
@@ -119,6 +119,7 @@ export default function CodeFormPanel({
             value={form.groupCode}
             onChange={(e) => handleChange("groupCode", e.target.value)}
             disabled={isEdit}
+            required
             fullWidth
           />
           <Input

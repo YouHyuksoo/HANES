@@ -177,7 +177,7 @@ export default function ProcessPage() {
   useEffect(() => { markDirty(dirty); }, [dirty, markDirty]);
 
   const handleSave = useCallback(async () => {
-    if (!formData.processCode || !formData.processName || !formData.processType)
+    if (!formData.processCode || !formData.processName || !formData.processType || !formData.processCategory || !formData.lineType)
       return;
     setSaving(true);
     try {
@@ -325,7 +325,7 @@ export default function ProcessPage() {
                 <Button size="sm" variant="secondary" onClick={() => guard(() => setIsPanelOpen(false))}>
                   {t("common.cancel")}
                 </Button>
-                <Button size="sm" onClick={handleSave} disabled={saving || !formData.processCode || !formData.processName || !formData.processType}>
+                <Button size="sm" onClick={handleSave} disabled={saving || !formData.processCode || !formData.processName || !formData.processType || !formData.processCategory || !formData.lineType}>
                   {saving ? t("common.saving") : t("common.save", "저장")}
                 </Button>
               </div>
@@ -364,6 +364,7 @@ export default function ProcessPage() {
                   label={t("master.process.processCategory")}
                   value={formData.processCategory || ""}
                   onChange={(v) => setFormData((p) => ({ ...p, processCategory: v }))}
+                  required
                 />
                 <FieldComCodeSelect
                   field="lineType"
@@ -372,6 +373,7 @@ export default function ProcessPage() {
                   includeAll={false}
                   value={formData.lineType || ""}
                   onChange={(v) => setFormData((p) => ({ ...p, lineType: v }))}
+                  required
                 />
                 <FieldInput
                   field="sortOrder"

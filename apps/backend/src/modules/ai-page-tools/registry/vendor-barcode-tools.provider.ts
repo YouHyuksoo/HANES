@@ -132,12 +132,13 @@ export class VendorBarcodeToolsProvider implements PageToolProvider {
     if (!this.mappingService) throw new BadRequestException('제조사 바코드 매핑 서비스가 준비되지 않았습니다.');
     const vendorBarcode = this.str(input.vendorBarcode);
     const itemCode = this.str(input.itemCode);
-    if (!vendorBarcode || !itemCode) throw new BadRequestException('제조사 바코드(vendorBarcode)·품번(itemCode)이 필요합니다.');
+    const vendorCode = this.str(input.vendorCode);
+    if (!vendorBarcode || !itemCode || !vendorCode) throw new BadRequestException('제조사 바코드(vendorBarcode)·품번(itemCode)·제조사코드(vendorCode)가 필요합니다.');
     const dto = {
       vendorBarcode,
       itemCode,
+      vendorCode,
       ...(input.itemName !== undefined ? { itemName: this.str(input.itemName) } : {}),
-      ...(input.vendorCode !== undefined ? { vendorCode: this.str(input.vendorCode) } : {}),
       ...(input.vendorName !== undefined ? { vendorName: this.str(input.vendorName) } : {}),
       ...(input.mappingRule !== undefined ? { mappingRule: this.str(input.mappingRule) } : {}),
       ...(input.matchType !== undefined ? { matchType: this.normalizeMatchType(input.matchType) } : {}),

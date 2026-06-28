@@ -139,6 +139,7 @@ export default function GaugeMasterPage() {
   }, [dirty, markDirty]);
 
   const handleSave = async () => {
+    if (!form.gaugeCode || !form.gaugeName || !form.gaugeType || !form.calibrationCycle) return;
     try {
       const payload = {
         gaugeCode: form.gaugeCode,
@@ -319,7 +320,7 @@ export default function GaugeMasterPage() {
                 {t("common.cancel")}
               </Button>
               <Button size="sm" onClick={handleSave}
-                disabled={!form.gaugeCode || !form.gaugeName || !form.gaugeType}>
+                disabled={!form.gaugeCode || !form.gaugeName || !form.gaugeType || !form.calibrationCycle}>
                 {t("common.save")}
               </Button>
             </div>
@@ -360,7 +361,7 @@ export default function GaugeMasterPage() {
                 type="number" fullWidth />
               <Input label={t("master.gauge.calibrationCycle")} value={form.calibrationCycle}
                 onChange={e => setField("calibrationCycle", e.target.value)}
-                type="number" fullWidth />
+                type="number" fullWidth required />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Input label={t("master.gauge.lastCalibrationDate")} type="date"

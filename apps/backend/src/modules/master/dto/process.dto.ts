@@ -9,7 +9,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
@@ -29,17 +29,17 @@ export class CreateProcessDto {
   @MaxLength(50)
   processType: string;
 
-  @ApiPropertyOptional({ description: '공정 대분류 (ASSY, INSP 등)' })
-  @IsOptional()
+  @ApiProperty({ description: '공정 대분류 (ASSY, INSP 등)' })
+  @IsNotEmpty()
   @IsString()
   @MaxLength(50)
-  processCategory?: string;
+  processCategory: string;
 
-  @ApiPropertyOptional({ description: '라인구분: LV=저전압 HV=고전압 CM=공통' })
-  @IsOptional()
+  @ApiProperty({ description: '라인구분: LV=저전압 HV=고전압 CM=공통' })
+  @IsNotEmpty()
   @IsString()
   @IsIn(['LV', 'HV', 'CM'])
-  lineType?: string;
+  lineType: string;
 
   @ApiPropertyOptional({ description: '정렬 순서', default: 0 })
   @IsOptional()
