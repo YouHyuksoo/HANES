@@ -520,12 +520,6 @@ describe('ErViewService', () => {
   });
 
   it('invalidates the schema snapshot cache after DDL execution', async () => {
-    const queryRunner = {
-      connect: jest.fn().mockResolvedValue(undefined),
-      query: jest.fn().mockResolvedValue(undefined),
-      release: jest.fn().mockResolvedValue(undefined),
-    };
-    (dataSource as any).createQueryRunner = jest.fn().mockReturnValue(queryRunner);
     jest.spyOn(service as any, 'loadSnapshot').mockResolvedValue({
       tables: [
         { tableName: 'VENDOR_MASTERS', tableComment: '', numRows: 1 },
@@ -557,17 +551,12 @@ describe('ErViewService', () => {
       confirmationPhrase: '실행',
     });
 
-    expect(queryRunner.query).toHaveBeenCalledWith('ALTER TABLE VENDOR_MASTERS ADD CONSTRAINT UK_VENDOR_TENANT_CODE UNIQUE (COMPANY, PLANT_CD, VENDOR_CODE) ENABLE VALIDATE');
+    expect(dataSource.query).toHaveBeenCalledWith('ALTER TABLE VENDOR_MASTERS ADD CONSTRAINT UK_VENDOR_TENANT_CODE UNIQUE (COMPANY, PLANT_CD, VENDOR_CODE) ENABLE VALIDATE');
     expect((service as any).snapshotCache).toBeNull();
   });
 
   it('maps duplicate Oracle constraint errors to BadRequestException during execute', async () => {
-    const queryRunner = {
-      connect: jest.fn().mockResolvedValue(undefined),
-      query: jest.fn().mockRejectedValue(new Error('ORA-02275: 참조 제약이 이미 테이블에 존재합니다')),
-      release: jest.fn().mockResolvedValue(undefined),
-    };
-    (dataSource as any).createQueryRunner = jest.fn().mockReturnValue(queryRunner);
+    dataSource.query.mockRejectedValueOnce(new Error('ORA-02275: 참조 제약이 이미 테이블에 존재합니다'));
     jest.spyOn(service as any, 'loadSnapshot')
       .mockResolvedValueOnce({
         tables: [

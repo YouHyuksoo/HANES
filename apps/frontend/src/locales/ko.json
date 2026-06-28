@@ -6081,6 +6081,10 @@
     "dashboard": "대시보드"
   },
   "comCode": {
+    "MOLD_LIFE_STATUS": { "NORMAL": "양호", "WARNING": "경고", "REPLACE": "교체필요", "MAINT": "점검중" },
+    "REPAIR_STATUS": { "RECEIVED": "입고", "IN_REPAIR": "수리중", "COMPLETED": "완료" },
+    "CUSTOMER_PO_STATUS": { "RECEIVED": "접수", "CONFIRMED": "확정", "IN_PRODUCTION": "생산중", "PARTIAL_SHIP": "부분출하", "SHIPPED": "출하", "CLOSED": "마감" },
+    "CUSTOMER_PO_PROGRESS": { "IN_PROGRESS": "진행중", "PARTIAL_SHIP": "부분출하", "COMPLETED": "완료", "OVERDUE": "지연" },
     "ARRIVAL_PO_TYPE": { "RM": "원자재", "CM": "소모품" },
     "ARRIVAL_RESULT_STATUS": { "ARRIVED": "입하완료", "IQC_PROGRESS": "IQC진행중", "IQC_DONE": "IQC완료", "RECEIVED": "입고완료", "CANCELED": "취소" },
     "AUDIT_RESULT": { "PASS": "적합", "MINOR": "경부적합", "MAJOR": "중부적합", "OFI": "개선권고" },

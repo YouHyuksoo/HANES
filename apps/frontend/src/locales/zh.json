@@ -6077,6 +6077,10 @@
     "dashboard": "仪表盘"
   },
   "comCode": {
+    "MOLD_LIFE_STATUS": { "NORMAL": "良好", "WARNING": "警告", "REPLACE": "需更换", "MAINT": "检修中" },
+    "REPAIR_STATUS": { "RECEIVED": "已入库", "IN_REPAIR": "维修中", "COMPLETED": "完成" },
+    "CUSTOMER_PO_STATUS": { "RECEIVED": "已接收", "CONFIRMED": "已确认", "IN_PRODUCTION": "生产中", "PARTIAL_SHIP": "部分出货", "SHIPPED": "已出货", "CLOSED": "已关闭" },
+    "CUSTOMER_PO_PROGRESS": { "IN_PROGRESS": "进行中", "PARTIAL_SHIP": "部分出货", "COMPLETED": "完成", "OVERDUE": "逾期" },
     "ARRIVAL_PO_TYPE": { "RM": "原材料", "CM": "耗材" },
     "ARRIVAL_RESULT_STATUS": { "ARRIVED": "已到货", "IQC_PROGRESS": "IQC进行中", "IQC_DONE": "IQC完成", "RECEIVED": "已入库", "CANCELED": "取消" },
     "AUDIT_RESULT": { "PASS": "合格", "MINOR": "轻微不符合", "MAJOR": "严重不符合", "OFI": "改进建议" },

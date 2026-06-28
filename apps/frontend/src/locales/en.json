@@ -6077,6 +6077,10 @@
     "dashboard": "Dashboard"
   },
   "comCode": {
+    "MOLD_LIFE_STATUS": { "NORMAL": "Good", "WARNING": "Warning", "REPLACE": "Replace", "MAINT": "Maintenance" },
+    "REPAIR_STATUS": { "RECEIVED": "Received", "IN_REPAIR": "In Repair", "COMPLETED": "Completed" },
+    "CUSTOMER_PO_STATUS": { "RECEIVED": "Received", "CONFIRMED": "Confirmed", "IN_PRODUCTION": "In Production", "PARTIAL_SHIP": "Partial Shipped", "SHIPPED": "Shipped", "CLOSED": "Closed" },
+    "CUSTOMER_PO_PROGRESS": { "IN_PROGRESS": "In Progress", "PARTIAL_SHIP": "Partial Shipped", "COMPLETED": "Completed", "OVERDUE": "Overdue" },
     "ARRIVAL_PO_TYPE": { "RM": "Raw Material", "CM": "Consumable" },
     "ARRIVAL_RESULT_STATUS": { "ARRIVED": "Arrived", "IQC_PROGRESS": "IQC In Progress", "IQC_DONE": "IQC Done", "RECEIVED": "Received", "CANCELED": "Canceled" },
     "AUDIT_RESULT": { "PASS": "Pass", "MINOR": "Minor NC", "MAJOR": "Major NC", "OFI": "OFI" },

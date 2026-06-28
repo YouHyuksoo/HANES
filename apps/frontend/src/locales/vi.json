@@ -6077,6 +6077,10 @@
     "dashboard": "Bảng điều khiển"
   },
   "comCode": {
+    "MOLD_LIFE_STATUS": { "NORMAL": "Tốt", "WARNING": "Cảnh báo", "REPLACE": "Cần thay", "MAINT": "Đang bảo trì" },
+    "REPAIR_STATUS": { "RECEIVED": "Đã nhận", "IN_REPAIR": "Đang sửa", "COMPLETED": "Hoàn thành" },
+    "CUSTOMER_PO_STATUS": { "RECEIVED": "Đã tiếp nhận", "CONFIRMED": "Đã xác nhận", "IN_PRODUCTION": "Đang sản xuất", "PARTIAL_SHIP": "Xuất một phần", "SHIPPED": "Đã xuất", "CLOSED": "Đã đóng" },
+    "CUSTOMER_PO_PROGRESS": { "IN_PROGRESS": "Đang tiến hành", "PARTIAL_SHIP": "Xuất một phần", "COMPLETED": "Hoàn thành", "OVERDUE": "Quá hạn" },
     "ARRIVAL_PO_TYPE": { "RM": "Nguyên liệu", "CM": "Vật tư tiêu hao" },
     "ARRIVAL_RESULT_STATUS": { "ARRIVED": "Đã đến", "IQC_PROGRESS": "Đang IQC", "IQC_DONE": "IQC xong", "RECEIVED": "Đã nhập kho", "CANCELED": "Đã hủy" },
     "AUDIT_RESULT": { "PASS": "Đạt", "MINOR": "Không phù hợp nhẹ", "MAJOR": "Không phù hợp nặng", "OFI": "Khuyến nghị cải tiến" },

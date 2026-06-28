@@ -1,6 +1,6 @@
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-06-28 23:21:36
+- 작성일: 2026-06-29 01:51:45
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
@@ -11,7 +11,7 @@
 - 컬럼 수: 2838
 - PK 보유 테이블: 167
 - DB FK 수: 29
-- COM_CODES 그룹 수: 157
+- COM_CODES 그룹 수: 161
 
 ## 2. 모듈별 테이블
 
