@@ -3,7 +3,7 @@
 -- 소스: XXPO_MES_ORAERP_PO_V@ERP_PROD (ORGANIZATION_ID=308, OSP_TYPE='N')
 -- 변경 감지: 없음 (매번 MERGE 수행)
 -- 주의: 이미 입고된 라인(RECEIVED_QTY>0)은 품번/발주수량 변경 불가
--- 주의: PARTNER_ID는 ERP VENDOR_ID를 1:1 매핑하나, FK 제약 위반이 발생할 수 있으므로
+-- 주의: PARTNER_CODE는 ERP VENDOR_ID를 1:1 매핑하나, FK 제약 위반이 발생할 수 있으므로
 --       실제 운영 시 PARTNER_MASTERS에 해당 거래처가 사전 등록되어 있어야 함
 -- 주의: PURCHASE_ORDER_ITEMS.SEQ = ERP LINE_NO, REL_NO = ERP REL_NO (Schedule Release)
 CREATE OR REPLACE PROCEDURE IF_PO(
@@ -49,7 +49,7 @@ BEGIN
     ) E ON (T.PO_NO = E.PO_NO AND T.COMPANY = '40' AND T.PLANT_CD = '1000')
     WHEN NOT MATCHED THEN
         INSERT (
-            PO_NO, PARTNER_ID, PARTNER_NAME, ORDER_DATE, DUE_DATE,
+            PO_NO, PARTNER_CODE, PARTNER_NAME, ORDER_DATE, DUE_DATE,
             STATUS, USE_TYPE, TOTAL_AMOUNT, REMARK,
             COMPANY, PLANT_CD, CREATED_BY, CREATED_AT, UPDATED_AT
         )
@@ -60,7 +60,7 @@ BEGIN
         )
     WHEN MATCHED THEN
         UPDATE SET
-            T.PARTNER_ID   = E.PARTNER_ID,
+            T.PARTNER_CODE = E.PARTNER_ID,
             T.PARTNER_NAME = E.PARTNER_NAME,
             T.ORDER_DATE   = E.ORDER_DATE,
             T.DUE_DATE     = E.DUE_DATE,
