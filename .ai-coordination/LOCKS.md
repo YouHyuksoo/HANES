@@ -2,6 +2,43 @@
 
 ## Active Locks
 
+## T-MASTER-UNSAVED-GUARD 기준정보 우측패널 행전환 일관화 + 저장안된변경 방어
+status: active
+owner: claude
+role: implementer
+files:
+- apps/frontend/src/hooks/useUnsavedGuard.ts
+- apps/frontend/src/app/(authenticated)/master/part/page.tsx
+- apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx
+- apps/frontend/src/app/(authenticated)/master/partner/page.tsx
+- apps/frontend/src/app/(authenticated)/master/partner/components/PartnerFormPanel.tsx
+- apps/frontend/src/app/(authenticated)/master/work-instruction/page.tsx
+- apps/frontend/src/app/(authenticated)/master/work-instruction/components/WorkInstructionFormPanel.tsx
+- apps/frontend/src/app/(authenticated)/master/company/page.tsx
+- apps/frontend/src/app/(authenticated)/master/company/components/CompanyForm.tsx
+- apps/frontend/src/app/(authenticated)/master/worker/page.tsx
+- apps/frontend/src/app/(authenticated)/master/worker/components/WorkerFormPanel.tsx
+- apps/frontend/src/app/(authenticated)/master/vendor-barcode/page.tsx
+- apps/frontend/src/app/(authenticated)/master/vendor-barcode/components/VendorBarcodeFormPanel.tsx
+- apps/frontend/src/app/(authenticated)/master/equip/components/EquipMasterTab.tsx
+- apps/frontend/src/app/(authenticated)/master/gauge/page.tsx
+- apps/frontend/src/app/(authenticated)/master/equip-inspect-item/page.tsx
+- apps/frontend/src/components/master/ProdLineTab.tsx
+- apps/frontend/src/app/(authenticated)/master/code/page.tsx
+- apps/frontend/src/app/(authenticated)/master/code/components/CodeFormPanel.tsx
+- apps/frontend/src/app/(authenticated)/master/code/components/CodeDetailGrid.tsx
+- apps/frontend/src/app/(authenticated)/master/process/page.tsx
+- apps/frontend/src/app/(authenticated)/master/warehouse/components/WarehouseForm.tsx
+- apps/frontend/src/app/(authenticated)/master/warehouse/components/WarehouseList.tsx
+- apps/frontend/src/app/(authenticated)/master/warehouse/components/LocationList.tsx
+- apps/frontend/src/app/(authenticated)/master/warehouse/components/TransferRuleList.tsx
+- apps/frontend/src/app/(authenticated)/master/master-required-fields.structure.test.mjs
+- apps/frontend/src/locales/ko.json
+- apps/frontend/src/locales/en.json
+- apps/frontend/src/locales/zh.json
+- apps/frontend/src/locales/vi.json
+note: (1) 그리드 행클릭 시 패널 재마운트(key) 대신 데이터만 교체(equip 패턴 표준화) + 공통 useUnsavedGuard로 작성중 유실 방어(행전환/신규/닫기 가드, 확인모달). (2) 모달형 등록/수정 화면(prod-line/code/process/warehouse 3탭)을 우측 인라인 패널로 전환. code는 CodeFormModal 삭제→CodeFormPanel 신규. work-calendar는 캘린더 UI라 모달 유지. locales는 common.unsavedTitle/Message/discardAndContinue 3키만 추가.
+
 ## T-CHECKOUT-LOCALHOST-QA localhost checkout 흐름 브라우저 QA
 status: active
 owner: codex
