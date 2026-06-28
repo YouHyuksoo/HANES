@@ -11,7 +11,7 @@
  * 실제 DB 스키마 (PROD_RESULTS 테이블):
  * - RESULT_NO: PK (SeqGenerator 채번)
  * - ORDER_NO: 작업지시 참조
- * - status: RUNNING, DONE, CANCELED
+ * - status: compatibility field; production results are confirmed at registration time.
  */
 
 import {
@@ -504,6 +504,7 @@ export class ProdResultService {
     let savedResultNo!: string;
     await this.tx.run(async (queryRunner) => {
       const resultNo = await this.numbering.next('PROD_RESULT', queryRunner);
+      const occurredAt = dto.startAt ? new Date(dto.startAt) : new Date();
       const prodResult = queryRunner.manager.create(ProdResult, {
         resultNo,
         orderNo: dto.orderNo,
@@ -513,10 +514,10 @@ export class ProdResultService {
         processCode: dto.processCode,
         goodQty: dto.goodQty ?? 0,
         defectQty: effectiveDefectQty,
-        startAt: dto.startAt ? new Date(dto.startAt) : new Date(),
-        endAt: dto.endAt ? new Date(dto.endAt) : null,
+        startAt: occurredAt,
+        endAt: dto.endAt ? new Date(dto.endAt) : occurredAt,
         cycleTime: dto.cycleTime,
-        status: 'RUNNING',
+        status: 'DONE',
         remark: dto.remark,
         company: jobOrder.company,
         plant: jobOrder.plant,
@@ -678,7 +679,7 @@ export class ProdResultService {
       }
 
       // 수량 변경 시 자재 자동차감 재계산 (역분개 → 재차감)
-      if (qtyChanged && prodResult.status !== 'DONE') {
+      if (qtyChanged) {
         await this.reverseAutoIssue(
           queryRunner,
           resultNo,
@@ -740,22 +741,63 @@ export class ProdResultService {
     });
   }
 
-  /**
-   * 생산실적 삭제
-   */
+  /** 생산실적 삭제: 연결 수불/재고를 되돌린 뒤 실적 row를 제거한다. */
   async delete(resultNo: string, company?: string, plant?: string) {
     const prodResult = await this.findById(resultNo, company, plant);
 
-    if (prodResult.status !== 'CANCELED') {
-      throw new BadRequestException(
-        `????? ?? ??? ??? ? ????. ?? ?? ??? ???. ?? ??: ${prodResult.status}`,
-      );
-    }
+    await this.ensureNoDownstreamProgress(prodResult, company, plant);
 
-    await this.prodResultRepository.delete({
-      resultNo,
-      ...(company ? { company } : {}),
-      ...(plant ? { plant } : {}),
+    await this.tx.run(async (queryRunner) => {
+      if (prodResult.equipCode) {
+        await queryRunner.manager.update(
+          EquipMaster,
+          { equipCode: prodResult.equipCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+          { currentJobOrderId: null },
+        );
+      }
+
+      await this.reverseAutoIssue(queryRunner, prodResult.resultNo, company, plant);
+      await this.reverseProductStock(queryRunner, prodResult.resultNo, company, plant);
+
+      const sgLabels = await queryRunner.manager.find(SgLabel, {
+        where: {
+          resultNo: prodResult.resultNo,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+      });
+      const progressedSgLabel = sgLabels.find((label) => label.status !== 'IN_STOCK');
+      if (progressedSgLabel) {
+        throw new BadRequestException(
+          `이미 후공정이 진행된 SG 라벨입니다: ${progressedSgLabel.sgBarcode} (${progressedSgLabel.status})`,
+        );
+      }
+      await queryRunner.manager.delete(SgLabel, {
+        resultNo: prodResult.resultNo,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      });
+
+      await queryRunner.manager.delete(DefectLog, {
+        prodResultNo: prodResult.resultNo,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      });
+
+      const { InspectResult } = await import('../../../entities/inspect-result.entity');
+      await queryRunner.manager.update(
+        InspectResult,
+        { prodResultNo: prodResult.resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        { prodResultNo: null },
+      );
+
+      await queryRunner.manager.delete(ProdResult, {
+        resultNo: prodResult.resultNo,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      });
+
+      await this.syncJobOrderFromRemainingResults(queryRunner, prodResult.orderNo, company, plant);
     });
 
     return { resultNo };
@@ -1009,48 +1051,10 @@ export class ProdResultService {
     });
   }
 
-  /**
-   * 생산실적 취소 (트랜잭션: 실적 취소 + 설비 해제 원자성 보장)
-   */
+  /** 생산실적 취소: 현재 업무 기준에서는 삭제와 동일하다. */
   async cancel(resultNo: string, remark?: string, company?: string, plant?: string) {
-    const prodResult = await this.findById(resultNo, company, plant);
-
-    if (prodResult.status === 'CANCELED') {
-      throw new BadRequestException(`이미 취소된 실적입니다.`);
-    }
-
-    await this.ensureNoDownstreamProgress(prodResult, company, plant);
-
-    await this.tx.run(async (queryRunner) => {
-      const updateData: Partial<Pick<ProdResult, 'status' | 'remark'>> = { status: 'CANCELED' };
-      if (remark) updateData.remark = remark;
-
-      await queryRunner.manager.update(
-        ProdResult,
-        { resultNo: prodResult.resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-        updateData,
-      );
-
-      // 설비의 현재 작업지시번호 해제
-      if (prodResult.equipCode) {
-        await queryRunner.manager.update(
-          EquipMaster,
-          { equipCode: prodResult.equipCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-          { currentJobOrderId: null },
-        );
-        this.logger.log(`설비 작업지시 해제 (취소): ${prodResult.equipCode}`);
-      }
-
-      // PROD_AUTO 자동차감 역분개
-      await this.reverseAutoIssue(queryRunner, prodResult.resultNo, company, plant);
-
-      // 공정재고 자동 적재 역분개 — PROD_RESULT 참조 트랜잭션 찾아서 취소
-      await this.reverseProductStock(queryRunner, prodResult.resultNo, company, plant);
-    });
-
-    return this.prodResultRepository.findOne({
-      where: { resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-    });
+    void remark;
+    return this.delete(resultNo, company, plant);
   }
 
   /**
@@ -1135,6 +1139,55 @@ export class ProdResultService {
 
     throw new BadRequestException(
       `이미 후공정이 진행된 생산실적입니다. ${details}. 출하 -> 팔레트 -> 박스/OQC -> FG 라벨 순서로 역처리 후 다시 취소해 주세요.`,
+    );
+  }
+
+  private async syncJobOrderFromRemainingResults(
+    qr: import('typeorm').QueryRunner,
+    orderNo: string,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    const jobOrder = await qr.manager.findOne(JobOrder, {
+      where: { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+    });
+    if (!jobOrder || jobOrder.status === 'CANCELED' || jobOrder.status === 'HOLD') return;
+
+    const summaryQb = qr.manager
+      .createQueryBuilder(ProdResult, 'pr')
+      .select('COUNT(pr.resultNo)', 'resultCount')
+      .addSelect('SUM(pr.goodQty)', 'totalGoodQty')
+      .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
+      .where('pr.orderNo = :orderNo', { orderNo });
+    if (company) summaryQb.andWhere('pr.company = :company', { company });
+    if (plant) summaryQb.andWhere('pr.plant = :plant', { plant });
+    const summary = await summaryQb.getRawOne();
+
+    const resultCount = Number(summary?.resultCount ?? 0);
+    const totalGood = Number(summary?.totalGoodQty ?? 0);
+    const totalDefect = Number(summary?.totalDefectQty ?? 0);
+    const nextStatus = resultCount === 0
+      ? 'WAITING'
+      : totalGood >= Number(jobOrder.planQty ?? 0)
+        ? 'DONE'
+        : 'RUNNING';
+
+    const updateData: Partial<JobOrder> = {
+      status: nextStatus,
+      goodQty: totalGood,
+      defectQty: totalDefect,
+      endAt: nextStatus === 'DONE' ? new Date() : null,
+    };
+    if (nextStatus === 'WAITING') {
+      updateData.startAt = null;
+    } else if (!jobOrder.startAt) {
+      updateData.startAt = new Date();
+    }
+
+    await qr.manager.update(
+      JobOrder,
+      { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      updateData,
     );
   }
 

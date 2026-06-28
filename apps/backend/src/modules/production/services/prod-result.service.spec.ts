@@ -16,6 +16,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { DefectLog } from '../../../entities/defect-log.entity';
+import { SgLabel } from '../../../entities/sg-label.entity';
 import { User } from '../../../entities/user.entity';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { AutoIssueService } from './auto-issue.service';
@@ -226,6 +227,10 @@ describe('ProdResultService', () => {
 
     expect(tx.run).toHaveBeenCalledTimes(1);
     expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+    expect(queryRunner.manager.create).toHaveBeenCalledWith(
+      ProdResult,
+      expect.objectContaining({ status: 'DONE' }),
+    );
     expect(result?.resultNo).toBe('PR-1');
   });
 
@@ -523,6 +528,43 @@ describe('ProdResultService', () => {
     expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
   });
 
+  it('recalculates material and product stock when a completed result quantity changes', async () => {
+    prodResultRepo.findOne
+      .mockResolvedValueOnce({
+        resultNo: 'PR-1',
+        status: 'DONE',
+        goodQty: 1,
+        defectQty: 0,
+        orderNo: 'JO-1',
+        processCode: 'PROC-1',
+        company: 'C1',
+        plant: 'P1',
+        inspectResults: [],
+        defectLogs: [],
+      } as any)
+      .mockResolvedValueOnce({ resultNo: 'PR-1', goodQty: 3, defectQty: 0 } as any);
+    matIssueRepo.find.mockResolvedValue([] as any);
+    queryRunner.manager.find.mockResolvedValue([] as any);
+    queryRunner.manager.findOne
+      .mockResolvedValueOnce(null as any)
+      .mockResolvedValueOnce({ orderNo: 'JO-1', itemCode: 'FG-1', company: 'C1', plant: 'P1', part: { itemType: 'SEMI_PRODUCT' } } as any)
+      .mockResolvedValueOnce({ resultNo: 'PR-1', prdUid: 'PRD-1' } as any);
+    queryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+    autoIssueService.execute.mockResolvedValue({ issued: [], warnings: [], skipped: false } as any);
+
+    await service.update('PR-1', { goodQty: 3 } as any, 'C1', 'P1');
+
+    expect(autoIssueService.execute).toHaveBeenCalledWith(
+      'ON_CREATE',
+      'PR-1',
+      'JO-1',
+      3,
+      expect.anything(),
+      'PROC-1',
+    );
+    expect(productInventoryService.receiveStockInTx).toHaveBeenCalled();
+  });
+
   it('update blocks direct status change', async () => {
     prodResultRepo.findOne.mockResolvedValue({
       resultNo: 'PR-1',
@@ -538,11 +580,63 @@ describe('ProdResultService', () => {
     await expect(service.update('PR-1', { status: 'DONE' } as any, 'C1', 'P1')).rejects.toThrow(BadRequestException);
   });
 
-  it('delete only allows canceled', async () => {
-    prodResultRepo.findOne.mockResolvedValue({ resultNo: 'PR-1', status: 'DONE', inspectResults: [], defectLogs: [] } as any);
+  it('delete reverses linked movements and removes a completed result row', async () => {
+    prodResultRepo.findOne.mockResolvedValue({
+      resultNo: 'PR-1',
+      orderNo: 'JO-1',
+      status: 'DONE',
+      equipCode: null,
+      inspectResults: [],
+      defectLogs: [],
+      company: 'C1',
+      plant: 'P1',
+    } as any);
     matIssueRepo.find.mockResolvedValue([] as any);
+    dataSource.getRepository.mockReturnValue({
+      find: jest.fn().mockResolvedValue([]),
+      findOne: jest.fn().mockResolvedValue(null),
+    } as any);
+    queryRunner.manager.find.mockResolvedValue([] as any);
+    queryRunner.manager.findOne.mockResolvedValue(null as any);
+    queryRunner.manager.delete.mockResolvedValue({ affected: 1 } as any);
 
-    await expect(service.delete('PR-1', 'C1', 'P1')).rejects.toThrow(BadRequestException);
+    await expect(service.delete('PR-1', 'C1', 'P1')).resolves.toEqual({ resultNo: 'PR-1' });
+
+    expect(queryRunner.manager.delete).toHaveBeenCalledWith(
+      ProdResult,
+      { resultNo: 'PR-1', company: 'C1', plant: 'P1' },
+    );
+  });
+
+  it('delete removes unused SG labels issued by the production result', async () => {
+    prodResultRepo.findOne.mockResolvedValue({
+      resultNo: 'PR-1',
+      orderNo: 'JO-1',
+      status: 'DONE',
+      equipCode: null,
+      inspectResults: [],
+      defectLogs: [],
+      company: 'C1',
+      plant: 'P1',
+    } as any);
+    matIssueRepo.find.mockResolvedValue([] as any);
+    dataSource.getRepository.mockReturnValue({
+      find: jest.fn().mockResolvedValue([]),
+      findOne: jest.fn().mockResolvedValue(null),
+    } as any);
+    queryRunner.manager.find
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ sgBarcode: 'SG-1', resultNo: 'PR-1', status: 'IN_STOCK', company: 'C1', plant: 'P1' }]);
+    queryRunner.manager.findOne.mockResolvedValue(null as any);
+    queryRunner.manager.delete.mockResolvedValue({ affected: 1 } as any);
+
+    await service.delete('PR-1', 'C1', 'P1');
+
+    expect(queryRunner.manager.delete).toHaveBeenCalledWith(
+      SgLabel,
+      { resultNo: 'PR-1', company: 'C1', plant: 'P1' },
+    );
   });
 
   it('blocks auto-issue reversal when tenant values disagree across source rows', async () => {

@@ -58,8 +58,6 @@ export default function ProdResultPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<ProdResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [cancelTarget, setCancelTarget] = useState<ProdResult | null>(null);
-  const [canceling, setCanceling] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ProdResult | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [editTarget, setEditTarget] = useState<ProdResult | null>(null);
@@ -112,31 +110,13 @@ export default function ProdResultPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  /** 실적 취소 — 적재된 제품재고를 역분개한다 (백엔드 cancel 엔드포인트 연결) */
-  const handleCancelConfirm = useCallback(async () => {
-    if (!cancelTarget) return;
-    setCanceling(true);
-    try {
-      await api.post(`/production/prod-results/${cancelTarget.resultNo}/cancel`, {
-        remark: '생산실적관리 화면에서 취소',
-      });
-      toast.success(t('production.result.cancelSuccess', '실적이 취소되고 재고가 역분개되었습니다.'));
-      setCancelTarget(null);
-      fetchData();
-    } catch {
-      // api 인터셉터에서 에러 토스트 처리
-    } finally {
-      setCanceling(false);
-    }
-  }, [cancelTarget, fetchData, t]);
-
-  /** 실적 삭제 — 취소(CANCELED)된 실적만 가능(백엔드 가드) */
+  /** 실적 삭제 — 연결 수불/재고를 되돌린 뒤 실적 row를 제거한다. */
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
       await api.delete(`/production/prod-results/${deleteTarget.resultNo}`);
-      toast.success(t('production.result.deleteSuccess', '실적이 삭제되었습니다.'));
+      toast.success(t('production.result.deleteSuccess', '실적이 삭제되고 재고가 역분개되었습니다.'));
       setDeleteTarget(null);
       fetchData();
     } catch {
@@ -231,36 +211,17 @@ export default function ProdResultPage() {
         cell: ({ row }) => <span className="text-text-muted">{row.original.startAt} ~ {row.original.endAt}</span>
       },
       {
-        accessorKey: 'status', header: t('common.status', '상태'), size: 80,
-        meta: { filterType: 'multi' as const },
-        cell: ({ getValue }) => {
-          const s = (getValue() as string) || '';
-          const cls = s === 'CANCELED' ? 'text-text-muted line-through'
-            : s === 'DONE' ? 'text-green-600 dark:text-green-400'
-            : 'text-blue-600 dark:text-blue-400';
-          return <span className={`font-medium ${cls}`}>{s}</span>;
-        },
-      },
-      {
-        id: 'actions', header: t('common.actions'), size: 150,
+        id: 'actions', header: t('common.actions'), size: 120,
         meta: { filterType: 'none' as const },
         cell: ({ row }) => {
-          if (row.original.status === 'CANCELED') {
-            return (
-              <Button size="sm" variant="ghost" onClick={() => setDeleteTarget(row.original)}
-                className="text-red-600 dark:text-red-400">
-                {t('common.delete')}
-              </Button>
-            );
-          }
           return (
             <div className="flex gap-1">
               <Button size="sm" variant="ghost" onClick={() => openEdit(row.original)}>
                 {t('common.edit')}
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setCancelTarget(row.original)}
+              <Button size="sm" variant="ghost" onClick={() => setDeleteTarget(row.original)}
                 className="text-red-600 dark:text-red-400">
-                {t('common.cancel')}
+                {t('common.delete')}
               </Button>
             </div>
           );
@@ -312,19 +273,11 @@ export default function ProdResultPage() {
       </Card>
 
       <ConfirmModal
-        isOpen={!!cancelTarget}
-        onClose={() => !canceling && setCancelTarget(null)}
-        onConfirm={handleCancelConfirm}
-        variant="danger"
-        message={`'${cancelTarget?.resultNo || ''}' ${t('production.result.cancelConfirm', '실적을 취소하시겠습니까? 적재된 제품재고가 역분개됩니다.')}`}
-      />
-
-      <ConfirmModal
         isOpen={!!deleteTarget}
         onClose={() => !deleting && setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
         variant="danger"
-        message={`'${deleteTarget?.resultNo || ''}' ${t('production.result.deleteConfirm', '실적을 영구 삭제하시겠습니까?')}`}
+        message={`'${deleteTarget?.resultNo || ''}' ${t('production.result.deleteConfirm', '실적을 삭제하시겠습니까? 연결된 수불과 재고가 역분개됩니다.')}`}
       />
 
       <Modal

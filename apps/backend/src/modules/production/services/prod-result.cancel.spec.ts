@@ -84,12 +84,12 @@ describe('ProdResultService cancel flow', () => {
 
   it('restores auto-issued material stock back to original warehouse rows on cancel', async () => {
     mockProdResultRepo.findOne
-      .mockResolvedValueOnce({ resultNo: 'PR-001', status: 'DONE', equipCode: null, inspectResults: [], defectLogs: [] } as any)
-      .mockResolvedValueOnce({ resultNo: 'PR-001', status: 'CANCELED' } as any);
+      .mockResolvedValueOnce({ resultNo: 'PR-001', orderNo: 'JO-001', status: 'DONE', equipCode: null, inspectResults: [], defectLogs: [] } as any);
     mockMatIssueRepo.find.mockResolvedValue([]);
 
     const manager = {
       update: jest.fn().mockResolvedValue(undefined),
+      delete: jest.fn().mockResolvedValue({ affected: 1 }),
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
       create: jest.fn((entity, payload) => ({ ...payload })),
       findOne: jest
@@ -106,6 +106,7 @@ describe('ProdResultService cancel flow', () => {
           { transNo: 'TX-001', refType: 'MAT_ISSUE', refId: 'ISS-001-1', status: 'DONE', fromWarehouseId: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: -2, company: 'HANES', plant: 'P01' } as StockTransaction,
           { transNo: 'TX-002', refType: 'MAT_ISSUE', refId: 'ISS-001-1', status: 'DONE', fromWarehouseId: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: -1, company: 'HANES', plant: 'P01' } as StockTransaction,
         ])
+        .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]),
     };
     (mockQueryRunner as any).manager = manager;
@@ -142,12 +143,12 @@ describe('ProdResultService cancel flow', () => {
 
   it('blocks auto-issue reversal when issue tenant is missing under a request tenant', async () => {
     mockProdResultRepo.findOne
-      .mockResolvedValueOnce({ resultNo: 'PR-001', status: 'DONE', equipCode: null, inspectResults: [], defectLogs: [] } as any)
-      .mockResolvedValueOnce({ resultNo: 'PR-001', status: 'CANCELED' } as any);
+      .mockResolvedValueOnce({ resultNo: 'PR-001', orderNo: 'JO-001', status: 'DONE', equipCode: null, inspectResults: [], defectLogs: [] } as any);
     mockMatIssueRepo.find.mockResolvedValue([]);
 
     const manager = {
       update: jest.fn().mockResolvedValue(undefined),
+      delete: jest.fn().mockResolvedValue({ affected: 1 }),
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
       create: jest.fn((entity, payload) => ({ ...payload })),
       findOne: jest.fn().mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' }),
@@ -168,12 +169,12 @@ describe('ProdResultService cancel flow', () => {
 
   it('blocks product stock reversal when product transaction tenant differs from request tenant', async () => {
     mockProdResultRepo.findOne
-      .mockResolvedValueOnce({ resultNo: 'PR-001', status: 'DONE', equipCode: null, inspectResults: [], defectLogs: [] } as any)
-      .mockResolvedValueOnce({ resultNo: 'PR-001', status: 'CANCELED' } as any);
+      .mockResolvedValueOnce({ resultNo: 'PR-001', orderNo: 'JO-001', status: 'DONE', equipCode: null, inspectResults: [], defectLogs: [] } as any);
     mockMatIssueRepo.find.mockResolvedValue([]);
 
     const manager = {
       update: jest.fn().mockResolvedValue(undefined),
+      delete: jest.fn().mockResolvedValue({ affected: 1 }),
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
       create: jest.fn((entity, payload) => ({ ...payload })),
       findOne: jest.fn().mockResolvedValue(null),
@@ -203,22 +204,23 @@ describe('ProdResultService cancel flow', () => {
     expect(manager.save).not.toHaveBeenCalledWith(ProductTransaction, expect.anything());
   });
 
-  it('updates production result and equipment within tenant on cancel', async () => {
+  it('deletes production result and clears equipment within tenant on cancel', async () => {
     mockProdResultRepo.findOne
       .mockResolvedValueOnce({
         resultNo: 'PR-001',
+        orderNo: 'JO-001',
         status: 'DONE',
         equipCode: 'EQ-001',
         inspectResults: [],
         defectLogs: [],
         company: 'HANES',
         plant: 'P01',
-      } as any)
-      .mockResolvedValueOnce({ resultNo: 'PR-001', status: 'CANCELED', company: 'HANES', plant: 'P01' } as any);
+      } as any);
     mockMatIssueRepo.find.mockResolvedValue([]);
 
     const manager = {
       update: jest.fn().mockResolvedValue(undefined),
+      delete: jest.fn().mockResolvedValue({ affected: 1 }),
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
       create: jest.fn((entity, payload) => ({ ...payload })),
       findOne: jest.fn().mockResolvedValue(null),
@@ -229,14 +231,13 @@ describe('ProdResultService cancel flow', () => {
     await target.cancel('PR-001', 'rollback', 'HANES', 'P01');
 
     expect(manager.update).toHaveBeenCalledWith(
-      ProdResult,
-      { resultNo: 'PR-001', company: 'HANES', plant: 'P01' },
-      { status: 'CANCELED', remark: 'rollback' },
-    );
-    expect(manager.update).toHaveBeenCalledWith(
       EquipMaster,
       { equipCode: 'EQ-001', company: 'HANES', plant: 'P01' },
       { currentJobOrderId: null },
+    );
+    expect(manager.delete).toHaveBeenCalledWith(
+      ProdResult,
+      { resultNo: 'PR-001', company: 'HANES', plant: 'P01' },
     );
   });
 

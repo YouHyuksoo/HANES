@@ -7,10 +7,9 @@
  * 초보자 가이드:
  * - 양품조건: 작업지시의 itemCode → by-item API로 routingCode+seq 조회 →
  *             GET /master/routing-groups/:code/processes/:seq/conditions
- * - 작업이력: GET /production/prod-results?equipCode=&limit=10
- * - 10초마다 자동 갱신 (현장 모니터링용)
+ * - 작업이력: GET /production/prod-results?orderNo=&limit=10
  */
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { History, CheckCircle2, XCircle, Clock, FlaskConical } from 'lucide-react';
 import api from '@/services/api';
@@ -38,14 +37,19 @@ interface HistoryItem {
   createdAt?: string;
 }
 
-const REFRESH_INTERVAL = 10_000;
+function formatHistoryTime(value?: string) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 19).replace('T', ' ');
+}
 
 export default function WorkHistoryPanel() {
   const { t } = useTranslation();
   const { selectedEquip, selectedJobOrder } = useKioskStore();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [conditions, setConditions] = useState<QualityCondition[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const conditionCodes = useComCodeList('QUALITY_CONDITION');
 
   // 라우팅 양품조건 로드: itemCode → routing → processCode 매칭 → conditions
@@ -75,10 +79,12 @@ export default function WorkHistoryPanel() {
   }, [selectedJobOrder?.itemCode, selectedJobOrder?.processCode]);
 
   const fetchHistory = () => {
-    if (!selectedEquip?.equipCode) { setHistory([]); return; }
+    if (!selectedEquip?.equipCode || !selectedJobOrder?.orderNo) {
+      setHistory([]);
+      return;
+    }
     const params: Record<string, string> = { limit: '10' };
-    if (selectedJobOrder?.orderNo) params.orderNo = selectedJobOrder.orderNo;
-    else params.equipCode = selectedEquip.equipCode;
+    params.orderNo = selectedJobOrder.orderNo;
     api.get('/production/prod-results', { params })
       .then(res => setHistory(res.data?.data ?? []))
       .catch(() => {});
@@ -86,8 +92,6 @@ export default function WorkHistoryPanel() {
 
   useEffect(() => {
     fetchHistory();
-    timerRef.current = setInterval(fetchHistory, REFRESH_INTERVAL);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEquip?.equipCode, selectedJobOrder?.orderNo]);
 
@@ -163,7 +167,6 @@ export default function WorkHistoryPanel() {
         <div className="sticky top-0 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 border-b border-border flex items-center gap-1.5">
           <History className="w-3.5 h-3.5 text-primary" />
           <span className="text-xs font-semibold text-text">{t('kiosk.history.recentHistory')}</span>
-          <span className="ml-auto text-xs text-text-muted">{t('kiosk.history.autoRefresh')}</span>
         </div>
         {history.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-text-muted">
@@ -200,7 +203,7 @@ export default function WorkHistoryPanel() {
                     {item.startAt && (
                       <span className="flex items-center gap-0.5 text-xs text-text-muted">
                         <Clock className="w-2.5 h-2.5" />
-                        {item.startAt}
+                        {formatHistoryTime(item.startAt)}
                       </span>
                     )}
                   </div>
