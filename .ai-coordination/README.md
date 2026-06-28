@@ -13,6 +13,8 @@
 5. `.ai-coordination/LOCKS.md`
 6. `.ai-coordination/PROTOCOL.md`는 충돌, stale lock, 리뷰, DB 변경, 큰 수정 때 읽는다.
 
+`REVIEW_QUEUE.md`는 기본 시작 절차에서 읽지 않는다. 리뷰 처리나 완료 정리 작업을 할 때만 필요한 작업 ID로 확인한다.
+
 ## 작업 절차
 
 1. `TASKS.md`에서 작업 ID를 확인한다.
@@ -20,9 +22,10 @@
 3. 구현 또는 검증을 진행한다.
 4. 중요한 결정은 `DECISIONS.md`에 기록한다.
 5. 작업 결과, 검증 명령, 남은 위험을 `JOURNAL.md`에 append한다.
-6. 완료된 작업은 `TASKS.md`에서 제거하고 `ARCHIVE.md`에 한 줄 요약만 남긴다.
-7. 다음 AI가 이어받을 수 있게 `HANDOFF/<agent-name>.md`를 갱신한다.
-8. 작업이 끝난 lock은 `LOCKS.md`에서 제거한다. 완료 이력을 `status: released`로 Active Locks에 남기지 않는다.
+6. 구현이 끝나 검토가 필요한 작업은 `TASKS.md`에서 제거하고 `REVIEW_QUEUE.md`로 옮긴다.
+7. 완료된 작업은 `TASKS.md` 또는 `REVIEW_QUEUE.md`에서 제거하고 `ARCHIVE.md`에 한 줄 요약만 남긴다.
+8. 다음 AI가 이어받을 수 있게 `HANDOFF/<agent-name>.md`를 갱신한다.
+9. 작업이 끝난 lock은 `LOCKS.md`에서 제거한다. 완료 이력을 `status: released`로 Active Locks에 남기지 않는다.
 
 ## 역할 분리
 
@@ -43,11 +46,13 @@
 ## 컨텍스트 절약 규칙
 
 - `TASKS.md`에는 `TODO`, `IN_PROGRESS`, `BLOCKED` 작업만 둔다.
-- `DONE` 작업은 `ARCHIVE.md`로 옮기고 `TASKS.md`에서 제거한다.
+- `REVIEW` 작업은 `REVIEW_QUEUE.md`로 옮기고 `TASKS.md`에서 제거한다.
+- `DONE` 작업은 `ARCHIVE.md`로 옮기고 `TASKS.md` 또는 `REVIEW_QUEUE.md`에서 제거한다.
 - `LOCKS.md`에는 현재 `active`/`stale` 잠금만 둔다. 완료된 잠금 이력은 `JOURNAL.md`와 `ARCHIVE.md`에만 남긴다.
 - `ARCHIVE.md`에는 작업 ID, 제목, 완료일, owner, 결과 한 줄만 남긴다.
 - 완료 작업의 상세 변경 파일, 검증 로그, 판단 근거는 `JOURNAL.md`에만 남긴다.
 - 새 AI 세션은 기본적으로 `ARCHIVE.md`를 읽지 않는다. 과거 작업 확인이 필요할 때만 특정 작업 ID로 검색한다.
+- 새 AI 세션은 기본적으로 `REVIEW_QUEUE.md`를 읽지 않는다. 리뷰/완료 정리 시 특정 작업 ID로 검색한다.
 - `HANDOFF/<agent-name>.md`에는 다음 작업자가 당장 알아야 할 미해결 사항만 남기고 완료 상세는 반복하지 않는다.
 - `STATE.md`는 80줄 이하, active task는 25줄 이하, handoff는 80줄 이하로 유지한다.
 
@@ -79,7 +84,8 @@
 - 다른 AI가 LOCKS.md에 기록한 파일은 수정하지 마라.
 - 작업 시작 전 LOCKS.md에 너의 agent 이름, 작업 ID, 수정 예정 파일을 기록해라.
 - 작업 종료 전 JOURNAL.md와 .ai-coordination/HANDOFF/<agent-name>.md를 갱신해라.
-- DONE 작업은 TASKS.md에서 제거하고 ARCHIVE.md에 한 줄만 남겨 컨텍스트를 아껴라.
+- REVIEW 작업은 TASKS.md에서 제거하고 REVIEW_QUEUE.md로 옮겨라.
+- DONE 작업은 TASKS.md 또는 REVIEW_QUEUE.md에서 제거하고 ARCHIVE.md에 한 줄만 남겨 컨텍스트를 아껴라.
 - ARCHIVE.md는 기본적으로 읽지 말고, 과거 작업 확인이 필요한 경우에만 작업 ID로 검색해라.
 - 충돌, stale lock, broad refactor, DB 변경, review handoff는 PROTOCOL.md를 따라라.
 - 중요한 기술 결정은 DECISIONS.md에 남겨라.

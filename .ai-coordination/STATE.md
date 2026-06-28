@@ -20,5 +20,6 @@
 - Multiple AI sessions may work in this repo concurrently.
 - Coordination state lives in `.ai-coordination/`.
 - Before editing, each AI must claim its intended files in `LOCKS.md`.
-- `TASKS.md` is active-work-only. Completed work is compacted into `ARCHIVE.md` and details stay in `JOURNAL.md`.
+- `TASKS.md` is active-work-only: TODO, IN_PROGRESS, BLOCKED only. Review-ready work goes to `REVIEW_QUEUE.md`.
+- Completed work is compacted into `ARCHIVE.md` and details stay in `JOURNAL.md`.
 - Use `PROTOCOL.md` for roles, stale locks, conflicts, review gates, and context budgets.

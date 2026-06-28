@@ -12,12 +12,13 @@ One AI may hold multiple roles only for small tasks. For risky changes, split ro
 
 ## Task Lifecycle
 
-TODO -> IN_PROGRESS -> REVIEW -> DONE
+TODO -> IN_PROGRESS -> REVIEW_QUEUE -> DONE
 TODO -> IN_PROGRESS -> BLOCKED
 
-- `TASKS.md` keeps TODO, IN_PROGRESS, REVIEW, BLOCKED.
-- DONE tasks move to `ARCHIVE.md` and detailed evidence goes to `JOURNAL.md`.
+- `TASKS.md` keeps TODO, IN_PROGRESS, BLOCKED only.
 - REVIEW means implementation is done but another agent or the user should inspect it before commit/deploy.
+- REVIEW tasks move to `REVIEW_QUEUE.md`; do not leave them in `TASKS.md`.
+- DONE tasks move to `ARCHIVE.md` and detailed evidence goes to `JOURNAL.md`.
 
 ## Lock Lifecycle
 
@@ -38,7 +39,7 @@ TODO -> IN_PROGRESS -> BLOCKED
 
 ## Review Gate
 
-For non-trivial code changes, record in `TASKS.md`:
+For non-trivial code changes, record review-ready work in `REVIEW_QUEUE.md`:
 
 - changed files
 - verification commands
