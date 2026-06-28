@@ -44,14 +44,14 @@ describe('EquipBomService', () => {
 
   // ─── BOM Item CRUD ───
 
-  describe('findItemById', () => {
+  describe('findItem', () => {
     it('should return item when found', async () => {
       // Arrange
-      const item = { bomItemCode: 'BI01', bomItemName: 'Bolt' } as EquipBomItem;
+      const item = { equipCode: 'EQ01', bomItemCode: 'BI01', bomItemName: 'Bolt' } as EquipBomItem;
       mockBomItemRepo.findOne.mockResolvedValue(item);
 
       // Act
-      const result = await target.findItemById('BI01');
+      const result = await target.findItem('EQ01', 'BI01');
 
       // Assert
       expect(result).toEqual(item);
@@ -62,16 +62,16 @@ describe('EquipBomService', () => {
       mockBomItemRepo.findOne.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(target.findItemById('BI99')).rejects.toThrow(NotFoundException);
+      await expect(target.findItem('EQ01', 'BI99')).rejects.toThrow(NotFoundException);
     });
 
     it('should find item within tenant only', async () => {
-      mockBomItemRepo.findOne.mockResolvedValue({ bomItemCode: 'BI01', company: 'C1', plant: 'P1' } as EquipBomItem);
+      mockBomItemRepo.findOne.mockResolvedValue({ equipCode: 'EQ01', bomItemCode: 'BI01', company: 'C1', plant: 'P1' } as EquipBomItem);
 
-      await target.findItemById('BI01', 'C1', 'P1');
+      await target.findItem('EQ01', 'BI01', 'C1', 'P1');
 
       expect(mockBomItemRepo.findOne).toHaveBeenCalledWith({
-        where: { bomItemCode: 'BI01', company: 'C1', plant: 'P1' },
+        where: { equipCode: 'EQ01', bomItemCode: 'BI01', company: 'C1', plant: 'P1' },
       });
     });
   });
@@ -79,7 +79,7 @@ describe('EquipBomService', () => {
   describe('createItem', () => {
     it('should create and return item with tenant and default columns', async () => {
       // Arrange
-      const dto = { bomItemCode: 'BI01', bomItemName: 'Bolt' } as any;
+      const dto = { equipCode: 'EQ01', bomItemCode: 'BI01', bomItemName: 'Bolt' } as any;
       const created = { ...dto } as EquipBomItem;
       mockBomItemRepo.findOne.mockResolvedValue(null);
       mockBomItemRepo.create.mockReturnValue(created);
@@ -93,6 +93,7 @@ describe('EquipBomService', () => {
       // createItem은 dto 필드 외에 unit/useYn/stockQty/safetyStock 기본값을 채워 넣는다.
       expect(mockBomItemRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
+          equipCode: 'EQ01',
           bomItemCode: 'BI01',
           bomItemName: 'Bolt',
           unit: 'EA',
@@ -106,8 +107,8 @@ describe('EquipBomService', () => {
     });
 
     it('should reject duplicate item code within tenant', async () => {
-      const dto = { bomItemCode: 'BI01', bomItemName: 'Bolt' } as any;
-      mockBomItemRepo.findOne.mockResolvedValue({ bomItemCode: 'BI01', company: 'COMP', plant: 'PLT' } as EquipBomItem);
+      const dto = { equipCode: 'EQ01', bomItemCode: 'BI01', bomItemName: 'Bolt' } as any;
+      mockBomItemRepo.findOne.mockResolvedValue({ equipCode: 'EQ01', bomItemCode: 'BI01', company: 'COMP', plant: 'PLT' } as EquipBomItem);
 
       await expect(target.createItem(dto, 'COMP', 'PLT')).rejects.toThrow(ConflictException);
       expect(mockBomItemRepo.save).not.toHaveBeenCalled();
@@ -117,23 +118,23 @@ describe('EquipBomService', () => {
   describe('updateItem', () => {
     it('should update and return item', async () => {
       // Arrange
-      const existing = { bomItemCode: 'BI01', bomItemName: 'Old' } as EquipBomItem;
+      const existing = { equipCode: 'EQ01', bomItemCode: 'BI01', bomItemName: 'Old' } as EquipBomItem;
       mockBomItemRepo.findOne.mockResolvedValue(existing);
       mockBomItemRepo.save.mockResolvedValue({ ...existing, bomItemName: 'New' } as EquipBomItem);
 
       // Act
-      const result = await target.updateItem('BI01', { bomItemName: 'New' } as any);
+      const result = await target.updateItem('EQ01', 'BI01', { bomItemName: 'New' } as any);
 
       // Assert
       expect(result.bomItemName).toBe('New');
     });
 
     it('should keep tenant and item key columns from the matched item when update payload contains them', async () => {
-      const existing = { bomItemCode: 'BI01', bomItemName: 'Old', company: 'C1', plant: 'P1' } as EquipBomItem;
+      const existing = { equipCode: 'EQ01', bomItemCode: 'BI01', bomItemName: 'Old', company: 'C1', plant: 'P1' } as EquipBomItem;
       mockBomItemRepo.findOne.mockResolvedValue(existing);
       mockBomItemRepo.save.mockImplementation(async (value) => value as EquipBomItem);
 
-      const result = await target.updateItem('BI01', {
+      const result = await target.updateItem('EQ01', 'BI01', {
         bomItemCode: 'BI99',
         bomItemName: 'New',
         company: 'C2',
@@ -152,12 +153,12 @@ describe('EquipBomService', () => {
   describe('deleteItem', () => {
     it('should remove item', async () => {
       // Arrange
-      const existing = { bomItemCode: 'BI01' } as EquipBomItem;
+      const existing = { equipCode: 'EQ01', bomItemCode: 'BI01' } as EquipBomItem;
       mockBomItemRepo.findOne.mockResolvedValue(existing);
       mockBomItemRepo.remove.mockResolvedValue(existing);
 
       // Act & Assert
-      await expect(target.deleteItem('BI01')).resolves.toBeUndefined();
+      await expect(target.deleteItem('EQ01', 'BI01')).resolves.toBeUndefined();
       expect(mockBomItemRepo.remove).toHaveBeenCalledWith(existing);
     });
   });

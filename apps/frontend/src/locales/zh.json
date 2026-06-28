@@ -1257,6 +1257,9 @@
     "equip": {
       "title": "设备主数据",
       "addBomItem": "添加BOM品目",
+      "manageBom": "BOM管理",
+      "bomPanelTitle": "{{name}} BOM",
+      "noBomItems": "未登记BOM品目。",
       "addBomLink": "添加BOM关联",
       "bomItem": "BOM品目",
       "bomList": "BOM列表",

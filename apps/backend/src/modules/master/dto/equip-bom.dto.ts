@@ -27,6 +27,11 @@ import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 // ========================================
 
 export class CreateEquipBomItemDto {
+  @ApiProperty({ description: '설비 코드', example: 'EQ-001', maxLength: 50 })
+  @IsString()
+  @MaxLength(50)
+  equipCode: string;
+
   @ApiProperty({ description: '품목 코드', example: 'PART-001', maxLength: 50 })
   @IsString()
   @MaxLength(50)
@@ -102,7 +107,10 @@ export class CreateEquipBomItemDto {
 export class UpdateEquipBomItemDto extends PartialType(CreateEquipBomItemDto) {}
 
 export class EquipBomItemQueryDto extends PaginationQueryDto {
-
+  @ApiPropertyOptional({ description: '설비 코드' })
+  @IsOptional()
+  @IsString()
+  equipCode?: string;
 
   @ApiPropertyOptional({ description: '품목 유형', enum: ['PART', 'CONSUMABLE'] })
   @IsOptional()

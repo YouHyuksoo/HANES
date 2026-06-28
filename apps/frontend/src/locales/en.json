@@ -1257,6 +1257,9 @@
     "equip": {
       "title": "Equipment Master",
       "addBomItem": "Add BOM Item",
+      "manageBom": "Manage BOM",
+      "bomPanelTitle": "{{name}} BOM",
+      "noBomItems": "No BOM items registered.",
       "addBomLink": "Add BOM Link",
       "bomItem": "BOM Item",
       "bomList": "BOM List",

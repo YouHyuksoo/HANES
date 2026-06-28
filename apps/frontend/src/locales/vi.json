@@ -1257,6 +1257,9 @@
     "equip": {
       "title": "Danh mục thiết bị",
       "addBomItem": "Thêm mục BOM",
+      "manageBom": "Quản lý BOM",
+      "bomPanelTitle": "BOM {{name}}",
+      "noBomItems": "Chưa có mục BOM nào được đăng ký.",
       "addBomLink": "Thêm liên kết BOM",
       "bomItem": "Mục BOM",
       "bomList": "Danh sách BOM",

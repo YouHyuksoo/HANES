@@ -4,10 +4,10 @@
  *
  * 초보자 가이드:
  * 1. **GET /master/equip-bom/items**: BOM 품목 목록
- * 2. **GET /master/equip-bom/items/:id**: BOM 품목 상세
+ * 2. **GET /master/equip-bom/items/:equipCode/:bomItemCode**: BOM 품목 상세
  * 3. **POST /master/equip-bom/items**: BOM 품목 생성
- * 4. **PUT /master/equip-bom/items/:id**: BOM 품목 수정
- * 5. **DELETE /master/equip-bom/items/:id**: BOM 품목 삭제
+ * 4. **PUT /master/equip-bom/items/:equipCode/:bomItemCode**: BOM 품목 수정
+ * 5. **DELETE /master/equip-bom/items/:equipCode/:bomItemCode**: BOM 품목 삭제
  * 6. **GET /master/equip-bom/rels**: 설비-BOM 연결 목록
  * 7. **GET /master/equip-bom/equip/:equipCode**: 특정 설비의 BOM 목록
  * 8. **POST /master/equip-bom/rels**: 설비-BOM 연결 생성
@@ -56,10 +56,15 @@ export class EquipBomController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
-  @Get('items/:id')
+  @Get('items/:equipCode/:bomItemCode')
   @ApiOperation({ summary: 'BOM 품목 상세 조회' })
-  async findItemById(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
-    const data = await this.equipBomService.findItemById(id, company, plant);
+  async findItem(
+    @Param('equipCode') equipCode: string,
+    @Param('bomItemCode') bomItemCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipBomService.findItem(equipCode, bomItemCode, company, plant);
     return ResponseUtil.success(data);
   }
 
@@ -71,17 +76,28 @@ export class EquipBomController {
     return ResponseUtil.success(data, 'BOM 품목이 생성되었습니다.');
   }
 
-  @Put('items/:id')
+  @Put('items/:equipCode/:bomItemCode')
   @ApiOperation({ summary: 'BOM 품목 수정' })
-  async updateItem(@Param('id') id: string, @Body() dto: UpdateEquipBomItemDto, @Company() company: string, @Plant() plant: string) {
-    const data = await this.equipBomService.updateItem(id, dto, company, plant);
+  async updateItem(
+    @Param('equipCode') equipCode: string,
+    @Param('bomItemCode') bomItemCode: string,
+    @Body() dto: UpdateEquipBomItemDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipBomService.updateItem(equipCode, bomItemCode, dto, company, plant);
     return ResponseUtil.success(data, 'BOM 품목이 수정되었습니다.');
   }
 
-  @Delete('items/:id')
+  @Delete('items/:equipCode/:bomItemCode')
   @ApiOperation({ summary: 'BOM 품목 삭제' })
-  async deleteItem(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
-    await this.equipBomService.deleteItem(id, company, plant);
+  async deleteItem(
+    @Param('equipCode') equipCode: string,
+    @Param('bomItemCode') bomItemCode: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.equipBomService.deleteItem(equipCode, bomItemCode, company, plant);
     return ResponseUtil.success(null, 'BOM 품목이 삭제되었습니다.');
   }
 

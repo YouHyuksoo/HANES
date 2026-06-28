@@ -49,9 +49,9 @@ export interface EquipMaster {
 export type BomItemType = 'PART' | 'CONSUMABLE';
 
 export interface EquipBomItem {
+  equipCode: string;
   bomItemCode: string;
-  itemCode: string;
-  itemName: string;
+  bomItemName: string;
   itemType: BomItemType;
   spec?: string;
   maker?: string;
@@ -63,25 +63,6 @@ export interface EquipBomItem {
   useYn: string;
   createdAt?: string;
   updatedAt?: string;
-}
-
-// ========================================
-// 설비-BOM 연결 타입
-// ========================================
-
-export interface EquipBomRel {
-  equipCode: string;
-  bomItemCode: string;
-  quantity: number;
-  installDate?: string;
-  expireDate?: string;
-  remark?: string;
-  useYn: string;
-  createdAt?: string;
-  updatedAt?: string;
-  // Joined data
-  bomItem?: EquipBomItem;
-  equipment?: EquipMaster;
 }
 
 // ========================================

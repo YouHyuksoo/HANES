@@ -1667,6 +1667,9 @@
     "equip": {
       "title": "설비마스터",
       "addBomItem": "BOM 품목 등록",
+      "manageBom": "BOM 관리",
+      "bomPanelTitle": "{{name}} BOM",
+      "noBomItems": "등록된 BOM 품목이 없습니다.",
       "addBomLink": "BOM 연결 추가",
       "bomItem": "BOM 품목",
       "bomList": "BOM 목록",

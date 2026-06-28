@@ -35,10 +35,13 @@ export class EquipBomService {
   // ========================================
 
   async findAllItems(query: EquipBomItemQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 20, itemType, useYn, search, company: queryCompany } = query;
+    const { page = 1, limit = 20, equipCode, itemType, useYn, search, company: queryCompany } = query;
 
     const whereConditions: FindOptionsWhere<EquipBomItem> = {};
 
+    if (equipCode) {
+      whereConditions.equipCode = equipCode;
+    }
     if (itemType === 'PART' || itemType === 'CONSUMABLE') {
       whereConditions.itemType = itemType;
     }
@@ -79,9 +82,9 @@ export class EquipBomService {
     };
   }
 
-  async findItemById(bomItemCode: string, company?: string, plant?: string): Promise<EquipBomItem> {
+  async findItem(equipCode: string, bomItemCode: string, company?: string, plant?: string): Promise<EquipBomItem> {
     const item = await this.bomItemRepo.findOne({
-      where: { bomItemCode, ...this.tenantWhere(company, plant) },
+      where: { equipCode, bomItemCode, ...this.tenantWhere(company, plant) },
     });
     if (!item) {
       throw new NotFoundException('BOM 품목을 찾을 수 없습니다.');
@@ -91,13 +94,14 @@ export class EquipBomService {
 
   async createItem(dto: CreateEquipBomItemDto, company?: string, plant?: string): Promise<EquipBomItem> {
     const existing = await this.bomItemRepo.findOne({
-      where: { bomItemCode: dto.bomItemCode, ...this.tenantWhere(company, plant) },
+      where: { equipCode: dto.equipCode, bomItemCode: dto.bomItemCode, ...this.tenantWhere(company, plant) },
     });
     if (existing) {
-      throw new ConflictException(`이미 등록된 설비 BOM 품목입니다: ${dto.bomItemCode}`);
+      throw new ConflictException(`이미 등록된 설비 BOM 품목입니다: ${dto.equipCode}/${dto.bomItemCode}`);
     }
 
     const item = this.bomItemRepo.create({
+      equipCode: dto.equipCode,
       bomItemCode: dto.bomItemCode,
       bomItemName: dto.bomItemName,
       itemType: dto.itemType,
@@ -115,8 +119,8 @@ export class EquipBomService {
     return this.bomItemRepo.save(item);
   }
 
-  async updateItem(id: string, dto: UpdateEquipBomItemDto, company?: string, plant?: string): Promise<EquipBomItem> {
-    const item = await this.findItemById(id, company, plant);
+  async updateItem(equipCode: string, bomItemCode: string, dto: UpdateEquipBomItemDto, company?: string, plant?: string): Promise<EquipBomItem> {
+    const item = await this.findItem(equipCode, bomItemCode, company, plant);
     const updateData: Partial<EquipBomItem> = {
       ...(dto.bomItemName !== undefined ? { bomItemName: dto.bomItemName } : {}),
       ...(dto.itemType !== undefined ? { itemType: dto.itemType } : {}),
@@ -133,8 +137,8 @@ export class EquipBomService {
     return this.bomItemRepo.save(item);
   }
 
-  async deleteItem(id: string, company?: string, plant?: string): Promise<void> {
-    const item = await this.findItemById(id, company, plant);
+  async deleteItem(equipCode: string, bomItemCode: string, company?: string, plant?: string): Promise<void> {
+    const item = await this.findItem(equipCode, bomItemCode, company, plant);
     await this.bomItemRepo.remove(item);
   }
 

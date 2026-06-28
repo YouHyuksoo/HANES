@@ -18,7 +18,7 @@ test('equip master field help includes image field db metadata', () => {
 });
 
 test('equip page keeps equip master tab as the place where image upload is wired', () => {
-  assert.match(pageSource, /<EquipMasterTab\s*onHeaderActionsChange=\{setHeaderActions\}/);
+  assert.match(pageSource, /<EquipMasterTab\s*\/>/);
 });
 
 test('equip master panel submit button uses save copy instead of add copy', () => {

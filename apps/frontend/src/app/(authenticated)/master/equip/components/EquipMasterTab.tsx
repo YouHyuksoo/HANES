@@ -10,20 +10,23 @@
  * 3. 라인, 설비유형, 상태 필터링 지원
  */
 
-import { useState, useMemo, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, Edit2, Trash2, Search, RefreshCw, Settings, ImageIcon, Upload,
-  Wifi, Monitor,
+  Wifi, Boxes, Monitor,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import ComCodeBadge from "@/components/ui/ComCodeBadge";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import { EquipMaster, EquipType, CommType, COMM_TYPE_COLORS, COMM_TYPE_LABELS } from "../types";
 import api from "@/services/api";
 import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import { ComCodeSelect, LineSelect } from '@/components/shared';
 import { FieldInput, FieldComCodeSelect, FieldLineSelect } from "./EquipFieldHelp";
+import EquipBomPanel from "./EquipBomPanel";
 
 function EquipImageThumb({ src, alt }: { src: string; alt: string }) {
   const [errored, setErrored] = useState(false);
@@ -55,10 +58,6 @@ interface FormState {
   useYn: string;
 }
 
-interface EquipMasterTabProps {
-  onHeaderActionsChange?: (actions: ReactNode | null) => void;
-}
-
 const EMPTY_FORM: FormState = {
   equipCode: "",
   equipName: "",
@@ -75,7 +74,7 @@ const EMPTY_FORM: FormState = {
   useYn: "Y",
 };
 
-export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTabProps) {
+export default function EquipMasterTab() {
   const { t } = useTranslation();
   const [equipments, setEquipments] = useState<EquipMaster[]>([]);
   const [loading, setLoading] = useState(false);
@@ -86,6 +85,7 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
   const [panelOpen, setPanelOpen] = useState(false);
   const [editing, setEditing] = useState<EquipMaster | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [bomTarget, setBomTarget] = useState<EquipMaster | null>(null);
   const initialFormRef = useRef<FormState>(EMPTY_FORM);
   const { markDirty, guard, guardModalProps } = useUnsavedGuard();
   const [deleteTarget, setDeleteTarget] = useState<EquipMaster | null>(null);
@@ -123,6 +123,7 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
   }, [fetchEquipments]);
 
   const openCreate = useCallback(() => {
+    setBomTarget(null);
     setEditing(null);
     setForm(EMPTY_FORM);
     initialFormRef.current = EMPTY_FORM;
@@ -132,7 +133,14 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
     setPanelOpen(true);
   }, []);
 
+  // BOM 패널 열기 — 설비 편집 패널과 상호배타(둘 중 하나만 열림)
+  const openBom = (equip: EquipMaster) => {
+    setPanelOpen(false);
+    setBomTarget(equip);
+  };
+
   const openEdit = (equip: EquipMaster) => {
+    setBomTarget(null);
     setEditing(equip);
     const nextForm: FormState = {
       equipCode: equip.equipCode,
@@ -257,33 +265,19 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
     }
   };
 
-  useEffect(() => {
-    if (!onHeaderActionsChange) return;
-    onHeaderActionsChange(
-      <>
-        <Button variant="secondary" size="sm" onClick={fetchEquipments}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
-          {t("common.refresh", "새로고침")}
-        </Button>
-        <Button size="sm" onClick={() => guard(openCreate)}>
-          <Plus className="w-4 h-4 mr-1" />
-          {t("master.equip.addEquip", "설비 추가")}
-        </Button>
-      </>,
-    );
-    return () => onHeaderActionsChange(null);
-  }, [fetchEquipments, loading, onHeaderActionsChange, openCreate, guard, t]);
-
   const columns = useMemo<ColumnDef<EquipMaster>[]>(() => [
     {
-      id: "actions", header: t("common.actions", "작업"), size: 80,
+      id: "actions", header: t("common.actions", "작업"), size: 110,
       meta: { align: "center" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button onClick={() => guard(() => openEdit(row.original))} className="p-1 hover:bg-surface rounded">
+          <button onClick={() => guard(() => openEdit(row.original))} className="p-1 hover:bg-surface rounded" title={t("common.edit", "수정")}>
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
-          <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded">
+          <button onClick={() => guard(() => openBom(row.original))} className="p-1 hover:bg-surface rounded" title={t("master.equip.manageBom", "BOM 관리")}>
+            <Boxes className="w-4 h-4 text-text-muted" />
+          </button>
+          <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.delete", "삭제")}>
             <Trash2 className="w-4 h-4 text-red-500" />
           </button>
         </div>
@@ -343,6 +337,13 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
     { accessorKey: "maker", header: t("master.equip.maker", "제조사"), size: 100 },
     { accessorKey: "modelName", header: t("master.equip.model", "모델"), size: 100 },
     {
+      accessorKey: "status",
+      header: () => <StatusHeaderHelp label={t("common.status", "상태")} codeType="EQUIP_STATUS" />,
+      size: 90,
+      meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => <ComCodeBadge groupCode="EQUIP_STATUS" code={getValue() as string} />,
+    },
+    {
       accessorKey: "useYn", header: t("common.use", "사용"), size: 50,
       cell: ({ getValue }) => (
         <span className={`w-2 h-2 rounded-full inline-block ${getValue() === "Y" ? "bg-green-500" : "bg-gray-400"}`} />
@@ -351,8 +352,30 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
   ], [t, guard]);
 
   return (
-    <div className="h-full flex overflow-hidden">
-      <div className="flex-1 min-w-0 flex flex-col">
+    <div className="flex h-full animate-fade-in">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        <div className="flex justify-between items-start gap-3 flex-shrink-0">
+          <div>
+            <h1 className="text-xl font-bold text-text flex items-center gap-2">
+              <Monitor className="w-7 h-7 text-primary" />
+              {t("master.equip.title", "설비 관리")}
+            </h1>
+            <p className="text-text-muted mt-1">
+              {t("master.equip.subtitle", "설비 마스터 및 BOM 관리")}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={fetchEquipments}>
+              <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+              {t("common.refresh", "새로고침")}
+            </Button>
+            <Button size="sm" onClick={() => guard(openCreate)}>
+              <Plus className="w-4 h-4 mr-1" />
+              {t("master.equip.addEquip", "설비 추가")}
+            </Button>
+          </div>
+        </div>
+
         <Card className="flex-1 min-h-0 overflow-hidden">
           <CardContent className="h-full">
             <DataGrid data={equipments} columns={columns} pageSize={10} isLoading={loading} enableColumnPinning enableColumnFilter enableExport exportFileName={t("master.equip.title", "설비관리")}
@@ -491,6 +514,14 @@ export default function EquipMasterTab({ onHeaderActionsChange }: EquipMasterTab
             </div>
           </div>
         </div>
+      )}
+
+      {bomTarget && (
+        <EquipBomPanel
+          equipCode={bomTarget.equipCode}
+          equipName={bomTarget.equipName}
+          onClose={() => setBomTarget(null)}
+        />
       )}
 
       <ConfirmModal {...guardModalProps} />
