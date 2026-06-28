@@ -15,10 +15,10 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Search, RefreshCw, Clock, CheckCircle, Package, XCircle, Play, Ban,
+  Search, RefreshCw, CheckCircle, XCircle, Play,
 } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
-import { Card, CardContent, Button, Input, Select, StatCard, Modal, ConfirmModal } from '@/components/ui';
+import { Card, CardContent, Button, Input, Select, Modal, ConfirmModal } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { IssueRequestStatusBadge } from '@/components/material';
 import IssueFromRequestModal from '@/components/material/IssueFromRequestModal';
@@ -30,7 +30,7 @@ import type { IssueRequestStatus } from '@/components/material';
 export default function IssueRequestTab() {
   const { t } = useTranslation();
   const {
-    records, isLoading, refetch, stats,
+    records, isLoading, refetch,
     statusFilter, setStatusFilter, searchText, setSearchText,
     handleApprove, handleReject,
   } = useIssueRequests();
@@ -171,14 +171,6 @@ export default function IssueRequestTab() {
 
   return (
     <>
-      {/* 통계카드 */}
-      <div className="grid grid-cols-4 gap-3">
-        <StatCard label={t('material.issue.stats.requested')} value={stats.requested} icon={Clock} color="yellow" />
-        <StatCard label={t('material.issue.stats.approved')} value={stats.approved} icon={CheckCircle} color="blue" />
-        <StatCard label={t('material.issue.stats.completed')} value={stats.completed} icon={Package} color="green" />
-        <StatCard label={t('material.issue.status.rejected')} value={stats.rejected} icon={Ban} color="red" />
-      </div>
-
       {/* 필터 + 테이블 */}
       <Card>
         <CardContent>
