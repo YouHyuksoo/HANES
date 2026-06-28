@@ -19,24 +19,22 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Layers, Plus, Search, RefreshCw, Lock, LockOpen,
-  Package, ArrowRight, X, ScanLine, Printer, Trash2,
+  Layers, Plus, Search, RefreshCw,
+  Package, ArrowRight, X, ScanLine,
 } from "lucide-react";
 import { Card, CardContent, Button, ConfirmModal, Input, Modal, Select } from "@/components/ui";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import OpenIncludedNotice from "@/components/shared/OpenIncludedNotice";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import { getTodayLocal } from "@/utils/date";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
-import { PalletStatusBadge } from "@/components/shipping";
-import type { PalletStatus } from "@/components/shipping";
 import api from "@/services/api";
 import toast from "react-hot-toast";
 import PalletLabelModal from "./components/PalletLabelModal";
 import type { PalletLabelInfo } from "./components/PalletLabelModal";
 import { useSysConfigStore } from "@/stores/sysConfigStore";
+import { createPalletGridColumns } from "./palletColumns";
+import type { Pallet } from "./palletColumns";
 
 /** 팔레트 포함 박스 (GET /shipping/pallets/barcode/:no/boxes 응답) */
 interface PalletBox {
@@ -53,19 +51,6 @@ interface AvailableBox {
   itemCode: string;
   qty: number;
   oqcStatus: string | null;
-}
-
-/** palletNo가 PK이므로 별도 id 불필요 */
-interface Pallet {
-  palletNo: string;
-  boxCount: number;
-  totalQty: number;
-  status: PalletStatus;
-  shipmentId: string | null;
-  createdAt: string;
-  closeAt: string | null;
-  shipOrderNo?: string | null;
-  shippedAt?: string | null;
 }
 
 interface ShipOrderLineSummary {
@@ -440,41 +425,18 @@ export default function PalletPage() {
     return set;
   }, [data, statusFilter, createdFrom, createdTo]);
 
-  const columns = useMemo<ColumnDef<Pallet>[]>(() => [
-    {
-      id: "actions", header: t("common.actions"), size: 164, meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => {
-        const pallet = row.original;
-        const isOpen = pallet.status === "OPEN";
-        return (
-          <div className="flex gap-1">
-            <Button variant="ghost" size="sm" title={t("shipping.pallet.assignBox")} disabled={!isOpen || !pallet.shipOrderNo} onClick={() => { selectPallet(pallet); setIsAssignModalOpen(true); fetchAvailableBoxes(); }}>
-              <Plus className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm" title={t("shipping.pallet.closePallet")} disabled={!isOpen || !pallet.shipOrderNo} onClick={() => handleClosePallet(pallet)}>
-              <Lock className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm" title={t("shipping.pallet.reopenPallet")} disabled={pallet.status !== "CLOSED"} onClick={() => handleReopenPallet(pallet)}>
-              <LockOpen className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm" title={t("shipping.pallet.printLabel", "라벨 출력")} onClick={() => handleOpenLabel(pallet)}>
-              <Printer className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm" title={t("shipping.pallet.deleteEmptyPallet", "빈 팔레트 삭제")} disabled={!canDeleteEmptyPallet(pallet) || saving} onClick={() => setDeletePalletTarget(pallet)}>
-              <Trash2 className="w-4 h-4 text-danger" />
-            </Button>
-          </div>
-        );
-      },
-    },
-    { accessorKey: "shipOrderNo", header: t("shipping.pallet.shipOrderNo", "출하지시번호"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span> },
-    { accessorKey: "palletNo", header: t("shipping.pallet.palletNo"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "boxCount", header: t("shipping.pallet.boxCount"), size: 80, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="PALLET_STATUS" align="center" />, size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <PalletStatusBadge status={getValue() as PalletStatus} /> },
-    { accessorKey: "shipmentId", header: t("shipping.confirm.shipmentNo"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span> },
-    { accessorKey: "createdAt", header: t("common.createdAt"), size: 140, meta: { filterType: "date" as const } },
-  ], [t, handleClosePallet, handleReopenPallet, fetchAvailableBoxes, selectPallet, canDeleteEmptyPallet, saving]);
+  const columns = useMemo(() => createPalletGridColumns({
+    t,
+    saving,
+    selectPallet,
+    setIsAssignModalOpen,
+    fetchAvailableBoxes,
+    handleClosePallet,
+    handleReopenPallet,
+    handleOpenLabel,
+    canDeleteEmptyPallet,
+    setDeletePalletTarget,
+  }), [t, handleClosePallet, handleReopenPallet, fetchAvailableBoxes, selectPallet, canDeleteEmptyPallet, saving]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

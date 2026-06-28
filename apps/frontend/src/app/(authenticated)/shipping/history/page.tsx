@@ -11,17 +11,15 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import {
   History, Search, RefreshCw, Package, Box, Loader2,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
-import StatusBadge from "@/components/shared/StatusBadge";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
+import { createShippingHistoryGridColumns, type ShipHistory } from "./shippingHistoryColumns";
 
 const formatDateInput = (date: Date) => {
   const year = date.getFullYear();
@@ -29,19 +27,6 @@ const formatDateInput = (date: Date) => {
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
-
-interface ShipHistory {
-  id: string;
-  shipOrderNo: string;
-  customerName: string;
-  dueDate: string;
-  shipDate: string;
-  status: string;
-  itemCount: number;
-  totalQty: number;
-  createdAt: string;
-  items?: { itemCode: string; orderQty?: number; shippedQty?: number }[];
-}
 
 interface OrderPalletBox {
   boxNo: string;
@@ -143,16 +128,7 @@ export default function ShipHistoryPage() {
     }
   }, []);
 
-  const columns = useMemo<ColumnDef<ShipHistory>[]>(() => [
-    { accessorKey: "shipOrderNo", header: t("shipping.history.shipOrderNo"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "customerName", header: t("shipping.history.customer"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "dueDate", header: t("shipping.history.dueDate"), size: 100, meta: { filterType: "date" as const } },
-    { accessorKey: "shipDate", header: t("shipping.history.shipDateCol"), size: 100, meta: { filterType: "date" as const } },
-    { accessorKey: "itemCount", header: t("shipping.history.itemCount"), size: 70, meta: { filterType: "number" as const } },
-    { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="SHIP_ORDER_STATUS" align="center" />, size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <StatusBadge codeType="SHIP_ORDER_STATUS" value={getValue() as string} /> },
-    { accessorKey: "createdAt", header: t("common.createdAt"), size: 100, meta: { filterType: "date" as const } },
-  ], [t]);
+  const columns = useMemo(() => createShippingHistoryGridColumns({ t }), [t]);
 
   const pallets = palletDetail?.pallets ?? [];
   const looseBoxes = palletDetail?.boxShipped ?? [];

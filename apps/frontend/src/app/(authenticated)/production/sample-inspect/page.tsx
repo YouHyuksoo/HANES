@@ -13,30 +13,14 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, RefreshCw, FlaskConical, Plus } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, ComCodeBadge } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select } from "@/components/ui";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
 import SampleInspectInputModal from "./components/SampleInspectInputModal";
-
-interface SampleInspectRow {
-  id: string;
-  orderNo: string;
-  itemCode: string;
-  itemName: string;
-  inspectDate: string;
-  inspectorName: string;
-  inspectType: string;
-  sampleNo: number;
-  measuredValue: string;
-  specUpper: string;
-  specLower: string;
-  passYn: string;
-  remark: string;
-}
+import { createSampleInspectGridColumns, type SampleInspectRow } from "./sampleInspectColumns";
 
 export default function SampleInspectPage() {
   const { t } = useTranslation();
@@ -73,64 +57,7 @@ export default function SampleInspectPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const columns = useMemo<ColumnDef<SampleInspectRow>[]>(() => [
-    {
-      accessorKey: "inspectDate", header: t("production.sampleInspect.inspectDate"), size: 100,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
-    },
-    {
-      accessorKey: "orderNo", header: t("production.sampleInspect.orderNo"), size: 160,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
-    },
-    {
-      accessorKey: "itemCode", header: t("common.partCode"), size: 110,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span>,
-    },
-    {
-      accessorKey: "itemName", header: t("common.partName"), size: 140,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "inspectType", header: t("production.sampleInspect.inspectType"), size: 90,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "sampleNo", header: t("production.sampleInspect.sampleNo"), size: 60,
-      meta: { filterType: "number" as const, align: "center" as const },
-      cell: ({ getValue }) => <span className="font-mono">{getValue() as number}</span>,
-    },
-    {
-      accessorKey: "measuredValue", header: t("production.sampleInspect.measuredValue"), size: 90,
-      meta: { filterType: "text" as const, align: "right" as const },
-      cell: ({ getValue }) => <span className="font-mono">{(getValue() as string) || "-"}</span>,
-    },
-    {
-      accessorKey: "specLower", header: t("production.sampleInspect.specLower"), size: 70,
-      meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => <span className="text-text-muted">{(getValue() as string) || "-"}</span>,
-    },
-    {
-      accessorKey: "specUpper", header: t("production.sampleInspect.specUpper"), size: 70,
-      meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => <span className="text-text-muted">{(getValue() as string) || "-"}</span>,
-    },
-    {
-      accessorKey: "passYn", header: t("production.sampleInspect.judgment"), size: 80,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="JUDGE_YN" code={getValue() as string} />,
-    },
-    {
-      accessorKey: "inspectorName", header: t("production.sampleInspect.inspector"), size: 80,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "remark", header: t("production.sampleInspect.remark"), size: 120,
-      meta: { filterType: "text" as const },
-    },
-  ], [t]);
+  const columns = useMemo(() => createSampleInspectGridColumns({ t }), [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

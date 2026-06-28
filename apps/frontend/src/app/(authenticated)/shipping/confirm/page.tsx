@@ -16,11 +16,9 @@ import { useTranslation } from "react-i18next";
 import { Truck, RefreshCw, Package, ScanLine, AlertTriangle, XCircle } from "lucide-react";
 import { Card, CardContent, Button } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
-import StatusBadge from "@/components/shared/StatusBadge";
-import { ColumnDef } from "@tanstack/react-table";
 import { BoxScanShipModal } from "@/components/shipping";
 import api from "@/services/api";
+import { createShipConfirmGridColumns, type CandidateBox } from "./shipConfirmColumns";
 
 interface ShipOrderLineSummary {
   itemCode: string;
@@ -42,12 +40,6 @@ interface OrderLine {
   orderQty: number;
   shippedQty: number;
   remainingQty: number;
-}
-interface CandidateBox {
-  boxNo: string;
-  itemCode: string;
-  qty: number;
-  oqcStatus?: string | null;
 }
 interface FulfillmentData {
   order: { shipOrderNo: string; customerName?: string | null; shipDate?: string | null; dueDate?: string | null };
@@ -139,12 +131,7 @@ export default function BoxShipPage() {
     if (selectedOrderNo) fetchFulfillment(selectedOrderNo);
   }, [fetchOrders, fetchFulfillment, selectedOrderNo]);
 
-  const candidateColumns = useMemo<ColumnDef<CandidateBox>[]>(() => [
-    { accessorKey: "boxNo", header: t("shipping.confirm.boxNo", "박스번호"), size: 190, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="font-mono font-medium">{getValue() as string}</span> },
-    { accessorKey: "itemCode", header: t("shipping.confirm.item", "품목"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "qty", header: t("shipping.confirm.qty", "수량"), size: 90, meta: { align: "right" as const, filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "oqcStatus", header: () => <StatusHeaderHelp label="OQC" codeType="OQC_STATUS" align="center" />, size: 80, meta: { align: "center" as const }, cell: ({ getValue }) => <StatusBadge codeType="OQC_STATUS" value={getValue() as string} /> },
-  ], [t]);
+  const candidateColumns = useMemo(() => createShipConfirmGridColumns({ t }), [t]);
 
   const candidateBoxes = fulfillment?.candidateBoxes ?? [];
   const lines = fulfillment?.lines ?? [];

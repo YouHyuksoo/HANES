@@ -23,31 +23,14 @@ import { Card, CardContent, CardHeader, Button, ConfirmModal, Input, Modal, Sele
 import PartSelect from "@/components/shared/PartSelect";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import OpenIncludedNotice from "@/components/shared/OpenIncludedNotice";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import { getTodayLocal } from "@/utils/date";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
 import { BoxStatusBadge } from "@/components/shipping";
 import type { BoxStatus } from "@/components/shipping";
 import api from "@/services/api";
 import BoxLabelModal from "./components/BoxLabelModal";
-
-/** 박스 (백엔드 BOX_MASTERS 자연키 boxNo, 시리얼은 serialList JSON) */
-interface Box {
-  boxNo: string;
-  itemCode: string;
-  itemName: string | null;
-  qty: number;
-  status: BoxStatus;
-  serialList: string | null;
-  closeAt: string | null;
-  palletNo: string | null;
-  oqcStatus: string | null;
-  /** 품목 마스터의 박스입수량 (없으면 제한 없음) */
-  boxQty: number | null;
-  createdAt: string;
-}
+import { createPackGridColumns, type Box } from "./packColumns";
 
 /** 포장 대기 FG 시리얼(검사합격·박스 미배정) */
 interface PackableSerial {
@@ -308,20 +291,7 @@ export default function PackPage() {
     }
   }, [deleteBoxTarget, fetchData, selectedBox?.boxNo, t]);
 
-  const columns = useMemo<ColumnDef<Box>[]>(() => [
-    { accessorKey: "boxNo", header: t("shipping.pack.boxNo"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "itemName", header: t("common.partName"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
-    {
-      accessorKey: "qty", header: t("shipping.pack.packedQty"), size: 110, meta: { align: "center" as const, filterType: "number" as const },
-      cell: ({ row }) => {
-        const { qty, boxQty } = row.original;
-        return <span className="font-medium">{(qty ?? 0).toLocaleString()}{boxQty ? <span className="text-text-muted"> / {boxQty.toLocaleString()}</span> : null}</span>;
-      },
-    },
-    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="BOX_STATUS" align="center" />, size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <BoxStatusBadge status={getValue() as BoxStatus} /> },
-    { accessorKey: "closeAt", header: t("shipping.pack.closedAt"), size: 150, meta: { filterType: "date" as const }, cell: ({ getValue }) => (getValue() ? String(getValue()).replace("T", " ").slice(0, 16) : "-") },
-  ], [t]);
+  const columns = useMemo(() => createPackGridColumns({ t }), [t]);
 
   // 기간(생성일) 밖이지만 미마감(OPEN)이라 includeOpen으로 포함된 박스
   const outOfRangeNos = useMemo(() => {

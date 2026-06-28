@@ -4,54 +4,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { CheckCircle2, CopyPlus, FileSpreadsheet, Maximize2, Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
-import { ColumnDef } from "@tanstack/react-table";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { Button, Card, CardContent, Input, Modal, Select } from "@/components/ui";
 import api from "@/services/api";
-
-type RevisionStatus = "DRAFT" | "APPROVED" | "OBSOLETE";
-
-interface HarnessCircuitSpec {
-  circuitId?: number;
-  circuitNo: string;
-  wireItemCode?: string;
-  wireSpec?: string;
-  wireSize?: string;
-  colorCode?: string;
-  colorName?: string;
-  lengthMm?: number | "";
-  stripA?: number | "";
-  stripB?: number | "";
-  endAHousing?: string;
-  endATerminal?: string;
-  connectionSymbol?: string;
-  endBTerminal?: string;
-  endBHousing?: string;
-  tubeSpec?: string;
-  subNo?: string;
-  remark?: string;
-}
-
-interface HarnessDrawingRevision {
-  revisionId: number;
-  drawingId: number;
-  revisionCode: string;
-  status: RevisionStatus;
-  changeReason?: string | null;
-  circuits?: HarnessCircuitSpec[];
-}
-
-interface HarnessDrawing {
-  drawingId: number;
-  drawingNo: string;
-  itemCode: string;
-  itemName?: string | null;
-  erpItemNo?: string | null;
-  customerPartNo?: string | null;
-  remark?: string | null;
-  revisions?: HarnessDrawingRevision[];
-  revision?: HarnessDrawingRevision;
-}
+import {
+  createSpecificationSetupGridColumns,
+  type HarnessCircuitSpec,
+  type HarnessDrawing,
+  type HarnessDrawingRevision,
+} from "./specificationSetupColumns";
 
 interface BomOption {
   childItemCode: string;
@@ -245,12 +206,7 @@ export default function ProductionSpecificationSetupPage() {
     loadBomOptions(headerForm.itemCode);
   }, [headerForm.itemCode, loadBomOptions]);
 
-  const columns = useMemo<ColumnDef<HarnessDrawing>[]>(() => [
-    { accessorKey: "drawingNo", header: t("production.specSetup.drawingNo", "도면번호"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "erpItemNo", header: t("production.specSetup.erpItemNo", "ERP 품번"), size: 160, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "itemCode", header: t("common.partCode"), size: 110, meta: { filterType: "text" as const } },
-    { accessorKey: "itemName", header: t("common.partName"), size: 160, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
-  ], [t]);
+  const columns = useMemo(() => createSpecificationSetupGridColumns({ t }), [t]);
 
   const resetNew = () => {
     setSelected(null);

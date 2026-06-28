@@ -15,34 +15,14 @@ import { useTranslation } from "react-i18next";
 import { RotateCcw, Search, RefreshCw, XCircle } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard, Modal } from "@/components/ui";
 import ComCodeBadge from "@/components/ui/ComCodeBadge";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
-import StatusBadge from "@/components/shared/StatusBadge";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
-
-interface ProductIssueTx {
-  id: string;
-  transNo: string;
-  transType: string;
-  transDate: string;
-  itemCode: string;
-  itemType: string | null;
-  qty: number;
-  status: string;
-  issueType: string | null;
-  cancelRefId: string | null;
-  remark: string | null;
-  part?: { itemCode: string; itemName: string; unit: string } | null;
-  fromWarehouse?: { warehouseName: string } | null;
-}
-
-const statusColors: Record<string, string> = {
-  DONE: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  CANCELED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-};
+import {
+  createProductIssueCancelGridColumns,
+  type ProductIssueTx,
+} from "./productIssueCancelColumns";
 
 export default function ProductIssueCancelPage() {
   const { t } = useTranslation();
@@ -111,84 +91,14 @@ export default function ProductIssueCancelPage() {
     }
   }, [selectedTx, reason, fetchData]);
 
-  const columns = useMemo<ColumnDef<ProductIssueTx>[]>(() => [
-    {
-      id: "actions", header: "", size: 90,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => {
-        const tx = row.original;
-        if (tx.status === "CANCELED" || tx.cancelRefId || tx.transType.includes("CANCEL")) return null;
-        return (
-          <Button size="sm" variant="secondary" onClick={() => {
-            setSelectedTx(tx);
-            setReason("");
-            setIsModalOpen(true);
-          }}>
-            <XCircle className="w-4 h-4 mr-1" />{t("productMgmt.issueCancel.cancel")}
-          </Button>
-        );
-      },
+  const columns = useMemo(() => createProductIssueCancelGridColumns({
+    t,
+    onCancelTx: (tx) => {
+      setSelectedTx(tx);
+      setReason("");
+      setIsModalOpen(true);
     },
-    {
-      accessorKey: "transDate", header: t("productMgmt.issueCancel.transDate"), size: 100,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
-    },
-    {
-      accessorKey: "transNo", header: t("productMgmt.issueCancel.transNo"), size: 160,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
-    },
-    {
-      accessorKey: "transType",
-      header: () => <StatusHeaderHelp label={t("productMgmt.issueCancel.transType")} codeType="TRANSACTION_TYPE" align="center" />,
-      size: 110,
-      cell: ({ getValue }) => <StatusBadge codeType="TRANSACTION_TYPE" value={getValue() as string} />,
-    },
-    {
-      id: "partCode", header: t("common.partCode"), size: 120,
-      meta: { filterType: "text" as const },
-      cell: ({ row }) => <span className="font-mono text-sm">{row.original.part?.itemCode || "-"}</span>,
-    },
-    {
-      id: "partName", header: t("common.partName"), size: 150,
-      meta: { filterType: "text" as const },
-      cell: ({ row }) => row.original.part?.itemName || "-",
-    },
-    {
-      id: "warehouse", header: t("productMgmt.issueCancel.warehouse"), size: 110,
-      cell: ({ row }) => row.original.fromWarehouse?.warehouseName || "-",
-    },
-    {
-      accessorKey: "issueType",
-      header: () => <StatusHeaderHelp label={t("productMgmt.issueCancel.issueType")} codeType="ISSUE_TYPE" align="center" />,
-      size: 110,
-      cell: ({ getValue }) => {
-        const v = getValue() as string | null;
-        return v ? <ComCodeBadge groupCode="ISSUE_TYPE" code={v} /> : <span className="text-text-muted">-</span>;
-      },
-    },
-    {
-      accessorKey: "qty", header: t("productMgmt.issueCancel.qty"), size: 100,
-      meta: { align: "right" as const },
-      cell: ({ row }) => {
-        const q = row.original.qty;
-        const color = q > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
-        return (
-          <span className={`font-medium ${color}`}>
-            {q > 0 ? "+" : ""}{q.toLocaleString()} {row.original.part?.unit || ""}
-          </span>
-        );
-      },
-    },
-    {
-      accessorKey: "status", header: t("common.status"), size: 80,
-      cell: ({ getValue }) => {
-        const s = getValue() as string;
-        return <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[s] || ""}`}>{s}</span>;
-      },
-    },
-  ], [t]);
+  }), [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

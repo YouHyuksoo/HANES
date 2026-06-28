@@ -12,13 +12,13 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit2, Trash2, Search, ScanLine, RefreshCw } from "lucide-react";
+import { Plus, Search, ScanLine, RefreshCw } from "lucide-react";
 import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import { UseYnSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import ProtocolFormPanel, { Protocol } from "./components/ProtocolFormPanel";
+import { createProtocolGridColumns } from "./protocolColumns";
 
 export default function ProtocolPage() {
   const { t } = useTranslation();
@@ -70,48 +70,11 @@ export default function ProtocolPage() {
     finally { setDeleteTarget(null); }
   }, [deleteTarget, fetchProtocols]);
 
-  const columns = useMemo<ColumnDef<Protocol>[]>(() => [
-    {
-      id: "actions", header: t("common.actions"), size: 80,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingProtocol(row.original); setIsPanelOpen(true); }}
-            className="p-1 hover:bg-surface rounded">
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
-          <button onClick={e => { e.stopPropagation(); setDeleteTarget(row.original); }}
-            className="p-1 hover:bg-surface rounded">
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
-        </div>
-      ),
-    },
-    { accessorKey: "protocolId", header: t("inspection.protocol.protocolId"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "protocolName", header: t("inspection.protocol.protocolName"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "commType", header: t("inspection.protocol.commType"), size: 90, meta: { filterType: "multi" as const } },
-    { accessorKey: "delimiter", header: t("inspection.protocol.delimiter"), size: 70 },
-    { accessorKey: "passValue", header: t("inspection.protocol.passValue"), size: 80 },
-    { accessorKey: "failValue", header: t("inspection.protocol.failValue"), size: 80 },
-    { accessorKey: "sampleData", header: t("inspection.protocol.sampleData"), size: 200, cell: ({ getValue }) => {
-      const v = getValue() as string | null;
-      return <span className="text-xs text-text-muted truncate">{v || "-"}</span>;
-    }},
-    {
-      accessorKey: "useYn", header: t("common.useYn"), size: 70,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return (
-          <span className={`px-1.5 py-0.5 text-xs rounded ${v === "Y"
-            ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-            : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"}`}>
-            {v}
-          </span>
-        );
-      },
-    },
-  ], [t, isPanelOpen]);
+  const columns = useMemo(() => createProtocolGridColumns({
+    t,
+    onEditProtocol: (protocol) => { panelAnimateRef.current = !isPanelOpen; setEditingProtocol(protocol); setIsPanelOpen(true); },
+    onDeleteProtocol: (protocol) => setDeleteTarget(protocol),
+  }), [t, isPanelOpen]);
 
   const handlePanelClose = useCallback(() => {
     setIsPanelOpen(false);

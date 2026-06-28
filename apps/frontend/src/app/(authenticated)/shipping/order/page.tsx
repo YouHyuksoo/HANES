@@ -11,13 +11,11 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import QRCode from "react-qr-code";
 import {
-  ClipboardList, Plus, Search, RefreshCw, Edit2, Trash2, X, Printer, CheckCircle, RotateCcw,
+  ClipboardList, Plus, Search, RefreshCw, Trash2, X, Printer, CheckCircle, RotateCcw,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, ComCodeBadge, ConfirmModal } from "@/components/ui";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { Card, CardContent, Button, Input, Select, ConfirmModal } from "@/components/ui";
 import QtyInput from "@/components/shared/QtyInput";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import OpenIncludedNotice from "@/components/shared/OpenIncludedNotice";
@@ -27,34 +25,14 @@ import { useComCodeOptions } from "@/hooks/useComCode";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import PartSearchModal from "@/components/shared/PartSearchModal";
 import type { PartItem } from "@/components/shared/PartSearchModal";
+import { createShippingOrderGridColumns } from "./shippingOrderColumns";
+import type { ShipOrder, ShipOrderLine } from "./shippingOrderColumns";
 import api from "@/services/api";
 import toast from "react-hot-toast";
 
 /** Axios 에러에서 서버 메시지 추출 (없으면 fallback) */
 const getApiErrorMessage = (e: unknown, fallback: string): string =>
   (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
-
-interface ShipOrderLine {
-  itemCode: string;
-  itemName?: string;
-  unit?: string;
-  orderQty: number;
-  remark?: string;
-}
-
-interface ShipOrder {
-  shipOrderNo: string;
-  customerName: string;
-  customerId: string;
-  customerPoNo?: string;
-  dueDate: string;
-  shipDate: string;
-  status: string;
-  itemCount: number;
-  totalQty: number;
-  remark: string;
-  items?: ShipOrderLine[];
-}
 
 export default function ShipOrderPage() {
   const { t } = useTranslation();
@@ -331,31 +309,11 @@ export default function ShipOrderPage() {
     }
   }, [unconfirmTarget, closeFormPanel, fetchData]);
 
-  const columns = useMemo<ColumnDef<ShipOrder>[]>(() => [
-    { id: "actions", header: "", size: 56, meta: { align: "center" as const, filterType: "none" as const }, cell: ({ row }) => (
-      <div className="flex gap-1">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setSelectedOrder(row.original);
-            openEdit(row.original);
-          }}
-          className="p-1 hover:bg-surface rounded"
-          title={t("common.edit")}
-        >
-          <Edit2 className="w-4 h-4 text-primary" />
-        </button>
-      </div>
-    ) },
-    { accessorKey: "shipOrderNo", header: t("shipping.shipOrder.shipOrderNo"), size: 160, meta: { filterType: "text" as const } },
-    { accessorKey: "customerName", header: t("shipping.shipOrder.customer"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "customerPoNo", header: t("shipping.shipOrder.customerPoNo", "고객 PO번호"), size: 140, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
-    { accessorKey: "dueDate", header: t("shipping.shipOrder.dueDate"), size: 100, meta: { filterType: "date" as const } },
-    { accessorKey: "shipDate", header: t("shipping.shipOrder.shipDate"), size: 100, meta: { filterType: "date" as const } },
-    { accessorKey: "itemCount", header: t("shipping.shipOrder.itemCount"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
-    { accessorKey: "totalQty", header: t("common.totalQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="SHIP_ORDER_STATUS" align="center" />, size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="SHIP_ORDER_STATUS" code={getValue() as string} /> },
-  ], [t, openEdit]);
+  const columns = useMemo(() => createShippingOrderGridColumns({
+    t,
+    onSelectOrder: setSelectedOrder,
+    onEditOrder: openEdit,
+  }), [t, openEdit]);
 
   return (
     <div className="flex h-full animate-fade-in">
