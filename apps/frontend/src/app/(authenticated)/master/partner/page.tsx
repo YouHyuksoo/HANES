@@ -11,15 +11,15 @@
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit2, Trash2, Search, RefreshCw, Building2 } from "lucide-react";
-import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Plus, Search, RefreshCw, Building2 } from "lucide-react";
+import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect, UseYnSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
 import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import PartnerFormPanel, { type Partner } from "./components/PartnerFormPanel";
+import { createPartnerGridColumns } from "./partnerColumns";
 
 type PanelMode = "create" | "edit";
 
@@ -106,45 +106,11 @@ function PartnerPage() {
     guard(() => setEditingPartner(partner));
   }, [isPanelOpen, panelMode, guard]);
 
-  const columns = useMemo<ColumnDef<Partner>[]>(() => [
-    {
-      id: "actions", header: t("common.actions"), size: 80,
-      meta: { align: "center" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={(e) => { e.stopPropagation(); openEditPanel(row.original); }} className="p-1 hover:bg-surface rounded">
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); setDeleteTarget(row.original); }} className="p-1 hover:bg-surface rounded">
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
-        </div>
-      ),
-    },
-    { accessorKey: "partnerCode", header: t("master.partner.partnerCode"), size: 120 },
-    { accessorKey: "partnerName", header: t("master.partner.partnerName"), size: 200 },
-    {
-      accessorKey: "partnerType", header: t("master.partner.partnerType"), size: 80,
-      cell: ({ getValue }) => <ComCodeBadge groupCode="PARTNER_TYPE" code={getValue() as string} />,
-    },
-    { accessorKey: "bizNo", header: t("master.partner.bizNo"), size: 130 },
-    { accessorKey: "ceoName", header: t("master.partner.ceoName"), size: 90 },
-    { accessorKey: "tel", header: t("master.partner.tel"), size: 130 },
-    { accessorKey: "contactPerson", header: t("master.partner.contactPerson"), size: 90 },
-    { accessorKey: "email", header: t("master.partner.email"), size: 180 },
-    {
-      accessorKey: "useYn", header: t("common.useYn", "사용여부"), size: 60,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return (
-          <span className={`px-1.5 py-0.5 text-xs rounded ${v === "Y"
-            ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-            : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"}`}>{v === "Y" ? "Y" : "N"}</span>
-        );
-      },
-    },
-  ], [t, openEditPanel]);
+  const columns = useMemo(() => createPartnerGridColumns({
+    t,
+    onEditPartner: openEditPanel,
+    onDeletePartner: setDeleteTarget,
+  }), [t, openEditPanel]);
 
   return (
     <div className="flex h-full animate-fade-in">

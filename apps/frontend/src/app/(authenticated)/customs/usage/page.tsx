@@ -15,25 +15,8 @@ import { Plus, RefreshCw, Search, Send, CheckCircle, Clock } from "lucide-react"
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
 import { QtyInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
-import StatusBadge from "@/components/shared/StatusBadge";
 import api from "@/services/api";
-
-interface UsageReport {
-  reportNo: string;
-  lotEntryNo: string;
-  lotMatUid: string;
-  matUid: string;
-  itemCode: string;
-  itemName: string;
-  usageQty: number;
-  usageDate: string;
-  reportDate: string | null;
-  jobOrderNo: string | null;
-  status: string;
-  workerName: string;
-}
+import { createCustomsUsageGridColumns, type UsageReport } from "./customsUsageColumns";
 
 export default function CustomsUsagePage() {
   const { t } = useTranslation();
@@ -93,34 +76,11 @@ export default function CustomsUsagePage() {
     }
   }, [fetchData]);
 
-  const columns = useMemo<ColumnDef<UsageReport>[]>(() => [
-    {
-      id: "actions", header: t("common.manage"), size: 80, meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          {row.original.status === "DRAFT" && (
-            <button onClick={() => handleReport(row.original.reportNo)} className="p-1 hover:bg-surface rounded" title={t("customs.usage.report")}><Send className="w-4 h-4 text-primary" /></button>
-          )}
-          {row.original.status === "REPORTED" && (
-            <button onClick={() => handleConfirm(row.original.reportNo)} className="p-1 hover:bg-surface rounded" title={t("customs.usage.confirm")}><CheckCircle className="w-4 h-4 text-green-500" /></button>
-          )}
-        </div>
-      ),
-    },
-    { accessorKey: "reportNo", header: t("customs.usage.reportNo"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "matUid", header: t("customs.stock.matUid"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "itemName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },
-    { accessorKey: "usageQty", header: t("customs.usage.usageQty"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
-    { accessorKey: "usageDate", header: t("customs.usage.usageDate"), size: 130, meta: { filterType: "date" as const } },
-    { accessorKey: "reportDate", header: t("customs.usage.reportDate"), size: 130, meta: { filterType: "date" as const }, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "jobOrderNo", header: t("customs.usage.jobOrder"), size: 110, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
-    {
-      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="USAGE_REPORT_STATUS" align="center" />, size: 90, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <StatusBadge codeType="USAGE_REPORT_STATUS" value={getValue() as string} />,
-    },
-    { accessorKey: "workerName", header: t("customs.usage.worker"), size: 80, meta: { filterType: "text" as const } },
-  ], [t, handleReport, handleConfirm]);
+  const columns = useMemo(() => createCustomsUsageGridColumns({
+    t,
+    onReport: handleReport,
+    onConfirm: handleConfirm,
+  }), [t, handleReport, handleConfirm]);
 
   const stats = useMemo(() => ({
     total: data.length,

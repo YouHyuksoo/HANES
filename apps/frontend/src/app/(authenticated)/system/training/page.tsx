@@ -13,33 +13,17 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, GraduationCap,
-  CheckCircle, RotateCcw, Pencil, Trash2, FileSearch, X,
+  CheckCircle, RotateCcw, Pencil, Trash2, X,
 } from "lucide-react";
-import { Card, CardContent, Button, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import TrainingFormPanel from "./components/TrainingFormPanel";
 import TrainingResultList from "./components/TrainingResultList";
-
-/** 교육 계획 데이터 타입 */
-interface TrainingPlan {
-  planNo: string;
-  title: string;
-  trainingType: string;
-  instructor: string;
-  scheduledDate: string;
-  duration: number;
-  maxParticipants: number;
-  status: string;
-  description: string;
-  targetRole: string;
-  createdAt: string;
-}
+import { createTrainingGridColumns, type TrainingPlan } from "./trainingColumns";
 
 export default function TrainingPage() {
   const { t } = useTranslation();
@@ -116,68 +100,10 @@ export default function TrainingPage() {
   }, [selectedRow, fetchData, t]);
 
   /* -- 컬럼 정의 -- */
-  const columns = useMemo<ColumnDef<TrainingPlan>[]>(() => [
-    {
-      id: "actions", header: "", size: 60,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
-          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
-        >
-          <FileSearch className="w-4 h-4 text-primary" />
-        </button>
-      ),
-    },
-    {
-      accessorKey: "planNo", header: t("system.training.planNo"), size: 150,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (
-        <span className="text-primary font-medium">{getValue() as string}</span>
-      ),
-    },
-    {
-      accessorKey: "title", header: t("system.training.planTitle"), size: 200,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "trainingType", header: () => <StatusHeaderHelp label={t("system.training.trainingType")} codeType="TRAINING_TYPE" align="center" />, size: 120,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => (
-        <ComCodeBadge groupCode="TRAINING_TYPE" code={getValue() as string} />
-      ),
-    },
-    {
-      accessorKey: "instructor", header: t("system.training.instructor"), size: 120,
-      meta: { filterType: "text" as const },
-    },
-    {
-      accessorKey: "scheduledDate", header: t("system.training.scheduledDate"), size: 120,
-      meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10),
-    },
-    {
-      accessorKey: "duration", header: t("system.training.duration"), size: 80,
-      meta: { filterType: "number" as const },
-      cell: ({ getValue }) => (
-        <span className="font-mono text-right block">
-          {getValue() as number}{t("system.training.hours")}
-        </span>
-      ),
-    },
-    {
-      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="TRAINING_STATUS" align="center" />, size: 120,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => (
-        <ComCodeBadge groupCode="TRAINING_STATUS" code={getValue() as string} />
-      ),
-    },
-    {
-      accessorKey: "createdAt", header: t("common.createdAt"), size: 120,
-      meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10),
-    },
-  ], [t]);
+  const columns = useMemo(() => createTrainingGridColumns({
+    t,
+    onSelectRow: setSelectedRow,
+  }), [t]);
 
   /* -- 행 선택 시 액션 버튼 -- */
   const actionButtons = useMemo(() => {

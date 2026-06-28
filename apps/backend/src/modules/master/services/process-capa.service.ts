@@ -25,6 +25,7 @@ import {
   UpdateProcessCapaDto,
   ProcessCapaQueryDto,
 } from '../dto/process-capa.dto';
+import { calcStdUphFromTactTime, calcDailyCapa } from '@harness/shared';
 
 @Injectable()
 export class ProcessCapaService {
@@ -114,8 +115,8 @@ export class ProcessCapaService {
       );
     }
 
-    // stdUph 자동계산 (미입력 시)
-    const stdUph = dto.stdUph ?? Math.round((3600 / dto.stdTactTime) * 100) / 100;
+    // stdUph 자동계산 (미입력 시) — 백엔드는 소수 2자리 반올림
+    const stdUph = dto.stdUph ?? Math.round(calcStdUphFromTactTime(dto.stdTactTime) * 100) / 100;
 
     const entity = this.repo.create({
       company,
@@ -169,7 +170,7 @@ export class ProcessCapaService {
 
     // stdUph 자동계산 (stdTactTime이 변경됐고 stdUph가 명시되지 않은 경우)
     if (dto.stdTactTime !== undefined && dto.stdUph === undefined) {
-      existing.stdUph = Math.round((3600 / existing.stdTactTime) * 100) / 100;
+      existing.stdUph = Math.round(calcStdUphFromTactTime(existing.stdTactTime) * 100) / 100;
     }
 
     // dailyCapa 재계산
@@ -195,18 +196,15 @@ export class ProcessCapaService {
   }
 
   /**
-   * 일 생산능력(dailyCapa) 자동 계산
-   * 산식: UPH x 가동시간(8h) x 인원/설비 수 x 밸런싱효율
+   * 일 생산능력(dailyCapa) 자동 계산 (@harness/shared 단일 출처).
+   * 미입력 폴백(UPH 0, 효율 85%)은 백엔드 현행 동작 보존을 위해 호출부에서 적용한다.
    */
   private calculateDailyCapa(entity: ProcessCapa): number {
-    const hours = 8;
-    const uph = entity.stdUph || 0;
-    const eff = (entity.balanceEff || 85) / 100;
-    const multiplier = entity.equipCnt > 0
-      ? entity.equipCnt
-      : entity.workerCnt > 0
-        ? entity.workerCnt
-        : 1;
-    return Math.floor(uph * hours * multiplier * eff);
+    return calcDailyCapa({
+      stdUph: entity.stdUph || 0,
+      equipCnt: entity.equipCnt,
+      workerCnt: entity.workerCnt,
+      balanceEffPct: entity.balanceEff || 85,
+    });
   }
 }

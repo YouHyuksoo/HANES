@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+// 점검항목 컬럼 셀 로직은 equipInspectItemColumns.tsx 팩토리로 분리되었다
+const columnsSource = readFileSync(new URL("./equipInspectItemColumns.tsx", import.meta.url), "utf8");
 
 test("equip inspect item editor uses a right-side panel instead of Modal", () => {
   assert.doesNotMatch(source, /,\s*Modal\s*,/);
@@ -22,9 +24,9 @@ test("equip inspect item editor supports image preview upload and removal", () =
 });
 
 test("measure criteria falls back to criteria text when numeric limits are not fixed", () => {
-  assert.match(source, /r\.lslValue != null && r\.uslValue != null/);
-  assert.match(source, /if \(r\.criteria\)/);
-  assert.match(source, /\$\{r\.criteria\}\$\{r\.unit \? ` \(\$\{r\.unit\}\)` : ""\}/);
+  assert.match(columnsSource, /r\.lslValue != null && r\.uslValue != null/);
+  assert.match(columnsSource, /if \(r\.criteria\)/);
+  assert.match(columnsSource, /\$\{r\.criteria\}\$\{r\.unit \? ` \(\$\{r\.unit\}\)` : ""\}/);
 });
 
 test("measure unit is selected from UNIT_TYPE common code dropdown", () => {

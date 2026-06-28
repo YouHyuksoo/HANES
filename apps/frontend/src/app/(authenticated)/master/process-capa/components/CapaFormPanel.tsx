@@ -21,6 +21,7 @@ import PartSearchModal, {
 import api from "@/services/api";
 import { FieldInput, FieldSelect, FieldLabel, Field } from "./ProcessCapaFieldHelp";
 import { QtyInput } from "@/components/shared";
+import { calcStdUphFromTactTime, calcDailyCapa } from "@harness/shared";
 
 /** 공정 CAPA 아이템 타입 (부모에서 전달) */
 interface ProcessCapaItem {
@@ -139,9 +140,9 @@ export default function CapaFormPanel({
     <K extends keyof FormState>(key: K, value: FormState[K]) => {
       setForm((prev) => {
         const next = { ...prev, [key]: value };
-        // 택트타임 변경 시 UPH 자동계산
+        // 택트타임 변경 시 UPH 자동계산 — 프론트는 정수 반올림
         if (key === "stdTactTime" && typeof value === "number" && value > 0) {
-          next.stdUph = Math.round(3600 / value);
+          next.stdUph = Math.round(calcStdUphFromTactTime(value));
         }
         return next;
       });
@@ -149,19 +150,17 @@ export default function CapaFormPanel({
     [],
   );
 
-  /* -- 일일 CAPA 계산 -- */
-  const dailyCapaPreview = useMemo(() => {
-    const hours = 8;
-    const multiplier =
-      form.equipCnt > 0
-        ? form.equipCnt
-        : form.workerCnt > 0
-          ? form.workerCnt
-          : 1;
-    return Math.floor(
-      form.stdUph * hours * multiplier * (form.balanceEff / 100),
-    );
-  }, [form.stdUph, form.equipCnt, form.workerCnt, form.balanceEff]);
+  /* -- 일일 CAPA 계산 (@harness/shared 단일 출처) -- */
+  const dailyCapaPreview = useMemo(
+    () =>
+      calcDailyCapa({
+        stdUph: form.stdUph,
+        equipCnt: form.equipCnt,
+        workerCnt: form.workerCnt,
+        balanceEffPct: form.balanceEff,
+      }),
+    [form.stdUph, form.equipCnt, form.workerCnt, form.balanceEff],
+  );
 
   /* -- 품목 선택 -- */
   const handlePartSelect = useCallback(

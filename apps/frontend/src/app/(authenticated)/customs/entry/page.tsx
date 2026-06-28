@@ -11,28 +11,12 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit2, Eye, RefreshCw, FileText, Search, CheckCircle, Package, Layers } from "lucide-react";
+import { Plus, Eye, RefreshCw, FileText, Search, CheckCircle, Package, Layers } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
-import StatusBadge from "@/components/shared/StatusBadge";
+import { createCustomsEntryGridColumns, type CustomsEntry } from "./customsEntryColumns";
 import api from "@/services/api";
-
-interface CustomsEntry {
-  entryNo: string;
-  blNo: string;
-  invoiceNo: string;
-  declarationDate: string;
-  clearanceDate: string | null;
-  origin: string;
-  hsCode: string;
-  totalAmount: number;
-  currency: string;
-  status: string;
-  lotCount: number;
-}
 
 export default function CustomsEntryPage() {
   const { t } = useTranslation();
@@ -97,29 +81,7 @@ export default function CustomsEntryPage() {
     totalLots: data.reduce((s, d) => s + d.lotCount, 0),
   }), [data]);
 
-  const columns = useMemo<ColumnDef<CustomsEntry>[]>(() => [
-    {
-      id: "actions", header: t("common.manage"), size: 100, meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex gap-1">
-          <button onClick={() => openEdit(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.edit")}><Edit2 className="w-4 h-4 text-primary" /></button>
-        </div>
-      ),
-    },
-    { accessorKey: "entryNo", header: t("customs.entry.entryNo"), size: 140, meta: { filterType: "text" as const } },
-    { accessorKey: "blNo", header: t("customs.entry.blNo"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "invoiceNo", header: t("customs.entry.invoiceNo"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "declarationDate", header: t("customs.entry.declarationDate"), size: 100, meta: { filterType: "date" as const } },
-    { accessorKey: "clearanceDate", header: t("customs.entry.clearanceDate"), size: 100, meta: { filterType: "date" as const }, cell: ({ getValue }) => getValue() || "-" },
-    { accessorKey: "origin", header: t("customs.entry.origin"), size: 70, meta: { filterType: "text" as const } },
-    { accessorKey: "hsCode", header: t("customs.entry.hsCode"), size: 90, meta: { filterType: "text" as const } },
-    { accessorKey: "totalAmount", header: t("customs.entry.amount"), size: 100, meta: { filterType: "number" as const }, cell: ({ row }) => `${row.original.totalAmount.toLocaleString()} ${row.original.currency}` },
-    {
-      accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="CUSTOMS_ENTRY_STATUS" align="center" />, size: 90, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <StatusBadge codeType="CUSTOMS_ENTRY_STATUS" value={getValue() as string} />,
-    },
-    { accessorKey: "lotCount", header: t("customs.entry.lotCount"), size: 70, meta: { filterType: "number" as const } },
-  ], [t, openEdit]);
+  const columns = useMemo(() => createCustomsEntryGridColumns({ t, onEditEntry: openEdit }), [t, openEdit]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
