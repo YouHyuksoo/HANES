@@ -14,7 +14,6 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import {
   RefreshCw,
   ClipboardList,
@@ -30,31 +29,17 @@ import {
   Button,
   Input,
   Select,
-  ComCodeBadge,
   StatCard,
 } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { LineSelect, ComCodeSelect } from "@/components/shared";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
-
-/** 재작업 지시 레코드 타입 */
-interface ReworkOrder {
-  reworkNo: string;
-  itemCode: string;
-  itemName: string;
-  reworkQty: number;
-  passQty: number;
-  failQty: number;
-  status: string;
-  defectType: string;
-  lineCode: string;
-  qcApproverCode: string;
-  prodApproverCode: string;
-  createdAt: string;
-}
+import {
+  createReworkHistoryGridColumns,
+  type ReworkOrder,
+} from "./reworkHistoryColumns";
 
 export default function ReworkHistoryPage() {
   const { t } = useTranslation();
@@ -110,98 +95,7 @@ export default function ReworkHistoryPage() {
   }, [data]);
 
   /* --- 컬럼 정의 --- */
-  const columns = useMemo<ColumnDef<ReworkOrder>[]>(
-    () => [
-      {
-        accessorKey: "reworkNo",
-        header: t("quality.rework.reworkNo"),
-        size: 170,
-        meta: { filterType: "text" as const },
-        cell: ({ getValue }) => (
-          <span className="text-primary font-medium">
-            {getValue() as string}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "itemCode",
-        header: t("quality.rework.itemCode"),
-        size: 120,
-        meta: { filterType: "text" as const },
-      },
-      {
-        accessorKey: "itemName",
-        header: t("quality.rework.itemName"),
-        size: 160,
-        meta: { filterType: "text" as const },
-      },
-      {
-        accessorKey: "reworkQty",
-        header: t("quality.rework.reworkQty"),
-        size: 100,
-        meta: { filterType: "number" as const },
-        cell: ({ getValue }) => (
-          <span className="font-mono text-right block">
-            {((getValue() as number) ?? 0).toLocaleString()}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "passQty",
-        header: t("quality.rework.passQty"),
-        size: 100,
-        meta: { filterType: "number" as const },
-        cell: ({ getValue }) => (
-          <span className="font-mono text-right block text-green-600 dark:text-green-400">
-            {((getValue() as number) ?? 0).toLocaleString()}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "failQty",
-        header: t("quality.rework.failQty"),
-        size: 100,
-        meta: { filterType: "number" as const },
-        cell: ({ getValue }) => (
-          <span className="font-mono text-right block text-red-600 dark:text-red-400">
-            {((getValue() as number) ?? 0).toLocaleString()}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "status",
-        header: () => <StatusHeaderHelp label={t("common.status")} codeType="REWORK_STATUS" align="center" />,
-        size: 130,
-        meta: { filterType: "multi" as const },
-        cell: ({ getValue }) => (
-          <ComCodeBadge groupCode="REWORK_STATUS" code={getValue() as string} />
-        ),
-      },
-      {
-        accessorKey: "qcApproverCode",
-        header: t("quality.rework.qcApprove"),
-        size: 110,
-        meta: { filterType: "text" as const },
-      },
-      {
-        accessorKey: "prodApproverCode",
-        header: t("quality.rework.prodApprove"),
-        size: 110,
-        meta: { filterType: "text" as const },
-      },
-      {
-        accessorKey: "createdAt",
-        header: t("common.createdAt"),
-        size: 150,
-        meta: { filterType: "date" as const },
-        cell: ({ getValue }) => {
-          const val = getValue() as string;
-          return val ? new Date(val).toLocaleString() : "-";
-        },
-      },
-    ],
-    [t],
-  );
+  const columns = useMemo(() => createReworkHistoryGridColumns({ t }), [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

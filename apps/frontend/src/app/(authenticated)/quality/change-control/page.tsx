@@ -13,42 +13,17 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, FileText, Clock, Play, CheckCircle, Search as SearchIcon,
-  Calendar, Send, ShieldCheck, Eye, FileSearch, X,
+  Calendar, Send, ShieldCheck, Eye, X,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, StatCard, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import api from "@/services/api";
 import ChangeFormPanel from "./components/ChangeFormPanel";
-
-/** 변경점 데이터 타입 */
-interface ChangeOrder {
-  changeNo: string;
-  changeType: string;
-  title: string;
-  description: string;
-  reason: string;
-  riskAssessment: string;
-  affectedItems: string;
-  affectedProcesses: string;
-  priority: string;
-  status: string;
-  requestedBy: string;
-  requestedAt: string;
-  reviewerCode: string;
-  reviewedAt: string;
-  reviewComment: string;
-  approverCode: string;
-  approvedAt: string;
-  effectiveDate: string;
-  completionDate: string;
-  createdAt: string;
-}
+import { createChangeControlGridColumns, type ChangeOrder } from "./changeControlColumns";
 
 /** 검토/승인 DTO */
 interface ReviewAction {
@@ -114,41 +89,10 @@ export default function ChangeControlPage() {
   }, [fetchData]);
 
   /* -- 컬럼 정의 -- */
-  const columns = useMemo<ColumnDef<ChangeOrder>[]>(() => [
-    {
-      id: "actions", header: "", size: 60,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
-          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
-        >
-          <FileSearch className="w-4 h-4 text-primary" />
-        </button>
-      ),
-    },
-    { accessorKey: "changeNo", header: t("quality.change.changeNo"), size: 180,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
-    { accessorKey: "changeType", header: t("quality.change.changeType"), size: 110,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="CHANGE_TYPE" code={getValue() as string} /> },
-    { accessorKey: "title", header: t("common.title"), size: 250, meta: { filterType: "text" as const } },
-    { accessorKey: "priority", header: () => <StatusHeaderHelp label={t("quality.change.priority")} codeType="CHANGE_PRIORITY" align="center" />, size: 100,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="CHANGE_PRIORITY" code={getValue() as string} /> },
-    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="CHANGE_STATUS" align="center" />, size: 120,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="CHANGE_STATUS" code={getValue() as string} /> },
-    { accessorKey: "requestedBy", header: t("common.requester"), size: 100,
-      meta: { filterType: "text" as const } },
-    { accessorKey: "effectiveDate", header: t("quality.change.effectiveDate"), size: 120,
-      meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) ?? "-" },
-    { accessorKey: "createdAt", header: t("common.createdAt"), size: 120,
-      meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
-  ], [t]);
+  const columns = useMemo(() => createChangeControlGridColumns({
+    t,
+    onSelectRow: setSelectedRow,
+  }), [t]);
 
   /* -- 행 선택 시 액션 버튼 -- */
   const actionButtons = useMemo(() => {

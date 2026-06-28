@@ -2,46 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import toast from "react-hot-toast";
 import { ClipboardList, Plus, RefreshCw, Save, Search, Trash2 } from "lucide-react";
 import { Button, Card, CardContent, ConfirmModal, Input } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
-import { HelpField, HelpHeader } from "./components/AqlFieldHelp";
-
-interface AqlRule {
-  lotQtyFrom: number;
-  lotQtyTo: number;
-  sampleSize: number;
-  acceptQty: number;
-  rejectQty: number;
-  sortOrder?: number | null;
-}
-
-interface AqlStandard {
-  [key: string]: unknown;
-  aqlCode: string;
-  aqlName: string;
-  inspectionLevel?: string | null;
-  aqlValue?: number | null;
-  useYn: string;
-  remark?: string | null;
-  rules?: AqlRule[];
-}
-
-interface IqcAqlPolicy {
-  [key: string]: unknown;
-  policyCode: string;
-  policyName: string;
-  inspectionLevel?: string | null;
-  majorAqlCode?: string | null;
-  minorAqlCode?: string | null;
-  criticalMode?: string | null;
-  useYn: string;
-  remark?: string | null;
-}
+import { HelpField } from "./components/AqlFieldHelp";
+import {
+  createAqlGridColumns,
+  createAqlPolicyGridColumns,
+  type AqlStandard,
+  type IqcAqlPolicy,
+} from "./aqlColumns";
 
 interface AqlCodeLetterRule {
   [key: string]: unknown;
@@ -465,39 +438,9 @@ export default function AqlPage() {
     await fetchPolicies();
   }, [fetchPolicies, handlePolicyNew, selectedPolicy]);
 
-  const columns = useMemo<ColumnDef<AqlStandard>[]>(() => [
-    {
-      accessorKey: "aqlCode",
-      header: () => <HelpHeader field="aqlCode" label={t("quality.aql.aqlCode", "AQL 코드")} />,
-      size: 120,
-      cell: ({ getValue }) => <span className="font-mono font-semibold text-primary">{getValue() as string}</span>,
-    },
-    { accessorKey: "aqlName", header: () => <HelpHeader field="aqlName" label={t("quality.aql.aqlName", "AQL 명칭")} />, size: 160 },
-    { accessorKey: "inspectionLevel", header: () => <HelpHeader field="inspectionLevel" label={t("quality.aql.inspectionLevel", "검사수준")} />, size: 90 },
-    { accessorKey: "aqlValue", header: () => <HelpHeader field="aqlValue" label={t("quality.aql.aqlValue", "AQL 값")} />, size: 80, meta: { align: "right" as const } },
-    {
-      accessorKey: "useYn",
-      header: () => <HelpHeader field="useYn" label={t("quality.aql.use", "사용")} />,
-      size: 70,
-      cell: ({ getValue }) => (
-        <span className={getValue() === "Y" ? "text-emerald-600 font-semibold" : "text-text-muted"}>{getValue() as string}</span>
-      ),
-    },
-  ], [t]);
+  const columns = useMemo(() => createAqlGridColumns({ t }), [t]);
 
-  const policyColumns = useMemo<ColumnDef<IqcAqlPolicy>[]>(() => [
-    {
-      accessorKey: "policyCode",
-      header: () => <HelpHeader field="policyCode" label={t("quality.aql.policyCode", "정책 코드")} />,
-      size: 130,
-      cell: ({ getValue }) => <span className="font-mono font-semibold text-primary">{getValue() as string}</span>,
-    },
-    { accessorKey: "policyName", header: () => <HelpHeader field="policyName" label={t("quality.aql.policyName", "정책명")} />, size: 180 },
-    { accessorKey: "inspectionLevel", header: () => <HelpHeader field="policyInspectionLevel" label={t("quality.aql.inspectionLevel", "검사수준")} />, size: 70 },
-    { accessorKey: "majorAqlCode", header: () => <HelpHeader field="policyMajorAqlCode" label={t("quality.aql.major", "Major")} />, size: 110 },
-    { accessorKey: "minorAqlCode", header: () => <HelpHeader field="policyMinorAqlCode" label={t("quality.aql.minor", "Minor")} />, size: 110 },
-    { accessorKey: "useYn", header: () => <HelpHeader field="policyUseYn" label={t("quality.aql.use", "사용")} />, size: 60 },
-  ], [t]);
+  const policyColumns = useMemo(() => createAqlPolicyGridColumns({ t }), [t]);
 
   const tabs: Array<{ id: AqlTab; label: string }> = [
     { id: "policies", label: t("quality.aql.policySection", "AQL 정책관리") },

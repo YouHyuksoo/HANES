@@ -13,17 +13,15 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, ClipboardList, Play, CheckCircle, Search as SearchIcon,
-  Send, ShieldCheck, Factory, Eye, Layers, FileSearch, X,
+  Send, ShieldCheck, Factory, Eye, Layers, X,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
 import toast from "react-hot-toast";
 import { FileCheck } from "lucide-react";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { LineSelect, ComCodeSelect, QtyInput } from "@/components/shared";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import api from "@/services/api";
 import ReworkFormPanel from "./components/ReworkFormPanel";
@@ -31,15 +29,7 @@ import type { ReworkEditData } from "./components/ReworkFormPanel";
 import ReworkApprovePanel from "./components/ReworkApprovePanel";
 import ReworkResultPanel from "./components/ReworkResultPanel";
 import type { ResultTarget } from "./components/ReworkResultPanel";
-
-/** 재작업 지시 데이터 타입 */
-interface ReworkOrder extends ReworkEditData {
-  status: string;
-  resultQty: number;
-  passQty: number;
-  failQty: number;
-  createdAt: string;
-}
+import { createReworkGridColumns, type ReworkOrder } from "./reworkColumns";
 
 /** 재작업 공정 데이터 타입 */
 interface ReworkProcess {
@@ -219,33 +209,10 @@ export default function ReworkPage() {
   }, [selectedRow, fetchProcesses, fetchData]);
 
   /* ── 컬럼 정의 ── */
-  const columns = useMemo<ColumnDef<ReworkOrder>[]>(() => [
-    {
-      id: "actions", header: "", size: 60,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
-          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
-        >
-          <FileSearch className="w-4 h-4 text-primary" />
-        </button>
-      ),
-    },
-    { accessorKey: "reworkNo", header: t("quality.rework.reworkNo"), size: 170, meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
-    { accessorKey: "itemCode", header: t("quality.rework.itemCode"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "itemName", header: t("quality.rework.itemName"), size: 180, meta: { filterType: "text" as const } },
-    { accessorKey: "reworkQty", header: t("quality.rework.reworkQty"), size: 90, meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "defectType", header: t("quality.rework.defectType"), size: 110, meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="DEFECT_TYPE" code={getValue() as string} /> },
-    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="REWORK_STATUS" align="center" />, size: 120, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="REWORK_STATUS" code={getValue() as string} /> },
-    { accessorKey: "workerId", header: t("quality.rework.worker"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "createdAt", header: t("common.createdAt"), size: 140, meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
-  ], [t]);
+  const columns = useMemo(() => createReworkGridColumns({
+    t,
+    onSelectRow: setSelectedRow,
+  }), [t]);
 
   /* ── 행 선택 시 액션 버튼 ── */
   const actionButtons = useMemo(() => {

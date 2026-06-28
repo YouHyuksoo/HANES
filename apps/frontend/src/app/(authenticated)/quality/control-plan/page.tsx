@@ -12,30 +12,16 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, ClipboardList, Search as SearchIcon,
   ShieldCheck, FileEdit, FileSearch, X,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import ControlPlanFormPanel from "./components/ControlPlanFormPanel";
-
-/** 관리계획서 데이터 타입 */
-interface ControlPlan {
-  [key: string]: unknown;
-  planNo: string;
-  itemCode: string;
-  itemName: string;
-  revisionNo: number;
-  phase: string;
-  status: string;
-  approvedBy: string;
-  createdAt: string;
-}
+import { createControlPlanGridColumns, ControlPlan } from "./controlPlanColumns";
 
 /** 상태 전환 액션 */
 interface ActionDef {
@@ -93,40 +79,10 @@ export default function ControlPlanPage() {
   }, [fetchData]);
 
   /* -- 컬럼 -- */
-  const columns = useMemo<ColumnDef<ControlPlan>[]>(() => [
-    {
-      id: "actions", header: "", size: 60,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
-          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
-        >
-          <FileSearch className="w-4 h-4 text-primary" />
-        </button>
-      ),
-    },
-    { accessorKey: "planNo", header: t("quality.controlPlan.planNo"), size: 160,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
-    { accessorKey: "itemCode", header: t("quality.controlPlan.itemCode"), size: 140,
-      meta: { filterType: "text" as const } },
-    { accessorKey: "itemName", header: t("quality.controlPlan.itemName"), size: 200,
-      meta: { filterType: "text" as const } },
-    { accessorKey: "revisionNo", header: t("quality.controlPlan.revisionNo"), size: 80,
-      cell: ({ getValue }) => <span className="text-text-muted">Rev.{getValue() as number}</span> },
-    { accessorKey: "phase", header: t("quality.controlPlan.phase"), size: 120,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="CP_PHASE" code={getValue() as string} /> },
-    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="CP_STATUS" align="center" />, size: 110,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="CP_STATUS" code={getValue() as string} /> },
-    { accessorKey: "approvedBy", header: t("quality.controlPlan.approvedBy"), size: 100,
-      meta: { filterType: "text" as const } },
-    { accessorKey: "createdAt", header: t("common.createdAt"), size: 120,
-      meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
-  ], [t]);
+  const columns = useMemo(
+    () => createControlPlanGridColumns({ t, onSelectRow: setSelectedRow }),
+    [t],
+  );
 
   /* -- 액션 버튼 -- */
   const actionButtons = useMemo(() => {

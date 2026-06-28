@@ -7,37 +7,17 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, AlertTriangle, Clock, Search as SearchIcon,
-  Calendar, CheckCircle, Eye, FileText, Link2, X, FileSearch,
+  Calendar, CheckCircle, Eye, FileText, Link2, X,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, StatCard, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import api from "@/services/api";
 import ComplaintFormPanel from "./components/ComplaintFormPanel";
-
-/** 클레임 데이터 타입 */
-interface Complaint {
-  complaintNo: string;
-  customerCode: string;
-  customerName: string;
-  complaintDate: string;
-  itemCode: string;
-  lotNo: string;
-  defectQty: number;
-  complaintType: string;
-  description: string;
-  urgency: string;
-  status: string;
-  responsibleCode: string;
-  capaId: string | null;
-  costAmount: number | null;
-  createdAt: string;
-}
+import { createComplaintGridColumns, type Complaint } from "./complaintColumns";
 
 export default function ComplaintPage() {
   const { t } = useTranslation();
@@ -136,44 +116,10 @@ export default function ComplaintPage() {
   };
 
   /* -- 컬럼 정의 -- */
-  const columns = useMemo<ColumnDef<Complaint>[]>(() => [
-    {
-      id: "actions", header: "", size: 60,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
-          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
-        >
-          <FileSearch className="w-4 h-4 text-primary" />
-        </button>
-      ),
-    },
-    { accessorKey: "complaintNo", header: t("quality.complaint.complaintNo"), size: 170,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
-    { accessorKey: "customerName", header: t("quality.complaint.customerName"), size: 150,
-      meta: { filterType: "text" as const } },
-    { accessorKey: "complaintDate", header: t("quality.complaint.complaintDate"), size: 110,
-      meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
-    { accessorKey: "itemCode", header: t("master.bom.itemCode"), size: 120,
-      meta: { filterType: "text" as const } },
-    { accessorKey: "defectQty", header: t("quality.complaint.defectQty"), size: 90,
-      meta: { filterType: "number" as const },
-      cell: ({ getValue }) => <span className="font-mono text-right block">{(getValue() as number)?.toLocaleString()}</span> },
-    { accessorKey: "complaintType", header: t("quality.complaint.complaintType"), size: 110,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="COMPLAINT_TYPE" code={getValue() as string} /> },
-    { accessorKey: "urgency", header: t("quality.complaint.urgency"), size: 90,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="COMPLAINT_URGENCY" code={getValue() as string} /> },
-    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="COMPLAINT_STATUS" align="center" />, size: 110,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="COMPLAINT_STATUS" code={getValue() as string} /> },
-    { accessorKey: "responsibleCode", header: t("common.manager"), size: 100,
-      meta: { filterType: "text" as const } },
-  ], [t]);
+  const columns = useMemo(() => createComplaintGridColumns({
+    t,
+    onSelectRow: setSelectedRow,
+  }), [t]);
 
   /* -- 액션 버튼 -- */
   const actionButtons = useMemo(() => {

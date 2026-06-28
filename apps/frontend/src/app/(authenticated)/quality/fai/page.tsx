@@ -11,27 +11,18 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, ClipboardCheck, Clock, Play, CheckCircle,
-  Search as SearchIcon, Calendar, ShieldCheck, XCircle, FileSearch, X,
+  Search as SearchIcon, Calendar, ShieldCheck, XCircle, X,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, StatCard, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import api from "@/services/api";
 import FaiFormPanel from "./components/FaiFormPanel";
 import FaiItemList from "./components/FaiItemList";
-
-interface FaiRequest {
-  faiNo: string; triggerType: string; triggerRef: string;
-  itemCode: string; orderNo: string; lineCode: string; sampleQty: number;
-  inspectorCode: string; status: string; inspectDate: string;
-  result: string; remark: string; approvalCode: string;
-  approvedAt: string; createdAt: string;
-}
+import { createFaiGridColumns, type FaiRequest } from "./faiColumns";
 
 export default function FaiPage() {
   const { t } = useTranslation();
@@ -90,34 +81,10 @@ export default function FaiPage() {
     setConfirmAction({ label: t("quality.fai.approve"), action: () => patchAction(selectedRow.faiNo, "approve") });
   };
 
-  const columns = useMemo<ColumnDef<FaiRequest>[]>(() => [
-    {
-      id: "actions", header: "", size: 60,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
-          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
-        >
-          <FileSearch className="w-4 h-4 text-primary" />
-        </button>
-      ),
-    },
-    { accessorKey: "faiNo", header: t("quality.fai.faiNo"), size: 170, meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
-    { accessorKey: "triggerType", header: () => <StatusHeaderHelp label={t("quality.fai.triggerType")} codeType="FAI_TRIGGER_TYPE" align="center" />, size: 130,
-      cell: ({ getValue }) => <ComCodeBadge groupCode="FAI_TRIGGER_TYPE" code={getValue() as string} /> },
-    { accessorKey: "itemCode", header: t("common.code"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "sampleQty", header: t("quality.fai.sampleQty"), size: 90,
-      cell: ({ getValue }) => <span className="font-mono text-right block">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="FAI_STATUS" align="center" />, size: 120, meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="FAI_STATUS" code={getValue() as string} /> },
-    { accessorKey: "result", header: () => <StatusHeaderHelp label={t("quality.fai.result")} codeType="FAI_RESULT" align="center" />, size: 100,
-      cell: ({ getValue }) => { const v = getValue() as string; return v ? <ComCodeBadge groupCode="FAI_RESULT" code={v} /> : "-"; } },
-    { accessorKey: "inspectorCode", header: t("quality.fai.inspectorCode"), size: 100 },
-    { accessorKey: "createdAt", header: t("common.date"), size: 110, meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
-  ], [t]);
+  const columns = useMemo(() => createFaiGridColumns({
+    t,
+    onSelectRow: setSelectedRow,
+  }), [t]);
 
   const actionButtons = useMemo(() => {
     if (!selectedRow) return null;

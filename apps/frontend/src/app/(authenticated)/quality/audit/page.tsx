@@ -13,26 +13,17 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, ClipboardCheck,
-  CheckCircle, Lock, Eye, Pencil, Trash2, Undo2, FileSearch, X,
+  CheckCircle, Lock, Eye, Pencil, Trash2, Undo2, X,
 } from "lucide-react";
-import { Card, CardContent, Button, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import AuditFormPanel from "./components/AuditFormPanel";
 import AuditFindingList from "./components/AuditFindingList";
-
-/** 내부심사 데이터 타입 */
-interface Audit {
-  auditNo: string; auditType: string; auditScope: string;
-  targetDept: string; auditor: string; coAuditor: string;
-  scheduledDate: string; actualDate: string; status: string;
-  overallResult: string; summary: string; createdAt: string;
-}
+import { createAuditGridColumns, Audit } from "./auditColumns";
 
 export default function AuditPage() {
   const { t } = useTranslation();
@@ -81,83 +72,8 @@ export default function AuditPage() {
   };
 
   /* -- 컬럼 정의 -- */
-  const columns = useMemo<ColumnDef<Audit>[]>(
-    () => [
-      {
-        id: "actions", header: "", size: 60,
-        meta: { align: "center" as const, filterType: "none" as const },
-        cell: ({ row }) => (
-          <button
-            onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
-            className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
-          >
-            <FileSearch className="w-4 h-4 text-primary" />
-          </button>
-        ),
-      },
-      {
-        accessorKey: "auditNo",
-        header: t("quality.audit.auditNo"),
-        size: 160,
-        meta: { filterType: "text" as const },
-        cell: ({ getValue }) => (
-          <span className="text-primary font-medium">{getValue() as string}</span>
-        ),
-      },
-      {
-        accessorKey: "auditType",
-        header: () => <StatusHeaderHelp label={t("quality.audit.auditType")} codeType="AUDIT_TYPE" align="center" />,
-        size: 120,
-        meta: { filterType: "multi" as const },
-        cell: ({ getValue }) => (
-          <ComCodeBadge groupCode="AUDIT_TYPE" code={getValue() as string} />
-        ),
-      },
-      {
-        accessorKey: "auditScope",
-        header: t("quality.audit.auditScope"),
-        size: 180,
-        meta: { filterType: "text" as const },
-      },
-      {
-        accessorKey: "targetDept",
-        header: t("quality.audit.targetDept"),
-        size: 120,
-        meta: { filterType: "text" as const },
-      },
-      {
-        accessorKey: "auditor",
-        header: t("quality.audit.auditor"),
-        size: 100,
-        meta: { filterType: "text" as const },
-      },
-      {
-        accessorKey: "scheduledDate",
-        header: t("quality.audit.scheduledDate"),
-        size: 120,
-        meta: { filterType: "date" as const },
-        cell: ({ getValue }) => (getValue() as string)?.slice(0, 10),
-      },
-      {
-        accessorKey: "status",
-        header: () => <StatusHeaderHelp label={t("common.status")} codeType="AUDIT_STATUS" align="center" />,
-        size: 110,
-        meta: { filterType: "multi" as const },
-        cell: ({ getValue }) => (
-          <ComCodeBadge groupCode="AUDIT_STATUS" code={getValue() as string} />
-        ),
-      },
-      {
-        accessorKey: "overallResult",
-        header: () => <StatusHeaderHelp label={t("quality.audit.overallResult")} codeType="AUDIT_RESULT" align="center" />,
-        size: 110,
-        meta: { filterType: "multi" as const },
-        cell: ({ getValue }) => {
-          const v = getValue() as string;
-          return v ? <ComCodeBadge groupCode="AUDIT_RESULT" code={v} /> : "-";
-        },
-      },
-    ],
+  const columns = useMemo(
+    () => createAuditGridColumns({ t, onSelect: setSelectedRow }),
     [t],
   );
 

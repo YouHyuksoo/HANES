@@ -9,34 +9,14 @@
  * 2. 우측: 선택 항목의 측정값/판정 입력
  * 3. 저장: PATCH /production/self-inspect/results/:id/status
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ClipboardCheck, RefreshCw, CheckCircle, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button, Card, CardContent } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
-
-interface DelegateItem {
-  id: string;
-  orderNo: string;
-  processCode: string | null;
-  itemName: string;
-  timing: string;
-  inspectMethod: string;
-  status: string;
-  remark: string | null;
-  measureValue: number | null;
-  sampleNo: number;
-  createdAt: string;
-  // 검사항목 마스터(SELF_INSPECT_ITEMS) JOIN — 공정생품검사 설정 기준
-  itemType: string | null;
-  unit: string | null;
-  standard: string | null;
-  lslValue: number | null;
-  uslValue: number | null;
-}
+import { createRequestInspectGridColumns, type DelegateItem } from "./requestInspectColumns";
 
 export default function RequestInspectPage() {
   const { t } = useTranslation();
@@ -97,33 +77,7 @@ export default function RequestInspectPage() {
     [selected, remark, measureValue, t, fetchDelegates]
   );
 
-  const columns: ColumnDef<DelegateItem, unknown>[] = [
-    { accessorKey: "orderNo", header: t("requestInspect.orderNo", "작업지시"), size: 140 },
-    { accessorKey: "processCode", header: t("requestInspect.processCode", "공정"), size: 90 },
-    { accessorKey: "itemName", header: t("requestInspect.itemName", "항목명"), size: 180 },
-    {
-      accessorKey: "timing",
-      header: t("requestInspect.timing", "시점"),
-      size: 60,
-      cell: ({ getValue }) => {
-        const v = getValue<string>();
-        return v === "FIRST"
-          ? t("requestInspect.timingFirst", "초물")
-          : v === "MID"
-            ? t("requestInspect.timingMid", "중물")
-            : t("requestInspect.timingLast", "종물");
-      },
-    },
-    {
-      accessorKey: "createdAt",
-      header: t("requestInspect.requestedAt", "요청일시"),
-      size: 140,
-      cell: ({ getValue }) => {
-        const v = getValue<string>();
-        return v ? new Date(v).toLocaleString() : "-";
-      },
-    },
-  ];
+  const columns = useMemo(() => createRequestInspectGridColumns({ t }), [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-3 animate-fade-in">

@@ -13,38 +13,17 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import {
   Plus, RefreshCw, BarChart3, Search as SearchIcon,
-  Calculator, TrendingUp, Eye, FileSearch, X,
+  Calculator, TrendingUp, Eye, X,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
 import SpcFormPanel from "./components/SpcFormPanel";
 import SpcChartView from "./components/SpcChartView";
-
-/** SPC 관리도 데이터 타입 */
-interface SpcChart {
-  chartNo: string;
-  itemCode: string;
-  processCode: string;
-  characteristicName: string;
-  chartType: string;
-  subgroupSize: number;
-  usl: number | null;
-  lsl: number | null;
-  target: number | null;
-  ucl: number | null;
-  lcl: number | null;
-  cl: number | null;
-  dataSource: string;
-  sourceInspectItem: string | null;
-  status: string;
-  createdAt: string;
-}
+import { createSpcGridColumns, type SpcChart } from "./spcColumns";
 
 export default function SpcPage() {
   const { t } = useTranslation();
@@ -99,41 +78,10 @@ export default function SpcPage() {
   }, [selectedRow]);
 
   /* -- 컬럼 정의 -- */
-  const columns = useMemo<ColumnDef<SpcChart>[]>(() => [
-    {
-      id: "actions", header: "", size: 60,
-      meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); setSelectedRow(row.original); }}
-          className="p-1 hover:bg-surface rounded transition-colors" title={t("common.detail", "상세")}
-        >
-          <FileSearch className="w-4 h-4 text-primary" />
-        </button>
-      ),
-    },
-    { accessorKey: "chartNo", header: t("quality.spc.chartNo"), size: 160,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span> },
-    { accessorKey: "itemCode", header: t("quality.spc.itemCode"), size: 140,
-      meta: { filterType: "text" as const } },
-    { accessorKey: "processCode", header: t("quality.spc.processCode"), size: 100,
-      meta: { filterType: "text" as const } },
-    { accessorKey: "processName", header: t("master.process.processName"), size: 130,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (getValue() as string) || "-" },
-    { accessorKey: "characteristicName", header: t("quality.spc.characteristicName"), size: 180,
-      meta: { filterType: "text" as const } },
-    { accessorKey: "chartType", header: () => <StatusHeaderHelp label={t("quality.spc.chartType")} codeType="SPC_CHART_TYPE" align="center" />, size: 120,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="SPC_CHART_TYPE" code={getValue() as string} /> },
-    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="SPC_STATUS" align="center" />, size: 110,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="SPC_STATUS" code={getValue() as string} /> },
-    { accessorKey: "createdAt", header: t("common.createdAt"), size: 120,
-      meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
-  ], [t]);
+  const columns = useMemo(() => createSpcGridColumns({
+    t,
+    onSelectRow: setSelectedRow,
+  }), [t]);
 
   /* -- 행 선택 시 액션 버튼 -- */
   const actionButtons = useMemo(() => {
