@@ -35,6 +35,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ComCodeSelect, ProcessSelect, WorkerSelect } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import api from "@/services/api";
 import RepairFormModal from "./components/RepairFormModal";
 import type { RepairOrderData } from "./components/RepairFormModal";
@@ -170,27 +171,10 @@ export default function RepairPage() {
       { accessorKey: "seq", header: t("production.repair.seq"), size: 60, meta: { filterType: "none" as const } },
       {
         accessorKey: "status",
-        header: t("production.repair.status"),
+        header: () => <StatusHeaderHelp label={t("production.repair.status")} codeType="REPAIR_STATUS" align="center" />,
         size: 90,
         meta: { filterType: "select" as const },
-        cell: ({ getValue }) => {
-          const v = getValue() as string;
-          const colorMap: Record<string, string> = {
-            RECEIVED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-            IN_REPAIR: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
-            COMPLETED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-          };
-          const labelMap: Record<string, string> = {
-            RECEIVED: t("production.repair.statusReceived", "입고"),
-            IN_REPAIR: t("production.repair.statusInRepair", "수리중"),
-            COMPLETED: t("production.repair.statusCompleted", "완료"),
-          };
-          return (
-            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colorMap[v] ?? ""}`}>
-              {labelMap[v] ?? v}
-            </span>
-          );
-        },
+        cell: ({ getValue }) => <StatusBadge codeType="REPAIR_STATUS" value={getValue() as string} />,
       },
       { accessorKey: "fgBarcode", header: t("production.repair.fgBarcode"), size: 130, meta: { filterType: "text" as const } },
       { accessorKey: "itemCode", header: t("production.repair.itemCode"), size: 120, meta: { filterType: "text" as const } },

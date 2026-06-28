@@ -10,10 +10,12 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Plus, Search, RefreshCw, Settings2, Package, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from '@/components/ui';
 import ComCodeSelect from '@/components/shared/ComCodeSelect';
+import StatusHeaderHelp from '@/components/shared/StatusHeaderHelp';
+import StatusBadge from '@/components/shared/StatusBadge';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { useApiQuery } from '@/hooks/useApi';
 import { useFilteredList } from '@/hooks/useFilteredList';
-import { Mold, MoldStatus } from '@/types/mold';
+import { Mold } from '@/types/mold';
 
 function MoldPage() {
   const { t } = useTranslation();
@@ -55,20 +57,10 @@ function MoldPage() {
     },
     {
       accessorKey: 'status',
-      header: t('common.status'),
+      header: () => <StatusHeaderHelp label={t('common.status')} codeType="MOLD_LIFE_STATUS" align="center" />,
       size: 80,
       meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const status = getValue() as MoldStatus;
-        const config = {
-          NORMAL: { icon: CheckCircle, color: 'text-green-500' },
-          WARNING: { icon: AlertTriangle, color: 'text-yellow-500' },
-          REPLACE: { icon: XCircle, color: 'text-red-500' },
-          MAINT: { icon: Settings2, color: 'text-blue-500' },
-        }[status] || { icon: Package, color: 'text-gray-500' };
-        const Icon = config.icon;
-        return <Icon className={`w-5 h-5 ${config.color}`} />;
-      },
+      cell: ({ getValue }) => <StatusBadge codeType="MOLD_LIFE_STATUS" value={getValue() as string} />,
     },
   ];
 

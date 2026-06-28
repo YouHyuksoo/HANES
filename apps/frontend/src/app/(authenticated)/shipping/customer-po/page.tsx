@@ -19,18 +19,11 @@ import {
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import DataGrid from "@/components/data-grid/DataGrid";
 import CustomerPoFormPanel, { type CustomerOrder } from "./components/CustomerPoFormPanel";
 import api from "@/services/api";
-
-const statusColors: Record<string, string> = {
-  RECEIVED: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
-  CONFIRMED: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-  IN_PRODUCTION: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
-  PARTIAL_SHIP: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
-  SHIPPED: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-  CLOSED: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
-};
 
 export default function CustomerPoPage() {
   const { t } = useTranslation();
@@ -114,12 +107,11 @@ export default function CustomerPoPage() {
     { accessorKey: "itemCount", header: t("shipping.customerPo.itemCount"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{getValue() as number}</span> },
     { accessorKey: "totalAmount", header: t("shipping.customerPo.totalAmount"), size: 120, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     {
-      accessorKey: "status", header: t("common.status"), size: 90,
+      accessorKey: "status",
+      header: () => <StatusHeaderHelp label={t("common.status")} codeType="CUSTOMER_PO_STATUS" align="center" />,
+      size: 90,
       meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const s = getValue() as string;
-        return <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[s] || ""}`}>{s}</span>;
-      },
+      cell: ({ getValue }) => <StatusBadge codeType="CUSTOMER_PO_STATUS" value={getValue() as string} />,
     },
   ], [t, isPanelOpen]);
 

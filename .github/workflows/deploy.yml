@@ -42,6 +42,18 @@ jobs:
         run: pnpm install --frozen-lockfile
         shell: cmd
 
+      - name: Backend Jest
+        run: pnpm run test:backend:ci
+        shell: cmd
+
+      - name: Backend typecheck
+        run: pnpm run typecheck:backend
+        shell: cmd
+
+      - name: Frontend typecheck
+        run: pnpm run typecheck:frontend
+        shell: cmd
+
       - name: Build
         run: pnpm build
         shell: cmd

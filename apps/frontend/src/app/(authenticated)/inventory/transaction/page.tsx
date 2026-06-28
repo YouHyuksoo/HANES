@@ -13,6 +13,8 @@ import { ColumnDef } from '@tanstack/react-table';
 import { api } from '@/services/api';
 import { getTodayLocal } from '@/utils/date';
 import DateRangeFilter from '@/components/shared/DateRangeFilter';
+import StatusHeaderHelp from '@/components/shared/StatusHeaderHelp';
+import StatusBadge from '@/components/shared/StatusBadge';
 
 interface TransactionData {
   id: string;
@@ -204,18 +206,10 @@ export default function TransactionPage() {
     },
     {
       accessorKey: 'status',
-      header: t('inventory.transaction.status'),
+      header: () => <StatusHeaderHelp label={t('inventory.transaction.status')} codeType="PROD_RESULT_STATUS" align="center" />,
       size: 80,
       meta: { filterType: 'multi' as const },
-      cell: ({ row }) => (
-        <span className={`px-2 py-1 rounded text-xs ${
-          row.original.status === 'DONE' ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' :
-          row.original.status === 'CANCELED' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' :
-          'bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300'
-        }`}>
-          {row.original.status === 'DONE' ? t('inventory.transaction.statusDone') : row.original.status === 'CANCELED' ? t('inventory.transaction.statusCanceled') : row.original.status}
-        </span>
-      ),
+      cell: ({ getValue }) => <StatusBadge codeType="PROD_RESULT_STATUS" value={getValue() as string} />,
     },
     {
       accessorKey: 'cancelRef',

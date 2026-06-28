@@ -15,6 +15,8 @@ import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import { BarChart3, Search, RefreshCw, FileText, Loader, TruckIcon, CheckCircle } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
+import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import StatusBadge from "@/components/shared/StatusBadge";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 
@@ -30,13 +32,6 @@ interface CustomerPoStatus {
   remainQty: number;
   status: string;
 }
-
-const statusColors: Record<string, string> = {
-  IN_PROGRESS: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-  PARTIAL_SHIP: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
-  COMPLETED: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-  OVERDUE: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-};
 
 export default function CustomerPoStatusPage() {
   const { t } = useTranslation();
@@ -105,15 +100,13 @@ export default function CustomerPoStatusPage() {
       cell: ({ getValue }) => { const qty = getValue() as number; return <span className={`font-medium ${qty > 0 ? "text-red-500" : "text-green-600 dark:text-green-400"}`}>{qty.toLocaleString()}</span>; },
     },
     {
-      accessorKey: "status", header: t("common.status"), size: 90,
+      accessorKey: "status",
+      header: () => <StatusHeaderHelp label={t("common.status")} codeType="CUSTOMER_PO_PROGRESS" align="center" />,
+      size: 90,
       meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const s = getValue() as string;
-        const label = statusOptions.find((o) => o.value === s)?.label || s;
-        return <span className={`px-2 py-0.5 text-xs rounded-full ${statusColors[s] || ""}`}>{label}</span>;
-      },
+      cell: ({ getValue }) => <StatusBadge codeType="CUSTOMER_PO_PROGRESS" value={getValue() as string} />,
     },
-  ], [t, statusOptions]);
+  ], [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
