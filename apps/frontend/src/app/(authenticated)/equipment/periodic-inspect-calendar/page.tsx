@@ -17,8 +17,9 @@ import {
   CalendarDays, CheckCircle, XCircle, RefreshCw,
   CalendarPlus, CalendarRange, AlertTriangle,
 } from "lucide-react";
-import { Button, StatCard } from "@/components/ui";
+import { Button, StatCard, Modal } from "@/components/ui";
 import { ProcessSelect } from "@/components/shared";
+import EquipSelect from "@/components/shared/EquipSelect";
 import InspectCalendar from "../inspect-calendar/components/InspectCalendar";
 import type { CalendarDaySummary } from "../inspect-calendar/components/InspectCalendar";
 import DaySchedulePanel from "../inspect-calendar/components/DaySchedulePanel";
@@ -40,6 +41,9 @@ export default function PeriodicInspectCalendarPage() {
   const [dayData, setDayData] = useState<DayScheduleEquip[]>([]);
   const [dayLoading, setDayLoading] = useState(false);
   const [modalEquip, setModalEquip] = useState<DayScheduleEquip | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addEquipCode, setAddEquipCode] = useState("");
+  const [addLoading, setAddLoading] = useState(false);
 
   const fetchCalendar = useCallback(async (y: number, m: number) => {
     setCalendarLoading(true);
@@ -111,6 +115,49 @@ export default function PeriodicInspectCalendarPage() {
     fetchCalendar(year, month);
     fetchDaySchedule(selectedDate);
   }, [fetchCalendar, fetchDaySchedule, year, month, selectedDate]);
+
+  /** 개별 점검 추가: 설비 선택 후 정기점검 마스터 항목 로드 → InspectExecuteModal 오픈 */
+  const handleAddInspectConfirm = useCallback(async () => {
+    if (!addEquipCode) return;
+    setAddLoading(true);
+    try {
+      const [equipRes, itemsRes] = await Promise.all([
+        api.get("/equipment/equips", { params: { equipCode: addEquipCode, limit: 1 } }),
+        api.get("/master/equip-inspect-items", { params: { equipCode: addEquipCode, inspectType: "PERIODIC", limit: 500 } }),
+      ]);
+      const equip = (equipRes.data?.data ?? [])[0];
+      if (!equip) return;
+      const masterItems: Record<string, unknown>[] = itemsRes.data?.data ?? [];
+      const newEquip: DayScheduleEquip = {
+        equipId: equip.equipCode,
+        equipCode: equip.equipCode,
+        equipName: equip.equipName,
+        lineCode: equip.lineCode ?? null,
+        equipType: equip.equipType ?? null,
+        inspected: false,
+        overallResult: null,
+        inspectorName: null,
+        logId: null,
+        items: masterItems.map((item, idx) => ({
+          itemId: String(item.itemCode),
+          seq: idx + 1,
+          itemName: String(item.itemName ?? ""),
+          criteria: (item.criteria as string | null) ?? null,
+          imageUrl: (item.imageUrl as string | null) ?? null,
+          cycle: String(item.cycle ?? ""),
+          result: null,
+          remark: "",
+        })),
+      };
+      setAddOpen(false);
+      setAddEquipCode("");
+      setModalEquip(newEquip);
+    } catch (e) {
+      console.error("설비 정보 로드 실패:", e);
+    } finally {
+      setAddLoading(false);
+    }
+  }, [addEquipCode]);
 
   const monthlyStats = useMemo(() => {
     let totalScheduled = 0;
@@ -215,6 +262,7 @@ export default function PeriodicInspectCalendarPage() {
             data={dayData}
             loading={dayLoading}
             onExecuteInspect={setModalEquip}
+            onAddInspect={() => setAddOpen(true)}
             inspectTitleKey="equipment.periodicInspectCalendar.inspectTitle"
           />
         </div>
@@ -231,6 +279,37 @@ export default function PeriodicInspectCalendarPage() {
         apiBasePath="/equipment/periodic-inspect"
         inspectTitleKey="equipment.periodicInspectCalendar.inspectTitle"
       />
+
+      {/* 개별 점검 추가 — 설비 선택 모달 */}
+      <Modal
+        isOpen={addOpen}
+        onClose={() => { setAddOpen(false); setAddEquipCode(""); }}
+        title={t("equipment.inspectCalendar.addInspect", "점검 추가")}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-text-muted">
+            {t("equipment.inspectCalendar.addInspectDesc", "점검할 설비를 선택하면 마스터에 등록된 점검항목이 자동으로 불러와집니다.")}
+          </p>
+          <EquipSelect
+            value={addEquipCode}
+            onChange={setAddEquipCode}
+            labelPrefix={t("common.equip", "설비")}
+            fullWidth
+          />
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+            <Button variant="secondary" onClick={() => { setAddOpen(false); setAddEquipCode(""); }}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={handleAddInspectConfirm}
+              disabled={!addEquipCode || addLoading}
+            >
+              {addLoading ? t("common.loading", "불러오는 중...") : t("common.next", "다음")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
