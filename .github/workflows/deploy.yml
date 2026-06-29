@@ -74,6 +74,7 @@ jobs:
           pm2 delete hanes-backend 2>&1 | Out-Null
           $ErrorActionPreference = 'Stop'
           Set-Location C:\Project\HANES
+          $env:RUNNER_TRACKING_ID = ""
           pm2 start ecosystem.config.js --update-env
           pm2 save
           Start-Sleep 5
