@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 // X 아이콘 제거됨 — 헤더에 취소/저장 버튼 사용
 import { Button } from "@/components/ui";
 import { FieldInput, FieldSelect } from "./VendorBarcodeFieldHelp";
+import { MATCH_TYPE_OPTIONS } from "../vendorBarcodeColumns";
 import { useUseYnOptions } from "@/components/shared";
 import api from "@/services/api";
 
@@ -38,11 +39,6 @@ interface Props {
   onDirtyChange?: (dirty: boolean) => void;
 }
 
-const MATCH_TYPE_OPTIONS = [
-  { value: "EXACT", labelKey: "master.vendorBarcode.matchExact", labelFallback: "정확 일치" },
-  { value: "PREFIX", labelKey: "master.vendorBarcode.matchPrefix", labelFallback: "접두사" },
-  { value: "REGEX", labelKey: "master.vendorBarcode.matchRegex", labelFallback: "정규식" },
-];
 
 export type { VendorBarcodeMapping };
 

@@ -3,13 +3,20 @@
 import type { TFunction } from "i18next";
 import { Edit2, Trash2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
+import { VENDOR_BARCODE_MATCH_TYPES, type VendorBarcodeMatchType } from "@harness/shared";
 import { type VendorBarcodeMapping } from "./components/VendorBarcodeFormPanel";
 
-export const MATCH_TYPE_OPTIONS = [
-  { value: "EXACT", labelKey: "master.vendorBarcode.matchExact", labelFallback: "정확 일치" },
-  { value: "PREFIX", labelKey: "master.vendorBarcode.matchPrefix", labelFallback: "접두사" },
-  { value: "REGEX", labelKey: "master.vendorBarcode.matchRegex", labelFallback: "정규식" },
-];
+/** 매칭유형 라벨(표시 전용). 값 집합은 @harness/shared 단일 출처. */
+const MATCH_TYPE_LABELS: Record<VendorBarcodeMatchType, { labelKey: string; labelFallback: string }> = {
+  EXACT: { labelKey: "master.vendorBarcode.matchExact", labelFallback: "정확 일치" },
+  PREFIX: { labelKey: "master.vendorBarcode.matchPrefix", labelFallback: "접두사" },
+  REGEX: { labelKey: "master.vendorBarcode.matchRegex", labelFallback: "정규식" },
+};
+
+export const MATCH_TYPE_OPTIONS = VENDOR_BARCODE_MATCH_TYPES.map((value) => ({
+  value,
+  ...MATCH_TYPE_LABELS[value],
+}));
 
 const MATCH_TYPE_COLORS: Record<string, string> = {
   EXACT: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",

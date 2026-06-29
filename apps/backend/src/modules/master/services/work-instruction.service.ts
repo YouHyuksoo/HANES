@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WorkInstruction } from '../../../entities/work-instruction.entity';
 import { CreateWorkInstructionDto, UpdateWorkInstructionDto, WorkInstructionQueryDto } from '../dto/work-instruction.dto';
+import { parseWorkInstructionKey } from '@harness/shared';
 
 @Injectable()
 export class WorkInstructionService {
@@ -74,10 +75,8 @@ export class WorkInstructionService {
    * id 문자열에서 복합키 파싱 ("itemCode::processCode::revision" 형식)
    */
   private parseCompositeId(id: string): { itemCode: string; processCode: string; revision: string } {
-    const parts = id.split('::');
-    if (parts.length === 3) {
-      return { itemCode: parts[0], processCode: parts[1], revision: parts[2] };
-    }
+    const key = parseWorkInstructionKey(id);
+    if (key) return key;
     throw new NotFoundException(`잘못된 작업지도서 ID 형식입니다: ${id}`);
   }
 

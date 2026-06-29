@@ -16,6 +16,7 @@ import { Upload, FileImage, FileText, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { HelpTooltip } from "@/components/shared";
 import api from "@/services/api";
+import { buildWorkInstructionKey } from "@harness/shared";
 import { WORK_INSTRUCTION_FIELD_HELP, FieldInput } from "./WorkInstructionFieldHelp";
 
 interface WorkInstruction {
@@ -31,7 +32,7 @@ interface WorkInstruction {
 
 export const getWorkInstructionKey = (
   item: Pick<WorkInstruction, "itemCode" | "processCode" | "revision">,
-) => `${item.itemCode}::${item.processCode || ""}::${item.revision || "A"}`;
+) => buildWorkInstructionKey(item);
 
 interface Props {
   editingItem: WorkInstruction | null;

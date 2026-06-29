@@ -13,8 +13,8 @@ import { IsString, IsOptional, IsNotEmpty, MaxLength, IsIn, IsInt, Min, Max } fr
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
-import { USE_YN_VALUES } from '@harness/shared';
-const MATCH_TYPE_VALUES = ['EXACT', 'PREFIX', 'REGEX'] as const;
+import { USE_YN_VALUES, VENDOR_BARCODE_MATCH_TYPES } from '@harness/shared';
+const MATCH_TYPE_VALUES = VENDOR_BARCODE_MATCH_TYPES;
 
 export class CreateVendorBarcodeMappingDto {
   @ApiProperty({ description: '제조사 바코드', example: 'JST-SVH-21T-P1.1' })
