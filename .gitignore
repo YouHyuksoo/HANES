@@ -22,6 +22,7 @@ pnpm-debug.log*
 # IDE
 .idea
 .vscode
+.vs
 *.swp
 *.swo
 
@@ -53,13 +54,24 @@ __pycache__/
 # Generated deliverables (decks, exports)
 *.pptx
 
+# Local database backup/dump artifacts
+db_backups/
+db_dumps/
+
 # Misc
 *.tsbuildinfo
 nul
 .gstack/
 
-# AI coordination — live presence file (hook-generated, never commit)
-.ai-coordination/AGENTS_STATUS.json
+# Local AI/tool session artifacts
+.superpowers/brainstorm/
+.superpowers/sdd/
+.claude/projects/
+.claude/settings.local.json
+.serena/
+
+# AI coordination — local multi-agent board and hook-generated presence
+.ai-coordination/
 
 # Stray tool output (Windows path mangling artifacts)
 CUsers*
