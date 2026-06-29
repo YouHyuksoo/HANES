@@ -506,20 +506,13 @@ describe('IssueRequestService', () => {
         plant: 'P1',
       } as MatIssueRequest);
       (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
-      requestItemRepo.findOne.mockResolvedValue({
-        requestId: 'REQ-001',
-        seq: 1,
-        itemCode: 'ITEM-001',
-        requestQty: 10,
-        issuedQty: 2,
-      } as MatIssueRequestItem);
       requestItemRepo.find.mockResolvedValue([
         { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 2 } as MatIssueRequestItem,
       ]);
-      queryRunner.manager.findOne.mockResolvedValue({
+      queryRunner.manager.find.mockResolvedValue([{
         matUid: 'MAT-001',
         itemCode: 'ITEM-001',
-      } as MatLot);
+      } as MatLot]);
 
       await service.issueFromRequest('REQ-001', {
         warehouseCode: 'WH-01',
@@ -534,9 +527,6 @@ describe('IssueRequestService', () => {
         warehouseCode: 'WH-01',
         items: [{ matUid: 'MAT-001', issueQty: 8 }],
       }), 'C1', 'P1');
-      expect(requestItemRepo.findOne).toHaveBeenCalledWith({
-        where: { requestId: 'REQ-001', seq: 1, company: 'C1', plant: 'P1' },
-      });
       expect(queryRunner.manager.update).toHaveBeenCalledWith(
         MatIssueRequestItem,
         { requestId: 'REQ-001', seq: 1, company: 'C1', plant: 'P1' },
@@ -577,17 +567,17 @@ describe('IssueRequestService', () => {
         plant: 'P1',
       } as MatIssueRequest);
       (matIssueService as any).createInTx = jest.fn().mockResolvedValue({ issueNo: 'ISSUE-001' } as any);
-      requestItemRepo.findOne.mockResolvedValue({
+      requestItemRepo.find.mockResolvedValue([{
         requestId: 'REQ-001',
         seq: 1,
         itemCode: 'ITEM-A',
         requestQty: 10,
         issuedQty: 0,
-      } as MatIssueRequestItem);
-      queryRunner.manager.findOne.mockResolvedValue({
+      } as MatIssueRequestItem]);
+      queryRunner.manager.find.mockResolvedValue([{
         matUid: 'MAT-B',
         itemCode: 'ITEM-B',
-      } as MatLot);
+      } as MatLot]);
 
       await expect(
         service.issueFromRequest('REQ-001', {
@@ -658,22 +648,15 @@ describe('IssueRequestService', () => {
         plant: 'P1',
       } as MatIssueRequest);
       (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
-      requestItemRepo.findOne.mockResolvedValue({
-        requestId: 'REQ-001',
-        seq: 1,
-        itemCode: 'ITEM-001',
-        requestQty: 10,
-        issuedQty: 0,
-      } as MatIssueRequestItem);
       requestItemRepo.find.mockResolvedValue([
         { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 0 } as MatIssueRequestItem,
       ]);
       // 포장단위 6 → 요청 10의 올림 잔여 = ceil(10/6)*6 = 12
-      itemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', minPackQty: 6 } as ItemMaster);
-      queryRunner.manager.findOne.mockResolvedValue({
+      itemMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', minPackQty: 6 } as ItemMaster]);
+      queryRunner.manager.find.mockResolvedValue([{
         matUid: 'MAT-001',
         itemCode: 'ITEM-001',
-      } as MatLot);
+      } as MatLot]);
 
       await service.issueFromRequest('REQ-001', {
         warehouseCode: 'WH-01',
@@ -732,21 +715,14 @@ describe('IssueRequestService', () => {
         plant: 'P1',
       } as MatIssueRequest);
       (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
-      requestItemRepo.findOne.mockResolvedValue({
-        requestId: 'REQ-001',
-        seq: 1,
-        itemCode: 'ITEM-001',
-        requestQty: 10,
-        issuedQty: 0,
-      } as MatIssueRequestItem);
       requestItemRepo.find.mockResolvedValue([
         { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 0 } as MatIssueRequestItem,
       ]);
-      itemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', minPackQty: 0 } as ItemMaster);
-      queryRunner.manager.findOne.mockResolvedValue({
+      itemMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', minPackQty: 0 } as ItemMaster]);
+      queryRunner.manager.find.mockResolvedValue([{
         matUid: 'MAT-001',
         itemCode: 'ITEM-001',
-      } as MatLot);
+      } as MatLot]);
 
       // 요청 10 중 4만 출고 → 잔여 6 → PARTIAL
       await service.issueFromRequest('REQ-001', {
@@ -773,21 +749,14 @@ describe('IssueRequestService', () => {
         plant: 'P1',
       } as MatIssueRequest);
       (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-002' }]);
-      requestItemRepo.findOne.mockResolvedValue({
-        requestId: 'REQ-001',
-        seq: 1,
-        itemCode: 'ITEM-001',
-        requestQty: 10,
-        issuedQty: 4,
-      } as MatIssueRequestItem);
       requestItemRepo.find.mockResolvedValue([
         { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 4 } as MatIssueRequestItem,
       ]);
-      itemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', minPackQty: 0 } as ItemMaster);
-      queryRunner.manager.findOne.mockResolvedValue({
+      itemMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', minPackQty: 0 } as ItemMaster]);
+      queryRunner.manager.find.mockResolvedValue([{
         matUid: 'MAT-001',
         itemCode: 'ITEM-001',
-      } as MatLot);
+      } as MatLot]);
 
       // 잔여 6 전량 출고 → COMPLETED
       await service.issueFromRequest('REQ-001', {
