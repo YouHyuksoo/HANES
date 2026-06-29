@@ -10,6 +10,36 @@
 3. 이 파일에서 해당 작업 본문을 제거한다.
 
 ## Review Tasks
+
+## T-ARCH-PAGE-RULE-REFORM page.tsx 축소와 업무 규칙 중앙화 아키텍처 개선
+status: REVIEW
+owner: codex
+role: implementer/reviewer
+scope:
+- HANES 전체 `page.tsx` 인라인 DataGrid 컬럼 분리 스윕
+- 컬럼 정의를 화면별 `*Columns.tsx` 팩토리와 필요 시 `types.ts`로 분리
+files:
+- docs/reports/architecture-improvement-candidates.md
+- apps/frontend/src/app/(authenticated)/customs/stock/**
+- apps/frontend/src/app/(authenticated)/sales/customer-po-status/**
+- apps/frontend/src/app/(authenticated)/outsourcing/receive/**
+- apps/frontend/src/app/(authenticated)/quality/defect/**
+- apps/frontend/src/app/(authenticated)/shipping/return/**
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- PASS: `rg -n "ColumnDef<|const .*columns\\s*=\\s*useMemo<ColumnDef|const .*Columns\\s*=\\s*useMemo<ColumnDef" 'apps/frontend/src/app/(authenticated)' -g page.tsx` 결과 없음
+- PASS: `node --test` 신규 5개 컬럼 구조 테스트 10/10 pass
+- PASS: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+- PASS: `git diff --check`
+review:
+- needs-review
+notes:
+- 사용자 승인 후 기존 active/stale lock이 남아 있던 5개 화면까지 컬럼 분리를 완료했다.
+- 업무 규칙 중앙화의 추가 후보는 별도 작업으로 다시 lock을 잡고 진행한다.
+
 ## T-IQC-AQL-ISO-REDESIGN AQL ISO 2859 표준 구조 재설계
 status: REVIEW
 owner: codex

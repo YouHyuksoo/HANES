@@ -167,3 +167,34 @@
 - 잔여 인라인-컬럼 free 페이지 0. 남은 5개(customs/stock, outsourcing/receive — codex T-ALL-MENU-QA; quality/defect — hermes; sales/customer-po-status — codex; shipping/return — claude T-SHIP-ORDER-CANCEL)는 타 lock 소유라 미착수.
 - codex slice(T-ARCH)도 별도로 ~18개 진행/커밋(department·pack-result·mold·progress·rework-inspect·scrap·result-summary·calibration-history·pm-result·pm-plan·inspect-history·mold-mgmt·inspection/history·structure·interface/log·outsourcing/order·vendor·sales/customer-po).
 - 발견(미해결): process-capa stdUph 반올림 FE(정수)/BE(소수2자리) 불일치(잠재 버그) — 동작 보존 우선, 사용자 판단 대기.
+
+## 2026-06-29 12:58 KST - codex - T-ARCH-PAGE-RULE-REFORM 잔여 5개 화면 컬럼 분리 완료
+
+- 사용자 "처리해" 지시에 따라 기존 active/stale lock이 남아 있던 잔여 5개 화면까지 `page.tsx` 인라인 DataGrid 컬럼을 분리했다.
+- 완료 화면:
+  - `/customs/stock`
+  - `/sales/customer-po-status`
+  - `/outsourcing/receive`
+  - `/quality/defect`
+  - `/shipping/return`
+- 변경 방식:
+  - 각 화면의 `ColumnDef` 배열과 상태 배지/헤더 도움말/액션 셀 렌더링을 화면별 `*Columns.tsx` 팩토리로 이동했다.
+  - 행 타입은 각 화면의 `types.ts`로 분리했다.
+  - 각 화면에 `*-columns.structure.test.mjs`를 추가해 `page.tsx`로 컬럼 정의가 되돌아오는 회귀를 감지한다.
+- 검증:
+  - PASS `rg -n "ColumnDef<|const .*columns\\s*=\\s*useMemo<ColumnDef|const .*Columns\\s*=\\s*useMemo<ColumnDef" 'apps/frontend/src/app/(authenticated)' -g page.tsx` 결과 없음
+  - PASS `node --test "apps/frontend/src/app/(authenticated)/customs/stock/customs-stock-columns.structure.test.mjs" "apps/frontend/src/app/(authenticated)/sales/customer-po-status/customer-po-status-columns.structure.test.mjs" "apps/frontend/src/app/(authenticated)/outsourcing/receive/subcon-receive-columns.structure.test.mjs" "apps/frontend/src/app/(authenticated)/quality/defect/defect-columns.structure.test.mjs" "apps/frontend/src/app/(authenticated)/shipping/return/ship-return-columns.structure.test.mjs"` → 10/10 pass
+  - PASS `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
+  - PASS `git diff --check`
+- coordination:
+  - `T-ARCH-PAGE-RULE-REFORM`은 active 작업에서 제거하고 `REVIEW_QUEUE.md`로 이동했다.
+  - 다른 세션/범위로 보이는 `vendor-barcode`, `work-instruction`, shared rules 변경은 이번 커밋 범위에서 제외한다.
+
+## 2026-06-29 (후속) — claude — 잔여 업무규칙 승격 + stdUph 통일 (사용자 지시)
+
+- stdUph 반올림 **소수 2자리로 통일**: shared `roundStdUph` 신규, FE CapaFormPanel(정수→2자리)·BE service 두 호출부 모두 사용. → 사용자 커밋 `8a4b4d14`(worktree 일괄)에 포함. 검증 FE/BE tsc 0, rules 구조 테스트 4/4, jest 5/5.
+- 약한 후보 2건 승격(동작 불변, **커밋 57511279**, 10 files):
+  - 작업지도서 복합키(`itemCode::processCode::revision`) → shared `work-instruction-rules.ts`(build/parse). FE getWorkInstructionKey·BE parseCompositeId가 위임.
+  - 바코드 매칭유형(EXACT/PREFIX/REGEX) → shared `vendor-barcode-rules.ts`. BE dto·FE 옵션(2곳→1곳) 단일화.
+  - 검증: FE/BE tsc 0, shared 재빌드, 구조 테스트 10/10, dist 동작 동치(build/parse/enum) 확인.
+- T-COLUMN-EXTRACT 전체(컬럼 87 + 규칙 4종) 구현+검증 완료. 미푸시. 잔여 약한 후보 없음.

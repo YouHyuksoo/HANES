@@ -13,39 +13,22 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ColumnDef } from "@tanstack/react-table";
 import { Plus, RefreshCw, AlertTriangle, Search } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, ComCodeBadge, Select } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useComCodeList } from "@/hooks/useComCode";
 import api from "@/services/api";
 import toast from "react-hot-toast";
 import { getTodayLocal } from "@/utils/date";
-import type { DefectLogStatusValue } from "@harness/shared";
 import DefectFormPanel, { type DefectCodeOption } from "./components/DefectFormPanel";
+import { createDefectGridColumns } from "./defectColumns";
+import type { Defect, DefectStatus } from "./types";
 
 /** API 에러에서 사용자용 메시지 추출 */
 function errMessage(e: unknown, fallback: string): string {
   return (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
-}
-
-type DefectStatus = DefectLogStatusValue;
-
-interface Defect {
-  id: string;
-  occurAt: string;
-  workOrderNo: string | null;
-  prodResultNo: string;
-  defectCode: string;
-  defectName: string | null;
-  qty: number;
-  status: DefectStatus;
-  cause: string | null;
-  operator: string | null;
-  equipmentNo: string | null;
 }
 
 export default function DefectPage() {
@@ -144,29 +127,17 @@ export default function DefectPage() {
     }
   }, [selectedDefect, fetchData, t]);
 
-const columns = useMemo<ColumnDef<Defect>[]>(() => [
-    {
-      id: "actions", header: t("common.manage"), size: 150, meta: { align: "center" as const, filterType: "none" as const },
-      cell: ({ row }) => (
-        <div className="flex items-center justify-center gap-1">
-          <Button size="sm" variant="secondary" onClick={() => { setSelectedDefect(row.original); setIsStatusModalOpen(true); }}>
-            {t("quality.defect.changeStatus")}
-          </Button>
-          <Button size="sm" variant="danger" onClick={() => { setDeletingDefect(row.original); setIsDeleteModalOpen(true); }}>
-            {t("quality.defect.cancelRegistration", "등록취소")}
-          </Button>
-        </div>
-      ),
+  const columns = useMemo(() => createDefectGridColumns({
+    t,
+    onOpenStatusModal: (defect) => {
+      setSelectedDefect(defect);
+      setIsStatusModalOpen(true);
     },
-    { accessorKey: "occurAt", header: t("quality.defect.occurredAt"), size: 150, meta: { filterType: "date" as const }, cell: ({ getValue }) => { const v = getValue() as string; return v ? new Date(v).toLocaleString() : "-"; } },
-    { accessorKey: "workOrderNo", header: t("quality.defect.workOrder"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="text-primary font-medium">{(getValue() as string) || "-"}</span> },
-    { accessorKey: "defectCode", header: t("quality.defect.defectCode"), size: 90, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span> },
-    { accessorKey: "defectName", header: t("quality.defect.defectName"), size: 120, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
-    { accessorKey: "qty", header: t("quality.defect.quantity"), size: 70, meta: { filterType: "number" as const, align: "right" as const }, cell: ({ getValue }) => <span className="font-mono">{(getValue() as number)?.toLocaleString() ?? 0}</span> },
-    { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="DEFECT_LOG_STATUS" align="center" />, size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="DEFECT_LOG_STATUS" code={getValue() as string} /> },
-    { accessorKey: "operator", header: t("quality.defect.operator"), size: 90, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
-    { accessorKey: "cause", header: t("quality.defect.cause"), size: 140, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
-  ], [t]);
+    onOpenDeleteModal: (defect) => {
+      setDeletingDefect(defect);
+      setIsDeleteModalOpen(true);
+    },
+  }), [t]);
 
   return (
     <div className="flex h-full animate-fade-in">

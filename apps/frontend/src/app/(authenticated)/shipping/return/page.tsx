@@ -14,30 +14,13 @@ import { useTranslation } from "react-i18next";
 import { Undo2, RefreshCw, Package, AlertTriangle, XCircle, Boxes, Layers } from "lucide-react";
 import { Card, CardContent, Button, Modal, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { ColumnDef } from "@tanstack/react-table";
 import { useAuthStore } from "@/stores/authStore";
 import api from "@/services/api";
-
-type ShipType = "BOX" | "PALLET" | "MIXED";
-interface ShippedOrder {
-  shipOrderNo: string;
-  customerName: string | null;
-  shipDate: string | null;
-  shippedQty: number;
-  shipType: ShipType;
-  palletCount: number;
-  boxCount: number;
-  hasErpSynced: boolean;
-}
-interface DetailBox { boxNo: string; itemCode: string; qty: number; }
-interface DetailPallet { palletNo: string; status: string; boxCount: number; totalQty: number; shipNo: string | null; boxes: DetailBox[]; }
-interface DetailLooseBox extends DetailBox { palletNo: string; shippedAt: string | null; }
-interface ShippedDetail {
-  order: { shipOrderNo: string; customerName: string | null; shipDate: string | null };
-  pallets: DetailPallet[];
-  boxShipped: DetailLooseBox[];
-}
-interface ReturnRow { returnNo: string; shipmentId: string | null; returnDate: string; returnReason: string; status: string; }
+import {
+  createShipReturnHistoryGridColumns,
+  createShipReturnOrderGridColumns,
+} from "./shipReturnColumns";
+import type { ReturnRow, ShippedDetail, ShippedOrder, ShipType } from "./types";
 
 function errMsg(e: unknown, fallback: string): string {
   return (e as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback;
@@ -142,24 +125,9 @@ export default function ShipCancelPage() {
     : tp === "PALLET" ? t("shipping.return.typePallet", "팔레트")
     : t("shipping.return.typeBox", "박스"), [t]);
 
-  const orderColumns = useMemo<ColumnDef<ShippedOrder>[]>(() => [
-    { accessorKey: "shipOrderNo", header: t("shipping.return.shipOrderNo", "출하지시번호"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="font-mono font-medium">{getValue() as string}</span> },
-    { accessorKey: "customerName", header: t("shipping.return.customer", "고객사"), size: 120, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
-    { accessorKey: "shipDate", header: t("shipping.return.shipDate", "출하일"), size: 100, meta: { filterType: "date" as const }, cell: ({ getValue }) => { const v = getValue() as string | null; return v ? String(v).slice(0, 10) : "-"; } },
-    { accessorKey: "shipType", header: t("shipping.return.shipType", "출하유형"), size: 90, meta: { align: "center" as const }, cell: ({ getValue }) => <span className="text-xs font-medium text-text">{typeLabel(getValue() as ShipType)}</span> },
-    { accessorKey: "shippedQty", header: t("shipping.return.shippedQty", "출하수량"), size: 90, meta: { align: "right" as const, filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    { accessorKey: "palletCount", header: t("shipping.return.palletCount", "팔레트수"), size: 80, meta: { align: "center" as const }, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
-    { accessorKey: "boxCount", header: t("shipping.return.boxCount", "박스수"), size: 80, meta: { align: "center" as const }, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
-    { accessorKey: "hasErpSynced", header: "ERP", size: 60, meta: { align: "center" as const }, cell: ({ getValue }) => (getValue() ? "Y" : "-") },
-  ], [t, typeLabel]);
+  const orderColumns = useMemo(() => createShipReturnOrderGridColumns(t, typeLabel), [t, typeLabel]);
 
-  const returnColumns = useMemo<ColumnDef<ReturnRow>[]>(() => [
-    { accessorKey: "returnNo", header: t("shipping.return.returnNo", "반품번호"), size: 160, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="font-mono">{getValue() as string}</span> },
-    { accessorKey: "shipmentId", header: t("shipping.return.shipOrderNo", "출하지시번호"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
-    { accessorKey: "returnDate", header: t("shipping.return.returnDate", "반품일"), size: 100, meta: { filterType: "date" as const }, cell: ({ getValue }) => { const v = getValue() as string | null; return v ? String(v).slice(0, 10) : "-"; } },
-    { accessorKey: "returnReason", header: t("shipping.return.cancelReason", "취소 사유"), size: 200, meta: { filterType: "text" as const } },
-    { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "text" as const } },
-  ], [t]);
+  const returnColumns = useMemo(() => createShipReturnHistoryGridColumns(t), [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">

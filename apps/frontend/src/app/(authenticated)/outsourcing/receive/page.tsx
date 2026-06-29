@@ -15,25 +15,9 @@ import { Plus, RefreshCw, Search, Package, CheckCircle, XCircle, Layers } from "
 import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
 import { QtyInput, ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
-import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
-import StatusBadge from "@/components/shared/StatusBadge";
-import { ColumnDef } from "@tanstack/react-table";
 import api from "@/services/api";
-
-interface SubconReceive {
-  id: string;
-  receiveNo: string;
-  orderNo: string;
-  vendorName: string;
-  itemCode: string;
-  itemName: string;
-  qty: number;
-  goodQty: number;
-  defectQty: number;
-  inspectResult: string;
-  receivedAt: string;
-  workerName: string;
-}
+import { createSubconReceiveGridColumns } from "./subconReceiveColumns";
+import type { SubconReceive } from "./types";
 
 export default function SubconReceivePage() {
   const { t } = useTranslation();
@@ -75,27 +59,7 @@ export default function SubconReceivePage() {
     }
   }, [form, fetchData]);
 
-  const columns = useMemo<ColumnDef<SubconReceive>[]>(() => [
-    { accessorKey: "receiveNo", header: t("outsourcing.receive.receiveNo"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "orderNo", header: t("outsourcing.order.orderNo"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "vendorName", header: t("outsourcing.order.vendor"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "itemCode", header: t("common.partCode"), size: 100, meta: { filterType: "text" as const } },
-    { accessorKey: "itemName", header: t("common.partName"), size: 130, meta: { filterType: "text" as const } },
-    { accessorKey: "qty", header: t("outsourcing.receive.receiveQty"), size: 80, cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString() },
-    { accessorKey: "goodQty", header: t("outsourcing.receive.goodQty"), size: 80, cell: ({ getValue }) => <span className="text-green-600 dark:text-green-400">{((getValue() as number) ?? 0).toLocaleString()}</span> },
-    {
-      accessorKey: "defectQty", header: t("outsourcing.receive.defectQty"), size: 80,
-      cell: ({ getValue }) => { const val = getValue() as number; return val > 0 ? <span className="text-red-600 dark:text-red-400">{val.toLocaleString()}</span> : "-"; },
-    },
-    {
-      accessorKey: "inspectResult",
-      header: () => <StatusHeaderHelp label={t("outsourcing.receive.inspectResult")} codeType="SUBCON_INSPECT_RESULT" align="center" />,
-      size: 90,
-      cell: ({ getValue }) => <StatusBadge codeType="SUBCON_INSPECT_RESULT" value={getValue() as string} />,
-    },
-    { accessorKey: "receivedAt", header: t("outsourcing.receive.receiveDate"), size: 130 },
-    { accessorKey: "workerName", header: t("outsourcing.receive.worker"), size: 80 },
-  ], [t]);
+  const columns = useMemo(() => createSubconReceiveGridColumns(t), [t]);
 
   const stats = useMemo(() => {
     const totalQty = data.reduce((sum, d) => sum + d.qty, 0);
