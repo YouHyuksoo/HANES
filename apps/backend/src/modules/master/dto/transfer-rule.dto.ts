@@ -12,6 +12,7 @@ import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-va
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { USE_YN_VALUES } from '@harness/shared';
 export class CreateTransferRuleDto {
   @ApiProperty({ description: '출발 창고 ID' })
   @IsString()
@@ -24,7 +25,7 @@ export class CreateTransferRuleDto {
   @ApiPropertyOptional({ description: '허용 여부', default: 'Y' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   allowYn?: string;
 
   @ApiPropertyOptional({ description: '비고' })
@@ -57,6 +58,6 @@ export class TransferRuleQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   allowYn?: string;
 }

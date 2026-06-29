@@ -12,6 +12,7 @@ import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn } from 'class-va
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { PRODUCT_STOCK_ITEM_TYPE_VALUES } from '@harness/shared';
 export class ProductHoldActionDto {
   @ApiProperty({ description: '제품 재고 ID (PRODUCT_STOCKS.ID)' })
   @IsString()
@@ -49,9 +50,9 @@ export class ProductHoldQueryDto extends PaginationQueryDto {
   @IsIn(['HOLD', 'NORMAL'])
   status?: string;
 
-  @ApiPropertyOptional({ enum: ['SEMI_PRODUCT', 'FINISHED'] })
+  @ApiPropertyOptional({ enum: PRODUCT_STOCK_ITEM_TYPE_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['SEMI_PRODUCT', 'FINISHED'])
+  @IsIn([...PRODUCT_STOCK_ITEM_TYPE_VALUES])
   itemType?: string;
 }

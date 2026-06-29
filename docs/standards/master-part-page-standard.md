@@ -87,6 +87,34 @@
 5. 새 컬럼을 추가할 때는 이 문서의 폼 배치 규칙과 함께 갱신한다.
 6. 목록에 새 상태/분류를 추가하면 배지 규칙도 함께 검토한다.
 
+## 품목 필드 변경 영향 파일 맵
+
+품목 필드를 추가, 삭제, 이름 변경, 필수화할 때는 아래 순서로 확인한다.
+
+1. DB 컬럼 매핑: `apps/backend/src/entities/item-master.entity.ts`
+2. API 입력/조회 규칙: `apps/backend/src/modules/master/dto/part.dto.ts`
+3. 저장/수정 매핑과 기본값: `apps/backend/src/modules/master/services/part.service.ts`
+4. 프론트 행 타입: `apps/frontend/src/app/(authenticated)/master/part/types.ts`
+5. 입력 폼: `apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx`
+6. 목록 컬럼명과 셀 표시 방식: `apps/frontend/src/app/(authenticated)/master/part/partColumns.tsx`
+7. 목록 조회와 서버 필터 파라미터: `apps/frontend/src/app/(authenticated)/master/part/page.tsx`
+8. 라벨/도움말: `apps/frontend/src/locales/ko.json`
+9. 회귀 테스트: `apps/frontend/src/app/(authenticated)/master/part/*.structure.test.mjs`, `apps/backend/src/modules/master/services/part.service.spec.ts`
+
+코드성 값은 자유입력으로 추가하지 말고 공통코드 또는 기준정보 선택 컴포넌트부터 확인한다.
+
+## 품목 검사 규칙 변경 영향 파일 맵
+
+IQC 대상, 검사구분, AQL 정책 필수 여부 같은 검사 규칙은 `packages/shared/src/utils/part-rules.ts`를 먼저 변경한다.
+
+그 다음 아래 호출부가 같은 의미로 동작하는지 확인한다.
+
+1. 프론트 저장 가능 조건: `apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx`
+2. 과거 모달 호출부: `apps/frontend/src/app/(authenticated)/master/part/components/PartFormModal.tsx`
+3. 백엔드 저장 차단 규칙: `apps/backend/src/modules/master/services/part.service.ts`
+4. 구조 테스트: `apps/frontend/src/app/(authenticated)/master/part/part-iqc-aql-guard.structure.test.mjs`
+5. 백엔드 단위 테스트: `apps/backend/src/modules/master/services/part.service.spec.ts`
+
 ## 좋은 예시
 
 - 기준정보 화면에서 제목과 주요 생성 액션을 한 줄에 묶고, 목록과 생성 패널을 분리하는 방식

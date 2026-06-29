@@ -25,7 +25,7 @@ import {
   UpdateProcessCapaDto,
   ProcessCapaQueryDto,
 } from '../dto/process-capa.dto';
-import { calcStdUphFromTactTime, calcDailyCapa } from '@harness/shared';
+import { roundStdUph, calcDailyCapa } from '@harness/shared';
 
 @Injectable()
 export class ProcessCapaService {
@@ -115,8 +115,8 @@ export class ProcessCapaService {
       );
     }
 
-    // stdUph 자동계산 (미입력 시) — 백엔드는 소수 2자리 반올림
-    const stdUph = dto.stdUph ?? Math.round(calcStdUphFromTactTime(dto.stdTactTime) * 100) / 100;
+    // stdUph 자동계산 (미입력 시) — 소수 2자리 반올림(공유 단일 정책)
+    const stdUph = dto.stdUph ?? roundStdUph(dto.stdTactTime);
 
     const entity = this.repo.create({
       company,
@@ -170,7 +170,7 @@ export class ProcessCapaService {
 
     // stdUph 자동계산 (stdTactTime이 변경됐고 stdUph가 명시되지 않은 경우)
     if (dto.stdTactTime !== undefined && dto.stdUph === undefined) {
-      existing.stdUph = Math.round(calcStdUphFromTactTime(existing.stdTactTime) * 100) / 100;
+      existing.stdUph = roundStdUph(existing.stdTactTime);
     }
 
     // dailyCapa 재계산

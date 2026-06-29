@@ -17,6 +17,15 @@ import Select from "@/components/ui/Select";
 import {
   CommConfigFormData,
 } from "@/hooks/system/useCommConfigData";
+import {
+  BAUD_RATE_VALUES,
+  COMM_TYPE_VALUES,
+  DATA_BITS_VALUES,
+  FLOW_CONTROL_VALUES,
+  LINE_ENDING_VALUES,
+  PARITY_VALUES,
+  STOP_BITS_VALUES,
+} from "@harness/shared";
 
 interface CommConfigFormProps {
   formData: CommConfigFormData;
@@ -25,51 +34,48 @@ interface CommConfigFormProps {
   isEdit?: boolean;
 }
 
-const COMM_TYPE_OPTIONS = [
-  { value: "SERIAL", label: "SERIAL (RS232/RS485)" },
-  { value: "TCP", label: "TCP/IP" },
-  { value: "MQTT", label: "MQTT" },
-  { value: "OPC_UA", label: "OPC-UA" },
-  { value: "MODBUS", label: "Modbus" },
-];
+const COMM_TYPE_LABELS: Record<(typeof COMM_TYPE_VALUES)[number], string> = {
+  SERIAL: "SERIAL (RS232/RS485)",
+  TCP: "TCP/IP",
+  MQTT: "MQTT",
+  OPC_UA: "OPC-UA",
+  MODBUS: "Modbus",
+};
 
-const BAUD_RATE_OPTIONS = [
-  { value: "9600", label: "9600" },
-  { value: "19200", label: "19200" },
-  { value: "38400", label: "38400" },
-  { value: "57600", label: "57600" },
-  { value: "115200", label: "115200" },
-];
+const PARITY_LABELS: Record<(typeof PARITY_VALUES)[number], string> = {
+  NONE: "None",
+  EVEN: "Even",
+  ODD: "Odd",
+};
 
-const DATA_BITS_OPTIONS = [
-  { value: "7", label: "7" },
-  { value: "8", label: "8" },
-];
+const FLOW_CONTROL_LABELS: Record<(typeof FLOW_CONTROL_VALUES)[number], string> = {
+  NONE: "None",
+  XONXOFF: "XON/XOFF",
+  RTSCTS: "RTS/CTS",
+};
 
-const STOP_BITS_OPTIONS = [
-  { value: "1", label: "1" },
-  { value: "1.5", label: "1.5" },
-  { value: "2", label: "2" },
-];
+const LINE_ENDING_LABELS: Record<(typeof LINE_ENDING_VALUES)[number], string> = {
+  NONE: "None",
+  CR: "CR (\\r)",
+  LF: "LF (\\n)",
+  CRLF: "CR+LF (\\r\\n)",
+};
 
-const PARITY_OPTIONS = [
-  { value: "NONE", label: "None" },
-  { value: "EVEN", label: "Even" },
-  { value: "ODD", label: "Odd" },
-];
+const toStringOptions = <T extends string | number>(values: readonly T[]) =>
+  values.map((value) => ({ value: String(value), label: String(value) }));
 
-const FLOW_CONTROL_OPTIONS = [
-  { value: "NONE", label: "None" },
-  { value: "XONXOFF", label: "XON/XOFF" },
-  { value: "RTSCTS", label: "RTS/CTS" },
-];
+const toLabeledOptions = <T extends string>(
+  values: readonly T[],
+  labels: Record<T, string>,
+) => values.map((value) => ({ value, label: labels[value] }));
 
-const LINE_ENDING_OPTIONS = [
-  { value: "NONE", label: "None" },
-  { value: "CR", label: "CR (\\r)" },
-  { value: "LF", label: "LF (\\n)" },
-  { value: "CRLF", label: "CR+LF (\\r\\n)" },
-];
+const COMM_TYPE_OPTIONS = toLabeledOptions(COMM_TYPE_VALUES, COMM_TYPE_LABELS);
+const BAUD_RATE_OPTIONS = toStringOptions(BAUD_RATE_VALUES);
+const DATA_BITS_OPTIONS = toStringOptions(DATA_BITS_VALUES);
+const STOP_BITS_OPTIONS = toStringOptions(STOP_BITS_VALUES);
+const PARITY_OPTIONS = toLabeledOptions(PARITY_VALUES, PARITY_LABELS);
+const FLOW_CONTROL_OPTIONS = toLabeledOptions(FLOW_CONTROL_VALUES, FLOW_CONTROL_LABELS);
+const LINE_ENDING_OPTIONS = toLabeledOptions(LINE_ENDING_VALUES, LINE_ENDING_LABELS);
 
 /** 통신 유형에 따른 extraConfig 키 설명 */
 const EXTRA_CONFIG_FIELDS: Record<string, { key: string; label: string; placeholder: string }[]> = {

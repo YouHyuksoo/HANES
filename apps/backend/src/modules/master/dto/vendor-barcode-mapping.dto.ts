@@ -13,6 +13,7 @@ import { IsString, IsOptional, IsNotEmpty, MaxLength, IsIn, IsInt, Min, Max } fr
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { USE_YN_VALUES } from '@harness/shared';
 const MATCH_TYPE_VALUES = ['EXACT', 'PREFIX', 'REGEX'] as const;
 
 export class CreateVendorBarcodeMappingDto {
@@ -65,7 +66,7 @@ export class CreateVendorBarcodeMappingDto {
   @ApiPropertyOptional({ description: '사용여부', default: 'Y' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
 
@@ -87,7 +88,7 @@ export class VendorBarcodeMappingQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '사용여부' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
 

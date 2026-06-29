@@ -9,15 +9,16 @@
  * 2. **그룹 코드**: BOX_STATUS, PALLET_STATUS, SHIPMENT_STATUS
  */
 import { ComCodeBadge } from '@/components/ui';
+import type { BoxStatusValue, PalletStatusValue, ShipmentStatusValue } from '@harness/shared';
 
 /** 박스 상태 타입 */
-export type BoxStatus = 'OPEN' | 'CLOSED' | 'SHIPPED';
+export type BoxStatus = BoxStatusValue;
 
 /** 팔레트 상태 타입 */
-export type PalletStatus = 'OPEN' | 'CLOSED' | 'LOADED' | 'SHIPPED';
+export type PalletStatus = PalletStatusValue;
 
 /** 출하 상태 타입 */
-export type ShipmentStatus = 'PREPARING' | 'LOADED' | 'SHIPPED' | 'DELIVERED' | 'CANCELED';
+export type ShipmentStatus = ShipmentStatusValue;
 
 /** 박스 상태 배지 - ComCodeBadge 위임 */
 export function BoxStatusBadge({ status }: { status: BoxStatus }) {

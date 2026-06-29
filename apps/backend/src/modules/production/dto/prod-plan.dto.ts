@@ -27,6 +27,7 @@ import {
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { PRODUCT_STOCK_ITEM_TYPE_VALUES } from '@harness/shared';
 /** 생산계획 개별 생성 DTO */
 export class CreateProdPlanDto {
   @ApiProperty({ description: '계획월 (YYYY-MM)', example: '2026-03' })
@@ -39,9 +40,9 @@ export class CreateProdPlanDto {
   @MaxLength(50)
   itemCode: string;
 
-  @ApiProperty({ description: '품목유형 (FINISHED/SEMI_PRODUCT)', example: 'FINISHED' })
+  @ApiProperty({ description: '품목유형 (FINISHED/SEMI_PRODUCT)', enum: PRODUCT_STOCK_ITEM_TYPE_VALUES, example: 'FINISHED' })
   @IsString()
-  @IsIn(['FINISHED', 'SEMI_PRODUCT'])
+  @IsIn([...PRODUCT_STOCK_ITEM_TYPE_VALUES])
   itemType: string;
 
   @ApiProperty({ description: '계획수량', example: 1000, minimum: 1 })
@@ -82,9 +83,9 @@ export class BulkProdPlanItemDto {
   @MaxLength(50)
   itemCode: string;
 
-  @ApiProperty({ description: '품목유형 (FINISHED/SEMI_PRODUCT)' })
+  @ApiProperty({ description: '품목유형 (FINISHED/SEMI_PRODUCT)', enum: PRODUCT_STOCK_ITEM_TYPE_VALUES })
   @IsString()
-  @IsIn(['FINISHED', 'SEMI_PRODUCT'])
+  @IsIn([...PRODUCT_STOCK_ITEM_TYPE_VALUES])
   itemType: string;
 
   @ApiProperty({ description: '계획수량', minimum: 1 })
@@ -150,10 +151,10 @@ export class ProdPlanQueryDto extends PaginationQueryDto {
   @IsString()
   planMonth?: string;
 
-  @ApiPropertyOptional({ description: '품목유형 필터 (FINISHED/SEMI_PRODUCT)' })
+  @ApiPropertyOptional({ description: '품목유형 필터 (FINISHED/SEMI_PRODUCT)', enum: PRODUCT_STOCK_ITEM_TYPE_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['FINISHED', 'SEMI_PRODUCT'])
+  @IsIn([...PRODUCT_STOCK_ITEM_TYPE_VALUES])
   itemType?: string;
 
   @ApiPropertyOptional({ description: '상태 필터' })

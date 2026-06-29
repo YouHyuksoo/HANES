@@ -15,6 +15,7 @@ import {
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { USE_YN_VALUES } from '@harness/shared';
 // ─── 라우팅 그룹 ───
 
 export class CreateRoutingGroupDto {
@@ -35,7 +36,7 @@ export class CreateRoutingGroupDto {
   description?: string;
 
   @ApiPropertyOptional({ description: '사용 여부', default: 'Y' })
-  @IsOptional() @IsString() @IsIn(['Y', 'N'])
+  @IsOptional() @IsString() @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
 
@@ -48,7 +49,7 @@ export class RoutingGroupQueryDto extends PaginationQueryDto {
   search?: string;
 
   @ApiPropertyOptional()
-  @IsOptional() @IsString() @IsIn(['Y', 'N'])
+  @IsOptional() @IsString() @IsIn([...USE_YN_VALUES])
   useYn?: string;
 
   @ApiPropertyOptional({ description: '연결 품목 유형 필터 (예: FINISHED)' })
@@ -87,8 +88,8 @@ export class CreateRoutingProcessDto {
   @IsOptional() @IsString() @IsIn(['IN_HOUSE', 'SUBCON'])
   executionType?: 'IN_HOUSE' | 'SUBCON';
 
-  @ApiPropertyOptional({ description: '공정 작업지시 생성 여부', enum: ['Y', 'N'], default: 'Y' })
-  @IsOptional() @IsString() @IsIn(['Y', 'N'])
+  @ApiPropertyOptional({ description: '공정 작업지시 생성 여부', enum: USE_YN_VALUES, default: 'Y' })
+  @IsOptional() @IsString() @IsIn([...USE_YN_VALUES])
   jobOrderYn?: string;
 
   @ApiPropertyOptional({ description: '외주처 코드' })
@@ -104,7 +105,7 @@ export class CreateRoutingProcessDto {
   setupTime?: number;
 
   @ApiPropertyOptional({ description: '샘플검사 필요 여부', default: 'N' })
-  @IsOptional() @IsString() @IsIn(['Y', 'N'])
+  @IsOptional() @IsString() @IsIn([...USE_YN_VALUES])
   sampleInspectYn?: string;
 
   @ApiPropertyOptional({ description: '라벨 발행 종류 (NONE/BUNDLE/SG/FG)', default: 'NONE' })
@@ -116,7 +117,7 @@ export class CreateRoutingProcessDto {
   @ApiPropertyOptional({ description: '자주검사 여부', default: 'N' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   qcSelfYn?: string;
 
   @ApiPropertyOptional({ description: '기본 검사방법 (DIRECT/DELEGATE)', default: 'DIRECT' })
@@ -128,7 +129,7 @@ export class CreateRoutingProcessDto {
   @ApiPropertyOptional({ description: '파괴검사 여부', default: 'N' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   destructiveYn?: string;
 
   @ApiPropertyOptional({ description: '기본 샘플 수량', default: 1 })
@@ -138,7 +139,7 @@ export class CreateRoutingProcessDto {
   sampleQty?: number;
 
   @ApiPropertyOptional({ description: '사용 여부', default: 'Y' })
-  @IsOptional() @IsString() @IsIn(['Y', 'N'])
+  @IsOptional() @IsString() @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
 
@@ -162,7 +163,7 @@ export class ConditionItemDto {
   @ApiPropertyOptional() @IsOptional() @IsString()
   unit?: string;
 
-  @ApiPropertyOptional() @IsOptional() @IsString() @IsIn(['Y', 'N'])
+  @ApiPropertyOptional() @IsOptional() @IsString() @IsIn([...USE_YN_VALUES])
   equipInterfaceYn?: string;
 }
 

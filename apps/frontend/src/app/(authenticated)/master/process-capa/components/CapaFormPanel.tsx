@@ -21,7 +21,7 @@ import PartSearchModal, {
 import api from "@/services/api";
 import { FieldInput, FieldSelect, FieldLabel, Field } from "./ProcessCapaFieldHelp";
 import { QtyInput } from "@/components/shared";
-import { calcStdUphFromTactTime, calcDailyCapa } from "@harness/shared";
+import { roundStdUph, calcDailyCapa } from "@harness/shared";
 
 /** 공정 CAPA 아이템 타입 (부모에서 전달) */
 interface ProcessCapaItem {
@@ -140,9 +140,9 @@ export default function CapaFormPanel({
     <K extends keyof FormState>(key: K, value: FormState[K]) => {
       setForm((prev) => {
         const next = { ...prev, [key]: value };
-        // 택트타임 변경 시 UPH 자동계산 — 프론트는 정수 반올림
+        // 택트타임 변경 시 UPH 자동계산 — 소수 2자리 반올림(백엔드와 단일 정책)
         if (key === "stdTactTime" && typeof value === "number" && value > 0) {
-          next.stdUph = Math.round(calcStdUphFromTactTime(value));
+          next.stdUph = roundStdUph(value);
         }
         return next;
       });

@@ -15,6 +15,7 @@ import {
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { USE_YN_VALUES } from '@harness/shared';
 export class CreateProcessCapaDto {
   @ApiProperty({ description: '공정 코드' })
   @IsString()
@@ -78,7 +79,7 @@ export class CreateProcessCapaDto {
   @ApiPropertyOptional({ description: '사용 여부', default: 'Y' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 
   @ApiPropertyOptional({ description: '비고' })

@@ -22,6 +22,7 @@ import {
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { USE_YN_VALUES } from '@harness/shared';
 /** 개별 샘플 측정값 */
 export class SampleMeasurementDto {
   @ApiProperty({ description: '샘플 번호', example: 1 })
@@ -47,7 +48,7 @@ export class SampleMeasurementDto {
 
   @ApiProperty({ description: '합불 판정 (Y/N)', example: 'Y' })
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   passYn: string;
 
   @ApiPropertyOptional({ description: '비고' })
@@ -87,7 +88,7 @@ export class SampleInspectHistoryQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '합격 여부 (Y/N)' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   passYn?: string;
 
   @ApiPropertyOptional({ description: '검사일 시작' })

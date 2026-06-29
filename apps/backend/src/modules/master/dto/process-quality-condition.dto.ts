@@ -20,6 +20,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+import { USE_YN_VALUES } from '@harness/shared';
 export class CreateConditionDto {
   @ApiProperty({ description: '품목 코드' })
   @IsString()
@@ -64,13 +65,13 @@ export class CreateConditionDto {
   @ApiPropertyOptional({ description: '설비 인터페이스 여부', default: 'N' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   equipInterfaceYn?: string;
 
   @ApiPropertyOptional({ description: '사용 여부', default: 'Y' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
 
@@ -108,7 +109,7 @@ export class ConditionItemDto {
   @ApiPropertyOptional({ description: '설비 인터페이스 여부' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   equipInterfaceYn?: string;
 }
 

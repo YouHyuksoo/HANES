@@ -17,6 +17,7 @@ import {
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { USE_YN_VALUES } from '@harness/shared';
 // ============================================================================
 // 소모품 마스터 DTOs
 // ============================================================================
@@ -79,7 +80,7 @@ export class UpdateConsumableDto extends PartialType(CreateConsumableDto) {
   @IsString()
   status?: string;
 
-  @ApiPropertyOptional({ description: '사용 여부', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: '사용 여부', enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
   useYn?: string;
@@ -269,10 +270,10 @@ export class CreateConsumableUsageMapDto {
   @Min(0)
   usagePerUnit?: number = 1;
 
-  @ApiPropertyOptional({ description: '사용 여부', enum: ['Y', 'N'], default: 'Y' })
+  @ApiPropertyOptional({ description: '사용 여부', enum: USE_YN_VALUES, default: 'Y' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string = 'Y';
 
   @ApiPropertyOptional({ description: '비고', maxLength: 500 })
@@ -290,10 +291,10 @@ export class UpdateConsumableUsageMapDto {
   @Min(0)
   usagePerUnit?: number;
 
-  @ApiPropertyOptional({ description: '사용 여부', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: '사용 여부', enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 
   @ApiPropertyOptional({ description: '비고', maxLength: 500 })

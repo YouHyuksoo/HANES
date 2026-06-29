@@ -3,6 +3,7 @@ import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength } from 'cla
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { USE_YN_VALUES } from '@harness/shared';
 export class CreateEquipInspectItemPoolDto {
   @ApiProperty({ description: '점검항목 코드', example: 'EIP-001' })
   @IsString()
@@ -40,7 +41,7 @@ export class CreateEquipInspectItemPoolDto {
   @ApiPropertyOptional({ description: '사용여부', default: 'Y' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 
   @ApiPropertyOptional({ description: '판정구분 (VISUAL 판정형 | MEASURE 측정형)', default: 'VISUAL' })
@@ -109,6 +110,6 @@ export class EquipInspectItemPoolQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '사용여부' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }

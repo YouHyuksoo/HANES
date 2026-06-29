@@ -9,22 +9,30 @@ const panel = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/proc
 
 test('process-capa CAPA 산식을 @harness/shared 단일 출처로 노출한다', () => {
   assert.match(rules, /export function calcStdUphFromTactTime\(stdTactTime: number\): number/);
+  assert.match(rules, /export function roundStdUph\(stdTactTime: number\): number/);
   assert.match(rules, /export function capaMultiplier\(equipCnt: number, workerCnt: number\): number/);
   assert.match(rules, /export function calcDailyCapa\(\{[\s\S]*\}: DailyCapaInput\): number/);
   assert.match(sharedIndex, /export \* from '\.\/process-capa-rules'/);
 });
 
-test('백엔드 process-capa.service가 공유 산식을 사용한다(반올림·폴백은 호출부 유지)', () => {
-  assert.match(service, /import \{ calcStdUphFromTactTime, calcDailyCapa \} from '@harness\/shared'/);
-  // stdUph: 백엔드는 소수 2자리 반올림 유지
-  assert.match(service, /Math\.round\(calcStdUphFromTactTime\([^)]*\) \* 100\) \/ 100/);
+test('roundStdUph는 소수 2자리 반올림 단일 정책이다', () => {
+  assert.match(rules, /Math\.round\(calcStdUphFromTactTime\(stdTactTime\) \* 100\) \/ 100/);
+});
+
+test('백엔드 process-capa.service가 공유 산식을 사용한다(stdUph 2자리, 폴백은 호출부)', () => {
+  assert.match(service, /import \{ roundStdUph, calcDailyCapa \} from '@harness\/shared'/);
+  // stdUph: 공유 roundStdUph(소수 2자리)로 통일
+  assert.match(service, /roundStdUph\(dto\.stdTactTime\)/);
+  assert.match(service, /roundStdUph\(existing\.stdTactTime\)/);
+  assert.doesNotMatch(service, /Math\.round\(calcStdUphFromTactTime/);
   // dailyCapa: 미입력 폴백(UPH 0, 효율 85)을 호출부에서 적용
   assert.match(service, /calcDailyCapa\(\{[\s\S]*stdUph: entity\.stdUph \|\| 0[\s\S]*balanceEffPct: entity\.balanceEff \|\| 85[\s\S]*\}\)/);
 });
 
-test('프론트 CapaFormPanel이 공유 산식을 사용한다(정수 반올림 유지)', () => {
-  assert.match(panel, /import \{ calcStdUphFromTactTime, calcDailyCapa \} from "@harness\/shared"/);
-  // stdUph: 프론트는 정수 반올림 유지
-  assert.match(panel, /Math\.round\(calcStdUphFromTactTime\(value\)\)/);
+test('프론트 CapaFormPanel이 공유 산식을 사용한다(stdUph 2자리로 통일)', () => {
+  assert.match(panel, /import \{ roundStdUph, calcDailyCapa \} from "@harness\/shared"/);
+  // stdUph: 공유 roundStdUph(소수 2자리)로 통일 — 기존 정수 반올림 제거
+  assert.match(panel, /next\.stdUph = roundStdUph\(value\)/);
+  assert.doesNotMatch(panel, /Math\.round\(calcStdUphFromTactTime/);
   assert.match(panel, /calcDailyCapa\(\{[\s\S]*stdUph: form\.stdUph[\s\S]*balanceEffPct: form\.balanceEff[\s\S]*\}\)/);
 });

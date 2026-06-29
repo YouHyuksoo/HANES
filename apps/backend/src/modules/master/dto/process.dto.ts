@@ -13,6 +13,7 @@ import { IsString, IsOptional, IsNotEmpty, IsInt, Min, Max, MaxLength, IsIn } fr
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { USE_YN_VALUES } from '@harness/shared';
 export class CreateProcessDto {
   @ApiProperty({ description: '공정 코드', example: 'CUT-01' })
   @IsString()
@@ -57,7 +58,7 @@ export class CreateProcessDto {
   @ApiPropertyOptional({ description: '사용 여부', default: 'Y' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
 
@@ -79,6 +80,6 @@ export class ProcessQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }

@@ -10,6 +10,7 @@
 import { IsString, IsOptional, IsNumber, IsIn, Min } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { PRODUCT_STOCK_ITEM_TYPE_VALUES } from '@harness/shared';
 /** 제품 입고 DTO */
 export class ProductReceiveStockDto {
   @IsString()
@@ -19,7 +20,7 @@ export class ProductReceiveStockDto {
   itemCode: string;
 
   @IsOptional()
-  @IsIn(['SEMI_PRODUCT', 'FINISHED'])
+  @IsIn([...PRODUCT_STOCK_ITEM_TYPE_VALUES])
   itemType?: string;
 
   @IsOptional()
@@ -80,7 +81,7 @@ export class ProductIssueStockDto {
   itemCode: string;
 
   @IsOptional()
-  @IsIn(['SEMI_PRODUCT', 'FINISHED'])
+  @IsIn([...PRODUCT_STOCK_ITEM_TYPE_VALUES])
   itemType?: string;
 
   @IsOptional()

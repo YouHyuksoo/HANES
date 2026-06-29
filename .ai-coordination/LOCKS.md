@@ -2,6 +2,251 @@
 
 ## Active Locks
 
+## T-COLUMN-EXTRACT-BATCH5 production/shipping/product/inspection 인라인 DataGrid 컬럼 분리
+status: active
+owner: claude
+role: implementer
+started: 2026-06-29 06:45 KST
+last_seen: 2026-06-29 06:45 KST
+expires: 2026-06-29 10:45 KST
+files:
+- apps/frontend/src/app/(authenticated)/inspection/integrated/
+- apps/frontend/src/app/(authenticated)/inspection/protocol/
+- apps/frontend/src/app/(authenticated)/product/issue/
+- apps/frontend/src/app/(authenticated)/product/issue-cancel/
+- apps/frontend/src/app/(authenticated)/product/receipt-cancel/
+- apps/frontend/src/app/(authenticated)/product/receive/
+- apps/frontend/src/app/(authenticated)/production/input-equip/
+- apps/frontend/src/app/(authenticated)/production/input-inspect/
+- apps/frontend/src/app/(authenticated)/production/order/
+- apps/frontend/src/app/(authenticated)/production/repair/
+- apps/frontend/src/app/(authenticated)/production/result/
+- apps/frontend/src/app/(authenticated)/production/sample-inspect/
+- apps/frontend/src/app/(authenticated)/production/specification-setup/
+- apps/frontend/src/app/(authenticated)/production/wip-material-stock/
+- apps/frontend/src/app/(authenticated)/production/wip-material-trans/
+- apps/frontend/src/app/(authenticated)/shipping/box-stock/
+- apps/frontend/src/app/(authenticated)/shipping/confirm/
+- apps/frontend/src/app/(authenticated)/shipping/customer-po/
+- apps/frontend/src/app/(authenticated)/shipping/customer-po-status/
+- apps/frontend/src/app/(authenticated)/shipping/history/
+- apps/frontend/src/app/(authenticated)/shipping/order/
+- apps/frontend/src/app/(authenticated)/shipping/pack/
+- apps/frontend/src/app/(authenticated)/shipping/pallet/
+- apps/frontend/src/app/(authenticated)/shipping/pallet-ship/
+note: T-COLUMN-EXTRACT 5차(잔여 일괄). 각 page.tsx 인라인 columns를 *Columns.tsx 팩토리로 분리(동작 불변, page폴더 한정). 폴더 단위 lock=해당 page.tsx + 신규 *Columns.tsx/*-columns.structure.test.mjs만. 타 active lock(claude shipping/return, production kiosk/assembly/subprocess 등)과 미겹침 확인하고 선택.
+
+## T-COLUMN-EXTRACT-BATCH4 material/* 인라인 DataGrid 컬럼 분리
+status: active
+owner: claude
+role: implementer
+started: 2026-06-29 06:42 KST
+last_seen: 2026-06-29 06:42 KST
+expires: 2026-06-29 10:42 KST
+files:
+- apps/frontend/src/app/(authenticated)/material/adjustment/
+- apps/frontend/src/app/(authenticated)/material/arrival-result/
+- apps/frontend/src/app/(authenticated)/material/arrival-stock/
+- apps/frontend/src/app/(authenticated)/material/arrival-transaction/
+- apps/frontend/src/app/(authenticated)/material/concession/
+- apps/frontend/src/app/(authenticated)/material/hold/
+- apps/frontend/src/app/(authenticated)/material/iqc-history/
+- apps/frontend/src/app/(authenticated)/material/lot/
+- apps/frontend/src/app/(authenticated)/material/lot-merge/
+- apps/frontend/src/app/(authenticated)/material/lot-split/
+- apps/frontend/src/app/(authenticated)/material/misc-receipt/
+- apps/frontend/src/app/(authenticated)/material/physical-inv/
+- apps/frontend/src/app/(authenticated)/material/physical-inv-history/
+- apps/frontend/src/app/(authenticated)/material/po/
+- apps/frontend/src/app/(authenticated)/material/po-status/
+- apps/frontend/src/app/(authenticated)/material/receipt-cancel/
+- apps/frontend/src/app/(authenticated)/material/shelf-life/
+- apps/frontend/src/app/(authenticated)/material/shelf-life-history/
+- apps/frontend/src/app/(authenticated)/material/shelf-life-reinspect/
+- apps/frontend/src/app/(authenticated)/material/stock/
+note: T-COLUMN-EXTRACT 4차. material/* 인라인 columns를 *Columns.tsx 팩토리로 분리(동작 불변, page폴더 한정). codex T-ARCH(material/scrap)·claude(material/receive 등)와 미겹침. 폴더 단위 lock=해당 page.tsx + 신규 *Columns.tsx/*-columns.structure.test.mjs만.
+
+## T-COLUMN-EXTRACT-BATCH3 quality/* 인라인 DataGrid 컬럼 분리
+status: active
+owner: claude
+role: implementer
+started: 2026-06-29 06:35 KST
+last_seen: 2026-06-29 06:35 KST
+expires: 2026-06-29 10:35 KST
+files:
+- apps/frontend/src/app/(authenticated)/quality/aql/
+- apps/frontend/src/app/(authenticated)/quality/audit/
+- apps/frontend/src/app/(authenticated)/quality/capa/
+- apps/frontend/src/app/(authenticated)/quality/change-control/
+- apps/frontend/src/app/(authenticated)/quality/complaint/
+- apps/frontend/src/app/(authenticated)/quality/control-plan/
+- apps/frontend/src/app/(authenticated)/quality/defect-code/
+- apps/frontend/src/app/(authenticated)/quality/fai/
+- apps/frontend/src/app/(authenticated)/quality/msa/
+- apps/frontend/src/app/(authenticated)/quality/oqc/
+- apps/frontend/src/app/(authenticated)/quality/oqc-history/
+- apps/frontend/src/app/(authenticated)/quality/ppap/
+- apps/frontend/src/app/(authenticated)/quality/request-inspect/
+- apps/frontend/src/app/(authenticated)/quality/rework/
+- apps/frontend/src/app/(authenticated)/quality/rework-history/
+- apps/frontend/src/app/(authenticated)/quality/self-inspect-history/
+- apps/frontend/src/app/(authenticated)/quality/spc/
+note: T-COLUMN-EXTRACT 3차. quality/* 인라인 columns를 *Columns.tsx 팩토리로 분리(동작 불변, page폴더 한정). quality/defect(hermes), quality/rework-inspect(codex T-ARCH)는 제외. 폴더 단위 lock=해당 page.tsx + 신규 *Columns.tsx/*-columns.structure.test.mjs만.
+
+## T-COLUMN-EXTRACT-BATCH2 inventory/consumables/customs/system 인라인 DataGrid 컬럼 분리
+status: active
+owner: claude
+role: implementer
+started: 2026-06-29 06:20 KST
+last_seen: 2026-06-29 06:20 KST
+expires: 2026-06-29 10:20 KST
+files:
+- apps/frontend/src/app/(authenticated)/inventory/material-physical-inv/
+- apps/frontend/src/app/(authenticated)/inventory/material-physical-inv-apply/
+- apps/frontend/src/app/(authenticated)/inventory/material-physical-inv-history/
+- apps/frontend/src/app/(authenticated)/inventory/material-stock/
+- apps/frontend/src/app/(authenticated)/inventory/product-hold/
+- apps/frontend/src/app/(authenticated)/inventory/product-physical-inv/
+- apps/frontend/src/app/(authenticated)/inventory/product-physical-inv-history/
+- apps/frontend/src/app/(authenticated)/inventory/stock/
+- apps/frontend/src/app/(authenticated)/inventory/transaction/
+- apps/frontend/src/app/(authenticated)/consumables/life/
+- apps/frontend/src/app/(authenticated)/consumables/master/
+- apps/frontend/src/app/(authenticated)/consumables/mount/
+- apps/frontend/src/app/(authenticated)/customs/entry/
+- apps/frontend/src/app/(authenticated)/customs/usage/
+- apps/frontend/src/app/(authenticated)/system/users/
+- apps/frontend/src/app/(authenticated)/system/document/
+- apps/frontend/src/app/(authenticated)/system/training/
+- apps/frontend/src/app/(authenticated)/system/comm-config/
+note: T-MASTER-COLUMN-EXTRACT 후속 배치. 각 page.tsx 인라인 columns를 *Columns.tsx 팩토리로 분리(동작 불변, page폴더 한정). 폴더 단위 lock=해당 page.tsx + 신규 *Columns.tsx/*-columns.structure.test.mjs만. codex T-ARCH(scrap/progress/rework-inspect/pack-result/mold/department)·hermes(quality/defect)·codex T-ALL-MENU-QA(customs/stock·outsourcing/receive 등)와 미겹침 확인하고 선택.
+
+## T-MASTER-COLUMN-EXTRACT 기준정보 DataGrid 컬럼 분리 + 공정CAPA 업무규칙 공통화
+status: active
+owner: claude
+role: implementer
+started: 2026-06-29 06:08 KST
+last_seen: 2026-06-29 06:08 KST
+expires: 2026-06-29 10:08 KST
+files:
+- apps/frontend/src/app/(authenticated)/master/worker/page.tsx
+- apps/frontend/src/app/(authenticated)/master/worker/workerColumns.tsx
+- apps/frontend/src/app/(authenticated)/master/worker/worker-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/master/company/page.tsx
+- apps/frontend/src/app/(authenticated)/master/company/companyColumns.tsx
+- apps/frontend/src/app/(authenticated)/master/company/company-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/master/gauge/page.tsx
+- apps/frontend/src/app/(authenticated)/master/gauge/gaugeColumns.tsx
+- apps/frontend/src/app/(authenticated)/master/gauge/gauge-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/master/partner/page.tsx
+- apps/frontend/src/app/(authenticated)/master/partner/partnerColumns.tsx
+- apps/frontend/src/app/(authenticated)/master/partner/partner-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/master/process-capa/page.tsx
+- apps/frontend/src/app/(authenticated)/master/process-capa/processCapaColumns.tsx
+- apps/frontend/src/app/(authenticated)/master/process-capa/process-capa-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/master/process-capa/process-capa-rules.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/master/process-capa/components/CapaFormPanel.tsx
+- apps/frontend/src/app/(authenticated)/master/vendor-barcode/page.tsx
+- apps/frontend/src/app/(authenticated)/master/vendor-barcode/vendorBarcodeColumns.tsx
+- apps/frontend/src/app/(authenticated)/master/vendor-barcode/vendor-barcode-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/master/work-instruction/page.tsx
+- apps/frontend/src/app/(authenticated)/master/work-instruction/workInstructionColumns.tsx
+- apps/frontend/src/app/(authenticated)/master/work-instruction/work-instruction-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/master/equip-inspect-item/page.tsx
+- apps/frontend/src/app/(authenticated)/master/equip-inspect-item/equipInspectItemColumns.tsx
+- apps/frontend/src/app/(authenticated)/master/equip-inspect-item/equip-inspect-item-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/master/equip-inspect-item/equip-inspect-item-panel.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/master/equip-inspect-item/equip-inspect-item-image-url.structure.test.mjs
+- packages/shared/src/utils/process-capa-rules.ts
+- packages/shared/src/utils/index.ts
+- apps/backend/src/modules/master/services/process-capa.service.ts
+note: 인라인 DataGrid columns를 page별 *Columns.tsx 팩토리로 분리(동작 불변). process-capa는 FE/BE 중복 CAPA 산식(stdUph 원시값·dailyCapa)을 @harness/shared로 승격(반올림·폴백은 호출부 유지 → 동작 보존). 겹침: master page.tsx들은 claude T-MASTER-UNSAVED-GUARD lock과 파일 중복(같은 owner, 컬럼 분리는 가산적 변경). codex T-ARCH-PAGE-RULE-REFORM과 동일 주제이나 codex는 system/department 담당(master/* 미수정). 사용자 승인 받아 진행.
+
+## T-ARCH-PAGE-RULE-REFORM page.tsx 축소와 업무 규칙 중앙화 아키텍처 개선
+status: active
+owner: codex
+role: implementer/reviewer
+started: 2026-06-29 06:03 KST
+last_seen: 2026-06-29 07:51 KST
+expires: 2026-06-29 11:51 KST
+files:
+- docs/reports/architecture-improvement-candidates.md
+- apps/frontend/src/app/(authenticated)/system/department/page.tsx
+- apps/frontend/src/app/(authenticated)/system/department/departmentColumns.tsx
+- apps/frontend/src/app/(authenticated)/system/department/department-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/system/department/types.ts
+- apps/frontend/src/app/(authenticated)/system/department/components/DepartmentFormPanel.tsx
+- apps/frontend/src/app/(authenticated)/production/pack-result/page.tsx
+- apps/frontend/src/app/(authenticated)/production/pack-result/packResultColumns.tsx
+- apps/frontend/src/app/(authenticated)/production/pack-result/pack-result-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/production/pack-result/types.ts
+- apps/frontend/src/app/(authenticated)/equipment/mold/page.tsx
+- apps/frontend/src/app/(authenticated)/equipment/mold/moldColumns.tsx
+- apps/frontend/src/app/(authenticated)/equipment/mold/mold-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/production/progress/page.tsx
+- apps/frontend/src/app/(authenticated)/production/progress/progressColumns.tsx
+- apps/frontend/src/app/(authenticated)/production/progress/progress-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/production/progress/types.ts
+- apps/frontend/src/app/(authenticated)/quality/rework-inspect/page.tsx
+- apps/frontend/src/app/(authenticated)/quality/rework-inspect/reworkInspectColumns.tsx
+- apps/frontend/src/app/(authenticated)/quality/rework-inspect/rework-inspect-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/quality/rework-inspect/types.ts
+- apps/frontend/src/app/(authenticated)/material/scrap/page.tsx
+- apps/frontend/src/app/(authenticated)/material/scrap/scrapColumns.tsx
+- apps/frontend/src/app/(authenticated)/material/scrap/scrap-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/material/scrap/types.ts
+- apps/frontend/src/app/(authenticated)/production/result-summary/page.tsx
+- apps/frontend/src/app/(authenticated)/production/result-summary/resultSummaryColumns.tsx
+- apps/frontend/src/app/(authenticated)/production/result-summary/result-summary-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/production/result-summary/types.ts
+- apps/frontend/src/app/(authenticated)/equipment/calibration-history/page.tsx
+- apps/frontend/src/app/(authenticated)/equipment/calibration-history/calibrationHistoryColumns.tsx
+- apps/frontend/src/app/(authenticated)/equipment/calibration-history/calibration-history-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/equipment/calibration-history/types.ts
+- apps/frontend/src/app/(authenticated)/equipment/pm-result/page.tsx
+- apps/frontend/src/app/(authenticated)/equipment/pm-result/pmResultColumns.tsx
+- apps/frontend/src/app/(authenticated)/equipment/pm-result/pm-result-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/equipment/pm-result/types.ts
+- apps/frontend/src/app/(authenticated)/equipment/pm-plan/page.tsx
+- apps/frontend/src/app/(authenticated)/equipment/pm-plan/pmPlanColumns.tsx
+- apps/frontend/src/app/(authenticated)/equipment/pm-plan/pm-plan-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/equipment/pm-plan/types.ts
+- apps/frontend/src/app/(authenticated)/equipment/inspect-history/page.tsx
+- apps/frontend/src/app/(authenticated)/equipment/inspect-history/inspectHistoryColumns.tsx
+- apps/frontend/src/app/(authenticated)/equipment/inspect-history/inspect-history-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/equipment/inspect-history/types.ts
+- apps/frontend/src/app/(authenticated)/equipment/mold-mgmt/page.tsx
+- apps/frontend/src/app/(authenticated)/equipment/mold-mgmt/moldMgmtColumns.tsx
+- apps/frontend/src/app/(authenticated)/equipment/mold-mgmt/mold-mgmt-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/equipment/mold-mgmt/types.ts
+- apps/frontend/src/app/(authenticated)/inspection/history/page.tsx
+- apps/frontend/src/app/(authenticated)/inspection/history/inspectionHistoryColumns.tsx
+- apps/frontend/src/app/(authenticated)/inspection/history/inspection-history-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/inspection/history/types.ts
+- apps/frontend/src/app/(authenticated)/inspection/structure/page.tsx
+- apps/frontend/src/app/(authenticated)/inspection/structure/structureInspectColumns.tsx
+- apps/frontend/src/app/(authenticated)/inspection/structure/structure-inspect-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/interface/log/page.tsx
+- apps/frontend/src/app/(authenticated)/interface/log/interfaceLogColumns.tsx
+- apps/frontend/src/app/(authenticated)/interface/log/interface-log-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/interface/log/types.ts
+- apps/frontend/src/app/(authenticated)/outsourcing/vendor/page.tsx
+- apps/frontend/src/app/(authenticated)/outsourcing/vendor/vendorColumns.tsx
+- apps/frontend/src/app/(authenticated)/outsourcing/vendor/vendor-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/outsourcing/vendor/types.ts
+- apps/frontend/src/app/(authenticated)/outsourcing/order/page.tsx
+- apps/frontend/src/app/(authenticated)/outsourcing/order/subconOrderColumns.tsx
+- apps/frontend/src/app/(authenticated)/outsourcing/order/subcon-order-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/outsourcing/order/types.ts
+- apps/frontend/src/app/(authenticated)/sales/customer-po/page.tsx
+- apps/frontend/src/app/(authenticated)/sales/customer-po/customerPoColumns.tsx
+- apps/frontend/src/app/(authenticated)/sales/customer-po/customer-po-columns.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+note: page.tsx 비대화, 컬럼 분리, 업무 규칙 중앙화, 필드 영향 경로 표준화의 적용 순서를 정리한다. 기존 active lock과 겹치는 master/* 및 shipping 서비스 코드는 lock 해소 전 수정하지 않는다.
+
 ## T-MASTER-UNSAVED-GUARD 기준정보 우측패널 행전환 일관화 + 저장안된변경 방어
 status: active
 owner: claude

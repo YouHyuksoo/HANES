@@ -12,6 +12,7 @@ import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn, IsNumber, IsBoo
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { USE_YN_VALUES } from '@harness/shared';
 export class CreateIqcItemDto {
   @ApiProperty({ description: '품목 코드' })
   @IsString()
@@ -67,7 +68,7 @@ export class CreateIqcItemDto {
   @ApiPropertyOptional({ description: '사용 여부', default: 'Y' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
 
@@ -89,6 +90,6 @@ export class IqcItemQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 const read = (path) => fs.readFileSync(path, 'utf8');
 const page = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/part/page.tsx', 'utf8');
+const partColumns = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/part/partColumns.tsx', 'utf8');
 const types = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/part/types.ts', 'utf8');
 const panel = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx', 'utf8');
 const modal = fs.readFileSync('apps/frontend/src/app/(authenticated)/master/part/components/PartFormModal.tsx', 'utf8');
@@ -13,16 +14,16 @@ const partEntity = fs.readFileSync('apps/backend/src/entities/item-master.entity
 const partService = fs.readFileSync('apps/backend/src/modules/master/services/part.service.ts', 'utf8');
 const implementationRules = fs.readFileSync('docs/standards/implementation-rules.md', 'utf8');
 const ko = JSON.parse(fs.readFileSync('apps/frontend/src/locales/ko.json', 'utf8'));
-const combined = [page, panel, modal].join('\n');
+const combined = [page, partColumns, panel, modal].join('\n');
 
 test('/master/part uses the revised Korean quantity labels', () => {
   assert.equal(ko.master.part.boxQty, '박스장입수량');
   assert.equal(ko.master.part.minPackQty, '최소불출단위수량(자재)');
   assert.equal(ko.master.part.lotUnitQty, '묶음단위수량(생산공정품)');
 
-  assert.match(page, /t\("master\.part\.boxQty", "박스장입수량"\)/);
-  assert.match(page, /t\("master\.part\.minPackQty", "최소불출단위수량\(자재\)"\)/);
-  assert.match(page, /t\("master\.part\.lotUnitQty", "묶음단위수량\(생산공정품\)"\)/);
+  assert.match(partColumns, /t\("master\.part\.boxQty", "박스장입수량"\)/);
+  assert.match(partColumns, /t\("master\.part\.minPackQty", "최소불출단위수량\(자재\)"\)/);
+  assert.match(partColumns, /t\("master\.part\.lotUnitQty", "묶음단위수량\(생산공정품\)"\)/);
   assert.match(panel, /t\("master\.part\.boxQty", "박스장입수량"\)/);
   assert.match(panel, /t\("master\.part\.minPackQty", "최소불출단위수량\(자재\)"\)/);
   assert.match(panel, /t\("master\.part\.lotUnitQty", "묶음단위수량\(생산공정품\)"\)/);
@@ -50,7 +51,7 @@ test('/master/part box quantity supports typed input with packaging unit suggest
 
 test('/master/part renames fixed storage location label', () => {
   assert.equal(ko.master.part.storageLocation, '품목고정 적재로케이션');
-  assert.match(page, /t\("master\.part\.storageLocation", "품목고정 적재로케이션"\)/);
+  assert.match(partColumns, /t\("master\.part\.storageLocation", "품목고정 적재로케이션"\)/);
   assert.match(panel, /t\("master\.part\.storageLocation", "품목고정 적재로케이션"\)/);
   assert.match(modal, /t\("master\.part\.storageLocation", "품목고정 적재로케이션"\)/);
   assert.doesNotMatch(combined, /"적재로케이션"/);
@@ -103,11 +104,11 @@ test('/master/part uses an IQC AQL policy code selector and decimal input for ba
   assert.match(partDto, /@ApiPropertyOptional\(\{ description: '샘플검사 수량', example: 0\.5 \}\)[\s\S]*?@IsNumber\(\)[\s\S]*?sampleQty\?: number;/);
   assert.doesNotMatch(partDto, /@ApiPropertyOptional\(\{ description: '샘플검사 수량'[\s\S]*?@IsInt\(\)[\s\S]*?sampleQty\?: number;/);
   assert.match(types, /iqcAqlPolicyCode\?: string \| null; \/\/ IQC AQL 정책 코드/);
-  assert.match(page, /accessorKey: "iqcAqlPolicyCode", header: t\("master\.part\.iqcAqlPolicyCode", "AQL 정책"\)/);
+  assert.match(partColumns, /accessorKey: "iqcAqlPolicyCode"[\s\S]*header: t\("master\.part\.iqcAqlPolicyCode", "AQL 정책"\)/);
   assert.match(partDto, /@ApiPropertyOptional\(\{ description: 'IQC AQL 정책 코드', example: 'AQLP-II-1\.0-2\.5' \}\)[\s\S]*?iqcAqlPolicyCode\?: string;/);
   assert.match(partEntity, /@Column\(\{ type: 'varchar2', name: 'IQC_AQL_POLICY_CODE', length: 50, nullable: true \}\)[\s\S]*?iqcAqlPolicyCode: string \| null;/);
   assert.match(partService, /iqcAqlPolicyCode: dto\.iqcAqlPolicyCode \?\? null/);
-  for (const source of [types, page, fieldHelp, partDto, partEntity, partService]) {
+  for (const source of [types, partColumns, fieldHelp, partDto, partEntity, partService]) {
     assert.doesNotMatch(source, /inspectionLevel\?: string \| null; \/\/ AQL 검사수준/);
     assert.doesNotMatch(source, /aqlCritical\?: number \| null/);
     assert.doesNotMatch(source, /aqlMajor\?: number \| null/);
@@ -124,7 +125,7 @@ test('/master/part exposes vehicle model name from ITEM_MASTERS.MODEL_NAME', () 
   assert.equal(ko.master.part.modelName, '차종');
 
   assert.match(types, /modelName\?: string \| null; \/\/ 차종/);
-  assert.match(page, /accessorKey: "modelName", header: t\("master\.part\.modelName", "차종"\)/);
+  assert.match(partColumns, /accessorKey: "modelName"[\s\S]*header: t\("master\.part\.modelName", "차종"\)/);
   assert.match(partService, /p\.modelName LIKE :searchRaw/);
 
   for (const source of [panel, modal]) {
@@ -141,6 +142,7 @@ test('/master/part exposes vehicle model name from ITEM_MASTERS.MODEL_NAME', () 
 test('/master/part exposes defect model group from ITEM_MASTERS.DEFECT_MODEL_GROUP', () => {
   const types = read('apps/frontend/src/app/(authenticated)/master/part/types.ts');
   const page = read('apps/frontend/src/app/(authenticated)/master/part/page.tsx');
+  const partColumns = read('apps/frontend/src/app/(authenticated)/master/part/partColumns.tsx');
   const panel = read('apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx');
   const fieldHelp = read('apps/frontend/src/app/(authenticated)/master/part/components/PartFieldHelp.tsx');
   const partDto = read('apps/backend/src/modules/master/dto/part.dto.ts');
@@ -150,7 +152,7 @@ test('/master/part exposes defect model group from ITEM_MASTERS.DEFECT_MODEL_GRO
 
   assert.match(types, /defectModelGroup\?: string \| null; \/\/ 불량 모델구분/);
   assert.match(page, /useComCodeOptions\("DEFECT_MODEL_GROUP"\)/);
-  assert.match(page, /accessorKey: "defectModelGroup", header: t\("master\.part\.defectModelGroup", "모델구분"\)/);
+  assert.match(partColumns, /accessorKey: "defectModelGroup"[\s\S]*header: t\("master\.part\.defectModelGroup", "모델구분"\)/);
   assert.match(panel, /const defectModelGroupOptions = useComCodeOptions\("DEFECT_MODEL_GROUP"\)/);
   assert.match(panel, /defectModelGroup: editingPart\?\.defectModelGroup \|\| ""/);
   assert.match(panel, /defectModelGroup: form\.defectModelGroup \|\| undefined/);
@@ -165,7 +167,7 @@ test('/master/part exposes defect model group from ITEM_MASTERS.DEFECT_MODEL_GRO
 });
 
 test('/master/part does not manage wire cut or stripping dimensions as item master fields', () => {
-  for (const source of [page, types, panel, modal, fieldHelp, partDto, partEntity, partService]) {
+  for (const source of [page, partColumns, types, panel, modal, fieldHelp, partDto, partEntity, partService]) {
     assert.doesNotMatch(source, /accessorKey: "length"/);
     assert.doesNotMatch(source, /field="length"/);
     assert.doesNotMatch(source, /length\?: number/);

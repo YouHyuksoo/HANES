@@ -25,6 +25,7 @@ import {
 import { Type } from 'class-transformer';
 import { BaseListQueryDto } from '@common/dto/base-query.dto';
 
+import { USE_YN_VALUES } from '@harness/shared';
 /**
  * 공통코드 생성 DTO
  */
@@ -62,7 +63,7 @@ export class CreateComCodeDto {
   @Min(0)
   sortOrder?: number;
 
-  @ApiPropertyOptional({ description: '사용 여부', default: 'Y', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: '사용 여부', default: 'Y', enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
   useYn?: string;
@@ -107,7 +108,7 @@ export class ComCodeQueryDto extends BaseListQueryDto {
   @IsString()
   groupCode?: string;
 
-  @ApiPropertyOptional({ description: '사용 여부 필터', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: '사용 여부 필터', enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
   useYn?: string;

@@ -6,6 +6,7 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { requiresIqcAqlPolicy } from '@harness/shared';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { CreatePartDto, UpdatePartDto, PartQueryDto } from '../dto/part.dto';
 
@@ -23,18 +24,12 @@ export class PartService {
     };
   }
 
-  private isNoInspectionMethod(inspectMethod?: string | null): boolean {
-    const method = (inspectMethod ?? '').trim().toUpperCase();
-    return method === 'SKIP' || method === 'NONE';
-  }
-
   private assertIqcAqlPolicySelected(input: {
     iqcYn?: string | null;
     inspectMethod?: string | null;
     iqcAqlPolicyCode?: string | null;
   }): void {
-    const isIqcTarget = (input.iqcYn ?? 'Y').trim().toUpperCase() === 'Y';
-    if (!isIqcTarget || this.isNoInspectionMethod(input.inspectMethod)) return;
+    if (!requiresIqcAqlPolicy(input.iqcYn, input.inspectMethod)) return;
 
     if (!input.iqcAqlPolicyCode?.trim()) {
       throw new BadRequestException('유검사 IQC 대상 품목은 AQL 정책을 선택해야 합니다.');

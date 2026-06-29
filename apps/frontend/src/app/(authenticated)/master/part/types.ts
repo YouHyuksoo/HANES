@@ -3,10 +3,10 @@
  * @description 품목 마스터 타입 + 상수 정의 (Oracle TM_ITEMS 기준 보강)
  */
 
-import type { UseYnValue } from "@harness/shared";
+import type { ItemTypeValue, UseYnValue } from "@harness/shared";
 
 /** 품목 분류 */
-export type PartType = "RAW_MATERIAL" | "SEMI_PRODUCT" | "FINISHED" | "CONSUMABLE";
+export type PartType = ItemTypeValue;
 
 /** 품목 인터페이스 */
 export interface Part {
@@ -62,4 +62,3 @@ export const PART_TYPE_COLORS: Record<
     color: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
   },
 };
-

@@ -168,10 +168,10 @@ export class CreatePartDto {
   @Max(100)
   toleranceRate?: number;
 
-  @ApiPropertyOptional({ description: '자재 분할 가능 여부', default: 'Y', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: '자재 분할 가능 여부', default: 'Y', enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   isSplittable?: string;
 
   @ApiPropertyOptional({ description: '샘플검사 수량', example: 0.5 })

@@ -124,6 +124,10 @@ export type ProcessCategoryValue = typeof PROCESS_CATEGORY_VALUES[number];
 export const ITEM_TYPE_VALUES = ['RAW_MATERIAL', 'SEMI_PRODUCT', 'FINISHED', 'CONSUMABLE'] as const;
 export type ItemTypeValue = typeof ITEM_TYPE_VALUES[number];
 
+// ===== 제품재고/생산계획 품목 유형 =====
+export const PRODUCT_STOCK_ITEM_TYPE_VALUES = ['SEMI_PRODUCT', 'FINISHED'] as const;
+export type ProductStockItemTypeValue = typeof PRODUCT_STOCK_ITEM_TYPE_VALUES[number];
+
 // ===== 제품 유형 =====
 export const PRODUCT_TYPE_VALUES = [
   'HARNESS',
@@ -216,6 +220,9 @@ export type ParityValue = typeof PARITY_VALUES[number];
 
 export const FLOW_CONTROL_VALUES = ['NONE', 'XONXOFF', 'RTSCTS'] as const;
 export type FlowControlValue = typeof FLOW_CONTROL_VALUES[number];
+
+export const LINE_ENDING_VALUES = ['NONE', 'CR', 'LF', 'CRLF'] as const;
+export type LineEndingValue = typeof LINE_ENDING_VALUES[number];
 
 // ===== 소모품 카테고리 =====
 export const CONSUMABLE_CATEGORY_VALUES = ['MOLD', 'JIG', 'TOOL'] as const;

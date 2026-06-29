@@ -19,6 +19,7 @@ import api from "@/services/api";
 import { Part } from "../types";
 import { FieldComCodeSelect, FieldInput, FieldSelect, FieldYnRadio, Field } from "./PartFieldHelp";
 import { QtyInput } from "@/components/shared";
+import { requiresIqcAqlPolicy as isIqcAqlPolicyRequired } from "@harness/shared";
 
 interface Props {
   isOpen: boolean;
@@ -28,7 +29,6 @@ interface Props {
 }
 
 const PACKAGING_QTY_OPTIONS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-const NO_INSPECTION_METHODS = new Set(["SKIP", "NONE"]);
 
 type IqcAqlPolicyOption = {
   policyCode: string;
@@ -108,7 +108,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
     remark: editingPart?.remark || "",
   }));
   const [saving, setSaving] = useState(false);
-  const requiresIqcAqlPolicy = form.iqcYn === "Y" && !NO_INSPECTION_METHODS.has(form.inspectMethod.toUpperCase());
+  const requiresIqcAqlPolicy = isIqcAqlPolicyRequired(form.iqcYn, form.inspectMethod);
   const canSave = !saving
     && !!form.itemCode.trim()
     && !!form.itemNo.trim()

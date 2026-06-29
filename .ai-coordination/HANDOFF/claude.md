@@ -2,9 +2,19 @@
 
 ## Last Update
 
-2026-06-28 (local) — 출고요청 개선 우선순위 9개 전부 완료(커밋 8cfaef22·4acbabfb·35c25279, 미푸시)
+2026-06-29 07:00 KST — DataGrid 컬럼 분리 스윕 **완료**: claude 87개 화면 + process-capa 규칙 승격. 커밋 4개(미푸시): 12b4b4e9·cf047e9d·55bf02a1·a66f4842. 잔여 free 0(남은 5개는 타 lock). FE/BE tsc 0, 구조 테스트 전수 pass.
 
 ## Latest
+
+- T-MASTER-COLUMN-EXTRACT 완료(미커밋, 검토 대기): master/* 인라인 DataGrid columns 8개 페이지를 page별 `*Columns.tsx` 팩토리로 분리(동작 불변) + process-capa FE/BE 중복 CAPA 산식을 `@harness/shared`로 승격.
+  - **대상 8**: worker(직접), company·gauge·partner·process-capa·vendor-barcode·work-instruction·equip-inspect-item(병렬 서브에이전트 7). part는 기존 레퍼런스.
+  - **컬럼 분리**: 각 page의 인라인 columns를 `create<Entity>GridColumns(options)` 팩토리(`*Columns.tsx`)로 이동, page는 `useMemo(()=>create...({t, ...maps, on edit/delete}), [동일 deps])`로 소비. header/size/meta/accessorKey/cell 로직 그대로(동작 불변). action 핸들러만 옵션 주입.
+  - **규칙 승격**: `packages/shared/src/utils/process-capa-rules.ts` 신규(`calcStdUphFromTactTime`·`capaMultiplier`·`calcDailyCapa`) + index.ts export. BE `process-capa.service.ts`·FE `CapaFormPanel.tsx`가 공유 함수 사용. **stdUph 반올림(FE 정수/BE 소수2자리)·dailyCapa 폴백(BE |0/|85)은 각 호출부 유지 → 동작 보존**. @harness/shared는 dist 해석이라 `pnpm --filter @harness/shared build` 재빌드 필수(완료).
+  - **발견(미수정)**: process-capa stdUph 자동계산 반올림이 FE(정수)/BE(소수2자리) **불일치 = 잠재 버그**. 동작 보존 우선이라 통일 안 함 — 사용자 판단 대기.
+  - **미승격(판단)**: 필수값/`useYn='Y'`/comcode 허용값은 cross-cutting이라 page별 rules 부적절. work-instruction 복합키(`itemCode::processCode::revision`)·vendor-barcode match-type enum은 약한 후보로 보고만.
+  - **검증**: FE/BE tsc 0/0, 구조 테스트 24(컬럼 8+rules 3+equip repoint 2 등), jest process-capa.service.spec 5/5. 무관 기존 실패(routing SFG/SG i18n, part 2건)는 작업 전부터 존재(part HEAD stash 재현).
+  - **겹침/조율**: master page.tsx가 claude `T-MASTER-UNSAVED-GUARD`(동일 owner)와 파일 중복 — 컬럼 분리는 가산적. codex `T-ARCH-PAGE-RULE-REFORM`은 system/department·production/pack-result 담당(master/* 미수정) → 실파일 충돌 없음. coordination은 본 세션에서 사용자 지시로 enable, lock `T-MASTER-COLUMN-EXTRACT` 등록.
+  - **남은 것**: 커밋(사용자 지시 시), work-instruction/vendor-barcode 약한 후보 승격 여부 결정, stdUph 반올림 통일 여부 결정, master 외 섹션(production/quality 등) 확장 여부.
 
 - T-ISSUE-REQ 출고요청 개선 9개 우선순위 **전부 완료**(커밋 3개, 미푸시). 설계 출처 `docs/reports/unfinished-work/2026-06-28-issue-request-and-itemmaster-rename.md`(grill-me). DB 무변경. 검증: BE jest 53/53(issue-request 22+mat-stock 31), FE/BE tsc 0, 구조테스트 6/6, locale JSON 4파일.
   - **#3+#9+#5(커밋 8cfaef22)**: 포장단위(MIN_PACK_QTY) 올림 출고 + [요청수량][포장단위][실출고수량] 3값. issueFromRequest 초과차단을 roundUpToPack(올림 잔여) 기준으로 완화. buildBomRequestItems/flattenItems 응답에 minPackQty. (상세는 이전 핸드오프 항목)

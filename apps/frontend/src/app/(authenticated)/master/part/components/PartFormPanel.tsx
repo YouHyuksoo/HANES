@@ -21,6 +21,7 @@ import api from "@/services/api";
 import { Part } from "../types";
 import { FieldComCodeSelect, FieldInput, FieldLabel, FieldSelect, FieldYnRadio, Field } from "./PartFieldHelp";
 import { QtyInput } from "@/components/shared";
+import { requiresIqcAqlPolicy as isIqcAqlPolicyRequired } from "@harness/shared";
 
 interface Props {
   editingPart: Part | null;
@@ -64,7 +65,6 @@ const buildForm = (editingPart: Part | null) => ({
 });
 
 const PACKAGING_QTY_OPTIONS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-const NO_INSPECTION_METHODS = new Set(["SKIP", "NONE"]);
 
 type IqcAqlPolicyOption = {
   policyCode: string;
@@ -125,7 +125,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
   const [previewUrl, setPreviewUrl] = useState<string | null>(editingPart?.imageUrl ?? null);
   const [imageError, setImageError] = useState(false);
   const [imageDeleteConfirmOpen, setImageDeleteConfirmOpen] = useState(false);
-  const requiresIqcAqlPolicy = form.iqcYn === "Y" && !NO_INSPECTION_METHODS.has(form.inspectMethod.toUpperCase());
+  const requiresIqcAqlPolicy = isIqcAqlPolicyRequired(form.iqcYn, form.inspectMethod);
   const canSave = !saving
     && !!form.itemCode.trim()
     && !!form.itemNo.trim()

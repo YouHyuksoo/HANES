@@ -31,6 +31,116 @@ notes:
 
 ## Active Tasks
 
+## T-MASTER-COLUMN-EXTRACT 기준정보 DataGrid 컬럼 분리 + 공정CAPA 업무규칙 공통화
+status: IN_PROGRESS
+owner: claude
+role: implementer
+scope:
+- master/{worker,company,gauge,partner,process-capa,vendor-barcode,work-instruction,equip-inspect-item} 인라인 columns → *Columns.tsx 팩토리 분리(동작 불변)
+- process-capa FE/BE 중복 CAPA 산식 → packages/shared/src/utils/process-capa-rules.ts 승격
+files:
+- (LOCKS.md T-MASTER-COLUMN-EXTRACT 항목 참조)
+verification:
+- pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false (완료: 0 errors)
+- pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false (진행 예정)
+- node --test 각 *-columns.structure.test.mjs (완료: 21 pass)
+review:
+- needs-review
+notes:
+- part(레퍼런스)·worker 패턴 기준. 컬럼 분리는 7개 페이지 병렬 에이전트 + worker 직접.
+- process-capa 승격 시 stdUph 반올림(FE 정수/BE 소수2자리)·dailyCapa 폴백(BE |0/|85)은 호출부 유지로 동작 보존.
+- 발견: process-capa stdUph 반올림 FE/BE 불일치(잠재 버그) — 별도 보고, 이번엔 동작 보존 우선.
+- 겹침: master page.tsx들이 claude T-MASTER-UNSAVED-GUARD lock과 파일 중복(동일 owner). codex T-ARCH-PAGE-RULE-REFORM은 system/department 담당(master/* 미수정).
+
+## T-ARCH-PAGE-RULE-REFORM page.tsx 축소와 업무 규칙 중앙화 아키텍처 개선
+status: IN_PROGRESS
+owner: codex
+role: implementer/reviewer
+scope:
+- HANES 전체 page.tsx 비대화, 컬럼 분리, 업무 규칙 중앙화, 필드 영향 경로 표준화
+files:
+- docs/reports/architecture-improvement-candidates.md
+- apps/frontend/src/app/(authenticated)/system/department/page.tsx
+- apps/frontend/src/app/(authenticated)/system/department/departmentColumns.tsx
+- apps/frontend/src/app/(authenticated)/system/department/department-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/system/department/types.ts
+- apps/frontend/src/app/(authenticated)/system/department/components/DepartmentFormPanel.tsx
+- apps/frontend/src/app/(authenticated)/production/pack-result/page.tsx
+- apps/frontend/src/app/(authenticated)/production/pack-result/packResultColumns.tsx
+- apps/frontend/src/app/(authenticated)/production/pack-result/pack-result-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/production/pack-result/types.ts
+- apps/frontend/src/app/(authenticated)/equipment/mold/page.tsx
+- apps/frontend/src/app/(authenticated)/equipment/mold/moldColumns.tsx
+- apps/frontend/src/app/(authenticated)/equipment/mold/mold-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/production/progress/page.tsx
+- apps/frontend/src/app/(authenticated)/production/progress/progressColumns.tsx
+- apps/frontend/src/app/(authenticated)/production/progress/progress-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/production/progress/types.ts
+- apps/frontend/src/app/(authenticated)/quality/rework-inspect/page.tsx
+- apps/frontend/src/app/(authenticated)/quality/rework-inspect/reworkInspectColumns.tsx
+- apps/frontend/src/app/(authenticated)/quality/rework-inspect/rework-inspect-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/quality/rework-inspect/types.ts
+- apps/frontend/src/app/(authenticated)/material/scrap/page.tsx
+- apps/frontend/src/app/(authenticated)/material/scrap/scrapColumns.tsx
+- apps/frontend/src/app/(authenticated)/material/scrap/scrap-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/material/scrap/types.ts
+- apps/frontend/src/app/(authenticated)/production/result-summary/page.tsx
+- apps/frontend/src/app/(authenticated)/production/result-summary/resultSummaryColumns.tsx
+- apps/frontend/src/app/(authenticated)/production/result-summary/result-summary-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/production/result-summary/types.ts
+- apps/frontend/src/app/(authenticated)/equipment/calibration-history/page.tsx
+- apps/frontend/src/app/(authenticated)/equipment/calibration-history/calibrationHistoryColumns.tsx
+- apps/frontend/src/app/(authenticated)/equipment/calibration-history/calibration-history-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/equipment/calibration-history/types.ts
+- apps/frontend/src/app/(authenticated)/equipment/pm-result/page.tsx
+- apps/frontend/src/app/(authenticated)/equipment/pm-result/pmResultColumns.tsx
+- apps/frontend/src/app/(authenticated)/equipment/pm-result/pm-result-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/equipment/pm-result/types.ts
+- apps/frontend/src/app/(authenticated)/equipment/pm-plan/page.tsx
+- apps/frontend/src/app/(authenticated)/equipment/pm-plan/pmPlanColumns.tsx
+- apps/frontend/src/app/(authenticated)/equipment/pm-plan/pm-plan-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/equipment/pm-plan/types.ts
+- apps/frontend/src/app/(authenticated)/equipment/inspect-history/page.tsx
+- apps/frontend/src/app/(authenticated)/equipment/inspect-history/inspectHistoryColumns.tsx
+- apps/frontend/src/app/(authenticated)/equipment/inspect-history/inspect-history-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/equipment/inspect-history/types.ts
+- apps/frontend/src/app/(authenticated)/equipment/mold-mgmt/page.tsx
+- apps/frontend/src/app/(authenticated)/equipment/mold-mgmt/moldMgmtColumns.tsx
+- apps/frontend/src/app/(authenticated)/equipment/mold-mgmt/mold-mgmt-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/equipment/mold-mgmt/types.ts
+- apps/frontend/src/app/(authenticated)/inspection/history/page.tsx
+- apps/frontend/src/app/(authenticated)/inspection/history/inspectionHistoryColumns.tsx
+- apps/frontend/src/app/(authenticated)/inspection/history/inspection-history-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/inspection/history/types.ts
+- apps/frontend/src/app/(authenticated)/inspection/structure/page.tsx
+- apps/frontend/src/app/(authenticated)/inspection/structure/structureInspectColumns.tsx
+- apps/frontend/src/app/(authenticated)/inspection/structure/structure-inspect-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/interface/log/page.tsx
+- apps/frontend/src/app/(authenticated)/interface/log/interfaceLogColumns.tsx
+- apps/frontend/src/app/(authenticated)/interface/log/interface-log-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/interface/log/types.ts
+- apps/frontend/src/app/(authenticated)/outsourcing/vendor/page.tsx
+- apps/frontend/src/app/(authenticated)/outsourcing/vendor/vendorColumns.tsx
+- apps/frontend/src/app/(authenticated)/outsourcing/vendor/vendor-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/outsourcing/vendor/types.ts
+- apps/frontend/src/app/(authenticated)/outsourcing/order/page.tsx
+- apps/frontend/src/app/(authenticated)/outsourcing/order/subconOrderColumns.tsx
+- apps/frontend/src/app/(authenticated)/outsourcing/order/subcon-order-columns.structure.test.mjs
+- apps/frontend/src/app/(authenticated)/outsourcing/order/types.ts
+- apps/frontend/src/app/(authenticated)/sales/customer-po/page.tsx
+- apps/frontend/src/app/(authenticated)/sales/customer-po/customerPoColumns.tsx
+- apps/frontend/src/app/(authenticated)/sales/customer-po/customer-po-columns.structure.test.mjs
+- .ai-coordination/TASKS.md
+- .ai-coordination/LOCKS.md
+- .ai-coordination/JOURNAL.md
+- .ai-coordination/HANDOFF/codex.md
+verification:
+- `python C:/Users/hsyou/.agents/skills/ai-coordination/scripts/check_coordination.py --repo .`
+review:
+- needs-review
+notes:
+- 1차는 기존 active lock과 충돌하지 않는 범위에서 개선 단위와 적용 순서를 확정한다. master/* 및 shipping 서비스 코드는 기존 lock 해소 전 직접 수정하지 않는다.
+
 ## T-CHECKOUT-LOCALHOST-QA localhost checkout 흐름 브라우저 QA
 status: IN_PROGRESS
 owner: codex

@@ -29,6 +29,7 @@ import {
   PARITY_VALUES,
   FLOW_CONTROL_VALUES,
   USE_YN_VALUES,
+  LINE_ENDING_VALUES,
 } from '@harness/shared';
 
 /** 통신설정 생성 DTO */
@@ -96,10 +97,10 @@ export class CreateCommConfigDto {
   @IsIn([...FLOW_CONTROL_VALUES])
   flowControl?: string;
 
-  @ApiPropertyOptional({ description: '라인엔딩', enum: ['NONE', 'CR', 'LF', 'CRLF'] })
+  @ApiPropertyOptional({ description: '라인엔딩', enum: LINE_ENDING_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['NONE', 'CR', 'LF', 'CRLF'])
+  @IsIn([...LINE_ENDING_VALUES])
   lineEnding?: string;
 
   @ApiPropertyOptional({ description: '프로토콜별 추가 설정 (JSON)' })
@@ -183,7 +184,7 @@ export class UpdateCommConfigDto {
   @ApiPropertyOptional({ description: '라인엔딩' })
   @IsOptional()
   @IsString()
-  @IsIn(['NONE', 'CR', 'LF', 'CRLF'])
+  @IsIn([...LINE_ENDING_VALUES])
   lineEnding?: string;
 
   @ApiPropertyOptional({ description: '프로토콜별 추가 설정 (JSON)' })

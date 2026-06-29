@@ -12,6 +12,7 @@ import { IsString, IsOptional, IsInt, Min, Max, MaxLength, IsIn, IsArray } from 
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { USE_YN_VALUES } from '@harness/shared';
 export class CreateWorkerDto {
   @ApiProperty({ description: '작업자 코드', example: 'W-001' })
   @IsString()
@@ -89,7 +90,7 @@ export class CreateWorkerDto {
   @ApiPropertyOptional({ description: '사용 여부', default: 'Y' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
 
@@ -111,6 +112,6 @@ export class WorkerQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }

@@ -8,6 +8,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+import { USE_YN_VALUES } from '@harness/shared';
 export class IqcPartSpecItemDto {
   @IsNumber()
   seq: number;
@@ -67,7 +68,7 @@ export class UpsertIqcPartSpecDto {
   @Min(1)
   sampleQty: number;
 
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   isDest: string;
 
   @IsOptional()

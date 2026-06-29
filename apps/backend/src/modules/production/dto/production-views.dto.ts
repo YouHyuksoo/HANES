@@ -22,6 +22,7 @@ import {
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { PRODUCT_STOCK_ITEM_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
 /**
  * 작업지시 진행현황 조회 DTO
  */
@@ -63,7 +64,7 @@ export class SampleInspectQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '합격 여부 (Y/N)' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   passYn?: string;
 
   @ApiPropertyOptional({ description: '검사일 시작' })
@@ -110,10 +111,10 @@ export class PackResultQueryDto extends PaginationQueryDto {
 export class WipStockQueryDto extends PaginationQueryDto {
 
 
-  @ApiPropertyOptional({ description: '품목 유형 (SEMI_PRODUCT/FINISHED)', enum: ['SEMI_PRODUCT', 'FINISHED'] })
+  @ApiPropertyOptional({ description: '품목 유형 (SEMI_PRODUCT/FINISHED)', enum: PRODUCT_STOCK_ITEM_TYPE_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['SEMI_PRODUCT', 'FINISHED'])
+  @IsIn([...PRODUCT_STOCK_ITEM_TYPE_VALUES])
   itemType?: string;
 
   @ApiPropertyOptional({ description: '검색어 (품목코드, 품목명)' })

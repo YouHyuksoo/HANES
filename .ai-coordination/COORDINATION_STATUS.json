@@ -1,7 +1,10 @@
 {
-  "enabled": false,
-  "stoppedAt": "2026-05-28T04:23:24.877613Z",
-  "stoppedBy": "codex",
-  "stopReason": "manual coordination disabled by user preference",
-  "updatedAt": "2026-05-28T04:23:24.877613Z"
+  "enabled": true,
+  "stoppedAt": null,
+  "stoppedBy": null,
+  "stopReason": null,
+  "updatedAt": "2026-06-28T21:05:20.809621Z",
+  "startedAt": "2026-06-28T21:05:20.809621Z",
+  "startedBy": "claude",
+  "startReason": "기준정보 DataGrid 컬럼 분리 + 공통규칙 승격 대규모 리팩토링"
 }

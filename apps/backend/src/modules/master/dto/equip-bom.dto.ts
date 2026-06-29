@@ -22,6 +22,7 @@ import {
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { USE_YN_VALUES } from '@harness/shared';
 // ========================================
 // BOM 품목 마스터 DTO
 // ========================================
@@ -97,10 +98,10 @@ export class CreateEquipBomItemDto {
   @Min(0)
   safetyStock?: number;
 
-  @ApiPropertyOptional({ description: '사용 여부', enum: ['Y', 'N'], default: 'Y' })
+  @ApiPropertyOptional({ description: '사용 여부', enum: USE_YN_VALUES, default: 'Y' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
 
@@ -118,10 +119,10 @@ export class EquipBomItemQueryDto extends PaginationQueryDto {
   @IsIn(['PART', 'CONSUMABLE'])
   itemType?: string;
 
-  @ApiPropertyOptional({ description: '사용 여부', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: '사용 여부', enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 
   @ApiPropertyOptional({ description: '검색어 (코드, 이름)' })
@@ -171,10 +172,10 @@ export class CreateEquipBomRelDto {
   @MaxLength(500)
   remark?: string;
 
-  @ApiPropertyOptional({ description: '사용 여부', enum: ['Y', 'N'], default: 'Y' })
+  @ApiPropertyOptional({ description: '사용 여부', enum: USE_YN_VALUES, default: 'Y' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
 
@@ -199,9 +200,9 @@ export class EquipBomRelQueryDto extends PaginationQueryDto {
   @IsIn(['PART', 'CONSUMABLE'])
   itemType?: string;
 
-  @ApiPropertyOptional({ description: '사용 여부', enum: ['Y', 'N'] })
+  @ApiPropertyOptional({ description: '사용 여부', enum: USE_YN_VALUES })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }

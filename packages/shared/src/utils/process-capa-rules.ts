@@ -2,17 +2,21 @@
  * @file packages/shared/src/utils/process-capa-rules.ts
  * @description 공정 CAPA 공통 업무 규칙 (프론트/백엔드 단일 출처)
  *
- * 라운딩 정책은 호출부에 위임한다(현행 동작 보존):
- * - stdUph: 프론트는 정수 반올림, 백엔드는 소수 2자리 반올림.
- * - 폴백(미입력 기본값)도 호출부에서 적용한다(백엔드 balanceEff 미입력 시 85 등).
+ * - stdUph 자동계산: 소수 2자리 반올림으로 프론트/백엔드 단일화(roundStdUph).
+ * - 폴백(미입력 기본값)은 호출부에서 적용한다(백엔드 balanceEff 미입력 시 85 등).
  */
 
 /** 일 가동시간(시간) */
 export const CAPA_WORK_HOURS_PER_DAY = 8;
 
-/** 택트타임(초) 기준 UPH 원시값. 라운딩은 호출부에서 수행한다. */
+/** 택트타임(초) 기준 UPH 원시값. */
 export function calcStdUphFromTactTime(stdTactTime: number): number {
   return 3600 / stdTactTime;
+}
+
+/** 택트타임(초) 기준 자동계산 UPH. 소수 2자리 반올림(프론트/백엔드 단일 정책). */
+export function roundStdUph(stdTactTime: number): number {
+  return Math.round(calcStdUphFromTactTime(stdTactTime) * 100) / 100;
 }
 
 /**

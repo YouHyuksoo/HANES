@@ -23,6 +23,7 @@ import {
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+import { USE_YN_VALUES } from '@harness/shared';
 export class CreateIqcItemPoolDto {
   @ApiProperty({ description: '항목코드', example: 'IQC-001' })
   @IsString()
@@ -78,7 +79,7 @@ export class CreateIqcItemPoolDto {
   @ApiPropertyOptional({ description: '사용 여부', default: 'Y' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 
   @ApiPropertyOptional({ description: '비고' })
@@ -107,6 +108,6 @@ export class IqcItemPoolQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '사용여부' })
   @IsOptional()
   @IsString()
-  @IsIn(['Y', 'N'])
+  @IsIn([...USE_YN_VALUES])
   useYn?: string;
 }
