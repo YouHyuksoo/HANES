@@ -180,9 +180,10 @@ describe('AqlService', () => {
 
   it('creates an IQC AQL policy from active major/minor AQL standards', async () => {
     policyRepo.findOne.mockResolvedValue(null);
-    standardRepo.findOne
-      .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' })
-      .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-2.5', useYn: 'Y' });
+    standardRepo.find.mockResolvedValue([
+      { company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' },
+      { company: '40', plant: '1000', aqlCode: 'AQL-II-2.5', useYn: 'Y' },
+    ]);
 
     const result = await service.createPolicy({
       policyCode: 'AQLP-II-1.0-2.5',
@@ -411,9 +412,9 @@ describe('AqlService', () => {
       useYn: 'Y',
     });
     partnerRepo.findOne.mockResolvedValue(null);
-    standardRepo.findOne
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' });
+    standardRepo.find.mockResolvedValue([
+      { company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' },
+    ]);
     ruleRepo.find.mockResolvedValue([{ lotQtyFrom: 1, lotQtyTo: 200, sampleSize: 20, acceptQty: 1, rejectQty: 2 }]);
 
     const result = await service.resolveIqcPolicyByItem({

@@ -63,8 +63,9 @@ describe('SensorMonitorService', () => {
       'P01',
     );
 
-    expect(pmPlanRepo.find).toHaveBeenCalledWith({
-      where: {
+    expect(pmPlanRepo.find).not.toHaveBeenCalled();
+    expect(pmPlanRepo.update).toHaveBeenCalledWith(
+      {
         equipCode: 'EQ-001',
         pmType: 'USAGE_BASED',
         usageField: 'SHOT_COUNT',
@@ -72,9 +73,6 @@ describe('SensorMonitorService', () => {
         company: 'CO',
         plant: 'P01',
       },
-    });
-    expect(pmPlanRepo.update).toHaveBeenCalledWith(
-      { planCode: 'PM-001', company: 'CO', plant: 'P01' },
       { currentUsage: 120 },
     );
   });
