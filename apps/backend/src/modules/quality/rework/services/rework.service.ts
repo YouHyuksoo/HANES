@@ -539,10 +539,11 @@ export class ReworkService {
       });
       const itemType = part?.itemType === 'FINISHED' ? 'FINISHED' : 'SEMI_PRODUCT';
 
+      const wipWarehouse = itemType === 'FINISHED' ? 'FG_WIP' : 'SFG_WIP';
       if ((dto.passQty ?? 0) > 0) {
         const moved = await this.productInventoryService.transferStockByItem({
           fromWarehouseId: 'DEFECT',
-          toWarehouseId: 'WIP_MAIN',
+          toWarehouseId: wipWarehouse,
           itemCode: order.itemCode,
           itemType,
           qty: dto.passQty,
@@ -556,7 +557,7 @@ export class ReworkService {
         // 불량재고가 부족하면(불량재고 도입 전 데이터 등) 부족분만 신규 입고로 보충
         if (moved < dto.passQty) {
           await this.productInventoryService.receiveStock({
-            warehouseId: 'WIP_MAIN',
+            warehouseId: wipWarehouse,
             itemCode: order.itemCode,
             itemType,
             qty: dto.passQty - moved,
@@ -568,7 +569,7 @@ export class ReworkService {
             plant,
           });
         }
-        this.logger.log(`재작업 합격 → WIP_MAIN: ${order.itemCode} × ${dto.passQty} (재작업 #${order.reworkNo})`);
+        this.logger.log(`재작업 합격 → ${wipWarehouse}: ${order.itemCode} × ${dto.passQty} (재작업 #${order.reworkNo})`);
       }
 
       if ((dto.failQty ?? 0) > 0) {

@@ -23,8 +23,8 @@ interface WipStock {
 }
 
 interface LabelDetailRow {
-  labelType: "SG" | "FG";
   barcode: string;
+  boxNo: string | null;
   status: string;
   inspectPassYn: string | null;
   orderNo: string | null;
@@ -122,11 +122,8 @@ export default function WipStockView({ itemType, titleKey, descriptionKey, enabl
   ], [t]);
 
   const labelColumns = useMemo<ColumnDef<LabelDetailRow>[]>(() => [
-    { accessorKey: "labelType", header: t("production.wipStock.labelType", "구분"), size: 70, meta: { filterType: "multi" as const }, cell: ({ getValue }) => {
-      const v = getValue() as string;
-      return <span className={`px-2 py-0.5 rounded text-xs font-medium ${v === "SG" ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"}`}>{v}</span>;
-    } },
     { accessorKey: "barcode", header: t("production.wipStock.labelBarcode", "라벨바코드"), size: 160, meta: { filterType: "text" as const }, cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span> },
+    { accessorKey: "boxNo", header: t("production.wipStock.boxNo", "박스번호"), size: 130, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string | null) ?? "-" },
     { accessorKey: "status", header: t("common.status"), size: 100, meta: { filterType: "multi" as const } },
     { accessorKey: "remainQty", header: t("production.wipStock.remainQty", "잔량"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => {
       const value = getValue() as number | null;
@@ -140,9 +137,10 @@ export default function WipStockView({ itemType, titleKey, descriptionKey, enabl
   ], [t]);
 
   const wipStockSql = useMemo(() => {
+    const search = searchText.trim().replace(/'/g, "''").toUpperCase();
+
     const sqlItemType = effectiveItemType.replace(/'/g, "''");
     const sqlTypePredicate = effectiveItemType ? `\n  AND s.ITEM_TYPE = '${sqlItemType}'` : "";
-    const search = searchText.trim().replace(/'/g, "''").toUpperCase();
 
     return `SELECT
   s.ITEM_CODE AS "itemCode",
@@ -163,7 +161,8 @@ LEFT JOIN WAREHOUSES wh
  AND wh.COMPANY = s.COMPANY
  AND wh.PLANT_CD = s.PLANT_CD
 WHERE s.COMPANY = '40'
-  AND s.PLANT_CD = '1000'${sqlTypePredicate}${search
+  AND s.PLANT_CD = '1000'
+  AND s.WAREHOUSE_CODE IN ('FG_WIP', 'SFG_WIP')${sqlTypePredicate}${search
     ? `\n  AND (UPPER(s.ITEM_CODE) LIKE '%${search}%' OR UPPER(im.ITEM_NAME) LIKE '%${search}%')`
     : ""}
 ORDER BY s.UPDATED_AT DESC`;

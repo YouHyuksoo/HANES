@@ -288,10 +288,9 @@ export class ProductInventoryService {
   }
 
   /**
-   * 완제품 입고: WIP_MAIN → FG 창고 이동.
-   * 박스 입고는 prdUid를 지정하지 않으므로, 생산이 시리얼(배치) 키로 적재한 WIP_MAIN 재고를
+   * 완제품 입고: FG_WIP(완제품 공정창고) → FG 창고 이동.
+   * 박스 입고는 prdUid를 지정하지 않으므로, 생산이 시리얼(배치) 키로 적재한 FG_WIP 재고를
    * itemCode 기준 FIFO로 수량만큼 차감한다(행마다 WIP_OUT+FG_IN 거래 → 시리얼 보존 + 취소 가역성).
-   * 과거 단일 IsNull 조회는 시리얼 키 재고를 못 찾아 항상 "재고 부족"으로 실패하던 구멍을 막는다.
    * 시리얼 단위 추적은 FG_LABELS(BOX_NO 스탬프)가 담당한다.
    */
   async receiveFinishedFromWip(dto: ProductReceiveStockDto) {
@@ -314,10 +313,10 @@ export class ProductInventoryService {
         }
       }
 
-      // WIP_MAIN 단일행(품목+창고)에서 qty만큼 1회 출고(WIP_OUT) → 목적 창고로 입고.
+      // FG_WIP 단일행(품목+창고)에서 qty만큼 1회 출고(WIP_OUT) → 목적 창고로 입고.
       // 시리얼 추적은 FG_LABELS(BOX_NO 스탬프)가 담당하므로 재고는 수량 단일행으로 다룬다.
       const lastTx = await this.issueStockInTx(qr, {
-        warehouseId: 'WIP_MAIN',
+        warehouseId: 'FG_WIP',
         toWarehouseId: dto.warehouseId,
         itemCode: dto.itemCode,
         itemType: 'FINISHED',

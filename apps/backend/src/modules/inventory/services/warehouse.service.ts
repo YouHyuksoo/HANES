@@ -240,7 +240,8 @@ export class WarehouseService {
     const defaultWarehouses = [
       { code: 'RM_MAIN', name: '원자재 메인창고', type: 'RM', isDefault: true },
       { code: 'RM_SUB', name: '원자재 서브창고', type: 'RM', isDefault: false },
-      { code: 'WIP_MAIN', name: '반제품 메인창고', type: 'WIP', isDefault: true },
+      { code: 'FG_WIP', name: '완제품 공정창고', type: 'WIP', isDefault: false },
+      { code: 'SFG_WIP', name: '반제품 공정창고', type: 'WIP', isDefault: true },
       { code: 'FG_MAIN', name: '완제품 메인창고', type: 'FG', isDefault: true },
       { code: 'FG_SHIP', name: '출하대기창고', type: 'FG', isDefault: false },
       { code: 'DEFECT', name: '불량품창고', type: 'DEFECT', isDefault: true },

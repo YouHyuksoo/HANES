@@ -200,6 +200,9 @@ export class ProductionViewsService {
 
   /**
    * 반제품/제품 재고 조회
+   * - FINISHED: PRODUCT_STOCKS WHERE WAREHOUSE_CODE='FG_WIP' (완제품 공정창고)
+   * - SEMI_PRODUCT: PRODUCT_STOCKS WHERE WAREHOUSE_CODE='SFG_WIP' (반제품 공정창고)
+   * - 전체: IN ('FG_WIP', 'SFG_WIP')
    */
   async getWipStock(query: WipStockQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, itemType, search } = query;
@@ -229,7 +232,15 @@ export class ProductionViewsService {
       ])
       .where('s.ITEM_TYPE IN (:...itemTypes)', {
         itemTypes: itemType ? [itemType] : ['SEMI_PRODUCT', 'FINISHED'],
-      });
+      })
+      // 공정 재고: FG_WIP(완제품)/SFG_WIP(반제품) 공정창고만.
+      .andWhere(
+        itemType === 'FINISHED'
+          ? "s.WAREHOUSE_CODE = 'FG_WIP'"
+          : itemType === 'SEMI_PRODUCT'
+            ? "s.WAREHOUSE_CODE = 'SFG_WIP'"
+            : "s.WAREHOUSE_CODE IN ('FG_WIP', 'SFG_WIP')",
+      );
 
     if (company) {
       qb.andWhere('s.COMPANY = :company', { company });
@@ -257,7 +268,6 @@ export class ProductionViewsService {
       const qb = this.sgLabelRepository
         .createQueryBuilder('sg')
         .select([
-          `'SG' AS "labelType"`,
           'sg.sgBarcode AS "barcode"',
           'sg.itemCode AS "itemCode"',
           'sg.status AS "status"',
@@ -283,10 +293,15 @@ export class ProductionViewsService {
 
     const qb = this.fgLabelRepository
       .createQueryBuilder('fg')
+      .leftJoin(
+        'PRODUCT_TRANSACTIONS',
+        'tx',
+        `tx.REF_TYPE = 'BOX' AND tx.REF_ID = fg.BOX_NO AND tx.STATUS = 'DONE' AND tx.TRANS_TYPE IN ('WIP_OUT', 'FG_IN') AND tx.COMPANY = fg.COMPANY AND tx.PLANT_CD = fg.PLANT_CD`,
+      )
       .select([
-        `'FG' AS "labelType"`,
         'fg.fgBarcode AS "barcode"',
         'fg.itemCode AS "itemCode"',
+        'fg.boxNo AS "boxNo"',
         'fg.status AS "status"',
         'fg.inspectPassYn AS "inspectPassYn"',
         'fg.orderNo AS "orderNo"',
@@ -294,8 +309,8 @@ export class ProductionViewsService {
         'fg.issuedAt AS "issuedAt"',
       ])
       .where('fg.itemCode = :itemCode', { itemCode })
-      .andWhere('fg.boxNo IS NULL')
-      .andWhere("fg.status NOT IN ('VOIDED', 'SHIPPED')");
+      .andWhere("fg.status NOT IN ('VOIDED', 'SHIPPED')")
+      .andWhere('tx.TRANS_NO IS NULL');
     if (company) qb.andWhere('fg.company = :company', { company });
     if (plant) qb.andWhere('fg.plant = :plant', { plant });
     qb.orderBy('fg.issuedAt', 'DESC');

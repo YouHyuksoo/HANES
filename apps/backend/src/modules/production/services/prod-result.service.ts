@@ -1609,8 +1609,9 @@ export class ProdResultService {
       );
     }
 
+    const wipWarehouse = itemType === 'FINISHED' ? 'FG_WIP' : 'SFG_WIP';
     await this.productInventoryService.receiveStockInTx(qr, {
-      warehouseId: 'WIP_MAIN',
+      warehouseId: wipWarehouse,
       itemCode: jobOrder.itemCode,
       itemType,
       qty: goodQty,
@@ -1624,7 +1625,7 @@ export class ProdResultService {
       plant: jobOrder.plant,
     });
     this.logger.log(
-      `공정재고 자동 적재: ${jobOrder.itemCode} × ${goodQty} → WIP_MAIN (실적 #${resultNo})`,
+      `공정재고 자동 적재: ${jobOrder.itemCode} × ${goodQty} → ${wipWarehouse} (실적 #${resultNo})`,
     );
   }
 

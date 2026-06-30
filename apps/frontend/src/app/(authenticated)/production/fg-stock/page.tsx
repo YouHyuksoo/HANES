@@ -8,7 +8,6 @@ export default function FgStockPage() {
       itemType="FINISHED"
       titleKey="production.wipStock.fgTitle"
       descriptionKey="production.wipStock.fgDescription"
-      enableTypeFilter
     />
   );
 }

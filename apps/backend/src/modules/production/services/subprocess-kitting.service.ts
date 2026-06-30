@@ -32,8 +32,8 @@ import { ConfirmAssemblyDto, ConfirmSubKitDto } from '../dto/subprocess-kitting.
 import { ProductionSpecificationService } from './production-specification.service';
 import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
 
-/** 제품 WIP 공정창고 코드 — 생산실적 자동 적재(adsorbProductStockInTx)와 동일하게 WIP_MAIN 사용 */
-const WIP_WAREHOUSE = 'WIP_MAIN';
+const FG_WIP_WAREHOUSE = 'FG_WIP';   // 완제품 공정창고
+const SFG_WIP_WAREHOUSE = 'SFG_WIP'; // 반제품 공정창고
 
 @Injectable()
 export class SubprocessKittingService {
@@ -369,7 +369,7 @@ export class SubprocessKittingService {
 
       // 7. FG WIP 재고 적재 (kit와 동일: productInventory.receiveStockInTx)
       await this.productInventory.receiveStockInTx(qr, {
-        warehouseId: WIP_WAREHOUSE,
+        warehouseId: FG_WIP_WAREHOUSE,
         itemCode: jobOrder.itemCode,
         itemType: 'FINISHED',
         qty: 1,
@@ -385,7 +385,7 @@ export class SubprocessKittingService {
       });
 
       this.logger.log(
-        `조립 확정: ${fgBarcode} → ${WIP_WAREHOUSE} (실적 #${resultNoForRef})`,
+        `조립 확정: ${fgBarcode} → ${FG_WIP_WAREHOUSE} (실적 #${resultNoForRef})`,
       );
 
       const printFg = await this.isFgPrintProcess(qr, jobOrder.routingCode, processCode, { company, plant });
@@ -694,9 +694,9 @@ export class SubprocessKittingService {
         );
       }
 
-      // 8. 반제품 WIP 재고 +1 (WIP_MAIN). 품목+창고 단일행 집계 적재.
+      // 8. 반제품 WIP 재고 +1 (SFG_WIP). 품목+창고 단일행 집계 적재.
       await this.productInventory.receiveStockInTx(qr, {
-        warehouseId: WIP_WAREHOUSE,
+        warehouseId: SFG_WIP_WAREHOUSE,
         itemCode: jobOrder.itemCode,
         itemType: 'SEMI_PRODUCT',
         qty: 1,
@@ -712,7 +712,7 @@ export class SubprocessKittingService {
       });
 
       this.logger.log(
-        `서브 키팅 확정: ${newSgBarcode} → ${WIP_WAREHOUSE} (실적 #${resultNoForRef})`,
+        `서브 키팅 확정: ${newSgBarcode} → ${SFG_WIP_WAREHOUSE} (실적 #${resultNoForRef})`,
       );
 
       return { resultNo: resultNoForRef, sgBarcode: newSgBarcode };

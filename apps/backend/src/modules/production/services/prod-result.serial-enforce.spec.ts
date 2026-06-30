@@ -97,7 +97,7 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
         find: jest.fn().mockResolvedValue([
           {
             transNo: 'PTX-1',
-            toWarehouseId: 'WIP_MAIN',
+            toWarehouseId: 'SFG_WIP',
             itemCode: 'ITEM-1',
             itemType: 'SEMI_PRODUCT',
             prdUid: '*',
@@ -107,7 +107,7 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
           },
         ]),
         findOne: jest.fn().mockResolvedValue({
-          warehouseCode: 'WIP_MAIN',
+          warehouseCode: 'SFG_WIP',
           itemCode: 'ITEM-1',
           prdUid: '*',
           qty: stockQty,
@@ -131,12 +131,12 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
       // PRD_UID 비키화(78d46411): 재고 키는 품목+창고 기준, prdUid는 키에서 제외
       expect(manager.delete).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ warehouseCode: 'WIP_MAIN', itemCode: 'ITEM-1' }),
+        expect.objectContaining({ warehouseCode: 'SFG_WIP', itemCode: 'ITEM-1' }),
       );
       // 빈 행은 update가 아니라 delete 되어야 한다
       expect(manager.update).not.toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ warehouseCode: 'WIP_MAIN', itemCode: 'ITEM-1' }),
+        expect.objectContaining({ warehouseCode: 'SFG_WIP', itemCode: 'ITEM-1' }),
         expect.objectContaining({ qty: 0 }),
       );
     });
@@ -149,7 +149,7 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
       expect(manager.delete).not.toHaveBeenCalled();
       expect(manager.update).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ warehouseCode: 'WIP_MAIN', itemCode: 'ITEM-1' }),
+        expect.objectContaining({ warehouseCode: 'SFG_WIP', itemCode: 'ITEM-1' }),
         expect.objectContaining({ qty: 50 }),
       );
     });
@@ -213,7 +213,7 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
       expect(prodInv.receiveStockInTx).toHaveBeenCalledWith(
         qr,
         expect.objectContaining({
-          warehouseId: 'WIP_MAIN', itemCode: 'ITEM-1', itemType: 'SEMI_PRODUCT',
+          warehouseId: 'SFG_WIP', itemCode: 'ITEM-1', itemType: 'SEMI_PRODUCT',
           qty: 5, transType: 'WIP_IN', refType: 'PROD_RESULT', refId: 'PR-1',
         }),
       );
