@@ -2,7 +2,7 @@
  * @file src/modules/ai/dto/ai-chat.dto.ts
  * @description AI 채팅 요청 DTO
  */
-import { IsArray, IsString, IsIn, ValidateNested, ArrayNotEmpty, MaxLength, IsOptional, IsBoolean } from 'class-validator';
+import { IsArray, IsString, IsIn, IsNumber, ValidateNested, ArrayNotEmpty, MaxLength, IsOptional, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class AiChatMessageDto {
@@ -164,4 +164,63 @@ export class AiTestDto {
   @IsString()
   @MaxLength(200)
   apiKey?: string;
+}
+
+/** RAG 지식 청크 출처 요약 — 채팅 응답(sources)과 피드백 요청(sources) 양쪽에서 사용 */
+export class AiKnowledgeSourceDto {
+  @IsString()
+  chunkId: string;
+
+  @IsString()
+  sourcePath: string;
+
+  @IsOptional()
+  @IsString()
+  menuCode?: string;
+
+  @IsOptional()
+  @IsString()
+  audience?: string;
+
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  heading?: string;
+
+  @IsOptional()
+  @IsNumber()
+  score?: number;
+}
+
+/** 좋아요/싫어요 피드백 등록 요청 */
+export class AiChatFeedbackDto {
+  @IsString()
+  @MaxLength(4000)
+  question: string;
+
+  @IsString()
+  @MaxLength(50000)
+  answer: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AiKnowledgeSourceDto)
+  sources?: AiKnowledgeSourceDto[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  route?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  menuCode?: string;
+
+  @IsIn(['LIKE', 'DISLIKE'])
+  rating: 'LIKE' | 'DISLIKE';
 }
