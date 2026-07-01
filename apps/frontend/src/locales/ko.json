@@ -8677,6 +8677,11 @@
       "execute": "실행",
       "sqlLabel": "실행된 SQL",
       "sqlLabelGen": "생성된 SQL (실행 실패)",
+      "sourcesToggle": "출처 {{count}}건",
+      "copy": "복사",
+      "copied": "복사됨",
+      "like": "좋아요",
+      "dislike": "싫어요",
       "resize": "드래그하여 너비 조절"
     },
     "config": {

@@ -8673,6 +8673,11 @@
       "execute": "Thực thi",
       "sqlLabel": "SQL đã thực thi",
       "sqlLabelGen": "SQL đã tạo (thực thi thất bại)",
+      "sourcesToggle": "{{count}} nguồn",
+      "copy": "Sao chép",
+      "copied": "Đã sao chép",
+      "like": "Thích",
+      "dislike": "Không thích",
       "resize": "Kéo để thay đổi kích thước"
     },
     "config": {

@@ -10,13 +10,15 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { Sparkles, X, Send, LoaderCircle, Trash2, Database, Play } from "lucide-react";
+import { Sparkles, X, Send, LoaderCircle, Trash2, Database, Play, Copy, Check, ThumbsUp, ThumbsDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import api from "@/services/api";
 import { usePageToolStore } from "@/ai-page-tools/pageToolStore";
-import { useAiChatStore } from "@/stores/aiChatStore";
+import { useAiChatStore, type AiChatMessage, type AiChatSource } from "@/stores/aiChatStore";
+import { useHelpStore } from "@/stores/helpStore";
 import { findMenuCodeByPath } from "@/config/menuConfig";
+import { slugify } from "@/lib/help";
 import PageToolExecutionLog from "./PageToolExecutionLog";
 import PageToolInspector from "./PageToolInspector";
 
@@ -47,9 +49,13 @@ export default function AiChatPanel() {
   const openChatTab = usePageToolStore((state) => state.openChatTab);
   const openToolsTab = usePageToolStore((state) => state.openToolsTab);
   const openLogTab = usePageToolStore((state) => state.openLogTab);
+  const openHelpFor = useHelpStore((state) => state.openHelpFor);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [approvedIdx, setApprovedIdx] = useState<Set<number>>(new Set());
+  const [expandedSources, setExpandedSources] = useState<Set<number>>(new Set());
+  const [feedbackByIdx, setFeedbackByIdx] = useState<Map<number, { feedbackId: number; rating: "LIKE" | "DISLIKE" }>>(new Map());
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [width, setWidth] = useState(440);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -147,6 +153,67 @@ export default function AiChatPanel() {
       }
     },
     [sending, addMessage, t],
+  );
+
+  const toggleSources = useCallback((idx: number) => {
+    setExpandedSources((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  }, []);
+
+  const openSource = useCallback(
+    (source: AiChatSource) => {
+      if (!source.menuCode) return;
+      const tab = source.audience === "operator" ? "operator" : "user";
+      openHelpFor(source.menuCode, tab, source.heading ? slugify(source.heading) : undefined);
+    },
+    [openHelpFor],
+  );
+
+  const copyMessage = useCallback(async (idx: number, content: string) => {
+    await navigator.clipboard.writeText(content);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx((cur) => (cur === idx ? null : cur)), 1500);
+  }, []);
+
+  const rate = useCallback(
+    async (idx: number, message: AiChatMessage, rating: "LIKE" | "DISLIKE") => {
+      const existing = feedbackByIdx.get(idx);
+      if (existing) {
+        try {
+          await api.delete(`/ai/chat/feedback/${existing.feedbackId}`);
+        } catch {
+          // 삭제 실패해도 사용자 흐름을 막지 않는다
+        }
+        setFeedbackByIdx((prev) => {
+          const next = new Map(prev);
+          next.delete(idx);
+          return next;
+        });
+        if (existing.rating === rating) return;
+      }
+      const question = [...messages.slice(0, idx)].reverse().find((m) => m.role === "user")?.content ?? "";
+      try {
+        const res = await api.post("/ai/chat/feedback", {
+          question,
+          answer: message.content,
+          sources: message.sources,
+          route: pathname,
+          menuCode: findMenuCodeByPath(pathname),
+          rating,
+        });
+        const feedbackId = res.data?.data?.id;
+        if (feedbackId) {
+          setFeedbackByIdx((prev) => new Map(prev).set(idx, { feedbackId, rating }));
+        }
+      } catch {
+        // 피드백 저장 실패는 조용히 무시(대화 흐름에 영향 없음)
+      }
+    },
+    [feedbackByIdx, messages, pathname],
   );
 
   const onKeyDown = useCallback(
@@ -318,6 +385,64 @@ export default function AiChatPanel() {
                   </summary>
                   <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-surface px-2 py-1 font-mono">{m.sql}</pre>
                 </details>
+              )}
+
+              {/* 출처 + 복사/좋아요/싫어요 액션 줄 */}
+              {m.role === "assistant" && (
+                <div className="mt-1.5 flex w-[92%] items-center justify-between">
+                  <div>
+                    {m.sources && m.sources.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleSources(i)}
+                        className="text-[11px] text-text-muted underline hover:text-text"
+                      >
+                        {t("ai.chat.sourcesToggle", "출처 {{count}}건", { count: m.sources.length })} {expandedSources.has(i) ? "▲" : "▼"}
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => copyMessage(i, m.content)}
+                      title={t("ai.chat.copy", "복사")}
+                      className="rounded p-1 text-text-muted hover:bg-surface hover:text-text"
+                    >
+                      {copiedIdx === i ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => rate(i, m, "LIKE")}
+                      title={t("ai.chat.like", "좋아요")}
+                      className={`rounded p-1 hover:bg-surface ${feedbackByIdx.get(i)?.rating === "LIKE" ? "text-primary" : "text-text-muted hover:text-text"}`}
+                    >
+                      <ThumbsUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => rate(i, m, "DISLIKE")}
+                      title={t("ai.chat.dislike", "싫어요")}
+                      className={`rounded p-1 hover:bg-surface ${feedbackByIdx.get(i)?.rating === "DISLIKE" ? "text-red-500" : "text-text-muted hover:text-text"}`}
+                    >
+                      <ThumbsDown className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+              {m.role === "assistant" && m.sources && m.sources.length > 0 && expandedSources.has(i) && (
+                <div className="mt-1 w-[92%] space-y-1 rounded-lg border border-border bg-surface/60 p-2">
+                  {m.sources.map((source, si) => (
+                    <button
+                      key={si}
+                      type="button"
+                      onClick={() => openSource(source)}
+                      className="block w-full rounded px-1.5 py-1 text-left text-[11px] text-text-muted hover:bg-surface hover:text-text"
+                    >
+                      <span className="font-medium text-text">{source.title ?? source.menuCode ?? source.sourcePath}</span>
+                      {source.heading ? ` > ${source.heading}` : ""}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           ))

@@ -8673,6 +8673,11 @@
       "execute": "Execute",
       "sqlLabel": "Executed SQL",
       "sqlLabelGen": "Generated SQL (execution failed)",
+      "sourcesToggle": "{{count}} sources",
+      "copy": "Copy",
+      "copied": "Copied",
+      "like": "Like",
+      "dislike": "Dislike",
       "resize": "Drag to resize"
     },
     "config": {
