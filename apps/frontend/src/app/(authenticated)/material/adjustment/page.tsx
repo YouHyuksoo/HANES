@@ -12,10 +12,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  SlidersHorizontal, Search, RefreshCw, Plus, TrendingUp, TrendingDown,
-} from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard, Modal } from "@/components/ui";
+import { SlidersHorizontal, Search, RefreshCw, Plus } from "lucide-react";
+import { Card, CardContent, Button, Input, Select, Modal } from "@/components/ui";
 import { QtyInput } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -72,12 +70,6 @@ export default function AdjustmentPage() {
     { value: "", label: t("common.select") }, ...warehouseOpts,
   ], [t, warehouseOpts]);
 
-  const stats = useMemo(() => ({
-    total: data.length,
-    increase: data.filter(d => d.diffQty > 0).length,
-    decrease: data.filter(d => d.diffQty < 0).length,
-  }), [data]);
-
   const selectedPart = useMemo(() =>
     partResults.find(p => p.itemCode === form.itemCode), [partResults, form.itemCode]);
 
@@ -123,12 +115,6 @@ export default function AdjustmentPage() {
             <Plus className="w-4 h-4 mr-1" />{t("material.adjustment.register")}
           </Button>
         </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3 flex-shrink-0">
-        <StatCard label={t("material.adjustment.stats.total")} value={stats.total} icon={SlidersHorizontal} color="blue" />
-        <StatCard label={t("material.adjustment.stats.increase")} value={stats.increase} icon={TrendingUp} color="green" />
-        <StatCard label={t("material.adjustment.stats.decrease")} value={stats.decrease} icon={TrendingDown} color="red" />
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">

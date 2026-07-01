@@ -11,6 +11,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 describe('MiscReceiptService', () => {
   let service: MiscReceiptService;
@@ -21,6 +22,7 @@ describe('MiscReceiptService', () => {
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
   let dataSource: DeepMocked<DataSource>;
   let tx: DeepMocked<TransactionService>;
+  let numbering: DeepMocked<NumberingService>;
   let queryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
@@ -31,6 +33,7 @@ describe('MiscReceiptService', () => {
     warehouseRepo = createMock<Repository<Warehouse>>();
     dataSource = createMock<DataSource>();
     tx = createMock<TransactionService>();
+    numbering = createMock<NumberingService>();
     queryRunner = createMock<QueryRunner>();
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
@@ -51,6 +54,7 @@ describe('MiscReceiptService', () => {
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
         { provide: DataSource, useValue: dataSource },
         { provide: TransactionService, useValue: tx },
+        { provide: NumberingService, useValue: numbering },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -179,5 +183,62 @@ describe('MiscReceiptService', () => {
         qty: 1,
       }),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('generates a material lot when misc receipt is created without matUid', async () => {
+    stockTxRepo.findOne.mockResolvedValue(null);
+    numbering.nextMatSerial.mockResolvedValue('VH1-RM260701-00001');
+    queryRunner.manager.create.mockImplementation((_entity: any, payload: any) => payload);
+    queryRunner.manager.save.mockImplementation(async (payload: any) => payload);
+
+    queryRunner.manager.findOne
+      .mockResolvedValueOnce({ warehouseCode: 'WH-01', warehouseName: 'Main WH', company: 'HANES', plant: 'P01' } as Warehouse)
+      .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'Raw', company: 'HANES', plant: 'P01' } as ItemMaster)
+      .mockResolvedValueOnce(null);
+
+    const result = await service.create({
+      warehouseId: 'WH-01',
+      itemCode: 'ITEM-001',
+      qty: 5,
+      remark: '기타입고',
+    }, 'HANES', 'P01');
+
+    expect(numbering.nextMatSerial).toHaveBeenCalledWith(queryRunner, expect.any(Date));
+    expect(queryRunner.manager.create).toHaveBeenCalledWith(
+      MatLot,
+      expect.objectContaining({
+        matUid: 'VH1-RM260701-00001',
+        itemCode: 'ITEM-001',
+        initQty: 5,
+        currentQty: 5,
+        recvDate: expect.any(Date),
+        origin: 'VH1-RM260701-00001',
+        vendor: 'MISC',
+        iqcStatus: 'PASS',
+        status: 'NORMAL',
+        company: 'HANES',
+        plant: 'P01',
+      }),
+    );
+    expect(queryRunner.manager.create).toHaveBeenCalledWith(
+      MatStock,
+      expect.objectContaining({
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'VH1-RM260701-00001',
+        qty: 5,
+        availableQty: 5,
+      }),
+    );
+    expect(queryRunner.manager.create).toHaveBeenCalledWith(
+      StockTransaction,
+      expect.objectContaining({
+        transType: 'MISC_IN',
+        itemCode: 'ITEM-001',
+        matUid: 'VH1-RM260701-00001',
+        qty: 5,
+      }),
+    );
+    expect(result).toEqual(expect.objectContaining({ matUid: 'VH1-RM260701-00001' }));
   });
 });

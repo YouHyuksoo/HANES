@@ -1349,8 +1349,11 @@ export class ArrivalService {
         "NVL(pi.LINE_STATUS, 'OPEN') AS \"lineStatus\"",
       ]);
 
+    // 기본적으로 CLOSE 제외 — 입하 완료된 라인은 이 화면에서 볼 필요 없음
     if (query.status) {
       qb.where("NVL(pi.LINE_STATUS, 'OPEN') = :st", { st: query.status });
+    } else {
+      qb.where("NVL(pi.LINE_STATUS, 'OPEN') != 'CLOSE'");
     }
     if (query.itemCode) qb.andWhere('pi.ITEM_CODE = :ic', { ic: query.itemCode });
     if (query.poNo) qb.andWhere('pi.PO_ID LIKE :pno', { pno: `%${query.poNo}%` });
@@ -1374,7 +1377,9 @@ export class ArrivalService {
       partnerName: r.partnerName ?? '',
       useType: r.useType ?? 'PROD',
       lineStatus:
-        r.lineStatus === 'CLOSE' ? 'CLOSE' : r.lineStatus === 'PARTIAL' ? 'PARTIAL' : 'OPEN',
+        (r.lineStatus === 'CLOSE' || r.lineStatus === 'CLOSED') ? 'CLOSE'
+        : r.lineStatus === 'PARTIAL' ? 'PARTIAL'
+        : 'OPEN',
     }));
   }
 

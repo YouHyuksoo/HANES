@@ -16,3 +16,9 @@ test('/material/adjustment page consumes the extracted column factory', () => {
   // 인라인 컬럼 배열이 페이지에 남아있지 않아야 한다
   assert.doesNotMatch(page, /accessorKey: "diffQty"/);
 });
+
+test('/material/adjustment page does not render top summary info cards', () => {
+  assert.doesNotMatch(page, /StatCard/);
+  assert.doesNotMatch(page, /const\s+stats\s*=/);
+  assert.doesNotMatch(page, /material\.adjustment\.stats\./);
+});

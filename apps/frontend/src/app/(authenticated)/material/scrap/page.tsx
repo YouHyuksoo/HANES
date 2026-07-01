@@ -1,24 +1,14 @@
-﻿"use client";
-
-/**
- * @file src/app/(authenticated)/material/scrap/page.tsx
- * @description 자재폐기 페이지 - 불량/만료 자재 폐기 처리 + 이력 조회
- *
- * 초보자 가이드:
- * 1. **폐기 등록**: LOT/창고/수량/사유 입력 → POST /inventory/scrap
- * 2. **이력 조회**: StockTransaction(transType=SCRAP) 조회
- * 3. **재고 자동 차감**: 폐기 시 Stock.qty 감소
- */
+"use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Trash, Search, RefreshCw, Plus, AlertTriangle } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
+import { Trash, Search, RefreshCw } from "lucide-react";
+import { Card, CardContent, Button, Input } from "@/components/ui";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
-import ScrapRegisterModal from "./components/ScrapRegisterModal";
+import ScrapRegisterPanel from "./components/ScrapRegisterPanel";
 import { createScrapGridColumns } from "./scrapColumns";
 import type { ScrapRecord } from "./types";
 
@@ -30,7 +20,6 @@ export default function ScrapPage() {
   const [searchText, setSearchText] = useState("");
   const [fromDate, setStartDate] = useState(() => getTodayLocal());
   const [toDate, setEndDate] = useState(() => getTodayLocal());
-  const [showRegister, setShowRegister] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -62,16 +51,11 @@ export default function ScrapPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const stats = useMemo(() => {
-    const total = data.length;
-    const totalQty = data.reduce((s, d) => s + d.qty, 0);
-    return { total, totalQty };
-  }, [data]);
-
   const columns = useMemo(() => createScrapGridColumns(t), [t]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+      {/* 헤더 */}
       <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
@@ -80,43 +64,54 @@ export default function ScrapPage() {
           </h1>
           <p className="text-text-muted mt-1">{t("material.scrap.subtitle")}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-          </Button>
-          <Button size="sm" onClick={() => setShowRegister(true)}>
-            <Plus className="w-4 h-4 mr-1" /> {t("material.scrap.register")}
-          </Button>
-        </div>
+        <Button variant="secondary" size="sm" onClick={fetchData}>
+          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+          {t("common.refresh")}
+        </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 flex-shrink-0">
-        <StatCard label={t("material.scrap.totalCount")} value={stats.total} icon={Trash} color="red" />
-        <StatCard label={t("material.scrap.totalQty")} value={stats.totalQty.toLocaleString()} icon={AlertTriangle} color="yellow" />
+      {/* 본문: 좌측 폐기이력 + 우측 폐기등록 패널 */}
+      <div className="flex-1 min-h-0 flex gap-3">
+        {/* 좌측: 폐기 이력 DataGrid */}
+        <Card className="flex-1 min-w-0 overflow-hidden" padding="none">
+          <CardContent className="h-full p-3">
+            <DataGrid
+              data={data}
+              columns={columns}
+              isLoading={loading}
+              enableColumnFilter
+              enableExport
+              exportFileName={t("material.scrap.title")}
+              toolbarLeft={
+                <div className="flex gap-3 flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
+                    <Input
+                      placeholder={t("material.scrap.searchPlaceholder")}
+                      value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)}
+                      leftIcon={<Search className="w-4 h-4" />}
+                      fullWidth
+                    />
+                  </div>
+                  <DateRangeFilter
+                    from={fromDate}
+                    to={toDate}
+                    onFromChange={setStartDate}
+                    onToChange={setEndDate}
+                    className="flex-shrink-0"
+                  />
+                </div>
+              }
+              sqlQuery={`SELECT *\nFROM MAT_SCRAPS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}
+            />
+          </CardContent>
+        </Card>
+
+        {/* 우측: 폐기 등록 패널 */}
+        <Card className="w-[340px] flex-shrink-0 flex flex-col overflow-hidden" padding="none">
+          <ScrapRegisterPanel onCreated={fetchData} />
+        </Card>
       </div>
-
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("material.scrap.title")}
-          toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <Input placeholder={t("material.scrap.searchPlaceholder")}
-                  value={searchText} onChange={e => setSearchText(e.target.value)}
-                  leftIcon={<Search className="w-4 h-4" />} fullWidth />
-              </div>
-              <DateRangeFilter
-                from={fromDate}
-                to={toDate}
-                onFromChange={setStartDate}
-                onToChange={setEndDate}
-                className="flex-shrink-0"
-              />
-            </div>
-          } 
-          sqlQuery={`SELECT *\nFROM MAT_SCRAPS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
-      </CardContent></Card>
-
-      <ScrapRegisterModal isOpen={showRegister} onClose={() => setShowRegister(false)} onCreated={fetchData} />
     </div>
   );
 }

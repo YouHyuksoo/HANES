@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, CheckCircle2, PackageCheck, ScanLine, Trash2, X } from 'lucide-react';
 import { Button, Input, Modal, Select } from '@/components/ui';
+import { BarcodeScanInput } from '@/components/shared';
 import WarehouseSelect from '@/components/shared/WarehouseSelect';
 import { useLocationOptions } from '@/hooks/useMasterOptions';
 import api from '@/services/api';
@@ -97,8 +98,8 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
     focusInput();
   }, [focusInput, pendingMatUid]);
 
-  const handleScan = useCallback(() => {
-    const barcode = input.trim();
+  const handleScan = useCallback((rawBarcode?: string) => {
+    const barcode = (rawBarcode ?? input).replace(/\r?\n|\r/g, '').trim();
     if (!barcode) return;
     if (phase === 'own') {
       handleOwnScan(barcode);
@@ -217,12 +218,13 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
                   {t('material.receive.noLocation', '선택한 창고에 등록된 로케이션이 없습니다. 바코드로 직접 스캔하거나 창고관리에서 로케이션을 등록하세요.')}
                 </p>
               )}
-              <Input
+              <BarcodeScanInput
                 value={locationCode}
-                onChange={(e) => { setLocationCode(e.target.value); setError(''); }}
+                onChange={(value) => { setLocationCode(value); setError(''); }}
+                onScan={(value) => { setLocationCode(value); setError(''); focusInput(); }}
                 placeholder={t('material.receive.scanLocation', '로케이션 바코드 스캔')}
-                leftIcon={<ScanLine className="w-4 h-4" />}
                 className="font-mono"
+                maintainFocus={false}
                 fullWidth
               />
             </div>
@@ -230,22 +232,19 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
         </div>
 
         <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
-          <Input
+          <BarcodeScanInput
             ref={inputRef}
             label={phaseTitle}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleScan();
-            }}
+            onChange={setInput}
+            onScan={handleScan}
             placeholder={phase === 'own'
               ? t('material.receive.scan.ownPlaceholder', '자체부착 바코드')
               : t('material.receive.scan.vendorPlaceholder', '거래처 바코드')}
             hint={phaseHint}
-            leftIcon={<ScanLine className="w-4 h-4" />}
             fullWidth
           />
-          <Button onClick={handleScan} disabled={!input.trim()}>
+          <Button onClick={() => handleScan()} disabled={!input.trim()}>
             <ScanLine className="w-4 h-4 mr-1" />
             {t('material.receive.scan.scanRegister', '스캔등록')}
           </Button>

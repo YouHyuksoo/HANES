@@ -1,6 +1,6 @@
 ﻿import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like, In, FindOptionsWhere, IsNull } from 'typeorm';
+import { Repository, Between, Like, In, FindOptionsWhere } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -8,6 +8,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { CreateMiscReceiptDto, MiscReceiptQueryDto } from '../dto/misc-receipt.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
@@ -24,6 +25,7 @@ export class MiscReceiptService {
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
     private readonly tx: TransactionService,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -171,18 +173,46 @@ export class MiscReceiptService {
         throw new NotFoundException(`Part not found: ${itemCode}`);
       }
 
-      if (matUid) {
+      const txDate = new Date();
+      const requestedMatUid = matUid?.trim() || null;
+      const effectiveMatUid = requestedMatUid ?? await this.numbering.nextMatSerial(queryRunner, txDate);
+      const resolvedCompany = company ?? warehouse.company ?? part.company;
+      const resolvedPlant = plant ?? warehouse.plant ?? part.plant;
+
+      if (requestedMatUid) {
         const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { matUid, ...this.tenantWhere(company, plant) },
+          where: { matUid: requestedMatUid, ...this.tenantWhere(company, plant) },
         });
         if (!lot) {
-          throw new NotFoundException(`Lot not found: ${matUid}`);
+          throw new NotFoundException(`Lot not found: ${requestedMatUid}`);
         }
         if (lot.itemCode !== itemCode) {
           throw new BadRequestException(
-            `Lot ${matUid} item (${lot.itemCode}) does not match receipt item (${itemCode}).`,
+            `Lot ${requestedMatUid} item (${lot.itemCode}) does not match receipt item (${itemCode}).`,
           );
         }
+      } else {
+        if (!resolvedCompany || !resolvedPlant) {
+          throw new BadRequestException('회사/사업장 정보가 없어 기타입고 LOT을 생성할 수 없습니다.');
+        }
+        const lot = queryRunner.manager.create(MatLot, {
+          matUid: effectiveMatUid,
+          itemCode,
+          initQty: qty,
+          currentQty: qty,
+          recvDate: txDate,
+          origin: effectiveMatUid,
+          vendor: 'MISC',
+          poNo: null,
+          arrivalNo: null,
+          arrivalSeq: null,
+          iqcStatus: 'PASS',
+          specialAcceptYn: 'N',
+          status: 'NORMAL',
+          company: resolvedCompany,
+          plant: resolvedPlant,
+        });
+        await queryRunner.manager.save(lot);
       }
 
       const transNo = await this.generateTransNo();
@@ -191,7 +221,7 @@ export class MiscReceiptService {
         where: {
           warehouseCode: warehouse.warehouseCode,
           itemCode,
-          matUid: matUid ?? IsNull(),
+          matUid: effectiveMatUid,
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         },
@@ -218,12 +248,12 @@ export class MiscReceiptService {
         const newStock = queryRunner.manager.create(MatStock, {
           warehouseCode: warehouse.warehouseCode,
           itemCode,
-          matUid: matUid || null,
+          matUid: effectiveMatUid,
           qty,
           availableQty: qty,
           reservedQty: 0,
-          company,
-          plant,
+          company: resolvedCompany,
+          plant: resolvedPlant,
         });
         await queryRunner.manager.save(newStock);
       }
@@ -234,15 +264,15 @@ export class MiscReceiptService {
         transDate: new Date(),
         toWarehouseId: warehouse.warehouseCode,
         itemCode,
-        matUid: matUid || null,
+        matUid: effectiveMatUid,
         qty,
         refType: 'MISC_RECEIPT',
         workerId,
         remark,
         account,
         status: 'DONE',
-        company: existingStock?.company ?? company,
-        plant: existingStock?.plant ?? plant,
+        company: existingStock?.company ?? resolvedCompany,
+        plant: existingStock?.plant ?? resolvedPlant,
       });
       await queryRunner.manager.save(transaction);
 
@@ -253,7 +283,7 @@ export class MiscReceiptService {
         warehouseName: warehouse.warehouseName,
         itemCode: part.itemCode,
         itemName: part.itemName,
-        matUid,
+        matUid: effectiveMatUid,
         qty,
         remark,
         workerId,

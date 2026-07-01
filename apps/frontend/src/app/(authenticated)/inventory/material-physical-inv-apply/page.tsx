@@ -15,9 +15,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CheckSquare, Search, RefreshCw, Calendar, ClipboardCheck,
-  Boxes, ListChecks, CheckCircle, AlertTriangle,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { WarehouseSelect } from "@/components/shared";
 import api from "@/services/api";
@@ -85,12 +84,6 @@ export default function MaterialPhysicalInvApplyPage() {
 
   const countedItems = useMemo(() => data.filter(d => d.countedQty !== null), [data]);
   const mismatchItems = useMemo(() => countedItems.filter(d => d.countedQty !== d.qty), [countedItems]);
-  const stats = useMemo(() => ({
-    total: data.length,
-    counted: countedItems.length,
-    mismatch: mismatchItems.length,
-    matched: countedItems.filter(d => d.countedQty === d.qty).length,
-  }), [data, countedItems, mismatchItems]);
 
   const handleApply = useCallback(async () => {
     if (countedItems.length === 0) return;
@@ -129,13 +122,6 @@ export default function MaterialPhysicalInvApplyPage() {
             <CheckSquare className="w-4 h-4 mr-1" />{t("material.physicalInv.applyCount")} ({countedItems.length})
           </Button>
         </div>
-      </div>
-
-      <div className="grid grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label={t("material.physicalInv.stats.total")} value={stats.total} icon={Boxes} color="blue" />
-        <StatCard label={t("material.physicalInv.stats.counted")} value={stats.counted} icon={ListChecks} color="purple" />
-        <StatCard label={t("material.physicalInv.stats.matched")} value={stats.matched} icon={CheckCircle} color="green" />
-        <StatCard label={t("material.physicalInv.stats.mismatch")} value={stats.mismatch} icon={AlertTriangle} color="red" />
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">

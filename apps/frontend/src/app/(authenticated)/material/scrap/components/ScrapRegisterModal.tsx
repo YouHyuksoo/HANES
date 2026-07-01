@@ -61,7 +61,7 @@ export default function ScrapRegisterModal({ isOpen, onClose, onCreated }: Props
   useEffect(() => {
     if (!form.warehouseCode) { setStocks([]); return; }
     setLoadingStocks(true);
-    api.get("/inventory/stocks", { params: { warehouseCode: form.warehouseCode, limit: 5000 } }).then(res => {
+    api.get("/inventory/stocks", { params: { warehouseCode: form.warehouseCode } }).then(res => {
       const list = (res.data?.data ?? [])
         .filter((s: any) => s.availableQty > 0)
         .map((s: any) => ({
