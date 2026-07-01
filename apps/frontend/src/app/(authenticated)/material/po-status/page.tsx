@@ -13,13 +13,15 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useComCodeMap } from "@/hooks/useComCode";
-import { ClipboardList, Search, RefreshCw, Package } from "lucide-react";
+import { ClipboardList, Search, RefreshCw, Package, Zap } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
+import { ConfirmModal } from "@/components/ui/Modal";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import FilterBar from "@/components/shared/FilterBar";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
+import toast from "react-hot-toast";
 import {
   createPoStatusGridColumns,
   createPoStatusDetailGridColumns,
@@ -36,6 +38,8 @@ export default function PoStatusPage() {
 
   const [data, setData] = useState<PoStatusRaw[]>([]);
   const [loading, setLoading] = useState(false);
+  const [erpIfRunning, setErpIfRunning] = useState(false);
+  const [erpIfConfirmOpen, setErpIfConfirmOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedPo, setSelectedPo] = useState<PoStatusRaw | null>(null);
@@ -74,6 +78,19 @@ export default function PoStatusPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const handleErpIfConfirm = useCallback(async () => {
+    setErpIfConfirmOpen(false);
+    setErpIfRunning(true);
+    try {
+      // TODO: ERP PO I/F 백엔드 구현 후 실제 endpoint 연결
+      // await api.post("/interface/erp/po-sync");
+      // fetchData();
+      toast.error("ERP PO I/F가 아직 구현되지 않았습니다.");
+    } finally {
+      setErpIfRunning(false);
+    }
+  }, []);
+
   /** 마스터 그리드 컬럼 */
   const masterColumns = useMemo(() => createPoStatusGridColumns({ t, poStatusMap }), [t, poStatusMap]);
 
@@ -93,16 +110,22 @@ export default function PoStatusPage() {
           </h1>
           <p className="text-text-muted mt-1">{t("material.poStatus.subtitle")}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={fetchData}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
-          {t("common.refresh")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setErpIfConfirmOpen(true)} disabled={erpIfRunning}>
+            <Zap className={`w-4 h-4 mr-1 ${erpIfRunning ? "animate-pulse" : ""}`} />
+            ERP PO I/F
+          </Button>
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+            {t("common.refresh")}
+          </Button>
+        </div>
       </div>
 
       {/* 마스터-디테일 좌우 분할 */}
       <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
         {/* 좌측: PO 마스터 */}
-        <div className="col-span-5 min-h-0">
+        <div className="col-span-6 min-h-0">
           <Card className="h-full overflow-hidden" padding="none"><CardContent className="h-full p-4">
             <DataGrid data={data} columns={masterColumns} isLoading={loading}
               enableColumnFilter enableExport enableFullscreen
@@ -136,7 +159,7 @@ export default function PoStatusPage() {
         </div>
 
         {/* 우측: 품목 입고현황 디테일 */}
-        <div className="col-span-7 min-h-0">
+        <div className="col-span-6 min-h-0">
           <Card className="h-full overflow-hidden" padding="none">
             <CardContent className="h-full p-4">
               {selectedPo ? (
@@ -156,6 +179,21 @@ export default function PoStatusPage() {
           </Card>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={erpIfConfirmOpen}
+        onClose={() => setErpIfConfirmOpen(false)}
+        onConfirm={handleErpIfConfirm}
+        title="ERP PO I/F 실행"
+        message={
+          <span>
+            ERP에서 PO 데이터를 가져와 MES에 동기화합니다.<br />
+            실행하시겠습니까?
+          </span>
+        }
+        confirmText="실행"
+        isLoading={erpIfRunning}
+      />
     </div>
   );
 }
