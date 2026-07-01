@@ -58,6 +58,9 @@
 - TypeORM CLI는 ES Module 이슈로 직접 사용하지 않는다. Raw SQL과 `oracle-db` connector 경로를 우선한다.
 - DDL/DML 실행 시 사이트를 명시한다. 기본 사이트는 `JSHANES`다.
 - INSERT, seed, DDL 작성 전 실제 테이블 스키마를 먼저 확인한다.
+- DB 변경, 메뉴 seed, 운영 데이터 DML이 작업 범위에 포함되면 SQL 파일만 추가하고 멈추지 않는다. 사용자가 보류를 명시하지 않은 한 `oracle-db` connector로 `JSHANES`에 적용하고 pre-check/post-check 결과를 남긴다.
+- `oracle-db --execute-file`로 실행할 SQL 파일은 다중 DML/PLSQL 블록마다 `/` 구분자를 넣어 작성한다. ORA-00933 같은 실행 형식 오류가 나면 파일 형식을 고친 뒤 같은 connector로 재적용하고 DB 상태를 재확인한다.
+- 메뉴 추가는 `menuConfig.ts`, backend menu-code validator, seed/migration 파일뿐 아니라 `JSHANES`의 `MENU_CATEGORY_ITEMS`와 `ROLE_MENU_PERMISSIONS` 적용 확인까지 완료한다.
 - `SEQ` 또는 ID 채번은 Oracle `SEQUENCE.NEXTVAL`만 사용한다.
 - `MAX(SEQ)+1`, `NVL(MAX(...))+1`, 날짜별 1부터 재시작 채번은 금지한다.
 - `COMPANY`, `PLANT_CD`가 있는 업무 SQL은 명시적 공유 범위가 문서화되지 않는 한 tenant scope를 포함한다.
@@ -71,6 +74,9 @@
 - `alert()`, `confirm()`, `prompt()`는 사용하지 않는다. 모달 컴포넌트를 사용한다.
 - 상태 텍스트와 색상을 화면에서 하드코딩하지 말고 `ComCodeBadge`, `ComCodeSelect`, `useComCode` 계열을 우선한다.
 - 공통 필터와 공통 입력 컴포넌트는 `components/shared/`를 우선 확인한다.
+- 새 화면이나 컴포넌트에서 바코드/QR/스캔 입력을 받을 때는 일반 `Input`에 `onKeyDown Enter`, `useScanInputFocus`, `useSerialStore`를 직접 조합하지 말고 `components/shared/BarcodeScanInput`을 사용한다.
+- PC 업무 화면의 바코드 입력은 `BarcodeScanInput`의 `maintainFocus`, `blinkIndicator`, `serialFocusedOnly`, `refocusAfterScan` 옵션으로 처리한다. PDA 전용 스캔 UI나 검색/선택용 일반 입력은 이 규칙의 예외다.
+- 기존 화면을 수정하다가 바코드 스캔용 일반 `Input`을 발견하면 새 UI를 추가하기 전에 `BarcodeScanInput`으로 통일할 수 있는지 먼저 확인한다.
 - flex 스크롤 영역에는 `min-h-0`를 명시한다.
 - 정보카드가 운영 흐름에 필요 없다고 사용자가 말하면 restyle하지 말고 제거한다.
 

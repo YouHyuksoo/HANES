@@ -1,6 +1,6 @@
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-06-29 01:51:45
+- 작성일: 2026-06-30 17:52:53
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
@@ -8,7 +8,7 @@
 ## 1. 요약
 
 - 테이블 수: 171
-- 컬럼 수: 2838
+- 컬럼 수: 2840
 - PK 보유 테이블: 167
 - DB FK 수: 29
 - COM_CODES 그룹 수: 161
@@ -23,7 +23,7 @@
 - `CONSUMABLE_MOUNT_LOGS`: 소모품 설비 장착/탈착 이력 / PK: `MOUNT_DATE, SEQ`
 - `CONSUMABLE_STOCKS`: 소모품 재고(시리얼 단위) / PK: `CON_UID`
 - `CONSUMABLE_USAGE_MAP`: 소모품 사용 정의(품목 설비별 사용량) / PK: `COMPANY, PLANT_CD, PRODUCT_ITEM_CODE, EQUIP_CODE, CONSUMABLE_CODE`
-- `EQUIP_BOM_ITEMS`: 설비 BOM 부품(예비품) 마스터 / PK: `BOM_ITEM_CODE`
+- `EQUIP_BOM_ITEMS`: 설비 BOM 부품(예비품) 마스터 / PK: `EQUIP_CODE, BOM_ITEM_CODE`
 - `EQUIP_BOM_RELS`: 설비-부품 관계 (설비에 장착된 부품) / PK: `EQUIP_CODE, BOM_ITEM_CODE`
 - `EQUIP_CONDITION_RULES`: 설비 상태감시 규칙(센서 임계값) / PK: `RULE_ID`
 - `EQUIP_INSPECT_ITEM_MASTERS`: 설비점검항목 기준 마스터 (설비유형별 점검항목 템플릿) / PK: `COMPANY, PLANT_CD, ITEM_CODE`
@@ -772,6 +772,7 @@ erDiagram
     NUMBER_12 SAFETY_STOCK NOT_NULL
     VARCHAR2_1 USE_YN NOT_NULL
     VARCHAR2_50 COMPANY NOT_NULL
+    VARCHAR2_50 EQUIP_CODE PK NOT_NULL
     string more_columns
   }
   EQUIP_BOM_RELS {
@@ -2827,6 +2828,7 @@ erDiagram
 | `DEFECT_CODE_PRODUCT_TYPES` | `DEFECT_CODE` | `DEFECT_CATEGORY_MASTERS` |
 | `DEFECT_LOGS` | `PROD_RESULT_ID` | `PROD_RESULTS` |
 | `DEFECT_LOGS` | `DEFECT_CODE` | `DEFECT_CATEGORY_MASTERS` |
+| `EQUIP_BOM_ITEMS` | `EQUIP_CODE` | `EQUIP_BOM_RELS` |
 | `EQUIP_BOM_RELS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `EQUIP_CONDITION_RULES` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `EQUIP_CONDITION_RULES` | `PM_PLAN_CODE` | `PM_PLANS` |
@@ -2989,7 +2991,6 @@ erDiagram
 | `STOCK_TRANSACTIONS_BAK_20260616` | `WORKER_CODE` | `WORKER_MASTERS` |
 | `SUBCON_DELIVERIES` | `WORKER_CODE` | `WORKER_MASTERS` |
 | `SUBCON_ORDERS` | `VENDOR_CODE` | `VENDOR_BARCODE_MAPPINGS` |
-| `SUBCON_ORDERS` | `ITEM_CODE` | `ITEM_MASTERS` |
 
 ## 5. 모듈별 ERD
 
@@ -3099,6 +3100,7 @@ erDiagram
     NUMBER_12 SAFETY_STOCK NOT_NULL
     VARCHAR2_1 USE_YN NOT_NULL
     VARCHAR2_50 COMPANY NOT_NULL
+    VARCHAR2_50 EQUIP_CODE PK NOT_NULL
     string more_columns
   }
   EQUIP_BOM_RELS {
@@ -6470,7 +6472,7 @@ erDiagram
 ### `EQUIP_BOM_ITEMS`
 
 - 설명: 설비 BOM 부품(예비품) 마스터
-- PK: `BOM_ITEM_CODE`
+- PK: `EQUIP_CODE, BOM_ITEM_CODE`
 
 | 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
 |---|---|---|---|---|---|
@@ -6491,6 +6493,7 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` | 등록일시 |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` | 수정일시 |
+| `EQUIP_CODE` | `VARCHAR2(50)` | `N` | PK |  |  |
 
 ### `EQUIP_BOM_RELS`
 
@@ -6638,6 +6641,7 @@ erDiagram
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `IMAGE_URL` | `VARCHAR2(500)` | `Y` |  |  | 설비 사진 파일 URL (/uploads/equips/...) |
+| `CURRENT_WORKER_CODES` | `VARCHAR2(1000)` | `Y` |  |  | 현재 설비에 배치된 작업자 코드 목록(콤마 구분). 표시 정보는 WORKER_MASTERS에서 재조회한다. |
 
 ### `EQUIP_PROTOCOLS`
 

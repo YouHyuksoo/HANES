@@ -54,6 +54,8 @@ pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false
 - Oracle 작업은 `oracle-db` connector 또는 검증된 raw SQL 파일 경로를 우선한다.
 - 기본 사이트는 `JSHANES`다.
 - DDL/DML 실행 전 실제 스키마를 확인한다.
+- DB 변경, 메뉴 seed, 운영 데이터 DML은 SQL 파일만 만들고 끝내지 않는다. 사용자가 보류를 명시하지 않으면 `python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file <file>`로 적용하고 pre/post query 결과를 기록한다.
+- `--execute-file` 대상 SQL은 여러 DML/PLSQL 블록을 `/` 라인으로 분리한다. ORA-00933 같은 실행 형식 오류가 나면 SQL 파일 형식을 고치고 같은 connector로 재실행한다.
 - DB 스키마 변경 시 `AGENTS.md`의 ERD 갱신 규칙을 따른다.
 
 ## 5. UI와 코드 품질
@@ -62,6 +64,9 @@ pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false
 - 코드성 값은 직접 입력보다 공통코드/기준정보 선택 컴포넌트를 우선한다.
 - 공통 코드 표시는 `ComCodeBadge`, `ComCodeSelect`, `useComCode` 계열을 우선한다.
 - 공통 필터와 입력 컴포넌트는 `components/shared/`를 먼저 확인한다.
+- 새 화면이나 컴포넌트에서 바코드/QR/스캔 입력을 받을 때는 일반 `Input`에 `onKeyDown Enter`, `useScanInputFocus`, `useSerialStore`를 직접 조합하지 말고 `components/shared/BarcodeScanInput`을 사용한다.
+- PC 업무 화면의 바코드 입력은 `BarcodeScanInput`의 `maintainFocus`, `blinkIndicator`, `serialFocusedOnly`, `refocusAfterScan` 옵션으로 처리한다. PDA 전용 스캔 UI나 검색/선택용 일반 입력은 이 규칙의 예외다.
+- 기존 화면을 수정하다가 바코드 스캔용 일반 `Input`을 발견하면 새 UI를 추가하기 전에 `BarcodeScanInput`으로 통일할 수 있는지 먼저 확인한다.
 - `catch (error: unknown)` 형태를 유지하고, `as any` 사용을 피한다.
 - 멀티테넌시 기능에는 `COMPANY`, `PLANT_CD` 스코프를 포함한다.
 
