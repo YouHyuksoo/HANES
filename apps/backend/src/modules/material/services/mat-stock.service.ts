@@ -305,7 +305,7 @@ export class MatStockService {
 
       if (stock && afterQty < stock.reservedQty) {
         throw new BadRequestException(
-          `????(${stock.reservedQty})?? ?? ??? ??? ? ????.`,
+          `예약수량(${stock.reservedQty})보다 적은 수량으로는 조정할 수 없습니다.`,
         );
       }
 
@@ -381,11 +381,11 @@ export class MatStockService {
 
       // 출고 창고 차감
       if (fromWarehouseCode === toWarehouseCode) {
-        throw new BadRequestException('??? ???? ?? ??? ? ? ????.');
+        throw new BadRequestException('출발 창고와 도착 창고가 같을 수 없습니다.');
       }
       if (fromStock.availableQty < qty) {
         throw new BadRequestException(
-          `??? ??? ?? ?? ??? ??? ?????. ????: ${fromStock.availableQty}`,
+          `출고 가용재고가 부족합니다. 가용재고: ${fromStock.availableQty}`,
         );
       }
 

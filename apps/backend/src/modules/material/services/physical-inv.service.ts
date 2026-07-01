@@ -1,12 +1,12 @@
-﻿/**
+/**
  * @file src/modules/material/services/physical-inv.service.ts
- * @description ?ш퀬?ㅼ궗 鍮꾩쫰?덉뒪 濡쒖쭅 ??Stock ???+ InvAdjLog 湲곕줉 + ?ㅼ궗 ?몄뀡 愿由?
+ * @description 재고실사 비즈니스 로직 - Stock 갱신 + InvAdjLog 기록 + 실사 세션 관리
  *
- * 珥덈낫??媛?대뱶:
- * 1. startSession(): ?ㅼ궗 媛쒖떆 ??PHYSICAL_INV_SESSIONS ?뚯씠釉붿뿉 IN_PROGRESS ?덉퐫???앹꽦
- * 2. getSessionStatus(): ?ㅼ궗 ?몄뀡 ?곹깭 議고쉶 ??InventoryFreezeGuard媛 ???뚯씠釉붿쓣 李몄“
- * 3. completeSession(): ?ㅼ궗 ?꾨즺 ??status瑜?COMPLETED濡??낅뜲?댄듃 (李⑤떒 ?댁젣)
- * 4. applyCount(): ?ㅼ궗 寃곌낵 諛섏쁺 ??MatStock ?섎웾 ?낅뜲?댄듃 + InvAdjLog 湲곕줉
+ * 초보자 가이드:
+ * 1. startSession(): 실사 개시 시 PHYSICAL_INV_SESSIONS 테이블에 IN_PROGRESS 레코드 생성
+ * 2. getSessionStatus(): 실사 세션 상태 조회 — InventoryFreezeGuard가 이 테이블을 참조
+ * 3. completeSession(): 실사 완료 시 status를 COMPLETED로 업데이트 (차단 해제)
+ * 4. applyCount(): 실사 결과 반영 시 MatStock 수량 업데이트 + InvAdjLog 기록
  */
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
@@ -74,11 +74,11 @@ export class PhysicalInvService {
     }
   }
 
-  // ??? ?ㅼ궗 ?몄뀡 愿由?????????????????????????????????????????????????
+  // ─── 실사 세션 관리 ───────────────────────────────────────────────
 
   /**
-   * ?꾩옱 ?ㅼ궗 ?몄뀡 ?곹깭 議고쉶
-   * ?꾨줎?몄뿏??諛곕꼫 ?쒖떆, InventoryFreezeGuard 寃利앹뿉 ?쒖슜
+   * 현재 실사 세션 상태 조회
+   * 프론트엔드 배너 표시, InventoryFreezeGuard 검증에 사용
    */
   async getSessionStatus(company?: string, plant?: string) {
     const where: FindOptionsWhere<PhysicalInvSession> = { status: 'IN_PROGRESS' };
@@ -93,8 +93,8 @@ export class PhysicalInvService {
   }
 
   /**
-   * ?ㅼ궗 媛쒖떆 ??IN_PROGRESS ?몄뀡 ?앹꽦
-   * ?대? 吏꾪뻾 以묒씤 ?ㅼ궗媛 ?덉쑝硫?BadRequestException
+   * 실사 개시 시 IN_PROGRESS 세션 생성
+   * 이미 진행 중인 실사가 있으면 BadRequestException
    */
   async startSession(
     dto: StartPhysicalInvSessionDto,
@@ -157,15 +157,15 @@ export class PhysicalInvService {
   }
 
   /**
-   * ?ㅼ궗 ?꾨즺 ??IN_PROGRESS ??COMPLETED ?꾪솚
-   * ??硫붿꽌???ㅽ뻾 ??InventoryFreezeGuard 李⑤떒???댁젣?⑸땲??
+   * 실사 완료 시 IN_PROGRESS → COMPLETED 전환
+   * 이 메서드 실행 시 InventoryFreezeGuard 차단이 해제됩니다.
    */
   async completeSession(
     sessionDate: string,
     seq: number,
     dto: CompletePhysicalInvSessionDto,
   ): Promise<PhysicalInvSession> {
-    // Oracle DATE 鍮꾧탳 ??踰붿쐞 議곌굔?쇰줈 ?몃뜳???쒖슜 (TRUNC ?쒓굅)
+    // Oracle DATE 비교 시 범위 조건으로 인덱스 사용 (TRUNC 제거)
     const sdStart = new Date(`${sessionDate}T00:00:00`);
     const sdEnd = new Date(`${sessionDate}T23:59:59.999`);
     const session = await this.sessionRepository
@@ -177,10 +177,10 @@ export class PhysicalInvService {
       .andWhere('s.seq = :seq', { seq })
       .getOne();
     if (!session) {
-      throw new NotFoundException(`?ㅼ궗 ?몄뀡??李얠쓣 ???놁뒿?덈떎. (${sessionDate}-${seq})`);
+      throw new NotFoundException(`실사 세션을 찾을 수 없습니다. (${sessionDate}-${seq})`);
     }
     if (session.status !== 'IN_PROGRESS') {
-      throw new BadRequestException(`吏꾪뻾 以묒씤 ?ㅼ궗 ?몄뀡???꾨떃?덈떎. (?꾩옱 ?곹깭: ${session.status})`);
+      throw new BadRequestException(`진행 중인 실사 세션이 아닙니다. (현재 상태: ${session.status})`);
     }
 
     session.status = 'COMPLETED';
@@ -200,7 +200,7 @@ export class PhysicalInvService {
     if (plant) qb.andWhere('stock.plant = :plant', { plant });
     if (warehouseId) qb.andWhere('stock.warehouseCode = :warehouseId', { warehouseId });
 
-    // 寃?됱뼱媛 ?덉쑝硫?DB?먯꽌 ?꾪꽣 (硫붾え由??꾪꽣 ?쒓굅)
+    // 검색어가 있으면 DB에서 필터 (메모리 필터 제거)
     if (search) {
       const upper = search.toUpperCase();
       qb.leftJoin(ItemMaster, 'part', 'part.itemCode = stock.itemCode AND part.company = stock.company AND part.plant = stock.plant')
@@ -217,7 +217,7 @@ export class PhysicalInvService {
       qb.getCount(),
     ]);
 
-    // part, lot ?뺣낫 議고쉶
+    // part, lot 정보 조회
     const itemCodes = data.map((stock) => stock.itemCode).filter(Boolean);
     const matUids = data.map((stock) => stock.matUid).filter(Boolean) as string[];
     const tenantWhere = {
@@ -304,11 +304,11 @@ export class PhysicalInvService {
     return { data, total, page, limit };
   }
 
-  // ??? PDA ?꾩슜 API ?????????????????????????????????????????????????
+  // ─── PDA 전용 API ─────────────────────────────────────────────────
 
   /**
-   * PDA?????쒖꽦 ?ㅼ궗 ?몄뀡 議고쉶 (IN_PROGRESS ?곹깭)
-   * PDA ?낆뿉??留덉슫?????몄텧
+   * PDA용 활성 실사 세션 조회 (IN_PROGRESS 상태)
+   * PDA 앱에서 마운트 시 호출
    */
   async getActiveSession(company?: string, plant?: string) {
     const where: FindOptionsWhere<PhysicalInvSession> = { status: 'IN_PROGRESS', invType: 'MATERIAL' };
@@ -318,7 +318,7 @@ export class PhysicalInvService {
     const session = await this.sessionRepository.findOne({ where, order: { createdAt: 'DESC' } });
     if (!session) return null;
 
-    // 李쎄퀬紐?議고쉶
+    // 창고명 조회
     let warehouseName = '';
     if (session.warehouseCode) {
       const wh = await this.warehouseRepository.findOne({
@@ -326,10 +326,10 @@ export class PhysicalInvService {
       });
       warehouseName = wh?.warehouseName ?? session.warehouseCode;
     } else {
-      warehouseName = '?꾩껜 李쎄퀬';
+      warehouseName = '전체 창고';
     }
 
-    // sessionDate瑜?YYYY-MM-DD 臾몄옄?대줈 蹂??(??꾩〈 ?댁뒋 諛⑹?)
+    // sessionDate를 YYYY-MM-DD 문자열로 변환 (타임존 이슈 방지)
     const dateStr = session.sessionDate instanceof Date
       ? session.sessionDate.toISOString().split('T')[0]
       : String(session.sessionDate).split('T')[0];
@@ -346,8 +346,8 @@ export class PhysicalInvService {
   }
 
   /**
-   * PDA????濡쒖??댁뀡蹂??덈ぉ ?꾪솴 議고쉶
-   * ?대떦 ?몄뀡 + 濡쒖??댁뀡??MatStock 紐⑸줉 + 湲곗〈 移댁슫???곸꽭 JOIN
+   * PDA용 로케이션별 품목 현황 조회
+   * 해당 세션 + 로케이션의 MatStock 목록 + 기존 카운트 상세 JOIN
    */
   async getLocationItems(
     sessionDate: string,
@@ -370,7 +370,7 @@ export class PhysicalInvService {
       : [];
     const partMap = new Map(parts.map(p => [p.itemCode, p]));
 
-    // 湲곗〈 移댁슫???곸꽭 議고쉶
+    // 기존 카운트 상세 조회
     const details = await this.countDetailRepository.find({
       where: {
         sessionDate: parseDateStart(sessionDate)!,
@@ -396,8 +396,8 @@ export class PhysicalInvService {
   }
 
   /**
-   * PDA????諛붿퐫???ㅼ틪 ???ㅼ궗?섎웾 +1
-   * PHYSICAL_INV_COUNT_DETAILS ?뚯씠釉붿뿉 INSERT or UPDATE
+   * PDA용 바코드 스캔 시 실사수량 +1
+   * PHYSICAL_INV_COUNT_DETAILS 테이블에 INSERT or UPDATE
    */
   async scanCount(dto: PdaScanCountDto, company?: string, plant?: string) {
     const { sessionDate, seq, locationCode, barcode, countedBy } = dto;
@@ -417,15 +417,15 @@ export class PhysicalInvService {
 
     const session = await sessionQb.getOne();
     if (!session) {
-      throw new NotFoundException(`?? ??? ?? ? ????. (${sessionDate}-${seq})`);
+      throw new NotFoundException(`실사 세션을 찾을 수 없습니다. (${sessionDate}-${seq})`);
     }
     if (session.status !== 'IN_PROGRESS') {
       throw new BadRequestException(
-        `?? ?? ?? ??? ????. (?? ??: ${session.status})`,
+        `진행 중인 실사 세션이 아닙니다. (현재 상태: ${session.status})`,
       );
     }
 
-    // lot + stock + part瑜?JOIN 1?뚮줈 議고쉶 (湲곗〈 4????1??
+    // lot + stock + part를 JOIN 1번으로 조회 (기존 4번 → 1번)
     const qb = this.matStockRepository
       .createQueryBuilder('s')
       .innerJoin('MAT_LOTS', 'l', 's.ITEM_CODE = l.ITEM_CODE AND s.MAT_UID = l.MAT_UID AND s.COMPANY = l.COMPANY AND s.PLANT_CD = l.PLANT_CD')
@@ -444,7 +444,7 @@ export class PhysicalInvService {
 
     const row = await qb.getRawOne();
     if (!row) {
-      throw new NotFoundException(`?먯옱?쒕━???먮뒗 ?ш퀬瑜?李얠쓣 ???놁뒿?덈떎: ${barcode}`);
+      throw new NotFoundException(`해당 시리얼 또는 재고를 찾을 수 없습니다: ${barcode}`);
     }
     if (session.warehouseCode && row.warehouseCode !== session.warehouseCode) {
       throw new BadRequestException(
@@ -457,7 +457,7 @@ export class PhysicalInvService {
       );
     }
 
-    // 移댁슫???곸꽭 UPSERT
+    // 카운트 상세 UPSERT
     const detailKey = {
       sessionDate: parseDateStart(sessionDate)!,
       seq,
@@ -488,16 +488,16 @@ export class PhysicalInvService {
     };
   }
 
-  // ??? PC ?????몄뀡蹂??ㅼ궗?섎웾 議고쉶 ????????????????????????????????
+  // ─── PC 화면용 세션별 실사수량 조회 ───────────────────────────────
 
   /**
-   * PC ?뱀뿉??PDA媛 ??ν븳 ?ㅼ궗?섎웾??議고쉶
-   * ?몄뀡(湲곗??꾩썡) 湲곕컲?쇰줈 MatStock + CountDetail JOIN
+   * PC 화면에서 PDA가 저장한 실사수량을 조회
+   * 세션(기준연월) 기반으로 MatStock + CountDetail JOIN
    */
   async findStocksWithCounts(query: PhysicalInvCountQueryDto, company?: string, plant?: string) {
     const { countMonth, warehouseCode, search, limit = 5000 } = query;
 
-    // ?대떦 湲곗??꾩썡??紐⑤뱺 ?몄뀡 李얘린
+    // 해당 기준연월의 모든 세션 찾기
     let sessions: PhysicalInvSession[] = [];
     if (countMonth) {
       const sessionWhere: FindOptionsWhere<PhysicalInvSession> = { countMonth };
@@ -509,10 +509,10 @@ export class PhysicalInvService {
       });
     }
 
-    // 吏꾪뻾 以??몄뀡 (?ㅼ궗 媛쒖떆/?꾨즺 ?먮떒??
+    // 진행 중 세션 (실사 개시/완료 판단용)
     const activeSession = sessions.find(s => s.status === 'IN_PROGRESS') ?? null;
 
-    // ?ш퀬 紐⑸줉 議고쉶 (寃?됱뼱 ?꾪꽣瑜?DB濡??대룞)
+    // 재고 목록 조회 (검색어 필터를 DB로 이동)
     const stockQb = this.matStockRepository.createQueryBuilder('stock');
     if (company) stockQb.andWhere('stock.company = :company', { company });
     if (plant) stockQb.andWhere('stock.plant = :plant', { plant });
@@ -532,7 +532,7 @@ export class PhysicalInvService {
       .take(limit)
       .getMany();
 
-    // ?덈ぉ ?뺣낫
+    // 품목 정보
     const itemCodes = [...new Set(stocks.map(s => s.itemCode).filter(Boolean))];
     const tenantWhere = {
       ...(company ? { company } : {}),
@@ -543,14 +543,14 @@ export class PhysicalInvService {
       : [];
     const partMap = new Map(parts.map(p => [p.itemCode, p]));
 
-    // 李쎄퀬紐?議고쉶
+    // 창고명 조회
     const whCodes = [...new Set(stocks.map(s => s.warehouseCode).filter(Boolean))];
     const warehouses = whCodes.length > 0
       ? await this.warehouseRepository.find({ where: { warehouseCode: In(whCodes), ...tenantWhere } })
       : [];
     const whMap = new Map(warehouses.map(w => [w.warehouseCode, w.warehouseName]));
 
-    // ?대떦 ?붿쓽 紐⑤뱺 ?몄뀡 PDA ?ㅼ궗?섎웾 議고쉶 (?섎웾 + ?ㅼ틪 ?쒓컙)
+    // 해당 월의 모든 세션 PDA 실사수량 조회 (수량 + 스캔 시각)
     const detailMap = new Map<string, { countedQty: number; countedAt: Date | null }>();
     if (sessions.length > 0) {
       const allDetails = await this.countDetailRepository.find({
@@ -592,7 +592,7 @@ export class PhysicalInvService {
       };
     });
 
-    // ?몄뀡 紐⑸줉 吏곷젹??
+    // 세션 목록 직렬화
     const formatDate = (d: Date | string) =>
       d instanceof Date ? d.toISOString().split('T')[0] : String(d).split('T')[0];
 
@@ -619,11 +619,11 @@ export class PhysicalInvService {
   }
 
   /**
-   * ?ㅼ궗 諛섏쁺 ??遺덉씪移???ぉ留?異쒓퀬/?낃퀬 ?몃옖??뀡?쇰줈 ?ш퀬 議곗젙
+   * 실사 반영 시 불일치 항목만 출고/입고 트랜잭션으로 재고 조정
    *
-   * 遺議??쒖뒪??> ?ㅼ궗): PHYSCOUNT_OUT 異쒓퀬 ?몃옖??뀡 ???ш퀬 媛먯냼
-   * 怨쇱엵(?ㅼ궗 > ?쒖뒪??: PHYSCOUNT_IN ?낃퀬 ?몃옖??뀡 ???ш퀬 利앷?
-   * ?쇱튂(李⑥씠=0): ?ㅽ궢
+   * 부족(시스템 > 실사): PHYSCOUNT_OUT 출고 트랜잭션 → 재고 감소
+   * 과잉(실사 > 시스템): PHYSCOUNT_IN 입고 트랜잭션 → 재고 증가
+   * 일치(차이=0): 스킵
    */
   async applyCount(dto: CreatePhysicalInvDto, company?: string, plant?: string) {
     const { items, createdBy } = dto;
@@ -638,12 +638,12 @@ export class PhysicalInvService {
     });
 
     if (!activeSession) {
-      throw new BadRequestException('?? ?? ???? ??? ?? ?? ??? ? ? ????.');
+      throw new BadRequestException('진행 중인 실사 세션이 없어 반영할 수 없습니다.');
     }
     this.assertSameTenant('실사 세션', activeSession, company, plant);
 
     return this.tx.run(async (queryRunner) => {
-      // IN 諛곗튂 ?좎“?뚮줈 N+1 諛⑹? ??stockId ?뚯떛 ???쇨큵 議고쉶
+      // IN 배치 조회로 N+1 방지 — stockId 분해 후 일괄 조회
       const stockKeys = items.map((item) => {
         const [whCode, itCode, ltNo] = item.stockId.split('::');
         return { warehouseCode: whCode, itemCode: itCode, matUid: ltNo || '' };
@@ -670,7 +670,7 @@ export class PhysicalInvService {
         const stock = stockMap.get(`${whCode}::${itCode}::${ltNo || ''}`) ?? null;
 
         if (!stock) {
-          throw new NotFoundException(`?ш퀬瑜?李얠쓣 ???놁뒿?덈떎: ${item.stockId}`);
+          throw new NotFoundException(`재고를 찾을 수 없습니다: ${item.stockId}`);
         }
         this.assertSameTenant('실사 대상 재고', stock, company, plant);
         if (activeSession.warehouseCode && stock.warehouseCode !== activeSession.warehouseCode) {
@@ -686,20 +686,20 @@ export class PhysicalInvService {
 
         if (afterQty < reservedQty) {
           throw new BadRequestException(
-            `?ㅼ궗 諛섏쁺 ?섎웾(${afterQty})???덉빟?섎웾(${reservedQty})蹂대떎 ?묒븘 諛섏쁺?????놁뒿?덈떎: ${item.stockId}`,
+            `실사 반영 수량(${afterQty})이 예약수량(${reservedQty})보다 적어 반영할 수 없습니다: ${item.stockId}`,
           );
         }
 
-        // ?쇱튂 ??ぉ? ?ㅽ궢
+        // 일치 항목은 스킵
         if (diffQty === 0) continue;
 
-        // 1) MatStock ?낅뜲?댄듃
+        // 1) MatStock 업데이트
         await queryRunner.manager.update(MatStock,
           { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere },
           { qty: afterQty, availableQty: afterQty - reservedQty, lastCountAt: new Date() },
         );
 
-        // 2) StockTransaction ?앹꽦 (異쒓퀬 ?먮뒗 ?낃퀬 ?몃옖??뀡)
+        // 2) StockTransaction 생성 (출고 또는 입고 트랜잭션)
         const transNo = await this.generatePhysCountTransNo(queryRunner);
         const stockTransaction = queryRunner.manager.create(StockTransaction, {
           transNo,
@@ -712,7 +712,7 @@ export class PhysicalInvService {
           qty: Math.abs(diffQty),
           refType: 'PHYSICAL_COUNT',
           refId: item.stockId,
-          remark: item.remark || '?ш퀬?ㅼ궗 議곗젙',
+          remark: item.remark || '재고실사 조정',
           status: 'DONE',
           createdBy,
           company: stock.company,
@@ -720,7 +720,7 @@ export class PhysicalInvService {
         });
         await queryRunner.manager.save(stockTransaction);
 
-        // 4) InvAdjLog 湲곕줉 (?대젰 異붿쟻??
+        // 4) InvAdjLog 기록 (이력 추적용)
         const invAdjLog = queryRunner.manager.create(InvAdjLog, {
           warehouseCode: stock.warehouseCode,
           itemCode: stock.itemCode,
@@ -729,7 +729,7 @@ export class PhysicalInvService {
           beforeQty,
           afterQty,
           diffQty,
-          reason: item.remark || '?ш퀬?ㅼ궗 議곗젙',
+          reason: item.remark || '재고실사 조정',
           createdBy,
           company: stock.company,
           plant: stock.plant,
@@ -742,7 +742,7 @@ export class PhysicalInvService {
     });
   }
 
-  /** ?ㅼ궗 ?몃옖??뀡 踰덊샇 梨꾨쾲 (PHCyyyyMMdd + 4?먮━ seq) */
+  /** 실사 트랜잭션 번호 채번 (PHCyyyyMMdd + 4자리 seq) */
   private async generatePhysCountTransNo(queryRunner?: QueryRunner): Promise<string> {
     const today = new Date();
     const prefix = `PHC${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;

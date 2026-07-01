@@ -138,12 +138,12 @@ export class ScrapService {
       });
 
       if (!stock || stock.qty < qty) {
-        throw new BadRequestException(`??? ??? ?????. ?? ??: ${stock?.qty ?? 0}`);
+        throw new BadRequestException(`재고가 부족합니다. 현재 재고: ${stock?.qty ?? 0}`);
       }
       this.assertSameTenant('폐기 대상 재고', stock, company, plant);
       if (stock.availableQty < qty) {
         throw new BadRequestException(
-          `??? ??? ?? ?? ??? ??? ?????. ????: ${stock.availableQty}`,
+          `가용재고가 부족합니다. 가용재고: ${stock.availableQty}`,
         );
       }
 

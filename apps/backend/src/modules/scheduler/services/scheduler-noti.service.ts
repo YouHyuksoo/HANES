@@ -1,14 +1,14 @@
-﻿/**
+/**
  * @file src/modules/scheduler/services/scheduler-noti.service.ts
- * @description ?ㅼ?以꾨윭 ?뚮┝ ?쒕퉬??- ?묒뾽 ?ㅽ뻾 寃곌낵 ?뚮┝ ?앹꽦/議고쉶/?쎌쓬泥섎━瑜?愿由ы븳??
+ * @description 스케줄러 알림 서비스 - 작업 실행 결과 알림 생성/조회/읽음처리를 관리한다.
  *
- * 珥덈낫??媛?대뱶:
+ * 초보자 가이드:
  * 1. **generateNotiId()**: Oracle sequence 기반 NOTI_ID 채번
- * 2. **createNotification()**: ?ㅽ뻾 ?ㅽ뙣/??꾩븘????愿由ъ옄?먭쾶 ?뚮┝ ?앹꽦
- * 3. **findByUser()**: ?뱀젙 ?ъ슜?먯쓽 理쒓렐 ?뚮┝ 紐⑸줉 議고쉶
- * 4. **getUnreadCount()**: ?쎌? ?딆? ?뚮┝ 媛쒖닔 (?ㅻ뜑 踰??꾩씠肄?諭껋???
- * 5. **markAsRead()**: 媛쒕퀎 ?뚮┝ ?쎌쓬 泥섎━
- * 6. **markAllAsRead()**: ?ъ슜?먯쓽 紐⑤뱺 誘몄씫???뚮┝ ?쇨큵 ?쎌쓬 泥섎━
+ * 2. **createNotification()**: 실행 실패/완료 등 관리자에게 알림 생성
+ * 3. **findByUser()**: 특정 사용자의 최근 알림 목록 조회
+ * 4. **getUnreadCount()**: 읽지 않은 알림 개수 (헤더 벨 아이콘 뱃지용)
+ * 5. **markAsRead()**: 개별 알림 읽음 처리
+ * 6. **markAllAsRead()**: 사용자의 모든 미읽은 알림 일괄 읽음 처리
  */
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -27,13 +27,13 @@ export class SchedulerNotiService {
   ) {}
 
   // =============================================
-  // 梨꾨쾲
+  // 채번
   // =============================================
 
   /**
    * NOTI_ID 채번: Oracle sequence
-   * @param company ?뚯궗肄붾뱶
-   * @returns ?ㅼ쓬 NOTI_ID
+   * @param company 회사코드
+   * @returns 다음 NOTI_ID
    */
   async generateNotiId(company: string): Promise<number> {
     const result = await this.dataSource.query(
@@ -47,9 +47,9 @@ export class SchedulerNotiService {
   // =============================================
 
   /**
-   * ?뚮┝ ?앹꽦 (notiId ?먮룞 梨꾨쾲)
-   * @param data ?뚮┝ ?곗씠??
-   * @returns ?앹꽦???뚮┝
+   * 알림 생성 (notiId 자동 채번)
+   * @param data 알림 데이터
+   * @returns 생성된 알림
    */
   async createNotification(
     data: Partial<SchedulerNotification>,
@@ -64,15 +64,15 @@ export class SchedulerNotiService {
     });
 
     const saved = await this.notiRepo.save(noti);
-    this.logger.log(`?뚮┝ ?앹꽦: company=${company}, notiId=${notiId}, userId=${data.userId}`);
+    this.logger.log(`알림 생성: company=${company}, notiId=${notiId}, userId=${data.userId}`);
     return saved;
   }
 
   /**
-   * ?뱀젙 ?ъ슜?먯쓽 理쒓렐 ?뚮┝ 紐⑸줉 議고쉶
-   * @param userId ?ъ슜??ID
-   * @param company ?뚯궗肄붾뱶
-   * @param limit 議고쉶 嫄댁닔 (湲곕낯 20)
+   * 특정 사용자의 최근 알림 목록 조회
+   * @param userId 사용자 ID
+   * @param company 회사코드
+   * @param limit 조회 건수 (기본 20)
    */
   async findByUser(
     userId: string,
@@ -88,9 +88,9 @@ export class SchedulerNotiService {
   }
 
   /**
-   * ?쎌? ?딆? ?뚮┝ 媛쒖닔 議고쉶
-   * @param userId ?ъ슜??ID
-   * @param company ?뚯궗肄붾뱶
+   * 읽지 않은 알림 개수 조회
+   * @param userId 사용자 ID
+   * @param company 회사코드
    */
   async getUnreadCount(userId: string, company: string, plant: string): Promise<number> {
     return this.notiRepo.count({
@@ -99,9 +99,9 @@ export class SchedulerNotiService {
   }
 
   /**
-   * 媛쒕퀎 ?뚮┝ ?쎌쓬 泥섎━
-   * @param company ?뚯궗肄붾뱶
-   * @param notiId ?뚮┝ ID
+   * 개별 알림 읽음 처리
+   * @param company 회사코드
+   * @param notiId 알림 ID
    */
   async markAsRead(company: string, plant: string, notiId: number): Promise<void> {
     await this.notiRepo.update(
@@ -111,9 +111,9 @@ export class SchedulerNotiService {
   }
 
   /**
-   * ?ъ슜?먯쓽 紐⑤뱺 誘몄씫???뚮┝ ?쇨큵 ?쎌쓬 泥섎━
-   * @param userId ?ъ슜??ID
-   * @param company ?뚯궗肄붾뱶
+   * 사용자의 모든 미읽은 알림 일괄 읽음 처리
+   * @param userId 사용자 ID
+   * @param company 회사코드
    */
   async markAllAsRead(userId: string, company: string, plant: string): Promise<void> {
     await this.dataSource.query(
@@ -122,8 +122,6 @@ export class SchedulerNotiService {
         WHERE "COMPANY" = :1 AND "PLANT_CD" = :2 AND "USER_ID" = :3 AND "IS_READ" = 'N'`,
       [company, plant, userId],
     );
-    this.logger.log(`?뚮┝ ?쇨큵 ?쎌쓬 泥섎━: company=${company}, plant=${plant}, userId=${userId}`);
+    this.logger.log(`알림 일괄 읽음 처리: company=${company}, plant=${plant}, userId=${userId}`);
   }
 }
-
-

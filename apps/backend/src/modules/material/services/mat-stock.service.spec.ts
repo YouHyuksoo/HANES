@@ -376,25 +376,25 @@ describe('MatStockService', () => {
 
   // ─── adjustStock ───
   describe('adjustStock', () => {
-    it('??? ???????? ??????', async () => {
+    it('재고를 정상적으로 조정한다', async () => {
       const stock = createStock();
-      mockQueryRunner.manager.findOne.mockResolvedValueOnce(stock); // ??? ??? ???
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(stock); // 기존 재고 조회
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
-      mockQueryRunner.manager.findOne.mockResolvedValueOnce({ ...stock, qty: 110 }); // ?????? ?????
-      mockQueryRunner.manager.save.mockResolvedValue({} as any); // InvAdjLog ????
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce({ ...stock, qty: 110 }); // 업데이트 후 재조회
+      mockQueryRunner.manager.save.mockResolvedValue({} as any); // InvAdjLog 저장
 
       const result = await target.adjustStock({
         itemCode: 'ITEM-001',
         warehouseCode: 'WH-01',
         adjustQty: 10,
-        reason: '???',
+        reason: '조정',
       } as any);
 
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
-    it('????? ????? ??? BadRequestException', async () => {
+    it('조정 후 재고가 음수가 되면 BadRequestException', async () => {
       const stock = createStock({ qty: 5 });
       mockQueryRunner.manager.findOne.mockResolvedValueOnce(stock);
 
@@ -403,7 +403,7 @@ describe('MatStockService', () => {
           itemCode: 'ITEM-001',
           warehouseCode: 'WH-01',
           adjustQty: -10,
-          reason: '???',
+          reason: '조정',
         } as any),
       ).rejects.toThrow(BadRequestException);
 
@@ -411,7 +411,7 @@ describe('MatStockService', () => {
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
-    it('????? ??? ?????? ??? ?????? BadRequestException', async () => {
+    it('재고가 없는 상태에서 감소 조정을 하면 BadRequestException', async () => {
       mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
 
       await expect(
@@ -419,7 +419,7 @@ describe('MatStockService', () => {
           itemCode: 'ITEM-001',
           warehouseCode: 'WH-01',
           adjustQty: -5,
-          reason: '???',
+          reason: '조정',
         } as any),
       ).rejects.toThrow(BadRequestException);
 
@@ -427,7 +427,7 @@ describe('MatStockService', () => {
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
-    it('?????? ?? ??? ???? ????', async () => {
+    it('예약수량보다 적게 조정하면 BadRequestException', async () => {
       const stock = createStock({ qty: 20, reservedQty: 10, availableQty: 10 });
       mockQueryRunner.manager.findOne.mockResolvedValueOnce(stock);
 
@@ -436,7 +436,7 @@ describe('MatStockService', () => {
           itemCode: 'ITEM-001',
           warehouseCode: 'WH-01',
           adjustQty: -15,
-          reason: '????',
+          reason: '조정',
         } as any),
       ).rejects.toThrow(BadRequestException);
 
@@ -618,7 +618,7 @@ describe('MatStockService', () => {
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
-    it('??? ??? ?? ??? ???? ????', async () => {
+    it('출발 창고와 도착 창고가 같으면 BadRequestException', async () => {
       const fromStock = createStock({ warehouseCode: 'WH-01', qty: 50, availableQty: 50 });
       mockQueryRunner.manager.findOne.mockResolvedValueOnce(fromStock);
 
@@ -635,7 +635,7 @@ describe('MatStockService', () => {
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
-    it('??? ??? ??? ?? ??? ????', async () => {
+    it('가용재고가 부족하면 BadRequestException', async () => {
       const fromStock = createStock({ warehouseCode: 'WH-FROM', qty: 50, availableQty: 5, reservedQty: 45 });
       mockQueryRunner.manager.findOne.mockResolvedValueOnce(fromStock);
 
@@ -652,7 +652,7 @@ describe('MatStockService', () => {
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
-    it('??? ??? ?? ??? ???? ????', async () => {
+    it('출발 창고와 도착 창고가 같으면 BadRequestException', async () => {
       const fromStock = createStock({ warehouseCode: 'WH-01', qty: 50, availableQty: 50 });
       mockQueryRunner.manager.findOne.mockResolvedValueOnce(fromStock);
 
@@ -669,7 +669,7 @@ describe('MatStockService', () => {
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
-    it('??? ??? ??? ?? ??? ????', async () => {
+    it('가용재고가 부족하면 BadRequestException', async () => {
       const fromStock = createStock({ warehouseCode: 'WH-FROM', qty: 50, availableQty: 5, reservedQty: 45 });
       mockQueryRunner.manager.findOne.mockResolvedValueOnce(fromStock);
 

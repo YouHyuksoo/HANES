@@ -84,7 +84,7 @@ export class OqcService {
     });
 
     if (!oqcRequest) {
-      throw new NotFoundException(`OQC ?붿껌??李얠쓣 ???놁뒿?덈떎: ${id}`);
+      throw new NotFoundException(`OQC 요청을 찾을 수 없습니다: ${id}`);
     }
 
     const part = await this.partRepo.findOne({ where: { itemCode: oqcRequest.itemCode, ...tenantWhere } });
@@ -99,7 +99,7 @@ export class OqcService {
     });
 
     if (boxes.length !== boxIds.length) {
-      throw new BadRequestException('?쇰? 諛뺤뒪瑜?李얠쓣 ???놁뒿?덈떎.');
+      throw new BadRequestException('일부 박스를 찾을 수 없습니다.');
     }
 
     const tenantMismatchedBoxes = boxes.filter(
@@ -116,7 +116,7 @@ export class OqcService {
     const invalidBoxes = boxes.filter((box) => box.status !== 'CLOSED' || box.oqcStatus !== null);
     if (invalidBoxes.length > 0) {
       throw new BadRequestException(
-        `寃??遺덇? 諛뺤뒪: ${invalidBoxes.map((box) => box.boxNo).join(', ')} (CLOSED ?곹깭 + OQC 誘몄???諛뺤뒪留?媛??`,
+        `검사 불가 박스: ${invalidBoxes.map((box) => box.boxNo).join(', ')} (CLOSED 상태 + OQC 미실시 박스만 가능)`,
       );
     }
 
@@ -187,11 +187,11 @@ export class OqcService {
     });
 
     if (!oqcRequest) {
-      throw new NotFoundException(`OQC ?붿껌??李얠쓣 ???놁뒿?덈떎: ${id}`);
+      throw new NotFoundException(`OQC 요청을 찾을 수 없습니다: ${id}`);
     }
 
     if (oqcRequest.status !== 'PENDING' && oqcRequest.status !== 'IN_PROGRESS') {
-      throw new BadRequestException('?湲??먮뒗 吏꾪뻾 ?곹깭???붿껌留?寃?ы븷 ???덉뒿?덈떎.');
+      throw new BadRequestException('대기 또는 진행 상태의 요청만 검사할 수 있습니다.');
     }
 
     const boxNos = oqcRequest.boxes.map((box) => box.boxNo);
@@ -202,7 +202,7 @@ export class OqcService {
       const progressedBoxes = linkedBoxes.filter((box) => box.palletNo || box.status === 'SHIPPED');
       if (progressedBoxes.length > 0) {
         throw new BadRequestException(
-          `?꾧났?뺤씠 吏꾪뻾??諛뺤뒪(${progressedBoxes.map((box) => box.boxNo).join(', ')})媛 ?덉뼱 OQC 寃?щ? ?ㅽ뻾?????놁뒿?덈떎. ?붾젅??異쒗븯遺??癒쇱? ?뺣━??二쇱꽭??`,
+          `출하공정이 진행된 박스(${progressedBoxes.map((box) => box.boxNo).join(', ')})가 있어 OQC 검사를 실행할 수 없습니다. 팔레트·출하부터 먼저 정리해 주세요.`,
         );
       }
     }
@@ -248,7 +248,7 @@ export class OqcService {
     });
 
     if (!oqcRequest) {
-      throw new NotFoundException(`OQC ?붿껌??李얠쓣 ???놁뒿?덈떎: ${id}`);
+      throw new NotFoundException(`OQC 요청을 찾을 수 없습니다: ${id}`);
     }
 
     if (dto.result) {
@@ -260,7 +260,7 @@ export class OqcService {
         const progressedBoxes = linkedBoxes.filter((box) => box.palletNo || box.status === 'SHIPPED');
         if (progressedBoxes.length > 0) {
           throw new BadRequestException(
-            `?꾧났?뺤씠 吏꾪뻾??諛뺤뒪(${progressedBoxes.map((box) => box.boxNo).join(', ')})媛 ?덉뼱 OQC 寃곌낵瑜??섏젙?????놁뒿?덈떎. ?붾젅??異쒗븯遺??癒쇱? ?뺣━??二쇱꽭??`,
+            `출하공정이 진행된 박스(${progressedBoxes.map((box) => box.boxNo).join(', ')})가 있어 OQC 결과를 수정할 수 없습니다. 팔레트·출하부터 먼저 정리해 주세요.`,
           );
         }
       }
