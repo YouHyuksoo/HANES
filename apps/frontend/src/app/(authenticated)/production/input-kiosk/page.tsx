@@ -47,7 +47,8 @@ export default function InputKioskPage() {
   const {
     selectedEquip, selectedJobOrder, interlock, savedResultCount, hasPendingDelegate,
     selectedWorkers, midInspectDone,
-    addWorker, setSelectedJobOrder, setInterlock, setSavedResultCount, setHasPendingDelegate,
+    addWorker, removeWorker, setSelectedEquip, setSelectedJobOrder, setSelectedWorkers,
+    setInterlock, setSavedResultCount, setHasPendingDelegate, setMidInspectDone,
   } = useKioskStore();
 
   const [equips, setEquips] = useState<EquipOption[]>([]);
@@ -64,6 +65,7 @@ export default function InputKioskPage() {
   const [isConsumableScanOpen, setIsConsumableScanOpen] = useState(false);
   const [isDefectOpen, setIsDefectOpen] = useState(false);
   const [selfInspectTiming, setSelfInspectTiming] = useState<InspectTiming | null>(null);
+  const restoredEquipRef = useRef<string | null>(null);
 
   // 설비 목록 로드
   useEffect(() => {
@@ -71,6 +73,87 @@ export default function InputKioskPage() {
       .then(res => setEquips(normalizeEquipOptions(res.data)))
       .catch(() => setEquips([]));
   }, []);
+
+  const parseCurrentWorkerCodes = useCallback((value?: string | null) => {
+    return [...new Set((value ?? '').split(',').map(code => code.trim()).filter(Boolean))];
+  }, []);
+
+  const loadCurrentWorkers = useCallback(async (currentWorkerCodes?: string | null): Promise<Worker[]> => {
+    const codes = parseCurrentWorkerCodes(currentWorkerCodes);
+    const workers = await Promise.all(codes.map(async (code) => {
+      const res = await api.get(`/master/workers/${encodeURIComponent(code)}`);
+      const worker = res.data?.data;
+      return {
+        id: worker?.workerCode ?? code,
+        workerCode: worker?.workerCode ?? code,
+        workerName: worker?.workerName ?? code,
+        dept: worker?.dept,
+      } as Worker;
+    }));
+    return workers;
+  }, [parseCurrentWorkerCodes]);
+
+  const persistCurrentWorkerCodes = useCallback(async (workers: Worker[]) => {
+    if (!selectedEquip?.equipCode) return;
+    await api.patch(
+      `/equipment/equips/${selectedEquip.equipCode}/workers`,
+      { workerCodes: workers.map(worker => worker.id) },
+      { suppressErrorModal: true },
+    );
+  }, [selectedEquip?.equipCode]);
+
+  const restoreEquipmentCurrentState = useCallback(async (equip: EquipOption) => {
+    restoredEquipRef.current = equip.equipCode;
+    setSelectedEquip({
+      equipCode: equip.equipCode,
+      equipName: equip.equipName,
+      processCode: equip.processCode,
+      processName: equip.processName,
+    });
+    try {
+      const equipRes = await api.get(`/equipment/equips/${encodeURIComponent(equip.equipCode)}`);
+      const current = equipRes.data?.data ?? {};
+      const currentJobOrderId = current.currentJobOrderId ?? equip.currentJobOrderId ?? null;
+      const currentWorkerCodes = current.currentWorkerCodes ?? equip.currentWorkerCodes ?? null;
+
+      if (currentJobOrderId) {
+        const orderRes = await api.get(
+          `/production/job-orders/order-no/${encodeURIComponent(currentJobOrderId)}`,
+        );
+        setSelectedJobOrder(orderRes.data?.data ?? null);
+      } else {
+        setSelectedJobOrder(null);
+      }
+
+      const workers = await loadCurrentWorkers(currentWorkerCodes);
+      setSelectedWorkers(workers);
+    } catch {
+      setSelectedJobOrder(null);
+      setSelectedWorkers([]);
+      toast.error(t('kiosk.header.restoreError', '설비 현재 상태를 불러오지 못했습니다.'));
+    }
+  }, [loadCurrentWorkers, setSelectedEquip, setSelectedJobOrder, setSelectedWorkers, t]);
+
+  useEffect(() => {
+    if (!selectedEquip?.equipCode) {
+      restoredEquipRef.current = null;
+      return;
+    }
+    if (restoredEquipRef.current === selectedEquip.equipCode) return;
+    restoredEquipRef.current = selectedEquip.equipCode;
+    void restoreEquipmentCurrentState({
+      equipCode: selectedEquip.equipCode,
+      equipName: selectedEquip.equipName,
+      processCode: selectedEquip.processCode,
+      processName: selectedEquip.processName,
+    });
+  }, [
+    selectedEquip?.equipCode,
+    selectedEquip?.equipName,
+    selectedEquip?.processCode,
+    selectedEquip?.processName,
+    restoreEquipmentCurrentState,
+  ]);
 
   // 설비일일점검 / 작업자설비점검 완료 시각(헤더 "완료 HH:mm" 표시용)
   const [dailyInspectAt, setDailyInspectAt] = useState<string | null>(null);
@@ -118,11 +201,37 @@ export default function InputKioskPage() {
   }, [selectedEquip?.equipCode, selectedJobOrder?.orderNo, setInterlock]);
   useEffect(() => { void refreshWorkerInspect(); }, [refreshWorkerInspect]);
 
-  // 작업지시 변경 시 자주검사 완료 상태 초기화
-  useEffect(() => {
-    setFirstInspectDone(false);
-    setLastInspectDone(false);
-  }, [selectedJobOrder?.orderNo]);
+  const refreshSelfInspectStatus = useCallback(async () => {
+    if (!selectedJobOrder?.orderNo) {
+      setFirstInspectDone(false);
+      setMidInspectDone(false);
+      setLastInspectDone(false);
+      setHasPendingDelegate(false);
+      return;
+    }
+    try {
+      const res = await api.get(
+        `/production/self-inspect/results/${encodeURIComponent(selectedJobOrder.orderNo)}`,
+      );
+      const rows = Array.isArray(res.data?.data) ? res.data.data : [];
+      const doneTimings = new Set(
+        rows
+          .filter((row: { status?: string }) => row.status && row.status !== 'PENDING')
+          .map((row: { timing?: string }) => row.timing)
+          .filter(Boolean),
+      );
+      setFirstInspectDone(doneTimings.has('FIRST'));
+      setMidInspectDone(doneTimings.has('MID'));
+      setLastInspectDone(doneTimings.has('LAST'));
+      setHasPendingDelegate(rows.some((row: { status?: string }) => row.status === 'PENDING'));
+    } catch {
+      setFirstInspectDone(false);
+      setMidInspectDone(false);
+      setLastInspectDone(false);
+    }
+  }, [selectedJobOrder?.orderNo, setHasPendingDelegate, setMidInspectDone]);
+
+  useEffect(() => { void refreshSelfInspectStatus(); }, [refreshSelfInspectStatus]);
 
   // 진행수량을 서버 실적(PROD_RESULTS 집계) 기준으로 동기화
   // — 새로고침/재진입/다른 단말 실적이 있어도 진행률·중물 차단이 실제 생산량을 따른다.
@@ -173,10 +282,30 @@ export default function InputKioskPage() {
     }
   }, [selectedEquip, setSelectedJobOrder, t]);
 
-  const handleWorkerConfirm = useCallback((worker: Worker) => {
+  const handleWorkerConfirm = useCallback(async (worker: Worker) => {
+    const nextWorkers = selectedWorkers.some(w => w.id === worker.id)
+      ? selectedWorkers
+      : [...selectedWorkers, worker];
     addWorker(worker);
     setIsWorkerOpen(false);
-  }, [addWorker]);
+    try {
+      await persistCurrentWorkerCodes(nextWorkers);
+    } catch {
+      setSelectedWorkers(selectedWorkers);
+      toast.error(t('kiosk.header.workerAssignError', '현재 작업자 저장에 실패했습니다.'));
+    }
+  }, [addWorker, persistCurrentWorkerCodes, selectedWorkers, setSelectedWorkers, t]);
+
+  const handleRemoveWorker = useCallback(async (workerId: string) => {
+    const nextWorkers = selectedWorkers.filter(worker => worker.id !== workerId);
+    removeWorker(workerId);
+    try {
+      await persistCurrentWorkerCodes(nextWorkers);
+    } catch {
+      setSelectedWorkers(selectedWorkers);
+      toast.error(t('kiosk.header.workerAssignError', '현재 작업자 저장에 실패했습니다.'));
+    }
+  }, [persistCurrentWorkerCodes, removeWorker, selectedWorkers, setSelectedWorkers, t]);
 
   // 실적 저장 후 처리 — 서버 기준 진행수량 재동기화 + 초물 자주검사 자동 트리거
   const handleSaved = useCallback(() => {
@@ -197,9 +326,11 @@ export default function InputKioskPage() {
   // 자주검사 모달 완료 처리
   const handleSelfInspectDone = useCallback(() => {
     if (selfInspectTiming === 'FIRST') setFirstInspectDone(true);
+    if (selfInspectTiming === 'MID') setMidInspectDone(true);
     if (selfInspectTiming === 'LAST') setLastInspectDone(true);
     setSelfInspectTiming(null);
-  }, [selfInspectTiming]);
+    void refreshSelfInspectStatus();
+  }, [refreshSelfInspectStatus, selfInspectTiming, setMidInspectDone]);
 
   const handleOpenDefect = useCallback(() => setIsDefectOpen(true), []);
 
@@ -263,6 +394,8 @@ export default function InputKioskPage() {
         onOpenWorker={() => setIsWorkerOpen(true)}
         onOpenDailyInspect={() => setIsDailyInspectOpen(true)}
         onOpenWorkerInspect={() => setIsWorkerInspectOpen(true)}
+        onSelectEquip={restoreEquipmentCurrentState}
+        onRemoveWorker={handleRemoveWorker}
         dailyInspectAt={dailyInspectAt}
         workerInspectAt={workerInspectAt}
       />

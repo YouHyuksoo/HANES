@@ -39,6 +39,7 @@ import { ProcessMaster } from '../../entities/process-master.entity';
 import { WorkCalendar } from '../../entities/work-calendar.entity';
 import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
 import { ShiftPattern } from '../../entities/shift-pattern.entity';
+import { WorkerMaster } from '../../entities/worker-master.entity';
 import { EquipMasterController } from './controllers/equip-master.controller';
 import { ConsumableController, ConsumableLogController } from './controllers/consumable.controller';
 import { DailyInspectController } from './controllers/daily-inspect.controller';
@@ -78,6 +79,7 @@ import { SensorMonitorController } from './controllers/sensor-monitor.controller
       WorkCalendar,
       WorkCalendarDay,
       ShiftPattern,
+      WorkerMaster,
       MoldMaster,
       MoldUsageLog,
       SensorDataLog,

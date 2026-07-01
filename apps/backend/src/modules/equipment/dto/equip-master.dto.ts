@@ -178,6 +178,18 @@ export class AssignJobOrderDto {
 }
 
 /**
+ * 설비 현재 작업자 할당 DTO
+ */
+export class AssignWorkerCodesDto {
+  @ApiPropertyOptional({
+    description: '현재 설비에 배치된 작업자 코드 목록. 문자열이면 콤마 구분으로 해석한다.',
+    example: ['W001', 'W014'],
+  })
+  @IsOptional()
+  workerCodes?: string[] | string | null;
+}
+
+/**
  * 설비마스터 목록 조회 쿼리 DTO
  */
 export class EquipMasterQueryDto extends PaginationQueryDto {

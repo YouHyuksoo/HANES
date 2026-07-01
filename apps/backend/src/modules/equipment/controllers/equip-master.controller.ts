@@ -47,6 +47,7 @@ import {
   EquipMasterQueryDto,
   ChangeEquipStatusDto,
   AssignJobOrderDto,
+  AssignWorkerCodesDto,
 } from '../dto/equip-master.dto';
 import { EQUIP_TYPE_VALUES, EQUIP_STATUS_VALUES } from '@harness/shared';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -286,6 +287,21 @@ export class EquipMasterController {
   ) {
     const data = await this.equipMasterService.assignJobOrder(id, dto, company, plant);
     return ResponseUtil.success(data, dto.orderNo ? '작업지시가 할당되었습니다.' : '작업지시가 해제되었습니다.');
+  }
+
+  @Patch(':id/workers')
+  @ApiOperation({ summary: '설비 현재 작업자 할당/해제' })
+  @ApiParam({ name: 'id', description: '설비 ID' })
+  @SwaggerResponse({ status: 200, description: '현재 작업자 할당/해제 성공' })
+  @SwaggerResponse({ status: 404, description: '설비 또는 작업자를 찾을 수 없음' })
+  async assignWorkerCodes(
+    @Param('id') id: string,
+    @Body() dto: AssignWorkerCodesDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.equipMasterService.assignWorkerCodes(id, dto, company, plant);
+    return ResponseUtil.success(data, dto.workerCodes ? '현재 작업자가 할당되었습니다.' : '현재 작업자가 해제되었습니다.');
   }
 
   // =============================================

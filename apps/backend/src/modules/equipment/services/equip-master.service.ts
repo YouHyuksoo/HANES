@@ -27,12 +27,14 @@ import { Repository, In } from 'typeorm';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { ProdLineMaster } from '../../../entities/prod-line-master.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
+import { WorkerMaster } from '../../../entities/worker-master.entity';
 import {
   CreateEquipMasterDto,
   UpdateEquipMasterDto,
   EquipMasterQueryDto,
   ChangeEquipStatusDto,
   AssignJobOrderDto,
+  AssignWorkerCodesDto,
 } from '../dto/equip-master.dto';
 import { parseDateStart } from '../../../shared/date.util';
 
@@ -47,6 +49,8 @@ export class EquipMasterService {
     private readonly lineRepository: Repository<ProdLineMaster>,
     @InjectRepository(ProcessMaster)
     private readonly processRepository: Repository<ProcessMaster>,
+    @InjectRepository(WorkerMaster)
+    private readonly workerRepository: Repository<WorkerMaster>,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -58,6 +62,15 @@ export class EquipMasterService {
 
   private withClientId(equip: EquipMaster) {
     return { ...equip, id: equip.equipCode };
+  }
+
+  private normalizeWorkerCodes(value: AssignWorkerCodesDto['workerCodes']): string[] {
+    const raw = Array.isArray(value)
+      ? value
+      : typeof value === 'string'
+        ? value.split(',')
+        : [];
+    return [...new Set(raw.map((code) => code.trim()).filter(Boolean))];
   }
 
   // =============================================
@@ -410,6 +423,43 @@ export class EquipMasterService {
       dto.orderNo
         ? `설비 작업지시 할당: ${equip.equipCode} → ${dto.orderNo}`
         : `설비 작업지시 해제: ${equip.equipCode}`,
+    );
+
+    return this.findById(equipCode, company, plant);
+  }
+
+  /**
+   * 설비에 현재 작업자 코드 목록 할당/해제
+   */
+  async assignWorkerCodes(equipCode: string, dto: AssignWorkerCodesDto, company?: string, plant?: string) {
+    const equip = await this.findById(equipCode, company, plant);
+    const workerCodes = this.normalizeWorkerCodes(dto.workerCodes);
+
+    if (workerCodes.length > 0) {
+      const workers = await this.workerRepository.find({
+        where: {
+          workerCode: In(workerCodes),
+          useYn: 'Y',
+          ...this.tenantWhere(company, plant),
+        },
+        select: ['workerCode'],
+      });
+      const found = new Set(workers.map((worker) => worker.workerCode));
+      const missing = workerCodes.filter((code) => !found.has(code));
+      if (missing.length > 0) {
+        throw new NotFoundException(`작업자를 찾을 수 없습니다: ${missing.join(',')}`);
+      }
+    }
+
+    await this.equipMasterRepository.update(
+      { equipCode, ...this.tenantWhere(company, plant) },
+      { currentWorkerCodes: workerCodes.length > 0 ? workerCodes.join(',') : null },
+    );
+
+    this.logger.log(
+      workerCodes.length > 0
+        ? `설비 현재 작업자 할당: ${equip.equipCode} → ${workerCodes.join(',')}`
+        : `설비 현재 작업자 해제: ${equip.equipCode}`,
     );
 
     return this.findById(equipCode, company, plant);

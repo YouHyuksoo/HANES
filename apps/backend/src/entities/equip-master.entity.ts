@@ -71,6 +71,9 @@ export class EquipMaster {
   @Column({ type: 'varchar2', name: 'CURRENT_JOB_ORDER_ID', length: 50, nullable: true })
   currentJobOrderId: string | null;
 
+  @Column({ type: 'varchar2', name: 'CURRENT_WORKER_CODES', length: 1000, nullable: true })
+  currentWorkerCodes: string | null;
+
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 

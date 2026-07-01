@@ -13,7 +13,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Scan, Search, Cpu, CheckCircle2, XCircle } from 'lucide-react';
 import { Modal, ComCodeBadge } from '@/components/ui';
-import { useScanInputFocus } from '@/hooks/useScanInputFocus';
+import { BarcodeScanInput } from '@/components/shared';
 import { useComCodeList } from '@/hooks/useComCode';
 
 interface EquipOption { equipCode: string; equipName: string; processCode?: string; processName?: string; lineType?: string; }
@@ -48,8 +48,6 @@ export default function EquipSelectModal({ isOpen, onClose, equips, onSelect }: 
   const [scanStatus, setScanStatus] = useState<ScanStatus>('idle');
   const [searchQuery, setSearchQuery] = useState('');
   const lineCodes = useComCodeList('LINE_TYPE');
-  // 모달 열린 동안 스캔 입력창 항상 포커스 유지 (수동 검색 입력은 guard로 허용)
-  useScanInputFocus(scanRef, isOpen);
 
   // 모달 열릴 때마다 초기화 + 스캔창 포커스
   useEffect(() => {
@@ -79,12 +77,6 @@ export default function EquipSelectModal({ isOpen, onClose, equips, onSelect }: 
       }, 1200);
     }
   }, [equips, onSelect, onClose]);
-
-  const handleScanKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && scanValue.trim()) {
-      handleScanSelect(scanValue);
-    }
-  }, [scanValue, handleScanSelect]);
 
   const noProcessLabel = t('kiosk.equip.noProcess', { defaultValue: '공정 미지정' });
   const noLineLabel = t('kiosk.equip.noLine', { defaultValue: '라인 미지정' });
@@ -168,14 +160,14 @@ export default function EquipSelectModal({ isOpen, onClose, equips, onSelect }: 
                   : t('kiosk.equip.scanHint')}
               </span>
             </div>
-            <input
+            <BarcodeScanInput
               ref={scanRef}
-              type="text"
               value={scanValue}
-              onChange={e => { setScanValue(e.target.value); setScanStatus('idle'); }}
-              onKeyDown={handleScanKeyDown}
+              onChange={(value) => { setScanValue(value); setScanStatus('idle'); }}
+              onScan={handleScanSelect}
               placeholder={t('kiosk.equip.scanPlaceholder')}
               disabled={scanStatus !== 'idle'}
+              maintainFocus={isOpen}
               className={`flex-1 min-w-0 h-11 px-3 text-base font-mono font-bold border-2 rounded-lg focus:outline-none transition-colors ${
                 scanStatus === 'ok'
                   ? 'border-green-400 text-green-700 dark:text-green-300'

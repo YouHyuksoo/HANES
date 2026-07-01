@@ -17,8 +17,7 @@ import {
 import { useKioskStore } from '@/stores/kioskStore';
 import EquipSelectModal from './EquipSelectModal';
 import HeaderCheckItem from './HeaderCheckItem';
-
-interface EquipOption { equipCode: string; equipName: string; processCode?: string; processName?: string; }
+import type { EquipOption } from '../utils/equipOptions';
 
 interface EquipHeaderProps {
   equips: EquipOption[];
@@ -26,6 +25,8 @@ interface EquipHeaderProps {
   onOpenWorker: () => void;
   onOpenDailyInspect: () => void;
   onOpenWorkerInspect: () => void;
+  onSelectEquip: (equip: EquipOption) => void;
+  onRemoveWorker: (workerId: string) => void;
   /** 설비일일점검 완료 시각 "YYYY-MM-DD HH:mm:ss" (없으면 미완료/시각없음) */
   dailyInspectAt?: string | null;
   /** 작업자설비점검 완료 시각 "YYYY-MM-DD HH:mm:ss" */
@@ -34,6 +35,7 @@ interface EquipHeaderProps {
 
 export default function EquipHeader({
   equips, onOpenJobOrder, onOpenWorker, onOpenDailyInspect, onOpenWorkerInspect,
+  onSelectEquip, onRemoveWorker,
   dailyInspectAt, workerInspectAt,
 }: EquipHeaderProps) {
   const { t } = useTranslation();
@@ -43,7 +45,6 @@ export default function EquipHeader({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const {
     selectedEquip, selectedJobOrder, selectedWorkers, interlock,
-    setSelectedEquip, removeWorker,
   } = useKioskStore();
   const isWorkView = searchParams.get('view') === 'work';
 
@@ -55,13 +56,8 @@ export default function EquipHeader({
   }, []);
 
   const handleEquipSelect = useCallback((equip: EquipOption) => {
-    setSelectedEquip({
-      equipCode: equip.equipCode,
-      equipName: equip.equipName,
-      processCode: equip.processCode,
-      processName: equip.processName,
-    });
-  }, [setSelectedEquip]);
+    onSelectEquip(equip);
+  }, [onSelectEquip]);
 
   const handleToggleWorkView = useCallback(() => {
     if (isWorkView) {
@@ -163,7 +159,7 @@ export default function EquipHeader({
                 <span key={w.id} className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-300">
                   <CheckCircle className="h-3 w-3" />
                   {w.workerName}
-                  <button onClick={() => removeWorker(w.id)} className="ml-0.5 transition-colors hover:text-red-500">
+                  <button onClick={() => onRemoveWorker(w.id)} className="ml-0.5 transition-colors hover:text-red-500">
                     <X className="h-3 w-3" />
                   </button>
                 </span>

@@ -6,7 +6,7 @@
  * - 설비 선택 → 준비단계 체크 → 작업 화면 순서로 진행
  * - interlock: 각 준비 조건의 완료 여부 (모두 true여야 실적입력 가능)
  * - pendingDefects: 실적 저장 전 임시 보관 불량 목록 (저장 시 defect-logs API 연동)
- * - persist: 페이지 새로고침 후에도 선택 상태 유지 (localStorage)
+ * - persist: 설비만 편의 저장한다. 작업지시·작업자·점검상태는 DB 기준으로 복원한다.
  * - clearAll: 작업 완료 후 또는 설비 변경 시 전체 초기화
  */
 import { create } from 'zustand';
@@ -67,6 +67,7 @@ interface KioskState {
   setSelectedEquip: (equip: KioskEquip | null) => void;
   setSelectedJobOrder: (jobOrder: JobOrder | null) => void;
   addWorker: (worker: Worker) => void;
+  setSelectedWorkers: (workers: Worker[]) => void;
   removeWorker: (workerId: string) => void;
   setLotSize: (size: number) => void;
   incrementSerial: () => void;
@@ -89,6 +90,16 @@ const DEFAULT_INTERLOCK: KioskInterlock = {
   materialScanDone: false,
   consumableScanDone: false,
 };
+
+function migratePersistedKioskState(persistedState: unknown): { selectedEquip: KioskEquip | null } {
+  if (typeof persistedState !== 'object' || persistedState === null) {
+    return { selectedEquip: null };
+  }
+  const state = persistedState as Partial<KioskState>;
+  return {
+    selectedEquip: state.selectedEquip ?? null,
+  };
+}
 
 export const useKioskStore = create<KioskState>()(
   persist(
@@ -118,21 +129,26 @@ export const useKioskStore = create<KioskState>()(
         midInspectDone: false,
       }),
 
-      setSelectedJobOrder: (jobOrder) => set({
+      setSelectedJobOrder: (jobOrder) => set((state) => ({
         selectedJobOrder: jobOrder,
         serialSeq: 1,
         // 작업지시 변경 시 작업자점검·자재·소모품 스캔 초기화
-        interlock: { ...DEFAULT_INTERLOCK, dailyInspectDone: true },
+        interlock: {
+          ...DEFAULT_INTERLOCK,
+          dailyInspectDone: state.interlock.dailyInspectDone,
+        },
         pendingDefects: [],
         savedResultCount: 0,
         hasPendingDelegate: false,
         midInspectDone: false,
-      }),
+      })),
 
       addWorker: (worker) => set((state) => {
         if (state.selectedWorkers.some(w => w.id === worker.id)) return state;
         return { selectedWorkers: [...state.selectedWorkers, worker] };
       }),
+
+      setSelectedWorkers: (workers) => set({ selectedWorkers: workers }),
 
       removeWorker: (workerId) => set((state) => ({
         selectedWorkers: state.selectedWorkers.filter(w => w.id !== workerId),
@@ -189,17 +205,13 @@ export const useKioskStore = create<KioskState>()(
     }),
     {
       name: 'harness-kiosk',
-      // 새로고침 후 현장 작업 컨텍스트가 유지되도록 설비·작업자·작업지시·lotSize·인터락을 저장한다.
-      // 단, 자재리스트·소모성부품·스캔 롯트 등 작업지시 연관 데이터는 저장하지 않고
-      // MaterialListPanel/page 의 조회 useEffect 가 selectedJobOrder 기준으로 서버에서 다시 불러온다.
+      // 브라우저 저장소는 설비 재진입 편의용으로만 쓴다.
+      // 현재 작업지시·작업자·점검/자재/소모품/초중종물 상태는 DB에서 재조회한다.
       partialize: (state) => ({
         selectedEquip: state.selectedEquip,
-        selectedJobOrder: state.selectedJobOrder,
-        selectedWorkers: state.selectedWorkers,
-        lotSize: state.lotSize,
-        interlock: state.interlock,
       }),
-      version: 2,
+      migrate: (persistedState) => migratePersistedKioskState(persistedState),
+      version: 3,
     }
   )
 );
