@@ -184,6 +184,12 @@ export class ProdResultService {
       return kst.toISOString().slice(0, 10);
     };
 
+    const downstreamMap = await this.computeDownstreamProgressMap(
+      data.map((pr) => ({ resultNo: pr.resultNo, prdUid: pr.prdUid })),
+      company,
+      plant,
+    );
+
     const mapped = data.map((pr) => ({
       ...pr,
       itemCode: pr.jobOrder?.itemCode ?? '',
@@ -195,6 +201,7 @@ export class ProdResultService {
       totalQty: (pr.goodQty ?? 0) + (pr.defectQty ?? 0),
       workerName: pr.worker?.workerName ?? null,
       workerDept: (pr.worker as any)?.dept ?? null,
+      hasDownstreamProgress: downstreamMap.get(pr.resultNo) ?? false,
     }));
 
     return { data: mapped, total, page, limit };
@@ -640,6 +647,10 @@ export class ProdResultService {
   async update(resultNo: string, dto: UpdateProdResultDto, company?: string, plant?: string) {
     const prodResult = await this.findById(resultNo, company, plant);
 
+    if (prodResult.status === 'CANCELED') {
+      throw new BadRequestException('취소된 실적은 수정할 수 없습니다.');
+    }
+
     // DONE 상태에서는 일부 필드만 수정 가능
     if (prodResult.status === 'DONE') {
       if (dto.orderNo || dto.equipCode || dto.workerId || dto.startAt) {
@@ -654,10 +665,15 @@ export class ProdResultService {
     const newTotalQty = newGoodQty + newDefectQty;
     const qtyChanged = (dto.goodQty !== undefined || dto.defectQty !== undefined) && oldTotalQty !== newTotalQty;
 
+    if (qtyChanged) {
+      // 이미 포장/출하까지 진행된 실적은 수량을 바꾸면 재고 역분개가 꼬인다 — delete()/cancel()과 동일 가드.
+      await this.ensureNoDownstreamProgress(prodResult, company, plant);
+    }
+
     await this.tx.run(async (queryRunner) => {
       if (dto.status !== undefined) {
         throw new BadRequestException(
-          '???? ??? ?? ???? ??? ? ????. ?? ?? ?? ?? API? ??? ???.',
+          '상태(status)는 이 API로 직접 수정할 수 없습니다. 완료/취소는 별도 API를 사용하세요.',
         );
       }
       if (dto.orderNo !== undefined && dto.orderNo !== prodResult.orderNo) {
@@ -745,51 +761,13 @@ export class ProdResultService {
   async delete(resultNo: string, company?: string, plant?: string) {
     const prodResult = await this.findById(resultNo, company, plant);
 
+    if (prodResult.status === 'CANCELED') {
+      throw new BadRequestException('이미 취소된 실적입니다.');
+    }
     await this.ensureNoDownstreamProgress(prodResult, company, plant);
 
     await this.tx.run(async (queryRunner) => {
-      if (prodResult.equipCode) {
-        await queryRunner.manager.update(
-          EquipMaster,
-          { equipCode: prodResult.equipCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-          { currentJobOrderId: null },
-        );
-      }
-
-      await this.reverseAutoIssue(queryRunner, prodResult.resultNo, company, plant);
-      await this.reverseProductStock(queryRunner, prodResult.resultNo, company, plant);
-
-      const sgLabels = await queryRunner.manager.find(SgLabel, {
-        where: {
-          resultNo: prodResult.resultNo,
-          ...(company ? { company } : {}),
-          ...(plant ? { plant } : {}),
-        },
-      });
-      const progressedSgLabel = sgLabels.find((label) => label.status !== 'IN_STOCK');
-      if (progressedSgLabel) {
-        throw new BadRequestException(
-          `이미 후공정이 진행된 SG 라벨입니다: ${progressedSgLabel.sgBarcode} (${progressedSgLabel.status})`,
-        );
-      }
-      await queryRunner.manager.delete(SgLabel, {
-        resultNo: prodResult.resultNo,
-        ...(company ? { company } : {}),
-        ...(plant ? { plant } : {}),
-      });
-
-      await queryRunner.manager.delete(DefectLog, {
-        prodResultNo: prodResult.resultNo,
-        ...(company ? { company } : {}),
-        ...(plant ? { plant } : {}),
-      });
-
-      const { InspectResult } = await import('../../../entities/inspect-result.entity');
-      await queryRunner.manager.update(
-        InspectResult,
-        { prodResultNo: prodResult.resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-        { prodResultNo: null },
-      );
+      await this.reverseResultInTx(queryRunner, prodResult, company, plant);
 
       await queryRunner.manager.delete(ProdResult, {
         resultNo: prodResult.resultNo,
@@ -801,6 +779,61 @@ export class ProdResultService {
     });
 
     return { resultNo };
+  }
+
+  /**
+   * delete()/cancel() 공통 되돌리기: 설비 작업지시 해제 + 자재/제품재고 역분개 +
+   * SG라벨 삭제(후공정 진행된 라벨이 있으면 차단) + 불량로그 삭제 + 검사결과 연결 해제.
+   * 호출 전 ensureNoDownstreamProgress로 FG 포장/출하 여부는 이미 검증됐다는 전제.
+   */
+  private async reverseResultInTx(
+    queryRunner: import('typeorm').QueryRunner,
+    prodResult: ProdResult,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    if (prodResult.equipCode) {
+      await queryRunner.manager.update(
+        EquipMaster,
+        { equipCode: prodResult.equipCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        { currentJobOrderId: null },
+      );
+    }
+
+    await this.reverseAutoIssue(queryRunner, prodResult.resultNo, company, plant);
+    await this.reverseProductStock(queryRunner, prodResult.resultNo, company, plant);
+
+    const sgLabels = await queryRunner.manager.find(SgLabel, {
+      where: {
+        resultNo: prodResult.resultNo,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+    const progressedSgLabel = sgLabels.find((label) => label.status !== 'IN_STOCK');
+    if (progressedSgLabel) {
+      throw new BadRequestException(
+        `이미 후공정이 진행된 SG 라벨입니다: ${progressedSgLabel.sgBarcode} (${progressedSgLabel.status})`,
+      );
+    }
+    await queryRunner.manager.delete(SgLabel, {
+      resultNo: prodResult.resultNo,
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    });
+
+    await queryRunner.manager.delete(DefectLog, {
+      prodResultNo: prodResult.resultNo,
+      ...(company ? { company } : {}),
+      ...(plant ? { plant } : {}),
+    });
+
+    const { InspectResult } = await import('../../../entities/inspect-result.entity');
+    await queryRunner.manager.update(
+      InspectResult,
+      { prodResultNo: prodResult.resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      { prodResultNo: null },
+    );
   }
 
   /**
@@ -1062,36 +1095,126 @@ export class ProdResultService {
     });
   }
 
-  /** 생산실적 취소: 현재 업무 기준에서는 삭제와 동일하다. */
+  /**
+   * 생산실적 취소: delete()와 같은 되돌리기(설비 해제/자재·제품재고 역분개/SG라벨·불량로그 정리)를
+   * 수행하되, 실적 row는 지우지 않고 CANCELED 상태 + 사유(remark)로 남겨 이력을 보존한다.
+   */
   async cancel(resultNo: string, remark?: string, company?: string, plant?: string) {
-    void remark;
-    return this.delete(resultNo, company, plant);
+    const prodResult = await this.findById(resultNo, company, plant);
+
+    if (prodResult.status === 'CANCELED') {
+      throw new BadRequestException('이미 취소된 실적입니다.');
+    }
+    await this.ensureNoDownstreamProgress(prodResult, company, plant);
+
+    await this.tx.run(async (queryRunner) => {
+      await this.reverseResultInTx(queryRunner, prodResult, company, plant);
+
+      await queryRunner.manager.update(
+        ProdResult,
+        {
+          resultNo: prodResult.resultNo,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+        {
+          status: 'CANCELED',
+          remark: remark ? `취소: ${remark}` : '취소',
+        },
+      );
+
+      await this.syncJobOrderFromRemainingResults(queryRunner, prodResult.orderNo, company, plant);
+    });
+
+    return this.prodResultRepository.findOne({
+      where: { resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      relations: ['jobOrder', 'equip', 'worker'],
+    });
   }
 
   /**
-   * PROD_AUTO 자동차감 역분개
-   * - 해당 실적의 PROD_AUTO MatIssue를 모두 찾아 CANCELED 처리
-   * - MatStock.qty 복원, 역방향 StockTransaction 생성
+   * 실적별 후공정 진행 여부 판단에 쓸 후보 FG바코드 목록을 모은다.
+   * - 실적 prdUid 자체(ON_PRODUCTION 모드/레거시 데이터에서 prdUid=FG바코드인 경우 대비)
+   * - 이 실적에서 통전검사로 발행된 FG바코드(InspectResult.prodResultNo 링크)
+   * resultNo 단위 N+1을 피하려고 여러 실적을 한 번에 받아 배치로 조회한다.
    */
+  private async collectCandidateBarcodes(
+    results: Array<{ resultNo: string; prdUid: string | null }>,
+    company?: string,
+    plant?: string,
+  ): Promise<Map<string, string[]>> {
+    const byResultNo = new Map<string, string[]>();
+    if (results.length === 0) return byResultNo;
+
+    const { InspectResult } = await import('../../../entities/inspect-result.entity');
+    const inspectRepo = this.dataSource.getRepository(InspectResult);
+    const resultNos = results.map((r) => r.resultNo);
+    const inspects = await inspectRepo.find({
+      where: { prodResultNo: In(resultNos), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      select: ['prodResultNo', 'fgBarcode'],
+    });
+
+    for (const r of results) {
+      const own = r.prdUid ? [r.prdUid] : [];
+      const linked = inspects
+        .filter((i) => i.prodResultNo === r.resultNo)
+        .map((i) => i.fgBarcode)
+        .filter((b): b is string => !!b);
+      byResultNo.set(r.resultNo, Array.from(new Set([...own, ...linked])));
+    }
+    return byResultNo;
+  }
+
   /**
-   * ???? ??? ????? ?? ???? ??, ? ???? ????? ????.
+   * 여러 실적의 후공정(포장/출하) 진행 여부를 일괄 조회한다(N+1 방지).
+   * 목록 화면에서 수정/삭제 아이콘 활성화 여부를 판단하는 데 쓴다.
    */
+  async computeDownstreamProgressMap(
+    results: Array<{ resultNo: string; prdUid: string | null }>,
+    company?: string,
+    plant?: string,
+  ): Promise<Map<string, boolean>> {
+    const map = new Map<string, boolean>();
+    if (results.length === 0) return map;
+
+    const barcodesByResult = await this.collectCandidateBarcodes(results, company, plant);
+    const allBarcodes = Array.from(new Set(Array.from(barcodesByResult.values()).flat()));
+    if (allBarcodes.length === 0) {
+      for (const r of results) map.set(r.resultNo, false);
+      return map;
+    }
+
+    const { FgLabel } = await import('../../../entities/fg-label.entity');
+    const fgLabelRepo = this.dataSource.getRepository(FgLabel);
+    const progressedLabels = await fgLabelRepo.find({
+      where: {
+        fgBarcode: In(allBarcodes),
+        status: In(['PACKED', 'SHIPPED']),
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+      select: ['fgBarcode'],
+    });
+    const progressedSet = new Set(progressedLabels.map((l) => l.fgBarcode));
+
+    for (const r of results) {
+      const barcodes = barcodesByResult.get(r.resultNo) ?? [];
+      map.set(r.resultNo, barcodes.some((b) => progressedSet.has(b)));
+    }
+    return map;
+  }
+
+  /** 생산실적이 이미 후공정(포장/출하)까지 진행됐으면 취소/수정/삭제를 막는다. */
   private async ensureNoDownstreamProgress(prodResult: ProdResult, company?: string, plant?: string): Promise<void> {
     const { FgLabel } = await import('../../../entities/fg-label.entity');
-    const { InspectResult } = await import('../../../entities/inspect-result.entity');
     const fgLabelRepo = this.dataSource.getRepository(FgLabel);
-    const inspectRepo = this.dataSource.getRepository(InspectResult);
 
-    // 이 실적에서 통전검사로 발행된 FG바코드를 InspectResult 링크로 수집한다.
-    // (실적 prdUid 자체도 후보 — ON_PRODUCTION 모드/레거시 데이터에서 prdUid=FG바코드인 경우 대비)
-    const inspects = await inspectRepo.find({
-      where: { prodResultNo: prodResult.resultNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-      select: ['resultNo', 'fgBarcode'],
-    });
-    const barcodes = Array.from(new Set([
-      ...(prodResult.prdUid ? [prodResult.prdUid] : []),
-      ...inspects.map((i) => i.fgBarcode).filter((b): b is string => !!b),
-    ]));
+    const barcodesByResult = await this.collectCandidateBarcodes(
+      [{ resultNo: prodResult.resultNo, prdUid: prodResult.prdUid }],
+      company,
+      plant,
+    );
+    const barcodes = barcodesByResult.get(prodResult.resultNo) ?? [];
     if (barcodes.length === 0) return;
 
     const packedLabel = await fgLabelRepo.findOne({
@@ -1169,7 +1292,8 @@ export class ProdResultService {
       .select('COUNT(pr.resultNo)', 'resultCount')
       .addSelect('SUM(pr.goodQty)', 'totalGoodQty')
       .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
-      .where('pr.orderNo = :orderNo', { orderNo });
+      .where('pr.orderNo = :orderNo', { orderNo })
+      .andWhere('pr.status != :canceled', { canceled: 'CANCELED' });
     if (company) summaryQb.andWhere('pr.company = :company', { company });
     if (plant) summaryQb.andWhere('pr.plant = :plant', { plant });
     const summary = await summaryQb.getRawOne();
@@ -1392,7 +1516,7 @@ export class ProdResultService {
       await qr.manager.save(StockTransaction, reverseTx);
     }
 
-    this.logger.log(`???? ??? ?? - resultNo: ${resultNo}, ${issues.length}?`);
+    this.logger.log(`자동차감 역분개 완료 - resultNo: ${resultNo}, ${issues.length}건`);
   }
 
   private assertTenantConsistency(

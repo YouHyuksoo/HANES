@@ -699,7 +699,8 @@ export class JobOrderService {
         .createQueryBuilder(ProdResult, 'pr')
         .select('SUM(pr.goodQty)', 'totalGoodQty')
         .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
-        .where('pr.orderNo = :orderNo', { orderNo: id });
+        .where('pr.orderNo = :orderNo', { orderNo: id })
+        .andWhere('pr.status != :canceled', { canceled: 'CANCELED' });
       if (company) summaryQb.andWhere('pr.company = :company', { company });
       if (plant) summaryQb.andWhere('pr.plant = :plant', { plant });
       const summary = await summaryQb.getRawOne();
@@ -812,7 +813,8 @@ export class JobOrderService {
       .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
       .addSelect('AVG(pr.cycleTime)', 'avgCycleTime')
       .addSelect('COUNT(*)', 'resultCount')
-      .where('pr.orderNo = :orderNo', { orderNo: jobOrder.orderNo });
+      .where('pr.orderNo = :orderNo', { orderNo: jobOrder.orderNo })
+      .andWhere('pr.status != :canceled', { canceled: 'CANCELED' });
     if (company) summaryQb.andWhere('pr.company = :company', { company });
     if (plant) summaryQb.andWhere('pr.plant = :plant', { plant });
     const summary = await summaryQb.getRawOne();
