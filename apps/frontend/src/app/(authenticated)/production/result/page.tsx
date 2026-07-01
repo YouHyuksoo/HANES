@@ -158,6 +158,7 @@ export default function ProdResultPage() {
         <CardContent className="h-full p-4">
           <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
             enableExport exportFileName={t('production.result.title')}
+            enableColumnPinning defaultPinnedColumns={{ left: ['actions'] }}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
                 <div className="flex-1 min-w-0">

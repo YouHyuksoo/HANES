@@ -3668,7 +3668,10 @@
       "editSuccess": "Kết quả đã được cập nhật.",
       "cancelConfirm": "Hủy kết quả này? Tồn kho thành phẩm đã nhập sẽ bị đảo bút toán.",
       "deleteConfirm": "Xóa vĩnh viễn kết quả này?",
-      "editHint": "Khi thay đổi số lượng, việc trừ vật tư và tồn kho thành phẩm sẽ tự động đồng bộ lại."
+      "editHint": "Khi thay đổi số lượng, việc trừ vật tư và tồn kho thành phẩm sẽ tự động đồng bộ lại.",
+      "status": "Trạng thái",
+      "alreadyCanceled": "Kết quả này đã được hủy.",
+      "downstreamLocked": "Không thể sửa/xóa vì đã đóng gói/xuất hàng."
     },
     "progress": {
       "title": "Theo dõi tiến độ lệnh sản xuất",

@@ -2,7 +2,9 @@
 
 import type { TFunction } from "i18next";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Button, ComCodeBadge } from "@/components/ui";
+import { Edit2, Trash2 } from "lucide-react";
+import { ComCodeBadge } from "@/components/ui";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { WorkerAvatar } from "@/components/worker/WorkerSelector";
 import { getWorkerDisplayName } from "@/components/worker/workerAvatar";
 
@@ -30,6 +32,8 @@ export interface ProdResult {
   startAt: string;
   endAt: string;
   workHours: number;
+  /** 이 실적으로 발행된 FG가 이미 포장/출하까지 진행됐는지 — true면 수정/삭제가 서버에서 차단된다 */
+  hasDownstreamProgress?: boolean;
 }
 
 const getDefectRate = (result: ProdResult): string => {
@@ -49,7 +53,46 @@ export function createProductionResultGridColumns({
   onDeleteResult,
 }: CreateProductionResultGridColumnsOptions): ColumnDef<ProdResult>[] {
   return [
+    {
+      id: 'actions', header: t('common.actions'), size: 80,
+      meta: { align: 'center' as const, filterType: 'none' as const },
+      cell: ({ row }) => {
+        // 이미 취소됐거나(재취소/재삭제 불가) FG가 포장·출하까지 진행된 실적은 되돌리기가
+        // 서버에서 막히므로(ensureNoDownstreamProgress), 그리드에서도 아이콘을 미리 비활성화한다.
+        const locked = row.original.status === 'CANCELED' || !!row.original.hasDownstreamProgress;
+        const lockedTitle = row.original.status === 'CANCELED'
+          ? t('production.result.alreadyCanceled', '이미 취소된 실적입니다.')
+          : t('production.result.downstreamLocked', '이미 포장/출하까지 진행되어 수정·삭제할 수 없습니다.');
+        return (
+          <div className="flex gap-1">
+            <button
+              onClick={(e) => { e.stopPropagation(); if (!locked) onEditResult(row.original); }}
+              disabled={locked}
+              className="p-1 hover:bg-surface rounded disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              title={locked ? lockedTitle : t('common.edit')}
+              aria-label={t('common.edit')}
+            >
+              <Edit2 className="w-4 h-4 text-primary" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); if (!locked) onDeleteResult(row.original); }}
+              disabled={locked}
+              className="p-1 hover:bg-surface rounded disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              title={locked ? lockedTitle : t('common.delete')}
+              aria-label={t('common.delete')}
+            >
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </button>
+          </div>
+        );
+      },
+    },
     { accessorKey: 'resultNo', header: t('production.result.resultNo'), size: 150, meta: { filterType: 'text' as const } },
+    {
+      accessorKey: 'status', header: t('production.result.status', '상태'), size: 90,
+      meta: { filterType: 'multi' as const },
+      cell: ({ getValue }) => <StatusBadge codeType="PROD_RESULT_STATUS" value={getValue() as string} />
+    },
     { accessorKey: 'workDate', header: t('production.result.workDate'), size: 100, meta: { filterType: 'date' as const } },
     {
       accessorKey: 'processType', header: t('production.order.processType'), size: 80,
@@ -97,23 +140,6 @@ export function createProductionResultGridColumns({
       id: 'workTime', header: t('production.result.workTime'), size: 120,
       meta: { filterType: 'none' as const },
       cell: ({ row }) => <span className="text-text-muted">{row.original.startAt} ~ {row.original.endAt}</span>
-    },
-    {
-      id: 'actions', header: t('common.actions'), size: 120,
-      meta: { filterType: 'none' as const },
-      cell: ({ row }) => {
-        return (
-          <div className="flex gap-1">
-            <Button size="sm" variant="ghost" onClick={() => onEditResult(row.original)}>
-              {t('common.edit')}
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => onDeleteResult(row.original)}
-              className="text-red-600 dark:text-red-400">
-              {t('common.delete')}
-            </Button>
-          </div>
-        );
-      },
     },
   ];
 }

@@ -3668,7 +3668,10 @@
       "editSuccess": "The result was updated.",
       "cancelConfirm": "Cancel this result? The loaded product inventory will be reversed.",
       "deleteConfirm": "Permanently delete this result?",
-      "editHint": "Changing the quantity automatically re-syncs material deduction and product inventory."
+      "editHint": "Changing the quantity automatically re-syncs material deduction and product inventory.",
+      "status": "Status",
+      "alreadyCanceled": "This result has already been canceled.",
+      "downstreamLocked": "Cannot edit or delete — already packed/shipped downstream."
     },
     "progress": {
       "title": "Work Order Progress",

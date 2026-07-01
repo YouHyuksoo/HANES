@@ -3668,7 +3668,10 @@
       "editSuccess": "实绩已修改。",
       "cancelConfirm": "确定取消该实绩吗？已入库的产品库存将被冲销。",
       "deleteConfirm": "确定永久删除该实绩吗？",
-      "editHint": "修改数量时，物料扣减与产品库存将自动重新同步。"
+      "editHint": "修改数量时，物料扣减与产品库存将自动重新同步。",
+      "status": "状态",
+      "alreadyCanceled": "该实绩已被取消。",
+      "downstreamLocked": "已进行到包装/出货，无法修改或删除。"
     },
     "progress": {
       "title": "作业进度查询",

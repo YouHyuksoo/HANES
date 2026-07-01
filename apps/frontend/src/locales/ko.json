@@ -4078,7 +4078,10 @@
       "editSuccess": "실적이 수정되었습니다.",
       "cancelConfirm": "실적을 취소하시겠습니까? 적재된 제품재고가 역분개됩니다.",
       "deleteConfirm": "실적을 영구 삭제하시겠습니까?",
-      "editHint": "수량 변경 시 자재 차감과 제품재고가 자동 재동기화됩니다."
+      "editHint": "수량 변경 시 자재 차감과 제품재고가 자동 재동기화됩니다.",
+      "status": "상태",
+      "alreadyCanceled": "이미 취소된 실적입니다.",
+      "downstreamLocked": "이미 포장/출하까지 진행되어 수정·삭제할 수 없습니다."
     },
     "progress": {
       "title": "작업지시 진행현황",
