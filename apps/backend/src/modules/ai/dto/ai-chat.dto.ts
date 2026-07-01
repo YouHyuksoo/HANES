@@ -52,6 +52,20 @@ export class AiPageToolContextDto {
   tools: AiPageToolContextToolDto[];
 }
 
+export class AiKnowledgeContextDto {
+  @IsOptional()
+  @IsString()
+  route?: string;
+
+  @IsOptional()
+  @IsString()
+  menuCode?: string;
+
+  @IsOptional()
+  @IsString()
+  language?: string;
+}
+
 export class AiChatDto {
   @IsArray()
   @ArrayNotEmpty()
@@ -63,6 +77,11 @@ export class AiChatDto {
   @ValidateNested()
   @Type(() => AiPageToolContextDto)
   pageToolContext?: AiPageToolContextDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AiKnowledgeContextDto)
+  knowledgeContext?: AiKnowledgeContextDto;
 }
 
 /** 승인된 INSERT/UPDATE 실행 요청 */
@@ -114,6 +133,22 @@ export class AiCatalogTablesDto {
   @ValidateNested({ each: true })
   @Type(() => CatalogTableDto)
   tables: CatalogTableDto[];
+}
+
+export class AiEmbeddingTestDto {
+  @IsString()
+  provider: string;
+
+  @IsString()
+  model: string;
+
+  @IsString()
+  dims: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  apiKey?: string;
 }
 
 /** AI provider 연결 테스트 요청 */

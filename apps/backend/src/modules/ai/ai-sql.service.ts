@@ -13,7 +13,8 @@ import { AiCatalogService } from './ai-catalog.service';
 import { SchemaInfoService } from './schema-info.service';
 import { SqlValidatorService } from './sql-validator.service';
 import { AiPageToolsService } from '../ai-page-tools/ai-page-tools.service';
-import { AiChatMessageDto, AiPageToolContextDto } from './dto/ai-chat.dto';
+import { AiChatMessageDto, AiKnowledgeContextDto, AiPageToolContextDto } from './dto/ai-chat.dto';
+import { AiKnowledgeService } from '../ai-knowledge/ai-knowledge.service';
 
 export interface AiPageToolCallProposal {
   pageId: string;
@@ -110,15 +111,25 @@ export class AiSqlService {
     private readonly schemaInfo: SchemaInfoService,
     private readonly validator: SqlValidatorService,
     private readonly pageTools: AiPageToolsService,
+    private readonly knowledge: AiKnowledgeService,
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
   async process(
     messages: AiChatMessageDto[],
     pageToolContext?: AiPageToolContextDto,
+    knowledgeContext?: AiKnowledgeContextDto,
   ): Promise<AiSqlResult> {
     const userMessage = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
     if (!userMessage.trim()) return { content: '질문을 입력해 주세요.' };
+
+    let knowledgePrompt = '';
+    try {
+      const knowledgeChunks = await this.knowledge.search(userMessage, knowledgeContext, 5);
+      knowledgePrompt = this.knowledge.formatContext(knowledgeChunks);
+    } catch (error) {
+      this.logger.warn(`AI 지식 검색 실패: ${error instanceof Error ? error.message : String(error)}`);
+    }
 
     if (pageToolContext && this.looksLikePageWorkflowRequest(userMessage)) {
       // 등록/처리 요청 → 페이지의 write 도구로 매핑(있으면 승인 카드로 제안)
@@ -130,18 +141,18 @@ export class AiSqlService {
           requiresApproval: true,
         };
       }
-      return this.generalChat(messages, pageToolContext);
+      return this.generalChat(messages, pageToolContext, knowledgePrompt);
     }
 
     // [1단계] 관련 테이블 선택 (없으면 일반 대화)
     const tables = await this.selectTables(userMessage);
-    if (tables.length === 0) return this.generalChat(messages, pageToolContext);
+    if (tables.length === 0) return this.generalChat(messages, pageToolContext, knowledgePrompt);
 
     // [2단계] SQL 생성 (스키마 + 카탈로그 관계(JOIN 키) 주입)
     const schemaText = await this.schemaInfo.getSchemaText(tables);
     const relations = await this.catalog.getRelationsText(tables);
     const rawSql = await this.generateSql(userMessage, relations ? `${schemaText}\n\n${relations}` : schemaText);
-    if (!rawSql) return this.generalChat(messages, pageToolContext);
+    if (!rawSql) return this.generalChat(messages, pageToolContext, knowledgePrompt);
 
     // [검증]
     const v = this.validator.validate(rawSql);
@@ -162,7 +173,7 @@ export class AiSqlService {
     // 조회: 즉시 실행 + 분석
     try {
       const rows = await this.runSelect(sql);
-      const analysis = await this.analyze(userMessage, sql, rows);
+      const analysis = await this.analyze(userMessage, sql, rows, knowledgePrompt);
       return { content: analysis, sql, executed: true, rowCount: rows.length };
     } catch (error: unknown) {
       this.logger.error(
@@ -246,13 +257,14 @@ export class AiSqlService {
     userMessage: string,
     sql: string,
     rows: Record<string, unknown>[],
+    knowledgePrompt = '',
   ): Promise<string> {
     const json = JSON.stringify(rows).slice(0, 9000);
     return this.aiService.complete([
       { role: 'system', content: ANALYSIS_PROMPT },
       {
         role: 'user',
-        content: `## 질문\n${userMessage}\n\n## 실행 SQL\n${sql}\n\n## 결과(JSON, 최대 100행)\n${json}\n\n위 결과를 분석해 한국어 마크다운으로 답하세요.`,
+        content: `${knowledgePrompt ? `## 참고 문서\n${knowledgePrompt}\n\n` : ''}## 질문\n${userMessage}\n\n## 실행 SQL\n${sql}\n\n## 결과(JSON, 최대 100행)\n${json}\n\n위 결과를 분석해 한국어 마크다운으로 답하세요. 문서를 참고했다면 마지막에 근거를 짧게 표시하세요.`,
       },
     ]);
   }
@@ -319,10 +331,15 @@ export class AiSqlService {
   private async generalChat(
     messages: AiChatMessageDto[],
     pageToolContext?: AiPageToolContextDto,
+    knowledgePrompt = '',
   ): Promise<AiSqlResult> {
     const pageToolPrompt = this.formatPageToolContext(pageToolContext);
+    const knowledgeSystem = knowledgePrompt
+      ? `아래 참고 문서가 질문과 관련될 수 있습니다. 답변은 참고 문서를 우선하고, 추측하지 마세요. 마지막에 근거를 짧게 표시하세요.\n\n## 참고 문서\n${knowledgePrompt}`
+      : '';
+    const systemParts = [GENERAL_PROMPT, pageToolPrompt, knowledgeSystem].filter(Boolean).join('\n\n');
     const content = await this.aiService.complete([
-      { role: 'system', content: pageToolPrompt ? `${GENERAL_PROMPT}\n\n${pageToolPrompt}` : GENERAL_PROMPT },
+      { role: 'system', content: systemParts },
       ...messages,
     ]);
     return { content };

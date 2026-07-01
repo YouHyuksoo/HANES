@@ -8,6 +8,7 @@
  *  - 응답은 마크다운(표) 렌더.
  */
 import { useState, useRef, useEffect, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Sparkles, X, Send, LoaderCircle, Trash2, Database, Play } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -15,6 +16,7 @@ import remarkGfm from "remark-gfm";
 import api from "@/services/api";
 import { usePageToolStore } from "@/ai-page-tools/pageToolStore";
 import { useAiChatStore } from "@/stores/aiChatStore";
+import { findMenuCodeByPath } from "@/config/menuConfig";
 import PageToolExecutionLog from "./PageToolExecutionLog";
 import PageToolInspector from "./PageToolInspector";
 
@@ -38,6 +40,7 @@ const MD_COMPONENTS = {
 
 export default function AiChatPanel() {
   const { t } = useTranslation();
+  const pathname = usePathname();
   const { isOpen, messages, close, addMessage, clear } = useAiChatStore();
   const activeTab = usePageToolStore((state) => state.activeTab);
   const manifest = usePageToolStore((state) => state.manifest);
@@ -83,7 +86,12 @@ export default function AiChatPanel() {
             })),
           }
         : undefined;
-      const res = await api.post("/ai/chat", { messages: history, pageToolContext });
+      const knowledgeContext = {
+        route: pathname,
+        menuCode: findMenuCodeByPath(pathname),
+        language: "ko",
+      };
+      const res = await api.post("/ai/chat", { messages: history, pageToolContext, knowledgeContext });
       const data = res.data?.data ?? {};
       addMessage({
         role: "assistant",
@@ -100,7 +108,7 @@ export default function AiChatPanel() {
       setSending(false);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [input, sending, messages, addMessage, t, manifest]);
+  }, [input, sending, messages, addMessage, t, manifest, pathname]);
 
   const approve = useCallback(
     async (idx: number, sql?: string) => {

@@ -14,7 +14,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Settings, Package, Factory, ClipboardCheck, Cog,
-  Save, Plus, Trash2, RefreshCw, Sparkles, BookText,
+  Save, Plus, Trash2, RefreshCw, Sparkles, BookText, Database,
 } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, Modal, ConfirmModal } from '@/components/ui';
 import { useApiQuery, useInvalidateQueries } from '@/hooks/useApi';
@@ -24,6 +24,7 @@ import type { SysConfigItem } from '@/stores/sysConfigStore';
 import ConfigItemRow from '@/components/system/ConfigItemRow';
 import AddConfigModal from '@/components/system/AddConfigModal';
 import AiConfigPanel from '@/components/system/AiConfigPanel';
+import AiEmbeddingPanel from '@/components/system/AiEmbeddingPanel';
 import AiCatalogPanel from '@/components/system/AiCatalogPanel';
 
 /** 그룹 탭 정의 */
@@ -34,6 +35,7 @@ const CONFIG_GROUPS = [
   { key: 'QUALITY', label: 'system.config.group.QUALITY', icon: ClipboardCheck },
   { key: 'SYSTEM', label: 'system.config.group.SYSTEM', icon: Cog },
   { key: 'AI', label: 'system.config.group.AI', icon: Sparkles },
+  { key: 'AI_EMBEDDING', label: 'Embedding', icon: Database },
   { key: 'AI_CATALOG', label: 'system.config.group.AI_CATALOG', icon: BookText },
 ];
 
@@ -67,7 +69,7 @@ function ConfigPage() {
     if (!raw) return [];
     const list = (raw as ConfigListResponse)?.data ?? (Array.isArray(raw) ? raw : []);
     const arr = list as SysConfigItem[];
-    // 전체 탭에서는 AI 그룹을 숨긴다 — AI 설정은 AI 탭 전용 패널에서만 관리.
+    // 전체 탭에서는 AI 그룹을 숨긴다 — AI/Embedding 설정은 전용 패널에서만 관리.
     return activeGroup === '' ? arr.filter((c) => c.configGroup !== 'AI') : arr;
   }, [data, activeGroup]);
 
@@ -112,7 +114,7 @@ function ConfigPage() {
           </h1>
           <p className="text-text-muted mt-1">{t('system.config.description')}</p>
         </div>
-        {activeGroup !== 'AI' && activeGroup !== 'AI_CATALOG' && (
+        {activeGroup !== 'AI' && activeGroup !== 'AI_EMBEDDING' && activeGroup !== 'AI_CATALOG' && (
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setShowAddModal(true)}>
               <Plus className="w-4 h-4 mr-1" />{t('system.config.addNew')}
@@ -153,10 +155,12 @@ function ConfigPage() {
         })}
       </div>
 
-      {/* 설정 목록 (AI 탭은 전용 패널) */}
+      {/* 설정 목록 (AI/Embedding 탭은 전용 패널) */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {activeGroup === 'AI' ? (
           <div className="h-full overflow-y-auto"><AiConfigPanel /></div>
+        ) : activeGroup === 'AI_EMBEDDING' ? (
+          <div className="h-full overflow-y-auto"><AiEmbeddingPanel /></div>
         ) : activeGroup === 'AI_CATALOG' ? (
           <AiCatalogPanel />
         ) : (

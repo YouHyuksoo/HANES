@@ -2,10 +2,7 @@
 
 /**
  * @file src/components/system/AiConfigPanel.tsx
- * @description system/config의 AI 탭 전용 설정 패널
- *  - provider(Mistral/OpenAI)·모델 드롭다운, API 키 입력, 연결 테스트, 저장
- *  - 저장: PUT /system/configs/bulk (AI_PROVIDER/AI_MODEL/AI_ENABLED/AI_{provider}_KEY)
- *  - 키를 비우면 서버 .env로 폴백. 키 원문은 조회되지 않는다(keyConfigured만).
+ * @description system/config의 AI 탭 전용 LLM 설정 패널.
  */
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -41,6 +38,15 @@ const MODEL_OPTIONS: Record<string, { value: string; label: string }[]> = {
   ],
 };
 
+type ConfigRow = { configKey: string; configValue: string };
+type ConfigMeta = {
+  label: string;
+  description: string;
+  configType?: "TEXT" | "SELECT" | "NUMBER" | "BOOLEAN";
+  options?: string;
+  sortOrder?: number;
+};
+
 function errMessage(e: unknown, fallback: string): string {
   return (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
 }
@@ -52,6 +58,7 @@ export default function AiConfigPanel() {
   const [enabled, setEnabled] = useState(true);
   const [apiKey, setApiKey] = useState("");
   const [keyConfigured, setKeyConfigured] = useState(false);
+  const [existingKeys, setExistingKeys] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -69,9 +76,10 @@ export default function AiConfigPanel() {
       try {
         const res = await api.get("/system/configs", { params: { configGroup: "AI" } });
         const raw = res.data?.data;
-        const list = (raw?.data ?? (Array.isArray(raw) ? raw : [])) as { configKey: string; configValue: string }[];
+        const list = (raw?.data ?? (Array.isArray(raw) ? raw : [])) as ConfigRow[];
         const map = Object.fromEntries(list.map((c) => [c.configKey, c.configValue]));
         const p = (map.AI_PROVIDER || "mistral").trim();
+        setExistingKeys(new Set(list.map((c) => c.configKey)));
         setProvider(p);
         setModel((map.AI_MODEL || MODEL_OPTIONS[p]?.[0]?.value || "").trim());
         setEnabled((map.AI_ENABLED ?? "Y") === "Y");
@@ -91,6 +99,31 @@ export default function AiConfigPanel() {
     setTestResult(null);
   }, []);
 
+  const upsertConfig = useCallback(async (key: string, configValue: string, meta: ConfigMeta) => {
+    if (existingKeys.has(key)) {
+      await api.patch(`/system/configs/${key}`, {
+        configValue,
+        label: meta.label,
+        description: meta.description,
+        options: meta.options,
+        sortOrder: meta.sortOrder,
+        isActive: "Y",
+      });
+      return;
+    }
+    await api.post("/system/configs", {
+      configGroup: "AI",
+      configKey: key,
+      configValue,
+      configType: meta.configType ?? "TEXT",
+      label: meta.label,
+      description: meta.description,
+      options: meta.options,
+      sortOrder: meta.sortOrder ?? 0,
+    });
+    setExistingKeys((prev) => new Set(prev).add(key));
+  }, [existingKeys]);
+
   const handleTest = useCallback(async () => {
     setTesting(true);
     setTestResult(null);
@@ -107,13 +140,36 @@ export default function AiConfigPanel() {
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      const items: { id: string; configValue: string }[] = [
-        { id: "AI_PROVIDER", configValue: provider },
-        { id: "AI_MODEL", configValue: model },
-        { id: "AI_ENABLED", configValue: enabled ? "Y" : "N" },
-      ];
-      if (apiKey.trim()) items.push({ id: `AI_${provider.toUpperCase()}_KEY`, configValue: apiKey.trim() });
-      await api.put("/system/configs/bulk", { items });
+      const providerOptions = JSON.stringify(PROVIDER_OPTIONS.map(({ value, label }) => ({ value, label })));
+      await Promise.all([
+        upsertConfig("AI_PROVIDER", provider, {
+          label: "AI 제공자",
+          description: "채팅/질의 응답에 사용할 LLM 제공자입니다.",
+          configType: "SELECT",
+          options: providerOptions,
+          sortOrder: 10,
+        }),
+        upsertConfig("AI_MODEL", model, {
+          label: "AI 모델",
+          description: "채팅/질의 응답에 사용할 LLM 모델입니다.",
+          configType: "TEXT",
+          sortOrder: 11,
+        }),
+        upsertConfig("AI_ENABLED", enabled ? "Y" : "N", {
+          label: "AI 채팅 활성화",
+          description: "AI 채팅 기능 사용 여부입니다.",
+          configType: "BOOLEAN",
+          sortOrder: 12,
+        }),
+      ]);
+      if (apiKey.trim()) {
+        await upsertConfig(`AI_${provider.toUpperCase()}_KEY`, apiKey.trim(), {
+          label: `${provider.toUpperCase()} API 키`,
+          description: "LLM 채팅용 AI API 키입니다. 조회 시 원문은 반환하지 않습니다.",
+          configType: "TEXT",
+          sortOrder: 30,
+        });
+      }
       toast.success(t("common.saved", "저장되었습니다."));
       setApiKey("");
       await refreshStatus();
@@ -122,7 +178,7 @@ export default function AiConfigPanel() {
     } finally {
       setSaving(false);
     }
-  }, [provider, model, enabled, apiKey, refreshStatus, t]);
+  }, [provider, model, enabled, apiKey, upsertConfig, refreshStatus, t]);
 
   if (loading) {
     return <Card><CardContent className="py-8 text-center text-text-muted">{t("common.loading", "불러오는 중...")}</CardContent></Card>;
@@ -131,6 +187,10 @@ export default function AiConfigPanel() {
   return (
     <Card>
       <CardContent className="max-w-xl space-y-4">
+        <div>
+          <h2 className="text-base font-semibold text-text">{t("ai.config.llmTitle", "LLM 채팅 설정")}</h2>
+          <p className="text-xs text-text-muted">{t("ai.config.llmDesc", "일반 답변, SQL 생성/분석에 사용할 모델입니다.")}</p>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <label className="text-sm">
             <span className="mb-1 block font-medium text-text">{t("ai.config.provider", "AI 제공자")}</span>

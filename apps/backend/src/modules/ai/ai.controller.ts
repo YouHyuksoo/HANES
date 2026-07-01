@@ -10,7 +10,8 @@ import { AiService } from './ai.service';
 import { AiSqlService } from './ai-sql.service';
 import { AiCatalogService } from './ai-catalog.service';
 import { SchemaInfoService } from './schema-info.service';
-import { AiChatDto, AiExecuteSqlDto, AiTestDto, AiCatalogSaveDto, AiCatalogTablesDto } from './dto/ai-chat.dto';
+import { EmbeddingService } from '../ai-knowledge/embedding.service';
+import { AiChatDto, AiExecuteSqlDto, AiTestDto, AiEmbeddingTestDto, AiCatalogSaveDto, AiCatalogTablesDto } from './dto/ai-chat.dto';
 
 @Controller('ai')
 export class AiController {
@@ -19,6 +20,7 @@ export class AiController {
     private readonly aiSqlService: AiSqlService,
     private readonly aiCatalogService: AiCatalogService,
     private readonly schemaInfoService: SchemaInfoService,
+    private readonly embeddingService: EmbeddingService,
   ) {}
 
   @Get('status')
@@ -28,7 +30,7 @@ export class AiController {
 
   @Post('chat')
   chat(@Body() dto: AiChatDto) {
-    return this.aiSqlService.process(dto.messages, dto.pageToolContext);
+    return this.aiSqlService.process(dto.messages, dto.pageToolContext, dto.knowledgeContext);
   }
 
   @Post('execute-sql')
@@ -39,6 +41,11 @@ export class AiController {
   @Post('test')
   test(@Body() dto: AiTestDto) {
     return this.aiService.test(dto.provider, dto.model ?? '', dto.apiKey);
+  }
+
+  @Post('embedding/test')
+  testEmbedding(@Body() dto: AiEmbeddingTestDto) {
+    return this.embeddingService.test(dto.provider, dto.model, Number(dto.dims), dto.apiKey);
   }
 
   /** AI 테이블 카탈로그 md 원문 조회 */
