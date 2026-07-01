@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { AlertTriangle, AlertCircle, CheckCircle2, ScanLine, X } from "lucide-react";
 import { Card, CardContent, ConfirmModal } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
 import api from "@/services/api";
 
 /** 매핑 기반 소모품 행 (백엔드 KioskConsumableRow) */
@@ -73,9 +74,8 @@ export default function ConsumablePanel({ orderNo, equipCode, onStatusChange }: 
   const mountedCount = items.filter((c) => c.mountedConUid != null).length;
 
   const handleScan = useCallback(
-    async (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key !== "Enter") return;
-      const conUid = scanInput.trim();
+    async (rawConUid?: string) => {
+      const conUid = (rawConUid ?? scanInput).replace(/\r?\n|\r/g, "").trim();
       if (!conUid || !orderNo || !equipCode) return;
       setScanInput("");
       try {
@@ -122,17 +122,16 @@ export default function ConsumablePanel({ orderNo, equipCode, onStatusChange }: 
         </div>
 
         {/* 스캔 입력 (검사기 미선택 시 비활성) */}
-        <div className={`flex items-center gap-2 p-2 bg-surface rounded-lg border border-border mb-2 ${!equipCode ? "opacity-50" : ""}`}>
-          <ScanLine className="w-4 h-4 text-primary shrink-0" />
-          <input
+        <div className={`mb-2 ${!equipCode ? "opacity-50" : ""}`}>
+          <BarcodeScanInput
             ref={inputRef}
-            type="text"
             value={scanInput}
-            onChange={(e) => setScanInput(e.target.value)}
-            onKeyDown={handleScan}
+            onChange={setScanInput}
+            onScan={handleScan}
             disabled={!equipCode}
             placeholder={t("inspection.result.consumableScanPlaceholder")}
-            className="flex-1 bg-transparent text-sm outline-none text-text placeholder:text-text-muted disabled:cursor-not-allowed"
+            className="text-sm"
+            fullWidth
           />
         </div>
 

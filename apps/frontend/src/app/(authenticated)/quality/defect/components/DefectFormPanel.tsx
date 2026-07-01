@@ -13,8 +13,9 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { ScanLine, AlertTriangle, X } from "lucide-react";
-import { Button, Input } from "@/components/ui";
+import { AlertTriangle, X } from "lucide-react";
+import { Button } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
 import QtyInput from "@/components/shared/QtyInput";
 import api from "@/services/api";
 import toast from "react-hot-toast";
@@ -150,28 +151,20 @@ export default function DefectFormPanel({
                   <label className="block text-xs font-medium text-text mb-1">
                     {t("quality.defect.productBarcode", "제품 바코드")}
                   </label>
-                  <Input
+                  <BarcodeScanInput
                     ref={barcodeRef}
                     placeholder={t("quality.defect.productBarcodePlaceholder", "제품 바코드를 스캔하세요")}
                     value={form.prdUid}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setForm((p) => ({ ...p, prdUid: v }));
-                      if (/[\r\n]/.test(v)) {
-                        const clean = v.replace(/[\r\n]+/g, "").trim();
-                        setForm((p) => ({ ...p, prdUid: clean }));
-                        lookupBarcode(clean);
-                      }
+                    onChange={(value) => {
+                      setForm((p) => ({ ...p, prdUid: value }));
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        lookupBarcode(form.prdUid);
-                      }
+                    onScan={(value) => {
+                      const clean = value.replace(/\r?\n|\r/g, "").trim();
+                      setForm((p) => ({ ...p, prdUid: clean }));
+                      lookupBarcode(clean);
                     }}
                     onBlur={() => lookupBarcode(form.prdUid)}
-                    leftIcon={<ScanLine className={`w-4 h-4 ${scanning ? "animate-pulse text-primary" : ""}`} />}
-                    className="font-mono"
+                    className={`font-mono ${scanning ? "animate-pulse" : ""}`}
                     fullWidth
                   />
                   {/* 스캔 결과 표시 */}

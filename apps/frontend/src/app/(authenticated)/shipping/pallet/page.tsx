@@ -23,6 +23,7 @@ import {
   Package, ArrowRight, X, ScanLine,
 } from "lucide-react";
 import { Card, CardContent, Button, ConfirmModal, Input, Modal, Select } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import OpenIncludedNotice from "@/components/shared/OpenIncludedNotice";
 import { getTodayLocal } from "@/utils/date";
@@ -181,8 +182,8 @@ export default function PalletPage() {
     shipOrderScanInputRef.current?.focus();
   }, []);
 
-  const handleShipOrderScan = useCallback(() => {
-    const scanned = shipOrderScanText.trim();
+  const handleShipOrderScan = useCallback((rawShipOrderNo?: string) => {
+    const scanned = (rawShipOrderNo ?? shipOrderScanText).replace(/\r?\n|\r/g, "").trim();
     if (!scanned) return;
     const found = shipOrders.find((order) => order.shipOrderNo === scanned);
     if (!found) {
@@ -215,8 +216,8 @@ export default function PalletPage() {
   }, [fetchPalletBoxes]);
 
   /** 바코드 스캔 처리 */
-  const handleBarcodeScan = useCallback(() => {
-    const val = scanText.trim();
+  const handleBarcodeScan = useCallback((rawBarcode?: string) => {
+    const val = (rawBarcode ?? scanText).replace(/\r?\n|\r/g, "").trim();
     if (!val) return;
     setSearchText(val);
     setScanText("");
@@ -278,8 +279,8 @@ export default function PalletPage() {
   }, [fetchData, fetchShipOrders, selectedShipOrderNo, shipOrderScanText, shipOrders, t]);
 
   /** 박스번호 스캔 → 유효성 검증 후 선택 목록에 추가 */
-  const handleScanBox = useCallback(async () => {
-    const boxNo = scanBoxInput.trim();
+  const handleScanBox = useCallback(async (rawBoxNo?: string) => {
+    const boxNo = (rawBoxNo ?? scanBoxInput).replace(/\r?\n|\r/g, "").trim();
     if (!boxNo || !selectedPallet) return;
     if (!selectedPallet.shipOrderNo) {
       toast.error(t("shipping.pallet.shipOrderRequired", "출하지시가 없는 팔레트는 구성할 수 없습니다."));
@@ -484,13 +485,12 @@ export default function PalletPage() {
                     <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
                   </div>
                   <div className="w-32">
-                    <Input
+                    <BarcodeScanInput
                       ref={scanInputRef}
                       placeholder={t("shipping.pallet.barcodePlaceholder", "바코드 스캔")}
                       value={scanText}
-                      onChange={(e) => setScanText(e.target.value)}
-                      onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); handleBarcodeScan(); } }}
-                      leftIcon={<ScanLine className="w-4 h-4" />}
+                      onChange={setScanText}
+                      onScan={handleBarcodeScan}
                       fullWidth
                     />
                   </div>
@@ -594,14 +594,13 @@ export default function PalletPage() {
 
           <section className="space-y-4">
             <p className="text-sm text-text-muted">{t("shipping.pallet.createConfirm", "출하지시번호를 스캔하거나 좌측 대기 목록에서 선택해 팔레트를 생성합니다.")}</p>
-            <Input
+            <BarcodeScanInput
               ref={shipOrderScanInputRef}
               label={t("shipping.pallet.shipOrderNo", "출하지시번호")}
               placeholder={t("shipping.pallet.scanShipOrderPlaceholder", "출하지시번호 스캔")}
               value={shipOrderScanText}
-              onChange={(e) => { setShipOrderScanText(e.target.value); setSelectedShipOrderNo(""); }}
-              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); handleShipOrderScan(); } }}
-              leftIcon={<ScanLine className="w-4 h-4" />}
+              onChange={(value) => { setShipOrderScanText(value); setSelectedShipOrderNo(""); }}
+              onScan={handleShipOrderScan}
               required
               fullWidth
             />
@@ -635,13 +634,12 @@ export default function PalletPage() {
               <p className="text-sm text-text-muted">{t("shipping.pallet.pallet")}: <span className="font-medium text-text">{selectedPallet.palletNo}</span></p>
             </div>
           )}
-          <Input
+          <BarcodeScanInput
             ref={scanBoxRef}
             placeholder={t("shipping.pallet.scanBoxPlaceholder", "박스번호 스캔")}
             value={scanBoxInput}
-            onChange={(e) => setScanBoxInput(e.target.value)}
-            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); handleScanBox(); } }}
-            leftIcon={<ScanLine className="w-4 h-4" />}
+            onChange={setScanBoxInput}
+            onScan={handleScanBox}
             fullWidth
           />
           <p className="text-sm text-text-muted">{t("shipping.pallet.selectBoxHint")}</p>

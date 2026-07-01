@@ -18,7 +18,8 @@ import { ColumnDef } from "@tanstack/react-table";
 import {
   CheckCircle, XCircle, RefreshCw, ScanBarcode, AlertTriangle,
 } from "lucide-react";
-import { Card, CardContent, Button, Input } from "@/components/ui";
+import { Card, CardContent, Button } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import type { JobOrderRow, InspectHistoryRow, FgLabelInfo } from "../types";
@@ -67,8 +68,8 @@ export default function VisualInspectPanel({ order }: Props) {
   const alreadyInspected = scannedLabel ? scannedLabel.status !== "ISSUED" : false;
 
   /** 바코드 스캔 → 라벨 조회 */
-  const lookupLabel = useCallback(async () => {
-    const barcode = scannedBarcode.trim();
+  const lookupLabel = useCallback(async (rawBarcode: string) => {
+    const barcode = rawBarcode.replace(/\r?\n|\r/g, "").trim();
     if (!barcode) return;
     setScanError("");
     setScannedLabel(null);
@@ -88,14 +89,7 @@ export default function VisualInspectPanel({ order }: Props) {
     } catch {
       setScanError(t("quality.inspect.barcodeNotFound"));
     }
-  }, [scannedBarcode, order.orderNo, t]);
-
-  const handleScanKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      lookupLabel();
-    }
-  }, [lookupLabel]);
+  }, [order.orderNo, t]);
 
   /** 스캔 입력 초기화 + 재포커스 */
   const resetScan = useCallback(() => {
@@ -182,14 +176,15 @@ export default function VisualInspectPanel({ order }: Props) {
               {t("quality.inspect.scanPlaceholder")}
             </span>
           </div>
-          <Input
+          <BarcodeScanInput
             ref={scanInputRef}
             value={scannedBarcode}
-            onChange={(e) => { setScannedBarcode(e.target.value); setScanError(""); }}
-            onKeyDown={handleScanKeyDown}
+            onChange={(value) => { setScannedBarcode(value); setScanError(""); }}
+            onScan={lookupLabel}
             placeholder={t("quality.inspect.scanPlaceholder")}
             fullWidth
             autoFocus
+            maintainFocus
           />
           {scanError && (
             <p className="mt-2 text-sm text-red-500">{scanError}</p>

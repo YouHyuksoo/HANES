@@ -12,8 +12,9 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle, XCircle, ScanLine, Package, AlertTriangle } from "lucide-react";
-import { Button, Modal, Input } from "@/components/ui";
+import { CheckCircle, XCircle, Package, AlertTriangle } from "lucide-react";
+import { BarcodeScanInput } from "@/components/shared";
+import { Button, Modal } from "@/components/ui";
 import api from "@/services/api";
 
 interface PalletInfo {
@@ -75,8 +76,8 @@ export default function ShipmentScanModal({ isOpen, onClose, shipmentId, shipmen
     [pallets, verifiedIds],
   );
 
-  const handleScan = useCallback(async () => {
-    const barcode = scanInput.trim();
+  const handleScan = useCallback(async (rawBarcode?: string) => {
+    const barcode = (rawBarcode ?? scanInput).replace(/\r?\n|\r/g, "").trim();
     if (!barcode) return;
 
     // 이미 검증된 팔레트인지 로컬 체크
@@ -109,13 +110,6 @@ export default function ShipmentScanModal({ isOpen, onClose, shipmentId, shipmen
     inputRef.current?.focus();
   }, [scanInput, shipmentId, pallets, verifiedIds, t]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleScan();
-    }
-  };
-
   const handleConfirmShipped = useCallback(async () => {
     setConfirming(true);
     try {
@@ -136,11 +130,16 @@ export default function ShipmentScanModal({ isOpen, onClose, shipmentId, shipmen
       {/* 스캔 입력 */}
       <div className="flex gap-2 mb-4">
         <div className="flex-1">
-          <Input ref={inputRef} placeholder={t("shipping.scan.scanPlaceholder", "팔레트 바코드를 스캔하세요...")}
-            value={scanInput} onChange={(e) => setScanInput(e.target.value)} onKeyDown={handleKeyDown}
-            leftIcon={<ScanLine className="w-4 h-4" />} fullWidth />
+          <BarcodeScanInput
+            ref={inputRef}
+            placeholder={t("shipping.scan.scanPlaceholder", "팔레트 바코드를 스캔하세요...")}
+            value={scanInput}
+            onChange={setScanInput}
+            onScan={handleScan}
+            fullWidth
+          />
         </div>
-        <Button onClick={handleScan} disabled={!scanInput.trim()}>
+        <Button onClick={() => handleScan()} disabled={!scanInput.trim()}>
           {t("shipping.scan.verify", "검증")}
         </Button>
       </div>

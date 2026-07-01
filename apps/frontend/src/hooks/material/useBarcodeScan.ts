@@ -51,8 +51,8 @@ export function useBarcodeScan() {
   const [error, setError] = useState<string | null>(null);
 
   // 자재UID로 조회
-  const handleScan = useCallback(async () => {
-    const matUid = scanInput.trim();
+  const handleScan = useCallback(async (rawMatUid?: string) => {
+    const matUid = (rawMatUid ?? scanInput).replace(/\r?\n|\r/g, '').trim();
     if (!matUid) return;
 
     setIsScanning(true);
@@ -61,6 +61,7 @@ export function useBarcodeScan() {
       const res = await api.get(`/material/lots/by-uid/${encodeURIComponent(matUid)}`);
       const lotData = res.data?.data ?? res.data;
       setScannedLot(lotData);
+      setScanInput(matUid);
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       setError(axiosErr.response?.data?.message || 'LOT 조회에 실패했습니다.');

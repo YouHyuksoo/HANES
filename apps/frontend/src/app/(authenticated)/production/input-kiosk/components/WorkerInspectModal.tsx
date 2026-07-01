@@ -18,8 +18,7 @@ import { CheckCircle2, XCircle, QrCode, Wrench, User, Clock, Play } from 'lucide
 import { Modal, Button } from '@/components/ui';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
-import { useScanInputFocus } from '@/hooks/useScanInputFocus';
-import { InspectItemImage } from '@/components/shared';
+import { BarcodeScanInput, InspectItemImage } from '@/components/shared';
 
 interface WorkerInspectItem {
   seq: number;
@@ -56,8 +55,6 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
   const [loadError, setLoadError] = useState(false);
   const qrRef = useRef<HTMLInputElement>(null);
   const rowRefs = useRef<Record<number, HTMLDivElement | null>>({});
-  // 모달 열린 동안 QR 스캔 입력창 항상 포커스 유지
-  useScanInputFocus(qrRef, isOpen);
 
   const focusQrInput = useCallback((delay = 0) => {
     window.setTimeout(() => {
@@ -132,10 +129,6 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
     setQrInput('');
     focusQrInput();
   }, [focusQrInput, items, normalizeQrCode, t]);
-
-  const handleQrKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && qrInput.trim()) handleQrScan(qrInput);
-  }, [qrInput, handleQrScan]);
 
   const handleResult = useCallback((seq: number, val: 'OK' | 'NG') => {
     const now = new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -241,14 +234,14 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
                 <QrCode className="w-4 h-4 text-blue-500 shrink-0" />
                 <span className="text-xs font-medium text-blue-700 dark:text-blue-300">{t('kiosk.prep.workerQrScanner')}</span>
               </div>
-              <input
+              <BarcodeScanInput
                 ref={qrRef}
-                type="text"
                 value={qrInput}
-                onChange={e => setQrInput(e.target.value)}
-                onKeyDown={handleQrKeyDown}
+                onChange={setQrInput}
+                onScan={handleQrScan}
                 placeholder={t('kiosk.prep.workerQrPlaceholder')}
-                className="w-full text-sm bg-transparent focus:outline-none border-b border-blue-200 dark:border-blue-700 pb-0.5"
+                maintainFocus={isOpen}
+                fullWidth
               />
             </div>
           )}

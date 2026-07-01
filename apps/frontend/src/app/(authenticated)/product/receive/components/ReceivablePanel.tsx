@@ -14,7 +14,8 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ScanLine, RefreshCw, PackageCheck, AlertTriangle, CheckSquare, Square } from "lucide-react";
-import { Button, Input, Select } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
+import { Button, Select } from "@/components/ui";
 import { useWarehouseOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 import { receiveBoxes, type ReceiveCandidate } from "./useBoxReceive";
@@ -72,8 +73,8 @@ export default function ReceivablePanel({ onReceived }: ReceivablePanelProps) {
   }, []);
 
   /** 박스번호 스캔 → 목록에 있으면 선택, 없으면 사유 안내 */
-  const handleScan = useCallback(async () => {
-    const code = boxNo.trim();
+  const handleScan = useCallback(async (rawCode?: string) => {
+    const code = (rawCode ?? boxNo).replace(/\r?\n|\r/g, "").trim();
     if (!code) return;
     const found = rows.find((r) => r.boxNo === code);
     if (found) {
@@ -152,16 +153,14 @@ export default function ReceivablePanel({ onReceived }: ReceivablePanelProps) {
           </Button>
         </div>
 
-        <Input
+        <BarcodeScanInput
           ref={inputRef}
           value={boxNo}
-          onChange={(e) => setBoxNo(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleScan();
-          }}
+          onChange={setBoxNo}
+          onScan={handleScan}
           placeholder={t("productMgmt.receive.boxScan.placeholder")}
-          leftIcon={<ScanLine className="w-4 h-4" />}
           fullWidth
+          maintainFocus
         />
 
         <Select

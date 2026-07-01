@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Button, Input } from '@/components/ui';
-import { Package, ScanLine, CheckCircle, XCircle } from 'lucide-react';
+import { BarcodeScanInput } from '@/components/shared';
+import { Modal, Button } from '@/components/ui';
+import { CheckCircle, XCircle } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/services/api';
 
@@ -140,13 +141,12 @@ export default function BoxScanShipModal({ isOpen, onClose, onShipped, initialSh
       <div className="space-y-4">
         {!initialShipOrderNo && (
           <div className="flex gap-2 items-end">
-            <Input
+            <BarcodeScanInput
               label={t('shipping.boxScan.shipOrderNo', '출하지시번호')}
               placeholder={t('shipping.boxScan.scanOrder', '출하지시 바코드 스캔/입력')}
               value={orderNoInput}
-              onChange={(e) => setOrderNoInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') loadOrder(orderNoInput); }}
-              leftIcon={<ScanLine className="w-4 h-4" />}
+              onChange={setOrderNoInput}
+              onScan={loadOrder}
               fullWidth
             />
             <Button onClick={() => loadOrder(orderNoInput)} disabled={loadingOrder}>
@@ -179,14 +179,13 @@ export default function BoxScanShipModal({ isOpen, onClose, onShipped, initialSh
         )}
 
         {order && order.status === 'CONFIRMED' && (
-          <Input
+          <BarcodeScanInput
             ref={boxRef}
             label={t('shipping.boxScan.boxNo', '박스 바코드')}
             placeholder={t('shipping.boxScan.scanBox', '박스 바코드 스캔')}
             value={boxInput}
-            onChange={(e) => setBoxInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !shipping) shipBox(boxInput); }}
-            leftIcon={<Package className="w-4 h-4" />}
+            onChange={setBoxInput}
+            onScan={shipBox}
             disabled={shipping}
             fullWidth
           />

@@ -6,8 +6,9 @@
  */
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { ScanBarcode, LogOut, Undo2 } from "lucide-react";
-import { Card, CardContent, Input, Button } from "@/components/ui";
+import { LogOut, Undo2 } from "lucide-react";
+import { BarcodeScanInput } from "@/components/shared";
+import { Card, CardContent, Button } from "@/components/ui";
 import api from "@/services/api";
 
 type ScanMode = "issue" | "issue-return";
@@ -27,8 +28,8 @@ export default function IssueScanPanel({ onScanSuccess }: IssueScanPanelProps) {
     inputRef.current?.focus();
   }, []);
 
-  const handleScan = async () => {
-    const uid = scanValue.trim();
+  const handleScan = async (rawUid?: string) => {
+    const uid = (rawUid ?? scanValue).replace(/\r?\n|\r/g, "").trim();
     if (!uid || isScanning) return;
 
     setIsScanning(true);
@@ -49,13 +50,6 @@ export default function IssueScanPanel({ onScanSuccess }: IssueScanPanelProps) {
       setScanValue("");
       setIsScanning(false);
       inputRef.current?.focus();
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleScan();
     }
   };
 
@@ -100,18 +94,17 @@ export default function IssueScanPanel({ onScanSuccess }: IssueScanPanelProps) {
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <Input
+              <BarcodeScanInput
                 ref={inputRef}
                 placeholder={t("consumables.issuing.scanPlaceholder", "conUid 스캔 또는 입력")}
                 value={scanValue}
-                onChange={(e) => setScanValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                leftIcon={<ScanBarcode className="w-4 h-4" />}
+                onChange={setScanValue}
+                onScan={handleScan}
                 autoFocus
                 fullWidth
               />
             </div>
-            <Button onClick={handleScan} disabled={!scanValue.trim() || isScanning} className="flex-shrink-0">
+            <Button onClick={() => handleScan()} disabled={!scanValue.trim() || isScanning} className="flex-shrink-0">
               {mode === "issue"
                 ? t("consumables.issuing.confirmBtn", "출고확정")
                 : t("consumables.issuing.returnBtn", "취소확정")}

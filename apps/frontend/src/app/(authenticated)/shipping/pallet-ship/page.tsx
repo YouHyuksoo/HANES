@@ -17,7 +17,8 @@ import {
   Package, Truck, RefreshCw, CheckCircle2, XCircle,
   AlertTriangle, ScanLine, QrCode, Layers,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
+import { Card, CardContent, Button, Modal } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { BoxStatusBadge } from "@/components/shipping";
 import type { BoxStatus } from "@/components/shipping";
@@ -163,13 +164,6 @@ export default function PalletShipPage() {
   const removeScannedPallet = useCallback((palletNo: string) => {
     setScannedPallets((prev) => prev.filter((p) => p !== palletNo));
   }, []);
-
-  const handleScanKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addScannedPallet(e.currentTarget.value);
-    }
-  }, [addScannedPallet]);
 
   /* confirm shipping */
   const confirmShip = useCallback(async () => {
@@ -364,18 +358,11 @@ export default function PalletShipPage() {
       <Modal isOpen={scanModalOpen} onClose={() => setScanModalOpen(false)} title="팔레트 바코드 스캔" size="lg">
         <div className="space-y-4">
           <div className="flex gap-2">
-            <Input
+            <BarcodeScanInput
               placeholder="팔레트 바코드를 스캔하거나 입력하세요"
               value={scanInput}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (/[\r\n]/.test(v)) {
-                  addScannedPallet(v);
-                  return;
-                }
-                setScanInput(v);
-              }}
-              onKeyDown={handleScanKeyDown}
+              onChange={setScanInput}
+              onScan={addScannedPallet}
               disabled={shipLoading}
               fullWidth
             />

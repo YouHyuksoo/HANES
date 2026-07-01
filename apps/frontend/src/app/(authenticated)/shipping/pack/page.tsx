@@ -20,6 +20,7 @@ import {
   AlertTriangle, Printer, Lock, LockOpen, Trash2, ClipboardList,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, Button, ConfirmModal, Input, Modal, Select } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
 import PartSelect from "@/components/shared/PartSelect";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import OpenIncludedNotice from "@/components/shared/OpenIncludedNotice";
@@ -628,24 +629,12 @@ export default function PackPage() {
             </div>
           )}
           <div className="flex gap-2">
-            <Input
+            <BarcodeScanInput
               ref={serialInputRef}
               placeholder={t("shipping.pack.serialPlaceholder")}
               value={serialInput}
-              onChange={(e) => {
-                const nextValue = e.target.value;
-                if (/[\r\n]/.test(nextValue)) {
-                  handleAddSerial(nextValue);
-                  return;
-                }
-                setSerialInput(nextValue);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !atLimit) {
-                  e.preventDefault();
-                  handleAddSerial(e.currentTarget.value);
-                }
-              }}
+              onChange={setSerialInput}
+              onScan={handleAddSerial}
               disabled={atLimit || selectedBox?.status !== "OPEN" || isAddingSerial}
               fullWidth
             />

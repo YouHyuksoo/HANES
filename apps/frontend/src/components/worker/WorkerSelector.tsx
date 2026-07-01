@@ -12,6 +12,7 @@
 import { useState, useRef, useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, ScanLine, X } from "lucide-react";
+import { BarcodeScanInput } from "@/components/shared";
 import api from "@/services/api";
 import { getWorkerDisplayName, getWorkerInitial } from "./workerAvatar";
 
@@ -115,9 +116,10 @@ function WorkerSelector({ value, onChange, label }: WorkerSelectorProps) {
   };
 
   /** QR 입력 → Enter → 자동 매칭 */
-  const handleQrSubmit = () => {
-    if (!qrText.trim()) return;
-    const matched = allWorkers.find((w) => w.qrCode === qrText.trim());
+  const handleQrSubmit = (rawQrText?: string) => {
+    const qrCode = (rawQrText ?? qrText).replace(/\r?\n|\r/g, "").trim();
+    if (!qrCode) return;
+    const matched = allWorkers.find((w) => w.qrCode === qrCode);
     if (matched) {
       onChange(matched);
       setQrText("");
@@ -207,16 +209,14 @@ function WorkerSelector({ value, onChange, label }: WorkerSelectorProps) {
 
           {/* QR 스캔 모드 */}
           {mode === "qr" && (
-            <div className="relative">
-              <ScanLine className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-              <input
+            <div>
+              <BarcodeScanInput
                 ref={qrRef}
-                type="text"
                 value={qrText}
-                onChange={(e) => setQrText(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleQrSubmit(); }}
+                onChange={setQrText}
+                onScan={handleQrSubmit}
                 placeholder={t("production.result.qrPlaceholder")}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-lg bg-surface text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                fullWidth
               />
             </div>
           )}

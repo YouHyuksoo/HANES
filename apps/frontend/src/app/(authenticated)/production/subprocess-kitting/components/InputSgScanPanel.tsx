@@ -11,7 +11,7 @@ import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { Scan, Trash2 } from "lucide-react";
-import { Input } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
 import api from "@/services/api";
 
 interface SgLabelInfo {
@@ -131,18 +131,12 @@ export default function InputSgScanPanel({
           <Scan className="w-5 h-5 text-primary" />
           {t("production.subprocess.inputScanSection", "이전 공정 SG 스캔")}
         </h2>
-        <Input
+        <BarcodeScanInput
           ref={scanRef}
           value={scanInput}
-          onChange={(e) => setScanInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleScan(scanInput);
-            }
-          }}
+          onChange={setScanInput}
+          onScan={handleScan}
           placeholder={t("production.subprocess.inputScanPlaceholder", "이전 공정 SG 바코드 스캔 또는 입력 후 Enter")}
-          leftIcon={<Scan className="w-4 h-4" />}
           disabled={!orderNo || loading}
           fullWidth
         />

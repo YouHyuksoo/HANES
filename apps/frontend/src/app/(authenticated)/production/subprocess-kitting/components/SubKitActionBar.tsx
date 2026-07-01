@@ -9,7 +9,8 @@ import type { JSX } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Play, RotateCcw, Scan } from "lucide-react";
-import { Button, Input } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
+import { Button } from "@/components/ui";
 
 export default function SubKitActionBar({
   canIssue,
@@ -32,8 +33,8 @@ export default function SubKitActionBar({
 
   const [confirmScan, setConfirmScan] = useState("");
 
-  const submitConfirm = () => {
-    const trimmed = confirmScan.trim();
+  const submitConfirm = (rawConfirmScan?: string) => {
+    const trimmed = (rawConfirmScan ?? confirmScan).replace(/\r?\n|\r/g, "").trim();
     if (!trimmed) return;
     onConfirmScan(trimmed);
     setConfirmScan("");
@@ -68,22 +69,16 @@ export default function SubKitActionBar({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Input
+              <BarcodeScanInput
                 value={confirmScan}
-                onChange={(e) => setConfirmScan(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    submitConfirm();
-                  }
-                }}
+                onChange={setConfirmScan}
+                onScan={submitConfirm}
                 placeholder={t("production.subprocess.confirmScanPlaceholder", "실물 SG 라벨 스캔")}
-                leftIcon={<Scan className="w-4 h-4" />}
                 disabled={confirming}
               />
               <Button
                 size="sm"
-                onClick={submitConfirm}
+                onClick={() => submitConfirm()}
                 isLoading={confirming}
                 disabled={confirming || !confirmScan.trim()}
               >

@@ -18,6 +18,7 @@ import {
   ScanBarcode, AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import type { JobOrderRow, InspectHistoryRow } from "../types";
@@ -130,18 +131,16 @@ export default function InspectPanel({
   }, [order, refresh, fetchPending, isScanMode, scannedBarcode, inspectType, equipCode]);
 
   /** 제품 바코드 입력 Enter → 회로라벨 입력칸으로 포커스 이동 */
-  const handleScanKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && scannedBarcode.trim()) {
-      e.preventDefault();
+  const handleFgBarcodeScan = useCallback((rawBarcode: string) => {
+    const barcode = rawBarcode.replace(/\r?\n|\r/g, "").trim();
+    if (barcode) {
+      setScannedBarcode(barcode);
       circuitInputRef.current?.focus();
     }
-  }, [scannedBarcode]);
+  }, []);
 
-  /** 회로라벨 입력 Enter → 입력값 확정만 (PASS는 버튼으로) */
-  const handleCircuitKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-    }
+  const handleCircuitLabelScan = useCallback((rawLabel: string) => {
+    setCircuitLabel(rawLabel.replace(/\r?\n|\r/g, "").trim());
   }, []);
 
   const columns = useMemo<ColumnDef<InspectHistoryRow>[]>(() => [
@@ -214,12 +213,13 @@ export default function InspectPanel({
                 {t("inspection.result.scanBarcode")}
               </span>
             </div>
-            <Input
+            <BarcodeScanInput
               ref={scanInputRef}
               value={scannedBarcode}
-              onChange={(e) => setScannedBarcode(e.target.value)}
-              onKeyDown={handleScanKeyDown}
+              onChange={setScannedBarcode}
+              onScan={handleFgBarcodeScan}
               placeholder={t("inspection.result.scanBarcode")}
+              refocusAfterScan={false}
               fullWidth
               autoFocus
             />
@@ -230,11 +230,11 @@ export default function InspectPanel({
                 {t("inspection.result.scanCircuitLabel")}
               </span>
             </div>
-            <Input
+            <BarcodeScanInput
               ref={circuitInputRef}
               value={circuitLabel}
-              onChange={(e) => setCircuitLabel(e.target.value)}
-              onKeyDown={handleCircuitKeyDown}
+              onChange={setCircuitLabel}
+              onScan={handleCircuitLabelScan}
               placeholder={t("inspection.result.scanCircuitLabel")}
               fullWidth
             />

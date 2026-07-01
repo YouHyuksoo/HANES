@@ -30,3 +30,5 @@ export { default as DateFilter } from "./DateFilter";
 export type { DateFilterProps } from "./DateFilter";
 export { default as FilterBar } from "./FilterBar";
 export type { FilterBarProps } from "./FilterBar";
+export { default as BarcodeScanInput } from "./BarcodeScanInput";
+export type { BarcodeScanInputProps } from "./BarcodeScanInput";

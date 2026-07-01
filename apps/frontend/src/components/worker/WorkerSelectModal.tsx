@@ -12,6 +12,7 @@
 import { useState, useRef, useMemo, useCallback, useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle, ArrowLeft, UserCheck, Search, ScanLine, X } from "lucide-react";
+import { BarcodeScanInput } from "@/components/shared";
 import { Modal, Button } from "@/components/ui";
 import { WorkerAvatar } from "./WorkerSelector";
 import type { Worker } from "./WorkerSelector";
@@ -94,9 +95,10 @@ function WorkerSelectModal({ isOpen, onClose, onConfirm }: WorkerSelectModalProp
   }, [searchText, workers]);
 
   /** QR 입력 → Enter → 자동 매칭 */
-  const handleQrSubmit = useCallback(() => {
-    if (!qrText.trim()) return;
-    const matched = workers.find((w) => w.qrCode === qrText.trim());
+  const handleQrSubmit = useCallback((rawQrText?: string) => {
+    const qrCode = (rawQrText ?? qrText).replace(/\r?\n|\r/g, "").trim();
+    if (!qrCode) return;
+    const matched = workers.find((w) => w.qrCode === qrCode);
     if (matched) setTempWorker(matched);
     setQrText("");
   }, [qrText, workers]);
@@ -211,20 +213,17 @@ function WorkerSelectModal({ isOpen, onClose, onConfirm }: WorkerSelectModalProp
                 <ScanLine className="w-12 h-12 text-primary" />
               </div>
               <p className="text-base text-text-muted text-center">{t("production.inputManual.scanInstruction")}</p>
-              <div className="relative w-full">
-                <ScanLine className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
-                <input
+              <div className="w-full">
+                <BarcodeScanInput
                   ref={qrRef}
-                  type="text"
                   value={qrText}
-                  onChange={(e) => setQrText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleQrSubmit(); }}
+                  onChange={setQrText}
+                  onScan={handleQrSubmit}
                   placeholder={t("production.result.qrPlaceholder")}
-                  className="w-full pl-12 pr-4 py-4 text-lg text-center border-2 border-primary/30 rounded-xl bg-surface text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                  autoComplete="off"
+                  fullWidth
                 />
               </div>
-              <Button onClick={handleQrSubmit} className="w-full py-4 text-base" disabled={!qrText.trim()}>
+              <Button onClick={() => handleQrSubmit()} className="w-full py-4 text-base" disabled={!qrText.trim()}>
                 <CheckCircle className="w-5 h-5 mr-2" />
                 {t("production.inputManual.workerConfirm")}
               </Button>

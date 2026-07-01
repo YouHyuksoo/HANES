@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Card, CardContent, Button, Select } from '@/components/ui';
+import { BarcodeScanInput } from '@/components/shared';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { useBarcodeScan } from '@/hooks/material/useBarcodeScan';
 import { useComCodeOptions } from '@/hooks/useComCode';
@@ -73,14 +74,6 @@ export default function BarcodeScanTab({ fixedIssueType, excludeIssueTypes }: Ba
       inputRef.current?.focus();
     }
   }, [scannedLot, error]);
-
-  // Enter 키 핸들러
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleScan();
-    }
-  };
 
   // 전량출고 후 포커스 복원
   const handleIssueAndFocus = async () => {
@@ -151,22 +144,20 @@ export default function BarcodeScanTab({ fixedIssueType, excludeIssueTypes }: Ba
 
             {/* 바코드 스캔 입력 */}
             <div className="flex-1 min-w-0">
-              <div className="relative">
-                <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-text-muted" />
-                <input
+              <div>
+                <BarcodeScanInput
                   ref={inputRef}
-                  type="text"
                   value={scanInput}
-                  onChange={(e) => setScanInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
+                  onChange={setScanInput}
+                  onScan={handleScan}
                   placeholder={t('material.issue.scanPlaceholder', { defaultValue: 'LOT 번호를 스캔하거나 입력하세요...' })}
-                  className="w-full h-14 pl-14 pr-4 text-lg font-medium bg-background dark:bg-slate-800 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-text placeholder:text-text-muted"
-                  autoComplete="off"
+                  className="h-14 text-lg font-medium"
+                  fullWidth
                 />
               </div>
             </div>
             <Button
-              onClick={handleScan}
+              onClick={() => handleScan()}
               disabled={!scanInput.trim() || isScanning}
               className="h-14 px-6 flex-shrink-0"
             >

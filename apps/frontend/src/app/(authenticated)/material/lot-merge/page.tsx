@@ -15,6 +15,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Merge, Search, RefreshCw, ScanLine, X, AlertCircle, Plus } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
@@ -168,13 +169,12 @@ export default function LotMergePage() {
       <Card className="flex-shrink-0" padding="none"><CardContent className="p-4 space-y-3">
         <div className="flex items-center gap-2">
           <div className="flex-1">
-            <Input
+            <BarcodeScanInput
               ref={scanRef}
               placeholder={t("material.lotMerge.scanPlaceholder")}
               value={scanInput}
-              onChange={(e) => setScanInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addByBarcode(scanInput); } }}
-              leftIcon={<ScanLine className="w-4 h-4" />}
+              onChange={setScanInput}
+              onScan={addByBarcode}
               fullWidth
               autoFocus
             />

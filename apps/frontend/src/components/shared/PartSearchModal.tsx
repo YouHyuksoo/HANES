@@ -50,6 +50,8 @@ interface PartSearchModalProps {
   allowedItemTypes?: string[];
   /** 그리드 페이지당 행 수. 미지정 시 15행 (호출처별 모달 높이 조절용) */
   pageSize?: number;
+  /** 단건 선택 모달 폭. 미지정 시 기존 기본 폭(xl)을 유지 */
+  modalSize?: 'xl' | '2xl';
 }
 
 export default function PartSearchModal({
@@ -61,6 +63,7 @@ export default function PartSearchModal({
   itemType: defaultItemType,
   allowedItemTypes,
   pageSize = 15,
+  modalSize = "xl",
 }: PartSearchModalProps) {
   const { t } = useTranslation();
 
@@ -262,7 +265,7 @@ export default function PartSearchModal({
       isOpen={isOpen}
       onClose={onClose}
       title={t("common.partSearch", "품목 검색")}
-      size={multiSelect ? "2xl" : "xl"}
+      size={multiSelect ? "2xl" : modalSize}
       footer={multiSelect ? (
         <>
           <div className="mr-auto text-sm text-text-muted">

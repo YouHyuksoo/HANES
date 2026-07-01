@@ -12,11 +12,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { Cog, CheckCircle2, ScanLine } from 'lucide-react';
+import { Cog, CheckCircle2 } from 'lucide-react';
 import { Modal, Button } from '@/components/ui';
+import { BarcodeScanInput } from '@/components/shared';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
-import { useScanInputFocus } from '@/hooks/useScanInputFocus';
 import type { ConsumableMapRow } from './MaterialListPanel';
 
 interface ConsumableScanModalProps {
@@ -31,8 +31,6 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
   const [items, setItems] = useState<ConsumableMapRow[]>([]);
   const [scanInput, setScanInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  // 모달 열린 동안 스캔 입력창 항상 포커스 유지
-  useScanInputFocus(inputRef, isOpen);
 
   useEffect(() => {
     if (!isOpen || !selectedJobOrder?.orderNo) return;
@@ -48,9 +46,8 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
   const unmountedCount = items.filter(c => c.mountedConUid == null).length;
   const completeDisabledReason = allMounted ? '' : t('kiosk.material.remaining', { count: unmountedCount });
 
-  const handleScan = useCallback(async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    const conUid = scanInput.trim();
+  const handleScan = useCallback(async (rawConUid?: string) => {
+    const conUid = (rawConUid ?? scanInput).replace(/\r?\n|\r/g, '').trim();
     if (!conUid || !selectedJobOrder?.orderNo) return;
     setScanInput('');
 
@@ -77,16 +74,15 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
     <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.consumableScanTitle')} size="lg">
       <div className="space-y-4">
         {/* 스캔 입력 */}
-        <div className="flex items-center gap-2 p-3 bg-surface rounded-lg border border-border">
-          <ScanLine className="w-5 h-5 text-primary shrink-0" />
-          <input
+        <div>
+          <BarcodeScanInput
             ref={inputRef}
-            type="text"
             value={scanInput}
-            onChange={e => setScanInput(e.target.value)}
-            onKeyDown={handleScan}
+            onChange={setScanInput}
+            onScan={handleScan}
             placeholder={t('kiosk.prep.consumableScanPlaceholder')}
-            className="flex-1 bg-transparent text-sm outline-none text-text placeholder:text-text-muted"
+            maintainFocus={isOpen}
+            fullWidth
           />
         </div>
 

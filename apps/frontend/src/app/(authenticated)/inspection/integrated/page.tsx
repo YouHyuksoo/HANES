@@ -3,9 +3,10 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ScanLine, RefreshCw, Search, List, Maximize2, Minimize2,
+  ScanLine, RefreshCw, List, Maximize2, Minimize2,
 } from "lucide-react";
-import { Card, CardContent, Button, Input } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
+import { Card, CardContent, Button } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import IntegratedInspectPanel from "./components/IntegratedInspectPanel";
@@ -75,16 +76,12 @@ export default function IntegratedInspectPage() {
     }
   }, []);
 
-  const handleScan = useCallback(async () => {
-    const barcode = scanInput.trim();
+  const handleScan = useCallback(async (rawBarcode?: string) => {
+    const barcode = (rawBarcode ?? scanInput).replace(/\r?\n|\r/g, "").trim();
     if (!barcode) return;
     setScanInput("");
     await openInspectPanel(barcode);
   }, [scanInput, openInspectPanel]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleScan();
-  }, [handleScan]);
 
   const handlePanelClose = useCallback(() => {
     setIsPanelOpen(false);
@@ -135,13 +132,12 @@ export default function IntegratedInspectPage() {
               <div className="flex items-center gap-3">
                 <ScanLine className="w-6 h-6 text-primary flex-shrink-0" />
                 <div className="w-64">
-                  <Input
+                  <BarcodeScanInput
                     ref={scanRef}
                     placeholder={t("inspection.integrated.scanPlaceholder", "FG 바코드를 스캔 또는 입력하세요")}
                     value={scanInput}
-                    onChange={(e) => { setScanInput(e.target.value); setScanError(""); }}
-                    onKeyDown={handleKeyDown}
-                    leftIcon={<Search className="w-4 h-4" />}
+                    onChange={(value) => { setScanInput(value); setScanError(""); }}
+                    onScan={handleScan}
                     fullWidth
                     autoFocus
                   />

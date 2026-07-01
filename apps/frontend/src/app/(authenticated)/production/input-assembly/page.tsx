@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { Boxes, Cpu, ChevronDown, RefreshCw, Scan, Search } from "lucide-react";
-import { Button, Card, CardContent, Input } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
+import { Button, Card, CardContent } from "@/components/ui";
 import api from "@/services/api";
 import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
 import EquipMaterialMountPanel from "./components/EquipMaterialMountPanel";
@@ -374,23 +375,17 @@ export default function InputAssemblyPage() {
               ) : (
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
-                    <Input
+                    <BarcodeScanInput
                       ref={orderScanRef}
                       label={t("production.subprocess.orderScanLabel", "작업지시번호 스캔 또는 입력 후 Enter")}
                       value={orderScan}
-                      onChange={(e) => setOrderScan(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          fetchOrderByNo(orderScan);
-                        }
-                      }}
+                      onChange={setOrderScan}
+                      onScan={fetchOrderByNo}
                       placeholder={
                         equipCode
                           ? "W-20260001"
                           : t("production.subprocess.requireEquipFirst", "설비를 먼저 선택하세요.")
                       }
-                      leftIcon={<Scan className="w-4 h-4" />}
                       disabled={!equipCode}
                       fullWidth
                     />

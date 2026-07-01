@@ -13,9 +13,10 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { QrCode, Plus, Trash2, Search } from "lucide-react";
+import { Plus, Trash2, Search } from "lucide-react";
 import { Modal, Button, Input, Select } from "@/components/ui";
 import {
+  BarcodeScanInput,
   ComCodeSelect,
   ProcessSelect,
   WorkerSelect,
@@ -130,8 +131,10 @@ export default function RepairFormModal({
   }, [isOpen, editData]);
 
   /** 바코드 스캔 처리 */
-  const handleBarcodeScan = useCallback(() => {
-    if (!fgBarcode.trim()) return;
+  const handleBarcodeScan = useCallback((rawFgBarcode?: string) => {
+    const scanned = (rawFgBarcode ?? fgBarcode).replace(/\r?\n|\r/g, "").trim();
+    if (!scanned) return;
+    setFgBarcode(scanned);
     // 바코드로 품목 정보 조회 가능하면 여기서 처리
     barcodeRef.current?.focus();
   }, [fgBarcode]);
@@ -216,17 +219,15 @@ export default function RepairFormModal({
             <label className="block text-sm font-medium text-text-secondary dark:text-slate-400 mb-1">
               {t("production.repair.fgBarcode")}
             </label>
-            <div className="relative">
-              <QrCode className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
-              <input
+            <div>
+              <BarcodeScanInput
                 ref={barcodeRef}
-                type="text"
                 value={fgBarcode}
-                onChange={(e) => setFgBarcode(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleBarcodeScan()}
+                onChange={setFgBarcode}
+                onScan={handleBarcodeScan}
                 placeholder={t("production.repair.scanBarcode")}
-                autoComplete="off"
-                className="w-full h-12 pl-10 pr-4 text-lg border border-border-default dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-text-primary dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="h-12 text-lg"
+                fullWidth
               />
             </div>
           </div>

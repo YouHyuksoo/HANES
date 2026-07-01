@@ -35,6 +35,21 @@ test('/production/subprocess-kitting: SEMI_PRODUCT job order filter', () => {
   assert.match(source, /SEMI_PRODUCT/);
 });
 
+test('/production/subprocess-kitting: job order modal uses kiosk-equivalent filters', () => {
+  assert.match(source, /filterStatus=\{\['WAITING', 'RUNNING'\]\}/);
+  assert.match(source, /equipCode=\{equipCode \|\| undefined\}/);
+  assert.match(source, /orderKind="OPERATION"/);
+  assert.match(source, /processCode=\{processCode \|\| undefined\}/);
+  assert.match(source, /itemType="SEMI_PRODUCT"/);
+});
+
+test('/production/subprocess-kitting: typed job order lookup uses kiosk-equivalent filters', () => {
+  assert.match(source, /statuses: "WAITING,RUNNING"/);
+  assert.match(source, /orderKind: "OPERATION"/);
+  assert.match(source, /equipCode/);
+  assert.match(source, /itemType: "SEMI_PRODUCT"/);
+});
+
 test('/production/subprocess-kitting: no alert/confirm/prompt usage', () => {
   assert.doesNotMatch(source, /\balert\s*\(/);
   assert.doesNotMatch(source, /\bconfirm\s*\(/);

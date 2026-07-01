@@ -14,11 +14,11 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { Package, CheckCircle2, ScanLine } from 'lucide-react';
+import { Package, CheckCircle2 } from 'lucide-react';
 import { Modal, Button } from '@/components/ui';
+import { BarcodeScanInput } from '@/components/shared';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
-import { useScanInputFocus } from '@/hooks/useScanInputFocus';
 import { filterBomMaterials, type BomItem, type MountedMaterial } from './MaterialListPanel';
 
 interface MaterialScanModalProps {
@@ -37,8 +37,6 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
   const [mounted, setMounted] = useState<MountedMaterial[]>([]);
   const [scanInput, setScanInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  // 모달 열린 동안 스캔 입력창 항상 포커스 유지
-  useScanInputFocus(inputRef, isOpen);
 
   useEffect(() => {
     if (!isOpen || !selectedJobOrder?.itemCode) return;
@@ -84,9 +82,8 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
     setInterlock('materialScanDone', bomItems.every(b => mountedByItem.has(b.childItemCode)));
   }, [bomItems, mountedByItem, setInterlock]);
 
-  const handleScan = useCallback(async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    const matUid = scanInput.trim();
+  const handleScan = useCallback(async (rawMatUid?: string) => {
+    const matUid = (rawMatUid ?? scanInput).replace(/\r?\n|\r/g, '').trim();
     if (!matUid || !selectedJobOrder?.orderNo) return;
     setScanInput('');
 
@@ -112,16 +109,15 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
     <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.materialScan')} size="lg">
       <div className="space-y-4">
         {/* 스캔 입력 */}
-        <div className="flex items-center gap-2 p-3 bg-surface rounded-lg border border-border">
-          <ScanLine className="w-5 h-5 text-primary shrink-0" />
-          <input
+        <div>
+          <BarcodeScanInput
             ref={inputRef}
-            type="text"
             value={scanInput}
-            onChange={e => setScanInput(e.target.value)}
-            onKeyDown={handleScan}
+            onChange={setScanInput}
+            onScan={handleScan}
             placeholder={t('kiosk.material.scanPlaceholder')}
-            className="flex-1 bg-transparent text-sm outline-none text-text placeholder:text-text-muted"
+            maintainFocus={isOpen}
+            fullWidth
           />
         </div>
 

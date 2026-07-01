@@ -17,7 +17,7 @@ import {
   BadgeCheck, Search, RefreshCw, ShieldCheck, ShieldX, AlertTriangle, ScanLine,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
-import { WorkerSelect } from "@/components/shared";
+import { BarcodeScanInput, WorkerSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { createConcessionGridColumns, type ConcessionTarget } from "./concessionColumns";
@@ -106,13 +106,14 @@ export default function ConcessionPage() {
     setIsModalOpen(true);
   }, []);
 
-  const handleWorkerQrLookup = useCallback(async () => {
-    if (!workerQrText.trim()) return;
+  const handleWorkerQrLookup = useCallback(async (rawWorkerQr?: string) => {
+    const workerQr = (rawWorkerQr ?? workerQrText).replace(/\r?\n|\r/g, "").trim();
+    if (!workerQr) return;
     setWorkerQrLoading(true);
     setWorkerQrError("");
     try {
       const res = await api.get(
-        `/master/workers/by-qr/${encodeURIComponent(workerQrText.trim())}`,
+        `/master/workers/by-qr/${encodeURIComponent(workerQr)}`,
       );
       const worker = res.data?.data as WorkerQrResponse | undefined;
       if (!worker?.workerCode) {
@@ -186,21 +187,15 @@ export default function ConcessionPage() {
             {actionType === "apply" && (
               <div className="space-y-2">
                 <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(13rem,16rem)_auto] gap-2 items-end">
-                  <Input
+                  <BarcodeScanInput
                     label={t("material.concession.workerQrScan", "작업자 QR 스캔")}
                     placeholder={t("material.concession.workerQrScanPlaceholder", "작업자 QR을 스캔하거나 입력 후 Enter")}
                     value={workerQrText}
-                    onChange={(e) => {
-                      setWorkerQrText(e.target.value);
+                    onChange={(value) => {
+                      setWorkerQrText(value);
                       setWorkerQrError("");
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleWorkerQrLookup();
-                      }
-                    }}
-                    leftIcon={<ScanLine className="w-4 h-4" />}
+                    onScan={handleWorkerQrLookup}
                     fullWidth
                   />
                   <WorkerSelect
@@ -218,7 +213,7 @@ export default function ConcessionPage() {
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={handleWorkerQrLookup}
+                    onClick={() => handleWorkerQrLookup()}
                     disabled={workerQrLoading || !workerQrText.trim()}
                   >
                     {workerQrLoading ? t("common.loading") : t("common.search")}

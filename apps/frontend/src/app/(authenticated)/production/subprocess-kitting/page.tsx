@@ -12,7 +12,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { Cpu, ChevronDown, Package, RefreshCw, Scan, Search } from "lucide-react";
-import { Button, Card, CardContent, Input, Select } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
+import { Button, Card, CardContent, Select } from "@/components/ui";
 import api from "@/services/api";
 import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
 import InputSgScanPanel from "./components/InputSgScanPanel";
@@ -194,7 +195,15 @@ export default function SubprocessKittingPage() {
       }
       try {
         const res = await api.get("/production/job-orders", {
-          params: { limit: 20, search: trimmed, itemType: "SEMI_PRODUCT", ...(processCode ? { processCode } : {}) },
+          params: {
+            limit: 20,
+            search: trimmed,
+            statuses: "WAITING,RUNNING",
+            equipCode,
+            itemType: "SEMI_PRODUCT",
+            orderKind: "OPERATION",
+            ...(processCode ? { processCode } : {}),
+          },
         });
         const list: JobOrderPick[] = Array.isArray(res.data?.data) ? res.data.data : [];
         const found = list.find((r) => r.orderNo === trimmed) ?? list[0];
@@ -431,23 +440,17 @@ export default function SubprocessKittingPage() {
               ) : (
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
-                    <Input
+                    <BarcodeScanInput
                       ref={orderScanRef}
                       label={t("production.subprocess.orderScanLabel", "작업지시번호 스캔 또는 입력 후 Enter")}
                       value={orderScan}
-                      onChange={(e) => setOrderScan(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          fetchOrderByNo(orderScan);
-                        }
-                      }}
+                      onChange={setOrderScan}
+                      onScan={fetchOrderByNo}
                       placeholder={
                         equipCode
                           ? "W-20260001"
                           : t("production.subprocess.requireEquipFirst", "설비를 먼저 선택하세요.")
                       }
-                      leftIcon={<Scan className="w-4 h-4" />}
                       disabled={!equipCode}
                       fullWidth
                     />
@@ -522,8 +525,11 @@ export default function SubprocessKittingPage() {
           selectOrder(toJobOrderPick(jo));
           setOrderSearchOpen(false);
         }}
+        filterStatus={['WAITING', 'RUNNING']}
+        equipCode={equipCode || undefined}
         processCode={processCode || undefined}
         itemType="SEMI_PRODUCT"
+        orderKind="OPERATION"
       />
 
       {/* 설비 선택 모달 — input-kiosk 공용. 설비 선택 시 공정 자동 도출. */}

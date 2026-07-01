@@ -11,9 +11,10 @@
  */
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ScanBarcode, ArrowDownToLine, Undo2 } from "lucide-react";
+import { ArrowDownToLine, Undo2 } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Card, CardContent, Input, Button, Select } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
 import { ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useLocationOptions } from "@/hooks/useMasterOptions";
@@ -62,8 +63,8 @@ export default function BarcodeScanPanel({ onScanSuccess }: BarcodeScanPanelProp
     inputRef.current?.focus();
   }, []);
 
-  const handleScan = async () => {
-    const uid = scanValue.trim();
+  const handleScan = async (rawUid?: string) => {
+    const uid = (rawUid ?? scanValue).replace(/\r?\n|\r/g, "").trim();
     if (!uid || isScanning) return;
 
     setIsScanning(true);
@@ -88,13 +89,6 @@ export default function BarcodeScanPanel({ onScanSuccess }: BarcodeScanPanelProp
       setReturnReason("");
       setIsScanning(false);
       inputRef.current?.focus();
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleScan();
     }
   };
 
@@ -159,13 +153,12 @@ export default function BarcodeScanPanel({ onScanSuccess }: BarcodeScanPanelProp
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <Input
+              <BarcodeScanInput
                 ref={inputRef}
                 placeholder={t("consumables.receiving.scanPlaceholder")}
                 value={scanValue}
-                onChange={(e) => setScanValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                leftIcon={<ScanBarcode className="w-4 h-4" />}
+                onChange={setScanValue}
+                onScan={handleScan}
                 autoFocus
                 fullWidth
               />
@@ -192,7 +185,7 @@ export default function BarcodeScanPanel({ onScanSuccess }: BarcodeScanPanelProp
                 />
               </div>
             )}
-            <Button onClick={handleScan} disabled={!scanValue.trim() || isScanning} className="flex-shrink-0">
+            <Button onClick={() => handleScan()} disabled={!scanValue.trim() || isScanning} className="flex-shrink-0">
               {mode === "receiving"
                 ? t("consumables.receiving.confirmBtn")
                 : t("consumables.receiving.returnBtn", "반납확정")}
