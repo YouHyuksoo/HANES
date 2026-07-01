@@ -392,6 +392,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/material/issue-history": {
+      const mod = await import("./page-registries/material__issue-history.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/material/issue-other": {
       const mod = await import("./page-registries/material__issue-other.generated");
       component = mod.getPageComponent();
@@ -462,6 +467,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/material/request-other": {
+      const mod = await import("./page-registries/material__request-other.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/material/scrap": {
       const mod = await import("./page-registries/material__scrap.generated");
       component = mod.getPageComponent();
@@ -484,6 +494,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
     }
     case "/material/stock": {
       const mod = await import("./page-registries/material__stock.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/material/stock-transfer": {
+      const mod = await import("./page-registries/material__stock-transfer.generated");
       component = mod.getPageComponent();
       break;
     }

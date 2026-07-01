@@ -344,15 +344,73 @@ export class IssueRequestService {
 
   /** 출고요청 목록 조회 (페이지네이션 + 필터) */
   async findAll(query: IssueRequestQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, status, search, orderNo } = query;
-    const where: FindOptionsWhere<MatIssueRequest> = { ...(status && { status }), ...(orderNo && { orderNo }), ...(company && { company }), ...(plant && { plant }) };
+    const { page = 1, limit = 10, status, search, orderNo, issueType } = query;
+    const where: FindOptionsWhere<MatIssueRequest> = {
+      ...(status && { status }),
+      ...(orderNo && { orderNo }),
+      ...(issueType && { issueType }),
+      ...(company && { company }),
+      ...(plant && { plant }),
+    };
 
-    const [data, total] = await Promise.all([
-      this.requestRepository.find({
-        where, skip: (page - 1) * limit, take: limit, order: { requestDate: 'DESC' },
-      }),
-      this.requestRepository.count({ where }),
-    ]);
+    let data: MatIssueRequest[] = [];
+    let total = 0;
+    const trimmedSearch = search?.trim();
+
+    if (trimmedSearch) {
+      const searchValue = `%${trimmedSearch.toUpperCase()}%`;
+      const qb = this.requestRepository.createQueryBuilder('req');
+      if (status) qb.andWhere('req.status = :status', { status });
+      if (orderNo) qb.andWhere('req.orderNo = :orderNo', { orderNo });
+      if (issueType) qb.andWhere('req.issueType = :issueType', { issueType });
+      if (company) qb.andWhere('req.company = :company', { company });
+      if (plant) qb.andWhere('req.plant = :plant', { plant });
+      qb.andWhere(`
+        (
+          UPPER(req.requestNo) LIKE :search
+          OR UPPER(COALESCE(req.requester, '')) LIKE :search
+          OR UPPER(COALESCE(req.orderNo, '')) LIKE :search
+          OR UPPER(COALESCE(req.issueType, '')) LIKE :search
+          OR UPPER(COALESCE(req.remark, '')) LIKE :search
+          OR EXISTS (
+            SELECT 1
+            FROM MAT_ISSUE_REQUEST_ITEMS item
+            LEFT JOIN ITEM_MASTERS part
+              ON part.ITEM_CODE = item.ITEM_CODE
+             AND part.COMPANY = item.COMPANY
+             AND part.PLANT_CD = item.PLANT_CD
+            WHERE item.REQUEST_ID = req.requestNo
+              ${company ? 'AND item.COMPANY = :company' : ''}
+              ${plant ? 'AND item.PLANT_CD = :plant' : ''}
+              AND (
+                UPPER(item.ITEM_CODE) LIKE :search
+                OR UPPER(COALESCE(part.ITEM_NAME, '')) LIKE :search
+              )
+          )
+        )
+      `, { search: searchValue });
+
+      total = await qb.clone().getCount();
+      const rows = await qb
+        .select('req.requestNo', 'requestNo')
+        .orderBy('req.requestDate', 'DESC')
+        .skip((page - 1) * limit)
+        .take(limit)
+        .getRawMany<{ requestNo: string }>();
+      const requestNos = rows.map((row) => row.requestNo).filter(Boolean);
+      if (requestNos.length > 0) {
+        data = await this.requestRepository.find({ where: { requestNo: In(requestNos), ...this.tenantWhere(company, plant) } });
+        const order = new Map(requestNos.map((requestNo, idx) => [requestNo, idx]));
+        data.sort((a, b) => (order.get(a.requestNo) ?? 0) - (order.get(b.requestNo) ?? 0));
+      }
+    } else {
+      [data, total] = await Promise.all([
+        this.requestRepository.find({
+          where, skip: (page - 1) * limit, take: limit, order: { requestDate: 'DESC' },
+        }),
+        this.requestRepository.count({ where }),
+      ]);
+    }
 
     // IN 배치 선조회로 N+1 제거 (요청별 아이템 개별 조회 → 일괄 조회)
     const requestNos = data.map((r) => r.requestNo);
@@ -376,7 +434,7 @@ export class IssueRequestService {
       itemsByRequest.set(item.requestId, list);
     }
 
-    let result = data.map((req) => {
+    const result = data.map((req) => {
       const items = itemsByRequest.get(req.requestNo) ?? [];
       const flatItems = items.map((item) => {
         const part = partMap.get(item.itemCode);
@@ -396,12 +454,6 @@ export class IssueRequestService {
       };
     });
 
-    if (search) {
-      const upper = search.toUpperCase();
-      result = result.filter(
-        (r) => r.requestNo?.toUpperCase().includes(upper) || r.requester?.toUpperCase().includes(upper),
-      );
-    }
     return { data: result, total, page, limit };
   }
 

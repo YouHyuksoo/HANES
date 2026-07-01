@@ -293,8 +293,10 @@
     "material.receive": "자재입고관리",
     "material.receiveHistory": "입고이력조회",
     "material.request": "출고요청관리",
+    "material.requestOther": "기타출고요청",
     "material.issue": "자재출고관리",
     "material.issueOther": "기타출고관리",
+    "material.issueHistory": "출고이력조회",
     "material.concession": "특채처리",
     "material.issueAccount": "출고계정",
     "material.lot": "LOT관리",
@@ -307,9 +309,10 @@
     "material.shelfLifeReinspect": "유수명자재 재검사",
     "material.shelfLifeHistory": "유수명자재 검사이력",
     "material.hold": "자재재고홀드관리",
-    "material.scrap": "자재폐기처리",
-    "material.adjustment": "재고보정처리",
-    "material.miscReceipt": "기타입고관리",
+    "material.scrap": "자재폐기확정관리",
+    "material.stockTransfer": "자재재고이동관리",
+    "material.adjustment": "자재재고보정관리",
+    "material.miscReceipt": "자재기타입고관리",
     "material.receiptCancel": "자재입고취소",
     "cutting": "절단공정",
     "cutting.order": "작업지시",
@@ -2885,6 +2888,11 @@
       "bomCalculating": "작업지시 BOM 기준 출고 예정 품목을 계산 중입니다.",
       "items": "건"
     },
+    "requestOther": {
+      "title": "기타출고요청",
+      "description": "작업지시 없이 필요한 자재 출고요청을 등록하고 조회합니다.",
+      "newRequest": "기타출고요청"
+    },
     "issueOther": {
       "title": "기타출고",
       "description": "양산 외 출고계정(불량/샘플/외주/폐기/반품/기타 등)을 선택하여 출고합니다."
@@ -3320,8 +3328,8 @@
       }
     },
     "scrap": {
-      "title": "자재폐기",
-      "subtitle": "불량/만료 자재 폐기를 처리합니다.",
+      "title": "폐기확정",
+      "subtitle": "폐기창고 격리 자재를 최종 소멸 처리합니다.",
       "transNo": "처리번호",
       "partCode": "품목코드",
       "partName": "품목명",
@@ -3329,7 +3337,7 @@
       "reason": "사유",
       "reasonPlaceholder": "폐기 사유를 입력하세요",
       "transDate": "처리일",
-      "register": "폐기등록",
+      "register": "폐기확정",
       "warehouse": "창고",
       "matUid": "자재시리얼",
       "matUidPlaceholder": "자재시리얼 입력",
@@ -3341,7 +3349,33 @@
       "stockSelect": "재고 선택 (품목-LOT)",
       "availableQty": "가용수량",
       "max": "최대",
-      "noStock": "선택한 창고에 폐기 가능한 재고가 없습니다."
+      "noStock": "선택한 창고에 폐기 가능한 재고가 없습니다.",
+      "selectWarehouseFirst": "먼저 폐기창고를 선택해 주세요.",
+      "notFound": "해당 창고에서 LOT를 찾을 수 없거나 가용수량이 없습니다: {{matUid}}",
+      "scanError": "재고 조회에 실패했습니다.",
+      "scanHint": "폐기창고에 있는 LOT 바코드를 스캔하세요.",
+      "sessionHistory": "금일 등록 이력",
+      "noHistory": "등록 이력 없음"
+    },
+    "transfer": {
+      "title": "재고이동",
+      "subtitle": "창고 간 자재 재고를 이동 처리합니다.",
+      "panelTitle": "재고이동",
+      "transNo": "이동번호",
+      "transDate": "이동일",
+      "qty": "수량",
+      "fromWarehouse": "출발창고",
+      "toWarehouse": "목적창고",
+      "availableQty": "가용수량",
+      "execute": "이동실행",
+      "searchPlaceholder": "이동번호, LOT번호, 품목명 검색...",
+      "notFound": "재고를 찾을 수 없거나 가용수량이 없습니다: {{matUid}}",
+      "scanError": "재고 조회에 실패했습니다.",
+      "scanHint": "이동할 자재의 LOT 바코드를 스캔하세요.",
+      "selectDest": "목적창고 선택",
+      "sameWarehouseError": "출발창고와 목적창고가 같습니다.",
+      "sessionHistory": "금일 이동 이력",
+      "noHistory": "이동 이력 없음"
     },
     "adjustment": {
       "title": "재고보정",
@@ -6498,30 +6532,163 @@
     }
   },
   "comCode": {
-    "MOLD_LIFE_STATUS": { "NORMAL": "양호", "WARNING": "경고", "REPLACE": "교체필요", "MAINT": "점검중" },
-    "REPAIR_STATUS": { "RECEIVED": "입고", "IN_REPAIR": "수리중", "COMPLETED": "완료" },
-    "CUSTOMER_PO_STATUS": { "RECEIVED": "접수", "CONFIRMED": "확정", "IN_PRODUCTION": "생산중", "PARTIAL_SHIP": "부분출하", "SHIPPED": "출하", "CLOSED": "마감" },
-    "CUSTOMER_PO_PROGRESS": { "IN_PROGRESS": "진행중", "PARTIAL_SHIP": "부분출하", "COMPLETED": "완료", "OVERDUE": "지연" },
-    "ARRIVAL_PO_TYPE": { "RM": "원자재", "CM": "소모품" },
-    "ARRIVAL_RESULT_STATUS": { "ARRIVED": "입하완료", "IQC_PROGRESS": "IQC진행중", "IQC_DONE": "IQC완료", "RECEIVED": "입고완료", "CANCELED": "취소" },
-    "AUDIT_RESULT": { "PASS": "적합", "MINOR": "경부적합", "MAJOR": "중부적합", "OFI": "개선권고" },
-    "AUDIT_STATUS": { "PLANNED": "계획", "IN_PROGRESS": "진행중", "COMPLETED": "완료", "CLOSED": "마감" },
-    "AUDIT_TYPE": { "SYSTEM": "시스템심사", "PROCESS": "공정심사", "PRODUCT": "제품심사", "LAYERED": "계층별심사" },
-    "FAI_RESULT": { "PASS": "합격", "FAIL": "불합격", "CONDITIONAL": "조건부" },
-    "FAI_STATUS": { "REQUESTED": "요청", "SAMPLING": "샘플채취", "INSPECTING": "검사중", "PASS": "합격", "FAIL": "불합격", "CONDITIONAL": "조건부합격" },
-    "FAI_TRIGGER_TYPE": { "NEW_PART": "신규품목", "ECN": "설계변경", "PROCESS_CHANGE": "공정변경", "LONG_STOP": "장기중단", "EQUIP_CHANGE": "설비변경" },
-    "GAUGE_STATUS": { "ACTIVE": "사용중", "EXPIRED": "교정만료", "SCRAPPED": "폐기" },
-    "GAUGE_TYPE": { "CALIPER": "캘리퍼스", "MICROMETER": "마이크로미터", "DIAL_GAUGE": "다이얼게이지", "HEIGHT_GAUGE": "하이트게이지", "PIN_GAUGE": "핀게이지", "RING_GAUGE": "링게이지", "FORCE_GAUGE": "포스게이지", "OTHER": "기타" },
-    "IQC_INSPECT_TYPE": { "INITIAL": "초기검사", "RETEST": "재검사" },
-    "PPAP_REASON": { "NEW_PART": "신규부품", "ECN": "설계변경", "TOOLING": "금형변경", "CORRECTION": "시정조치", "OTHER": "기타" },
-    "PPAP_STATUS": { "DRAFT": "작성중", "SUBMITTED": "제출됨", "APPROVED": "승인", "REJECTED": "반려", "INTERIM": "잠정승인" },
-    "REWORK_INSPECT_RESULT": { "PASS": "합격", "FAIL": "불합격", "SCRAP": "폐기" },
-    "REWORK_PROCESS_STATUS": { "WAITING": "대기", "IN_PROGRESS": "진행중", "COMPLETED": "완료", "SKIPPED": "건너뛰기" },
-    "REWORK_STATUS": { "REGISTERED": "등록", "QC_PENDING": "품질승인대기", "QC_APPROVED": "품질승인", "QC_REJECTED": "품질반려", "PROD_PENDING": "생산승인대기", "APPROVED": "승인완료", "PROD_REJECTED": "생산반려", "IN_PROGRESS": "진행중", "INSPECT_PENDING": "재검사대기", "PASS": "합격", "FAIL": "불합격", "SCRAP": "폐기" },
-    "SPC_CHART_TYPE": { "XBAR_R": "Xbar-R 관리도", "XBAR_S": "Xbar-S 관리도", "P": "P 관리도", "NP": "NP 관리도", "C": "C 관리도", "U": "U 관리도" },
-    "SPC_STATUS": { "ACTIVE": "활성", "INACTIVE": "비활성" },
-    "TRAINING_STATUS": { "PLANNED": "예정", "IN_PROGRESS": "진행중", "COMPLETED": "완료", "CANCELLED": "취소" },
-    "TRAINING_TYPE": { "OJT": "현장교육", "CLASSROOM": "집합교육", "ONLINE": "온라인교육", "EXTERNAL": "외부교육", "SAFETY": "안전교육" },
+    "MOLD_LIFE_STATUS": {
+      "NORMAL": "양호",
+      "WARNING": "경고",
+      "REPLACE": "교체필요",
+      "MAINT": "점검중"
+    },
+    "REPAIR_STATUS": {
+      "RECEIVED": "입고",
+      "IN_REPAIR": "수리중",
+      "COMPLETED": "완료"
+    },
+    "CUSTOMER_PO_STATUS": {
+      "RECEIVED": "접수",
+      "CONFIRMED": "확정",
+      "IN_PRODUCTION": "생산중",
+      "PARTIAL_SHIP": "부분출하",
+      "SHIPPED": "출하",
+      "CLOSED": "마감"
+    },
+    "CUSTOMER_PO_PROGRESS": {
+      "IN_PROGRESS": "진행중",
+      "PARTIAL_SHIP": "부분출하",
+      "COMPLETED": "완료",
+      "OVERDUE": "지연"
+    },
+    "ARRIVAL_PO_TYPE": {
+      "RM": "원자재",
+      "CM": "소모품"
+    },
+    "ARRIVAL_RESULT_STATUS": {
+      "ARRIVED": "입하완료",
+      "IQC_PROGRESS": "IQC진행중",
+      "IQC_DONE": "IQC완료",
+      "RECEIVED": "입고완료",
+      "CANCELED": "취소"
+    },
+    "AUDIT_RESULT": {
+      "PASS": "적합",
+      "MINOR": "경부적합",
+      "MAJOR": "중부적합",
+      "OFI": "개선권고"
+    },
+    "AUDIT_STATUS": {
+      "PLANNED": "계획",
+      "IN_PROGRESS": "진행중",
+      "COMPLETED": "완료",
+      "CLOSED": "마감"
+    },
+    "AUDIT_TYPE": {
+      "SYSTEM": "시스템심사",
+      "PROCESS": "공정심사",
+      "PRODUCT": "제품심사",
+      "LAYERED": "계층별심사"
+    },
+    "FAI_RESULT": {
+      "PASS": "합격",
+      "FAIL": "불합격",
+      "CONDITIONAL": "조건부"
+    },
+    "FAI_STATUS": {
+      "REQUESTED": "요청",
+      "SAMPLING": "샘플채취",
+      "INSPECTING": "검사중",
+      "PASS": "합격",
+      "FAIL": "불합격",
+      "CONDITIONAL": "조건부합격"
+    },
+    "FAI_TRIGGER_TYPE": {
+      "NEW_PART": "신규품목",
+      "ECN": "설계변경",
+      "PROCESS_CHANGE": "공정변경",
+      "LONG_STOP": "장기중단",
+      "EQUIP_CHANGE": "설비변경"
+    },
+    "GAUGE_STATUS": {
+      "ACTIVE": "사용중",
+      "EXPIRED": "교정만료",
+      "SCRAPPED": "폐기"
+    },
+    "GAUGE_TYPE": {
+      "CALIPER": "캘리퍼스",
+      "MICROMETER": "마이크로미터",
+      "DIAL_GAUGE": "다이얼게이지",
+      "HEIGHT_GAUGE": "하이트게이지",
+      "PIN_GAUGE": "핀게이지",
+      "RING_GAUGE": "링게이지",
+      "FORCE_GAUGE": "포스게이지",
+      "OTHER": "기타"
+    },
+    "IQC_INSPECT_TYPE": {
+      "INITIAL": "초기검사",
+      "RETEST": "재검사"
+    },
+    "PPAP_REASON": {
+      "NEW_PART": "신규부품",
+      "ECN": "설계변경",
+      "TOOLING": "금형변경",
+      "CORRECTION": "시정조치",
+      "OTHER": "기타"
+    },
+    "PPAP_STATUS": {
+      "DRAFT": "작성중",
+      "SUBMITTED": "제출됨",
+      "APPROVED": "승인",
+      "REJECTED": "반려",
+      "INTERIM": "잠정승인"
+    },
+    "REWORK_INSPECT_RESULT": {
+      "PASS": "합격",
+      "FAIL": "불합격",
+      "SCRAP": "폐기"
+    },
+    "REWORK_PROCESS_STATUS": {
+      "WAITING": "대기",
+      "IN_PROGRESS": "진행중",
+      "COMPLETED": "완료",
+      "SKIPPED": "건너뛰기"
+    },
+    "REWORK_STATUS": {
+      "REGISTERED": "등록",
+      "QC_PENDING": "품질승인대기",
+      "QC_APPROVED": "품질승인",
+      "QC_REJECTED": "품질반려",
+      "PROD_PENDING": "생산승인대기",
+      "APPROVED": "승인완료",
+      "PROD_REJECTED": "생산반려",
+      "IN_PROGRESS": "진행중",
+      "INSPECT_PENDING": "재검사대기",
+      "PASS": "합격",
+      "FAIL": "불합격",
+      "SCRAP": "폐기"
+    },
+    "SPC_CHART_TYPE": {
+      "XBAR_R": "Xbar-R 관리도",
+      "XBAR_S": "Xbar-S 관리도",
+      "P": "P 관리도",
+      "NP": "NP 관리도",
+      "C": "C 관리도",
+      "U": "U 관리도"
+    },
+    "SPC_STATUS": {
+      "ACTIVE": "활성",
+      "INACTIVE": "비활성"
+    },
+    "TRAINING_STATUS": {
+      "PLANNED": "예정",
+      "IN_PROGRESS": "진행중",
+      "COMPLETED": "완료",
+      "CANCELLED": "취소"
+    },
+    "TRAINING_TYPE": {
+      "OJT": "현장교육",
+      "CLASSROOM": "집합교육",
+      "ONLINE": "온라인교육",
+      "EXTERNAL": "외부교육",
+      "SAFETY": "안전교육"
+    },
     "AQL_INSP_LEVEL": {
       "S-1": "특별검사수준 S-1",
       "S-2": "특별검사수준 S-2",
@@ -7233,6 +7400,20 @@
       "REVIEW": "검토중",
       "APPROVED": "승인됨",
       "OBSOLETE": "폐기"
+    },
+    "FG_LABEL_STATUS": {
+      "ISSUED": "발행됨",
+      "VISUAL_PASS": "외관합격",
+      "VISUAL_FAIL": "외관불합격",
+      "PACKED": "포장완료",
+      "SHIPPED": "출하완료",
+      "VOIDED": "무효"
+    },
+    "SG_LABEL_STATUS": {
+      "IN_STOCK": "재공중",
+      "MOUNTED": "장착중",
+      "CONSUMED": "소비완료",
+      "DEFECT": "불량"
     }
   },
   "comCodeGroup": {
@@ -7981,6 +8162,7 @@
       "concession": "특채처리",
       "receive": "입고",
       "request": "출고요청",
+      "requestOther": "기타출고요청",
       "issue": "출고",
       "issueOther": "기타출고"
     },

@@ -106,14 +106,14 @@ export class IssueRequestQueryDto extends PaginationQueryDto {
 
   @ApiPropertyOptional({
     description: '상태 필터',
-    enum: ['REQUESTED', 'APPROVED', 'REJECTED', 'COMPLETED'],
+    enum: ['REQUESTED', 'APPROVED', 'PARTIAL', 'REJECTED', 'COMPLETED'],
   })
   @IsOptional()
   @IsString()
-  @IsIn(['REQUESTED', 'APPROVED', 'REJECTED', 'COMPLETED'])
+  @IsIn(['REQUESTED', 'APPROVED', 'PARTIAL', 'REJECTED', 'COMPLETED'])
   status?: string;
 
-  @ApiPropertyOptional({ description: '검색어 (요청번호, 요청자)' })
+  @ApiPropertyOptional({ description: '검색어 (요청번호, 요청자, 작업지시, 출고유형, 품목, 비고)' })
   @IsOptional()
   @IsString()
   search?: string;
@@ -122,6 +122,12 @@ export class IssueRequestQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   orderNo?: string;
+
+  @ApiPropertyOptional({ description: '출고 유형 필터 (ComCode ISSUE_TYPE)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  issueType?: string;
 }
 
 /** 출고요청 반려 DTO */

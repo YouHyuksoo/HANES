@@ -292,8 +292,10 @@
     "material.receive": "Material Receiving",
     "material.receiveHistory": "Receiving History",
     "material.request": "Issue Request Mgmt",
+    "material.requestOther": "Other Issue Request",
     "material.issue": "Material Issuing",
     "material.issueOther": "Other Issuing",
+    "material.issueHistory": "Issue History",
     "material.concession": "Concession",
     "material.issueAccount": "Issue Account",
     "material.lot": "LOT Management",
@@ -306,9 +308,10 @@
     "material.shelfLifeReinspect": "Shelf Life Reinspection",
     "material.shelfLifeHistory": "Shelf Life Inspection History",
     "material.hold": "Material Stock Hold",
-    "material.scrap": "Material Scrap Process",
-    "material.adjustment": "Stock Adjust Process",
-    "material.miscReceipt": "Misc Receipt Mgmt",
+    "material.scrap": "Material Scrap Confirmation",
+    "material.stockTransfer": "Material Stock Transfer",
+    "material.adjustment": "Material Stock Adjustment",
+    "material.miscReceipt": "Material Misc Receipt",
     "material.receiptCancel": "Material Receipt Cancel",
     "cutting": "Cutting",
     "cutting.order": "Work Order",
@@ -2475,6 +2478,11 @@
       "bomCalculating": "Calculating BOM-based issue items...",
       "items": "items"
     },
+    "requestOther": {
+      "title": "Other Issue Request",
+      "description": "Register and view material issue requests that are not tied to a work order.",
+      "newRequest": "Other Issue Request"
+    },
     "issueOther": {
       "title": "Other Issue",
       "description": "Issue with a non-production account (defect/sample/subcontract/scrap/return/etc.)."
@@ -2910,8 +2918,8 @@
       }
     },
     "scrap": {
-      "title": "Material Scrap",
-      "subtitle": "Process scrap for defective/expired materials.",
+      "title": "Scrap Confirmation",
+      "subtitle": "Final write-off of quarantined scrap warehouse materials.",
       "transNo": "Transaction No.",
       "partCode": "Part Code",
       "partName": "Part Name",
@@ -2919,7 +2927,7 @@
       "reason": "Reason",
       "reasonPlaceholder": "Enter scrap reason",
       "transDate": "Trans Date",
-      "register": "Register Scrap",
+      "register": "Confirm Scrap",
       "warehouse": "Warehouse",
       "matUid": "Material Serial",
       "matUidPlaceholder": "Enter Material Serial",
@@ -2931,7 +2939,33 @@
       "stockSelect": "Select Stock (Part-LOT)",
       "availableQty": "Available Qty",
       "max": "Max",
-      "noStock": "No scrapable stock available in the selected warehouse."
+      "noStock": "No scrapable stock available in the selected warehouse.",
+      "selectWarehouseFirst": "Please select a scrap warehouse first.",
+      "notFound": "LOT not found or no available qty in this warehouse: {{matUid}}",
+      "scanError": "Failed to look up stock.",
+      "scanHint": "Scan the LOT barcode in the scrap warehouse.",
+      "sessionHistory": "Today's Registration History",
+      "noHistory": "No history"
+    },
+    "transfer": {
+      "title": "Stock Transfer",
+      "subtitle": "Transfer material stock between warehouses.",
+      "panelTitle": "Stock Transfer",
+      "transNo": "Transfer No.",
+      "transDate": "Transfer Date",
+      "qty": "Qty",
+      "fromWarehouse": "From Warehouse",
+      "toWarehouse": "To Warehouse",
+      "availableQty": "Available Qty",
+      "execute": "Execute Transfer",
+      "searchPlaceholder": "Search transfer no., LOT, part name...",
+      "notFound": "Stock not found or no available qty: {{matUid}}",
+      "scanError": "Failed to look up stock.",
+      "scanHint": "Scan the LOT barcode of the material to transfer.",
+      "selectDest": "Select destination",
+      "sameWarehouseError": "Source and destination warehouse are the same.",
+      "sessionHistory": "Today's Transfer History",
+      "noHistory": "No transfer history"
     },
     "adjustment": {
       "title": "Stock Adjustment",
@@ -6494,30 +6528,163 @@
     }
   },
   "comCode": {
-    "MOLD_LIFE_STATUS": { "NORMAL": "Good", "WARNING": "Warning", "REPLACE": "Replace", "MAINT": "Maintenance" },
-    "REPAIR_STATUS": { "RECEIVED": "Received", "IN_REPAIR": "In Repair", "COMPLETED": "Completed" },
-    "CUSTOMER_PO_STATUS": { "RECEIVED": "Received", "CONFIRMED": "Confirmed", "IN_PRODUCTION": "In Production", "PARTIAL_SHIP": "Partial Shipped", "SHIPPED": "Shipped", "CLOSED": "Closed" },
-    "CUSTOMER_PO_PROGRESS": { "IN_PROGRESS": "In Progress", "PARTIAL_SHIP": "Partial Shipped", "COMPLETED": "Completed", "OVERDUE": "Overdue" },
-    "ARRIVAL_PO_TYPE": { "RM": "Raw Material", "CM": "Consumable" },
-    "ARRIVAL_RESULT_STATUS": { "ARRIVED": "Arrived", "IQC_PROGRESS": "IQC In Progress", "IQC_DONE": "IQC Done", "RECEIVED": "Received", "CANCELED": "Canceled" },
-    "AUDIT_RESULT": { "PASS": "Pass", "MINOR": "Minor NC", "MAJOR": "Major NC", "OFI": "OFI" },
-    "AUDIT_STATUS": { "PLANNED": "Planned", "IN_PROGRESS": "In Progress", "COMPLETED": "Completed", "CLOSED": "Closed" },
-    "AUDIT_TYPE": { "SYSTEM": "System Audit", "PROCESS": "Process Audit", "PRODUCT": "Product Audit", "LAYERED": "Layered Audit" },
-    "FAI_RESULT": { "PASS": "Pass", "FAIL": "Fail", "CONDITIONAL": "Conditional" },
-    "FAI_STATUS": { "REQUESTED": "Requested", "SAMPLING": "Sampling", "INSPECTING": "Inspecting", "PASS": "Pass", "FAIL": "Fail", "CONDITIONAL": "Conditional Pass" },
-    "FAI_TRIGGER_TYPE": { "NEW_PART": "New Part", "ECN": "Design Change", "PROCESS_CHANGE": "Process Change", "LONG_STOP": "Long Stop", "EQUIP_CHANGE": "Equipment Change" },
-    "GAUGE_STATUS": { "ACTIVE": "Active", "EXPIRED": "Calibration Expired", "SCRAPPED": "Scrapped" },
-    "GAUGE_TYPE": { "CALIPER": "Caliper", "MICROMETER": "Micrometer", "DIAL_GAUGE": "Dial Gauge", "HEIGHT_GAUGE": "Height Gauge", "PIN_GAUGE": "Pin Gauge", "RING_GAUGE": "Ring Gauge", "FORCE_GAUGE": "Force Gauge", "OTHER": "Other" },
-    "IQC_INSPECT_TYPE": { "INITIAL": "Initial", "RETEST": "Retest" },
-    "PPAP_REASON": { "NEW_PART": "New Part", "ECN": "Design Change", "TOOLING": "Tooling Change", "CORRECTION": "Correction", "OTHER": "Other" },
-    "PPAP_STATUS": { "DRAFT": "Draft", "SUBMITTED": "Submitted", "APPROVED": "Approved", "REJECTED": "Rejected", "INTERIM": "Interim" },
-    "REWORK_INSPECT_RESULT": { "PASS": "Pass", "FAIL": "Fail", "SCRAP": "Scrap" },
-    "REWORK_PROCESS_STATUS": { "WAITING": "Waiting", "IN_PROGRESS": "In Progress", "COMPLETED": "Completed", "SKIPPED": "Skipped" },
-    "REWORK_STATUS": { "REGISTERED": "Registered", "QC_PENDING": "QC Approval Pending", "QC_APPROVED": "QC Approved", "QC_REJECTED": "QC Rejected", "PROD_PENDING": "Prod Approval Pending", "APPROVED": "Approved", "PROD_REJECTED": "Prod Rejected", "IN_PROGRESS": "In Progress", "INSPECT_PENDING": "Reinspection Pending", "PASS": "Pass", "FAIL": "Fail", "SCRAP": "Scrap" },
-    "SPC_CHART_TYPE": { "XBAR_R": "Xbar-R Chart", "XBAR_S": "Xbar-S Chart", "P": "P Chart", "NP": "NP Chart", "C": "C Chart", "U": "U Chart" },
-    "SPC_STATUS": { "ACTIVE": "Active", "INACTIVE": "Inactive" },
-    "TRAINING_STATUS": { "PLANNED": "Planned", "IN_PROGRESS": "In Progress", "COMPLETED": "Completed", "CANCELLED": "Cancelled" },
-    "TRAINING_TYPE": { "OJT": "OJT", "CLASSROOM": "Classroom", "ONLINE": "Online", "EXTERNAL": "External", "SAFETY": "Safety" },
+    "MOLD_LIFE_STATUS": {
+      "NORMAL": "Good",
+      "WARNING": "Warning",
+      "REPLACE": "Replace",
+      "MAINT": "Maintenance"
+    },
+    "REPAIR_STATUS": {
+      "RECEIVED": "Received",
+      "IN_REPAIR": "In Repair",
+      "COMPLETED": "Completed"
+    },
+    "CUSTOMER_PO_STATUS": {
+      "RECEIVED": "Received",
+      "CONFIRMED": "Confirmed",
+      "IN_PRODUCTION": "In Production",
+      "PARTIAL_SHIP": "Partial Shipped",
+      "SHIPPED": "Shipped",
+      "CLOSED": "Closed"
+    },
+    "CUSTOMER_PO_PROGRESS": {
+      "IN_PROGRESS": "In Progress",
+      "PARTIAL_SHIP": "Partial Shipped",
+      "COMPLETED": "Completed",
+      "OVERDUE": "Overdue"
+    },
+    "ARRIVAL_PO_TYPE": {
+      "RM": "Raw Material",
+      "CM": "Consumable"
+    },
+    "ARRIVAL_RESULT_STATUS": {
+      "ARRIVED": "Arrived",
+      "IQC_PROGRESS": "IQC In Progress",
+      "IQC_DONE": "IQC Done",
+      "RECEIVED": "Received",
+      "CANCELED": "Canceled"
+    },
+    "AUDIT_RESULT": {
+      "PASS": "Pass",
+      "MINOR": "Minor NC",
+      "MAJOR": "Major NC",
+      "OFI": "OFI"
+    },
+    "AUDIT_STATUS": {
+      "PLANNED": "Planned",
+      "IN_PROGRESS": "In Progress",
+      "COMPLETED": "Completed",
+      "CLOSED": "Closed"
+    },
+    "AUDIT_TYPE": {
+      "SYSTEM": "System Audit",
+      "PROCESS": "Process Audit",
+      "PRODUCT": "Product Audit",
+      "LAYERED": "Layered Audit"
+    },
+    "FAI_RESULT": {
+      "PASS": "Pass",
+      "FAIL": "Fail",
+      "CONDITIONAL": "Conditional"
+    },
+    "FAI_STATUS": {
+      "REQUESTED": "Requested",
+      "SAMPLING": "Sampling",
+      "INSPECTING": "Inspecting",
+      "PASS": "Pass",
+      "FAIL": "Fail",
+      "CONDITIONAL": "Conditional Pass"
+    },
+    "FAI_TRIGGER_TYPE": {
+      "NEW_PART": "New Part",
+      "ECN": "Design Change",
+      "PROCESS_CHANGE": "Process Change",
+      "LONG_STOP": "Long Stop",
+      "EQUIP_CHANGE": "Equipment Change"
+    },
+    "GAUGE_STATUS": {
+      "ACTIVE": "Active",
+      "EXPIRED": "Calibration Expired",
+      "SCRAPPED": "Scrapped"
+    },
+    "GAUGE_TYPE": {
+      "CALIPER": "Caliper",
+      "MICROMETER": "Micrometer",
+      "DIAL_GAUGE": "Dial Gauge",
+      "HEIGHT_GAUGE": "Height Gauge",
+      "PIN_GAUGE": "Pin Gauge",
+      "RING_GAUGE": "Ring Gauge",
+      "FORCE_GAUGE": "Force Gauge",
+      "OTHER": "Other"
+    },
+    "IQC_INSPECT_TYPE": {
+      "INITIAL": "Initial",
+      "RETEST": "Retest"
+    },
+    "PPAP_REASON": {
+      "NEW_PART": "New Part",
+      "ECN": "Design Change",
+      "TOOLING": "Tooling Change",
+      "CORRECTION": "Correction",
+      "OTHER": "Other"
+    },
+    "PPAP_STATUS": {
+      "DRAFT": "Draft",
+      "SUBMITTED": "Submitted",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "INTERIM": "Interim"
+    },
+    "REWORK_INSPECT_RESULT": {
+      "PASS": "Pass",
+      "FAIL": "Fail",
+      "SCRAP": "Scrap"
+    },
+    "REWORK_PROCESS_STATUS": {
+      "WAITING": "Waiting",
+      "IN_PROGRESS": "In Progress",
+      "COMPLETED": "Completed",
+      "SKIPPED": "Skipped"
+    },
+    "REWORK_STATUS": {
+      "REGISTERED": "Registered",
+      "QC_PENDING": "QC Approval Pending",
+      "QC_APPROVED": "QC Approved",
+      "QC_REJECTED": "QC Rejected",
+      "PROD_PENDING": "Prod Approval Pending",
+      "APPROVED": "Approved",
+      "PROD_REJECTED": "Prod Rejected",
+      "IN_PROGRESS": "In Progress",
+      "INSPECT_PENDING": "Reinspection Pending",
+      "PASS": "Pass",
+      "FAIL": "Fail",
+      "SCRAP": "Scrap"
+    },
+    "SPC_CHART_TYPE": {
+      "XBAR_R": "Xbar-R Chart",
+      "XBAR_S": "Xbar-S Chart",
+      "P": "P Chart",
+      "NP": "NP Chart",
+      "C": "C Chart",
+      "U": "U Chart"
+    },
+    "SPC_STATUS": {
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive"
+    },
+    "TRAINING_STATUS": {
+      "PLANNED": "Planned",
+      "IN_PROGRESS": "In Progress",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "TRAINING_TYPE": {
+      "OJT": "OJT",
+      "CLASSROOM": "Classroom",
+      "ONLINE": "Online",
+      "EXTERNAL": "External",
+      "SAFETY": "Safety"
+    },
     "AQL_INSP_LEVEL": {
       "S-1": "Special Level S-1",
       "S-2": "Special Level S-2",
@@ -7229,6 +7396,20 @@
       "REVIEW": "Review",
       "APPROVED": "Approved",
       "OBSOLETE": "Obsolete"
+    },
+    "FG_LABEL_STATUS": {
+      "ISSUED": "Issued",
+      "VISUAL_PASS": "Visual Pass",
+      "VISUAL_FAIL": "Visual Fail",
+      "PACKED": "Packed",
+      "SHIPPED": "Shipped",
+      "VOIDED": "Voided"
+    },
+    "SG_LABEL_STATUS": {
+      "IN_STOCK": "In Stock",
+      "MOUNTED": "Mounted",
+      "CONSUMED": "Consumed",
+      "DEFECT": "Defect"
     }
   },
   "comCodeGroup": {
@@ -7977,6 +8158,7 @@
       "concession": "Concession",
       "receive": "Receive",
       "request": "Request",
+      "requestOther": "Other Issue Request",
       "issue": "Issue",
       "issueOther": "Other Issue"
     },

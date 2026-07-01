@@ -82,6 +82,10 @@ interface JobOrderListResponse {
   total?: number;
 }
 
+export type JobOrderTreeListRow = ProductionJobOrderRow & {
+  _depth?: number;
+};
+
 /** 품목 검색 응답 */
 interface PartSearchResponse {
   data: Array<{
@@ -94,6 +98,35 @@ interface PartSearchResponse {
     minPackQty?: number;
   }>;
 }
+
+const normalizeJobOrderSearchText = (value?: string | null) => String(value ?? '').trim().toUpperCase();
+
+const filterJobOrderTree = (
+  nodes: ProductionJobOrderRow[],
+  predicate: (row: ProductionJobOrderRow) => boolean,
+  options: { includeAncestors: boolean } = { includeAncestors: true },
+): ProductionJobOrderRow[] =>
+  nodes.flatMap((node) => {
+    const matchesSelf = predicate(node);
+    const children = node.children ?? [];
+    const filteredChildren = filterJobOrderTree(children, predicate, options);
+
+    if (matchesSelf) {
+      return [{ ...node, children: filteredChildren }];
+    }
+
+    if (filteredChildren.length > 0) {
+      return options.includeAncestors ? [{ ...node, children: filteredChildren }] : filteredChildren;
+    }
+
+    return [];
+  });
+
+const flattenJobOrderTree = (nodes: ProductionJobOrderRow[], depth = 0): JobOrderTreeListRow[] =>
+  nodes.flatMap((node) => [
+    { ...node, _depth: depth },
+    ...flattenJobOrderTree(node.children ?? [], depth + 1),
+  ]);
 
 export function useIssueRequestData() {
   const [statusFilter, setStatusFilter] = useState('');
@@ -116,10 +149,11 @@ export function useIssueRequestData() {
     { staleTime: 30_000 },
   );
 
-  // 작업지시 조회 필터 (좌측 패널) - 작업지시번호 / 모델 / 상태
+  // 작업지시 조회 필터 (좌측 패널) - 작업지시번호 / 모델 / 상태 / 품목유형
   const [woOrderNo, setWoOrderNo] = useState('');
   const [woModel, setWoModel] = useState('');
-  const [woStatus, setWoStatus] = useState('');
+  const [woStatus, setWoStatus] = useState('WAITING');
+  const [woItemType, setWoItemType] = useState('');
   // 텍스트 입력 디바운스 (키 입력마다 요청 방지)
   const [appliedWo, setAppliedWo] = useState({ orderNo: '', model: '' });
   useEffect(() => {
@@ -127,18 +161,10 @@ export function useIssueRequestData() {
     return () => clearTimeout(id);
   }, [woOrderNo, woModel]);
 
-  const jobOrderQuery = useMemo(() => {
-    const params = new URLSearchParams({ limit: '100' });
-    if (appliedWo.orderNo.trim()) params.set('orderNo', appliedWo.orderNo.trim());
-    if (appliedWo.model.trim()) params.set('search', appliedWo.model.trim());
-    if (woStatus) params.set('status', woStatus);
-    return params.toString();
-  }, [appliedWo, woStatus]);
-
-  // 작업지시 목록 조회 (좌측 패널 + 드롭다운 옵션용)
+  // 작업지시 관계 조회 (완제품-반제품 parentOrderNo 트리)
   const { data: jobOrderData, isLoading: isLoadingJobOrders } = useApiQuery<JobOrderListResponse>(
-    ['job-orders', 'options', jobOrderQuery],
-    `/production/job-orders?${jobOrderQuery}`,
+    ['job-orders', 'tree', 'material-request'],
+    '/production/job-orders/tree',
     { staleTime: 60_000 },
   );
 
@@ -149,8 +175,11 @@ export function useIssueRequestData() {
     return Array.isArray(raw) ? raw : (raw as IssueRequestListResponse)?.data ?? [];
   }, [requestData]);
 
-  // 프론트 필터링 (API에서 이미 필터링되지만 혹시 안될 때 대비)
-  const filteredRequests = useMemo(() => allRequests, [allRequests]);
+  // 작업지시 출고요청 화면에서는 작업지시 없는 기타출고요청(MANUAL)을 제외한다.
+  const filteredRequests = useMemo(
+    () => allRequests.filter((request) => request.issueType !== 'MANUAL'),
+    [allRequests],
+  );
 
   // 통계 계산
   const stats = useMemo(() => ({
@@ -214,11 +243,30 @@ export function useIssueRequestData() {
     return Array.isArray(raw) ? raw : raw?.data ?? [];
   }, []);
 
-  // 작업지시 목록 (서버에서 orderNo/model/status 필터 적용)
-  const jobOrders = useMemo<ProductionJobOrderRow[]>(() => {
+  const jobOrderTree = useMemo<ProductionJobOrderRow[]>(() => {
     const raw = jobOrderData?.data;
     return Array.isArray(raw) ? raw : (raw as JobOrderListResponse)?.data ?? [];
   }, [jobOrderData]);
+
+  // 작업지시 목록 (트리 관계를 유지한 채 orderNo/model/status/itemType 필터 적용)
+  const jobOrders = useMemo<JobOrderTreeListRow[]>(() => {
+    const orderNoFilter = normalizeJobOrderSearchText(appliedWo.orderNo);
+    const modelFilter = normalizeJobOrderSearchText(appliedWo.model);
+
+    const filteredTree = filterJobOrderTree(jobOrderTree, (row) => {
+      const itemCode = row.itemCode ?? row.part?.itemCode ?? '';
+      const itemName = row.part?.itemName ?? '';
+      const matchesOrderNo = !orderNoFilter || normalizeJobOrderSearchText(row.orderNo).includes(orderNoFilter);
+      const matchesModel = !modelFilter
+        || normalizeJobOrderSearchText(itemCode).includes(modelFilter)
+        || normalizeJobOrderSearchText(itemName).includes(modelFilter);
+      const matchesStatus = !woStatus || String(row.status) === woStatus;
+      const matchesItemType = !woItemType || row.part?.itemType === woItemType;
+      return matchesOrderNo && matchesModel && matchesStatus && matchesItemType;
+    }, { includeAncestors: !woItemType });
+
+    return flattenJobOrderTree(filteredTree);
+  }, [jobOrderTree, appliedWo, woStatus, woItemType]);
 
   // 작업지시 드롭다운 옵션
   const workOrderOptions = useMemo(() => [
@@ -247,6 +295,8 @@ export function useIssueRequestData() {
     setWoModel,
     woStatus,
     setWoStatus,
+    woItemType,
+    setWoItemType,
     workOrderOptions,
     stockItems: [] as StockItem[],
     isLoading,

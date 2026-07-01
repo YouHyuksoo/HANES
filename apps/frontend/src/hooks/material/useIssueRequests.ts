@@ -32,6 +32,7 @@ export interface IssueRequestRecord {
   items: IssueRequestItem[];
   itemCount: number;
   totalQty: number;
+  issueType?: string;
   status: string;
   requester: string;
   rejectReason?: string;
@@ -57,29 +58,39 @@ export interface IssueRequestStats {
   rejected: number;
 }
 
+interface UseIssueRequestsOptions {
+  /** 서버에서 특정 출고요청 유형만 조회한다. 예: MANUAL */
+  issueType?: string;
+  /** 서버 필터로 표현하기 어려운 제외 조건은 목록 추출 후 보정한다. */
+  excludeIssueTypes?: string[];
+}
+
 /**
  * 출고요청 관리 훅
  * - 목록 조회 (필터/페이지네이션)
  * - 승인/반려 처리
  * - 상태별 통계 계산
  */
-export function useIssueRequests() {
+export function useIssueRequests(options: UseIssueRequestsOptions = {}) {
+  const { issueType, excludeIssueTypes = [] } = options;
   const [statusFilter, setStatusFilter] = useState('');
   const [searchText, setSearchText] = useState('');
   const [page, setPage] = useState(1);
   const invalidate = useInvalidateQueries();
+  const excludeIssueTypeSet = useMemo(() => new Set(excludeIssueTypes), [excludeIssueTypes]);
 
   // 쿼리 파라미터 구성
   const queryParams = useMemo(() => {
     const params = new URLSearchParams({ page: String(page), limit: '20' });
     if (statusFilter) params.set('status', statusFilter);
     if (searchText) params.set('search', searchText);
+    if (issueType) params.set('issueType', issueType);
     return params.toString();
-  }, [page, statusFilter, searchText]);
+  }, [page, statusFilter, searchText, issueType]);
 
   // 목록 조회
   const { data, isLoading, refetch } = useApiQuery<IssueRequestListResponse>(
-    ['issue-requests', String(page), statusFilter, searchText],
+    ['issue-requests', String(page), statusFilter, searchText, issueType ?? '', excludeIssueTypes.join(',')],
     `/material/issue-requests?${queryParams}`,
     { staleTime: 30_000 },
   );
@@ -88,8 +99,10 @@ export function useIssueRequests() {
   const records = useMemo(() => {
     const raw = data?.data;
     if (!raw) return [];
-    return Array.isArray(raw) ? raw : (raw as IssueRequestListResponse)?.data ?? [];
-  }, [data]);
+    const list = Array.isArray(raw) ? raw : (raw as IssueRequestListResponse)?.data ?? [];
+    if (excludeIssueTypeSet.size === 0) return list;
+    return list.filter((record) => !excludeIssueTypeSet.has(record.issueType ?? ''));
+  }, [data, excludeIssueTypeSet]);
 
   // 통계 계산 (전체 데이터 기준)
   const stats = useMemo<IssueRequestStats>(() => ({

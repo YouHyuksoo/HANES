@@ -12,7 +12,7 @@
  */
 import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, ClipboardList, AlertTriangle, Loader2, Plus, PackageCheck, X, ListChecks, FilePlus2, ChevronLeft, Info } from 'lucide-react';
+import { Search, ClipboardList, AlertTriangle, Loader2, Plus, PackageCheck, X, ListChecks, FilePlus2, ChevronLeft, ChevronDown, ChevronRight, Info, CornerDownRight, CalendarDays } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, ComCodeBadge } from '@/components/ui';
 import ComCodeSelect from '@/components/shared/ComCodeSelect';
 import ProcessSelect from '@/components/shared/ProcessSelect';
@@ -24,9 +24,10 @@ import type { ProductionJobOrderRow } from '@harness/shared';
 import type { IssueRequest, RequestItem, StockItem } from '@/hooks/material/useIssueRequestData';
 
 type RightMode = 'history' | 'create';
+type JobOrderListRow = ProductionJobOrderRow & { _depth?: number };
 
 interface WorkOrderRequestPanelProps {
-  jobOrders: ProductionJobOrderRow[];
+  jobOrders: JobOrderListRow[];
   isLoadingJobOrders?: boolean;
   loadBomRequestItems: (orderNo: string) => Promise<RequestItem[]>;
   loadRequestsByOrder: (orderNo: string) => Promise<IssueRequest[]>;
@@ -39,6 +40,13 @@ interface WorkOrderRequestPanelProps {
   onWoModelChange: (v: string) => void;
   woStatus: string;
   onWoStatusChange: (v: string) => void;
+  woItemType: string;
+  onWoItemTypeChange: (v: string) => void;
+  /** 최근 출고요청 조회 필터 */
+  requestSearchText: string;
+  onRequestSearchTextChange: (v: string) => void;
+  requestStatusFilter: string;
+  onRequestStatusFilterChange: (v: string) => void;
   /** 미선택 시 우측에 표시할 최근 출고요청 목록 */
   recentRequests: IssueRequest[];
   isLoadingRequests?: boolean;
@@ -50,6 +58,17 @@ const toNum = (v: number | null | undefined) => Number(v ?? 0);
 /** 실출고수량 = ceil(요청/포장단위)*포장단위. 포장단위<=0이면 요청 그대로 */
 const calcIssueQty = (requestQty: number, minPackQty: number) =>
   minPackQty > 0 && requestQty > 0 ? Math.ceil(requestQty / minPackQty) * minPackQty : requestQty;
+
+const itemTypeBadgeClass: Record<string, string> = {
+  FINISHED: 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-800',
+  SEMI_PRODUCT: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-800',
+};
+
+const formatJobOrderPlanDate = (value?: string | Date | null) => {
+  if (!value) return '-';
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+};
 
 export default function WorkOrderRequestPanel({
   jobOrders,
@@ -63,6 +82,12 @@ export default function WorkOrderRequestPanel({
   onWoModelChange,
   woStatus,
   onWoStatusChange,
+  woItemType,
+  onWoItemTypeChange,
+  requestSearchText,
+  onRequestSearchTextChange,
+  requestStatusFilter,
+  onRequestStatusFilterChange,
   recentRequests,
   isLoadingRequests,
   onViewRequestDetail,
@@ -86,6 +111,15 @@ export default function WorkOrderRequestPanel({
   const [isLoadingBom, setIsLoadingBom] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [collapsedOrderNos, setCollapsedOrderNos] = useState<Set<string>>(() => new Set());
+
+  const resetCreateState = useCallback(() => {
+    setErrorMessage('');
+    setDetailItems([]);
+    setManualQuery('');
+    setManualResults([]);
+    setSelectedProcessCode('');
+  }, []);
 
   const reasonOptions = [
     { value: '생산투입', label: t('material.request.reasonProduction') },
@@ -94,17 +128,73 @@ export default function WorkOrderRequestPanel({
     { value: '기타', label: t('material.request.reasonOther') },
   ];
 
+  const itemTypeFilterOptions = [
+    { value: '', label: t('common.all') },
+    { value: 'FINISHED', label: t('production.order.itemTypeFG', '완제품') },
+    { value: 'SEMI_PRODUCT', label: t('production.order.itemTypeWIP', '반제품') },
+  ];
+
+  const requestStatusFilterOptions = [
+    { value: '', label: t('common.all') },
+    { value: 'REQUESTED', label: t('material.request.status.requested', '대기') },
+    { value: 'APPROVED', label: t('material.request.status.approved', '승인') },
+    { value: 'PARTIAL', label: t('material.request.status.partial', '부분출고') },
+    { value: 'COMPLETED', label: t('material.request.status.completed', '완료') },
+    { value: 'REJECTED', label: t('material.request.status.rejected', '반려') },
+  ];
+
   const selectedOrder = useMemo(
     () => jobOrders.find((j) => j.orderNo === selectedOrderNo) ?? null,
     [jobOrders, selectedOrderNo],
   );
 
-  const hasFilter = !!(woOrderNo || woModel || woStatus);
+  const visibleJobOrders = useMemo(() => {
+    const hiddenAncestorDepths: number[] = [];
+    return jobOrders.filter((order) => {
+      const depth = order._depth ?? 0;
+      while (hiddenAncestorDepths.length > 0 && depth <= hiddenAncestorDepths[hiddenAncestorDepths.length - 1]) {
+        hiddenAncestorDepths.pop();
+      }
+      if (hiddenAncestorDepths.length > 0) return false;
+      if ((order.children?.length ?? 0) > 0 && collapsedOrderNos.has(order.orderNo)) {
+        hiddenAncestorDepths.push(depth);
+      }
+      return true;
+    });
+  }, [jobOrders, collapsedOrderNos]);
+
+  const hasFilter = !!(woOrderNo || woModel || woStatus || woItemType);
   const clearFilters = () => {
     onWoOrderNoChange('');
     onWoModelChange('');
-    onWoStatusChange('');
+    onWoStatusChange('WAITING');
+    onWoItemTypeChange('');
   };
+
+  const toggleOrderCollapse = useCallback((orderNo: string) => {
+    setCollapsedOrderNos((prev) => {
+      const next = new Set(prev);
+      if (next.has(orderNo)) {
+        next.delete(orderNo);
+      } else {
+        next.add(orderNo);
+      }
+      return next;
+    });
+  }, []);
+
+  const getJobOrderItemTypeMeta = useCallback((itemType?: string | null) => {
+    if (!itemType) return null;
+    const label = itemType === 'FINISHED'
+      ? t('production.order.itemTypeFG', '완제품')
+      : itemType === 'SEMI_PRODUCT'
+        ? t('production.order.itemTypeWIP', '반제품')
+        : itemType;
+    return {
+      label,
+      className: itemTypeBadgeClass[itemType] ?? 'bg-slate-50 text-slate-600 ring-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700',
+    };
+  }, [t]);
 
   // 선택 작업지시의 기존 출고요청 내역 로드
   const loadHistory = useCallback(async (orderNo: string) => {
@@ -118,20 +208,18 @@ export default function WorkOrderRequestPanel({
     }
   }, [loadRequestsByOrder]);
 
-  const handleSelectOrder = useCallback((order: ProductionJobOrderRow) => {
+  const handleSelectOrder = useCallback((order: JobOrderListRow) => {
     setSelectedOrderNo(order.orderNo);
     setMode('history');
-    setErrorMessage('');
-    setDetailItems([]);
+    resetCreateState();
     loadHistory(order.orderNo);
-  }, [loadHistory]);
+  }, [loadHistory, resetCreateState]);
 
   // 신규 작성 모드 진입 - BOM 기준 출고 예정 품목 계산
   const enterCreateMode = useCallback(async () => {
     if (!selectedOrderNo) return;
     setMode('create');
-    setErrorMessage('');
-    setDetailItems([]);
+    resetCreateState();
     setIsLoadingBom(true);
     try {
       const items = await loadBomRequestItems(selectedOrderNo);
@@ -145,7 +233,7 @@ export default function WorkOrderRequestPanel({
     } finally {
       setIsLoadingBom(false);
     }
-  }, [selectedOrderNo, loadBomRequestItems, t]);
+  }, [selectedOrderNo, loadBomRequestItems, resetCreateState, t]);
 
   const updateQty = (itemCode: string, qty: number) => {
     setDetailItems((prev) =>
@@ -206,8 +294,7 @@ export default function WorkOrderRequestPanel({
       await api.post('/material/issue-requests', body);
       invalidate(['issue-request-data']);
       invalidate(['issue-requests']);
-      // 등록 후 내역 모드로 복귀 + 해당 작업지시 내역 갱신
-      setDetailItems([]);
+      resetCreateState();
       setMode('history');
       await loadHistory(selectedOrderNo);
     } catch (err: unknown) {
@@ -259,6 +346,15 @@ export default function WorkOrderRequestPanel({
               fullWidth
             />
           </div>
+          <div className="w-40 flex-shrink-0">
+            <Select
+              options={itemTypeFilterOptions}
+              value={woItemType}
+              onChange={onWoItemTypeChange}
+              placeholder={t('common.itemType', '품목유형')}
+              fullWidth
+            />
+          </div>
           {hasFilter && (
             <Button variant="secondary" size="sm" onClick={clearFilters} className="flex-shrink-0">
               <X className="w-4 h-4 mr-1" /> {t('common.reset')}
@@ -274,7 +370,7 @@ export default function WorkOrderRequestPanel({
         <div className="p-3 border-b border-border">
           <h2 className="text-sm font-semibold text-text flex items-center gap-1.5">
             {t('material.request.workOrderListTitle')}
-            <span className="text-xs font-normal text-text-muted">({jobOrders.length})</span>
+            <span className="text-xs font-normal text-text-muted">({visibleJobOrders.length}/{jobOrders.length})</span>
           </h2>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto">
@@ -288,13 +384,25 @@ export default function WorkOrderRequestPanel({
             </div>
           ) : (
             <ul className="divide-y divide-border">
-              {jobOrders.map((order) => {
+              {visibleJobOrders.map((order) => {
                 const active = order.orderNo === selectedOrderNo;
+                const depth = order._depth ?? 0;
+                const childCount = order.children?.length ?? 0;
+                const hasChildren = childCount > 0;
+                const collapsed = collapsedOrderNos.has(order.orderNo);
+                const itemTypeMeta = getJobOrderItemTypeMeta(order.part?.itemType);
                 return (
                   <li key={order.orderNo}>
-                    <button
-                      type="button"
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleSelectOrder(order)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          handleSelectOrder(order);
+                        }
+                      }}
                       className={`w-full text-left px-3 py-2.5 transition-colors border-l-2 ${
                         active
                           ? 'border-l-primary bg-primary/5'
@@ -302,21 +410,77 @@ export default function WorkOrderRequestPanel({
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className={`font-mono text-xs font-semibold ${active ? 'text-primary' : 'text-text'}`}>
-                          {order.orderNo}
-                        </span>
+                        <div
+                          className="flex min-w-0 items-center gap-1.5"
+                          style={{ paddingLeft: `${depth * 16}px` }}
+                        >
+                          {hasChildren ? (
+                            <button
+                              type="button"
+                              aria-label={collapsed ? t('common.expand', '펼치기') : t('common.collapse', '접기')}
+                              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-muted hover:bg-background hover:text-text"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                toggleOrderCollapse(order.orderNo);
+                              }}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  toggleOrderCollapse(order.orderNo);
+                                }
+                              }}
+                            >
+                              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </button>
+                          ) : depth > 0 ? (
+                            <CornerDownRight className="h-3.5 w-5 shrink-0 text-text-muted" />
+                          ) : (
+                            <span className="h-5 w-5 shrink-0" />
+                          )}
+                          <span className={`truncate font-mono text-xs font-semibold ${active ? 'text-primary' : 'text-text'}`}>
+                            {order.orderNo}
+                          </span>
+                          {hasChildren && (
+                            <span className="shrink-0 text-[10px] text-text-muted">
+                              {childCount}
+                            </span>
+                          )}
+                          {itemTypeMeta && (
+                            <span
+                              title={t('common.itemType', '품목유형')}
+                              className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none ring-1 ${itemTypeMeta.className}`}
+                            >
+                              {itemTypeMeta.label}
+                            </span>
+                          )}
+                        </div>
                         <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={String(order.status)} />
                       </div>
-                      <div className="mt-1 text-sm text-text truncate">
+                      <div
+                        className="mt-1 text-sm text-text truncate"
+                        style={{ paddingLeft: `${depth * 16}px` }}
+                      >
                         {order.part?.itemName ?? order.itemCode}
                       </div>
-                      <div className="mt-0.5 flex items-center justify-between text-xs text-text-muted">
+                      <div
+                        className="mt-0.5 flex items-center justify-between gap-2 text-xs text-text-muted"
+                        style={{ paddingLeft: `${depth * 16}px` }}
+                      >
                         <span className="font-mono">{order.itemCode}</span>
                         <span>
                           {t('material.request.planQtyShort')} {toNum(order.planQty).toLocaleString()}
                         </span>
                       </div>
-                    </button>
+                      <div
+                        className="mt-0.5 flex items-center gap-1 text-xs text-text-muted"
+                        style={{ paddingLeft: `${depth * 16}px` }}
+                      >
+                        <CalendarDays className="h-3 w-3 shrink-0" />
+                        <span>{t('production.order.orderDate', '작업지시일자')}</span>
+                        <span className="font-mono text-text">{formatJobOrderPlanDate(order.planDate)}</span>
+                      </div>
+                    </div>
                   </li>
                 );
               })}
@@ -330,10 +494,30 @@ export default function WorkOrderRequestPanel({
         {!selectedOrder ? (
           /* 미선택: 최근 출고요청 목록 */
           <CardContent className="h-full p-4 flex flex-col min-h-0">
-            <h2 className="text-sm font-semibold text-text mb-3 flex items-center gap-1.5">
-              <PackageCheck className="w-4 h-4 text-primary" />
-              {t('material.request.recentRequestsTitle')}
-            </h2>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold text-text flex items-center gap-1.5">
+                <PackageCheck className="w-4 h-4 text-primary" />
+                {t('material.request.recentRequestsTitle')}
+              </h2>
+              <div className="flex items-center gap-2">
+                <div className="w-72">
+                  <Input
+                    value={requestSearchText}
+                    onChange={(e) => onRequestSearchTextChange(e.target.value)}
+                    placeholder={t('material.request.searchRequestPlaceholder', '요청번호 / 품목 / 비고 검색')}
+                    fullWidth
+                  />
+                </div>
+                <div className="w-32">
+                  <Select
+                    options={requestStatusFilterOptions}
+                    value={requestStatusFilter}
+                    onChange={onRequestStatusFilterChange}
+                    fullWidth
+                  />
+                </div>
+              </div>
+            </div>
             <div className="flex-1 min-h-0">
               <RequestTable
                 data={recentRequests}
@@ -346,23 +530,25 @@ export default function WorkOrderRequestPanel({
           <div className="h-full flex flex-col min-h-0">
             {/* 작업지시 헤더 + 모드 전환 */}
             <div className="p-3 border-b border-border flex items-center justify-between gap-3 flex-wrap">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm font-semibold text-primary">{selectedOrder.orderNo}</span>
-                  <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={String(selectedOrder.status)} />
+              {selectedOrder ? (
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm font-semibold text-primary">{selectedOrder.orderNo}</span>
+                    <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={String(selectedOrder.status)} />
+                  </div>
+                  <div className="mt-0.5 text-sm text-text truncate">
+                    {selectedOrder.part?.itemName ?? selectedOrder.itemCode}
+                    <span className="ml-2 text-xs text-text-muted font-mono">{selectedOrder.itemCode}</span>
+                  </div>
                 </div>
-                <div className="mt-0.5 text-sm text-text truncate">
-                  {selectedOrder.part?.itemName ?? selectedOrder.itemCode}
-                  <span className="ml-2 text-xs text-text-muted font-mono">{selectedOrder.itemCode}</span>
-                </div>
-              </div>
+              ) : null}
               {mode === 'history' ? (
                 <Button size="sm" onClick={enterCreateMode}>
                   <FilePlus2 className="w-4 h-4 mr-1" /> {t('material.request.newRequest')}
                 </Button>
               ) : (
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => { setMode('history'); setErrorMessage(''); }}>
+                  <Button size="sm" variant="secondary" onClick={() => { setMode('history'); resetCreateState(); }}>
                     <ChevronLeft className="w-4 h-4 mr-1" /> {t('material.request.backToHistory')}
                   </Button>
                   <div className="w-40">

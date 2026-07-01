@@ -12,9 +12,7 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ClipboardList, Plus } from 'lucide-react';
-import { Button } from '@/components/ui';
-import RequestModal from '@/components/material/RequestModal';
+import { ClipboardList } from 'lucide-react';
 import IssueRequestDetailModal from '@/components/material/IssueRequestDetailModal';
 import WorkOrderRequestPanel from '@/components/material/WorkOrderRequestPanel';
 import { useIssueRequestData, type IssueRequest } from '@/hooks/material/useIssueRequestData';
@@ -24,6 +22,10 @@ function IssueRequestPage() {
 
   const {
     filteredRequests,
+    statusFilter,
+    setStatusFilter,
+    searchText,
+    setSearchText,
     searchStockItems,
     loadBomRequestItems,
     loadRequestsByOrder,
@@ -35,61 +37,58 @@ function IssueRequestPage() {
     setWoModel,
     woStatus,
     setWoStatus,
-    workOrderOptions,
+    woItemType,
+    setWoItemType,
     isLoading,
   } = useIssueRequestData();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [detailTarget, setDetailTarget] = useState<IssueRequest | null>(null);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
-      {/* 헤더 */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <ClipboardList className="w-7 h-7 text-primary" />
-            {t('material.request.title')}
-          </h1>
-          <p className="text-text-muted mt-1">{t('material.request.description')}</p>
+    <div className="flex h-full animate-fade-in">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-6 gap-4">
+        {/* 헤더 */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-bold text-text flex items-center gap-2">
+              <ClipboardList className="w-7 h-7 text-primary" />
+              {t('material.request.title')}
+            </h1>
+            <p className="text-text-muted mt-1">{t('material.request.description')}</p>
+          </div>
         </div>
-        <Button size="sm" variant="secondary" onClick={() => setIsModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-1" /> {t('material.request.manualRequest')}
-        </Button>
+
+        {/* 작업지시 master-detail 패널 (상단 조건 필터 바 포함) */}
+        <WorkOrderRequestPanel
+          jobOrders={jobOrders}
+          isLoadingJobOrders={isLoadingJobOrders}
+          loadBomRequestItems={loadBomRequestItems}
+          loadRequestsByOrder={loadRequestsByOrder}
+          searchStockItems={searchStockItems}
+          woOrderNo={woOrderNo}
+          onWoOrderNoChange={setWoOrderNo}
+          woModel={woModel}
+          onWoModelChange={setWoModel}
+          woStatus={woStatus}
+          onWoStatusChange={setWoStatus}
+          woItemType={woItemType}
+          onWoItemTypeChange={setWoItemType}
+          requestSearchText={searchText}
+          onRequestSearchTextChange={setSearchText}
+          requestStatusFilter={statusFilter}
+          onRequestStatusFilterChange={setStatusFilter}
+          recentRequests={filteredRequests}
+          isLoadingRequests={isLoading}
+          onViewRequestDetail={setDetailTarget}
+        />
+
+        <IssueRequestDetailModal
+          isOpen={!!detailTarget}
+          onClose={() => setDetailTarget(null)}
+          request={detailTarget}
+        />
       </div>
 
-      {/* 작업지시 master-detail 패널 (상단 조건 필터 바 포함) */}
-      <WorkOrderRequestPanel
-        jobOrders={jobOrders}
-        isLoadingJobOrders={isLoadingJobOrders}
-        loadBomRequestItems={loadBomRequestItems}
-        loadRequestsByOrder={loadRequestsByOrder}
-        searchStockItems={searchStockItems}
-        woOrderNo={woOrderNo}
-        onWoOrderNoChange={setWoOrderNo}
-        woModel={woModel}
-        onWoModelChange={setWoModel}
-        woStatus={woStatus}
-        onWoStatusChange={setWoStatus}
-        recentRequests={filteredRequests}
-        isLoadingRequests={isLoading}
-        onViewRequestDetail={setDetailTarget}
-      />
-
-      {/* 수동 출고요청 모달 (작업지시 없는 임시 요청용) */}
-      <RequestModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        searchStockItems={searchStockItems}
-        loadBomRequestItems={loadBomRequestItems}
-        workOrderOptions={workOrderOptions}
-      />
-
-      <IssueRequestDetailModal
-        isOpen={!!detailTarget}
-        onClose={() => setDetailTarget(null)}
-        request={detailTarget}
-      />
     </div>
   );
 }

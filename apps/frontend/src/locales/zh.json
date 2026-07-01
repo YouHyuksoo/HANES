@@ -292,8 +292,10 @@
     "material.receive": "物料入库管理",
     "material.receiveHistory": "入库历史查询",
     "material.request": "出库申请管理",
+    "material.requestOther": "其他出库申请",
     "material.issue": "物料出库管理",
     "material.issueOther": "其他出库管理",
+    "material.issueHistory": "出库历史查询",
     "material.concession": "特采处理",
     "material.issueAccount": "出库账户",
     "material.lot": "LOT管理",
@@ -306,9 +308,10 @@
     "material.shelfLifeReinspect": "保质期复检",
     "material.shelfLifeHistory": "保质期检验历史",
     "material.hold": "物料库存冻结管理",
-    "material.scrap": "物料报废处理",
-    "material.adjustment": "库存调整处理",
-    "material.miscReceipt": "其他入库管理",
+    "material.scrap": "物料报废确认管理",
+    "material.stockTransfer": "物料库存移动管理",
+    "material.adjustment": "物料库存调整管理",
+    "material.miscReceipt": "物料其他入库管理",
     "material.receiptCancel": "物料入库取消",
     "cutting": "裁切工序",
     "cutting.order": "作业指示",
@@ -2475,6 +2478,11 @@
       "bomCalculating": "正在计算工单BOM待出库物料...",
       "items": "件"
     },
+    "requestOther": {
+      "title": "其他出库申请",
+      "description": "登记和查询不关联工单的物料出库申请。",
+      "newRequest": "其他出库申请"
+    },
     "issueOther": {
       "title": "其他出库",
       "description": "选择量产以外的出库账户（不良/样品/外协/报废/退货/其他等）进行出库。"
@@ -2910,8 +2918,8 @@
       }
     },
     "scrap": {
-      "title": "物料报废",
-      "subtitle": "处理不良/过期物料的报废。",
+      "title": "报废确认",
+      "subtitle": "对隔离于报废仓库的物料进行最终注销处理。",
       "transNo": "处理编号",
       "partCode": "零件代码",
       "partName": "零件名称",
@@ -2919,7 +2927,7 @@
       "reason": "原因",
       "reasonPlaceholder": "请输入报废原因",
       "transDate": "处理日期",
-      "register": "登记报废",
+      "register": "确认报废",
       "warehouse": "仓库",
       "matUid": "材料序列号",
       "matUidPlaceholder": "输入材料序列号",
@@ -2931,7 +2939,33 @@
       "stockSelect": "选择库存 (品目-LOT)",
       "availableQty": "可用数量",
       "max": "最大",
-      "noStock": "所选仓库中没有可报废的库存。"
+      "noStock": "所选仓库中没有可报废的库存。",
+      "selectWarehouseFirst": "请先选择报废仓库。",
+      "notFound": "在该仓库中未找到LOT或可用数量为零：{{matUid}}",
+      "scanError": "库存查询失败。",
+      "scanHint": "请扫描报废仓库中的LOT条码。",
+      "sessionHistory": "今日登记历史",
+      "noHistory": "无登记历史"
+    },
+    "transfer": {
+      "title": "库存移动",
+      "subtitle": "在仓库之间移动物料库存。",
+      "panelTitle": "库存移动",
+      "transNo": "移动编号",
+      "transDate": "移动日期",
+      "qty": "数量",
+      "fromWarehouse": "源仓库",
+      "toWarehouse": "目标仓库",
+      "availableQty": "可用数量",
+      "execute": "执行移动",
+      "searchPlaceholder": "搜索移动编号、LOT、品目名...",
+      "notFound": "未找到库存或可用数量为零：{{matUid}}",
+      "scanError": "库存查询失败。",
+      "scanHint": "请扫描要移动物料的LOT条码。",
+      "selectDest": "选择目标仓库",
+      "sameWarehouseError": "源仓库和目标仓库相同。",
+      "sessionHistory": "今日移动历史",
+      "noHistory": "无移动历史"
     },
     "adjustment": {
       "title": "库存调整",
@@ -6494,30 +6528,163 @@
     }
   },
   "comCode": {
-    "MOLD_LIFE_STATUS": { "NORMAL": "良好", "WARNING": "警告", "REPLACE": "需更换", "MAINT": "检修中" },
-    "REPAIR_STATUS": { "RECEIVED": "已入库", "IN_REPAIR": "维修中", "COMPLETED": "完成" },
-    "CUSTOMER_PO_STATUS": { "RECEIVED": "已接收", "CONFIRMED": "已确认", "IN_PRODUCTION": "生产中", "PARTIAL_SHIP": "部分出货", "SHIPPED": "已出货", "CLOSED": "已关闭" },
-    "CUSTOMER_PO_PROGRESS": { "IN_PROGRESS": "进行中", "PARTIAL_SHIP": "部分出货", "COMPLETED": "完成", "OVERDUE": "逾期" },
-    "ARRIVAL_PO_TYPE": { "RM": "原材料", "CM": "耗材" },
-    "ARRIVAL_RESULT_STATUS": { "ARRIVED": "已到货", "IQC_PROGRESS": "IQC进行中", "IQC_DONE": "IQC完成", "RECEIVED": "已入库", "CANCELED": "取消" },
-    "AUDIT_RESULT": { "PASS": "合格", "MINOR": "轻微不符合", "MAJOR": "严重不符合", "OFI": "改进建议" },
-    "AUDIT_STATUS": { "PLANNED": "计划", "IN_PROGRESS": "进行中", "COMPLETED": "完成", "CLOSED": "关闭" },
-    "AUDIT_TYPE": { "SYSTEM": "系统审核", "PROCESS": "过程审核", "PRODUCT": "产品审核", "LAYERED": "分层审核" },
-    "FAI_RESULT": { "PASS": "合格", "FAIL": "不合格", "CONDITIONAL": "有条件" },
-    "FAI_STATUS": { "REQUESTED": "已请求", "SAMPLING": "取样", "INSPECTING": "检查中", "PASS": "合格", "FAIL": "不合格", "CONDITIONAL": "有条件合格" },
-    "FAI_TRIGGER_TYPE": { "NEW_PART": "新品", "ECN": "设计变更", "PROCESS_CHANGE": "工序变更", "LONG_STOP": "长期停产", "EQUIP_CHANGE": "设备变更" },
-    "GAUGE_STATUS": { "ACTIVE": "使用中", "EXPIRED": "校准过期", "SCRAPPED": "报废" },
-    "GAUGE_TYPE": { "CALIPER": "卡尺", "MICROMETER": "千分尺", "DIAL_GAUGE": "百分表", "HEIGHT_GAUGE": "高度规", "PIN_GAUGE": "针规", "RING_GAUGE": "环规", "FORCE_GAUGE": "测力计", "OTHER": "其他" },
-    "IQC_INSPECT_TYPE": { "INITIAL": "初检", "RETEST": "复检" },
-    "PPAP_REASON": { "NEW_PART": "新零件", "ECN": "设计变更", "TOOLING": "模具变更", "CORRECTION": "纠正措施", "OTHER": "其他" },
-    "PPAP_STATUS": { "DRAFT": "草稿", "SUBMITTED": "已提交", "APPROVED": "已批准", "REJECTED": "已驳回", "INTERIM": "临时批准" },
-    "REWORK_INSPECT_RESULT": { "PASS": "合格", "FAIL": "不合格", "SCRAP": "报废" },
-    "REWORK_PROCESS_STATUS": { "WAITING": "等待", "IN_PROGRESS": "进行中", "COMPLETED": "完成", "SKIPPED": "跳过" },
-    "REWORK_STATUS": { "REGISTERED": "已登记", "QC_PENDING": "待质量批准", "QC_APPROVED": "质量批准", "QC_REJECTED": "质量驳回", "PROD_PENDING": "待生产批准", "APPROVED": "批准完成", "PROD_REJECTED": "生产驳回", "IN_PROGRESS": "进行中", "INSPECT_PENDING": "待复检", "PASS": "合格", "FAIL": "不合格", "SCRAP": "报废" },
-    "SPC_CHART_TYPE": { "XBAR_R": "Xbar-R 控制图", "XBAR_S": "Xbar-S 控制图", "P": "P 控制图", "NP": "NP 控制图", "C": "C 控制图", "U": "U 控制图" },
-    "SPC_STATUS": { "ACTIVE": "启用", "INACTIVE": "停用" },
-    "TRAINING_STATUS": { "PLANNED": "计划", "IN_PROGRESS": "进行中", "COMPLETED": "完成", "CANCELLED": "取消" },
-    "TRAINING_TYPE": { "OJT": "在岗培训", "CLASSROOM": "集中培训", "ONLINE": "在线培训", "EXTERNAL": "外部培训", "SAFETY": "安全培训" },
+    "MOLD_LIFE_STATUS": {
+      "NORMAL": "良好",
+      "WARNING": "警告",
+      "REPLACE": "需更换",
+      "MAINT": "检修中"
+    },
+    "REPAIR_STATUS": {
+      "RECEIVED": "已入库",
+      "IN_REPAIR": "维修中",
+      "COMPLETED": "完成"
+    },
+    "CUSTOMER_PO_STATUS": {
+      "RECEIVED": "已接收",
+      "CONFIRMED": "已确认",
+      "IN_PRODUCTION": "生产中",
+      "PARTIAL_SHIP": "部分出货",
+      "SHIPPED": "已出货",
+      "CLOSED": "已关闭"
+    },
+    "CUSTOMER_PO_PROGRESS": {
+      "IN_PROGRESS": "进行中",
+      "PARTIAL_SHIP": "部分出货",
+      "COMPLETED": "完成",
+      "OVERDUE": "逾期"
+    },
+    "ARRIVAL_PO_TYPE": {
+      "RM": "原材料",
+      "CM": "耗材"
+    },
+    "ARRIVAL_RESULT_STATUS": {
+      "ARRIVED": "已到货",
+      "IQC_PROGRESS": "IQC进行中",
+      "IQC_DONE": "IQC完成",
+      "RECEIVED": "已入库",
+      "CANCELED": "取消"
+    },
+    "AUDIT_RESULT": {
+      "PASS": "合格",
+      "MINOR": "轻微不符合",
+      "MAJOR": "严重不符合",
+      "OFI": "改进建议"
+    },
+    "AUDIT_STATUS": {
+      "PLANNED": "计划",
+      "IN_PROGRESS": "进行中",
+      "COMPLETED": "完成",
+      "CLOSED": "关闭"
+    },
+    "AUDIT_TYPE": {
+      "SYSTEM": "系统审核",
+      "PROCESS": "过程审核",
+      "PRODUCT": "产品审核",
+      "LAYERED": "分层审核"
+    },
+    "FAI_RESULT": {
+      "PASS": "合格",
+      "FAIL": "不合格",
+      "CONDITIONAL": "有条件"
+    },
+    "FAI_STATUS": {
+      "REQUESTED": "已请求",
+      "SAMPLING": "取样",
+      "INSPECTING": "检查中",
+      "PASS": "合格",
+      "FAIL": "不合格",
+      "CONDITIONAL": "有条件合格"
+    },
+    "FAI_TRIGGER_TYPE": {
+      "NEW_PART": "新品",
+      "ECN": "设计变更",
+      "PROCESS_CHANGE": "工序变更",
+      "LONG_STOP": "长期停产",
+      "EQUIP_CHANGE": "设备变更"
+    },
+    "GAUGE_STATUS": {
+      "ACTIVE": "使用中",
+      "EXPIRED": "校准过期",
+      "SCRAPPED": "报废"
+    },
+    "GAUGE_TYPE": {
+      "CALIPER": "卡尺",
+      "MICROMETER": "千分尺",
+      "DIAL_GAUGE": "百分表",
+      "HEIGHT_GAUGE": "高度规",
+      "PIN_GAUGE": "针规",
+      "RING_GAUGE": "环规",
+      "FORCE_GAUGE": "测力计",
+      "OTHER": "其他"
+    },
+    "IQC_INSPECT_TYPE": {
+      "INITIAL": "初检",
+      "RETEST": "复检"
+    },
+    "PPAP_REASON": {
+      "NEW_PART": "新零件",
+      "ECN": "设计变更",
+      "TOOLING": "模具变更",
+      "CORRECTION": "纠正措施",
+      "OTHER": "其他"
+    },
+    "PPAP_STATUS": {
+      "DRAFT": "草稿",
+      "SUBMITTED": "已提交",
+      "APPROVED": "已批准",
+      "REJECTED": "已驳回",
+      "INTERIM": "临时批准"
+    },
+    "REWORK_INSPECT_RESULT": {
+      "PASS": "合格",
+      "FAIL": "不合格",
+      "SCRAP": "报废"
+    },
+    "REWORK_PROCESS_STATUS": {
+      "WAITING": "等待",
+      "IN_PROGRESS": "进行中",
+      "COMPLETED": "完成",
+      "SKIPPED": "跳过"
+    },
+    "REWORK_STATUS": {
+      "REGISTERED": "已登记",
+      "QC_PENDING": "待质量批准",
+      "QC_APPROVED": "质量批准",
+      "QC_REJECTED": "质量驳回",
+      "PROD_PENDING": "待生产批准",
+      "APPROVED": "批准完成",
+      "PROD_REJECTED": "生产驳回",
+      "IN_PROGRESS": "进行中",
+      "INSPECT_PENDING": "待复检",
+      "PASS": "合格",
+      "FAIL": "不合格",
+      "SCRAP": "报废"
+    },
+    "SPC_CHART_TYPE": {
+      "XBAR_R": "Xbar-R 控制图",
+      "XBAR_S": "Xbar-S 控制图",
+      "P": "P 控制图",
+      "NP": "NP 控制图",
+      "C": "C 控制图",
+      "U": "U 控制图"
+    },
+    "SPC_STATUS": {
+      "ACTIVE": "启用",
+      "INACTIVE": "停用"
+    },
+    "TRAINING_STATUS": {
+      "PLANNED": "计划",
+      "IN_PROGRESS": "进行中",
+      "COMPLETED": "完成",
+      "CANCELLED": "取消"
+    },
+    "TRAINING_TYPE": {
+      "OJT": "在岗培训",
+      "CLASSROOM": "集中培训",
+      "ONLINE": "在线培训",
+      "EXTERNAL": "外部培训",
+      "SAFETY": "安全培训"
+    },
     "AQL_INSP_LEVEL": {
       "S-1": "特殊检验水平 S-1",
       "S-2": "特殊检验水平 S-2",
@@ -7229,6 +7396,20 @@
       "REVIEW": "审核中",
       "APPROVED": "已批准",
       "OBSOLETE": "作废"
+    },
+    "FG_LABEL_STATUS": {
+      "ISSUED": "已发行",
+      "VISUAL_PASS": "外观合格",
+      "VISUAL_FAIL": "外观不合格",
+      "PACKED": "包装完成",
+      "SHIPPED": "出货完成",
+      "VOIDED": "无效"
+    },
+    "SG_LABEL_STATUS": {
+      "IN_STOCK": "在制中",
+      "MOUNTED": "装配中",
+      "CONSUMED": "已消耗",
+      "DEFECT": "不良"
     }
   },
   "comCodeGroup": {
@@ -7977,6 +8158,7 @@
       "concession": "特采处理",
       "receive": "入库",
       "request": "出库申请",
+      "requestOther": "其他出库申请",
       "issue": "出库",
       "issueOther": "其他出库"
     },

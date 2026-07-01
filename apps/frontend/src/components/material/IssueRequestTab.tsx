@@ -27,13 +27,21 @@ import { useIssueRequests } from '@/hooks/material/useIssueRequests';
 import type { IssueRequestRecord } from '@/hooks/material/useIssueRequests';
 import type { IssueRequestStatus } from '@/components/material';
 
-export default function IssueRequestTab() {
+interface IssueRequestTabProps {
+  issueType?: string;
+  excludeIssueTypes?: string[];
+}
+
+export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: IssueRequestTabProps) {
   const { t } = useTranslation();
   const {
     records, isLoading, refetch,
     statusFilter, setStatusFilter, searchText, setSearchText,
     handleApprove, handleReject,
-  } = useIssueRequests();
+  } = useIssueRequests({
+    issueType,
+    excludeIssueTypes,
+  });
 
   // 모달 상태
   const [approveTarget, setApproveTarget] = useState<string | null>(null);

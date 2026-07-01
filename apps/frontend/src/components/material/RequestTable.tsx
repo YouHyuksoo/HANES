@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { Eye } from 'lucide-react';
+import { ComCodeBadge } from '@/components/ui';
 import { IssueRequestStatusBadge } from '@/components/material';
 import type { IssueRequest } from '@/hooks/material/useIssueRequestData';
 import type { IssueRequestStatus } from '@/components/material';
@@ -34,17 +35,49 @@ function totalRequestQty(row: IssueRequest): number {
   return toNumber(row.totalQty ?? row.totalRequestQty) || (row.items ?? []).reduce((sum, item) => sum + toNumber(item.requestQty), 0);
 }
 
+function itemSummary(row: IssueRequest): string {
+  const items = row.items ?? [];
+  const first = items[0];
+  if (!first) return '-';
+  const label = first.itemName ? `${first.itemCode} ${first.itemName}` : first.itemCode;
+  return items.length > 1 ? `${label} +${items.length - 1}` : label;
+}
+
 export default function RequestTable({ data, toolbarLeft, isLoading, onViewDetail }: RequestTableProps) {
   const { t } = useTranslation();
   const columns = useMemo<ColumnDef<IssueRequest>[]>(() => [
     { accessorKey: 'requestNo', header: t('material.col.requestNo'), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'requestDate', header: t('material.col.requestDate'), size: 100, meta: { filterType: 'date' as const } },
     {
+      accessorKey: 'issueType',
+      header: t('material.issueAccount'),
+      size: 100,
+      meta: { filterType: 'text' as const },
+      cell: ({ getValue }) => {
+        const value = getValue() as string | null | undefined;
+        return value ? <ComCodeBadge groupCode="ISSUE_TYPE" code={value} /> : <span className="text-text-muted">-</span>;
+      },
+    },
+    {
       id: 'workOrderNo', header: t('material.col.workOrder'), size: 160, meta: { filterType: 'text' as const },
       accessorFn: (row) => row.workOrderNo ?? row.orderNo ?? '',
-      cell: ({ row }) => (
-        <span className="text-primary font-medium">{row.original.workOrderNo ?? row.original.orderNo ?? '-'}</span>
-      ),
+      cell: ({ row }) => {
+        const workOrderNo = row.original.workOrderNo ?? row.original.orderNo;
+        const isManual = !workOrderNo && row.original.issueType === 'MANUAL';
+        return (
+          <span className={isManual ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-primary font-medium'}>
+            {isManual ? t('material.request.manualRequest') : workOrderNo ?? '-'}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'itemSummary',
+      header: t('common.partName'),
+      size: 220,
+      meta: { filterType: 'text' as const },
+      accessorFn: itemSummary,
+      cell: ({ row }) => <span className="text-text">{itemSummary(row.original)}</span>,
     },
     {
       id: 'itemCount', header: t('material.col.itemCount'), size: 70, meta: { filterType: 'none' as const },

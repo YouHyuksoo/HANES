@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle, XCircle, AlertCircle, Upload, ScanLine, ListChecks, X } from "lucide-react";
 import { Button, Modal, ComCodeBadge, Select } from "@/components/ui";
+import { BarcodeScanInput } from "@/components/shared";
 import { useWorkerOptions } from "@/hooks/useMasterOptions";
 import type { IqcItem, IqcResultForm } from "@/hooks/material/useIqcData";
 import api from "@/services/api";
@@ -560,20 +561,15 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                 <span className="text-xs font-semibold text-text">{t("material.iqc.serialScan", "시리얼 스캔")}</span>
                 <span className="text-xs text-text-muted">{scannedSerials.length.toLocaleString()} / {pendingSerials.length.toLocaleString()}</span>
               </div>
-              <div className="relative">
-                <ScanLine className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                <input
+              <div>
+                <BarcodeScanInput
                   ref={serialScanInputRef}
                   value={serialScanValue}
-                  onChange={(e) => setSerialScanValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleSerialScan();
-                    }
-                  }}
+                  onChange={setSerialScanValue}
+                  onScan={handleSerialScan}
                   placeholder={t("material.iqc.serialScanPlaceholder", "시리얼을 스캔하거나 입력 후 Enter")}
-                  className="h-9 w-full pl-8 pr-3 text-sm rounded-md border border-border bg-surface text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="h-9 text-sm"
+                  fullWidth
                 />
               </div>
               {scanSerialError && (
