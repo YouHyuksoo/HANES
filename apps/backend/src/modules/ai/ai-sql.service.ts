@@ -14,13 +14,23 @@ import { SchemaInfoService } from './schema-info.service';
 import { SqlValidatorService } from './sql-validator.service';
 import { AiPageToolsService } from '../ai-page-tools/ai-page-tools.service';
 import { AiChatMessageDto, AiKnowledgeContextDto, AiPageToolContextDto } from './dto/ai-chat.dto';
-import { AiKnowledgeService } from '../ai-knowledge/ai-knowledge.service';
+import { AiKnowledgeService, KnowledgeSearchResult } from '../ai-knowledge/ai-knowledge.service';
 
 export interface AiPageToolCallProposal {
   pageId: string;
   toolName: string;
   label: string;
   input: Record<string, unknown>;
+}
+
+export interface AiKnowledgeSourceSummary {
+  chunkId: string;
+  sourcePath: string;
+  menuCode?: string;
+  audience?: string;
+  title?: string;
+  heading?: string;
+  score: number;
 }
 
 export interface AiSqlResult {
@@ -31,6 +41,8 @@ export interface AiSqlResult {
   requiresApproval?: boolean;
   /** 승인 후 실행할 페이지 도구 호출 제안(write 도구) */
   pageToolCall?: AiPageToolCallProposal;
+  /** 답변 근거로 사용한 RAG 지식 청크 요약 (검색 결과가 있을 때만) */
+  sources?: AiKnowledgeSourceSummary[];
 }
 
 const TOOL_SELECT_PROMPT = `당신은 사용자의 등록/처리 요청을 "페이지 도구 호출"로 변환하는 AI입니다.
@@ -124,13 +136,42 @@ export class AiSqlService {
     if (!userMessage.trim()) return { content: '질문을 입력해 주세요.' };
 
     let knowledgePrompt = '';
+    let knowledgeChunks: KnowledgeSearchResult[] = [];
     try {
-      const knowledgeChunks = await this.knowledge.search(userMessage, knowledgeContext, 5);
+      knowledgeChunks = await this.knowledge.search(userMessage, knowledgeContext, 5);
       knowledgePrompt = this.knowledge.formatContext(knowledgeChunks);
     } catch (error) {
       this.logger.warn(`AI 지식 검색 실패: ${error instanceof Error ? error.message : String(error)}`);
     }
 
+    const result = await this.processWithKnowledge(userMessage, messages, pageToolContext, knowledgePrompt);
+    return this.withSources(result, knowledgeChunks);
+  }
+
+  /** 검색된 지식 청크를 응답의 sources 필드로 병합(청크가 없으면 그대로 반환) */
+  private withSources(result: AiSqlResult, chunks: KnowledgeSearchResult[]): AiSqlResult {
+    if (chunks.length === 0) return result;
+    return {
+      ...result,
+      sources: chunks.map((chunk) => ({
+        chunkId: chunk.chunkId,
+        sourcePath: chunk.sourcePath,
+        menuCode: chunk.menuCode,
+        audience: chunk.audience,
+        title: chunk.title,
+        heading: chunk.heading,
+        score: chunk.score,
+      })),
+    };
+  }
+
+  /** 기존 process()의 테이블선택→SQL생성→실행/일반대화 분기 로직(변경 없음, knowledgePrompt를 인자로 받도록만 조정) */
+  private async processWithKnowledge(
+    userMessage: string,
+    messages: AiChatMessageDto[],
+    pageToolContext: AiPageToolContextDto | undefined,
+    knowledgePrompt: string,
+  ): Promise<AiSqlResult> {
     if (pageToolContext && this.looksLikePageWorkflowRequest(userMessage)) {
       // 등록/처리 요청 → 페이지의 write 도구로 매핑(있으면 승인 카드로 제안)
       const call = await this.selectPageTool(userMessage, pageToolContext.pageId);
