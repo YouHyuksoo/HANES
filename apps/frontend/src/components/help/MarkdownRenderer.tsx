@@ -3,22 +3,23 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypeSlug from "rehype-slug";
 
 interface MarkdownRendererProps {
   content: string;
 }
 
-/** 도움말 Markdown 렌더러 — GFM(표/코드/링크) + 제한적 raw HTML(img width 등) */
+/** 도움말 Markdown 렌더러 — GFM(표/코드/링크) + 제한적 raw HTML(img width 등) + 헤딩 id(딥링크용) */
 export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
   return (
     <div className="help-md max-w-none text-sm leading-relaxed text-text">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw]}
+        rehypePlugins={[rehypeRaw, rehypeSlug]}
         components={{
-          h1: ({ children }) => <h1 className="mb-3 mt-1 text-lg font-bold text-text">{children}</h1>,
-          h2: ({ children }) => <h2 className="mb-2 mt-5 border-b border-border pb-1 text-base font-semibold text-text">{children}</h2>,
-          h3: ({ children }) => <h3 className="mb-1.5 mt-4 text-sm font-semibold text-text">{children}</h3>,
+          h1: ({ id, children }) => <h1 id={id} className="mb-3 mt-1 scroll-mt-4 text-lg font-bold text-text">{children}</h1>,
+          h2: ({ id, children }) => <h2 id={id} className="mb-2 mt-5 scroll-mt-4 border-b border-border pb-1 text-base font-semibold text-text">{children}</h2>,
+          h3: ({ id, children }) => <h3 id={id} className="mb-1.5 mt-4 scroll-mt-4 text-sm font-semibold text-text">{children}</h3>,
           p: ({ children }) => <p className="my-2 text-text">{children}</p>,
           ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-5">{children}</ul>,
           ol: ({ children }) => <ol className="my-2 list-decimal space-y-1 pl-5">{children}</ol>,
