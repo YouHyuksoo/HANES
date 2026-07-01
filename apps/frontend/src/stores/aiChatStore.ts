@@ -14,6 +14,17 @@ export interface AiPageToolCallProposal {
   input: Record<string, unknown>;
 }
 
+/** 답변 근거로 사용한 RAG 지식 청크 요약 */
+export interface AiChatSource {
+  chunkId: string;
+  sourcePath: string;
+  menuCode?: string;
+  audience?: string;
+  title?: string;
+  heading?: string;
+  score: number;
+}
+
 export interface AiChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -25,6 +36,8 @@ export interface AiChatMessage {
   executed?: boolean;
   /** 페이지 도구 실행 제안(승인 카드) */
   pageToolCall?: AiPageToolCallProposal;
+  /** 답변 근거 출처 (RAG 검색 결과가 있을 때만) */
+  sources?: AiChatSource[];
 }
 
 interface AiChatState {

@@ -100,6 +100,7 @@ export default function AiChatPanel() {
         requiresApproval: data.requiresApproval,
         executed: data.executed,
         pageToolCall: data.pageToolCall,
+        sources: data.sources,
       });
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
