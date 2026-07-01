@@ -252,7 +252,11 @@ export class AiKnowledgeService implements OnModuleInit {
           WHERE ai_knowledge_fts MATCH ?
           LIMIT 30
         `).all(ftsQuery) as Array<{ chunkId: string; rank: number }>;
-        for (const row of ftsRows) scores.set(row.chunkId, (scores.get(row.chunkId) ?? 0) + 0.3 * (1 / (1 + Math.abs(row.rank))));
+        // bm25()는 값이 작을수록(더 음수일수록) 더 좋은 매치다. Math.abs를 취하면 순위가 뒤집히므로 음수를 그대로 relevance로 쓴다.
+        for (const row of ftsRows) {
+          const relevance = Math.max(0, -row.rank);
+          scores.set(row.chunkId, (scores.get(row.chunkId) ?? 0) + 0.3 * (relevance / (1 + relevance)));
+        }
       } catch {
         // FTS syntax errors should not break chat.
       }
