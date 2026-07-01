@@ -5,6 +5,19 @@ import { ChevronRight, ChevronDown } from "lucide-react";
 import type { SemiProductTrace } from "../types";
 import MaterialSection from "./MaterialSection";
 
+const SG_STATUS_CLS: Record<string, string> = {
+  IN_STOCK:  "text-blue-600 border-blue-400",
+  MOUNTED:   "text-amber-600 border-amber-400",
+  CONSUMED:  "text-text-muted border-border",
+  DEFECT:    "text-red-600 border-red-400",
+};
+
+function SgStatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
+  const cls = SG_STATUS_CLS[status] ?? "text-text-muted border-border";
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${cls}`}>{t(`comCode.SG_LABEL_STATUS.${status}`, status)}</span>;
+}
+
 export default function SemiProductSection({ semiProducts }: { semiProducts: SemiProductTrace[] }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -39,8 +52,10 @@ export default function SemiProductSection({ semiProducts }: { semiProducts: Sem
               )}
               <span className="font-mono text-primary">{sp.sgBarcode}</span>
               <span className="text-text">{sp.itemName || sp.itemCode}</span>
-              <span className="ml-auto text-sm text-text-muted">
-                {sp.consumedQty.toLocaleString()} · {sp.status}
+              <span className="ml-auto flex items-center gap-2 text-sm text-text-muted shrink-0">
+                {sp.consumedQty.toLocaleString()}
+                {sp.warehouseCode && <span className="font-mono text-xs">{sp.warehouseCode}</span>}
+                <SgStatusBadge status={sp.status} />
               </span>
             </button>
             {expanded && (

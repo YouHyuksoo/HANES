@@ -85,6 +85,7 @@ export interface SemiProductTrace {
   itemName: string;
   consumedQty: number;
   status: string;
+  warehouseCode: string | null;
   issueProcessCode: string | null;
   processHistory: ProcessStep[];
   inspections: InspectionRecord[];

@@ -215,8 +215,12 @@ export default function TracePage() {
                 </div>
                 <div className="mt-1 flex items-center gap-2 text-xs text-text-muted">
                   <span className="truncate">{candidate.orderNo ?? "-"}</span>
-                  <span>/</span>
-                  <span>{candidate.status ?? "-"}</span>
+                  {candidate.status && candidate.traceType === "FG" && (
+                    <FgStatusBadge status={candidate.status} />
+                  )}
+                  {candidate.status && candidate.traceType === "SG" && (
+                    <span className="text-xs text-text-muted">{candidate.status}</span>
+                  )}
                 </div>
               </button>
             ))}
@@ -294,7 +298,10 @@ function TraceDetail({ data }: { data: ProductTraceabilityDto }) {
               <Field label={t("quality.trace.partNo")} value={data.product.itemNo} />
               <Field label={t("quality.trace.partName")} value={data.product.itemName} />
               <Field label={t("quality.trace.workOrderNo")} value={data.product.orderNo ?? "-"} mono />
-              <Field label={t("quality.trace.statusCol")} value={data.product.status} />
+              <div className="min-w-0">
+                <div className="text-xs text-text-muted mb-0.5">{t("quality.trace.statusCol")}</div>
+                <FgStatusBadge status={data.product.status} />
+              </div>
               <Field label={t("quality.trace.productionDate")} value={fmt(data.product.productionDate)} />
             </div>
           </CardContent>
@@ -435,4 +442,19 @@ function badge(r: "PASS" | "FAIL" | "WORK") {
       {r}
     </span>
   );
+}
+
+const FG_STATUS_CLS: Record<string, string> = {
+  ISSUED:       "text-text-muted border-border",
+  VISUAL_PASS:  "text-green-600 border-green-600",
+  VISUAL_FAIL:  "text-red-600 border-red-600",
+  PACKED:       "text-blue-600 border-blue-600",
+  SHIPPED:      "text-purple-600 border-purple-600",
+  VOIDED:       "text-red-400 border-red-400",
+};
+
+function FgStatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
+  const cls = FG_STATUS_CLS[status] ?? "text-text-muted border-border";
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs border ${cls}`}>{t(`comCode.FG_LABEL_STATUS.${status}`, status)}</span>;
 }

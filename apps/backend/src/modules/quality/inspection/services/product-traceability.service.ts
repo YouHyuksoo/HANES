@@ -943,6 +943,7 @@ export class ProductTraceabilityService {
           itemName: part?.itemName ?? '',
           consumedQty: consumedBySg.get(sgBarcode) ?? 0,
           status: sg?.status ?? '',
+          warehouseCode: sg?.warehouseCode ?? null,
           issueProcessCode: sg?.issueProcessCode ?? null,
           processHistory, inspections, materials,
         };
