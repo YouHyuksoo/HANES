@@ -40,6 +40,12 @@ const MD_COMPONENTS = {
   a: ({ node: _n, ...p }: { node?: unknown }) => <a className="text-primary underline" {...p} />,
 };
 
+const AI_PROVIDER_LABELS: Record<string, string> = {
+  mistral: "Mistral",
+  openai: "OpenAI",
+  openrouter: "OpenRouter",
+};
+
 export default function AiChatPanel() {
   const { t } = useTranslation();
   const pathname = usePathname();
@@ -57,6 +63,7 @@ export default function AiChatPanel() {
   const [feedbackByIdx, setFeedbackByIdx] = useState<Map<number, { feedbackId: number; rating: "LIKE" | "DISLIKE" }>>(new Map());
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [width, setWidth] = useState(440);
+  const [aiStatus, setAiStatus] = useState<{ provider: string; model: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -66,6 +73,24 @@ export default function AiChatPanel() {
 
   useEffect(() => {
     if (isOpen) setTimeout(() => inputRef.current?.focus(), 120);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    api
+      .get("/ai/status")
+      .then((res) => {
+        if (cancelled) return;
+        const data = res.data?.data ?? {};
+        if (data.provider && data.model) setAiStatus({ provider: data.provider, model: data.model });
+      })
+      .catch(() => {
+        /* 상태 배지는 부가 정보 — 조회 실패해도 채팅 흐름을 막지 않는다 */
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen]);
 
   const send = useCallback(async () => {
@@ -263,6 +288,11 @@ export default function AiChatPanel() {
         <h2 className="flex items-center gap-2 text-base font-bold text-text">
           <Sparkles className="h-5 w-5 text-violet-500" />
           {t("ai.chat.title", "AI 채팅")}
+          {aiStatus && (
+            <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-normal text-text-muted">
+              {AI_PROVIDER_LABELS[aiStatus.provider] ?? aiStatus.provider} · {aiStatus.model}
+            </span>
+          )}
         </h2>
         <div className="flex items-center gap-1">
           <button
