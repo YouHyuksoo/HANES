@@ -20,12 +20,6 @@ import {
 
 const getToday = () => getTodayLocal();
 
-const getOneMonthAgo = () => {
-  const d = new Date();
-  d.setMonth(d.getMonth() - 1);
-  return getTodayLocal(d);
-};
-
 export default function ArrivalTransactionPage() {
   const { t } = useTranslation();
   const transTypeOptions = useMemo(() => [
@@ -46,7 +40,7 @@ export default function ArrivalTransactionPage() {
   const [rows, setRows] = useState<ArrivalTransactionRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
-    fromDate: getOneMonthAgo(),
+    fromDate: getToday(),
     toDate: getToday(),
     transType: "",
     status: "",

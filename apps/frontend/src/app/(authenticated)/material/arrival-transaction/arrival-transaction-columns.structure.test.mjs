@@ -16,3 +16,9 @@ test('/material/arrival-transaction page consumes the extracted column factory',
   // 인라인 컬럼 배열이 페이지에 남아있지 않아야 한다
   assert.doesNotMatch(page, /accessorKey: "transDate"/);
 });
+
+test('/material/arrival-transaction defaults date range to today instead of a fixed or month-back start date', () => {
+  assert.doesNotMatch(page, /getOneMonthAgo/);
+  assert.match(page, /fromDate:\s*getToday\(\)/);
+  assert.match(page, /toDate:\s*getToday\(\)/);
+});
