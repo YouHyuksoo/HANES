@@ -82,8 +82,8 @@ STOCK_TRANSACTIONS ── 재고 이동/출고 이력 (refType: IQC_FAIL / IQC_D
 | 검사자 | `INSPECTOR_NAME` | 검사 수행자 이름(자유 입력). |
 | 검사분류 | `INSPECT_CLASS` | legacy 컬럼. 현재 화면에서 IQC 검사구분(FULL/SKIP) 기록에 사용하지 않음. |
 | 파괴시료수 | `DESTRUCT_SAMPLE_QTY` | 파괴검사 시료 수량. 이 값이 0 초과이고 PASS이면 AUTO_ISSUE 모드에서 자동 출고됨. |
-| 검사성적서 | `CERT_FILE_PATH` | 업로드된 파일의 서버 경로(`/uploads/iqc/...`). 파일 업로드 API로 별도 저장. |
-| 시료바코드 | `SAMPLE_BARCODE` | 스캔한 시리얼 목록(콤마 구분). 500바이트 초과 시 자동 압축(`...(+N more)` 접미). |
+| 검사성적서 | `CERT_FILE_PATH` | 업로드된 파일의 서버 경로(`/uploads/iqc/...`). 지원 형식: `.pdf,.jpg,.jpeg,.png,.xlsx,.xls`. 파일 업로드 API로 별도 저장. |
+| 시료바코드 | `SAMPLE_BARCODE` | 스캔한 시리얼 목록(콤마 구분). UTF-8 기준 **500바이트 초과 시 자동 축약**(`...(+N more)` 접미어로 대체). |
 | LOT 수량 | `LOT_QTY` | AQL 판정 시 사용된 LOT 총수량. |
 | AQL 검사수준 | `AQL_INSPECTION_LEVEL` | 적용된 AQL 검사수준(예: `II`). |
 | AQL 검사모드 | `AQL_INSPECTION_MODE` | 적용된 검사모드(예: `NORMAL`). |
@@ -149,6 +149,21 @@ STOCK_TRANSACTIONS ── 재고 이동/출고 이력 (refType: IQC_FAIL / IQC_D
 
 ---
 
+## 검사결과 등록 버튼 활성화 조건 (canSubmit)
+
+```typescript
+canSubmit =
+  (scannedSerials.length > 0 || (aqlItems.length === 0 && destructItems.length > 0))
+  && !loadingItems
+  && !isIncomplete          // 모든 시리얼 판정 완료
+  && (!needsDefectCode || hasDefectCodeRows)   // FAIL이면 불량코드 필수
+  && !hasContradictingDefectCodes              // PASS인데 불량코드 있으면 차단
+```
+
+- `needsDefectCode`: `(anyFail || anyDestructFail) && !hasDefectCodeRows`
+- `hasContradictingDefectCodes`: `!(anyFail || anyDestructFail) && hasDefectCodeRows`
+- 불량코드 유효성: `defectCode != "" && qty > 0`인 행이 1개 이상
+
 ## AQL 판정 로직
 
 입하단위 검사결과 등록(`POST /material/iqc-history/arrival`) 시 아래 순서로 최종 결과가 결정됩니다.
@@ -191,16 +206,18 @@ STOCK_TRANSACTIONS ── 재고 이동/출고 이력 (refType: IQC_FAIL / IQC_D
 
 ## API 경로
 
-| 목적 | 메서드 | 경로 |
-|------|------|------|
-| 검사대기 목록 조회 | GET | `/material/iqc-history/pending-arrivals` |
-| 검사대기 시리얼 조회 | GET | `/material/iqc-history/pending-serials` |
-| 입하단위 검사결과 등록 | POST | `/material/iqc-history/arrival` |
-| 검사성적서 업로드 | POST | `/material/iqc-history/{inspectDate}/{seq}/upload-cert` |
-| 판정 취소 | DELETE | `/material/iqc-history/{inspectDate}/{seq}` |
-| 품목 검사항목 조회 | GET | `/master/iqc-part-specs/{itemCode}/resolve-items` |
-| 품목 기준 헤더 조회 | GET | `/master/iqc-part-specs/{itemCode}` |
-| AQL 샘플수량 조회 | GET | `/quality/aql/resolve-iqc-items` |
+| 목적 | 메서드 | 경로 | 비고 |
+|------|------|------|------|
+| 검사대기 목록 조회 | GET | `/material/iqc-history/pending-arrivals` | |
+| 검사대기 시리얼 조회 | GET | `/material/iqc-history/pending-serials` | `?arrivalNo=&itemCode=` |
+| 입하단위 검사결과 등록 | POST | `/material/iqc-history/arrival` | DETAILS JSON 포함 |
+| 검사성적서 업로드 | POST | `/material/iqc-history/{inspectDate}/{seq}/upload-cert` | 파일 multipart |
+| 판정 취소 | DELETE | `/material/iqc-history/{inspectDate}/{seq}` | STATUS→CANCELED, 시리얼→PENDING 복원 |
+| 품목 검사항목 조회 | GET | `/master/iqc-part-specs/{itemCode}/resolve-items` | inspectionType 포함 |
+| 품목 기준 헤더 조회 | GET | `/master/iqc-part-specs/{itemCode}` | sampleQty 초기값 |
+| AQL 샘플수량 조회 | GET | `/quality/aql/resolve-iqc-items` | `?itemCode=&vendorCode=&lotQty=` |
+| 불량코드 목록 조회 | GET | `/quality/defect-codes/options` | `?productType={defectModelGroup}` — 품목 defectModelGroup으로 필터 |
+| 검사자(작업자) 목록 조회 | GET | `/master/workers/options` | 부서=`품질팀` 필터 적용 |
 
 ---
 
@@ -208,10 +225,12 @@ STOCK_TRANSACTIONS ── 재고 이동/출고 이력 (refType: IQC_FAIL / IQC_D
 
 - 공통코드: `IQC_INSPECT_METHOD`(FULL/SKIP), `IQC_STATUS`, `DEFECT_TYPE`(불량코드, `ATTR1`에 등급 필수), `DEFECT_GRADE`(CRITICAL/MAJOR/MINOR), `IQC_ITEM_INSP_TYPE`(AQL/DESTRUCTIVE/FULL), `IQC_SAMPLE_METHOD`(AQL/FIXED), `AQL_INSP_LEVEL`, `AQL_VALUE`
 - `ITEM_MASTERS.IQC_FLAG='Y'` 설정 필수 (IQC 대상 품목)
+- `WORKER_MASTERS` — 검사자 선택 목록: 부서(`DEPT`)='품질팀'인 작업자만 표시됨
 - `IQC_ITEM_POOL` — 검사항목 풀 등록 필요
 - `IQC_PART_SPECS` + `IQC_PART_SPEC_ITEMS` — 품목별 검사항목 구성 필요
 - `IQC_AQL_POLICIES` — AQL 정책 설정 및 품목 연결 필요
 - 불용창고(`warehouseType='DEFECT'`, `USE_YN='Y'`) 등록 필수 — 없으면 불합격 재고 이동 불가(에러 없이 스킵됨)
+- 불량코드(`DEFECT_CODES`) — `ITEM_MASTERS.DEFECT_MODEL_GROUP` 컬럼이 설정된 경우 해당 그룹 코드 불량만 선택 목록에 나타남. 그룹 미설정 시 전체 불량코드 표시
 
 ---
 

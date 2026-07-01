@@ -16,6 +16,7 @@ import {
   Folder, LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck,
   Database, FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog,
   ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler, GitBranch,
+  BookOpen,
 } from "lucide-react";
 import { menuConfig, type MenuConfigItem } from "@/config/menuConfig";
 import { useAuthStore } from "@/stores/authStore";
@@ -27,6 +28,26 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Database, FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog,
   ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler, GitBranch,
 };
+
+const HELP_MENU_PATH = "/help";
+const HELP_MENU_ITEM: MenuConfigItem = {
+  code: "HELP_INDEX",
+  labelKey: "help.viewAll",
+  path: HELP_MENU_PATH,
+  icon: BookOpen,
+};
+
+function excludeHelpMenuItems(items: MenuConfigItem[]): MenuConfigItem[] {
+  return items.flatMap((item) => {
+    if (item.path === HELP_MENU_PATH) return [];
+    if (!item.children) return [item];
+
+    const children = excludeHelpMenuItems(item.children);
+    if (children.length === 0) return [];
+
+    return [{ ...item, children }];
+  });
+}
 
 interface SidebarProps {
   isOpen: boolean;
@@ -53,7 +74,7 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
 
   /** DB 머지된 트리를 SidebarMenu가 받는 MenuConfigItem 형식으로 변환. groups가 null이면 코드 menuConfig 사용. */
   const items: MenuConfigItem[] = useMemo(() => {
-    if (!groups) return menuConfig;
+    if (!groups) return excludeHelpMenuItems(menuConfig);
     const leafLookup = new Map<string, MenuConfigItem>();
     const walk = (arr: MenuConfigItem[]) => {
       for (const x of arr) {
@@ -83,7 +104,7 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
         children: childrenLeaf,
       });
     }
-    return result;
+    return excludeHelpMenuItems(result);
   }, [groups]);
 
   const toggleMenu = (menuCode: string) => {
@@ -113,10 +134,10 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
     <>
       {isOpen && <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={onClose} />}
       <aside
-        className={`fixed top-[var(--header-height)] left-0 z-30 h-[calc(100vh-var(--header-height))] bg-surface border-r border-border overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out lg:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed top-[var(--header-height)] left-0 z-30 flex h-[calc(100vh-var(--header-height))] flex-col overflow-hidden bg-surface border-r border-border transition-all duration-300 ease-in-out lg:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
         style={{ width: sidebarWidth }}
       >
-        <nav className="p-3">
+        <nav className="min-h-0 flex-1 overflow-y-auto p-3">
           <SidebarMenu
             items={items}
             collapsed={collapsed}
@@ -125,6 +146,19 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
             onToggleMenu={toggleMenu}
             isMenuActive={isMenuActive}
             isMenuDisabled={isMenuDisabled}
+            onClose={onClose}
+            t={t}
+          />
+        </nav>
+        <nav className="flex-shrink-0 border-t border-border bg-surface p-3">
+          <SidebarMenu
+            items={[HELP_MENU_ITEM]}
+            collapsed={collapsed}
+            pathname={pathname}
+            expandedMenus={expandedMenus}
+            onToggleMenu={toggleMenu}
+            isMenuActive={isMenuActive}
+            isMenuDisabled={() => false}
             onClose={onClose}
             t={t}
           />
