@@ -19,7 +19,7 @@ export const useHelpStore = create<HelpState>((set) => ({
   tab: "user",
   overrideMenuCode: undefined,
   overrideHeadingSlug: undefined,
-  openHelp: () => set({ isOpen: true }),
+  openHelp: () => set({ isOpen: true, overrideMenuCode: undefined, overrideHeadingSlug: undefined }),
   openHelpFor: (menuCode, tab, headingSlug) =>
     set({ isOpen: true, tab, overrideMenuCode: menuCode, overrideHeadingSlug: headingSlug }),
   closeHelp: () => set({ isOpen: false, overrideMenuCode: undefined, overrideHeadingSlug: undefined }),

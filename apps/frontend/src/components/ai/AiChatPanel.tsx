@@ -265,7 +265,18 @@ export default function AiChatPanel() {
           {t("ai.chat.title", "AI 채팅")}
         </h2>
         <div className="flex items-center gap-1">
-          <button type="button" onClick={() => { clear(); setApprovedIdx(new Set()); }} title={t("ai.chat.clear", "대화 비우기")} className="rounded p-1.5 text-text-muted hover:bg-surface hover:text-text">
+          <button
+            type="button"
+            onClick={() => {
+              clear();
+              setApprovedIdx(new Set());
+              setFeedbackByIdx(new Map());
+              setExpandedSources(new Set());
+              setCopiedIdx(null);
+            }}
+            title={t("ai.chat.clear", "대화 비우기")}
+            className="rounded p-1.5 text-text-muted hover:bg-surface hover:text-text"
+          >
             <Trash2 className="h-4 w-4" />
           </button>
           <button type="button" onClick={close} title={t("common.close", "닫기")} className="rounded p-1.5 text-text-muted hover:bg-surface hover:text-text">
