@@ -13,8 +13,8 @@ export default function HelpPanel() {
   const { t } = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
-  const { isOpen, tab, closeHelp, setTab } = useHelpStore();
-  const menuCode = findMenuCodeByPath(pathname);
+  const { isOpen, tab, overrideMenuCode, overrideHeadingSlug, closeHelp, setTab } = useHelpStore();
+  const menuCode = overrideMenuCode ?? findMenuCodeByPath(pathname);
   const { content, loading, notFound } = useHelpDoc(isOpen ? menuCode : undefined, tab);
   const [width, setWidth] = useState(448);
 
@@ -49,6 +49,16 @@ export default function HelpPanel() {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [isOpen, closeHelp]);
+
+  // 출처 딥링크: 본문 로드 완료 후 해당 헤딩으로 스크롤
+  useEffect(() => {
+    if (!isOpen || loading || !content || !overrideHeadingSlug) return;
+    const id = overrideHeadingSlug;
+    const timer = setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [isOpen, loading, content, overrideHeadingSlug]);
 
   if (!isOpen) return null;
 
