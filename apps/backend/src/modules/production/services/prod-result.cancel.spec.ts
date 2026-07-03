@@ -25,6 +25,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { TransactionService } from '../../../shared/transaction.service';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
+import { DefectLog } from '../../../entities/defect-log.entity';
 
 describe('ProdResultService cancel flow', () => {
   let target: ProdResultService;
@@ -204,7 +205,7 @@ describe('ProdResultService cancel flow', () => {
     expect(manager.save).not.toHaveBeenCalledWith(ProductTransaction, expect.anything());
   });
 
-  it('deletes production result and clears equipment within tenant on cancel', async () => {
+  it('marks production result as CANCELED and clears equipment within tenant on cancel', async () => {
     mockProdResultRepo.findOne
       .mockResolvedValueOnce({
         resultNo: 'PR-001',
@@ -235,9 +236,14 @@ describe('ProdResultService cancel flow', () => {
       { equipCode: 'EQ-001', company: 'HANES', plant: 'P01' },
       { currentJobOrderId: null },
     );
-    expect(manager.delete).toHaveBeenCalledWith(
+    expect(manager.update).toHaveBeenCalledWith(
       ProdResult,
       { resultNo: 'PR-001', company: 'HANES', plant: 'P01' },
+      expect.objectContaining({ status: 'CANCELED' }),
+    );
+    expect(manager.delete).toHaveBeenCalledWith(
+      DefectLog,
+      expect.objectContaining({ prodResultNo: 'PR-001', company: 'HANES', plant: 'P01' }),
     );
   });
 

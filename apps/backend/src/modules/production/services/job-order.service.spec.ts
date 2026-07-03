@@ -683,6 +683,7 @@ describe('JobOrderService', () => {
         select: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getRawOne: jest.fn().mockResolvedValue({ totalGoodQty: '80', totalDefectQty: '5' }),
       };
       mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockCreateQb as any);
@@ -889,6 +890,7 @@ describe('JobOrderService', () => {
         select: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getRawOne: jest.fn().mockResolvedValue({
           totalGoodQty: '80', totalDefectQty: '10', avgCycleTime: '5.5', resultCount: '3',
         }),
