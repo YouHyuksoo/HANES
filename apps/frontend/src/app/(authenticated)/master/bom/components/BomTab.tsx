@@ -40,7 +40,7 @@ const normalizeBomTree = (items: RawBomTreeItem[]): BomTreeItem[] =>
     const { id, bomKey, children, ...rest } = item;
     return {
       ...rest,
-      bomKey: bomKey || id || `${item.itemCode}::${item.childItemCode || item.itemCode}::${item.revision}`,
+      bomKey: bomKey || id || `${item.itemCode}::${item.childItemCode || item.itemCode}::${formatDateOnly(item.validFrom)}`,
       children: children ? normalizeBomTree(children) : undefined,
     };
   });
@@ -233,7 +233,7 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
       <BomUploadModal
         isOpen={uploadModalOpen}
         onClose={() => setUploadModalOpen(false)}
-        onComplete={() => { fetchBomTree(); setUploadModalOpen(false); }}
+        onComplete={() => fetchBomTree()}
       />
     </div>
   );

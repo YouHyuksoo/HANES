@@ -89,14 +89,14 @@ describe('BomService', () => {
       await expect(target.findById('P01::C01::A')).rejects.toThrow(NotFoundException);
     });
 
-    it('should default revision to A when not provided', async () => {
+    it('should omit validFrom condition when key has no date part', async () => {
       // Arrange
       mockBomRepo.findOne.mockResolvedValue(null);
 
       // Act & Assert
       await expect(target.findById('P01::C01')).rejects.toThrow(NotFoundException);
       expect(mockBomRepo.findOne).toHaveBeenCalledWith({
-        where: { parentItemCode: 'P01', childItemCode: 'C01', revision: 'A' },
+        where: { parentItemCode: 'P01', childItemCode: 'C01' },
       });
     });
   });
@@ -155,28 +155,59 @@ describe('BomService', () => {
       await expect(target.create(dto)).rejects.toThrow(ConflictException);
     });
 
-    it('should throw ConflictException when bom already exists', async () => {
-      // Arrange
-      const dto = { parentItemCode: 'P01', childItemCode: 'C01' } as any;
-      mockBomRepo.findOne.mockResolvedValue({ parentItemCode: 'P01' } as BomMaster);
+    it('should throw ConflictException when validFrom is missing', async () => {
+      // Arrange — 적용일자는 PK라 필수
+      const dto = { parentItemCode: 'P01', childItemCode: 'C01', qtyPer: 1 } as any;
 
       // Act & Assert
       await expect(target.create(dto)).rejects.toThrow(ConflictException);
     });
 
-    it('should create bom successfully', async () => {
+    it('should throw ConflictException when same parent+child+validFrom exists (revision과 무관)', async () => {
       // Arrange
-      const dto = { parentItemCode: 'P01', childItemCode: 'C01', qtyPer: 2 } as any;
-      const created = { ...dto, revision: 'A', useYn: 'Y' } as BomMaster;
-      mockBomRepo.findOne.mockResolvedValue(null);
+      const dto = { parentItemCode: 'P01', childItemCode: 'C01', revision: 'B', validFrom: '2026-01-01' } as any;
+      mockBomRepo.find.mockResolvedValue([{ revision: 'A', validFrom: '2026-01-01' } as unknown as BomMaster]);
+
+      // Act & Assert
+      await expect(target.create(dto)).rejects.toThrow(ConflictException);
+    });
+
+    it('should allow same revision when validFrom differs (적용일자 버전 관리)', async () => {
+      // Arrange
+      const dto = { parentItemCode: 'P01', childItemCode: 'C01', qtyPer: 2, revision: 'A', validFrom: '2026-02-01', validTo: '2099-12-31' } as any;
+      const created = { ...dto, useYn: 'Y' } as BomMaster;
+      mockBomRepo.find
+        .mockResolvedValueOnce([{ revision: 'A', validFrom: '2026-01-01' } as unknown as BomMaster]) // create 중복검사
+        .mockResolvedValue([]); // findById part enrich
       mockBomRepo.create.mockReturnValue(created);
       mockBomRepo.save.mockResolvedValue(created);
+      mockBomRepo.findOne.mockResolvedValue(created);
+      mockPartRepo.find.mockResolvedValue([]);
 
       // Act
       const result = await target.create(dto);
 
       // Assert
-      expect(result).toEqual(created);
+      expect(mockBomRepo.save).toHaveBeenCalled();
+      expect(result.parentItemCode).toBe('P01');
+    });
+
+    it('should create bom successfully', async () => {
+      // Arrange
+      const dto = { parentItemCode: 'P01', childItemCode: 'C01', qtyPer: 2, validFrom: '2026-01-01', validTo: '2099-12-31' } as any;
+      const created = { ...dto, revision: 'A', useYn: 'Y' } as BomMaster;
+      mockBomRepo.find.mockResolvedValue([]);
+      mockBomRepo.create.mockReturnValue(created);
+      mockBomRepo.save.mockResolvedValue(created);
+      mockBomRepo.findOne.mockResolvedValue(created);
+      mockPartRepo.find.mockResolvedValue([]);
+
+      // Act
+      const result = await target.create(dto);
+
+      // Assert
+      expect(mockBomRepo.save).toHaveBeenCalled();
+      expect(result.childItemCode).toBe('C01');
     });
   });
 
@@ -184,16 +215,30 @@ describe('BomService', () => {
   describe('update', () => {
     it('should update and return bom', async () => {
       // Arrange
-      const bom = { parentItemCode: 'P01', childItemCode: 'C01', revision: 'A' } as BomMaster;
+      const bom = { parentItemCode: 'P01', childItemCode: 'C01', revision: 'A', validFrom: '2026-01-01' } as unknown as BomMaster;
       mockBomRepo.findOne.mockResolvedValue(bom);
       mockPartRepo.find.mockResolvedValue([]);
       mockBomRepo.update.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.update('P01::C01::A', { qtyPer: 5 } as any);
+      await target.update('P01::C01::2026-01-01', { qtyPer: 5 } as any);
 
       // Assert
-      expect(mockBomRepo.update).toHaveBeenCalled();
+      expect(mockBomRepo.update).toHaveBeenCalledWith(
+        expect.objectContaining({ parentItemCode: 'P01', childItemCode: 'C01', validFrom: expect.any(Date) }),
+        expect.objectContaining({ qtyPer: 5 }),
+      );
+    });
+
+    it('should throw ConflictException when changing validFrom to an existing sibling date', async () => {
+      // Arrange
+      const bom = { parentItemCode: 'P01', childItemCode: 'C01', revision: 'A', validFrom: '2026-01-01' } as unknown as BomMaster;
+      mockBomRepo.findOne.mockResolvedValue(bom);
+      mockPartRepo.find.mockResolvedValue([]);
+      mockBomRepo.find.mockResolvedValue([{ validFrom: '2026-03-01' } as unknown as BomMaster]);
+
+      // Act & Assert
+      await expect(target.update('P01::C01::2026-01-01', { validFrom: '2026-03-01' } as any)).rejects.toThrow(ConflictException);
     });
   });
 
@@ -201,16 +246,19 @@ describe('BomService', () => {
   describe('delete', () => {
     it('should delete and return id', async () => {
       // Arrange
-      const bom = { parentItemCode: 'P01', childItemCode: 'C01', revision: 'A' } as BomMaster;
+      const bom = { parentItemCode: 'P01', childItemCode: 'C01', revision: 'A', validFrom: '2026-01-01' } as unknown as BomMaster;
       mockBomRepo.findOne.mockResolvedValue(bom);
       mockPartRepo.find.mockResolvedValue([]);
       mockBomRepo.delete.mockResolvedValue({ affected: 1 } as any);
 
       // Act
-      const result = await target.delete('P01::C01::A');
+      const result = await target.delete('P01::C01::2026-01-01');
 
       // Assert
-      expect(result).toEqual({ id: 'P01::C01::A' });
+      expect(result).toEqual({ id: 'P01::C01::2026-01-01' });
+      expect(mockBomRepo.delete).toHaveBeenCalledWith(
+        expect.objectContaining({ parentItemCode: 'P01', childItemCode: 'C01', validFrom: expect.any(Date) }),
+      );
     });
   });
 

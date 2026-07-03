@@ -137,10 +137,11 @@ export default function BomUploadModal({ isOpen, onClose, onComplete }: BomUploa
               {t("master.bom.uploadWithCount", "업로드")} ({preview?.newCount ?? 0}{t("common.count", "건")})
             </Button>
           )}
-          {stage === "done" && (
+          {stage === "done" ? (
             <Button size="sm" onClick={handleClose}>{t("common.close")}</Button>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={handleClose}>{t("common.close")}</Button>
           )}
-          <Button variant="ghost" size="sm" onClick={handleClose}>{t("common.close")}</Button>
         </>
       }
     >

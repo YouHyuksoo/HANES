@@ -1,11 +1,11 @@
 /**
  * @file bom-master.entity.ts
  * @description BOM 마스터(BomMaster) 엔티티 - 부모/자식 품목 간 BOM 관계를 정의한다.
- *              복합 PK: (parentItemCode, childItemCode, revision)
+ *              복합 PK: (company, plant, parentItemCode, childItemCode, validFrom)
  *              parentPartId → parentItemCode, childPartId → childItemCode로 변환됨.
  *
  * 초보자 가이드:
- * 1. 복합 PK: PARENT_ITEM_CODE + CHILD_ITEM_CODE + REVISION
+ * 1. 복합 PK: COMPANY + PLANT_CD + PARENT_ITEM_CODE + CHILD_ITEM_CODE + VALID_FROM (적용일자 버전 관리)
  * 2. UUID id 필드 없음
  * 3. ItemMaster의 itemCode를 직접 참조
  */
@@ -29,7 +29,7 @@ export class BomMaster {
   @PrimaryColumn({ name: 'CHILD_ITEM_CODE', length: 50 })
   childItemCode: string;
 
-  @PrimaryColumn({ name: 'REVISION', length: 10, default: 'A' })
+  @Column({ name: 'REVISION', length: 10, default: 'A' })
   revision: string;
 
   @Column({ name: 'QTY_PER', type: 'decimal', precision: 10, scale: 4 })
@@ -50,8 +50,8 @@ export class BomMaster {
   @Column({ type: 'varchar2', name: 'ECO_NO', length: 50, nullable: true })
   ecoNo: string | null;
 
-  @Column({ name: 'VALID_FROM', type: 'date', nullable: true })
-  validFrom: Date | null;
+  @PrimaryColumn({ name: 'VALID_FROM', type: 'date' })
+  validFrom: Date;
 
   @Column({ name: 'VALID_TO', type: 'date', nullable: true })
   validTo: Date | null;

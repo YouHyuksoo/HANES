@@ -18,8 +18,7 @@ import QualityConditionEditor from "../routing/components/QualityConditionEditor
 import RoutingMaterialEditor from "../routing/components/RoutingMaterialEditor";
 import type { BomRoutingInfo, BomRoutingProcess, ParentPart, RoutingTarget } from "./types";
 import type { SelectedProcess } from "../routing/types";
-
-const getToday = () => new Date().toISOString().split("T")[0];
+import { getTodayLocal } from "@/utils/date";
 
 export default function BomPage() {
   usePageAiTools("master.bom");
@@ -36,7 +35,7 @@ export default function BomPage() {
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState("FINISHED");
   const [bomDateMode, setBomDateMode] = useState<"effective" | "all">("effective");
-  const [effectiveDate, setEffectiveDate] = useState(getToday());
+  const [effectiveDate, setEffectiveDate] = useState(getTodayLocal());
   const [loadingParents, setLoadingParents] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [loadingRouting, setLoadingRouting] = useState(false);
@@ -443,7 +442,7 @@ export default function BomPage() {
       <BomUploadModal
         isOpen={uploadOpen}
         onClose={() => setUploadOpen(false)}
-        onComplete={() => { setUploadOpen(false); fetchParents(); }}
+        onComplete={() => fetchParents()}
       />
     </div>
   );

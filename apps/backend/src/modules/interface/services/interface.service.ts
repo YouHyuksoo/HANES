@@ -293,19 +293,34 @@ export class InterfaceService {
         : [];
       const partMap = new Map(allParts.map((p) => [p.itemCode, p]));
 
-      // 기존 BOM 일괄 선조회 (N+1 제거)
-      const bomKeys = dtos.map((d) => ({
+      // 기존 BOM 일괄 선조회 (N+1 제거) — PK는 모+자+적용일자(VALID_FROM)
+      const toYmd = (v: Date | string | null | undefined): string => {
+        if (!v) return '';
+        const d = v instanceof Date ? v : new Date(v);
+        if (isNaN(d.getTime())) return '';
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      };
+      const toLocalDate = (ymd: string): Date => {
+        const [y, m, d] = ymd.split('-').map(Number);
+        return new Date(y, m - 1, d);
+      };
+      const bomPairs = dtos.map((d) => ({
         parentItemCode: d.parentItemCode,
         childItemCode: d.childItemCode,
-        revision: d.revision ?? 'A',
         ...this.tenantWhere(company, plant),
       }));
-      const existingBoms = bomKeys.length > 0
-        ? await this.bomMasterRepository.find({ where: bomKeys })
+      const existingBoms = bomPairs.length > 0
+        ? await this.bomMasterRepository.find({ where: bomPairs })
         : [];
-      const bomKeySet = new Set(
-        existingBoms.map((b) => `${b.parentItemCode}::${b.childItemCode}::${b.revision}`),
-      );
+      // 정확 매칭(모+자+적용일자)과 페어 매칭(모+자 — validFrom 미지정 DTO용) 두 인덱스
+      const bomByExactKey = new Map(existingBoms.map((b) => [`${b.parentItemCode}::${b.childItemCode}::${toYmd(b.validFrom)}`, b]));
+      const bomByPair = new Map<string, (typeof existingBoms)[number]>();
+      for (const b of existingBoms) {
+        const pairKey = `${b.parentItemCode}::${b.childItemCode}`;
+        const prev = bomByPair.get(pairKey);
+        // 페어 매칭은 적용일자가 가장 최신인 행을 대상으로 갱신
+        if (!prev || toYmd(b.validFrom) > toYmd(prev.validFrom)) bomByPair.set(pairKey, b);
+      }
 
       const results = [];
       for (const dto of dtos) {
@@ -318,25 +333,33 @@ export class InterfaceService {
         }
 
         const rev = dto.revision ?? 'A';
-        const key = `${parentPart.itemCode}::${childPart.itemCode}::${rev}`;
+        const dtoYmd = dto.validFrom ? toYmd(dto.validFrom) : '';
+        const target = dtoYmd
+          ? bomByExactKey.get(`${parentPart.itemCode}::${childPart.itemCode}::${dtoYmd}`)
+          : bomByPair.get(`${parentPart.itemCode}::${childPart.itemCode}`);
 
-        if (bomKeySet.has(key)) {
+        if (target) {
           await this.bomMasterRepository.update(
-            { parentItemCode: parentPart.itemCode, childItemCode: childPart.itemCode, revision: rev, ...this.tenantWhere(company, plant) },
-            { qtyPer: dto.qtyPer, ecoNo: dto.ecoNo },
+            { parentItemCode: parentPart.itemCode, childItemCode: childPart.itemCode, validFrom: toLocalDate(toYmd(target.validFrom)), ...this.tenantWhere(company, plant) },
+            { qtyPer: dto.qtyPer, ecoNo: dto.ecoNo, revision: rev },
           );
         } else {
+          const validFromYmd = dtoYmd || toYmd(new Date());
           const newBom = this.bomMasterRepository.create({
             parentItemCode: parentPart.itemCode,
             childItemCode: childPart.itemCode,
             qtyPer: dto.qtyPer,
             revision: rev,
+            validFrom: toLocalDate(validFromYmd),
             ecoNo: dto.ecoNo,
             company,
             plant,
           });
           await this.bomMasterRepository.save(newBom);
-          bomKeySet.add(key);
+          bomByExactKey.set(`${parentPart.itemCode}::${childPart.itemCode}::${validFromYmd}`, newBom);
+          const pairKey = `${parentPart.itemCode}::${childPart.itemCode}`;
+          const prev = bomByPair.get(pairKey);
+          if (!prev || validFromYmd > toYmd(prev.validFrom)) bomByPair.set(pairKey, newBom);
         }
 
         results.push({ success: true, dto });

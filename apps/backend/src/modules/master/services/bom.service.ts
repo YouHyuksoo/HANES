@@ -232,10 +232,11 @@ export class BomService {
   }
 
   async findById(id: string, company?: string, plant?: string) {
-    // id is composite key encoded as "parentItemCode::childItemCode::revision"
-    const [parentItemCode, childItemCode, revision] = id.split('::');
+    // id is composite key encoded as "parentItemCode::childItemCode::validFrom(YYYY-MM-DD)"
+    const [parentItemCode, childItemCode, validFromKey] = id.split('::');
+    const validFrom = this.keyDate(validFromKey);
     const bom = await this.bomRepository.findOne({
-      where: { parentItemCode, childItemCode, revision: revision || 'A', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      where: { parentItemCode, childItemCode, ...(validFrom ? { validFrom } : {}), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
 
     if (!bom) throw new NotFoundException(`BOM을 찾을 수 없습니다: ${id}`);
@@ -358,7 +359,7 @@ export class BomService {
 
     const query = `
       SELECT
-        b.PARENT_ITEM_CODE || '::' || b.CHILD_ITEM_CODE || '::' || b.REVISION AS "id",
+        b.PARENT_ITEM_CODE || '::' || b.CHILD_ITEM_CODE || '::' || TO_CHAR(b.VALID_FROM, 'YYYY-MM-DD') AS "id",
         b.PARENT_ITEM_CODE AS "parentItemCode",
         b.CHILD_ITEM_CODE  AS "childItemCode",
         b.QTY_PER          AS "qtyPer",
@@ -463,9 +464,25 @@ export class BomService {
     return this.toDateOnly(parsed);
   }
 
+  /**
+   * 날짜형 값을 로컬(서버 KST) 자정 Date로 변환 — PK VALID_FROM 조회/저장 값 단일 경로.
+   * new Date('YYYY-MM-DD')는 UTC 자정(KST 09:00)이라 DB의 자정 값과 어긋난다.
+   */
+  private keyDate(value: unknown): Date | null {
+    const s = this.toDateOnly(value);
+    if (!s) return null;
+    const [y, m, d] = s.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
   async create(dto: CreateBomDto, company?: string, plant?: string) {
     if (dto.parentItemCode === dto.childItemCode) {
       throw new ConflictException('상위 품목과 하위 품목이 같을 수 없습니다.');
+    }
+
+    const validFromYmd = this.toDateOnly(dto.validFrom);
+    if (!validFromYmd) {
+      throw new ConflictException('적용일자(validFrom)는 필수입니다. (YYYY-MM-DD)');
     }
 
     const existing = await this.bomRepository.find({
@@ -475,15 +492,9 @@ export class BomService {
         ...(company ? { company } : {}),
         ...(plant ? { plant } : {}),
       },
-      select: ['revision', 'validFrom'],
+      select: ['validFrom'],
     });
-
-    const revision = dto.revision ?? 'A';
-    if (existing.some((b) => b.revision === revision)) {
-      throw new ConflictException('이미 존재하는 BOM입니다. (동일 상위·하위·리비전)');
-    }
-    const validFromYmd = this.toDateOnly(dto.validFrom);
-    if (validFromYmd && existing.some((b) => this.toDateOnly(b.validFrom) === validFromYmd)) {
+    if (existing.some((b) => this.toDateOnly(b.validFrom) === validFromYmd)) {
       throw new ConflictException('동일 상위·하위 품목에 같은 적용일자의 BOM이 이미 존재합니다.');
     }
 
@@ -497,7 +508,7 @@ export class BomService {
       processCode: dto.processCode,
       side: dto.side,
       ecoNo: dto.ecoNo,
-      validFrom: dto.validFrom ? new Date(dto.validFrom) : undefined,
+      validFrom: this.keyDate(validFromYmd)!,
       validTo: dto.validTo ? new Date(dto.validTo) : undefined,
       remark: dto.remark,
       useYn: dto.useYn ?? 'Y',
@@ -506,27 +517,28 @@ export class BomService {
     });
 
     await this.bomRepository.save(bom);
-    return this.findById(`${bom.parentItemCode}::${bom.childItemCode}::${bom.revision}`, company, plant);
+    return this.findById(`${bom.parentItemCode}::${bom.childItemCode}::${validFromYmd}`, company, plant);
   }
 
   async update(id: string, dto: UpdateBomDto, company?: string, plant?: string) {
     const bom = await this.findById(id, company, plant);
 
-    const updateData: Partial<Pick<BomMaster, 'qtyPer' | 'seq' | 'bomGrp' | 'processCode' | 'side' | 'ecoNo' | 'validFrom' | 'validTo' | 'remark' | 'useYn'>> = {};
+    const updateData: Partial<Pick<BomMaster, 'qtyPer' | 'seq' | 'revision' | 'bomGrp' | 'processCode' | 'side' | 'ecoNo' | 'validFrom' | 'validTo' | 'remark' | 'useYn'>> = {};
     if (dto.qtyPer !== undefined) updateData.qtyPer = dto.qtyPer;
     if (dto.seq !== undefined) updateData.seq = dto.seq;
     if (dto.bomGrp !== undefined) updateData.bomGrp = dto.bomGrp;
     if (dto.processCode !== undefined) updateData.processCode = dto.processCode;
     if (dto.side !== undefined) updateData.side = dto.side;
     if (dto.ecoNo !== undefined) updateData.ecoNo = dto.ecoNo;
-    if (dto.validFrom !== undefined) updateData.validFrom = dto.validFrom ? new Date(dto.validFrom) : null;
+    if (dto.revision !== undefined) updateData.revision = dto.revision;
     if (dto.validTo !== undefined) updateData.validTo = dto.validTo ? new Date(dto.validTo) : null;
     if (dto.remark !== undefined) updateData.remark = dto.remark;
     if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
 
-    // 적용일자 변경 시 동일 모+자(다른 리비전)에 같은 적용일자가 있으면 중복 — create/업로드와 동일 규칙
+    // 적용일자는 PK — 변경 시 동일 모+자에 같은 적용일자가 이미 있으면 중복
+    const oldValidFrom = this.toDateOnly(bom.validFrom);
     const newValidFrom = this.toDateOnly(dto.validFrom);
-    if (newValidFrom && newValidFrom !== this.toDateOnly(bom.validFrom)) {
+    if (newValidFrom && newValidFrom !== oldValidFrom) {
       const siblings = await this.bomRepository.find({
         where: {
           parentItemCode: bom.parentItemCode,
@@ -534,32 +546,38 @@ export class BomService {
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         },
-        select: ['revision', 'validFrom'],
+        select: ['validFrom'],
       });
-      if (siblings.some((b) => b.revision !== bom.revision && this.toDateOnly(b.validFrom) === newValidFrom)) {
+      if (siblings.some((b) => this.toDateOnly(b.validFrom) === newValidFrom)) {
         throw new ConflictException('동일 상위·하위 품목에 같은 적용일자의 BOM이 이미 존재합니다.');
       }
+      updateData.validFrom = this.keyDate(newValidFrom)!;
     }
 
     await this.bomRepository.update(
       {
         parentItemCode: bom.parentItemCode,
         childItemCode: bom.childItemCode,
-        revision: bom.revision,
+        ...(oldValidFrom ? { validFrom: this.keyDate(oldValidFrom)! } : {}),
         ...(company ? { company } : {}),
         ...(plant ? { plant } : {}),
       },
       updateData,
     );
-    return this.findById(id, company, plant);
+    return this.findById(
+      `${bom.parentItemCode}::${bom.childItemCode}::${newValidFrom ?? oldValidFrom ?? ''}`,
+      company,
+      plant,
+    );
   }
 
   async delete(id: string, company?: string, plant?: string) {
     const bom = await this.findById(id, company, plant);
+    const validFrom = this.keyDate(bom.validFrom);
     await this.bomRepository.delete({
       parentItemCode: bom.parentItemCode,
       childItemCode: bom.childItemCode,
-      revision: bom.revision,
+      ...(validFrom ? { validFrom } : {}),
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
     });
@@ -606,7 +624,6 @@ export class BomService {
 
     const rows: BomPreviewRow[] = [];
     const fileKeySet = new Set<string>();
-    const filePkSet = new Set<string>();
     const dbKeys: { parentItemCode: string; childItemCode: string; validFrom: Date | null }[] = [];
 
     for (let i = 0; i < jsonRows.length; i++) {
@@ -641,14 +658,7 @@ export class BomService {
         rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, validTo, qtyPer: Number(qtyRaw), revision, status: 'duplicate_file', message: '파일 내 중복 (동일 모·자·적용일자)' });
         continue;
       }
-      // PK(모+자+리비전) 충돌은 중복 규칙과 별개의 물리 제약 — 행 단위 오류로 안내
-      const filePk = `${parentCode}::${childCode}::${revision}`;
-      if (filePkSet.has(filePk)) {
-        rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, validTo, qtyPer: Number(qtyRaw), revision, status: 'error', message: `파일 내 동일 모·자·리비전(${revision}) 존재 — 리비전 변경 필요` });
-        continue;
-      }
       fileKeySet.add(fileKey);
-      filePkSet.add(filePk);
       dbKeys.push({ parentItemCode: parentCode, childItemCode: childCode, validFrom: validFrom ? new Date(validFrom) : null });
       rows.push({ row: rowNum, parentItemCode: parentCode, childItemCode: childCode, validFrom, validTo, qtyPer: Number(qtyRaw), revision, status: 'new' });
     }
@@ -662,11 +672,10 @@ export class BomService {
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         })),
-        select: ['parentItemCode', 'childItemCode', 'revision', 'validFrom'],
+        select: ['parentItemCode', 'childItemCode', 'validFrom'],
       });
-      // DB 기존 행의 모+자+유효시작일 키 셋 (중복 판정) / 모+자+리비전 키 셋 (PK 충돌 검사)
+      // DB 기존 행의 모+자+유효시작일(PK) 키 셋
       const dbKeySet = new Set(existBoms.map((b) => `${b.parentItemCode}::${b.childItemCode}::${this.toDateOnly(b.validFrom) ?? ''}`));
-      const dbPkSet = new Set(existBoms.map((b) => `${b.parentItemCode}::${b.childItemCode}::${b.revision}`));
 
       for (const row of rows) {
         if (row.status !== 'new') continue;
@@ -674,11 +683,6 @@ export class BomService {
         if (dbKeySet.has(key)) {
           row.status = 'duplicate_db';
           row.message = 'DB에 동일 모·자·적용일자 존재';
-          continue;
-        }
-        if (dbPkSet.has(`${row.parentItemCode}::${row.childItemCode}::${row.revision}`)) {
-          row.status = 'error';
-          row.message = `DB에 동일 모·자·리비전(${row.revision}) 존재 — 적용일자가 다르면 리비전 변경 필요`;
         }
       }
     }
@@ -711,7 +715,7 @@ export class BomService {
       : [];
     const validCodes = new Set(parts.map((p) => p.itemCode));
 
-    /* 2) 기존 BOM 일괄 조회 — 중복 스킵 판정은 모+자+적용일자(미리보기와 동일 규칙), 리비전은 PK 충돌 검사용 */
+    /* 2) 기존 BOM 일괄 조회 — 중복 스킵 판정은 PK인 모+자+적용일자 (미리보기와 동일 규칙) */
     const pairList = jsonRows
       .map((r) => ({ p: String(r['상위품목코드'] ?? '').trim(), c: String(r['하위품목코드'] ?? '').trim() }))
       .filter((pk) => pk.p && pk.c);
@@ -722,15 +726,13 @@ export class BomService {
         ...(company ? { company } : {}),
         ...(plant ? { plant } : {}),
       })),
-      select: ['parentItemCode', 'childItemCode', 'revision', 'validFrom'],
+      select: ['parentItemCode', 'childItemCode', 'validFrom'],
     });
     const existValidSet = new Set(existBoms.map((b) => `${b.parentItemCode}::${b.childItemCode}::${this.toDateOnly(b.validFrom) ?? ''}`));
-    const existPkSet = new Set(existBoms.map((b) => `${b.parentItemCode}::${b.childItemCode}::${b.revision}`));
 
     /* 3) 행별 검증 및 INSERT */
     const result: BomUploadResult = { inserted: 0, skipped: 0, errors: [] };
     const doneValidSet = new Set<string>();
-    const donePkSet = new Set<string>();
     const str = (v: unknown) => String(v ?? '').trim();
 
     for (let i = 0; i < jsonRows.length; i++) {
@@ -750,16 +752,9 @@ export class BomService {
       if (!validCodes.has(parentCode)) { result.errors.push({ row: rowNum, message: `상위품목코드 [${parentCode}]가 품목마스터에 없습니다.` }); continue; }
       if (!validCodes.has(childCode)) { result.errors.push({ row: rowNum, message: `하위품목코드 [${childCode}]가 품목마스터에 없습니다.` }); continue; }
 
-      // 중복 스킵: 모+자+적용일자 (미리보기 duplicate 규칙과 동일)
+      // 중복 스킵: PK인 모+자+적용일자 (미리보기 duplicate 규칙과 동일)
       const dupKey = `${parentCode}::${childCode}::${validFrom}`;
       if (existValidSet.has(dupKey) || doneValidSet.has(dupKey)) { result.skipped++; continue; }
-
-      // PK(모+자+리비전) 충돌은 물리 제약 — 조용한 스킵 대신 명시적 에러로 안내
-      const pkKey = `${parentCode}::${childCode}::${revision}`;
-      if (existPkSet.has(pkKey) || donePkSet.has(pkKey)) {
-        result.errors.push({ row: rowNum, message: `동일 모·자·리비전(${revision}) BOM이 이미 존재합니다 — 적용일자가 다르면 리비전을 변경하세요.` });
-        continue;
-      }
 
       try {
         const bom = this.bomRepository.create({
@@ -767,7 +762,7 @@ export class BomService {
           qtyPer: Number(qtyRaw), seq: Number(row['순서'] ?? 0) || 0,
           bomGrp: str(row['BOM그룹']) || null, processCode: str(row['공정코드']) || null,
           side: str(row['사이드']) || null, ecoNo: str(row['ECO번호']) || null,
-          validFrom: new Date(validFrom),
+          validFrom: this.keyDate(validFrom)!,
           validTo: new Date(validTo),
           remark: str(row['비고']) || null, useYn: 'Y',
           company: company ?? null, plant: plant ?? null,
@@ -775,7 +770,6 @@ export class BomService {
         });
         await this.bomRepository.save(bom);
         doneValidSet.add(dupKey);
-        donePkSet.add(pkKey);
         result.inserted++;
       } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : String(error);

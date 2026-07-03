@@ -1,15 +1,15 @@
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-06-30 17:52:53
+- 작성일: 2026-07-03 09:58:59
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
 
 ## 1. 요약
 
-- 테이블 수: 171
-- 컬럼 수: 2840
-- PK 보유 테이블: 167
+- 테이블 수: 172
+- 컬럼 수: 2851
+- PK 보유 테이블: 168
 - DB FK 수: 29
 - COM_CODES 그룹 수: 161
 
@@ -37,7 +37,7 @@
 
 ### Master Data
 
-- `BOM_MASTERS`: BOM(자재명세서) 마스터 - 모/자 품목 관계 / PK: `COMPANY, PLANT_CD, PARENT_ITEM_CODE, CHILD_ITEM_CODE, REVISION`
+- `BOM_MASTERS`: BOM(자재명세서) 마스터 - 모/자 품목 관계 / PK: `COMPANY, PLANT_CD, PARENT_ITEM_CODE, CHILD_ITEM_CODE, VALID_FROM`
 - `BOM_MASTERS_CONSUMABLE_BAK`: - / PK: `-`
 - `COMPANY_MASTERS`: 자사(본사) 법인 정보. 자기 회사 1건만 보유(외부 회사 아님) / PK: `COMPANY, PLANT_CD, COMPANY_CODE`
 - `IQC_PART_SPECS`: 품목별 IQC 기준 헤더 / PK: `COMPANY, PLANT_CD, ITEM_CODE`
@@ -86,6 +86,7 @@
 
 ### Other
 
+- `AI_CHAT_FEEDBACKS`: - / PK: `FEEDBACK_ID`
 - `AQL_ACCEPTANCE_RULES`: ISO 2859-1 Code Letter와 AQL값별 Ac/Re 판정표 / PK: `COMPANY, PLANT_CD, INSPECTION_MODE, CODE_LETTER, AQL_VALUE`
 - `AQL_CODE_LETTER_RULES`: ISO 2859-1 LOT 수량/검사수준별 Sample Size Code Letter 표 / PK: `COMPANY, PLANT_CD, INSPECTION_LEVEL, LOT_QTY_FROM`
 - `AQL_CODE_LETTER_SAMPLES`: ISO 2859-1 Code Letter별 표준 샘플수량 표 / PK: `COMPANY, PLANT_CD, CODE_LETTER`
@@ -232,6 +233,19 @@ erDiagram
     VARCHAR2_50 PLANT_CD NOT_NULL
     string more_columns
   }
+  AI_CHAT_FEEDBACKS {
+    NUMBER FEEDBACK_ID PK NOT_NULL
+    VARCHAR2_10 COMPANY NOT_NULL
+    VARCHAR2_10 PLANT_CD NOT_NULL
+    VARCHAR2_200 ROUTE
+    VARCHAR2_50 MENU_CODE
+    CLOB QUESTION NOT_NULL
+    CLOB ANSWER NOT_NULL
+    CLOB SOURCES_JSON
+    VARCHAR2_10 RATING NOT_NULL
+    VARCHAR2_50 CREATED_BY NOT_NULL
+    TIMESTAMP_6 CREATED_AT NOT_NULL
+  }
   AQL_ACCEPTANCE_RULES {
     VARCHAR2_50 COMPANY PK NOT_NULL
     VARCHAR2_50 PLANT_CD PK NOT_NULL
@@ -336,12 +350,12 @@ erDiagram
     VARCHAR2_50 CHILD_ITEM_CODE PK NOT_NULL
     NUMBER_10_4 QTY_PER NOT_NULL
     NUMBER SEQ NOT_NULL
-    VARCHAR2_10 REVISION PK NOT_NULL
+    VARCHAR2_10 REVISION
     VARCHAR2_50 BOM_GRP
     VARCHAR2_50 OPER
     VARCHAR2_10 SIDE
     VARCHAR2_50 ECO_NO
-    DATE VALID_FROM
+    DATE VALID_FROM PK NOT_NULL
     DATE VALID_TO
     VARCHAR2_1000 REMARK
     VARCHAR2_50 COMPANY PK NOT_NULL
@@ -2791,6 +2805,7 @@ erDiagram
 
 | 자식 테이블 | 컬럼 | 후보 부모 테이블 |
 |---|---|---|
+| `AI_CHAT_FEEDBACKS` | `MENU_CODE` | `MENU_CATEGORIES` |
 | `AQL_SAMPLING_RULES` | `AQL_CODE` | `AQL_ACCEPTANCE_RULES` |
 | `AQL_STANDARDS` | `AQL_CODE` | `AQL_ACCEPTANCE_RULES` |
 | `AUDIT_FINDINGS` | `AUDIT_ID` | `AUDIT_PLANS` |
@@ -2990,7 +3005,6 @@ erDiagram
 | `STOCK_TRANSACTIONS_BAK_20260616` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `STOCK_TRANSACTIONS_BAK_20260616` | `WORKER_CODE` | `WORKER_MASTERS` |
 | `SUBCON_DELIVERIES` | `WORKER_CODE` | `WORKER_MASTERS` |
-| `SUBCON_ORDERS` | `VENDOR_CODE` | `VENDOR_BARCODE_MAPPINGS` |
 
 ## 5. 모듈별 ERD
 
@@ -3268,12 +3282,12 @@ erDiagram
     VARCHAR2_50 CHILD_ITEM_CODE PK NOT_NULL
     NUMBER_10_4 QTY_PER NOT_NULL
     NUMBER SEQ NOT_NULL
-    VARCHAR2_10 REVISION PK NOT_NULL
+    VARCHAR2_10 REVISION
     VARCHAR2_50 BOM_GRP
     VARCHAR2_50 OPER
     VARCHAR2_10 SIDE
     VARCHAR2_50 ECO_NO
-    DATE VALID_FROM
+    DATE VALID_FROM PK NOT_NULL
     DATE VALID_TO
     VARCHAR2_1000 REMARK
     VARCHAR2_50 COMPANY PK NOT_NULL
@@ -3928,6 +3942,19 @@ erDiagram
 
 ```mermaid
 erDiagram
+  AI_CHAT_FEEDBACKS {
+    NUMBER FEEDBACK_ID PK NOT_NULL
+    VARCHAR2_10 COMPANY NOT_NULL
+    VARCHAR2_10 PLANT_CD NOT_NULL
+    VARCHAR2_200 ROUTE
+    VARCHAR2_50 MENU_CODE
+    CLOB QUESTION NOT_NULL
+    CLOB ANSWER NOT_NULL
+    CLOB SOURCES_JSON
+    VARCHAR2_10 RATING NOT_NULL
+    VARCHAR2_50 CREATED_BY NOT_NULL
+    TIMESTAMP_6 CREATED_AT NOT_NULL
+  }
   AQL_ACCEPTANCE_RULES {
     VARCHAR2_50 COMPANY PK NOT_NULL
     VARCHAR2_50 PLANT_CD PK NOT_NULL
@@ -5595,6 +5622,24 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` |  |
 
+### `AI_CHAT_FEEDBACKS`
+
+- PK: `FEEDBACK_ID`
+
+| 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
+|---|---|---|---|---|---|
+| `FEEDBACK_ID` | `NUMBER` | `N` | PK | 기본값 `"TEST"."ISEQ$$_86814".nextval` |  |
+| `COMPANY` | `VARCHAR2(10)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(10)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `ROUTE` | `VARCHAR2(200)` | `Y` |  |  |  |
+| `MENU_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `QUESTION` | `CLOB` | `N` |  |  |  |
+| `ANSWER` | `CLOB` | `N` |  |  |  |
+| `SOURCES_JSON` | `CLOB` | `Y` |  |  |  |
+| `RATING` | `VARCHAR2(10)` | `N` |  | CHECK `RATING IN ('LIKE','DISLIKE')` |  |
+| `CREATED_BY` | `VARCHAR2(50)` | `N` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+
 ### `AQL_ACCEPTANCE_RULES`
 
 - 설명: ISO 2859-1 Code Letter와 AQL값별 Ac/Re 판정표
@@ -5746,7 +5791,7 @@ erDiagram
 ### `BOM_MASTERS`
 
 - 설명: BOM(자재명세서) 마스터 - 모/자 품목 관계
-- PK: `COMPANY, PLANT_CD, PARENT_ITEM_CODE, CHILD_ITEM_CODE, REVISION`
+- PK: `COMPANY, PLANT_CD, PARENT_ITEM_CODE, CHILD_ITEM_CODE, VALID_FROM`
 
 | 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
 |---|---|---|---|---|---|
@@ -5754,12 +5799,12 @@ erDiagram
 | `CHILD_ITEM_CODE` | `VARCHAR2(50)` | `N` | PK<br>FK->ITEM_MASTERS(COMPANY, PLANT_CD, ITEM_CODE) |  | 자품목 ID (FK → PART_MASTERS.ID) |
 | `QTY_PER` | `NUMBER(10,4)` | `N` |  |  | 소요량 (모품목 1개당) |
 | `SEQ` | `NUMBER` | `N` |  | 기본값 `0` | BOM 순서 |
-| `REVISION` | `VARCHAR2(10)` | `N` | PK | 기본값 `'A'` | 리비전 |
+| `REVISION` | `VARCHAR2(10)` | `Y` |  | 기본값 `'A'` | 리비전 |
 | `BOM_GRP` | `VARCHAR2(50)` | `Y` |  |  | BOM 그룹 |
 | `OPER` | `VARCHAR2(50)` | `Y` |  |  | 투입 공정 |
 | `SIDE` | `VARCHAR2(10)` | `Y` |  |  | 사이드 (L/R 등) |
 | `ECO_NO` | `VARCHAR2(50)` | `Y` |  |  | 설변번호 (ECO) |
-| `VALID_FROM` | `DATE` | `Y` |  |  | 유효 시작일 |
+| `VALID_FROM` | `DATE` | `N` | PK |  | 유효 시작일 |
 | `VALID_TO` | `DATE` | `Y` |  |  | 유효 종료일 |
 | `REMARK` | `VARCHAR2(1000)` | `Y` |  |  | 비고 |
 | `USE_YN` | `VARCHAR2(1)` | `N` |  | 기본값 `'Y'`<br>COM_CODES.USE_YN: Y=사용, N=미사용<br>관례값 Y/N | 사용여부 (Y/N) |

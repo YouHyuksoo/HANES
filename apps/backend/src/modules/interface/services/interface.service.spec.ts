@@ -580,10 +580,10 @@ describe('InterfaceService', () => {
         where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
       });
       expect(mockBomRepo.find).toHaveBeenCalledWith({
-        where: [{ parentItemCode: 'FG-001', childItemCode: 'RM-001', revision: 'A', company: 'C1', plant: 'P1' }],
+        where: [{ parentItemCode: 'FG-001', childItemCode: 'RM-001', company: 'C1', plant: 'P1' }],
       });
       expect(mockBomRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ parentItemCode: 'FG-001', childItemCode: 'RM-001', company: 'C1', plant: 'P1' }),
+        expect.objectContaining({ parentItemCode: 'FG-001', childItemCode: 'RM-001', company: 'C1', plant: 'P1', validFrom: expect.any(Date) }),
       );
     });
 

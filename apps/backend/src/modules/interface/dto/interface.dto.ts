@@ -152,6 +152,11 @@ export class BomSyncDto {
   @IsString()
   revision?: string;
 
+  @ApiPropertyOptional({ description: '적용일자(YYYY-MM-DD). 미지정 시 기존 행 갱신, 신규 생성은 당일 적용' })
+  @IsOptional()
+  @IsString()
+  validFrom?: string;
+
   @ApiPropertyOptional({ description: 'ECO 번호' })
   @IsOptional()
   @IsString()

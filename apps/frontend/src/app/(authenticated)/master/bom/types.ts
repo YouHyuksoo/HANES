@@ -62,10 +62,13 @@ export interface BomTreeItem {
   isRoot?: boolean;
 }
 
+import { formatDateOnly } from "@/utils/date";
+
+/** BOM 복합키: parent::child::validFrom(YYYY-MM-DD) — DB PK(모+자+적용일자)와 동일 */
 export const getBomKey = (
-  item: Pick<BomTreeItem, "bomKey" | "parentItemCode" | "itemCode" | "childItemCode" | "revision" | "isRoot">,
+  item: Pick<BomTreeItem, "bomKey" | "parentItemCode" | "itemCode" | "childItemCode" | "validFrom" | "isRoot">,
 ) =>
-  item.bomKey || (item.isRoot ? `ROOT::${item.itemCode}` : `${item.parentItemCode || item.itemCode}::${item.childItemCode || item.itemCode}::${item.revision}`);
+  item.bomKey || (item.isRoot ? `ROOT::${item.itemCode}` : `${item.parentItemCode || item.itemCode}::${item.childItemCode || item.itemCode}::${formatDateOnly(item.validFrom)}`);
 
 /** BOM에서 라우팅관리 화면으로 연결할 때 사용하는 타겟 정보 */
 export interface RoutingTarget {
