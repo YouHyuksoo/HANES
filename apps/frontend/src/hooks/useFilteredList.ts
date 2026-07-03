@@ -13,6 +13,7 @@
  */
 
 import { useState, useMemo, useCallback } from "react";
+import { formatDateOnly } from "@/utils/date";
 
 export interface UseFilteredListOptions<T> {
   /** 검색 대상 필드 목록 */
@@ -95,10 +96,8 @@ export function useFilteredList<T extends Record<string, any>>(
         const itemDate = item[dateField];
         if (!itemDate) return false;
 
-        const date = new Date(itemDate);
-        if (isNaN(date.getTime())) return false;
-
-        const dateStr = date.toISOString().slice(0, 10);
+        const dateStr = formatDateOnly(itemDate);
+        if (!dateStr) return false;
 
         if (fromDate && dateStr < fromDate) return false;
         if (toDate && dateStr > toDate) return false;

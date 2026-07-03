@@ -16,8 +16,8 @@ import { Button, Modal, Input } from "@/components/ui";
 import api from "@/services/api";
 import { BomTreeItem, getBomKey } from "../types";
 import { Field, FieldLabel, FieldInput, FieldComCodeSelect, FieldProcessSelect } from "./BomFieldHelp";
+import { formatDateOnly, getTodayLocal } from "@/utils/date";
 
-const getToday = () => new Date().toISOString().split("T")[0];
 const DEFAULT_VALID_TO = "2099-12-31";
 
 interface BomFormModalProps {
@@ -63,12 +63,12 @@ export default function BomFormModal({ isOpen, onClose, onSave, editingItem, par
       setRevision(editingItem.revision || "A");
       setProcessCode(editingItem.processCode || "");
       setSide(editingItem.side || "");
-      setValidFrom(editingItem.validFrom ? editingItem.validFrom.split("T")[0] : "");
-      setValidTo(editingItem.validTo ? editingItem.validTo.split("T")[0] : "");
+      setValidFrom(formatDateOnly(editingItem.validFrom));
+      setValidTo(formatDateOnly(editingItem.validTo));
       setRemark("");
     } else {
       setSelectedChild(null); setChildSearch(""); setQtyPer("1"); setSeq("0");
-      setRevision("A"); setProcessCode(""); setSide(""); setValidFrom(getToday()); setValidTo(DEFAULT_VALID_TO); setRemark("");
+      setRevision("A"); setProcessCode(""); setSide(""); setValidFrom(getTodayLocal()); setValidTo(DEFAULT_VALID_TO); setRemark("");
     }
   }, [isOpen, editingItem]);
 

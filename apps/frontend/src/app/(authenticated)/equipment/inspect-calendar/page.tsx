@@ -26,6 +26,7 @@ import DaySchedulePanel from "./components/DaySchedulePanel";
 import type { DayScheduleEquip } from "./components/DaySchedulePanel";
 import InspectExecuteModal from "./components/InspectExecuteModal";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 
 export default function InspectCalendarPage() {
@@ -37,7 +38,7 @@ export default function InspectCalendarPage() {
   const [processCode, setProcessCode] = useState("");
   const [calendarData, setCalendarData] = useState<CalendarDaySummary[]>([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(today.toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState(getTodayLocal(today));
   const [dayData, setDayData] = useState<DayScheduleEquip[]>([]);
   const [dayLoading, setDayLoading] = useState(false);
   const [modalEquip, setModalEquip] = useState<DayScheduleEquip | null>(null);
@@ -82,7 +83,7 @@ export default function InspectCalendarPage() {
     const now = new Date();
     setYear(now.getFullYear());
     setMonth(now.getMonth() + 1);
-    setSelectedDate(now.toISOString().split("T")[0]);
+    setSelectedDate(getTodayLocal(now));
   }, []);
 
   /** 차월 생성 */

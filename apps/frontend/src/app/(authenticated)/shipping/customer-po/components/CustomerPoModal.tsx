@@ -18,6 +18,7 @@ import { Modal, Button, Input, Select } from "@/components/ui";
 import QtyInput from "@/components/shared/QtyInput";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 interface PartItem {
   itemCode: string;
@@ -124,7 +125,7 @@ export default function CustomerPoModal({ isOpen, onClose, editingItem }: Custom
         <div className="grid grid-cols-2 gap-4">
           <Input label={t("shipping.customerPo.orderNo")} placeholder="CO-YYYYMMDD-NNN" defaultValue={editingItem?.orderNo} fullWidth />
           <Select label={t("shipping.customerPo.customer")} options={customerOptions} value={editingItem?.customerName ?? ""} onChange={() => {}} fullWidth />
-          <Input label={t("shipping.customerPo.orderDate")} type="date" defaultValue={editingItem?.orderDate || new Date().toISOString().split("T")[0]} fullWidth />
+          <Input label={t("shipping.customerPo.orderDate")} type="date" defaultValue={editingItem?.orderDate || getTodayLocal()} fullWidth />
           <Input label={t("shipping.customerPo.dueDate")} type="date" defaultValue={editingItem?.dueDate} fullWidth />
         </div>
 

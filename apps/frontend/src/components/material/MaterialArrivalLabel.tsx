@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import bwipjs from 'bwip-js';
+import { formatDateOnly } from '@/utils/date';
 
 export const MATERIAL_ARRIVAL_LABEL_WIDTH_MM = 80;
 export const MATERIAL_ARRIVAL_LABEL_HEIGHT_MM = 40;
@@ -25,9 +26,7 @@ interface MaterialArrivalLabelProps {
 }
 
 function formatDate(value?: string | Date | null) {
-  if (!value) return '';
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  return String(value).slice(0, 10);
+  return formatDateOnly(value);
 }
 
 function formatQtyUnit(item: MaterialArrivalLabelItem) {

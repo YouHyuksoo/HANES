@@ -16,6 +16,7 @@ import { CalendarCheck, RefreshCw } from "lucide-react";
 import api from "@/services/api";
 import EquipListPanel, { type EquipTarget } from "../daily-inspect/components/EquipListPanel";
 import InspectEntryPanel, { type Worker } from "../daily-inspect/components/InspectEntryPanel";
+import { getTodayLocal } from "@/utils/date";
 
 interface EquipInspectItemAssignment {
   equipCode: string;
@@ -35,7 +36,7 @@ interface EquipMaster {
 
 export default function PeriodicInspectPage() {
   const { t } = useTranslation();
-  const today = new Date().toISOString().split("T")[0];
+  const today = getTodayLocal();
 
   const [inspectDate, setInspectDate] = useState(today);
   const [equipTargets, setEquipTargets] = useState<EquipTarget[]>([]);

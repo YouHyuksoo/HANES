@@ -14,6 +14,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui";
+import { getTodayLocal } from "@/utils/date";
 
 export interface CalendarDaySummary {
   date: string;
@@ -86,7 +87,7 @@ export default function InspectCalendar({
     return weeks;
   }, [year, month]);
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getTodayLocal();
 
   return (
     <div className="bg-surface border border-border rounded-lg p-4">

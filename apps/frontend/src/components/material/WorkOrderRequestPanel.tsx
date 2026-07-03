@@ -22,6 +22,7 @@ import { useInvalidateQueries } from '@/hooks/useApi';
 import RequestTable from '@/components/material/RequestTable';
 import type { ProductionJobOrderRow } from '@harness/shared';
 import type { IssueRequest, RequestItem, StockItem } from '@/hooks/material/useIssueRequestData';
+import { formatDateOnly } from '@/utils/date';
 
 type RightMode = 'history' | 'create';
 type JobOrderListRow = ProductionJobOrderRow & { _depth?: number };
@@ -65,9 +66,7 @@ const itemTypeBadgeClass: Record<string, string> = {
 };
 
 const formatJobOrderPlanDate = (value?: string | Date | null) => {
-  if (!value) return '-';
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  return String(value).slice(0, 10);
+  return formatDateOnly(value, '-');
 };
 
 export default function WorkOrderRequestPanel({

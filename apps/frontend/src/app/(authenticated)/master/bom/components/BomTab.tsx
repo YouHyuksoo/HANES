@@ -18,6 +18,7 @@ import api from "@/services/api";
 import BomFormModal from "./BomFormModal";
 import BomUploadModal from "./BomUploadModal";
 import { ParentPart, BomTreeItem, RoutingTarget, getBomKey } from "../types";
+import { formatDateOnly, getTodayLocal } from "@/utils/date";
 
 const partTypeConfig: Record<string, { icon: typeof Package; color: string; bg: string }> = {
   FINISHED: { icon: Package, color: "text-emerald-700 dark:text-emerald-300", bg: "bg-emerald-100 dark:bg-emerald-900/50" },
@@ -143,7 +144,7 @@ export default function BomTab({ selectedParent, onViewRouting, onSelectItem, se
     const url = URL.createObjectURL(res.data);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `BOM_${selectedParent?.itemCode || "ALL"}_${new Date().toISOString().split("T")[0]}.xlsx`;
+    a.download = `BOM_${selectedParent?.itemCode || "ALL"}_${getTodayLocal()}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
   }, [selectedParent]);
@@ -260,8 +261,8 @@ function BomTreeRows({
         const levelColor = levelColors[item.level % levelColors.length];
         const itemCode = item.childItemCode || item.itemCode;
         const itemBreadcrumb = item.isRoot ? itemCode : breadcrumb ? `${breadcrumb} > ${itemCode}` : `${parentCode} > ${itemCode}`;
-        const validFrom = item.validFrom ? new Date(item.validFrom).toISOString().split("T")[0] : "-";
-        const validTo = item.validTo ? new Date(item.validTo).toISOString().split("T")[0] : "-";
+        const validFrom = formatDateOnly(item.validFrom, "-");
+        const validTo = formatDateOnly(item.validTo, "-");
         const isSelected = selectedItemCode === itemCode;
 
         return (

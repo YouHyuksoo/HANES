@@ -26,6 +26,7 @@ import PmWorkOrderPanel from "./components/PmWorkOrderPanel";
 import type { WoScheduleItem } from "./components/PmWorkOrderPanel";
 import PmExecuteModal from "./components/PmExecuteModal";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 export default function PmCalendarPage() {
   const { t } = useTranslation();
@@ -37,7 +38,7 @@ export default function PmCalendarPage() {
   const [equipType, setEquipType] = useState("");
   const [calendarData, setCalendarData] = useState<CalendarDaySummary[]>([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(today.toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState(getTodayLocal(today));
   const [dayData, setDayData] = useState<WoScheduleItem[]>([]);
   const [dayLoading, setDayLoading] = useState(false);
   const [generating, setGenerating] = useState(false);

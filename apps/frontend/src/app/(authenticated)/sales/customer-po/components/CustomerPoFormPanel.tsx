@@ -19,6 +19,7 @@ import { Button, Input, Select } from "@/components/ui";
 import QtyInput from "@/components/shared/QtyInput";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 
 interface PartItem {
   itemCode: string;
@@ -61,7 +62,7 @@ export default function CustomerPoFormPanel({ editingItem, onClose, onSave, anim
   const [form, setForm] = useState({
     orderNo: "",
     customerCode: "",
-    orderDate: new Date().toISOString().split("T")[0],
+    orderDate: getTodayLocal(),
     dueDate: "",
     remark: "",
   });
@@ -74,7 +75,7 @@ export default function CustomerPoFormPanel({ editingItem, onClose, onSave, anim
     setForm({
       orderNo: editingItem?.orderNo || "",
       customerCode: editingItem?.customerName || "",
-      orderDate: editingItem?.orderDate || new Date().toISOString().split("T")[0],
+      orderDate: editingItem?.orderDate || getTodayLocal(),
       dueDate: editingItem?.dueDate || "",
       remark: "",
     });

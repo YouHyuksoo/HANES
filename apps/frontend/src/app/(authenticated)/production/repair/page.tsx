@@ -36,6 +36,7 @@ import RepairFormModal from "./components/RepairFormModal";
 import type { RepairOrderData } from "./components/RepairFormModal";
 import { createRepairGridColumns } from "./repairColumns";
 import type { RepairItem } from "./repairColumns";
+import { formatDateOnly } from "@/utils/date";
 
 export default function RepairPage() {
   const { t } = useTranslation();
@@ -90,9 +91,8 @@ export default function RepairPage() {
   /** 행 클릭 → 상세 조회 → 수정 모달 */
   const handleRowClick = useCallback(async (row: RepairItem) => {
     try {
-      const dateStr = typeof row.repairDate === "string"
-        ? row.repairDate.substring(0, 10)
-        : new Date(row.repairDate).toISOString().substring(0, 10);
+      const dateStr = formatDateOnly(row.repairDate);
+      if (!dateStr) return;
       const res = await api.get(`/production/repairs/${dateStr}/${row.seq}`);
       const detail = res.data?.data;
       setEditData({
@@ -109,9 +109,8 @@ export default function RepairPage() {
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) return;
     try {
-      const dateStr = typeof deleteTarget.repairDate === "string"
-        ? deleteTarget.repairDate.substring(0, 10)
-        : new Date(deleteTarget.repairDate).toISOString().substring(0, 10);
+      const dateStr = formatDateOnly(deleteTarget.repairDate);
+      if (!dateStr) return;
       await api.delete(`/production/repairs/${dateStr}/${deleteTarget.seq}`);
       fetchData();
     } catch {
