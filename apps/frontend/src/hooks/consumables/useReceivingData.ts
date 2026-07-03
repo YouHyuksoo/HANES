@@ -62,7 +62,7 @@ export function useReceivingData() {
     queryKey,
     queryFn: async () => {
       const res = await api.get('/consumables/logs', {
-        params: { logTypeGroup: 'RECEIVING', startDate, endDate, limit: 5000 },
+        params: { logTypeGroup: 'RECEIVING', fromDate: startDate, toDate: endDate, limit: 5000 },
       });
       return res.data?.data ?? [];
     },

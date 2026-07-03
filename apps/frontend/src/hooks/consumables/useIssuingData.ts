@@ -43,7 +43,7 @@ export function useIssuingData() {
     queryKey,
     queryFn: async () => {
       const res = await api.get('/consumables/logs', {
-        params: { logTypeGroup: 'ISSUING', startDate, endDate, limit: 5000 },
+        params: { logTypeGroup: 'ISSUING', fromDate: startDate, toDate: endDate, limit: 5000 },
       });
       return res.data?.data ?? [];
     },
