@@ -31,6 +31,7 @@ export interface PendingArrivalsResult {
     defectModelGroup: string | null;
     vendor: string;
     vendorName: string | null;
+    poNo: string | null;
     totalQty: number;
     serialCount: number;
     recvDate: Date | null;
@@ -357,6 +358,7 @@ export class IqcHistoryService {
       .addSelect('part.defectModelGroup', 'defectModelGroup')
       .addSelect('lot.vendor', 'vendor')
       .addSelect('partner.partnerName', 'vendorName')
+      .addSelect('MIN(lot.poNo)', 'poNo')
       .addSelect('SUM(lot.initQty)', 'totalQty')
       .addSelect('COUNT(*)', 'serialCount')
       .addSelect('MIN(lot.recvDate)', 'recvDate')
@@ -395,6 +397,7 @@ export class IqcHistoryService {
       defectModelGroup: string | null;
       vendor: string;
       vendorName: string | null;
+      poNo: string | null;
       totalQty: string;
       serialCount: string;
       recvDate: Date | null;
@@ -411,6 +414,7 @@ export class IqcHistoryService {
         defectModelGroup: r.defectModelGroup ?? null,
         vendor: r.vendor,
         vendorName: r.vendorName ?? null,
+        poNo: r.poNo ?? null,
         totalQty: Number(r.totalQty) || 0,
         serialCount: Number(r.serialCount) || 0,
         recvDate: r.recvDate,

@@ -2053,6 +2053,7 @@
     "col": {
       "arrivalNo": "Arrival No.",
       "arrivalDate": "Arrival Date",
+      "poNo": "PO No.",
       "supplier": "Supplier",
       "matUid": "Material Serial",
       "inspector": "Inspector",
@@ -2217,7 +2218,7 @@
         "passed": "Passed",
         "failed": "Failed"
       },
-      "searchPlaceholder": "Search LOT no, part code...",
+      "searchPlaceholder": "Search LOT no, part code, PO no...",
       "status": {
         "pending": "Pending",
         "inProgress": "In Progress",

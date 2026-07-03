@@ -2053,6 +2053,7 @@
     "col": {
       "arrivalNo": "Mã nhập hàng",
       "arrivalDate": "Ngày nhập",
+      "poNo": "Mã PO",
       "supplier": "Nhà cung cấp",
       "matUid": "Số Serial Vật Liệu",
       "inspector": "Người kiểm tra",
@@ -2217,7 +2218,7 @@
         "passed": "Đạt",
         "failed": "Không đạt"
       },
-      "searchPlaceholder": "Tìm số LOT, mã linh kiện...",
+      "searchPlaceholder": "Tìm số LOT, mã linh kiện, mã PO...",
       "status": {
         "pending": "Chờ",
         "inProgress": "Đang kiểm tra",

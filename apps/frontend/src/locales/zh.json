@@ -2053,6 +2053,7 @@
     "col": {
       "arrivalNo": "入库编号",
       "arrivalDate": "入库日期",
+      "poNo": "PO编号",
       "supplier": "供应商",
       "matUid": "材料序列号",
       "inspector": "检查员",
@@ -2217,7 +2218,7 @@
         "passed": "合格",
         "failed": "不合格"
       },
-      "searchPlaceholder": "搜索LOT编号、零件代码...",
+      "searchPlaceholder": "搜索LOT编号、零件代码、PO编号...",
       "status": {
         "pending": "待处理",
         "inProgress": "检验中",

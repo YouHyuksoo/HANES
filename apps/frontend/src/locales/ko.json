@@ -2463,6 +2463,7 @@
     "col": {
       "arrivalNo": "입하번호",
       "arrivalDate": "입하일",
+      "poNo": "PO번호",
       "supplier": "공급업체",
       "matUid": "자재시리얼",
       "inspector": "검사자",
@@ -2627,7 +2628,7 @@
         "passed": "합격",
         "failed": "불합격"
       },
-      "searchPlaceholder": "LOT번호, 품목코드 검색...",
+      "searchPlaceholder": "LOT번호, 품목코드, PO번호 검색...",
       "status": {
         "pending": "대기",
         "inProgress": "검사중",

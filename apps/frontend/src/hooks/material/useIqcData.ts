@@ -20,6 +20,8 @@ export interface IqcItem {
   itemName: string;
   vendorCode: string;
   supplierName: string;
+  /** 이 입하건이 속한 발주(PO) 번호 */
+  poNo: string | null;
   /** 입하건 총수량 (SUM INIT_QTY) */
   totalQty: number;
   /** 입하건에 속한 시리얼 수 */
@@ -92,6 +94,7 @@ export function useIqcData() {
         itemName: g.itemName || '',
         vendorCode: g.vendor || '',
         supplierName: g.vendorName || g.vendor || '-',
+        poNo: g.poNo ?? null,
         totalQty: g.totalQty ?? 0,
         serialCount: g.serialCount ?? 0,
         unit: g.unit || 'EA',
@@ -120,7 +123,8 @@ export function useIqcData() {
         !searchText ||
         item.arrivalNo.toLowerCase().includes(searchText.toLowerCase()) ||
         item.itemName.toLowerCase().includes(searchText.toLowerCase()) ||
-        item.itemCode.toLowerCase().includes(searchText.toLowerCase());
+        item.itemCode.toLowerCase().includes(searchText.toLowerCase()) ||
+        (item.poNo ?? '').toLowerCase().includes(searchText.toLowerCase());
       return matchStatus && matchMethod && matchSearch;
     });
   }, [items, statusFilter, methodFilter, searchText]);

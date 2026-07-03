@@ -67,6 +67,13 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading, sqlQ
       },
       { accessorKey: 'arrivalNo', header: t('material.col.arrivalNo'), size: 160, meta: { filterType: 'text' as const } },
       {
+        accessorKey: 'poNo',
+        header: t('material.col.poNo'),
+        size: 140,
+        meta: { filterType: 'text' as const },
+        cell: ({ getValue }) => <span>{(getValue() as string | null) || '-'}</span>,
+      },
+      {
         accessorKey: 'arrivalDate',
         header: t('material.col.arrivalDate'),
         size: 100,
