@@ -105,6 +105,13 @@ function StockTable({ data, toolbarLeft, isLoading }: StockTableProps) {
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
       {
+        accessorKey: 'processCode',
+        header: t('consumables.issuing.processLabel', '출고 공정'),
+        size: 100,
+        meta: { filterType: 'text' as const },
+        cell: ({ getValue }) => (getValue() as string) ?? '-',
+      },
+      {
         accessorKey: 'mountedEquipCode',
         header: t('consumables.stock.mountedEquip'),
         size: 110,

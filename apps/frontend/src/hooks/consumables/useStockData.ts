@@ -19,6 +19,7 @@ export interface ConsumableStock {
   currentCount: number;
   expectedLife: number | null;
   location: string | null;
+  processCode: string | null;
   mountedEquipCode: string | null;
   recvDate: string | null;
   vendorCode: string | null;
@@ -57,7 +58,8 @@ export function useStockData() {
       const matchSearch = !searchTerm ||
         item.conUid.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.consumableCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.consumableName ?? '').toLowerCase().includes(searchTerm.toLowerCase());
+        (item.consumableName ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.processCode ?? '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchCategory = !categoryFilter || item.category === categoryFilter;
       const matchStatus = !stockStatusFilter || item.status === stockStatusFilter;
       return matchSearch && matchCategory && matchStatus;

@@ -563,6 +563,7 @@ ${tenantSql}
         incomingType: dto.incomingType || null,
         department: dto.department || null,
         lineCode: dto.lineCode || null,
+        processCode: dto.processCode || null,
         equipCode: dto.equipCode || null,
         issueReason: dto.issueReason || null,
         returnReason: dto.returnReason || null,

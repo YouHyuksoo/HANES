@@ -7,7 +7,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { LogOut, Undo2 } from "lucide-react";
-import { BarcodeScanInput } from "@/components/shared";
+import { BarcodeScanInput, ProcessSelect } from "@/components/shared";
 import { Card, CardContent, Button } from "@/components/ui";
 import api from "@/services/api";
 
@@ -21,12 +21,17 @@ export default function IssueScanPanel({ onScanSuccess }: IssueScanPanelProps) {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [scanValue, setScanValue] = useState("");
+  const [processCode, setProcessCode] = useState("");
   const [mode, setMode] = useState<ScanMode>("issue");
   const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (mode === "issue" && processCode) inputRef.current?.focus();
+  }, [mode, processCode]);
 
   const handleScan = async (rawUid?: string) => {
     const uid = (rawUid ?? scanValue).replace(/\r?\n|\r/g, "").trim();
@@ -37,6 +42,8 @@ export default function IssueScanPanel({ onScanSuccess }: IssueScanPanelProps) {
       if (mode === "issue") {
         await api.post("/consumables/label/issue", {
           conUid: uid,
+          processCode,
+          issueReason: "PRODUCTION",
         });
       } else {
         await api.post("/consumables/label/issue-return", {
@@ -92,7 +99,15 @@ export default function IssueScanPanel({ onScanSuccess }: IssueScanPanelProps) {
             )}
           </div>
 
-          <div className="flex gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-[220px_minmax(0,1fr)_auto] gap-3 items-end">
+            <ProcessSelect
+              label={t("consumables.issuing.processLabel", "출고 공정")}
+              value={processCode}
+              onChange={setProcessCode}
+              fullWidth
+              required={mode === "issue"}
+              disabled={isScanning}
+            />
             <div className="flex-1">
               <BarcodeScanInput
                 ref={inputRef}
@@ -102,9 +117,14 @@ export default function IssueScanPanel({ onScanSuccess }: IssueScanPanelProps) {
                 onScan={handleScan}
                 autoFocus
                 fullWidth
+                disabled={isScanning || (mode === "issue" && !processCode)}
               />
             </div>
-            <Button onClick={() => handleScan()} disabled={!scanValue.trim() || isScanning} className="flex-shrink-0">
+            <Button
+              onClick={() => handleScan()}
+              disabled={!scanValue.trim() || isScanning || (mode === "issue" && !processCode)}
+              className="flex-shrink-0"
+            >
               {mode === "issue"
                 ? t("consumables.issuing.confirmBtn", "출고확정")
                 : t("consumables.issuing.returnBtn", "취소확정")}

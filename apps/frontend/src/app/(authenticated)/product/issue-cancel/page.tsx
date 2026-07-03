@@ -60,15 +60,16 @@ export default function ProductIssueCancelPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   /** 통계 */
+  const issueTypes = useMemo(() => new Set(["WIP_OUT", "FG_OUT"]), []);
   const stats = useMemo(() => ({
-    total: data.filter((d) => d.transType === "WIP_OUT" || d.transType === "FG_OUT").length,
+    total: data.filter((d) => issueTypes.has(d.transType)).length,
     cancellable: data.filter(
-      (d) => (d.transType === "WIP_OUT" || d.transType === "FG_OUT") && d.status !== "CANCELED" && !d.cancelRefId,
+      (d) => issueTypes.has(d.transType) && d.status !== "CANCELED" && !d.cancelRefId,
     ).length,
     canceled: data.filter(
       (d) => d.status === "CANCELED" || d.transType.includes("CANCEL"),
     ).length,
-  }), [data]);
+  }), [data, issueTypes]);
 
   /** 취소 처리 */
   const handleCancel = useCallback(async () => {

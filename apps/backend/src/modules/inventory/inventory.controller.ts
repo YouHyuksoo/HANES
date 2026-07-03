@@ -38,6 +38,7 @@ import {
 import {
   ProductReceiveStockDto,
   ProductIssueStockDto,
+  ProductDefectTransferDto,
   ProductTransactionQueryDto,
   ProductStockQueryDto,
 } from './dto/product-inventory.dto';
@@ -95,6 +96,7 @@ export class InventoryController {
       itemCode: dto.itemCode,
       itemType,
       prdUid: dto.prdUid,
+      qualityStatus: dto.qualityStatus,
       qty: dto.qty,
       transType,
       orderNo: dto.orderNo,
@@ -121,6 +123,7 @@ export class InventoryController {
       itemCode: dto.itemCode,
       itemType,
       prdUid: dto.prdUid,
+      qualityStatus: dto.qualityStatus,
       qty: dto.qty,
       transType,
       toWarehouseId: dto.toWarehouseId,
@@ -449,6 +452,18 @@ export class InventoryController {
     return this.productInventoryService.issueStock(
       this.productIssuePayload(dto, 'FINISHED', 'FG_OUT', company, plant),
     );
+  }
+
+  /**
+   * 제품 불량창고 입고: 공정 WIP의 DEFECT 제품재고를 불량창고로 이동
+   */
+  @Post('product/defect-transfer')
+  async transferProductDefectToWarehouse(
+    @Body() dto: ProductDefectTransferDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    return this.productInventoryService.transferDefectStockToWarehouse({ ...dto, company, plant });
   }
 
   // ============================================================================

@@ -205,6 +205,42 @@ describe('ProdResultService', () => {
     );
   });
 
+  it('adsorbs defect quantity into WIP product stock with DEFECT quality status', async () => {
+    queryRunner.manager.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        orderNo: 'JO-1',
+        itemCode: 'SFG-001',
+        company: 'C1',
+        plant: 'P1',
+        part: { itemType: 'SEMI_PRODUCT' },
+      } as any)
+      .mockResolvedValueOnce({ resultNo: 'PR-1', prdUid: 'PRD-DEF-1' } as any);
+
+    await (service as any).adsorbDefectStockInTx(queryRunner, {
+      resultNo: 'PR-1',
+      orderNo: 'JO-1',
+      defectQty: 2,
+      processCode: 'PROC-1',
+      company: 'C1',
+      plant: 'P1',
+    });
+
+    expect(productInventoryService.receiveStockInTx).toHaveBeenCalledWith(
+      queryRunner,
+      expect.objectContaining({
+        warehouseId: 'SFG_WIP',
+        itemCode: 'SFG-001',
+        itemType: 'SEMI_PRODUCT',
+        qty: 2,
+        transType: 'WIP_IN',
+        qualityStatus: 'DEFECT',
+        refType: 'PROD_RESULT',
+        refId: 'PR-1',
+      }),
+    );
+  });
+
   it('create persists result', async () => {
     jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, company: 'C1', plant: 'P1' } as any);
 

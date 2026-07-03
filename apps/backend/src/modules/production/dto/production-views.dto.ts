@@ -22,7 +22,7 @@ import {
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
-import { PRODUCT_STOCK_ITEM_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
+import { PRODUCT_STOCK_ITEM_TYPE_VALUES, PRODUCT_STOCK_QUALITY_STATUS_VALUES, USE_YN_VALUES } from '@harness/shared';
 /**
  * 작업지시 진행현황 조회 DTO
  */
@@ -116,6 +116,12 @@ export class WipStockQueryDto extends PaginationQueryDto {
   @IsString()
   @IsIn([...PRODUCT_STOCK_ITEM_TYPE_VALUES])
   itemType?: string;
+
+  @ApiPropertyOptional({ description: '재고 품질상태 (GOOD/DEFECT)', enum: PRODUCT_STOCK_QUALITY_STATUS_VALUES })
+  @IsOptional()
+  @IsString()
+  @IsIn([...PRODUCT_STOCK_QUALITY_STATUS_VALUES])
+  qualityStatus?: string;
 
   @ApiPropertyOptional({ description: '검색어 (품목코드, 품목명)' })
   @IsOptional()

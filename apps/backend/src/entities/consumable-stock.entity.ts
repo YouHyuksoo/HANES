@@ -6,7 +6,7 @@
  * 초보자 가이드:
  * 1. conUid가 PK — Oracle DB Function(F_GET_CON_UID)으로 채번
  * 2. consumableCode: 소모품 마스터(CONSUMABLE_MASTERS) FK
- * 3. status: PENDING(미입고) → ACTIVE(사용가능) → MOUNTED(장착중) 등
+ * 3. status: PENDING(미입고) → ACTIVE(창고) → PROC_WAIT(공정대기) → MOUNTED(장착중) 등
  * 4. 같은 금형 3개를 입고하면 conUid 3개가 생성됨 (개별 추적)
  */
 import {
@@ -43,6 +43,9 @@ export class ConsumableStock {
 
   @Column({ type: 'varchar2', name: 'LOCATION', length: 100, nullable: true })
   location: string | null;
+
+  @Column({ type: 'varchar2', name: 'PROCESS_CODE', length: 50, nullable: true })
+  processCode: string | null;
 
   @Column({ type: 'varchar2', name: 'MOUNTED_EQUIP_CODE', length: 50, nullable: true })
   mountedEquipCode: string | null;

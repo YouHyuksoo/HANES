@@ -173,4 +173,26 @@ describe('ProductionViewsService', () => {
     );
     expect((qb as any).leftJoinAndSelect).toBeUndefined();
   });
+
+  it('filters WIP stock by quality status when requested', async () => {
+    const qb = {
+      leftJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      offset: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getCount: jest.fn().mockResolvedValue(0),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    };
+    stockRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+    await service.getWipStock({ page: 1, limit: 10, qualityStatus: 'DEFECT' } as any, 'C1', 'P1');
+
+    expect(qb.select).toHaveBeenCalledWith(expect.arrayContaining([
+      's.QUALITY_STATUS AS "qualityStatus"',
+    ]));
+    expect(qb.andWhere).toHaveBeenCalledWith('s.QUALITY_STATUS = :qualityStatus', { qualityStatus: 'DEFECT' });
+  });
 });

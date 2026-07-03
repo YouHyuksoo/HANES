@@ -3,7 +3,7 @@
  * @description 출고관리 데이터 훅 - API 연동 및 상태 관리
  *
  * 초보자 가이드:
- * 1. GET /consumables/logs?logTypeGroup=ISSUING 로 출고/반품 이력 조회
+ * 1. GET /consumables/logs?logTypeGroup=ISSUING 로 공정출고/취소 이력 조회
  * 2. 검색어/유형/기간 필터링은 FE에서 처리
  * 3. 통계 카드 데이터는 오늘 날짜 기준으로 계산
  */
@@ -22,6 +22,7 @@ export interface IssuingLog {
   qty: number;
   department: string | null;
   lineCode: string | null;
+  processCode: string | null;
   equipCode: string | null;
   issueReason: string | null;
   returnReason: string | null;
@@ -53,7 +54,9 @@ export function useIssuingData() {
     return data.filter((item) => {
       const matchSearch = !searchTerm ||
         item.consumableCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.consumableName?.toLowerCase().includes(searchTerm.toLowerCase());
+        item.consumableName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.conUid?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.processCode?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchType = !typeFilter || item.logType === typeFilter;
       return matchSearch && matchType;
     });

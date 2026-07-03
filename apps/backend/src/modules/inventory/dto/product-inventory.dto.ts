@@ -10,7 +10,7 @@
 import { IsString, IsOptional, IsNumber, IsIn, Min } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
-import { PRODUCT_STOCK_ITEM_TYPE_VALUES } from '@harness/shared';
+import { PRODUCT_STOCK_ITEM_TYPE_VALUES, PRODUCT_STOCK_QUALITY_STATUS_VALUES } from '@harness/shared';
 /** 제품 입고 DTO */
 export class ProductReceiveStockDto {
   @IsString()
@@ -26,6 +26,10 @@ export class ProductReceiveStockDto {
   @IsOptional()
   @IsString()
   prdUid?: string;
+
+  @IsOptional()
+  @IsIn([...PRODUCT_STOCK_QUALITY_STATUS_VALUES])
+  qualityStatus?: string;
 
   @IsNumber()
   @Min(1)
@@ -88,6 +92,10 @@ export class ProductIssueStockDto {
   @IsString()
   prdUid?: string;
 
+  @IsOptional()
+  @IsIn([...PRODUCT_STOCK_QUALITY_STATUS_VALUES])
+  qualityStatus?: string;
+
   @IsNumber()
   @Min(1)
   qty: number;
@@ -137,6 +145,43 @@ export class ProductIssueStockDto {
   plant?: string;
 }
 
+/** 제품 불량창고 이동 DTO */
+export class ProductDefectTransferDto {
+  @IsString()
+  fromWarehouseId: string;
+
+  @IsOptional()
+  @IsString()
+  toWarehouseId?: string;
+
+  @IsString()
+  itemCode: string;
+
+  @IsOptional()
+  @IsIn([...PRODUCT_STOCK_ITEM_TYPE_VALUES])
+  itemType?: string;
+
+  @IsNumber()
+  @Min(1)
+  qty: number;
+
+  @IsOptional()
+  @IsString()
+  workerId?: string;
+
+  @IsOptional()
+  @IsString()
+  remark?: string;
+
+  @IsOptional()
+  @IsString()
+  company?: string;
+
+  @IsOptional()
+  @IsString()
+  plant?: string;
+}
+
 /** 제품 수불 조회 DTO */
 export class ProductTransactionQueryDto extends PaginationQueryDto {
   @IsOptional()
@@ -150,6 +195,10 @@ export class ProductTransactionQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   itemType?: string;
+
+  @IsOptional()
+  @IsIn([...PRODUCT_STOCK_QUALITY_STATUS_VALUES])
+  qualityStatus?: string;
 
   @IsOptional()
   @IsString()
@@ -198,6 +247,10 @@ export class ProductStockQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   itemType?: string;
+
+  @IsOptional()
+  @IsIn([...PRODUCT_STOCK_QUALITY_STATUS_VALUES])
+  qualityStatus?: string;
 
   @IsOptional()
   @IsString()

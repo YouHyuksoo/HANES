@@ -15,6 +15,7 @@ export interface ProductIssueTx {
   transDate: string;
   itemCode: string;
   itemType: string | null;
+  qualityStatus?: string | null;
   qty: number;
   status: string;
   issueType: string | null;
@@ -22,6 +23,7 @@ export interface ProductIssueTx {
   remark: string | null;
   part?: { itemCode: string; itemName: string; unit: string } | null;
   fromWarehouse?: { warehouseName: string } | null;
+  toWarehouse?: { warehouseName: string } | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -81,6 +83,22 @@ export function createProductIssueCancelGridColumns({
     {
       id: "warehouse", header: t("productMgmt.issueCancel.warehouse"), size: 110,
       cell: ({ row }) => row.original.fromWarehouse?.warehouseName || "-",
+    },
+    {
+      id: "toWarehouse", header: t("productMgmt.issue.col.toWarehouse", "도착창고"), size: 110,
+      cell: ({ row }) => row.original.toWarehouse?.warehouseName || "-",
+    },
+    {
+      accessorKey: "qualityStatus",
+      header: t("productMgmt.issue.col.qualityStatus", "품질"),
+      size: 80,
+      meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as string | null;
+        return v === "DEFECT"
+          ? <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">{t("productMgmt.issue.defectStock", "불량")}</span>
+          : <span className="px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">{t("productMgmt.issue.goodStock", "양품")}</span>;
+      },
     },
     {
       accessorKey: "issueType",

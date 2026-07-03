@@ -15,6 +15,7 @@ interface WipStock {
   itemCode: string;
   itemName: string;
   itemType: string;
+  qualityStatus: "GOOD" | "DEFECT" | string;
   whCode: string;
   whName: string;
   qty: number;
@@ -115,6 +116,18 @@ export default function WipStockView({ itemType, titleKey, descriptionKey, enabl
           : <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{t("production.wipStock.fgLabel")}</span>;
       },
     },
+    {
+      accessorKey: "qualityStatus",
+      header: t("production.wipStock.qualityStatus", "품질"),
+      size: 80,
+      meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return v === "DEFECT"
+          ? <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">{t("production.wipStock.defectStock", "불량")}</span>
+          : <span className="px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">{t("production.wipStock.goodStock", "양품")}</span>;
+      },
+    },
     { accessorKey: "whName", header: t("production.wipStock.warehouse"), size: 110, meta: { filterType: "text" as const } },
     { accessorKey: "qty", header: t("production.wipStock.stockQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "unit", header: t("production.wipStock.unit"), size: 60, meta: { filterType: "text" as const } },
@@ -146,6 +159,7 @@ export default function WipStockView({ itemType, titleKey, descriptionKey, enabl
   s.ITEM_CODE AS "itemCode",
   im.ITEM_NAME AS "itemName",
   s.ITEM_TYPE AS "itemType",
+  s.QUALITY_STATUS AS "qualityStatus",
   s.WAREHOUSE_CODE AS "whCode",
   wh.WAREHOUSE_NAME AS "whName",
   s.QTY AS "qty",

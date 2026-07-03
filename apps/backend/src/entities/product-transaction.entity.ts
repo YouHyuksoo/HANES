@@ -9,6 +9,7 @@
  * - transType: WIP_IN, FG_IN, WIP_OUT, FG_OUT 등 (트랜잭션 유형 코드는 그대로 유지)
  * - 삭제 금지, 취소 시 원본 참조(cancelRefId) + 음수 수량
  * - itemType: 'SEMI_PRODUCT'(반제품) 또는 'FINISHED'(완제품)
+ * - qualityStatus: GOOD/DEFECT. 창고 위치와 별도로 재고 품질 상태를 추적한다
  * - orderNo: 작업지시 참조, processCode: 공정코드
  */
 import {
@@ -27,6 +28,7 @@ import {
 @Index(['toWarehouseId'])
 @Index(['itemCode'])
 @Index(['prdUid'])
+@Index(['qualityStatus'])
 @Index(['refType', 'refId'])
 @Index(['cancelRefId'])
 export class ProductTransaction {
@@ -53,6 +55,9 @@ export class ProductTransaction {
 
   @Column({ type: 'varchar2', name: 'PRD_UID', length: 50, nullable: true })
   prdUid: string | null;
+
+  @Column({ type: 'varchar2', name: 'QUALITY_STATUS', length: 20, default: 'GOOD' })
+  qualityStatus: string;
 
   @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true })
   orderNo: string | null;

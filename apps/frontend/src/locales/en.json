@@ -286,6 +286,7 @@
     "productMgmt.receiptCancel": "Product Receipt Cancel",
     "productMgmt.issue": "Product Issue",
     "productMgmt.issueCancel": "Product Issue Cancel",
+    "productMgmt.defectTransfer": "Defect Warehouse Receiving",
     "material.arrival": "Arrival",
     "material.arrivalTransaction": "Arrival Ledger Inquiry",
     "material.iqc": "IQC Inspection",
@@ -3253,6 +3254,36 @@
         "total": "Total Issues",
         "cancellable": "Cancellable",
         "canceled": "Canceled"
+      }
+    },
+    "defectTransfer": {
+      "title": "Defect Warehouse Receiving",
+      "subtitle": "Move defective WIP product stock from process warehouses into the defect warehouse.",
+      "register": "Register Receiving",
+      "cancel": "Cancel",
+      "cancelTitle": "Confirm Defect Receiving Cancel",
+      "reason": "Cancel Reason",
+      "reasonPlaceholder": "Enter cancel reason",
+      "confirmCancel": "Confirm Cancel",
+      "searchPlaceholder": "Search transaction no., part name...",
+      "defectStock": "Defect",
+      "col": {
+        "transNo": "Receipt No.",
+        "transDate": "Receipt Date",
+        "transType": "Type",
+        "sourceWarehouse": "Process Warehouse",
+        "targetWarehouse": "Defect Warehouse",
+        "qualityStatus": "Quality",
+        "qty": "Quantity"
+      },
+      "modal": {
+        "title": "Register Defect Warehouse Receiving",
+        "partType": "Part Type",
+        "partId": "Part",
+        "sourceWarehouse": "Process Warehouse",
+        "qty": "Quantity",
+        "remark": "Remark",
+        "confirm": "Confirm Receiving"
       }
     }
   },
@@ -7050,6 +7081,8 @@
       "FG_IN_CANCEL": "FG In Cancel",
       "FG_OUT": "FG Out",
       "FG_OUT_CANCEL": "FG Out Cancel",
+      "DEFECT_IN": "Defect Warehouse In",
+      "DEFECT_IN_CANCEL": "Defect Warehouse In Cancel",
       "SUBCON_OUT": "Subcon Out",
       "SUBCON_OUT_CANCEL": "Subcon Out Cancel",
       "SUBCON_IN": "Subcon In",

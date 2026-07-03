@@ -205,7 +205,7 @@ export class ProductionViewsService {
    * - 전체: IN ('FG_WIP', 'SFG_WIP')
    */
   async getWipStock(query: WipStockQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, itemType, search } = query;
+    const { page = 1, limit = 10, itemType, qualityStatus, search } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.stockRepository
@@ -224,6 +224,7 @@ export class ProductionViewsService {
         's.ITEM_CODE AS "itemCode"',
         'im.ITEM_NAME AS "itemName"',
         's.ITEM_TYPE AS "itemType"',
+        's.QUALITY_STATUS AS "qualityStatus"',
         's.WAREHOUSE_CODE AS "whCode"',
         'wh.WAREHOUSE_NAME AS "whName"',
         's.QTY AS "qty"',
@@ -247,6 +248,9 @@ export class ProductionViewsService {
     }
     if (plant) {
       qb.andWhere('s.PLANT_CD = :plant', { plant });
+    }
+    if (qualityStatus) {
+      qb.andWhere('s.QUALITY_STATUS = :qualityStatus', { qualityStatus });
     }
 
     if (search) {

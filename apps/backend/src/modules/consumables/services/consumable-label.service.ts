@@ -292,8 +292,13 @@ export class ConsumableLabelService {
     });
   }
 
-  /** 단건 출고 (바코드 스캔): ACTIVE → ISSUED */
+  /** 단건 출고 (바코드 스캔): ACTIVE → PROC_WAIT */
   async issueByScan(dto: IssueConDto, company?: string, plant?: string) {
+    const processCode = dto.processCode?.trim();
+    if (!processCode) {
+      throw new BadRequestException('소모품 출고 대상 공정을 선택해야 합니다.');
+    }
+
     const stock = await this.stockRepo.findOne({
       where: { conUid: dto.conUid, ...this.stockTenantWhere(company, plant) },
     });
@@ -303,7 +308,9 @@ export class ConsumableLabelService {
     }
 
     return this.tx.run(async (queryRunner) => {
-      stock.status = 'ISSUED';
+      stock.status = 'PROC_WAIT';
+      stock.processCode = processCode;
+      stock.mountedEquipCode = null;
       stock.remark = dto.remark ?? stock.remark;
       await queryRunner.manager.save(stock);
 
@@ -328,6 +335,7 @@ export class ConsumableLabelService {
         logType: 'OUT',
         qty: 1,
         conUid: stock.conUid,
+        processCode,
         department: dto.department ?? null,
         issueReason: dto.issueReason ?? null,
         company: company ?? null,
@@ -344,22 +352,26 @@ export class ConsumableLabelService {
         consumableCode: stock.consumableCode,
         consumableName: master?.consumableName ?? '',
         status: stock.status,
+        processCode: stock.processCode,
       };
     });
   }
 
-  /** 단건 출고취소 (바코드 스캔): ISSUED → ACTIVE */
+  /** 단건 출고취소 (바코드 스캔): PROC_WAIT → ACTIVE */
   async issueReturnByScan(dto: IssueReturnConDto, company?: string, plant?: string) {
     const stock = await this.stockRepo.findOne({
       where: { conUid: dto.conUid, ...this.stockTenantWhere(company, plant) },
     });
     if (!stock) throw new NotFoundException(`UID ${dto.conUid}를 찾을 수 없습니다.`);
-    if (stock.status !== 'ISSUED') {
-      throw new BadRequestException(`출고취소는 ISSUED 상태만 가능합니다. (${stock.status})`);
+    if (stock.status !== 'PROC_WAIT') {
+      throw new BadRequestException(`출고취소는 공정대기 상태만 가능합니다. (${stock.status})`);
     }
 
     return this.tx.run(async (queryRunner) => {
+      const processCode = stock.processCode;
       stock.status = 'ACTIVE';
+      stock.processCode = null;
+      stock.mountedEquipCode = null;
       stock.remark = dto.returnReason ?? stock.remark;
       await queryRunner.manager.save(stock);
 
@@ -384,6 +396,7 @@ export class ConsumableLabelService {
         logType: 'OUT_RETURN',
         qty: 1,
         conUid: stock.conUid,
+        processCode,
         returnReason: dto.returnReason ?? null,
         company: company ?? null,
         plant: plant ?? null,
@@ -399,6 +412,7 @@ export class ConsumableLabelService {
         consumableCode: stock.consumableCode,
         consumableName: master?.consumableName ?? '',
         status: stock.status,
+        processCode: stock.processCode,
       };
     });
   }

@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * - 작업지시(모델 itemCode + 설비 equipCode) → CONSUMABLE_USAGE_MAP에서 필요 소모품 조회
- * - 바코드(conUid) 스캔 → 해당 소모품 롯트(CONSUMABLE_STOCKS)를 설비에 장착(MOUNTED)
+ * - 바코드(conUid) 스캔 → 공정대기(PROC_WAIT) 롯트만 설비에 장착(MOUNTED)
  * - 실제 사용횟수 차감(누적)은 생산실적 완료 시 prod-result.service에서 처리한다.
  * - 소모품은 자재가 아니므로 재고 차감/수불을 일으키지 않는다.
  */
@@ -126,12 +126,23 @@ export class KioskConsumableService {
     if (!effectiveEquip) {
       throw new BadRequestException('장착 대상 설비가 지정되지 않았습니다. (검사기 선택 또는 작업지시 설비 필요)');
     }
+    if (!jobOrder.processCode) {
+      throw new BadRequestException('장착 대상 공정이 지정되지 않았습니다. 작업지시 공정을 확인하세요.');
+    }
 
     const stock = await this.stockRepo.findOne({
       where: { conUid, ...(company ? { company } : {}), ...(plant ? { plantCd: plant } : {}) },
     });
     if (!stock) {
       throw new NotFoundException(`소모품 롯트를 찾을 수 없습니다: ${conUid}`);
+    }
+    if (stock.status !== 'PROC_WAIT') {
+      throw new BadRequestException(`소모품은 공정대기 상태만 장착할 수 있습니다. (${stock.status})`);
+    }
+    if (stock.processCode !== jobOrder.processCode) {
+      throw new BadRequestException(
+        `소모품 출고 공정과 장착 공정이 다릅니다. (출고=${stock.processCode ?? '-'}, 장착=${jobOrder.processCode})`,
+      );
     }
 
     const map = await this.mapRepo.findOne({
@@ -160,7 +171,8 @@ export class KioskConsumableService {
     });
     for (const prev of prevMounted) {
       if (prev.conUid !== stock.conUid) {
-        prev.status = 'ACTIVE';
+        prev.status = 'PROC_WAIT';
+        prev.processCode = jobOrder.processCode;
         prev.mountedEquipCode = null;
         await this.stockRepo.save(prev);
       }
@@ -179,14 +191,14 @@ export class KioskConsumableService {
     };
   }
 
-  /** 장착 해제 (창고 복귀) */
+  /** 장착 해제 (공정대기 복귀) */
   async unmount(conUid: string, company?: string, plant?: string): Promise<void> {
     const stock = await this.stockRepo.findOne({
       where: { conUid, ...(company ? { company } : {}), ...(plant ? { plantCd: plant } : {}) },
     });
     if (!stock) return;
     stock.mountedEquipCode = null;
-    stock.status = 'ACTIVE';
+    stock.status = 'PROC_WAIT';
     await this.stockRepo.save(stock);
   }
 }

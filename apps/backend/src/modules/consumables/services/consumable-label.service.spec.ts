@@ -264,4 +264,80 @@ describe('ConsumableLabelService', () => {
       expect(mockQr.commitTransaction).not.toHaveBeenCalled();
     });
   });
+
+  describe('process issuing', () => {
+    it('should issue an active consumable to process waiting stock and log the process code', async () => {
+      const stock = {
+        conUid: 'CON001',
+        status: 'ACTIVE',
+        consumableCode: 'C001',
+        processCode: null,
+      } as ConsumableStock;
+      mockStockRepo.findOne.mockResolvedValue(stock);
+      mockMasterRepo.findOne.mockResolvedValue({ consumableCode: 'C001', consumableName: 'Test' } as ConsumableMaster);
+
+      const mockQr = {
+        manager: {
+          save: jest.fn().mockResolvedValue(stock),
+          decrement: jest.fn().mockResolvedValue({} as any),
+          create: jest.fn().mockReturnValue({} as any),
+          query: jest.fn().mockResolvedValue([{ nextSeq: 7 }]),
+        },
+      };
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
+
+      const result = await target.issueByScan(
+        { conUid: 'CON001', processCode: 'PROC-A', issueReason: 'PRODUCTION' } as any,
+        'COMP',
+        'PLANT',
+      );
+
+      expect(stock.status).toBe('PROC_WAIT');
+      expect((stock as any).processCode).toBe('PROC-A');
+      expect(result.status).toBe('PROC_WAIT');
+      expect(mockQr.manager.create).toHaveBeenCalledWith(
+        ConsumableLog,
+        expect.objectContaining({
+          logType: 'OUT',
+          conUid: 'CON001',
+          processCode: 'PROC-A',
+        }),
+      );
+    });
+
+    it('should cancel a process waiting issue back to warehouse stock and clear process code', async () => {
+      const stock = {
+        conUid: 'CON001',
+        status: 'PROC_WAIT',
+        consumableCode: 'C001',
+        processCode: 'PROC-A',
+      } as ConsumableStock;
+      mockStockRepo.findOne.mockResolvedValue(stock);
+      mockMasterRepo.findOne.mockResolvedValue({ consumableCode: 'C001', consumableName: 'Test' } as ConsumableMaster);
+
+      const mockQr = {
+        manager: {
+          save: jest.fn().mockResolvedValue(stock),
+          increment: jest.fn().mockResolvedValue({} as any),
+          create: jest.fn().mockReturnValue({} as any),
+          query: jest.fn().mockResolvedValue([{ nextSeq: 8 }]),
+        },
+      };
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
+
+      const result = await target.issueReturnByScan({ conUid: 'CON001', returnReason: 'CANCEL' } as any, 'COMP', 'PLANT');
+
+      expect(stock.status).toBe('ACTIVE');
+      expect((stock as any).processCode).toBeNull();
+      expect(result.status).toBe('ACTIVE');
+      expect(mockQr.manager.create).toHaveBeenCalledWith(
+        ConsumableLog,
+        expect.objectContaining({
+          logType: 'OUT_RETURN',
+          conUid: 'CON001',
+          processCode: 'PROC-A',
+        }),
+      );
+    });
+  });
 });

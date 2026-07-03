@@ -128,6 +128,10 @@ export type ItemTypeValue = typeof ITEM_TYPE_VALUES[number];
 export const PRODUCT_STOCK_ITEM_TYPE_VALUES = ['SEMI_PRODUCT', 'FINISHED'] as const;
 export type ProductStockItemTypeValue = typeof PRODUCT_STOCK_ITEM_TYPE_VALUES[number];
 
+// ===== 제품재고 품질 상태 =====
+export const PRODUCT_STOCK_QUALITY_STATUS_VALUES = ['GOOD', 'DEFECT'] as const;
+export type ProductStockQualityStatusValue = typeof PRODUCT_STOCK_QUALITY_STATUS_VALUES[number];
+
 // ===== 제품 유형 =====
 export const PRODUCT_TYPE_VALUES = [
   'HARNESS',
@@ -319,6 +323,7 @@ export const TRANSACTION_TYPE_VALUES = [
   'MAT_IN', 'MAT_IN_CANCEL', 'MAT_OUT', 'MAT_OUT_CANCEL',
   'WIP_IN', 'WIP_IN_CANCEL', 'WIP_OUT', 'WIP_OUT_CANCEL',
   'FG_IN', 'FG_IN_CANCEL', 'FG_OUT', 'FG_OUT_CANCEL',
+  'DEFECT_IN', 'DEFECT_IN_CANCEL',
   'SUBCON_OUT', 'SUBCON_OUT_CANCEL', 'SUBCON_IN', 'SUBCON_IN_CANCEL',
   'PROD_CONSUME', 'PROD_CONSUME_CANCEL',
   'TRANSFER', 'TRANSFER_CANCEL',

@@ -286,6 +286,7 @@
     "productMgmt.receiptCancel": "产品入库取消",
     "productMgmt.issue": "产品出库管理",
     "productMgmt.issueCancel": "产品出库取消",
+    "productMgmt.defectTransfer": "不良仓入库",
     "material.arrival": "到货管理",
     "material.arrivalTransaction": "到货流水查询",
     "material.iqc": "来料检验(IQC)",
@@ -3253,6 +3254,36 @@
         "total": "总出库数",
         "cancellable": "可取消",
         "canceled": "已取消"
+      }
+    },
+    "defectTransfer": {
+      "title": "不良仓入库",
+      "subtitle": "将工序中的不良产品库存移动到不良仓。",
+      "register": "登记入库",
+      "cancel": "取消",
+      "cancelTitle": "确认取消不良仓入库",
+      "reason": "取消原因",
+      "reasonPlaceholder": "请输入取消原因",
+      "confirmCancel": "确认取消",
+      "searchPlaceholder": "搜索交易编号、品目名...",
+      "defectStock": "不良",
+      "col": {
+        "transNo": "入库号",
+        "transDate": "入库日期",
+        "transType": "类型",
+        "sourceWarehouse": "工序仓库",
+        "targetWarehouse": "不良仓库",
+        "qualityStatus": "质量",
+        "qty": "数量"
+      },
+      "modal": {
+        "title": "登记不良仓入库",
+        "partType": "品目类型",
+        "partId": "品目",
+        "sourceWarehouse": "工序仓库",
+        "qty": "数量",
+        "remark": "备注",
+        "confirm": "入库处理"
       }
     }
   },
@@ -7050,6 +7081,8 @@
       "FG_IN_CANCEL": "成品入库取消",
       "FG_OUT": "成品出库",
       "FG_OUT_CANCEL": "成品出库取消",
+      "DEFECT_IN": "不良仓入库",
+      "DEFECT_IN_CANCEL": "不良仓入库取消",
       "SUBCON_OUT": "外包出库",
       "SUBCON_OUT_CANCEL": "外包出库取消",
       "SUBCON_IN": "外包入库",

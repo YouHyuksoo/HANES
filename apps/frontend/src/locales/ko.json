@@ -286,6 +286,7 @@
     "productMgmt.receiptCancel": "제품입고취소",
     "productMgmt.issue": "제품출고관리",
     "productMgmt.issueCancel": "제품출고취소",
+    "productMgmt.defectTransfer": "불량창고입고",
     "material.arrival": "입하관리",
     "material.arrivalTransaction": "입하수불조회",
     "material.iqc": "수입검사(IQC)",
@@ -3664,6 +3665,36 @@
         "cancellable": "취소가능",
         "canceled": "취소완료"
       }
+    },
+    "defectTransfer": {
+      "title": "불량창고입고",
+      "subtitle": "공정에 남아 있는 불량 제품재고를 불량창고로 이동 처리합니다.",
+      "register": "입고등록",
+      "cancel": "취소",
+      "cancelTitle": "불량창고입고 취소 확인",
+      "reason": "취소사유",
+      "reasonPlaceholder": "취소 사유를 입력하세요",
+      "confirmCancel": "취소확정",
+      "searchPlaceholder": "트랜잭션번호, 품목명 검색...",
+      "defectStock": "불량",
+      "col": {
+        "transNo": "입고번호",
+        "transDate": "입고일",
+        "transType": "유형",
+        "sourceWarehouse": "공정창고",
+        "targetWarehouse": "불량창고",
+        "qualityStatus": "품질",
+        "qty": "수량"
+      },
+      "modal": {
+        "title": "불량창고입고 등록",
+        "partType": "품목유형",
+        "partId": "품목",
+        "sourceWarehouse": "공정재고 창고",
+        "qty": "수량",
+        "remark": "비고",
+        "confirm": "입고처리"
+      }
     }
   },
   "productHold": {
@@ -5830,9 +5861,9 @@
       "returnBtn": "반납확정"
     },
     "issuing": {
-      "title": "소모품출고",
+      "title": "소모품 공정출고",
       "subtitle": "소모품 출고를 관리합니다.",
-      "description": "소모품 출고를 관리합니다.",
+      "description": "소모품을 창고에서 공정대기 상태로 출고합니다.",
       "register": "출고등록",
       "returnIssuing": "반납출고",
       "todayOutCount": "금일 출고",
@@ -5856,10 +5887,11 @@
       "returnReasonLabel": "반품사유",
       "returnReasonPlaceholder": "반품사유 입력",
       "remarkPlaceholder": "비고 입력",
-      "typeOut": "출고",
-      "typeOutReturn": "출고반품",
+      "typeOut": "공정출고",
+      "typeOutReturn": "출고취소",
+      "processLabel": "출고 공정",
       "scanPlaceholder": "소모품 UID 바코드를 스캔하세요...",
-      "confirmBtn": "출고확정",
+      "confirmBtn": "공정출고",
       "returnBtn": "취소확정",
       "returnScanHint": "출고취소 모드"
     },
@@ -6232,6 +6264,7 @@
     "CON_STOCK_STATUS": {
       "PENDING": "소모품이 아직 입고되지 않은 미입고 상태",
       "ACTIVE": "입고되어 사용 가능한 소모품 재고 상태",
+      "PROC_WAIT": "공정으로 출고되어 설비 장착을 기다리는 상태",
       "MOUNTED": "설비에 장착되어 사용 중인 소모품 상태",
       "REPAIR": "수리를 위해 분리되어 정비 중인 상태",
       "SCRAPPED": "수명이 다해 폐기 처리된 소모품 상태"
@@ -7054,6 +7087,8 @@
       "FG_IN_CANCEL": "완제품입고취소",
       "FG_OUT": "완제품출고",
       "FG_OUT_CANCEL": "완제품출고취소",
+      "DEFECT_IN": "불량창고입고",
+      "DEFECT_IN_CANCEL": "불량창고입고취소",
       "SUBCON_OUT": "외주출고",
       "SUBCON_OUT_CANCEL": "외주출고취소",
       "SUBCON_IN": "외주입고",
@@ -7120,12 +7155,12 @@
     "CONSUMABLE_LOG_TYPE": {
       "IN": "입고",
       "IN_RETURN": "입고반품",
-      "OUT": "출고",
-      "OUT_RETURN": "출고반품"
+      "OUT": "공정출고",
+      "OUT_RETURN": "공정출고취소"
     },
     "CONSUMABLE_LOG_TYPE_GROUP": {
       "RECEIVING": "입고",
-      "ISSUING": "출고"
+      "ISSUING": "공정출고"
     },
     "INCOMING_TYPE": {
       "NEW": "신규",
@@ -7288,6 +7323,7 @@
     "CON_STOCK_STATUS": {
       "PENDING": "미입고",
       "ACTIVE": "사용가능",
+      "PROC_WAIT": "공정대기",
       "MOUNTED": "장착중",
       "REPAIR": "수리중",
       "SCRAPPED": "폐기"

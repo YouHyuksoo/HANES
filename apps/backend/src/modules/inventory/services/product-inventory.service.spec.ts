@@ -71,7 +71,7 @@ describe('ProductInventoryService', () => {
       .map(column => column.propertyName);
 
     expect(primaryColumnNames).toEqual(
-      expect.arrayContaining(['company', 'plant', 'warehouseCode', 'itemCode']),
+      expect.arrayContaining(['company', 'plant', 'warehouseCode', 'itemCode', 'qualityStatus']),
     );
     expect(primaryColumnNames).not.toContain('prdUid');
   });
@@ -126,12 +126,52 @@ describe('ProductInventoryService', () => {
       } as any);
 
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
-        where: { warehouseCode: 'WH', itemCode: 'IT', company: 'C1', plant: 'P1' },
+        where: { warehouseCode: 'WH', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
       });
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         ProductStock,
-        { warehouseCode: 'WH', itemCode: 'IT', company: 'C1', plant: 'P1' },
+        { warehouseCode: 'WH', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
         expect.objectContaining({ qty: 30, availableQty: 25 }),
+      );
+    });
+
+    it('keeps defect stock as a separate product stock bucket in the same WIP warehouse', async () => {
+      const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
+      mockTransRepo.createQueryBuilder.mockReturnValue(qb);
+      mockTransRepo.create.mockReturnValue({ transNo: 'PTX001' } as any);
+      mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'PTX001' } as any);
+      mockQueryRunner.manager.findOne.mockResolvedValue(null);
+
+      await target.receiveStock({
+        warehouseId: 'SFG_WIP',
+        itemCode: 'SFG-001',
+        itemType: 'SEMI_PRODUCT',
+        qty: 3,
+        transType: 'WIP_IN',
+        qualityStatus: 'DEFECT',
+        orderNo: 'JO-1',
+        processCode: 'PROC-1',
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+
+      expect(mockTransRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        transType: 'WIP_IN',
+        toWarehouseId: 'SFG_WIP',
+        qualityStatus: 'DEFECT',
+      }));
+      expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
+        where: { warehouseCode: 'SFG_WIP', itemCode: 'SFG-001', qualityStatus: 'DEFECT', company: 'C1', plant: 'P1' },
+      });
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
+        ProductStock,
+        expect.objectContaining({
+          warehouseCode: 'SFG_WIP',
+          itemCode: 'SFG-001',
+          qualityStatus: 'DEFECT',
+          qty: 3,
+          availableQty: 3,
+        }),
       );
     });
   });
@@ -183,7 +223,7 @@ describe('ProductInventoryService', () => {
       }));
       expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(
         ProductStock,
-        { warehouseCode: 'FG_WIP', itemCode: 'FG-001', company: 'C1', plant: 'P1' },
+        { warehouseCode: 'FG_WIP', itemCode: 'FG-001', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
       );
       expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
         ProductStock,
@@ -257,11 +297,11 @@ describe('ProductInventoryService', () => {
         { status: 'CANCELED' },
       );
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
-        where: { warehouseCode: 'WH', itemCode: 'FG', company: 'C1', plant: 'P1' },
+        where: { warehouseCode: 'WH', itemCode: 'FG', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
       });
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         ProductStock,
-        { warehouseCode: 'WH', itemCode: 'FG', company: 'C1', plant: 'P1' },
+        { warehouseCode: 'WH', itemCode: 'FG', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
         expect.objectContaining({ qty: 30, availableQty: 30 }),
       );
     });
@@ -393,20 +433,117 @@ describe('ProductInventoryService', () => {
       } as any);
 
       expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(1, ProductStock, {
-        where: { warehouseCode: 'WH-FROM', itemCode: 'IT', company: 'C1', plant: 'P1' },
+        where: { warehouseCode: 'WH-FROM', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
       });
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         ProductStock,
-        { warehouseCode: 'WH-FROM', itemCode: 'IT', company: 'C1', plant: 'P1' },
+        { warehouseCode: 'WH-FROM', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
         expect.objectContaining({ qty: 40, availableQty: 40 }),
       );
       expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(2, ProductStock, {
-        where: { warehouseCode: 'WH-TO', itemCode: 'IT', company: 'C1', plant: 'P1' },
+        where: { warehouseCode: 'WH-TO', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
       });
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         ProductStock,
-        { warehouseCode: 'WH-TO', itemCode: 'IT', company: 'C1', plant: 'P1' },
+        { warehouseCode: 'WH-TO', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
         expect.objectContaining({ qty: 15, availableQty: 15 }),
+      );
+    });
+
+    it('issues only GOOD product stock by default so defect WIP cannot feed downstream', async () => {
+      const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
+      mockTransRepo.createQueryBuilder.mockReturnValue(qb);
+      mockTransRepo.create.mockReturnValue({ transNo: 'PTX001' } as any);
+      mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'PTX001' } as any);
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        warehouseCode: 'SFG_WIP',
+        itemCode: 'SFG-001',
+        qualityStatus: 'GOOD',
+        qty: 5,
+        availableQty: 5,
+        reservedQty: 0,
+        status: 'NORMAL',
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+
+      await target.issueStock({
+        warehouseId: 'SFG_WIP',
+        itemCode: 'SFG-001',
+        qty: 1,
+        transType: 'WIP_OUT',
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+
+      expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(1, ProductStock, {
+        where: { warehouseCode: 'SFG_WIP', itemCode: 'SFG-001', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
+      });
+      expect(mockTransRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        transType: 'WIP_OUT',
+        fromWarehouseId: 'SFG_WIP',
+        qualityStatus: 'GOOD',
+      }));
+    });
+  });
+
+  describe('transferDefectStockToWarehouse', () => {
+    it('moves only DEFECT WIP product stock into the defect warehouse', async () => {
+      const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
+      mockTransRepo.createQueryBuilder.mockReturnValue(qb);
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce({ warehouseCode: 'DEFECT', warehouseType: 'DEFECT', useYn: 'Y', company: 'C1', plant: 'P1' } as any)
+        .mockResolvedValueOnce({
+          warehouseCode: 'SFG_WIP',
+          itemCode: 'SFG-001',
+          itemType: 'SEMI_PRODUCT',
+          qualityStatus: 'DEFECT',
+          qty: 5,
+          availableQty: 5,
+          reservedQty: 0,
+          status: 'NORMAL',
+          company: 'C1',
+          plant: 'P1',
+        } as any)
+        .mockResolvedValueOnce(null);
+      mockQueryRunner.manager.create.mockReturnValue({ transNo: 'PTX-DEFECT' } as any);
+      mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'PTX-DEFECT' } as any);
+
+      await (target as any).transferDefectStockToWarehouse({
+        fromWarehouseId: 'SFG_WIP',
+        itemCode: 'SFG-001',
+        qty: 2,
+        remark: '불량창고 이동',
+        company: 'C1',
+        plant: 'P1',
+      });
+
+      expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(1, Warehouse, {
+        where: { warehouseCode: 'DEFECT', company: 'C1', plant: 'P1' },
+      });
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(ProductTransaction, expect.objectContaining({
+        transType: 'DEFECT_IN',
+        fromWarehouseId: 'SFG_WIP',
+        toWarehouseId: 'DEFECT',
+        itemCode: 'SFG-001',
+        itemType: 'SEMI_PRODUCT',
+        qualityStatus: 'DEFECT',
+        qty: -2,
+      }));
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        ProductStock,
+        { warehouseCode: 'SFG_WIP', itemCode: 'SFG-001', qualityStatus: 'DEFECT', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ qty: 3, availableQty: 3 }),
+      );
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
+        ProductStock,
+        expect.objectContaining({
+          warehouseCode: 'DEFECT',
+          itemCode: 'SFG-001',
+          qualityStatus: 'DEFECT',
+          qty: 2,
+          availableQty: 2,
+        }),
       );
     });
   });

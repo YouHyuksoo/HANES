@@ -286,6 +286,7 @@
     "productMgmt.receiptCancel": "Hủy nhập kho sản phẩm",
     "productMgmt.issue": "Xuất kho sản phẩm",
     "productMgmt.issueCancel": "Hủy xuất kho sản phẩm",
+    "productMgmt.defectTransfer": "Nhập kho lỗi",
     "material.arrival": "Quản lý nhập hàng",
     "material.arrivalTransaction": "Tra cứu giao dịch nhập hàng",
     "material.iqc": "Kiểm tra đầu vào (IQC)",
@@ -3253,6 +3254,36 @@
         "total": "Tổng xuất kho",
         "cancellable": "Có thể hủy",
         "canceled": "Đã hủy"
+      }
+    },
+    "defectTransfer": {
+      "title": "Nhập kho lỗi",
+      "subtitle": "Chuyển tồn sản phẩm lỗi tại công đoạn vào kho lỗi.",
+      "register": "Đăng ký nhập",
+      "cancel": "Hủy",
+      "cancelTitle": "Xác nhận hủy nhập kho lỗi",
+      "reason": "Lý do hủy",
+      "reasonPlaceholder": "Nhập lý do hủy",
+      "confirmCancel": "Xác nhận hủy",
+      "searchPlaceholder": "Tìm mã giao dịch, tên sản phẩm...",
+      "defectStock": "Lỗi",
+      "col": {
+        "transNo": "Số nhập",
+        "transDate": "Ngày nhập",
+        "transType": "Loại",
+        "sourceWarehouse": "Kho công đoạn",
+        "targetWarehouse": "Kho lỗi",
+        "qualityStatus": "Chất lượng",
+        "qty": "Số lượng"
+      },
+      "modal": {
+        "title": "Đăng ký nhập kho lỗi",
+        "partType": "Loại sản phẩm",
+        "partId": "Sản phẩm",
+        "sourceWarehouse": "Kho công đoạn",
+        "qty": "Số lượng",
+        "remark": "Ghi chú",
+        "confirm": "Xác nhận nhập"
       }
     }
   },
@@ -7050,6 +7081,8 @@
       "FG_IN_CANCEL": "Hủy nhập thành phẩm",
       "FG_OUT": "Xuất thành phẩm",
       "FG_OUT_CANCEL": "Hủy xuất thành phẩm",
+      "DEFECT_IN": "Nhập kho lỗi",
+      "DEFECT_IN_CANCEL": "Hủy nhập kho lỗi",
       "SUBCON_OUT": "Xuất gia công",
       "SUBCON_OUT_CANCEL": "Hủy xuất gia công",
       "SUBCON_IN": "Nhập gia công",

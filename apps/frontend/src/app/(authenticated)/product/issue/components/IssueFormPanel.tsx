@@ -22,6 +22,7 @@ interface ProductStockItem {
   itemName: string | null;
   warehouseCode: string;
   warehouseName: string | null;
+  qualityStatus?: "GOOD" | "DEFECT";
   availableQty: number;
   unit: string | null;
 }
@@ -65,7 +66,7 @@ export default function IssueFormPanel({ onClose, onSubmit, loading }: Props) {
   const fetchStocks = useCallback(async (type: string) => {
     try {
       const res = await api.get("/inventory/product/stocks", {
-        params: { itemType: type, includeZero: false },
+        params: { itemType: type, qualityStatus: "GOOD", includeZero: false },
       });
       const list = res.data?.data ?? res.data;
       setStocks(Array.isArray(list) ? list.filter((s: ProductStockItem) => s.availableQty > 0) : []);

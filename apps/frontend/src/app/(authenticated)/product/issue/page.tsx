@@ -5,7 +5,7 @@
  * @description 제품출고관리 페이지 - 반제품/완제품 출고 처리 (폐기, 창고이동, 기타)
  *
  * 초보자 가이드:
- * 1. 출고 이력 DataGrid: WIP_OUT, FG_OUT, WIP_OUT_CANCEL, FG_OUT_CANCEL 조회
+ * 1. 출고 이력 DataGrid: WIP_OUT, FG_OUT 및 취소 전표 조회
  * 2. 출고등록 우측 패널: 품목유형(WIP/FG) 선택 → 재고에서 품목 선택 → 출고계정(ISSUE_TYPE) 필수
  * 3. StatCards: 금일 출고건수/수량, WIP/FG 출고 건수
  * 4. API: POST /inventory/wip/issue 또는 POST /inventory/fg/issue
@@ -66,7 +66,7 @@ export default function ProductIssuePage() {
       const endpoint = formValues.itemType === "SEMI_PRODUCT" ? "/inventory/wip/issue" : "/inventory/fg/issue";
       await api.post(endpoint, {
         itemCode: formValues.itemCode,
-        warehouseCode: formValues.warehouseCode,
+        warehouseId: formValues.warehouseCode,
         qty: formValues.qty,
         itemType: formValues.itemType,
         transType: formValues.transType,

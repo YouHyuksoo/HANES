@@ -80,6 +80,9 @@ export class IssueConDto {
   @IsString()
   conUid: string;
 
+  @IsString()
+  processCode: string;
+
   @IsOptional()
   @IsString()
   department?: string;

@@ -5,7 +5,7 @@
  * 초보자 가이드:
  * - 자재 흐름: 원자재창고 → [출고] → 공정재고(PROC_MAT_STOCKS=장착 대기) → [장착] → 설비재고(WIP_MAT_STOCKS=장착됨).
  * - 장착(mount): 설비의 공정(EquipMaster.processCode)의 공정재고에서 LOT 잔량을 차감 → 설비재고로 가산.
- * - 해제(unmount): 설비재고 잔량을 역분개 → 공정재고로 복원.
+ * - 해제(unmount): 설비재고 현재 잔량만 차감 거래로 기록 → 공정재고로 복원.
  * - MAT_LOTS는 출고 단계에서 이미 차감되었으므로 여기서 건드리지 않는다.
  * - 모든 변경은 단일 트랜잭션(this.tx.run) 안에서 수행하고, company/plant 스코프를 적용한다.
  */
@@ -200,9 +200,9 @@ export class EquipMaterialService {
   }
 
   /**
-   * 설비에 장착된 자재 LOT를 해제하고 공정재고(장착 대기)로 복원한다.
+   * 설비에 장착된 자재 LOT를 해제하고 현재 남은 잔량만 공정재고(장착 대기)로 복원한다.
    * - RESERVED_QTY>0이면 BadRequest(진행 중인 작업 있음).
-   * - 설비재고 역분개(DEDUCT_BACK) → 공정재고 가산 복원(ADD_BACK).
+   * - 원본 장착 수량이 아니라 WIP_MAT_STOCKS의 현재 availableQty를 기준으로 거래를 생성한다.
    */
   async unmount(
     equipCode: string,
@@ -228,33 +228,50 @@ export class EquipMaterialService {
         );
       }
 
-      // 3. 설비재고 역분개(DEDUCT_BACK) — 장착됨 차감
-      const restored = await this.wipMatStockService.restoreInTx(qr, {
-        mode: 'DEDUCT_BACK',
-        refType: 'EQUIP_MOUNT',
+      const restoreQty = stock.availableQty ?? stock.qty ?? 0;
+      if (restoreQty <= 0) {
+        throw new BadRequestException(`해제 가능한 잔량이 없습니다: ${matUid}`);
+      }
+
+      const equip = await qr.manager.findOne(EquipMaster, {
+        where: { company, plant, equipCode },
+      });
+      if (!equip?.processCode) {
+        throw new BadRequestException(`설비에 공정이 지정되지 않았습니다: ${equipCode}`);
+      }
+      const processCode = equip.processCode;
+
+      // 3. 설비재고 현재 잔량 차감 — 장착됨 해제
+      const deducted = await this.wipMatStockService.deductStockInTx(qr, {
+        equipCode,
+        itemCode: stock.itemCode,
+        qty: restoreQty,
+        scannedMatUids: [matUid],
+        transType: 'WIP_IN_CANCEL',
+        refType: 'EQUIP_UNMOUNT',
         refId: matUid,
-        cancelTransType: 'WIP_IN_CANCEL',
-        originTransType: 'WIP_IN',
+        stockPolicy: 'BLOCK',
         company,
         plant,
       });
-      const restoreQty = restored.reduce((sum, r) => sum + r.qty, 0);
+      const deductedQty = deducted.reduce((sum, r) => sum + r.qty, 0);
 
-      // 4. 공정재고 가산 복원(ADD_BACK) — 장착 대기로 되돌림
-      if (restoreQty > 0) {
-        await this.procMatStockService.restoreInTx(qr, {
-          mode: 'ADD_BACK',
-          refType: 'EQUIP_MOUNT',
-          refId: matUid,
-          cancelTransType: 'PROC_MOUNT_CANCEL',
-          originTransType: 'PROC_MOUNT',
-          company,
-          plant,
-        });
-      }
+      // 4. 공정재고 가산 — 장착 대기로 되돌림
+      await this.procMatStockService.addStockInTx(qr, {
+        processCode,
+        itemCode: stock.itemCode,
+        matUid,
+        qty: deductedQty,
+        transType: 'PROC_UNMOUNT',
+        refType: 'EQUIP_UNMOUNT',
+        refId: matUid,
+        equipCode,
+        company,
+        plant,
+      });
 
       this.logger.log(
-        `설비 자재 해제: equipCode=${equipCode} matUid=${matUid} qty=${restoreQty}`,
+        `설비 자재 해제: equipCode=${equipCode} matUid=${matUid} qty=${deductedQty}`,
       );
     });
   }

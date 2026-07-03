@@ -86,6 +86,9 @@ export class ConsumableLog {
   @Column({ type: 'varchar2', name: 'LINE_CODE', length: 50, nullable: true })
   lineCode: string | null;
 
+  @Column({ type: 'varchar2', name: 'PROCESS_CODE', length: 50, nullable: true })
+  processCode: string | null;
+
   @Column({ type: 'varchar2', name: 'EQUIP_CODE', length: 50, nullable: true })
   equipCode: string | null;
 

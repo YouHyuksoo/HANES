@@ -82,6 +82,12 @@ function IssuingTable({ data, toolbarLeft, isLoading }: IssuingTableProps) {
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
       {
+        accessorKey: 'processCode',
+        header: t('consumables.issuing.processLabel', '출고 공정'),
+        size: 100,
+        cell: ({ getValue }) => (getValue() as string) ?? '-',
+      },
+      {
         accessorKey: 'equipCode',
         header: t('consumables.comp.equipment'),
         size: 90,

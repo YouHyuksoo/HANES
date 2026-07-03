@@ -1895,6 +1895,7 @@ export class ProdResultService {
         refType: 'PROD_RESULT',
         refId: resultNo,
         transType: In(['WIP_IN', 'FG_IN']),
+        qualityStatus: 'GOOD',
         status: 'DONE',
         ...(company ? { company } : {}),
         ...(plant ? { plant } : {}),
@@ -1949,9 +1950,9 @@ export class ProdResultService {
   }
 
   /**
-   * 불량재고 자동 적재 — 불량(defectQty)을 DEFECT(불량품)창고에 재고화한다.
-   * 불량 실물을 추적(어느 실적/지시에서 몇 개)하기 위함. 양품 적재와 동일한 시리얼·멱등 패턴.
-   * - 멱등: 같은 실적(refId)에 이미 DEFECT_IN 트랜잭션이 있으면 건너뛴다.
+   * 불량재고 자동 적재 — 불량(defectQty)을 양품과 같은 WIP 창고에 품질상태 DEFECT로 재고화한다.
+   * 불량 실물은 작업자 명시 이동 전까지 해당 공정에 남고, 후공정 투입은 품질상태 가드로 차단한다.
+   * - 멱등: 같은 실적(refId)에 이미 DEFECT 품질 WIP_IN 트랜잭션이 있으면 건너뛴다.
    * - refType=PROD_RESULT 이므로 실적 취소(reverseProductStock) 시 양품과 함께 자동 역분개된다.
    */
   private async adsorbDefectStockInTx(
@@ -1973,7 +1974,8 @@ export class ProdResultService {
       where: {
         refType: 'PROD_RESULT',
         refId: resultNo,
-        transType: 'DEFECT_IN',
+        transType: 'WIP_IN',
+        qualityStatus: 'DEFECT',
         status: 'DONE',
         ...(company ? { company } : {}),
         ...(plant ? { plant } : {}),
@@ -2004,22 +2006,24 @@ export class ProdResultService {
       );
     }
 
+    const wipWarehouse = itemType === 'FINISHED' ? 'FG_WIP' : 'SFG_WIP';
     await this.productInventoryService.receiveStockInTx(qr, {
-      warehouseId: 'DEFECT',
+      warehouseId: wipWarehouse,
       itemCode: jobOrder.itemCode,
       itemType,
       qty: defectQty,
-      transType: 'DEFECT_IN',
+      transType: 'WIP_IN',
+      qualityStatus: 'DEFECT',
       orderNo,
       processCode: processCode || undefined,
       refType: 'PROD_RESULT',
       refId: resultNo,
-      remark: '생산실적 불량 자동 적재',
+      remark: '생산실적 불량 WIP 적재',
       company: jobOrder.company,
       plant: jobOrder.plant,
     });
     this.logger.log(
-      `불량재고 자동 적재: ${jobOrder.itemCode} × ${defectQty} → DEFECT (실적 #${resultNo})`,
+      `불량재고 WIP 적재: ${jobOrder.itemCode} × ${defectQty} → ${wipWarehouse}/DEFECT (실적 #${resultNo})`,
     );
   }
 
@@ -2093,6 +2097,7 @@ export class ProdResultService {
           where: {
             warehouseCode: tx.toWarehouseId,
             itemCode: tx.itemCode,
+            qualityStatus: tx.qualityStatus || 'GOOD',
             ...(company ? { company } : {}),
             ...(plant ? { plant } : {}),
           },
@@ -2110,6 +2115,7 @@ export class ProdResultService {
           const stockKey = {
             warehouseCode: stock.warehouseCode,
             itemCode: stock.itemCode,
+            qualityStatus: tx.qualityStatus || 'GOOD',
             company: stock.company,
             plant: stock.plant,
           };
@@ -2134,6 +2140,7 @@ export class ProdResultService {
         itemCode: tx.itemCode,
         itemType: tx.itemType,
         prdUid: tx.prdUid,
+        qualityStatus: tx.qualityStatus || 'GOOD',
         orderNo: tx.orderNo,
         processCode: tx.processCode,
         qty: -tx.qty,
