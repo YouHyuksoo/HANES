@@ -29,6 +29,12 @@ test('/production/result shows a status badge column and locks actions for cance
   assert.match(columns, /disabled=\{locked\}/);
 });
 
+test('/production/result shows production type as 시생산 or 양산', () => {
+  assert.match(columns, /productionType: 'TRIAL' \| 'MASS' \| string;/);
+  assert.match(columns, /accessorKey: 'productionType'/);
+  assert.match(columns, /value === 'MASS' \? '양산' : '시생산'/);
+});
+
 test('/production/result page consumes the extracted column factory', () => {
   assert.match(page, /import \{ createProductionResultGridColumns, ProdResult \} from "\.\/productionResultColumns"|import \{ createProductionResultGridColumns, ProdResult \} from '\.\/productionResultColumns'/);
   assert.match(page, /createProductionResultGridColumns\(\{[\s\S]*onEditResult: openEdit[\s\S]*onDeleteResult: setDeleteTarget[\s\S]*\}\)/);

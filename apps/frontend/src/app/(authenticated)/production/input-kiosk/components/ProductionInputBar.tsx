@@ -25,6 +25,7 @@ interface ProductionInputBarProps {
   /** 준비단계 인터락 모두 완료 여부 — false면 실적입력 비활성화 */
   interlockDone?: boolean;
   disabledReasons?: string[];
+  productionType: 'TRIAL' | 'MASS';
 }
 
 const LOT_OPTIONS = [1, 5, 10, 20, 50, 100];
@@ -34,6 +35,7 @@ export default function ProductionInputBar({
   onResultSaved,
   interlockDone = true,
   disabledReasons = [],
+  productionType,
 }: ProductionInputBarProps) {
   const { t } = useTranslation();
   const {
@@ -71,6 +73,11 @@ export default function ProductionInputBar({
     : '';
 
   const canSave = !!(selectedEquip && selectedJobOrder && selectedWorkers.length > 0 && interlockDone);
+  const isMassProduction = productionType === 'MASS';
+  const productionTypeLabel = isMassProduction ? '양산' : '시생산';
+  const productionTypeHint = isMassProduction
+    ? '초물 합격 완료. 이후 실적은 양산으로 저장됩니다.'
+    : '초물 합격 전까지 시생산으로 저장됩니다.';
 
   const buttonTitle = (() => {
     if (saving) return t('common.saving');
@@ -175,6 +182,17 @@ export default function ProductionInputBar({
               <span className="text-xs font-mono text-text truncate">
                 {serialNo || <span className="text-text-muted">{t('kiosk.input.selectJobOrderFirst')}</span>}
               </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1 shrink-0 min-w-[92px]" title={productionTypeHint}>
+            <span className="text-xs text-text-muted">생산유형</span>
+            <div className={`h-8 px-2 rounded border flex items-center justify-center text-xs font-bold ${
+              isMassProduction
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300'
+                : 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300'
+            }`}>
+              {productionTypeLabel}
             </div>
           </div>
 

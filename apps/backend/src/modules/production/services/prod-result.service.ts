@@ -40,6 +40,7 @@ import {
   ProdResultQueryDto,
   ProdOrderResultQueryDto,
   CompleteProdResultDto,
+  ProdResultProductionType,
 } from '../dto/prod-result.dto';
 import { AutoIssueService } from './auto-issue.service';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
@@ -55,7 +56,10 @@ import { SgLabel } from '../../../entities/sg-label.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { DefectLog } from '../../../entities/defect-log.entity';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
+import { SelfInspectResult } from '../../../entities/self-inspect-result.entity';
 import { ShiftResolver } from '../../../utils/shift-resolver';
+
+const SELF_INSPECT_BATCH_WINDOW_MS = 10_000;
 
 @Injectable()
 export class ProdResultService {
@@ -140,6 +144,7 @@ export class ProdResultService {
       prdUid,
       processCode,
       status,
+      productionType,
       shiftCode,
       startTimeFrom,
       startTimeTo,
@@ -168,6 +173,7 @@ export class ProdResultService {
     if (prdUid) qb.andWhere('pr.prdUid LIKE :prdUid', { prdUid: `%${prdUid}%` });
     if (processCode) qb.andWhere('pr.processCode = :processCode', { processCode });
     if (status) qb.andWhere('pr.status = :status', { status });
+    if (productionType) qb.andWhere('pr.productionType = :productionType', { productionType });
     if (shiftCode) qb.andWhere('pr.shiftCode = :shiftCode', { shiftCode });
     if (startTimeFrom) qb.andWhere("pr.startAt >= TO_DATE(:startTimeFrom, 'YYYY-MM-DD')", { startTimeFrom });
     if (startTimeTo) qb.andWhere("pr.startAt < TO_DATE(:startTimeTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { startTimeTo });
@@ -459,6 +465,7 @@ export class ProdResultService {
         endAt: true,
         cycleTime: true,
         status: true,
+        productionType: true,
         remark: true,
         createdAt: true,
         updatedAt: true,
@@ -518,6 +525,39 @@ export class ProdResultService {
         `설비부품을 교체하거나 작업지시를 확인하세요.`
       );
     }
+  }
+
+  private latestFirstInspectionBatchPassed(rows: Array<Pick<SelfInspectResult, 'status' | 'createdAt'>>): boolean {
+    if (rows.length === 0) return false;
+    const latestAt = new Date(rows[0].createdAt).getTime();
+    if (!Number.isFinite(latestAt)) return false;
+
+    const latestBatch = rows.filter((row) => {
+      const rowAt = new Date(row.createdAt).getTime();
+      return Number.isFinite(rowAt) && Math.abs(latestAt - rowAt) <= SELF_INSPECT_BATCH_WINDOW_MS;
+    });
+
+    return latestBatch.length > 0 && latestBatch.every((row) => row.status === 'PASS');
+  }
+
+  private async resolveProductionTypeByFirstInspect(
+    orderNo: string,
+    company?: string,
+    plant?: string,
+  ): Promise<ProdResultProductionType> {
+    const rows = await this.dataSource.getRepository(SelfInspectResult).find({
+      where: {
+        orderNo,
+        timing: 'FIRST',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+      order: { createdAt: 'DESC' },
+      take: 100,
+      select: ['id', 'status', 'createdAt'],
+    });
+
+    return this.latestFirstInspectionBatchPassed(rows) ? 'MASS' : 'TRIAL';
   }
 
   /**
@@ -660,6 +700,8 @@ export class ProdResultService {
       }
     }
 
+    const productionType = await this.resolveProductionTypeByFirstInspect(dto.orderNo, company, plant);
+
     let savedResultNo!: string;
     await this.tx.run(async (queryRunner) => {
       const resultNo = await this.numbering.next('PROD_RESULT', queryRunner);
@@ -677,6 +719,7 @@ export class ProdResultService {
         endAt: dto.endAt ? new Date(dto.endAt) : occurredAt,
         cycleTime: dto.cycleTime,
         status: 'DONE',
+        productionType,
         remark: dto.remark,
         company: jobOrder.company,
         plant: jobOrder.plant,

@@ -23,6 +23,7 @@ export interface JobOrder {
   orderQty: number;
   completedQty: number;
   defectQty: number;
+  productionType?: 'TRIAL' | 'MASS' | string;
   unit: string;
   orderType: JobOrderType;
   priority: number;

@@ -1,6 +1,6 @@
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-07-03 09:58:59
+- 작성일: 2026-07-03 13:15:18
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
@@ -8,7 +8,7 @@
 ## 1. 요약
 
 - 테이블 수: 172
-- 컬럼 수: 2851
+- 컬럼 수: 2852
 - PK 보유 테이블: 168
 - DB FK 수: 29
 - COM_CODES 그룹 수: 161
@@ -8445,6 +8445,7 @@ erDiagram
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` | 수정일시 |
 | `RESULT_NO` | `VARCHAR2(30)` | `N` | PK | 기본값 `NULL` |  |
 | `SHIFT_CODE` | `VARCHAR2(20)` | `Y` |  |  |  |
+| `PRODUCTION_TYPE` | `VARCHAR2(20)` | `N` |  | 기본값 `'MASS'`<br>CHECK `PRODUCTION_TYPE IN ('TRIAL', 'MASS')` | 생산유형: TRIAL=시생산, MASS=양산 |
 
 ### `PURCHASE_ORDERS`
 

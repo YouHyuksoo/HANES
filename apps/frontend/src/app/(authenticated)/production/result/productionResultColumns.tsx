@@ -28,6 +28,7 @@ export interface ProdResult {
   defectQty: number;
   totalQty: number;
   status: string;
+  productionType: 'TRIAL' | 'MASS' | string;
   workDate: string;
   startAt: string;
   endAt: string;
@@ -92,6 +93,18 @@ export function createProductionResultGridColumns({
       accessorKey: 'status', header: t('production.result.status', '상태'), size: 90,
       meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => <StatusBadge codeType="PROD_RESULT_STATUS" value={getValue() as string} />
+    },
+    {
+      accessorKey: 'productionType', header: t('production.result.productionType', '생산유형'), size: 90,
+      meta: { filterType: 'multi' as const },
+      cell: ({ getValue }) => {
+        const value = getValue() as string;
+        const label = value === 'MASS' ? '양산' : '시생산';
+        const cls = value === 'MASS'
+          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800'
+          : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800';
+        return <span className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-semibold ${cls}`}>{label}</span>;
+      },
     },
     { accessorKey: 'workDate', header: t('production.result.workDate'), size: 100, meta: { filterType: 'date' as const } },
     {

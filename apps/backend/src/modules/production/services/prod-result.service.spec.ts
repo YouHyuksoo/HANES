@@ -17,6 +17,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { DefectLog } from '../../../entities/defect-log.entity';
 import { SgLabel } from '../../../entities/sg-label.entity';
+import { SelfInspectResult } from '../../../entities/self-inspect-result.entity';
 import { User } from '../../../entities/user.entity';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { AutoIssueService } from './auto-issue.service';
@@ -232,6 +233,83 @@ describe('ProdResultService', () => {
       expect.objectContaining({ status: 'DONE' }),
     );
     expect(result?.resultNo).toBe('PR-1');
+  });
+
+  it('stores TRIAL production type until the latest FIRST inspection batch is all PASS', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, company: 'C1', plant: 'P1' } as any);
+
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '0', totalDefect: '0' }),
+    } as any;
+    prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+
+    const selfInspectRepo = {
+      find: jest.fn().mockResolvedValue([
+        { status: 'PENDING', createdAt: new Date('2026-07-03T01:00:03.000Z') },
+        { status: 'PASS', createdAt: new Date('2026-07-03T01:00:02.000Z') },
+      ]),
+    };
+    dataSource.getRepository.mockImplementation((entity: any) => {
+      if (entity === SelfInspectResult) return selfInspectRepo as any;
+      return { find: jest.fn().mockResolvedValue([]) } as any;
+    });
+
+    numbering.next.mockResolvedValue('PR-1');
+    queryRunner.manager.create.mockReturnValue({ resultNo: 'PR-1' } as any);
+    queryRunner.manager.save.mockResolvedValue({ resultNo: 'PR-1' } as any);
+    sysConfigService.getValue.mockResolvedValue('OFF');
+    autoIssueService.execute.mockResolvedValue({ issued: [], warnings: [], skipped: false } as any);
+    prodResultRepo.findOne.mockResolvedValue({ resultNo: 'PR-1' } as any);
+
+    await service.create({ orderNo: 'JO-1', goodQty: 1, defectQty: 0 } as any, 'C1', 'P1');
+
+    expect(queryRunner.manager.create).toHaveBeenCalledWith(
+      ProdResult,
+      expect.objectContaining({ productionType: 'TRIAL' }),
+    );
+  });
+
+  it('stores MASS production type after the latest FIRST inspection batch is all PASS', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, company: 'C1', plant: 'P1' } as any);
+
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '0', totalDefect: '0' }),
+    } as any;
+    prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+
+    const selfInspectRepo = {
+      find: jest.fn().mockResolvedValue([
+        { status: 'PASS', createdAt: new Date('2026-07-03T01:00:03.000Z') },
+        { status: 'PASS', createdAt: new Date('2026-07-03T01:00:02.000Z') },
+        { status: 'FAIL', createdAt: new Date('2026-07-03T00:30:00.000Z') },
+      ]),
+    };
+    dataSource.getRepository.mockImplementation((entity: any) => {
+      if (entity === SelfInspectResult) return selfInspectRepo as any;
+      return { find: jest.fn().mockResolvedValue([]) } as any;
+    });
+
+    numbering.next.mockResolvedValue('PR-1');
+    queryRunner.manager.create.mockReturnValue({ resultNo: 'PR-1' } as any);
+    queryRunner.manager.save.mockResolvedValue({ resultNo: 'PR-1' } as any);
+    sysConfigService.getValue.mockResolvedValue('OFF');
+    autoIssueService.execute.mockResolvedValue({ issued: [], warnings: [], skipped: false } as any);
+    prodResultRepo.findOne.mockResolvedValue({ resultNo: 'PR-1' } as any);
+
+    await service.create({ orderNo: 'JO-1', goodQty: 1, defectQty: 0 } as any, 'C1', 'P1');
+
+    expect(queryRunner.manager.create).toHaveBeenCalledWith(
+      ProdResult,
+      expect.objectContaining({ productionType: 'MASS' }),
+    );
   });
 
   it('persists defect detail logs in the same transaction without double counting defectQty', async () => {

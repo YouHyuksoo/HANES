@@ -32,6 +32,8 @@ import { PROD_RESULT_STATUS_VALUES } from '@harness/shared';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export type ProdResultStatus = typeof PROD_RESULT_STATUS_VALUES[number];
+export const PROD_RESULT_PRODUCTION_TYPE_VALUES = ['TRIAL', 'MASS'] as const;
+export type ProdResultProductionType = typeof PROD_RESULT_PRODUCTION_TYPE_VALUES[number];
 
 /**
  * 생산실적 불량 상세 (불량입력 모달에서 등록된 유형별 불량)
@@ -207,6 +209,15 @@ export class ProdResultQueryDto extends PaginationQueryDto {
   @IsString()
   @IsIn([...PROD_RESULT_STATUS_VALUES])
   status?: ProdResultStatus;
+
+  @ApiPropertyOptional({
+    description: '생산유형 필터',
+    enum: [...PROD_RESULT_PRODUCTION_TYPE_VALUES],
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn([...PROD_RESULT_PRODUCTION_TYPE_VALUES])
+  productionType?: ProdResultProductionType;
 
   @ApiPropertyOptional({ description: '교대 코드 필터' })
   @IsOptional()

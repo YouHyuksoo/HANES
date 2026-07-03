@@ -32,6 +32,7 @@ import { WorkerMaster } from './worker-master.entity';
 @Index(['workerId'])
 @Index(['status'])
 @Index(['shiftCode'])
+@Index(['productionType'])
 export class ProdResult {
   @PrimaryColumn({ name: 'RESULT_NO', length: 30 })
   resultNo: string;
@@ -88,6 +89,9 @@ export class ProdResult {
 
   @Column({ name: 'STATUS', length: 20, default: 'RUNNING' })
   status: string;
+
+  @Column({ name: 'PRODUCTION_TYPE', length: 20, default: 'MASS' })
+  productionType: 'TRIAL' | 'MASS';
 
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;

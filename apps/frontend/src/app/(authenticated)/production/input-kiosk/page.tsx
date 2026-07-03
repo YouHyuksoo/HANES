@@ -42,6 +42,31 @@ import SelfInspectModal from './components/SelfInspectModal';
 import SgLabelPrintHost, { type SgLabelPrintHandle } from './components/SgLabelPrintHost';
 import { normalizeEquipOptions, type EquipOption } from './utils/equipOptions';
 
+const SELF_INSPECT_BATCH_WINDOW_MS = 10_000;
+
+type SelfInspectRow = {
+  timing?: string;
+  status?: string;
+  createdAt?: string;
+};
+
+function latestFirstInspectBatchPassed(rows: SelfInspectRow[]): boolean {
+  const firstRows = rows
+    .filter(row => row.timing === 'FIRST' && row.status && row.createdAt)
+    .sort((a, b) => new Date(b.createdAt ?? '').getTime() - new Date(a.createdAt ?? '').getTime());
+  if (firstRows.length === 0) return false;
+
+  const latestAt = new Date(firstRows[0].createdAt ?? '').getTime();
+  if (!Number.isFinite(latestAt)) return false;
+
+  const latestBatch = firstRows.filter((row) => {
+    const rowAt = new Date(row.createdAt ?? '').getTime();
+    return Number.isFinite(rowAt) && Math.abs(latestAt - rowAt) <= SELF_INSPECT_BATCH_WINDOW_MS;
+  });
+
+  return latestBatch.length > 0 && latestBatch.every(row => row.status === 'PASS');
+}
+
 export default function InputKioskPage() {
   const { t } = useTranslation();
   const {
@@ -213,17 +238,18 @@ export default function InputKioskPage() {
       const res = await api.get(
         `/production/self-inspect/results/${encodeURIComponent(selectedJobOrder.orderNo)}`,
       );
-      const rows = Array.isArray(res.data?.data) ? res.data.data : [];
+      const rows: SelfInspectRow[] = Array.isArray(res.data?.data) ? res.data.data : [];
+      const firstInspectPassed = latestFirstInspectBatchPassed(rows);
       const doneTimings = new Set(
         rows
           .filter((row: { status?: string }) => row.status && row.status !== 'PENDING')
           .map((row: { timing?: string }) => row.timing)
           .filter(Boolean),
       );
-      setFirstInspectDone(doneTimings.has('FIRST'));
+      setFirstInspectDone(firstInspectPassed);
       setMidInspectDone(doneTimings.has('MID'));
       setLastInspectDone(doneTimings.has('LAST'));
-      setHasPendingDelegate(rows.some((row: { status?: string }) => row.status === 'PENDING'));
+      setHasPendingDelegate(rows.some((row: SelfInspectRow) => row.status === 'PENDING' && row.timing !== 'FIRST'));
     } catch {
       setFirstInspectDone(false);
       setMidInspectDone(false);
@@ -232,6 +258,14 @@ export default function InputKioskPage() {
   }, [selectedJobOrder?.orderNo, setHasPendingDelegate, setMidInspectDone]);
 
   useEffect(() => { void refreshSelfInspectStatus(); }, [refreshSelfInspectStatus]);
+
+  useEffect(() => {
+    if (!selectedJobOrder?.orderNo || firstInspectDone) return;
+    const timer = setInterval(() => {
+      void refreshSelfInspectStatus();
+    }, 10000);
+    return () => clearInterval(timer);
+  }, [firstInspectDone, refreshSelfInspectStatus, selectedJobOrder?.orderNo]);
 
   // 진행수량을 서버 실적(PROD_RESULTS 집계) 기준으로 동기화
   // — 새로고침/재진입/다른 단말 실적이 있어도 진행률·중물 차단이 실제 생산량을 따른다.
@@ -309,13 +343,13 @@ export default function InputKioskPage() {
 
   // 실적 저장 후 처리 — 서버 기준 진행수량 재동기화 + 초물 자주검사 자동 트리거
   const handleSaved = useCallback(() => {
-    // 이번 저장 전 누적 생산수량이 0이었으면 초물 검사 트리거 (서버 집계 기준)
-    if (savedResultCount === 0 && !firstInspectDone) {
+    // 초물 전체 PASS 전까지는 시생산이며, 실적 저장 후 초물검사를 계속 유도한다.
+    if (!firstInspectDone) {
       setSelfInspectTiming('FIRST');
     }
     refreshProgress();
     setHistoryKey(k => k + 1);
-  }, [savedResultCount, firstInspectDone, refreshProgress]);
+  }, [firstInspectDone, refreshProgress]);
 
   // 실적 저장 성공 시: 라우팅 발행공정이면 백엔드가 발행한 SFG 라벨을 조회해 Print Agent로 자동 출력.
   const sgPrinterRef = useRef<SgLabelPrintHandle>(null);
@@ -344,6 +378,7 @@ export default function InputKioskPage() {
     ? (savedResultCount / selectedJobOrder.planQty) * 100
     : 0;
   const isMidBlock = progressPct >= midBlockPct && !midInspectDone;
+  const productionType = firstInspectDone ? 'MASS' : 'TRIAL';
 
   const submitDisabledReasons = useMemo(() => {
     const reasons: string[] = [];
@@ -446,6 +481,7 @@ export default function InputKioskPage() {
                 onResultSaved={handleResultSaved}
                 interlockDone={allInterlockDone && !hasPendingDelegate && !isMidBlock}
                 disabledReasons={submitDisabledReasons}
+                productionType={productionType}
               />
             </div>
           </div>
