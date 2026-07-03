@@ -3,7 +3,7 @@
  * @description AI 문서 RAG 인덱스 관리/검색 API.
  */
 import { Body, Controller, Get, Post } from '@nestjs/common';
-import { IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsArray, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { AiKnowledgeService, KnowledgeSearchContext } from './ai-knowledge.service';
 
 class KnowledgeSearchDto implements KnowledgeSearchContext {
@@ -29,6 +29,13 @@ class KnowledgeSearchDto implements KnowledgeSearchContext {
   topK?: number;
 }
 
+class KnowledgeReindexDto {
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  targets?: string[];
+}
+
 @Controller('ai/knowledge')
 export class AiKnowledgeController {
   constructor(private readonly knowledge: AiKnowledgeService) {}
@@ -39,8 +46,8 @@ export class AiKnowledgeController {
   }
 
   @Post('reindex')
-  reindex() {
-    return this.knowledge.reindex();
+  reindex(@Body() dto: KnowledgeReindexDto = {}) {
+    return this.knowledge.reindex({ targets: dto.targets });
   }
 
   @Post('search')

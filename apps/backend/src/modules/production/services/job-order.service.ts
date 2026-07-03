@@ -235,7 +235,7 @@ export class JobOrderService {
       page = 1, limit = 50, search, orderNo, itemCode,
       lineCode, equipCode, status, statuses, planDateFrom, planDateTo, erpSyncYn,
       itemType, processCode,
-      orderKind,
+      orderKind, assignableEquipCode,
     } = query;
     const skip = (page - 1) * limit;
 
@@ -259,6 +259,9 @@ export class JobOrderService {
       if (plant) conditions.push('AND pr.PLANT_CD = :plant');
       conditions.push(')');
       qb.andWhere(conditions.join(' '), { equipCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) });
+    }
+    if (assignableEquipCode) {
+      qb.andWhere('(jo.equipCode IS NULL OR jo.equipCode = :assignableEquipCode)', { assignableEquipCode });
     }
     if (statuses) {
       const statusList = statuses.split(',').map(s => s.trim()).filter(Boolean);

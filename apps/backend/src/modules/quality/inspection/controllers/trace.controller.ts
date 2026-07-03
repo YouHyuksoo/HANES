@@ -48,12 +48,13 @@ export class TraceController {
     @Query('equipCode') equipCode: string | undefined,
     @Query('dateFrom') dateFrom: string | undefined,
     @Query('dateTo') dateTo: string | undefined,
+    @Query('confirmLarge') confirmLarge: string | undefined,
     @Company() company: string,
     @Plant() plant: string,
   ) {
     const data = await this.traceabilityService.findCandidates(
       mode,
-      { value, equipCode, dateFrom, dateTo },
+      { value, equipCode, dateFrom, dateTo, confirmLarge: confirmLarge === 'true' },
       company,
       plant,
     );

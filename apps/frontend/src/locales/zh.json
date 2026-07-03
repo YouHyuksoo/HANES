@@ -331,6 +331,7 @@
     "production.inputAssembly": "组装实绩输入",
     "production.order": "作业指示管理",
     "production.result": "生产实绩查询",
+    "production.orderResult": "作业指示对比实绩",
     "production.progress": "作业指示现况查询",
     "production.inputKiosk": "实绩录入(加工)",
     "production.inputInspect": "实绩录入(简单检查)",
@@ -3840,6 +3841,26 @@
         "defectTotal": "总不良数量",
         "yieldRate": "整体良品率"
       }
+    },
+    "orderResult": {
+      "title": "作业指示对比实绩",
+      "description": "按作业指示计划数量查询实绩有无和达成率",
+      "orderNo": "作业指示",
+      "status": "状态",
+      "planDate": "计划日",
+      "line": "线别",
+      "process": "工序",
+      "orderKind": "指示类型",
+      "planQty": "计划数量",
+      "goodQty": "良品数量",
+      "defectQty": "不良数量",
+      "totalQty": "总实绩",
+      "remainingQty": "剩余",
+      "achievementRate": "达成率",
+      "defectRate": "不良率",
+      "resultCount": "实绩数",
+      "lastResultAt": "最近实绩日",
+      "searchPlaceholder": "搜索作业指示、品目代码、品名..."
     },
     "packResult": {
       "title": "包装实绩查询",

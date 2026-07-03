@@ -26,6 +26,7 @@ import {
   CreateProdResultDto,
   UpdateProdResultDto,
   ProdResultQueryDto,
+  ProdOrderResultQueryDto,
   CompleteProdResultDto,
 } from '../dto/prod-result.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
@@ -50,6 +51,18 @@ export class ProdResultController {
   async findByJobOrderId(@Param('orderNo') orderNo: string, @Company() company: string, @Plant() plant: string) {
     const data = await this.prodResultService.findByJobOrderId(orderNo, company, plant);
     return ResponseUtil.success(data);
+  }
+
+  @Get('summary/by-job-order')
+  @ApiOperation({ summary: 'List job orders with production result summary' })
+  @ApiResponse({ status: 200, description: 'Success' })
+  async getSummaryByJobOrderList(
+    @Query() query: ProdOrderResultQueryDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const result = await this.prodResultService.getSummaryByJobOrderList(query, company, plant);
+    return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
   @Get(':resultNo')

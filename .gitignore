@@ -74,6 +74,9 @@ nul
 # AI coordination — local multi-agent board and hook-generated presence
 .ai-coordination/
 
+# understand-anything skill's local codebase-analysis cache
+.understand-anything/
+
 # Stray tool output (Windows path mangling artifacts)
 CUsers*
 Ctemp*

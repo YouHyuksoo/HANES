@@ -4,7 +4,7 @@
  *
  * 라우트:
  * - POST /production/subprocess-kitting               : 키팅 실행(FG 발행)
- * - GET  /production/subprocess-kitting/sg-label/:sgBarcode : SG 라벨 조회
+ * - GET  /production/subprocess-kitting/sg-label/:sgBarcode : SFG 라벨 조회
  *
  * 주의: cancel()은 본 범위에서 제공하지 않는다(별도 후속).
  */
@@ -65,7 +65,7 @@ export class SubprocessKittingController {
 
   @Post('issue-sg-label')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '서브 키팅 SG 라벨 발행 — 새 SG 채번 + ISSUED 저장(입력SG·자재·실적·재고 미반영)' })
+  @ApiOperation({ summary: '서브 키팅 SFG 라벨 발행 — 새 SG 채번 + ISSUED 저장(입력SFG·자재·실적·재고 미반영)' })
   async issueSgLabel(
     @Body() dto: IssueSgLabelDto,
     @Company() company: string,
@@ -73,12 +73,12 @@ export class SubprocessKittingController {
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.service.issueSgLabel(dto, company, plant, req.user?.id ?? 'system');
-    return ResponseUtil.success(data, 'SG 라벨이 발행되었습니다.');
+    return ResponseUtil.success(data, 'SFG 라벨이 발행되었습니다.');
   }
 
   @Post('confirm-subkit')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '서브 키팅 확정 — 실물 새 SG 라벨 스캔으로 입력SG 소비+genealogy+자재차감+실적+재고 단일 트랜잭션' })
+  @ApiOperation({ summary: '서브 키팅 확정 — 실물 새 SFG 라벨 스캔으로 입력SFG 소비+genealogy+자재차감+실적+재고 단일 트랜잭션' })
   async confirmSubKit(
     @Body() dto: ConfirmSubKitDto,
     @Company() company: string,
@@ -102,7 +102,7 @@ export class SubprocessKittingController {
   }
 
   @Get('sg-labels-by-result/:resultNo')
-  @ApiOperation({ summary: '생산실적별 SG 라벨 목록 조회' })
+  @ApiOperation({ summary: '생산실적별 SFG 라벨 목록 조회' })
   @ApiParam({ name: 'resultNo', description: '생산실적번호' })
   async getSgLabelsByResult(
     @Param('resultNo') resultNo: string,
@@ -126,7 +126,7 @@ export class SubprocessKittingController {
   }
 
   @Get('sg-label/:sgBarcode')
-  @ApiOperation({ summary: 'SG 라벨 조회' })
+  @ApiOperation({ summary: 'SFG 라벨 조회' })
   @ApiParam({ name: 'sgBarcode', description: '반제품 묶음 라벨 바코드' })
   async getSgLabel(
     @Param('sgBarcode') sgBarcode: string,

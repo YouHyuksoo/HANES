@@ -2,8 +2,8 @@
 
 /**
  * @file components/SubKitActionBar.tsx
- * @description 서브공정 키팅 하단 액션 바 — 새 SG 라벨 발행 → 실물 새 SG 스캔 확정.
- *   input-assembly의 AssemblyActionBar 거울상(FG→새 SG).
+ * @description 서브공정 키팅 하단 액션 바 — 새 SFG 라벨 발행 → 실물 새 SFG 스캔 확정.
+ *   input-assembly의 AssemblyActionBar 거울상(FG→새 SFG).
  */
 import type { JSX } from "react";
 import { useState } from "react";
@@ -55,7 +55,7 @@ export default function SubKitActionBar({
           isLoading={issuing}
           leftIcon={<Play className="w-5 h-5" />}
         >
-          {t("production.subprocess.issueSgLabel", "키팅 실행 → SG 라벨 발행")}
+          {t("production.subprocess.issueSgLabel", "키팅 실행 → SFG 라벨 발행")}
         </Button>
       </div>
 
@@ -73,7 +73,7 @@ export default function SubKitActionBar({
                 value={confirmScan}
                 onChange={setConfirmScan}
                 onScan={submitConfirm}
-                placeholder={t("production.subprocess.confirmScanPlaceholder", "실물 SG 라벨 스캔")}
+                placeholder={t("production.subprocess.confirmScanPlaceholder", "실물 SFG 라벨 스캔")}
                 disabled={confirming}
               />
               <Button
@@ -97,7 +97,7 @@ export default function SubKitActionBar({
           </div>
         ) : (
           <p className="text-sm text-text-muted">
-            {t("production.subprocess.issueFirst", "먼저 키팅을 실행해 SG 라벨을 발행하세요")}
+            {t("production.subprocess.issueFirst", "먼저 키팅을 실행해 SFG 라벨을 발행하세요")}
           </p>
         )}
       </div>

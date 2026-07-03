@@ -14,7 +14,7 @@ interface SgLabelInfo {
   remainQty: number;
   status: string;
   orderNo?: string | null;
-  /** 라벨 종류 — BUNDLE(묶음)/SG(회로) */
+  /** 라벨 종류 — BUNDLE(묶음)/SFG(회로) */
   labelType?: string;
 }
 
@@ -65,7 +65,7 @@ export default function SgScanPanel({
 
       if (/^FG\d/i.test(trimmed)) {
         toast.error(
-          t("production.inputAssembly.scanIsFgLabel", "완제품(FG) 바코드입니다. 반제품(SG) 라벨을 스캔하세요."),
+          t("production.inputAssembly.scanIsFgLabel", "완제품(FG) 바코드입니다. 반제품(SFG) 라벨을 스캔하세요."),
         );
         setScanInput("");
         return;
@@ -79,7 +79,7 @@ export default function SgScanPanel({
         const data = res.data?.data as SgLabelInfo;
 
         if (data.remainQty <= 0) {
-          toast.error(t("production.kitting.warnZeroQty", "잔량이 없는 SG 라벨입니다."));
+          toast.error(t("production.kitting.warnZeroQty", "잔량이 없는 SFG 라벨입니다."));
           setScanInput("");
           return;
         }
@@ -87,7 +87,7 @@ export default function SgScanPanel({
         const validStatuses = ["IN_STOCK", "MOUNTED"];
         if (!validStatuses.includes(data.status?.toUpperCase())) {
           toast.error(
-            `${t("production.kitting.warnInvalidStatus", "사용할 수 없는 SG 라벨 상태입니다.")} (${data.status})`,
+            `${t("production.kitting.warnInvalidStatus", "사용할 수 없는 SFG 라벨 상태입니다.")} (${data.status})`,
           );
           setScanInput("");
           return;
@@ -109,7 +109,7 @@ export default function SgScanPanel({
       } catch (error: unknown) {
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          t("production.inputAssembly.scanNotFound", "SG 라벨을 찾을 수 없습니다.");
+          t("production.inputAssembly.scanNotFound", "SFG 라벨을 찾을 수 없습니다.");
         toast.error(message);
         setScanInput("");
       } finally {
@@ -132,7 +132,7 @@ export default function SgScanPanel({
           value={scanInput}
           onChange={setScanInput}
           onScan={handleScan}
-          placeholder={t("production.inputAssembly.scanPlaceholder", "SG 바코드 스캔 또는 입력 후 Enter")}
+          placeholder={t("production.inputAssembly.scanPlaceholder", "SFG 바코드 스캔 또는 입력 후 Enter")}
           disabled={!orderNo || loading}
           fullWidth
         />
@@ -150,7 +150,7 @@ export default function SgScanPanel({
                 <tr className="text-text-muted text-xs">
                   <th className="px-3 py-2 text-left font-semibold">#</th>
                   <th className="px-3 py-2 text-left font-semibold">
-                    {t("production.kitting.sgBarcode", "SG 바코드")}
+                    {t("production.kitting.sgBarcode", "SFG 바코드")}
                   </th>
                   <th className="px-3 py-2 text-left font-semibold">
                     {t("common.itemCode", "품번")}

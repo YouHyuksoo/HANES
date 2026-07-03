@@ -257,20 +257,20 @@ export class SubprocessKittingService {
       const foundSet = new Set(sgLabels.map((s) => s.sgBarcode));
       const missing = sgBarcodes.filter((b) => !foundSet.has(b));
       if (missing.length > 0) {
-        throw new BadRequestException(`존재하지 않는 SG 라벨: ${missing.join(', ')}`);
+        throw new BadRequestException(`존재하지 않는 SFG 라벨: ${missing.join(', ')}`);
       }
       for (const sg of sgLabels) {
         if (!['IN_STOCK', 'MOUNTED'].includes(sg.status)) {
           throw new BadRequestException(
-            `사용할 수 없는 SG 라벨 상태입니다: ${sg.sgBarcode} (${sg.status})`,
+            `사용할 수 없는 SFG 라벨 상태입니다: ${sg.sgBarcode} (${sg.status})`,
           );
         }
         if (sg.remainQty <= 0) {
-          throw new BadRequestException(`잔량이 없는 SG 라벨입니다: ${sg.sgBarcode}`);
+          throw new BadRequestException(`잔량이 없는 SFG 라벨입니다: ${sg.sgBarcode}`);
         }
         if (!semiCodeSet.has(sg.itemCode)) {
           throw new BadRequestException(
-            `BOM에 없는 반제품 SG 라벨입니다(오투입): ${sg.sgBarcode} (${sg.itemCode})`,
+            `BOM에 없는 반제품 SFG 라벨입니다(오투입): ${sg.sgBarcode} (${sg.itemCode})`,
           );
         }
       }
@@ -394,8 +394,8 @@ export class SubprocessKittingService {
   }
 
   /**
-   * 서브공정 키팅 SG 라벨 발행 (② 새 SG 채번 + ISSUED 저장).
-   * 입력 SG·자재·실적·재고는 미반영. confirmAssembly의 issueLabel 대칭(FG→새 SG).
+   * 서브공정 키팅 SFG 라벨 발행 (② 새 SFG 채번 + ISSUED 저장).
+   * 입력 SFG·자재·실적·재고는 미반영. confirmAssembly의 issueLabel 대칭(FG→새 SFG).
    * @returns { sgBarcode }
    */
   async issueSgLabel(
@@ -416,7 +416,7 @@ export class SubprocessKittingService {
         throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${dto.orderNo}`);
       }
       if (jobOrder.part?.itemType !== 'SEMI_PRODUCT') {
-        throw new BadRequestException('반제품 작업지시만 SG 라벨 발행 가능합니다.');
+        throw new BadRequestException('반제품 작업지시만 SFG 라벨 발행 가능합니다.');
       }
       // 작업지시 상태 가드 — 완료/취소/홀딩 작업지시에는 라벨 발행 불가
       if (jobOrder.status === 'DONE' || jobOrder.status === 'CANCELED') {
@@ -437,7 +437,7 @@ export class SubprocessKittingService {
         : null;
       const labelType = step?.issueLabelType === 'BUNDLE' ? 'BUNDLE' : 'SG';
 
-      // 3. SgLabel status='ISSUED' 저장 (확정 전까지 재고 오인 방지). 입력 SG·자재·실적·재고 미반영.
+      // 3. SgLabel status='ISSUED' 저장 (확정 전까지 재고 오인 방지). 입력 SFG·자재·실적·재고 미반영.
       await qr.manager.save(SgLabel, {
         sgBarcode,
         itemCode: jobOrder.itemCode,
@@ -463,10 +463,10 @@ export class SubprocessKittingService {
   }
 
   /**
-   * 서브공정 키팅 확정 (③ 실물 새 SG 라벨 스캔 → 단일 트랜잭션).
-   * genealogy(SG→입력SG, SG→MAT_LOT) + 입력 SG 소비 + 설비 WIP 자재 BOM 차감 +
-   * 새 SG IN_STOCK 승격 + ProdResult + SEMI_PRODUCT WIP 재고.
-   * confirmAssembly 대칭(FG→새 SG, 자식SG→입력SG).
+   * 서브공정 키팅 확정 (③ 실물 새 SFG 라벨 스캔 → 단일 트랜잭션).
+   * genealogy(SG→입력SFG, SG→MAT_LOT) + 입력 SFG 소비 + 설비 WIP 자재 BOM 차감 +
+   * 새 SFG IN_STOCK 승격 + ProdResult + SEMI_PRODUCT WIP 재고.
+   * confirmAssembly 대칭(FG→새 SFG, 자식SG→입력SFG).
    * @returns { resultNo, sgBarcode }
    */
   async confirmSubKit(
@@ -484,16 +484,16 @@ export class SubprocessKittingService {
         where: { sgBarcode: newSgBarcode, ...tenantWhere },
       });
       if (!newSg) {
-        throw new BadRequestException(`SG 라벨을 찾을 수 없습니다: ${newSgBarcode}`);
+        throw new BadRequestException(`SFG 라벨을 찾을 수 없습니다: ${newSgBarcode}`);
       }
       if (newSg.status !== 'ISSUED') {
         throw new BadRequestException(
-          `SG 라벨 상태가 ISSUED가 아닙니다: ${newSgBarcode} (${newSg.status})`,
+          `SFG 라벨 상태가 ISSUED가 아닙니다: ${newSgBarcode} (${newSg.status})`,
         );
       }
       if (newSg.orderNo !== orderNo) {
         throw new BadRequestException(
-          `SG 라벨의 작업지시가 일치하지 않습니다: ${newSgBarcode} (라벨=${newSg.orderNo ?? '-'}, 요청=${orderNo})`,
+          `SFG 라벨의 작업지시가 일치하지 않습니다: ${newSgBarcode} (라벨=${newSg.orderNo ?? '-'}, 요청=${orderNo})`,
         );
       }
 
@@ -502,7 +502,7 @@ export class SubprocessKittingService {
         where: { parentType: 'SG', parentKey: newSgBarcode, company, plant },
       });
       if (existingGenealogy) {
-        throw new BadRequestException(`이미 확정된 SG 라벨입니다: ${newSgBarcode}`);
+        throw new BadRequestException(`이미 확정된 SFG 라벨입니다: ${newSgBarcode}`);
       }
 
       // 2. 작업지시 + 반제품 BOM 조회
@@ -524,7 +524,7 @@ export class SubprocessKittingService {
       }
 
       // 회로 필수 검증 — 회로가 있는 품목이면 circuitNo 없이 확정 불가.
-      // 회로 정보는 아래 genealogy(SG→입력SG, SG→MAT_LOT)의 CIRCUIT_NO로만 남으므로,
+      // 회로 정보는 아래 genealogy(SG→입력SFG, SG→MAT_LOT)의 CIRCUIT_NO로만 남으므로,
       // 누락 시 추적 데이터가 비게 된다. 프론트 가드와 대칭으로 서버에서도 강제한다.
       const orderCircuits = await this.productionSpec.findCircuitsByItemCode(
         jobOrder.itemCode,
@@ -567,10 +567,10 @@ export class SubprocessKittingService {
       // 공정별 자재 차감 필터 — 라우팅 ISSUE 자재 배정 시 현재 공정 자재만 차감
       await this.filterRawByRoutingMaterials(qr, jobOrder.routingCode, processCode, { company, plant }, rawQtyPerByItem);
 
-      // 3. 스캔된 입력 SG 검증 (오투입 포함)
+      // 3. 스캔된 입력 SFG 검증 (오투입 포함)
       const sgBarcodes = [...new Set(dto.inputSgBarcodes)];
       if (sgBarcodes.includes(newSgBarcode)) {
-        throw new BadRequestException('새 SG 라벨을 입력 SG로 사용할 수 없습니다.');
+        throw new BadRequestException('새 SFG 라벨을 입력 SFG로 사용할 수 없습니다.');
       }
       const sgLabels = await qr.manager.find(SgLabel, {
         where: { sgBarcode: In(sgBarcodes), ...tenantWhere },
@@ -578,25 +578,25 @@ export class SubprocessKittingService {
       const foundSet = new Set(sgLabels.map((s) => s.sgBarcode));
       const missing = sgBarcodes.filter((b) => !foundSet.has(b));
       if (missing.length > 0) {
-        throw new BadRequestException(`존재하지 않는 SG 라벨: ${missing.join(', ')}`);
+        throw new BadRequestException(`존재하지 않는 SFG 라벨: ${missing.join(', ')}`);
       }
       for (const sg of sgLabels) {
         if (!['IN_STOCK', 'MOUNTED'].includes(sg.status)) {
           throw new BadRequestException(
-            `사용할 수 없는 SG 라벨 상태입니다: ${sg.sgBarcode} (${sg.status})`,
+            `사용할 수 없는 SFG 라벨 상태입니다: ${sg.sgBarcode} (${sg.status})`,
           );
         }
         if (sg.remainQty <= 0) {
-          throw new BadRequestException(`잔량이 없는 SG 라벨입니다: ${sg.sgBarcode}`);
+          throw new BadRequestException(`잔량이 없는 SFG 라벨입니다: ${sg.sgBarcode}`);
         }
         if (!semiCodeSet.has(sg.itemCode)) {
           throw new BadRequestException(
-            `BOM에 없는 반제품 SG 라벨입니다(오투입): ${sg.sgBarcode} (${sg.itemCode})`,
+            `BOM에 없는 반제품 SFG 라벨입니다(오투입): ${sg.sgBarcode} (${sg.itemCode})`,
           );
         }
       }
 
-      // 4. 입력 SG 1씩 소비 + genealogy(SG→입력SG, qty:1). genealogy ID 일괄 채번.
+      // 4. 입력 SFG 1씩 소비 + genealogy(SG→입력SFG, qty:1). genealogy ID 일괄 채번.
       const sgGenIds = await this.numbering.nextGenealogyIds(qr, sgLabels.length);
       for (let i = 0; i < sgLabels.length; i++) {
         const sg = sgLabels[i];
@@ -662,7 +662,7 @@ export class SubprocessKittingService {
         });
       }
 
-      // 6. 새 SG 승격: ISSUED → IN_STOCK + resultNo 채움 + currentProcessCode.
+      // 6. 새 SFG 승격: ISSUED → IN_STOCK + resultNo 채움 + currentProcessCode.
       newSg.status = 'IN_STOCK';
       newSg.resultNo = resultNoForRef;
       newSg.currentProcessCode = processCode;
@@ -850,7 +850,7 @@ export class SubprocessKittingService {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
-  /** SG 라벨 단건 조회 (tenant). 없으면 NotFound. */
+  /** SFG 라벨 단건 조회 (tenant). 없으면 NotFound. */
   async getSgLabel(
     sgBarcode: string,
     company: string,
@@ -866,7 +866,7 @@ export class SubprocessKittingService {
       where: { sgBarcode, company, plant },
     });
     if (!sg) {
-      throw new NotFoundException(`SG 라벨을 찾을 수 없습니다: ${sgBarcode}`);
+      throw new NotFoundException(`SFG 라벨을 찾을 수 없습니다: ${sgBarcode}`);
     }
     return {
       sgBarcode: sg.sgBarcode,

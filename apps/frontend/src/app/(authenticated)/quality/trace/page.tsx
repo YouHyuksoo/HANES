@@ -12,6 +12,7 @@ import api from "@/services/api";
 import type {
   ProductTraceabilityDto,
   TraceCandidate,
+  TraceCandidatesResult,
   TraceSearchInput,
   TraceSearchMode,
 } from "./types";
@@ -24,7 +25,7 @@ import TraceSearchWizard from "./components/TraceSearchWizard";
 
 const MODE_LABELS: Record<TraceSearchMode, string> = {
   product: "제품 바코드",
-  material: "자재 UID / LOT",
+  material: "자재 UID",
   supplierLot: "원자재 업체 LOT",
   box: "박스번호",
   pallet: "팔레트번호",
@@ -32,7 +33,7 @@ const MODE_LABELS: Record<TraceSearchMode, string> = {
   equipment: "설비 + 기간",
   operator: "작업자 + 기간",
   workOrder: "작업지시번호",
-  sg: "SG 바코드",
+  sg: "SFG 바코드",
 };
 
 export default function TracePage() {
@@ -46,6 +47,12 @@ export default function TracePage() {
   const [listLoading, setListLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState("");
+  const [largeCandidateConfirm, setLargeCandidateConfirm] = useState<{
+    input: TraceSearchInput;
+    total: number;
+    limit: number;
+    message: string | null;
+  } | null>(null);
 
   const selectedCandidate = useMemo(
     () => candidateItems.find((item) => item.traceKey === selectedTraceKey) ?? null,
@@ -71,7 +78,7 @@ export default function TracePage() {
     }
   }, [t]);
 
-  const fetchCandidates = useCallback(async (input: TraceSearchInput) => {
+  const fetchCandidates = useCallback(async (input: TraceSearchInput, confirmLarge = false) => {
     setWizardOpen(false);
     setListLoading(true);
     setCandidateItems([]);
@@ -79,6 +86,7 @@ export default function TracePage() {
     setData(null);
     setError("");
     setSearched(false);
+    setLargeCandidateConfirm(null);
 
     const params =
       input.mode === "equipment"
@@ -87,6 +95,7 @@ export default function TracePage() {
             equipCode: input.equipCode,
             dateFrom: input.dateFrom,
             dateTo: input.dateTo,
+            confirmLarge: confirmLarge ? "true" : undefined,
           }
         : input.mode === "operator"
         ? {
@@ -94,8 +103,9 @@ export default function TracePage() {
             value: input.value,
             dateFrom: input.dateFrom,
             dateTo: input.dateTo,
+            confirmLarge: confirmLarge ? "true" : undefined,
           }
-        : { mode: input.mode, value: input.value };
+        : { mode: input.mode, value: input.value, confirmLarge: confirmLarge ? "true" : undefined };
     const summary =
       input.mode === "equipment"
         ? `${input.equipCode} · ${input.dateFrom}~${input.dateTo}`
@@ -105,9 +115,19 @@ export default function TracePage() {
 
     try {
       const res = await api.get("/quality/trace/candidates", { params });
-      const items: TraceCandidate[] = res.data?.data ?? [];
-      setCandidateItems(items);
+      const payload = res.data?.data as TraceCandidate[] | TraceCandidatesResult | undefined;
+      const result: TraceCandidatesResult = Array.isArray(payload)
+        ? { candidates: payload, requiresConfirmation: false, total: payload.length, limit: 500, message: null }
+        : payload ?? { candidates: [], requiresConfirmation: false, total: 0, limit: 500, message: null };
+
       setCurrentSearch({ mode: input.mode, summary });
+      if (result.requiresConfirmation && !confirmLarge) {
+        setLargeCandidateConfirm({ input, total: result.total, limit: result.limit, message: result.message });
+        return;
+      }
+
+      const items = result.candidates;
+      setCandidateItems(items);
       if (items.length === 1 && items[0].traceType === "FG") {
         await fetchProductTrace(items[0].traceKey);
       }
@@ -280,6 +300,57 @@ export default function TracePage() {
         onClose={() => setWizardOpen(false)}
         onSubmit={fetchCandidates}
       />
+
+      <LargeCandidateConfirmModal
+        state={largeCandidateConfirm}
+        loading={listLoading}
+        onCancel={() => setLargeCandidateConfirm(null)}
+        onConfirm={() => {
+          if (!largeCandidateConfirm) return;
+          fetchCandidates(largeCandidateConfirm.input, true);
+        }}
+      />
+    </div>
+  );
+}
+
+function LargeCandidateConfirmModal({
+  state,
+  loading,
+  onCancel,
+  onConfirm,
+}: {
+  state: { total: number; limit: number; message: string | null } | null;
+  loading: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const { t } = useTranslation();
+  if (!state) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-950 p-5 text-zinc-100 shadow-2xl">
+        <h3 className="text-sm font-semibold">
+          {t("quality.trace.largeCandidateConfirmTitle", "대량 후보 조회 확인")}
+        </h3>
+        <p className="mt-3 text-sm leading-6 text-zinc-300">
+          {state.message ??
+            t(
+              "quality.trace.largeCandidateConfirmMessage",
+              "연결 제품 후보가 {{total}}건입니다. {{limit}}건을 초과해 조회 시간이 길어질 수 있습니다. 계속 조회할까요?",
+              { total: state.total, limit: state.limit },
+            )}
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={loading}>
+            {t("common.cancel", "취소")}
+          </Button>
+          <Button type="button" onClick={onConfirm} isLoading={loading}>
+            {t("quality.trace.continueLargeCandidateSearch", "감수하고 조회")}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

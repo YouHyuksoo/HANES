@@ -38,7 +38,7 @@ interface SgLabelInfo {
   remainQty: number;
   status: string;
   orderNo?: string | null;
-  /** 라벨 종류 — BUNDLE(묶음)/SG(회로) */
+  /** 라벨 종류 — BUNDLE(묶음)/SFG(회로) */
   labelType?: string;
 }
 
@@ -61,6 +61,8 @@ const toJobOrderPick = (jo: JobOrder): JobOrderPick => ({
   status: jo.status,
   processCode: jo.processCode,
 });
+
+const ASSEMBLY_SELECTED_EQUIP_KEY = "hanes:production:input-assembly:selected-equip";
 
 export default function InputAssemblyPage() {
   const { t } = useTranslation();
@@ -86,6 +88,8 @@ export default function InputAssemblyPage() {
   const [confirming, setConfirming] = useState(false);
 
   const orderScanRef = useRef<HTMLInputElement>(null);
+  const restoredEquipRef = useRef<string | null>(null);
+  const initialRestoreDoneRef = useRef(false);
 
   // 설비 목록 로드(공정 정보 포함) — input-kiosk와 동일 소스
   useEffect(() => {
@@ -94,6 +98,79 @@ export default function InputAssemblyPage() {
       .then((res) => setEquips(normalizeEquipOptions(res.data)))
       .catch(() => setEquips([]));
   }, []);
+
+  const persistCurrentJobOrder = useCallback(async (orderNo: string | null, targetEquipCode = equipCode) => {
+    if (!targetEquipCode) return;
+    await api.patch(
+      `/equipment/equips/${encodeURIComponent(targetEquipCode)}/job-order`,
+      { orderNo },
+      { suppressErrorModal: true },
+    );
+  }, [equipCode]);
+
+  const selectOrder = useCallback((order: JobOrderPick, options?: { persist?: boolean }) => {
+    setSelectedOrder(order);
+    setOrderScan("");
+    setSgList([]);
+    setIssuedFg(null);
+    if (options?.persist !== false) {
+      void persistCurrentJobOrder(order.orderNo).catch((error: unknown) => {
+        const message =
+          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          t("production.subprocess.assignOrderFailed", "설비 현재 작업지시 저장에 실패했습니다.");
+        toast.error(message);
+      });
+    }
+  }, [persistCurrentJobOrder, t]);
+
+  const restoreEquipmentCurrentState = useCallback(async (equip: EquipOption) => {
+    restoredEquipRef.current = equip.equipCode;
+    setEquipCode(equip.equipCode);
+    setEquipName(equip.equipName);
+    setProcessCode(equip.processCode ?? "");
+    setProcessName(equip.processName ?? "");
+    setSelectedOrder(null);
+    setOrderScan("");
+    setRequirements(null);
+    setSgList([]);
+    setIssuedFg(null);
+    window.localStorage.setItem(ASSEMBLY_SELECTED_EQUIP_KEY, equip.equipCode);
+
+    try {
+      const equipRes = await api.get(`/equipment/equips/${encodeURIComponent(equip.equipCode)}`);
+      const current = equipRes.data?.data ?? {};
+      const currentJobOrderId = current.currentJobOrderId ?? equip.currentJobOrderId ?? null;
+
+      if (currentJobOrderId) {
+        const orderRes = await api.get(
+          `/production/job-orders/order-no/${encodeURIComponent(currentJobOrderId)}`,
+        );
+        const restored = orderRes.data?.data as JobOrder | null | undefined;
+        if (restored?.orderNo) {
+          if (restored.itemType && restored.itemType !== "FINISHED") {
+            await persistCurrentJobOrder(null, equip.equipCode);
+            setTimeout(() => orderScanRef.current?.focus(), 80);
+            return;
+          }
+          selectOrder(toJobOrderPick(restored), { persist: false });
+          return;
+        }
+      }
+      setTimeout(() => orderScanRef.current?.focus(), 80);
+    } catch {
+      toast.error(t("production.subprocess.restoreError", "설비 현재 작업 상태를 불러오지 못했습니다."));
+      setTimeout(() => orderScanRef.current?.focus(), 80);
+    }
+  }, [persistCurrentJobOrder, selectOrder, t]);
+
+  useEffect(() => {
+    if (initialRestoreDoneRef.current || equips.length === 0) return;
+    initialRestoreDoneRef.current = true;
+    const savedEquipCode = window.localStorage.getItem(ASSEMBLY_SELECTED_EQUIP_KEY);
+    if (!savedEquipCode) return;
+    const savedEquip = equips.find((equip) => equip.equipCode === savedEquipCode);
+    if (savedEquip) void restoreEquipmentCurrentState(savedEquip);
+  }, [equips, restoreEquipmentCurrentState]);
 
   // 작업지시 선택 시 BOM 요구사항 조회
   useEffect(() => {
@@ -122,26 +199,10 @@ export default function InputAssemblyPage() {
     };
   }, [selectedOrder, t]);
 
-  const selectOrder = useCallback((order: JobOrderPick) => {
-    setSelectedOrder(order);
-    setOrderScan("");
-    setSgList([]);
-    setIssuedFg(null);
-  }, []);
-
-  // 설비 선택 — 설비가 공정을 결정한다(설비→공정 자동). 작업지시 조회조건이 바뀌므로
-  // 작업지시·스캔을 모두 초기화한다.
+  // 설비 선택 — 설비가 공정을 결정한다(설비→공정 자동). 저장된 설비 현재 작업지시가 있으면 함께 복원한다.
   const handleEquipSelect = useCallback((equip: EquipOption) => {
-    setEquipCode(equip.equipCode);
-    setEquipName(equip.equipName);
-    setProcessCode(equip.processCode ?? "");
-    setProcessName(equip.processName ?? "");
-    setSelectedOrder(null);
-    setOrderScan("");
-    setRequirements(null);
-    setSgList([]);
-    setIssuedFg(null);
-  }, []);
+    void restoreEquipmentCurrentState(equip);
+  }, [restoreEquipmentCurrentState]);
 
   const fetchOrderByNo = useCallback(
     async (no: string) => {
@@ -157,7 +218,15 @@ export default function InputAssemblyPage() {
       }
       try {
         const res = await api.get("/production/job-orders", {
-          params: { limit: 20, search: trimmed, itemType: "FINISHED", ...(processCode ? { processCode } : {}) },
+          params: {
+            limit: 20,
+            search: trimmed,
+            statuses: "WAITING,RUNNING",
+            itemType: "FINISHED",
+            orderKind: "OPERATION",
+            assignableEquipCode: equipCode,
+            ...(processCode ? { processCode } : {}),
+          },
         });
         const list: JobOrderPick[] = Array.isArray(res.data?.data) ? res.data.data : [];
         const found = list.find((r) => r.orderNo === trimmed) ?? list[0];
@@ -179,10 +248,14 @@ export default function InputAssemblyPage() {
     setRequirements(null);
     setSgList([]);
     setIssuedFg(null);
+    void persistCurrentJobOrder(null).catch(() => {
+      toast.error(t("production.subprocess.clearOrderFailed", "설비 현재 작업지시 해제에 실패했습니다."));
+    });
     setTimeout(() => orderScanRef.current?.focus(), 50);
   };
 
   const resetAll = () => {
+    const prevEquipCode = equipCode;
     setSelectedOrder(null);
     setOrderScan("");
     setProcessCode("");
@@ -192,6 +265,12 @@ export default function InputAssemblyPage() {
     setRequirements(null);
     setSgList([]);
     setIssuedFg(null);
+    window.localStorage.removeItem(ASSEMBLY_SELECTED_EQUIP_KEY);
+    if (prevEquipCode) {
+      void persistCurrentJobOrder(null, prevEquipCode).catch(() => {
+        toast.error(t("production.subprocess.clearOrderFailed", "설비 현재 작업지시 해제에 실패했습니다."));
+      });
+    }
     setTimeout(() => orderScanRef.current?.focus(), 50);
   };
 
@@ -220,7 +299,7 @@ export default function InputAssemblyPage() {
       return;
     }
     if (sgList.length === 0) {
-      toast.error(t("production.inputAssembly.requireScan", "SG 라벨을 스캔하세요."));
+      toast.error(t("production.inputAssembly.requireScan", "SFG 라벨을 스캔하세요."));
       return;
     }
 
@@ -303,7 +382,7 @@ export default function InputAssemblyPage() {
             {t("production.inputAssembly.title", "실적입력(조립)")}
           </h1>
           <p className="text-text-muted mt-1">
-            {t("production.inputAssembly.description", "반제품 SG 라벨을 스캔하여 완제품을 조립합니다.")}
+            {t("production.inputAssembly.description", "반제품 SFG 라벨을 스캔하여 완제품을 조립합니다.")}
           </p>
         </div>
         <Button
@@ -407,10 +486,16 @@ export default function InputAssemblyPage() {
         </CardContent>
       </Card>
 
-      {/* 본문 3영역 — input-kiosk 스타일: 좌(설비 자재 장착) | 중앙(작업지도서) | 우(반제품 SG 스캔).
+      {/* 본문 3영역 — input-kiosk 스타일: 좌(설비 자재 장착) | 중앙(작업지도서) | 우(반제품 SFG 스캔).
           좌·우는 고정폭으로 축소하고 중앙 작업지도서를 넓게 둔다. */}
       <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)_340px] gap-3 flex-1 min-h-0">
-        <EquipMaterialMountPanel equipCode={equipCode} />
+        <EquipMaterialMountPanel
+          equipCode={equipCode}
+          orderNo={selectedOrder?.orderNo}
+          itemCode={selectedOrder?.itemCode}
+          expectedItemTypes={["RAW_MATERIAL"]}
+          autoFocusKey={selectedOrder?.orderNo}
+        />
         {/* 중앙: 작업지도서 — 선택된 작업지시 품목 + 공정 기준 조회 */}
         <div className="flex flex-col h-full min-h-0 overflow-hidden rounded border border-border bg-card">
           <WorkInstructionView
@@ -449,6 +534,8 @@ export default function InputAssemblyPage() {
           setOrderSearchOpen(false);
         }}
         processCode={processCode || undefined}
+        filterStatus={['WAITING', 'RUNNING']}
+        equipCode={equipCode || undefined}
         itemType="FINISHED"
         orderKind="OPERATION"
       />

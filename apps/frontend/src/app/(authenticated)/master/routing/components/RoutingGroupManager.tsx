@@ -752,7 +752,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess, 
             >
               <option value="NONE">{t("master.routing.issueLabelTypeNone", "없음")}</option>
               <option value="BUNDLE">{t("master.routing.issueLabelTypeBundle", "묶음 추적 라벨")}</option>
-              <option value="SG">{t("master.routing.issueLabelTypeSg", "반제품(SG) 라벨")}</option>
+              <option value="SG">{t("master.routing.issueLabelTypeSg", "반제품(SFG) 라벨")}</option>
               <option value="FG">{t("master.routing.issueLabelTypeFg", "완제품(FG) 라벨")}</option>
             </select>
           </div>

@@ -21,7 +21,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, Like, Not, In, DataSource } from 'typeorm';
+import { Repository, ILike, Like, Not, In, DataSource, Brackets } from 'typeorm';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
@@ -38,6 +38,7 @@ import {
   CreateProdResultDto,
   UpdateProdResultDto,
   ProdResultQueryDto,
+  ProdOrderResultQueryDto,
   CompleteProdResultDto,
 } from '../dto/prod-result.dto';
 import { AutoIssueService } from './auto-issue.service';
@@ -205,6 +206,157 @@ export class ProdResultService {
     }));
 
     return { data: mapped, total, page, limit };
+  }
+
+  /**
+   * 작업지시 대비 실적 조회
+   * - JOB_ORDERS를 기준으로 조회해 실적이 없는 작업지시도 포함한다.
+   * - CANCELED 실적은 집계에서 제외한다.
+   */
+  async getSummaryByJobOrderList(query: ProdOrderResultQueryDto, company?: string, plant?: string) {
+    const {
+      page = 1,
+      limit = 50,
+      search,
+      orderNo,
+      itemCode,
+      lineCode,
+      equipCode,
+      status,
+      processCode,
+      orderKind,
+      planDateFrom,
+      planDateTo,
+    } = query;
+    const skip = (page - 1) * limit;
+
+    const qb = this.jobOrderRepository
+      .createQueryBuilder('jo')
+      .leftJoin('jo.part', 'part')
+      .leftJoin(
+        'jo.prodResults',
+        'pr',
+        [
+          'pr.status != :canceled',
+          'pr.company = jo.company',
+          'pr.plant = jo.plant',
+        ].join(' AND '),
+        { canceled: 'CANCELED' },
+      );
+
+    if (company) qb.andWhere('jo.company = :company', { company });
+    if (plant) qb.andWhere('jo.plant = :plant', { plant });
+    if (orderNo) qb.andWhere('jo.orderNo LIKE :orderNo', { orderNo: `%${orderNo.toUpperCase()}%` });
+    if (itemCode) qb.andWhere('jo.itemCode = :itemCode', { itemCode });
+    if (lineCode) qb.andWhere('jo.lineCode = :lineCode', { lineCode });
+    if (equipCode) {
+      qb.andWhere(new Brackets((qb2) => {
+        qb2.where('jo.equipCode = :equipCode')
+          .orWhere('pr.equipCode = :equipCode');
+      }), { equipCode });
+    }
+    if (status) qb.andWhere('jo.status = :status', { status });
+    if (processCode) qb.andWhere('jo.processCode = :processCode', { processCode });
+    if (orderKind) qb.andWhere('jo.orderKind = :orderKind', { orderKind });
+    if (planDateFrom) qb.andWhere("jo.planDate >= TO_DATE(:planDateFrom, 'YYYY-MM-DD')", { planDateFrom });
+    if (planDateTo) qb.andWhere("jo.planDate < TO_DATE(:planDateTo, 'YYYY-MM-DD') + INTERVAL '1' DAY", { planDateTo });
+    if (search) {
+      const upper = search.toUpperCase();
+      qb.andWhere(
+        '(UPPER(jo.orderNo) LIKE :search OR UPPER(jo.itemCode) LIKE :search OR part.itemName LIKE :searchRaw)',
+        { search: `%${upper}%`, searchRaw: `%${search}%` },
+      );
+    }
+
+    const countRaw = await qb.clone()
+      .select('COUNT(DISTINCT jo.orderNo)', 'total')
+      .getRawOne<{ total?: string | number }>();
+    const total = Number(countRaw?.total ?? 0);
+
+    const raw = await qb
+      .select([
+        'jo.orderNo AS "orderNo"',
+        'jo.parentOrderNo AS "parentOrderNo"',
+        'jo.rootOrderNo AS "rootOrderNo"',
+        'jo.planNo AS "planNo"',
+        'jo.itemCode AS "itemCode"',
+        'part.itemName AS "itemName"',
+        'part.itemType AS "itemType"',
+        'jo.lineCode AS "lineCode"',
+        'jo.processCode AS "processCode"',
+        'jo.orderKind AS "orderKind"',
+        'jo.routingSeq AS "routingSeq"',
+        'jo.equipCode AS "equipCode"',
+        'jo.planQty AS "planQty"',
+        'jo.planDate AS "planDate"',
+        'jo.status AS "status"',
+        'SUM(NVL(pr.goodQty, 0)) AS "totalGoodQty"',
+        'SUM(NVL(pr.defectQty, 0)) AS "totalDefectQty"',
+        'COUNT(pr.resultNo) AS "resultCount"',
+        'MAX(pr.startAt) AS "lastResultAt"',
+      ])
+      .groupBy('jo.orderNo')
+      .addGroupBy('jo.parentOrderNo')
+      .addGroupBy('jo.rootOrderNo')
+      .addGroupBy('jo.planNo')
+      .addGroupBy('jo.itemCode')
+      .addGroupBy('part.itemName')
+      .addGroupBy('part.itemType')
+      .addGroupBy('jo.lineCode')
+      .addGroupBy('jo.processCode')
+      .addGroupBy('jo.orderKind')
+      .addGroupBy('jo.routingSeq')
+      .addGroupBy('jo.equipCode')
+      .addGroupBy('jo.planQty')
+      .addGroupBy('jo.planDate')
+      .addGroupBy('jo.status')
+      .orderBy('jo.planDate', 'DESC', 'NULLS LAST')
+      .addOrderBy('jo.orderNo', 'ASC')
+      .offset(skip)
+      .limit(limit)
+      .getRawMany();
+
+    const formatDate = (value: Date | string | null): string => {
+      if (!value) return '';
+      const d = value instanceof Date ? value : new Date(value);
+      if (Number.isNaN(d.getTime())) return '';
+      return d.toISOString().slice(0, 10);
+    };
+
+    const data = raw.map((row) => {
+      const planQty = Number(row.planQty ?? 0);
+      const totalGoodQty = Number(row.totalGoodQty ?? 0);
+      const totalDefectQty = Number(row.totalDefectQty ?? 0);
+      const totalQty = totalGoodQty + totalDefectQty;
+      const remainingQty = Math.max(planQty - totalGoodQty, 0);
+      return {
+        orderNo: row.orderNo,
+        parentOrderNo: row.parentOrderNo ?? null,
+        rootOrderNo: row.rootOrderNo ?? null,
+        planNo: row.planNo ?? null,
+        itemCode: row.itemCode ?? '',
+        itemName: row.itemName ?? '',
+        itemType: row.itemType ?? '',
+        lineCode: row.lineCode ?? '',
+        processCode: row.processCode ?? '',
+        orderKind: row.orderKind ?? '',
+        routingSeq: row.routingSeq !== null && row.routingSeq !== undefined ? Number(row.routingSeq) : null,
+        equipCode: row.equipCode ?? '',
+        planQty,
+        planDate: formatDate(row.planDate),
+        status: row.status ?? '',
+        totalGoodQty,
+        totalDefectQty,
+        totalQty,
+        remainingQty,
+        achievementRate: planQty > 0 ? Math.round((totalGoodQty / planQty) * 1000) / 10 : 0,
+        defectRate: totalQty > 0 ? Math.round((totalDefectQty / totalQty) * 1000) / 10 : 0,
+        resultCount: Number(row.resultCount ?? 0),
+        lastResultAt: formatDate(row.lastResultAt),
+      };
+    });
+
+    return { data, total, page, limit };
   }
 
   /**
@@ -813,7 +965,7 @@ export class ProdResultService {
     const progressedSgLabel = sgLabels.find((label) => label.status !== 'IN_STOCK');
     if (progressedSgLabel) {
       throw new BadRequestException(
-        `이미 후공정이 진행된 SG 라벨입니다: ${progressedSgLabel.sgBarcode} (${progressedSgLabel.status})`,
+        `이미 후공정이 진행된 SFG 라벨입니다: ${progressedSgLabel.sgBarcode} (${progressedSgLabel.status})`,
       );
     }
     await queryRunner.manager.delete(SgLabel, {
@@ -1645,7 +1797,7 @@ export class ProdResultService {
     if (bundleCount != null && qtyPerBundle != null) {
       if (bundleCount * qtyPerBundle !== goodQty) {
         throw new BadRequestException(
-          `SG 라벨 수량 불일치: 묶음수(${bundleCount}) × 묶음당가닥수(${qtyPerBundle}) = ${bundleCount * qtyPerBundle} ≠ 양품수량(${goodQty})`,
+          `SFG 라벨 수량 불일치: 묶음수(${bundleCount}) × 묶음당가닥수(${qtyPerBundle}) = ${bundleCount * qtyPerBundle} ≠ 양품수량(${goodQty})`,
         );
       }
       resolvedBundleCount = bundleCount;
@@ -1676,7 +1828,7 @@ export class ProdResultService {
       });
     }
     this.logger.log(
-      `SG 라벨 발행: ${jobOrderWithPart.itemCode} 공정 ${processCode} — ${resolvedBundleCount}묶음 × ${resolvedQtyPerBundle}가닥 (실적 #${prodResult.resultNo})`,
+      `SFG 라벨 발행: ${jobOrderWithPart.itemCode} 공정 ${processCode} — ${resolvedBundleCount}묶음 × ${resolvedQtyPerBundle}가닥 (실적 #${prodResult.resultNo})`,
     );
   }
 

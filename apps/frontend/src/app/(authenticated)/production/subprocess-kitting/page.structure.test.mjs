@@ -8,6 +8,11 @@ const pagePath = join(
   'apps/frontend/src/app/(authenticated)/production/subprocess-kitting/page.tsx',
 );
 const source = readFileSync(pagePath, 'utf8');
+const equipMaterialMountPanelPath = join(
+  process.cwd(),
+  'apps/frontend/src/app/(authenticated)/production/input-assembly/components/EquipMaterialMountPanel.tsx',
+);
+const equipMaterialMountPanelSource = readFileSync(equipMaterialMountPanelPath, 'utf8');
 
 test('/production/subprocess-kitting: issue-sg-label POST API path is present', () => {
   assert.match(source, /\/production\/subprocess-kitting\/issue-sg-label/);
@@ -46,7 +51,7 @@ test('/production/subprocess-kitting: job order modal uses kiosk-equivalent filt
 test('/production/subprocess-kitting: typed job order lookup uses kiosk-equivalent filters', () => {
   assert.match(source, /statuses: "WAITING,RUNNING"/);
   assert.match(source, /orderKind: "OPERATION"/);
-  assert.match(source, /equipCode/);
+  assert.match(source, /assignableEquipCode: equipCode/);
   assert.match(source, /itemType: "SEMI_PRODUCT"/);
 });
 
@@ -59,4 +64,40 @@ test('/production/subprocess-kitting: no alert/confirm/prompt usage', () => {
 test('/production/subprocess-kitting: issued SG label auto-print via Print Agent host', () => {
   assert.match(source, /SgLabelPrintHost/);
   assert.match(source, /sgPrinterRef\.current\?\.printBySgBarcodes/);
+});
+
+test('/production/subprocess-kitting: equipment selection focuses order scan', () => {
+  assert.match(source, /setTimeout\(\(\) => orderScanRef\.current\?\.focus\(\), 80\)/);
+});
+
+test('/production/subprocess-kitting: material mount panel receives order BOM context', () => {
+  assert.match(source, /<EquipMaterialMountPanel[\s\S]*orderNo=\{selectedOrder\?\.orderNo\}/);
+  assert.match(source, /<EquipMaterialMountPanel[\s\S]*itemCode=\{selectedOrder\?\.itemCode\}/);
+  assert.match(source, /expectedItemTypes=\{\["RAW_MATERIAL"\]\}/);
+  assert.match(source, /autoFocusKey=\{selectedOrder\?\.orderNo\}/);
+});
+
+test('/production/subprocess-kitting: material scan uses job-order BOM guard endpoint when order is present', () => {
+  assert.match(equipMaterialMountPanelSource, /orderNo\s*\?/);
+  assert.match(equipMaterialMountPanelSource, /\/production\/job-orders\/\$\{encodeURIComponent\(orderNo\)\}\/material-mounts\/scan/);
+  assert.match(equipMaterialMountPanelSource, /\/master\/boms\/parent\/\$\{encodeURIComponent\(itemCode\)\}/);
+});
+
+test('/production/subprocess-kitting: selected equipment is persisted locally for reboot restore', () => {
+  assert.match(source, /SUBKIT_SELECTED_EQUIP_KEY/);
+  assert.match(source, /window\.localStorage\.setItem\(SUBKIT_SELECTED_EQUIP_KEY, equip\.equipCode\)/);
+  assert.match(source, /window\.localStorage\.getItem\(SUBKIT_SELECTED_EQUIP_KEY\)/);
+});
+
+test('/production/subprocess-kitting: equipment current job order is restored from server', () => {
+  assert.match(source, /restoreEquipmentCurrentState/);
+  assert.match(source, /currentJobOrderId/);
+  assert.match(source, /\/production\/job-orders\/order-no\/\$\{encodeURIComponent\(currentJobOrderId\)\}/);
+  assert.match(source, /selectOrder\(toJobOrderPick\(restored\), \{ persist: false \}\)/);
+});
+
+test('/production/subprocess-kitting: job order selection persists to equipment current state', () => {
+  assert.match(source, /persistCurrentJobOrder/);
+  assert.match(source, /\/equipment\/equips\/\$\{encodeURIComponent\(targetEquipCode\)\}\/job-order/);
+  assert.match(source, /\{ orderNo \}/);
 });

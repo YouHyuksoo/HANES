@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { PackagePlus, Scan, Trash2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, PackagePlus, Scan, Trash2 } from "lucide-react";
 import { BarcodeScanInput } from "@/components/shared";
 import { Button } from "@/components/ui";
 import api from "@/services/api";
@@ -17,15 +17,73 @@ interface MountedRow {
   availableQty: number;
 }
 
-export default function EquipMaterialMountPanel({ equipCode }: { equipCode: string }) {
+interface BomItem {
+  childItemCode: string;
+  childItemName?: string | null;
+  qtyPer: number;
+  seq: number;
+  childPart?: { itemType?: string | null; itemName?: string | null } | null;
+}
+
+export default function EquipMaterialMountPanel({
+  equipCode,
+  orderNo,
+  itemCode,
+  expectedItemTypes,
+  autoFocusKey,
+}: {
+  equipCode: string;
+  /** 지정 시 작업지시 BOM 오장착 검증 API로 스캔 장착한다. */
+  orderNo?: string;
+  /** 지정 시 작업지시 선택 직후 BOM 요구 품목을 미리 표시한다. */
+  itemCode?: string;
+  /** BOM 표시 품목유형 필터. 미지정 시 CONSUMABLE만 제외한다. */
+  expectedItemTypes?: string[];
+  /** 값이 바뀌면 스캔 입력으로 포커스를 이동한다. */
+  autoFocusKey?: string;
+}) {
   const { t } = useTranslation();
 
   const [rows, setRows] = useState<MountedRow[]>([]);
   const [waitingRows, setWaitingRows] = useState<MountedRow[]>([]);
+  const [expectedItems, setExpectedItems] = useState<BomItem[]>([]);
   const [scanInput, setScanInput] = useState("");
   const [mounting, setMounting] = useState(false);
 
   const scanRef = useRef<HTMLInputElement>(null);
+  const expectedItemTypesKey = expectedItemTypes?.join('|') ?? '';
+
+  const fetchExpectedItems = useCallback(async () => {
+    if (!itemCode) {
+      setExpectedItems([]);
+      return;
+    }
+    try {
+      const res = await api.get(`/master/boms/parent/${encodeURIComponent(itemCode)}`);
+      const bomRows = (res.data?.data as BomItem[] | undefined) ?? [];
+      const filtered = bomRows.filter((item) => {
+        const itemType = item.childPart?.itemType ?? null;
+        const typeFilter = expectedItemTypesKey ? expectedItemTypesKey.split('|') : [];
+        if (typeFilter.length > 0) {
+          return itemType ? typeFilter.includes(itemType) : false;
+        }
+        return itemType !== "CONSUMABLE";
+      });
+      setExpectedItems(filtered);
+    } catch {
+      setExpectedItems([]);
+    }
+  }, [expectedItemTypesKey, itemCode]);
+
+  useEffect(() => {
+    void fetchExpectedItems();
+  }, [fetchExpectedItems]);
+
+  useEffect(() => {
+    if (!autoFocusKey) return;
+    const timer = window.setTimeout(() => scanRef.current?.focus(), 80);
+    return () => window.clearTimeout(timer);
+  }, [autoFocusKey]);
 
   const fetchMounted = useCallback(async () => {
     if (!equipCode) {
@@ -72,6 +130,24 @@ export default function EquipMaterialMountPanel({ equipCode }: { equipCode: stri
     void fetchWaiting();
   }, [equipCode, fetchMounted, fetchWaiting]);
 
+  const mountedByItem = useMemo(() => {
+    const map = new Map<string, MountedRow[]>();
+    for (const row of rows) {
+      if ((row.availableQty ?? 0) <= 0) continue;
+      const list = map.get(row.itemCode) ?? [];
+      list.push(row);
+      map.set(row.itemCode, list);
+    }
+    return map;
+  }, [rows]);
+
+  const coveredExpectedCount = expectedItems.filter((item) => mountedByItem.has(item.childItemCode)).length;
+  const waitingRowsToShow = useMemo(() => {
+    if (expectedItems.length === 0) return waitingRows;
+    const expectedCodes = new Set(expectedItems.map((item) => item.childItemCode));
+    return waitingRows.filter((row) => expectedCodes.has(row.itemCode));
+  }, [expectedItems, waitingRows]);
+
   const mountMaterial = useCallback(
     async (raw: string) => {
       const matUid = raw.trim();
@@ -79,10 +155,15 @@ export default function EquipMaterialMountPanel({ equipCode }: { equipCode: stri
 
       setMounting(true);
       try {
-        const res = await api.post("/production/equip-material/mount", {
-          equipCode,
-          matUid,
-        });
+        const res = orderNo
+          ? await api.post(
+              `/production/job-orders/${encodeURIComponent(orderNo)}/material-mounts/scan`,
+              { equipCode, matUid },
+            )
+          : await api.post("/production/equip-material/mount", {
+              equipCode,
+              matUid,
+            });
         const row = res.data?.data as MountedRow | undefined;
         if (row) {
           setRows((prev) => {
@@ -105,7 +186,7 @@ export default function EquipMaterialMountPanel({ equipCode }: { equipCode: stri
         scanRef.current?.focus();
       }
     },
-    [equipCode, fetchMounted, fetchWaiting, t],
+    [equipCode, fetchMounted, fetchWaiting, orderNo, t],
   );
 
   const unmountMaterial = useCallback(
@@ -142,16 +223,52 @@ export default function EquipMaterialMountPanel({ equipCode }: { equipCode: stri
           onChange={setScanInput}
           onScan={mountMaterial}
           placeholder={t("production.equipMaterial.scanPlaceholder", "자재 바코드 스캔 또는 입력 후 Enter")}
-          disabled={!equipCode || mounting}
+          disabled={!equipCode || mounting || (Boolean(orderNo) && expectedItems.length === 0)}
+          maintainFocus={Boolean(equipCode)}
           fullWidth
         />
-        {equipCode && waitingRows.length > 0 && (
+        {expectedItems.length > 0 && (
+          <div className="mt-3 rounded border border-border bg-surface/40">
+            <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-1.5 text-xs font-semibold text-text">
+              <PackagePlus className="h-3.5 w-3.5 text-primary" />
+              <span>{t("production.equipMaterial.expectedBom", "작업지시 BOM 장착 품목")}</span>
+              <span className="ml-auto text-text-muted">
+                {coveredExpectedCount}/{expectedItems.length}
+              </span>
+            </div>
+            <ul className="max-h-40 overflow-y-auto divide-y divide-border/40">
+              {expectedItems.map((item) => {
+                const mounts = mountedByItem.get(item.childItemCode) ?? [];
+                const mounted = mounts.length > 0;
+                const firstUid = mounts[0]?.matUid;
+                const extra = mounts.length - 1;
+                return (
+                  <li key={`${item.childItemCode}-${item.seq}`} className="flex items-center gap-2 px-2.5 py-1.5 text-xs">
+                    {mounted
+                      ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
+                      : <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-400" />}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-mono font-semibold text-text">{item.childItemCode}</div>
+                      <div className={mounted ? "truncate text-green-600 dark:text-green-400" : "truncate text-red-400"}>
+                        {mounted
+                          ? `${firstUid}${extra > 0 ? t("kiosk.material.andMore", { count: extra }) : ""}`
+                          : t("kiosk.material.noLot", "미장착")}
+                      </div>
+                    </div>
+                    <span className="shrink-0 tabular-nums text-text-muted">{Number(item.qtyPer ?? 0).toLocaleString()}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+        {equipCode && waitingRowsToShow.length > 0 && (
           <div className="mt-3">
             <p className="text-xs text-text-muted mb-1.5">
               {t("production.equipMaterial.waitingTitle", "장착 대기 (공정재고)")}
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {waitingRows.map((w) => (
+              {waitingRowsToShow.map((w) => (
                 <button
                   key={w.matUid}
                   type="button"
@@ -196,11 +313,11 @@ export default function EquipMaterialMountPanel({ equipCode }: { equipCode: stri
                     </div>
                     <div className="mt-0.5 flex items-center gap-3 text-xs">
                       <span className="text-text-muted">
-                        {t("production.equipMaterial.lot", "LOT")}:{" "}
+                        {t("production.equipMaterial.lot", "LOT")}: {" "}
                         <span className="font-mono text-text">{row.matUid}</span>
                       </span>
                       <span className="text-text-muted">
-                        {t("production.equipMaterial.remainQty", "잔량")}:{" "}
+                        {t("production.equipMaterial.remainQty", "잔량")}: {" "}
                         <span className="tabular-nums text-text">
                           {row.availableQty.toLocaleString()}
                         </span>

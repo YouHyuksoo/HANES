@@ -4,9 +4,9 @@
  * @file src/components/production/JobOrderSelectModal.tsx
  * @description 작업지시 선택 모달 — 실 API 연동
  *
- * - 현재 설비(equipCode)에 배당된 작업지시만 선택 가능
+ * - 현재 설비(equipCode)에 배당됐거나 아직 설비 미배정인 작업지시를 선택 가능
  * - 다른 설비 배당 건은 그레이 표시, 선택 불가
- * - "현재 설비만" / "전체" 토글로 표시 범위 전환
+ * - "현재/미배정" / "전체" 토글로 표시 범위 전환
  */
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -32,6 +32,8 @@ interface JobOrderSelectModalProps {
   itemType?: string;
   /** 작업지시 종류 필터 — ITEM | OPERATION */
   orderKind?: 'ITEM' | 'OPERATION';
+  /** 설비 미배정 작업지시도 현재 설비에서 선택 가능하게 허용 */
+  allowUnassignedEquip?: boolean;
 }
 
 export default function JobOrderSelectModal({
@@ -43,6 +45,7 @@ export default function JobOrderSelectModal({
   processCode,
   itemType,
   orderKind,
+  allowUnassignedEquip = true,
 }: JobOrderSelectModalProps) {
   const { t } = useTranslation();
   const [searchText, setSearchText] = useState('');
@@ -66,6 +69,7 @@ export default function JobOrderSelectModal({
           ...(processCode ? { processCode } : {}),
           ...(itemType ? { itemType } : {}),
           ...(orderKind ? { orderKind } : {}),
+          ...(equipCode && allowUnassignedEquip ? { assignableEquipCode: equipCode } : {}),
         },
       });
       const items: JobOrder[] = (res.data?.data ?? []).map((jo: Record<string, unknown>) => {
@@ -102,7 +106,13 @@ export default function JobOrderSelectModal({
     } finally {
       setLoading(false);
     }
-  }, [isOpen, statusesKey, equipCode, processCode, itemType, orderKind]);
+  }, [isOpen, statusesKey, equipCode, processCode, itemType, orderKind, allowUnassignedEquip]);
+
+  const isCurrentOrUnassigned = useCallback((item: JobOrder) => {
+    if (!equipCode) return true;
+    if (item.equipCode === equipCode) return true;
+    return allowUnassignedEquip && !item.equipCode;
+  }, [allowUnassignedEquip, equipCode]);
 
   useEffect(() => {
     if (isOpen) {
@@ -116,7 +126,7 @@ export default function JobOrderSelectModal({
   const displayData = useMemo(() => {
     const base = showAll || !equipCode
       ? rawData
-      : rawData.filter(item => item.equipCode === equipCode);
+      : rawData.filter(isCurrentOrUnassigned);
 
     if (!searchText) return base;
     const s = searchText.toLowerCase();
@@ -127,11 +137,11 @@ export default function JobOrderSelectModal({
         item.itemName.toLowerCase().includes(s) ||
         (item.processCode?.toLowerCase().includes(s) ?? false),
     );
-  }, [rawData, searchText, showAll, equipCode]);
+  }, [rawData, searchText, showAll, equipCode, isCurrentOrUnassigned]);
 
   const isSelectable = (item: JobOrder) => {
     if (!equipCode) return true;
-    return item.equipCode === equipCode;
+    return isCurrentOrUnassigned(item);
   };
 
   const handleConfirm = () => {
@@ -284,8 +294,8 @@ export default function JobOrderSelectModal({
   );
 
   const currentEquipCount = useMemo(
-    () => equipCode ? rawData.filter(item => item.equipCode === equipCode).length : rawData.length,
-    [rawData, equipCode],
+    () => equipCode ? rawData.filter(isCurrentOrUnassigned).length : rawData.length,
+    [rawData, equipCode, isCurrentOrUnassigned],
   );
 
   return (
@@ -310,7 +320,7 @@ export default function JobOrderSelectModal({
                   !showAll ? 'bg-primary text-white shadow-sm' : 'text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white'
                 }`}
               >
-                {t('kiosk.jobOrder.thisEquip', '현재 설비')}
+                {t('kiosk.jobOrder.thisEquip', '현재/미배정')}
                 <span className="ml-1.5 rounded-full bg-white/30 px-1.5 text-[11px]">{currentEquipCount}</span>
               </button>
               <button
@@ -328,7 +338,7 @@ export default function JobOrderSelectModal({
 
         {showAll && equipCode && (
           <p className="text-xs text-amber-600 dark:text-amber-400">
-            {t('kiosk.jobOrder.otherEquipNote', '다른 설비에 배당된 작업지시는 조회만 가능하며 선택할 수 없습니다.')}
+            {t('kiosk.jobOrder.otherEquipNote', '다른 설비에 배당된 작업지시는 조회만 가능하며, 미배정 작업지시는 현재 설비에서 선택할 수 있습니다.')}
           </p>
         )}
 

@@ -22,6 +22,14 @@ export interface TraceCandidate {
   sourceValue: string;
 }
 
+export interface TraceCandidatesResult {
+  candidates: TraceCandidate[];
+  requiresConfirmation: boolean;
+  total: number;
+  limit: number;
+  message: string | null;
+}
+
 export interface ProcessStep {
   process: string;
   processName: string;

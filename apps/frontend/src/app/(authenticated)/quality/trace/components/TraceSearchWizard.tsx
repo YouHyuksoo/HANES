@@ -48,7 +48,7 @@ interface EquipmentInput {
 
 const MODE_CARDS: ModeCard[] = [
   { mode: "product", Icon: Barcode, label: "제품 바코드", description: "제품 1건의 제조이력과 투입 자재를 역추적" },
-  { mode: "material", Icon: Tag, label: "자재 UID / LOT", description: "자재가 투입된 대상 제품을 정추적" },
+  { mode: "material", Icon: Tag, label: "자재 UID", description: "자재 UID가 투입된 대상 제품을 정추적" },
   { mode: "supplierLot", Icon: Layers, label: "원자재 업체 LOT", description: "원자재 업체 LOT(송장번호)이 투입된 제품을 역추적" },
   { mode: "box", Icon: Package, label: "박스번호", description: "박스에 포함된 제품과 포장 이력 조회" },
   { mode: "pallet", Icon: Boxes, label: "팔레트번호", description: "팔레트에 적재된 박스와 제품 조회" },
@@ -56,18 +56,18 @@ const MODE_CARDS: ModeCard[] = [
   { mode: "equipment", Icon: Wrench, label: "설비 + 기간", description: "설비에서 생산 또는 검사된 제품 조회" },
   { mode: "operator", Icon: User, label: "작업자 + 기간", description: "작업자가 기간 내 생산실적을 남긴 제품 조회" },
   { mode: "workOrder", Icon: Factory, label: "작업지시번호", description: "작업지시 기준 생산 제품과 반제품 조회" },
-  { mode: "sg", Icon: ScanLine, label: "SG 바코드", description: "반제품 이력과 해당 SG를 사용한 제품 조회" },
+  { mode: "sg", Icon: ScanLine, label: "SFG 바코드", description: "반제품 이력과 해당 SFG를 사용한 제품 조회" },
 ];
 
 const SINGLE_PLACEHOLDER: Record<Exclude<TraceSearchMode, "equipment" | "operator">, string> = {
   product: "FG 바코드를 스캔하거나 입력",
-  material: "MAT_UID 또는 자재 LOT를 입력",
+  material: "MAT_UID를 입력",
   supplierLot: "원자재 업체 LOT(송장번호)를 입력",
   box: "박스번호를 입력",
   pallet: "팔레트번호를 입력",
   shipOrder: "출하지시번호를 입력",
   workOrder: "작업지시번호를 입력",
-  sg: "SG 바코드를 스캔하거나 입력",
+  sg: "SFG 바코드를 스캔하거나 입력",
 };
 
 export default function TraceSearchWizard({ isOpen, loading, onClose, onSubmit }: Props) {

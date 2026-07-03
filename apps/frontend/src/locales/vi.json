@@ -331,6 +331,7 @@
     "production.inputAssembly": "Nhập Thực Tích Lắp Ráp",
     "production.order": "Quản lý lệnh sản xuất",
     "production.result": "Tra cứu kết quả sản xuất",
+    "production.orderResult": "Kết quả theo lệnh SX",
     "production.progress": "Tra cứu tình trạng lệnh SX",
     "production.inputKiosk": "Nhập kết quả (gia công)",
     "production.inputInspect": "Nhập kết quả (kiểm tra đơn giản)",
@@ -3840,6 +3841,26 @@
         "defectTotal": "Tổng SL lỗi",
         "yieldRate": "Tỷ lệ đạt chung"
       }
+    },
+    "orderResult": {
+      "title": "Kết quả theo lệnh SX",
+      "description": "Tra cứu có/không có kết quả và tỷ lệ đạt so với số lượng kế hoạch của lệnh sản xuất",
+      "orderNo": "Lệnh sản xuất",
+      "status": "Trạng thái",
+      "planDate": "Ngày kế hoạch",
+      "line": "Line",
+      "process": "Công đoạn",
+      "orderKind": "Loại lệnh",
+      "planQty": "SL kế hoạch",
+      "goodQty": "SL đạt",
+      "defectQty": "SL lỗi",
+      "totalQty": "Tổng thực tế",
+      "remainingQty": "Còn lại",
+      "achievementRate": "Tỷ lệ đạt KH",
+      "defectRate": "Tỷ lệ lỗi",
+      "resultCount": "Số kết quả",
+      "lastResultAt": "KQ gần nhất",
+      "searchPlaceholder": "Tìm lệnh SX, mã SP, tên SP..."
     },
     "packResult": {
       "title": "Tra cứu thực tích đóng gói",

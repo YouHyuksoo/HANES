@@ -127,13 +127,13 @@ export class CreateProdResultDto {
   @MaxLength(20)
   shiftCode?: string;
 
-  @ApiPropertyOptional({ description: '실적 묶음 수 (SG 라벨 발행 시 묶음 개수)', minimum: 1 })
+  @ApiPropertyOptional({ description: '실적 묶음 수 (SFG 라벨 발행 시 묶음 개수)', minimum: 1 })
   @IsOptional()
   @IsInt()
   @Min(1)
   bundleCount?: number;
 
-  @ApiPropertyOptional({ description: '묶음당 가닥수 (SG 라벨 발행 시 묶음당 수량)', minimum: 1 })
+  @ApiPropertyOptional({ description: '묶음당 가닥수 (SFG 라벨 발행 시 묶음당 수량)', minimum: 1 })
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -222,6 +222,61 @@ export class ProdResultQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsDateString()
   startTimeTo?: string;
+}
+
+/**
+ * 작업지시 대비 실적 조회 쿼리 DTO
+ */
+export class ProdOrderResultQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({ description: '통합 검색어 (작업지시번호, 품목코드, 품목명)' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ description: '작업지시 번호 필터' })
+  @IsOptional()
+  @IsString()
+  orderNo?: string;
+
+  @ApiPropertyOptional({ description: '품목 코드 필터' })
+  @IsOptional()
+  @IsString()
+  itemCode?: string;
+
+  @ApiPropertyOptional({ description: '라인 코드 필터' })
+  @IsOptional()
+  @IsString()
+  lineCode?: string;
+
+  @ApiPropertyOptional({ description: '설비 코드 필터' })
+  @IsOptional()
+  @IsString()
+  equipCode?: string;
+
+  @ApiPropertyOptional({ description: '작업지시 상태 필터' })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiPropertyOptional({ description: '공정 코드 필터' })
+  @IsOptional()
+  @IsString()
+  processCode?: string;
+
+  @ApiPropertyOptional({ description: '작업지시 종류 필터' })
+  @IsOptional()
+  @IsString()
+  orderKind?: string;
+
+  @ApiPropertyOptional({ description: '계획일 시작 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  planDateFrom?: string;
+
+  @ApiPropertyOptional({ description: '계획일 종료 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  planDateTo?: string;
 }
 
 /**

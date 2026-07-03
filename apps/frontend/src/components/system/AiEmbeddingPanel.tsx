@@ -6,7 +6,7 @@
  */
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Database, LoaderCircle, Play, Plug, RefreshCw, Save, Search } from "lucide-react";
+import { Database, LoaderCircle, Play, Plug, Plus, RefreshCw, RotateCcw, Save, Search, Trash2 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select } from "@/components/ui";
 import { api } from "@/services/api";
 import toast from "react-hot-toast";
@@ -24,7 +24,19 @@ const EMBEDDING_MODEL_OPTIONS: Record<string, { value: string; label: string; di
   ],
 };
 
+const CHUNK_TARGET_STORAGE_KEY = "hanes.aiEmbedding.chunkTargets.v1";
+const DEFAULT_CHUNK_TARGETS = [
+  { path: "apps/frontend/public/help/user/ko", label: "사용자 도움말" },
+  { path: "apps/frontend/public/help/operator/ko", label: "작업자 도움말" },
+  { path: "docs/standards", label: "표준 문서" },
+  { path: "docs/specs", label: "사양 문서" },
+  { path: "docs/plans", label: "계획 문서" },
+  { path: "apps/backend/data/ai-table-catalog.md", label: "테이블 카탈로그" },
+];
+const DEFAULT_CHUNK_TARGET_LABELS = new Map(DEFAULT_CHUNK_TARGETS.map((target) => [target.path, target.label]));
+
 type ConfigRow = { configKey: string; configValue: string };
+type ChunkTarget = { path: string; label: string };
 type ConfigMeta = {
   label: string;
   description: string;
@@ -34,7 +46,22 @@ type ConfigMeta = {
 };
 type KnowledgeStatus = {
   dbPath?: string;
+  dbDirectory?: string;
+  dbFileName?: string;
+  dbExists?: boolean;
+  dbSizeBytes?: number;
+  configuredDbPath?: string | null;
+  usesDefaultDbPath?: boolean;
+  envKey?: string;
   vectorEnabled?: boolean;
+  sqliteVecStatus?: string;
+  vectorTableExists?: boolean;
+  ftsTableExists?: boolean;
+  vectorDims?: number | null;
+  vectorRows?: number | null;
+  ftsRows?: number | null;
+  embeddingRows?: number | null;
+  lastReindexAt?: string | null;
   chunks?: number;
   provider?: string;
   model?: string;
@@ -44,6 +71,7 @@ type KnowledgeStatus = {
 type ReindexResult = {
   ok?: boolean;
   vectorEnabled?: boolean;
+  targets?: string[];
   documents?: number;
   chunks?: number;
   embedded?: number;
@@ -71,6 +99,47 @@ function errMessage(e: unknown, fallback: string): string {
   return (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback;
 }
 
+function formatBytes(value?: number | null): string {
+  if (value === undefined || value === null) return "-";
+  if (value === 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  const index = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
+  const size = value / 1024 ** index;
+  return `${size.toFixed(size >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function normalizeTargetPath(value: string): string {
+  return value.trim().replace(/\\/g, "/").replace(/^\/+/, "").replace(/\/+/g, "/");
+}
+
+function toChunkTarget(pathValue: string): ChunkTarget | null {
+  const path = normalizeTargetPath(pathValue);
+  if (!path || path === "." || path.split("/").includes("..") || /^[a-zA-Z]:/.test(path)) return null;
+  return { path, label: DEFAULT_CHUNK_TARGET_LABELS.get(path) ?? path };
+}
+
+function loadStoredChunkTargets(): { targets: ChunkTarget[]; selectedPaths: string[] } {
+  const fallback = {
+    targets: DEFAULT_CHUNK_TARGETS,
+    selectedPaths: DEFAULT_CHUNK_TARGETS.map((target) => target.path),
+  };
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(CHUNK_TARGET_STORAGE_KEY);
+    if (!raw) return fallback;
+    const stored = JSON.parse(raw) as { targets?: string[]; selectedPaths?: string[] };
+    const targets = Array.from(new Set((stored.targets ?? []).map(normalizeTargetPath)))
+      .map(toChunkTarget)
+      .filter((target): target is ChunkTarget => !!target);
+    return {
+      targets,
+      selectedPaths: (stored.selectedPaths ?? []).map(normalizeTargetPath).filter((path) => targets.some((target) => target.path === path)),
+    };
+  } catch {
+    return fallback;
+  }
+}
+
 export default function AiEmbeddingPanel() {
   const { t } = useTranslation();
   const [provider, setProvider] = useState("mistral");
@@ -83,6 +152,10 @@ export default function AiEmbeddingPanel() {
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("출하지시 확정취소 언제 가능해?");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [chunkTargets, setChunkTargets] = useState<ChunkTarget[]>(DEFAULT_CHUNK_TARGETS);
+  const [selectedTargetPaths, setSelectedTargetPaths] = useState<Set<string>>(() => new Set(DEFAULT_CHUNK_TARGETS.map((target) => target.path)));
+  const [newTargetPath, setNewTargetPath] = useState("");
+  const [chunkTargetsLoaded, setChunkTargetsLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -90,6 +163,10 @@ export default function AiEmbeddingPanel() {
   const [searching, setSearching] = useState(false);
 
   const modelOptions = useMemo(() => EMBEDDING_MODEL_OPTIONS[provider] ?? [], [provider]);
+  const selectedTargets = useMemo(
+    () => chunkTargets.filter((target) => selectedTargetPaths.has(target.path)),
+    [chunkTargets, selectedTargetPaths],
+  );
 
   const refreshStatus = useCallback(async () => {
     const res = await api.get("/ai/knowledge/status");
@@ -118,6 +195,21 @@ export default function AiEmbeddingPanel() {
       }
     })();
   }, [refreshStatus]);
+
+  useEffect(() => {
+    const stored = loadStoredChunkTargets();
+    setChunkTargets(stored.targets);
+    setSelectedTargetPaths(new Set(stored.selectedPaths));
+    setChunkTargetsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!chunkTargetsLoaded || typeof window === "undefined") return;
+    window.localStorage.setItem(CHUNK_TARGET_STORAGE_KEY, JSON.stringify({
+      targets: chunkTargets.map((target) => target.path),
+      selectedPaths: Array.from(selectedTargetPaths),
+    }));
+  }, [chunkTargets, selectedTargetPaths, chunkTargetsLoaded]);
 
   const onProviderChange = useCallback((nextProvider: string) => {
     const first = EMBEDDING_MODEL_OPTIONS[nextProvider]?.[0];
@@ -221,10 +313,16 @@ export default function AiEmbeddingPanel() {
   }, [provider, model, dims, apiKey, t]);
 
   const handleReindex = useCallback(async () => {
+    if (selectedTargets.length === 0) {
+      toast.error("청킹 대상을 하나 이상 선택하세요.");
+      return;
+    }
     setReindexing(true);
     setReindexResult(null);
     try {
-      const res = await api.post("/ai/knowledge/reindex", undefined, {
+      const res = await api.post("/ai/knowledge/reindex", {
+        targets: selectedTargets.map((target) => target.path),
+      }, {
         timeout: 10 * 60 * 1000,
         suppressErrorModal: true,
         skipSuccessToast: true,
@@ -241,7 +339,44 @@ export default function AiEmbeddingPanel() {
     } finally {
       setReindexing(false);
     }
-  }, [refreshStatus]);
+  }, [refreshStatus, selectedTargets]);
+
+  const handleToggleTarget = useCallback((targetPath: string) => {
+    setSelectedTargetPaths((prev) => {
+      const next = new Set(prev);
+      if (next.has(targetPath)) next.delete(targetPath);
+      else next.add(targetPath);
+      return next;
+    });
+  }, []);
+
+  const handleAddTarget = useCallback(() => {
+    const target = toChunkTarget(newTargetPath);
+    if (!target) {
+      toast.error("프로젝트 상대경로만 입력하세요.");
+      return;
+    }
+    setChunkTargets((prev) => {
+      if (prev.some((item) => item.path === target.path)) return prev;
+      return [...prev, target];
+    });
+    setSelectedTargetPaths((prev) => new Set(prev).add(target.path));
+    setNewTargetPath("");
+  }, [newTargetPath]);
+
+  const handleDeleteTarget = useCallback((targetPath: string) => {
+    setChunkTargets((prev) => prev.filter((target) => target.path !== targetPath));
+    setSelectedTargetPaths((prev) => {
+      const next = new Set(prev);
+      next.delete(targetPath);
+      return next;
+    });
+  }, []);
+
+  const handleRestoreDefaultTargets = useCallback(() => {
+    setChunkTargets(DEFAULT_CHUNK_TARGETS);
+    setSelectedTargetPaths(new Set(DEFAULT_CHUNK_TARGETS.map((target) => target.path)));
+  }, []);
 
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return;
@@ -261,33 +396,35 @@ export default function AiEmbeddingPanel() {
   }
 
   return (
-    <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_420px] gap-4">
-      <div className="space-y-4">
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_520px] gap-3">
+      <div className="space-y-2">
         <Card>
-          <CardContent className="space-y-4">
-            <div>
+          <CardContent className="space-y-2.5 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
               <h2 className="flex items-center gap-2 text-base font-semibold text-text">
                 <Database className="h-4 w-4 text-primary" />
                 Embedding / RAG 검색 설정
               </h2>
-              <p className="text-xs text-text-muted">청킹, embedding 모델, sqlite-vec 인덱스를 관리합니다.</p>
+              <p className="text-xs text-text-muted">Embedding 모델과 키를 설정합니다.</p>
+              </div>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <label className="text-sm">
-                <span className="mb-1 block font-medium text-text">Embedding 제공자</span>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
+              <label className="text-xs">
+                <span className="mb-0.5 block font-medium text-text">Embedding 제공자</span>
                 <Select options={EMBEDDING_PROVIDER_OPTIONS} value={provider} onChange={onProviderChange} fullWidth />
               </label>
-              <label className="text-sm">
-                <span className="mb-1 block font-medium text-text">Embedding 모델</span>
+              <label className="text-xs">
+                <span className="mb-0.5 block font-medium text-text">Embedding 모델</span>
                 <Select options={modelOptions} value={model} onChange={onModelChange} fullWidth />
               </label>
-              <label className="text-sm">
-                <span className="mb-1 block font-medium text-text">차원</span>
+              <label className="text-xs">
+                <span className="mb-0.5 block font-medium text-text">차원</span>
                 <Input value={dims} onChange={(e) => setDims(e.target.value)} fullWidth />
               </label>
             </div>
-            <label className="text-sm">
-              <span className="mb-1 block font-medium text-text">API 키</span>
+            <label className="text-xs">
+              <span className="mb-0.5 block font-medium text-text">API 키</span>
               <Input
                 type="password"
                 value={apiKey}
@@ -295,14 +432,13 @@ export default function AiEmbeddingPanel() {
                 placeholder="비우면 저장된 provider 키 또는 서버 .env 사용"
                 fullWidth
               />
-              <span className="mt-1 block text-xs text-text-muted">OpenAI는 LLM과 embedding이 같은 API 키를 공유할 수 있습니다.</span>
             </label>
             {testResult && (
-              <div className={`rounded-lg border px-3 py-2 text-sm ${testResult.ok ? "border-green-500 text-green-700 dark:text-green-400" : "border-red-500 text-red-700 dark:text-red-400"}`}>
+              <div className={`rounded-md border px-2.5 py-1.5 text-xs ${testResult.ok ? "border-green-500 text-green-700 dark:text-green-400" : "border-red-500 text-red-700 dark:text-red-400"}`}>
                 {testResult.message}
               </div>
             )}
-            <div className="flex justify-end gap-2 border-t border-border pt-3">
+            <div className="flex justify-end gap-2 border-t border-border pt-2">
               <Button variant="secondary" onClick={handleTest} disabled={testing || saving || reindexing}>
                 {testing ? <LoaderCircle className="mr-1 h-4 w-4 animate-spin" /> : <Plug className="mr-1 h-4 w-4" />}
                 연결 테스트
@@ -316,18 +452,74 @@ export default function AiEmbeddingPanel() {
         </Card>
 
         <Card>
-          <CardContent className="space-y-4">
-            <div>
-              <h2 className="text-base font-semibold text-text">청킹 / 임베딩 실행</h2>
-              <p className="text-xs text-text-muted">문서를 chunk로 나누고 현재 embedding 설정으로 SQLite/sqlite-vec 인덱스를 생성합니다.</p>
+          <CardContent className="space-y-2 py-3">
+            <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold text-text">청킹 / 임베딩 실행</h2>
+                <p className="text-xs text-text-muted">대상 {selectedTargets.length} / {chunkTargets.length}</p>
+              </div>
+              <Button onClick={handleReindex} disabled={reindexing || saving || testing || selectedTargets.length === 0}>
+                {reindexing ? <LoaderCircle className="mr-1 h-4 w-4 animate-spin" /> : <Play className="mr-1 h-4 w-4" />}
+                {reindexing ? "생성 중..." : "청킹 + 임베딩 재생성"}
+              </Button>
             </div>
-            <div className="rounded-lg bg-surface-secondary px-3 py-2 text-xs text-text-muted">
-              대상: help/user/ko, help/operator/ko, docs/standards, docs/specs, docs/plans, ai-table-catalog.md
+            <div className="rounded-md border border-border bg-surface-secondary/50 p-2">
+              <div className="flex flex-col gap-2 lg:flex-row">
+                <Input
+                  value={newTargetPath}
+                  onChange={(e) => setNewTargetPath(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddTarget();
+                    }
+                  }}
+                  placeholder="docs/custom 또는 docs/custom/file.md"
+                  fullWidth
+                />
+                <div className="flex gap-2">
+                  <Button variant="secondary" size="sm" onClick={handleAddTarget} disabled={!newTargetPath.trim()}>
+                    <Plus className="h-4 w-4" />
+                    추가
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleRestoreDefaultTargets} title="기본 대상 복원">
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="mt-2 grid grid-cols-1 gap-1.5 lg:grid-cols-2">
+                {chunkTargets.map((target) => (
+                  <label key={target.path} className="flex min-w-0 items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-xs">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 shrink-0 accent-primary"
+                      checked={selectedTargetPaths.has(target.path)}
+                      onChange={() => handleToggleTarget(target.path)}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-text">{target.label}</span>
+                      <span className="block truncate font-mono text-[11px] text-text-muted" title={target.path}>{target.path}</span>
+                    </span>
+                    <button
+                      type="button"
+                      className="rounded-md p-1 text-text-muted hover:bg-error/10 hover:text-error"
+                      title="대상 삭제"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleDeleteTarget(target.path);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </label>
+                ))}
+                {chunkTargets.length === 0 && (
+                  <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-text-muted">
+                    등록된 대상이 없습니다.
+                  </div>
+                )}
+              </div>
             </div>
-            <Button onClick={handleReindex} disabled={reindexing || saving || testing}>
-              {reindexing ? <LoaderCircle className="mr-1 h-4 w-4 animate-spin" /> : <Play className="mr-1 h-4 w-4" />}
-              {reindexing ? "청킹/임베딩 생성 중..." : "청킹 + 임베딩 재생성"}
-            </Button>
             {reindexResult && (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-sm">
                 <Metric label="문서" value={reindexResult.documents} />
@@ -340,17 +532,18 @@ export default function AiEmbeddingPanel() {
         </Card>
 
         <Card>
-          <CardContent className="space-y-4">
-            <div>
-              <h2 className="text-base font-semibold text-text">검색 테스트</h2>
-              <p className="text-xs text-text-muted">현재 인덱스에서 관련 chunk가 잘 검색되는지 확인합니다.</p>
-            </div>
-            <div className="flex gap-2">
-              <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} fullWidth />
-              <Button variant="secondary" onClick={handleSearch} disabled={searching || !searchQuery.trim()}>
-                {searching ? <LoaderCircle className="mr-1 h-4 w-4 animate-spin" /> : <Search className="mr-1 h-4 w-4" />}
-                검색
-              </Button>
+          <CardContent className="space-y-2 py-3">
+            <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
+              <div className="shrink-0">
+                <h2 className="text-base font-semibold text-text">검색 테스트</h2>
+              </div>
+              <div className="flex min-w-0 flex-1 gap-2">
+                <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} fullWidth />
+                <Button variant="secondary" onClick={handleSearch} disabled={searching || !searchQuery.trim()}>
+                  {searching ? <LoaderCircle className="mr-1 h-4 w-4 animate-spin" /> : <Search className="mr-1 h-4 w-4" />}
+                  검색
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               {searchResults.map((row) => (
@@ -366,21 +559,43 @@ export default function AiEmbeddingPanel() {
       </div>
 
       <Card>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2 py-3">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold text-text">인덱스 상태</h2>
             <Button variant="ghost" size="sm" onClick={() => refreshStatus()}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
-          <Metric label="Vector" value={status?.vectorEnabled ? "enabled" : "disabled"} />
-          <Metric label="Chunks" value={status?.chunks} />
-          <Metric label="Provider" value={status?.provider} />
-          <Metric label="Model" value={status?.model} />
-          <Metric label="Dims" value={status?.dims} />
-          <Metric label="Real Provider" value={status?.realEmbeddingProvider ? "Y" : "N"} />
-          <div className="break-all rounded-lg bg-surface-secondary px-3 py-2 text-xs text-text-muted">
-            {status?.dbPath ?? "DB 경로 없음"}
+          <div className="grid grid-cols-2 gap-1.5">
+            <CompactMetric label="Vector" value={status?.vectorEnabled ? "enabled" : "disabled"} />
+            <CompactMetric label="Chunks" value={status?.chunks} />
+            <CompactMetric label="Provider" value={status?.provider} />
+            <CompactMetric label="Model" value={status?.model} />
+            <CompactMetric label="Dims" value={status?.dims} />
+            <CompactMetric label="Real Provider" value={status?.realEmbeddingProvider ? "Y" : "N"} />
+          </div>
+          <div className="border-t border-border pt-2">
+            <h3 className="mb-1.5 text-sm font-semibold text-text">SQLite 벡터 DB</h3>
+            <div className="grid grid-cols-2 gap-1.5">
+              <CompactMetric label="파일 존재" value={status?.dbExists ? "Y" : "N"} />
+              <CompactMetric label="DB 크기" value={formatBytes(status?.dbSizeBytes)} />
+              <CompactMetric label="sqlite-vec" value={status?.sqliteVecStatus ?? (status?.vectorEnabled ? "loaded" : "unavailable")} />
+              <CompactMetric label="설정 방식" value={status?.usesDefaultDbPath ? "기본 경로" : "환경변수"} />
+              <CompactMetric label="Vector Table" value={status?.vectorTableExists ? "Y" : "N"} />
+              <CompactMetric label="FTS Table" value={status?.ftsTableExists ? "Y" : "N"} />
+              <CompactMetric label="Vector Dims" value={status?.vectorDims ?? status?.dims} />
+              <CompactMetric label="Vector Rows" value={status?.vectorRows} />
+              <CompactMetric label="Embedding Rows" value={status?.embeddingRows} />
+              <CompactMetric label="FTS Rows" value={status?.ftsRows} />
+            </div>
+            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+              <PathRow label="환경변수" value={status?.envKey ?? "AI_KNOWLEDGE_DB_PATH"} />
+              <PathRow label="설정값" value={status?.configuredDbPath || "미설정 — 서버 기본 경로 사용"} />
+              <PathRow label="파일명" value={status?.dbFileName ?? "-"} />
+              <PathRow label="디렉터리" value={status?.dbDirectory ?? "-"} />
+              <PathRow label="전체 경로" value={status?.dbPath ?? "DB 경로 없음"} />
+              <PathRow label="마지막 재생성" value={status?.lastReindexAt ?? "-"} />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -394,6 +609,25 @@ function Metric({ label, value }: { label: string; value: unknown }) {
     <div className="rounded-lg border border-border px-3 py-2">
       <div className="text-xs text-text-muted">{label}</div>
       <div className="mt-0.5 font-medium text-text">{displayValue}</div>
+    </div>
+  );
+}
+
+function CompactMetric({ label, value }: { label: string; value: unknown }) {
+  const displayValue = value === undefined || value === null ? "-" : String(value);
+  return (
+    <div className="flex min-w-0 items-center justify-between gap-2 rounded-md border border-border px-2.5 py-1.5 text-xs">
+      <span className="shrink-0 text-text-muted">{label}</span>
+      <span className="min-w-0 truncate text-right font-medium text-text" title={displayValue}>{displayValue}</span>
+    </div>
+  );
+}
+
+function PathRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2 rounded-md bg-surface-secondary px-2.5 py-1.5 text-xs">
+      <span className="w-20 shrink-0 font-medium text-text-muted">{label}</span>
+      <span className="min-w-0 flex-1 truncate font-mono text-text" title={value}>{value}</span>
     </div>
   );
 }

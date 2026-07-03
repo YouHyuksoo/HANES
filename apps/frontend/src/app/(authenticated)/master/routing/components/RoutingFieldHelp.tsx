@@ -27,7 +27,7 @@ export const ROUTING_FIELD_HELP = {
   issueLabelType: { db: "ROUTING_PROCESSES.ISSUE_LABEL_TYPE", description: "이 공정 완료 시 발행할 라벨 종류입니다(없음/묶음/SG/FG). 한 공정은 한 종류만 발행합니다." },
   labelIssue: {
     db: "ROUTING_PROCESSES.ISSUE_LABEL_TYPE",
-    description: "이 공정 완료 시 발행할 라벨 종류를 지정합니다. 없음·묶음 추적 라벨·반제품(SG)·완제품(FG) 중 하나를 선택합니다(한 공정 한 종류).",
+    description: "이 공정 완료 시 발행할 라벨 종류를 지정합니다. 없음·묶음 추적 라벨·반제품(SFG)·완제품(FG) 중 하나를 선택합니다(한 공정 한 종류).",
   },
 } as const;
 

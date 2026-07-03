@@ -1,4 +1,20 @@
 {
+  "equipment.inspectCalendar.addInspect": {
+    "fallback": "점검 추가",
+    "file": "app/(authenticated)/equipment/inspect-calendar/components/DaySchedulePanel.tsx"
+  },
+  "equipment.inspectCalendar.addInspectDesc": {
+    "fallback": "점검할 설비를 선택하면 마스터에 등록된 점검항목이 자동으로 불러와집니다.",
+    "file": "app/(authenticated)/equipment/inspect-calendar/page.tsx"
+  },
+  "common.equip": {
+    "fallback": "설비",
+    "file": "app/(authenticated)/equipment/inspect-calendar/page.tsx"
+  },
+  "common.next": {
+    "fallback": "다음",
+    "file": "app/(authenticated)/equipment/inspect-calendar/page.tsx"
+  },
   "inventory.productPhysicalInv.inProgress": {
     "fallback": "실사 진행 중",
     "file": "app/(authenticated)/inventory/product-physical-inv/page.tsx"
@@ -7,29 +23,389 @@
     "fallback": "실사 개시",
     "file": "app/(authenticated)/inventory/product-physical-inv/page.tsx"
   },
+  "master.bom.colValidTo": {
+    "fallback": "완료일자",
+    "file": "app/(authenticated)/master/bom/components/BomUploadModal.tsx"
+  },
+  "master.bom.effectiveLookup": {
+    "fallback": "기준일",
+    "file": "app/(authenticated)/master/bom/page.tsx"
+  },
+  "master.bom.allHistoryLookup": {
+    "fallback": "전체이력",
+    "file": "app/(authenticated)/master/bom/page.tsx"
+  },
+  "common.deleteFailed": {
+    "fallback": "삭제에 실패했습니다.",
+    "file": "app/(authenticated)/master/equip/components/EquipBomPanel.tsx"
+  },
+  "master.equip.image": {
+    "fallback": "사진",
+    "file": "app/(authenticated)/master/equip/components/EquipMasterTab.tsx"
+  },
+  "master.equip.sectionImage": {
+    "fallback": "사진",
+    "file": "app/(authenticated)/master/equip/components/EquipMasterTab.tsx"
+  },
+  "master.equip.imageLoadFailed": {
+    "fallback": "이미지를 불러올 수 없습니다",
+    "file": "app/(authenticated)/master/equip/components/EquipMasterTab.tsx"
+  },
+  "master.equip.imageUploadHint": {
+    "fallback": "클릭하여 설비 사진 선택",
+    "file": "app/(authenticated)/master/equip/components/EquipMasterTab.tsx"
+  },
+  "master.equip.imageChange": {
+    "fallback": "사진 변경",
+    "file": "app/(authenticated)/master/equip/components/EquipMasterTab.tsx"
+  },
+  "master.equip.imageDeleteConfirm": {
+    "fallback": "설비 사진을 삭제하시겠습니까?",
+    "file": "app/(authenticated)/master/equip/components/EquipMasterTab.tsx"
+  },
+  "master.iqcItem.registerAqlStandardFirst": {
+    "fallback": "AQL 기준관리에서 먼저 등록하세요",
+    "file": "app/(authenticated)/master/iqc-item/components/IqcSpecPanel.tsx"
+  },
+  "master.label.noSourceField": {
+    "fallback": "고정값 사용",
+    "file": "app/(authenticated)/master/label/components/LabelObjectDesigner.tsx"
+  },
+  "master.label.uploadImage": {
+    "fallback": "이미지 업로드",
+    "file": "app/(authenticated)/master/label/components/LabelObjectDesigner.tsx"
+  },
   "master.label.templateName": {
     "fallback": "템플릿 이름",
     "file": "app/(authenticated)/master/label/components/TemplateManager.tsx"
   },
+  "master.part.aqlPolicyAll": {
+    "fallback": "AQL 정책: 전체",
+    "file": "app/(authenticated)/master/part/page.tsx"
+  },
+  "master.part.aqlPolicyNone": {
+    "fallback": "AQL 정책: 미설정",
+    "file": "app/(authenticated)/master/part/page.tsx"
+  },
+  "master.routing.executionType": {
+    "fallback": "실행유형",
+    "file": "app/(authenticated)/master/routing/components/RoutingGroupManager.tsx"
+  },
+  "master.routing.jobOrderYn": {
+    "fallback": "작업지시",
+    "file": "app/(authenticated)/master/routing/components/RoutingGroupManager.tsx"
+  },
+  "master.routing.executionSubcon": {
+    "fallback": "외주",
+    "file": "app/(authenticated)/master/routing/components/RoutingGroupManager.tsx"
+  },
+  "master.routing.executionInHouse": {
+    "fallback": "사내",
+    "file": "app/(authenticated)/master/routing/components/RoutingGroupManager.tsx"
+  },
+  "master.routing.jobOrderCreate": {
+    "fallback": "생성",
+    "file": "app/(authenticated)/master/routing/components/RoutingGroupManager.tsx"
+  },
+  "master.routing.jobOrderSkip": {
+    "fallback": "미생성",
+    "file": "app/(authenticated)/master/routing/components/RoutingGroupManager.tsx"
+  },
+  "master.routing.subconVendor": {
+    "fallback": "외주처",
+    "file": "app/(authenticated)/master/routing/components/RoutingGroupManager.tsx"
+  },
+  "material.concession.specialAcceptWorker": {
+    "fallback": "특채처리자",
+    "file": "app/(authenticated)/material/concession/concessionColumns.tsx"
+  },
+  "material.concession.workerQrNotFound": {
+    "fallback": "작업자 QR을 찾을 수 없습니다.",
+    "file": "app/(authenticated)/material/concession/page.tsx"
+  },
+  "material.concession.workerQrScan": {
+    "fallback": "작업자 QR 스캔",
+    "file": "app/(authenticated)/material/concession/page.tsx"
+  },
+  "material.concession.workerQrScanPlaceholder": {
+    "fallback": "작업자 QR을 스캔하거나 입력 후 Enter",
+    "file": "app/(authenticated)/material/concession/page.tsx"
+  },
+  "material.concession.workerSelect": {
+    "fallback": "작업자 선택",
+    "file": "app/(authenticated)/material/concession/page.tsx"
+  },
+  "material.concession.specialAcceptWorkerPlaceholder": {
+    "fallback": "작업자 선택",
+    "file": "app/(authenticated)/material/concession/page.tsx"
+  },
+  "material.concession.selectedWorker": {
+    "fallback": "선택된 작업자",
+    "file": "app/(authenticated)/material/concession/page.tsx"
+  },
+  "material.receiveHistory.concessionYn": {
+    "fallback": "특채여부",
+    "file": "app/(authenticated)/material/receive/components/ReceivingHistoryTable.tsx"
+  },
+  "material.receiveHistory.concession": {
+    "fallback": "특채",
+    "file": "app/(authenticated)/material/receive/components/ReceivingHistoryTable.tsx"
+  },
+  "material.receiveHistory.normal": {
+    "fallback": "일반",
+    "file": "app/(authenticated)/material/receive/components/ReceivingHistoryTable.tsx"
+  },
+  "material.request.status.partial": {
+    "fallback": "부분출고",
+    "file": "app/(authenticated)/material/request-other/page.tsx"
+  },
+  "material.request.searchRequestPlaceholder": {
+    "fallback": "요청번호 / 품목 / 비고 검색",
+    "file": "app/(authenticated)/material/request-other/page.tsx"
+  },
+  "production.equipMaterial.expectedBom": {
+    "fallback": "작업지시 BOM 장착 품목",
+    "file": "app/(authenticated)/production/input-assembly/components/EquipMaterialMountPanel.tsx"
+  },
   "common.itemCode": {
     "fallback": "품번",
-    "file": "app/(authenticated)/production/input-assembly/page.tsx"
+    "file": "app/(authenticated)/production/input-assembly/components/SgScanPanel.tsx"
   },
-  "common.itemName": {
-    "fallback": "품명",
-    "file": "app/(authenticated)/production/input-assembly/page.tsx"
+  "sgLabel.typeBundle": {
+    "fallback": "묶음",
+    "file": "app/(authenticated)/production/input-assembly/components/SgScanPanel.tsx"
+  },
+  "sgLabel.typeCircuit": {
+    "fallback": "회로",
+    "file": "app/(authenticated)/production/input-assembly/components/SgScanPanel.tsx"
+  },
+  "kiosk.header.restoreError": {
+    "fallback": "설비 현재 상태를 불러오지 못했습니다.",
+    "file": "app/(authenticated)/production/input-kiosk/page.tsx"
+  },
+  "kiosk.header.workerAssignError": {
+    "fallback": "현재 작업자 저장에 실패했습니다.",
+    "file": "app/(authenticated)/production/input-kiosk/page.tsx"
   },
   "production.order.toolView": {
     "fallback": "도구보기",
     "file": "app/(authenticated)/production/order/page.tsx"
   },
+  "common.partType": {
+    "fallback": "품목유형",
+    "file": "app/(authenticated)/production/order/page.tsx"
+  },
+  "production.order.itemTypeFG": {
+    "fallback": "완제품",
+    "file": "app/(authenticated)/production/order/page.tsx"
+  },
+  "production.order.itemTypeWIP": {
+    "fallback": "반제품",
+    "file": "app/(authenticated)/production/order/page.tsx"
+  },
+  "production.order.orderKind": {
+    "fallback": "구분",
+    "file": "app/(authenticated)/production/order/productionOrderColumns.tsx"
+  },
+  "production.order.orderKindOperation": {
+    "fallback": "공정",
+    "file": "app/(authenticated)/production/order/productionOrderColumns.tsx"
+  },
+  "production.order.orderKindItem": {
+    "fallback": "품목",
+    "file": "app/(authenticated)/production/order/productionOrderColumns.tsx"
+  },
+  "production.result.equipAll": {
+    "fallback": "전체 설비",
+    "file": "app/(authenticated)/production/result/page.tsx"
+  },
   "production.wipMaterialStock.lotCount": {
     "fallback": "LOT 수",
-    "file": "app/(authenticated)/production/wip-material-stock/page.tsx"
+    "file": "app/(authenticated)/production/wip-material-stock/wipMaterialStockColumns.tsx"
   },
-  "quality.defect.defectCodePlaceholder": {
-    "fallback": "공정 불량 코드 선택",
-    "file": "app/(authenticated)/quality/defect/components/DefectFormPanel.tsx"
+  "common.equipName": {
+    "fallback": "설비명",
+    "file": "app/(authenticated)/production/wip-material-trans/wipMaterialTransColumns.tsx"
+  },
+  "production.wipStock.boxNo": {
+    "fallback": "박스번호",
+    "file": "app/(authenticated)/production/wip-stock/WipStockView.tsx"
+  },
+  "quality.aql.isoLoadFailed": {
+    "fallback": "ISO AQL 표 데이터를 불러오지 못했습니다.",
+    "file": "app/(authenticated)/quality/aql/page.tsx"
+  },
+  "quality.aql.standardTab": {
+    "fallback": "AQL 기준",
+    "file": "app/(authenticated)/quality/aql/page.tsx"
+  },
+  "quality.aql.codeLetterTab": {
+    "fallback": "Code Letter 표",
+    "file": "app/(authenticated)/quality/aql/page.tsx"
+  },
+  "quality.aql.samplingPlanTab": {
+    "fallback": "Sampling Plan 표",
+    "file": "app/(authenticated)/quality/aql/page.tsx"
+  },
+  "quality.aql.reloadIsoTables": {
+    "fallback": "표 다시읽기",
+    "file": "app/(authenticated)/quality/aql/page.tsx"
+  },
+  "quality.aql.isoRuleSection": {
+    "fallback": "ISO 판정표 관리",
+    "file": "app/(authenticated)/quality/aql/page.tsx"
+  },
+  "quality.aql.isoRuleSectionDesc": {
+    "fallback": "LOT 수량별 Sample Size, Ac, Re는 이 기준 화면에서 직접 입력하지 않습니다. Code Letter 표 탭에서 LOT+검사수준 기준을 관리하고, Sampling Plan 표 탭에서 Code Letter+AQL 기준의 Ac/Re를 관리합니다.",
+    "file": "app/(authenticated)/quality/aql/page.tsx"
+  },
+  "quality.aql.codeLetterDesc": {
+    "fallback": "LOT 수량과 검사수준(I, II, III, S1~S4)으로 ISO Code Letter를 결정합니다.",
+    "file": "app/(authenticated)/quality/aql/page.tsx"
+  },
+  "quality.aql.samplingPlanDesc": {
+    "fallback": "Code Letter와 AQL 값의 교차점으로 표준 샘플수량, Ac, Re를 결정합니다. 화살표는 Sample Code Letter로 저장합니다.",
+    "file": "app/(authenticated)/quality/aql/page.tsx"
+  },
+  "quality.defect.cancelRegistration": {
+    "fallback": "등록취소",
+    "file": "app/(authenticated)/quality/defect/defectColumns.tsx"
+  },
+  "quality.defect.deleteSuccess": {
+    "fallback": "불량 등록이 취소되었습니다.",
+    "file": "app/(authenticated)/quality/defect/page.tsx"
+  },
+  "quality.defect.deleteConfirm": {
+    "fallback": "아래 불량 기록을 취소(삭제)합니다. 이 작업은 되돌릴 수 없습니다.",
+    "file": "app/(authenticated)/quality/defect/page.tsx"
+  },
+  "quality.defect.confirmDelete": {
+    "fallback": "등록 취소 확인",
+    "file": "app/(authenticated)/quality/defect/page.tsx"
+  },
+  "quality.trace.life": {
+    "fallback": "수명",
+    "file": "app/(authenticated)/quality/trace/components/EquipConsumableSection.tsx"
+  },
+  "quality.trace.wizard.pickTitle": {
+    "fallback": "추적 방식 선택",
+    "file": "app/(authenticated)/quality/trace/components/TraceSearchWizard.tsx"
+  },
+  "quality.trace.wizard.inputTitle": {
+    "fallback": "{{label}} 조회 조건",
+    "file": "app/(authenticated)/quality/trace/components/TraceSearchWizard.tsx"
+  },
+  "quality.trace.wizard.pickHint": {
+    "fallback": "현재 가진 번호나 조건을 기준으로 시작합니다.",
+    "file": "app/(authenticated)/quality/trace/components/TraceSearchWizard.tsx"
+  },
+  "quality.trace.wizard.workerCode": {
+    "fallback": "작업자코드",
+    "file": "app/(authenticated)/quality/trace/components/TraceSearchWizard.tsx"
+  },
+  "quality.trace.wizard.equipCode": {
+    "fallback": "설비코드",
+    "file": "app/(authenticated)/quality/trace/components/TraceSearchWizard.tsx"
+  },
+  "quality.trace.wizard.dateFrom": {
+    "fallback": "시작일",
+    "file": "app/(authenticated)/quality/trace/components/TraceSearchWizard.tsx"
+  },
+  "quality.trace.wizard.dateTo": {
+    "fallback": "종료일",
+    "file": "app/(authenticated)/quality/trace/components/TraceSearchWizard.tsx"
+  },
+  "quality.trace.loadFailed": {
+    "fallback": "추적 상세를 조회하지 못했습니다.",
+    "file": "app/(authenticated)/quality/trace/page.tsx"
+  },
+  "quality.trace.candidateLoadFailed": {
+    "fallback": "추적 후보를 조회하지 못했습니다.",
+    "file": "app/(authenticated)/quality/trace/page.tsx"
+  },
+  "quality.trace.changeMode": {
+    "fallback": "방식 변경",
+    "file": "app/(authenticated)/quality/trace/page.tsx"
+  },
+  "quality.trace.startTrace": {
+    "fallback": "추적 시작",
+    "file": "app/(authenticated)/quality/trace/page.tsx"
+  },
+  "quality.trace.candidates": {
+    "fallback": "추적 후보",
+    "file": "app/(authenticated)/quality/trace/page.tsx"
+  },
+  "quality.trace.openWizardHint": {
+    "fallback": "추적 시작을 눌러 방식을 선택하세요.",
+    "file": "app/(authenticated)/quality/trace/page.tsx"
+  },
+  "quality.trace.noCandidates": {
+    "fallback": "조회된 추적 후보가 없습니다.",
+    "file": "app/(authenticated)/quality/trace/page.tsx"
+  },
+  "quality.trace.startWithWizard": {
+    "fallback": "제품, 자재, 박스, 설비 등 가진 단서로 추적을 시작합니다.",
+    "file": "app/(authenticated)/quality/trace/page.tsx"
+  },
+  "quality.trace.loadingDetail": {
+    "fallback": "추적 상세 조회 중...",
+    "file": "app/(authenticated)/quality/trace/page.tsx"
+  },
+  "quality.trace.sgOnlyCandidate": {
+    "fallback": "선택한 SG는 연결 제품 후보가 없어 제품 제조이력 상세를 표시할 수 없습니다.",
+    "file": "app/(authenticated)/quality/trace/page.tsx"
+  },
+  "quality.trace.selectCandidate": {
+    "fallback": "좌측 후보를 선택하면 제조이력이 표시됩니다.",
+    "file": "app/(authenticated)/quality/trace/page.tsx"
+  },
+  "quality.trace.largeCandidateConfirmTitle": {
+    "fallback": "대량 후보 조회 확인",
+    "file": "app/(authenticated)/quality/trace/page.tsx"
+  },
+  "quality.trace.largeCandidateConfirmMessage": {
+    "fallback": "연결 제품 후보가 {{total}}건입니다. {{limit}}건을 초과해 조회 시간이 길어질 수 있습니다. 계속 조회할까요?",
+    "file": "app/(authenticated)/quality/trace/page.tsx"
+  },
+  "quality.trace.continueLargeCandidateSearch": {
+    "fallback": "감수하고 조회",
+    "file": "app/(authenticated)/quality/trace/page.tsx"
+  },
+  "shipping.history.boxShipped": {
+    "fallback": "박스 단건 출하",
+    "file": "app/(authenticated)/shipping/history/page.tsx"
+  },
+  "shipping.shipOrder.saveFailed": {
+    "fallback": "저장에 실패했습니다.",
+    "file": "app/(authenticated)/shipping/order/page.tsx"
+  },
+  "shipping.shipOrder.confirmFailed": {
+    "fallback": "확정에 실패했습니다.",
+    "file": "app/(authenticated)/shipping/order/page.tsx"
+  },
+  "shipping.shipOrder.deleteFailed": {
+    "fallback": "삭제에 실패했습니다.",
+    "file": "app/(authenticated)/shipping/order/page.tsx"
+  },
+  "shipping.shipOrder.unconfirmFailed": {
+    "fallback": "확정취소에 실패했습니다.",
+    "file": "app/(authenticated)/shipping/order/page.tsx"
+  },
+  "shipping.shipOrder.confirm": {
+    "fallback": "확정",
+    "file": "app/(authenticated)/shipping/order/page.tsx"
+  },
+  "shipping.shipOrder.unconfirmOrder": {
+    "fallback": "확정취소",
+    "file": "app/(authenticated)/shipping/order/page.tsx"
+  },
+  "shipping.shipOrder.saveAndConfirm": {
+    "fallback": "저장 후 확정",
+    "file": "app/(authenticated)/shipping/order/page.tsx"
+  },
+  "shipping.shipOrder.unconfirmOrderMessage": {
+    "fallback": "출하지시 확정을 취소하고 작성중(DRAFT) 상태로 되돌리시겠습니까? 출하수량 또는 배정된 박스/팔레트가 있으면 처리되지 않습니다.",
+    "file": "app/(authenticated)/shipping/order/page.tsx"
   },
   "shipping.pack.waitingDesc": {
     "fallback": "검사 합격 후 미배정 FG 시리얼",
@@ -71,6 +447,126 @@
     "fallback": "스캔 후 Enter를 누르면 대기 목록과 대조합니다.",
     "file": "app/(authenticated)/shipping/pallet/page.tsx"
   },
+  "shipping.pallet.deleteEmptyPalletMessage": {
+    "fallback": "빈 팔레트를 삭제하시겠습니까?",
+    "file": "app/(authenticated)/shipping/pallet/page.tsx"
+  },
+  "shipping.pallet.deleteEmptyPallet": {
+    "fallback": "빈 팔레트 삭제",
+    "file": "app/(authenticated)/shipping/pallet/palletColumns.tsx"
+  },
+  "workflowGuide.lane": {
+    "fallback": "레인",
+    "file": "app/(authenticated)/workflow/components/WorkflowFlow.tsx"
+  },
+  "workflowGuide.hideRelations": {
+    "fallback": "보조 연결 숨김",
+    "file": "app/(authenticated)/workflow/components/WorkflowFlow.tsx"
+  },
+  "workflowGuide.showRelations": {
+    "fallback": "보조 연결 보기",
+    "file": "app/(authenticated)/workflow/components/WorkflowFlow.tsx"
+  },
+  "workflowGuide.stepSuffix": {
+    "fallback": "단계",
+    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
+  },
+  "workflowGuide.why": {
+    "fallback": "왜 하는가",
+    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
+  },
+  "workflowGuide.when": {
+    "fallback": "언제 하는가",
+    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
+  },
+  "workflowGuide.cautions": {
+    "fallback": "주의점",
+    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
+  },
+  "workflowGuide.inputs": {
+    "fallback": "입력",
+    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
+  },
+  "workflowGuide.outputs": {
+    "fallback": "산출",
+    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
+  },
+  "workflowGuide.routes": {
+    "fallback": "화면 바로가기",
+    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
+  },
+  "workflowGuide.opening": {
+    "fallback": "여는 중…",
+    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
+  },
+  "workflowGuide.help": {
+    "fallback": "관련 화면 도움말",
+    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
+  },
+  "workflowGuide.dataObjects": {
+    "fallback": "생성/변경 데이터",
+    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
+  },
+  "workflowGuide.viewSchema": {
+    "fallback": "테이블 스키마 보기",
+    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
+  },
+  "workflowGuide.previous": {
+    "fallback": "선행 업무",
+    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
+  },
+  "workflowGuide.next": {
+    "fallback": "후행 업무",
+    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
+  },
+  "workflowGuide.columnsSuffix": {
+    "fallback": "개 컬럼",
+    "file": "app/(authenticated)/workflow/components/WorkflowSchemaPanel.tsx"
+  },
+  "workflowGuide.schemaLoading": {
+    "fallback": "스키마 불러오는 중…",
+    "file": "app/(authenticated)/workflow/components/WorkflowSchemaPanel.tsx"
+  },
+  "workflowGuide.schemaError": {
+    "fallback": "테이블 명세를 불러올 수 없습니다.",
+    "file": "app/(authenticated)/workflow/components/WorkflowSchemaPanel.tsx"
+  },
+  "workflowGuide.schemaEmpty": {
+    "fallback": "컬럼 정보가 없습니다. 테이블명을 확인하세요.",
+    "file": "app/(authenticated)/workflow/components/WorkflowSchemaPanel.tsx"
+  },
+  "workflowGuide.colName": {
+    "fallback": "컬럼명",
+    "file": "app/(authenticated)/workflow/components/WorkflowSchemaPanel.tsx"
+  },
+  "workflowGuide.colType": {
+    "fallback": "타입",
+    "file": "app/(authenticated)/workflow/components/WorkflowSchemaPanel.tsx"
+  },
+  "workflowGuide.colDesc": {
+    "fallback": "설명",
+    "file": "app/(authenticated)/workflow/components/WorkflowSchemaPanel.tsx"
+  },
+  "workflowGuide.pageTitle": {
+    "fallback": "업무 가이드",
+    "file": "app/(authenticated)/workflow/page.tsx"
+  },
+  "workflowGuide.pageSubtitle": {
+    "fallback": "처음 사용자를 위한 단계별 업무 지침과 화면 바로가기를 제공합니다.",
+    "file": "app/(authenticated)/workflow/page.tsx"
+  },
+  "workflowGuide.tabGuide": {
+    "fallback": "가이드",
+    "file": "app/(authenticated)/workflow/page.tsx"
+  },
+  "workflowGuide.tabFlow": {
+    "fallback": "흐름도",
+    "file": "app/(authenticated)/workflow/page.tsx"
+  },
+  "workflowGuide.searchPlaceholder": {
+    "fallback": "업무, 화면, 데이터 객체 검색",
+    "file": "app/(authenticated)/workflow/page.tsx"
+  },
   "ai.chat.tab.chat": {
     "fallback": "채팅",
     "file": "components/ai/AiChatPanel.tsx"
@@ -90,5 +586,37 @@
   "help.resize": {
     "fallback": "드래그하여 너비 조절",
     "file": "components/help/HelpPanel.tsx"
+  },
+  "material.iqc.defectCode": {
+    "fallback": "불량코드",
+    "file": "components/material/IqcModal.tsx"
+  },
+  "material.iqc.defectGrade": {
+    "fallback": "등급",
+    "file": "components/material/IqcModal.tsx"
+  },
+  "material.iqc.defectCodeRequired": {
+    "fallback": "FAIL 판정에는 불량코드와 불량수가 필요합니다.",
+    "file": "components/material/IqcModal.tsx"
+  },
+  "material.iqc.defectCodeContradiction": {
+    "fallback": "PASS 판정에는 불량코드를 입력할 수 없습니다.",
+    "file": "components/material/IqcModal.tsx"
+  },
+  "common.expand": {
+    "fallback": "펼치기",
+    "file": "components/material/WorkOrderRequestPanel.tsx"
+  },
+  "common.collapse": {
+    "fallback": "접기",
+    "file": "components/material/WorkOrderRequestPanel.tsx"
+  },
+  "ai.config.llmTitle": {
+    "fallback": "LLM 채팅 설정",
+    "file": "components/system/AiConfigPanel.tsx"
+  },
+  "ai.config.llmDesc": {
+    "fallback": "일반 답변, SQL 생성/분석에 사용할 모델입니다.",
+    "file": "components/system/AiConfigPanel.tsx"
   }
 }

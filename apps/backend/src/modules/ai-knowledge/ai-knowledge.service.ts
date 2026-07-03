@@ -2,7 +2,7 @@
  * @file src/modules/ai-knowledge/ai-knowledge.service.ts
  * @description SQLite + sqlite-vec 기반 도움말/문서 RAG 인덱스.
  */
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
 import * as path from 'path';
@@ -10,6 +10,18 @@ import { EmbeddingService } from './embedding.service';
 import { KnowledgeChunk, chunkMarkdown } from './markdown-chunker';
 
 type DatabaseInstance = any;
+
+type KnowledgeDocument = { sourcePath: string; docType: string; language: string; raw: string };
+type KnowledgeTarget = { path: string; docType: string };
+
+const DEFAULT_KNOWLEDGE_TARGETS: KnowledgeTarget[] = [
+  { path: 'apps/frontend/public/help/user/ko', docType: 'help' },
+  { path: 'apps/frontend/public/help/operator/ko', docType: 'help' },
+  { path: 'docs/standards', docType: 'standard' },
+  { path: 'docs/specs', docType: 'spec' },
+  { path: 'docs/plans', docType: 'plan' },
+  { path: 'apps/backend/data/ai-table-catalog.md', docType: 'catalog' },
+];
 
 export interface KnowledgeSearchContext {
   route?: string;
@@ -33,6 +45,7 @@ export interface KnowledgeSearchResult {
 export interface KnowledgeReindexResult {
   ok: boolean;
   vectorEnabled: boolean;
+  targets: string[];
   documents: number;
   chunks: number;
   embedded: number;
@@ -40,6 +53,10 @@ export interface KnowledgeReindexResult {
   provider: string;
   model: string;
   dims: number;
+}
+
+export interface KnowledgeReindexOptions {
+  targets?: string[];
 }
 
 @Injectable()
@@ -141,11 +158,35 @@ export class AiKnowledgeService implements OnModuleInit {
 
   async status() {
     const db = await this.open();
+    const resolvedDbPath = this.dbPath();
+    const dbExists = fsSync.existsSync(resolvedDbPath);
+    const dbStats = dbExists ? await fs.stat(resolvedDbPath) : null;
     const chunkCount = db.prepare(`SELECT COUNT(*) AS count FROM ai_knowledge_chunks`).get().count as number;
+    const metaRows = db.prepare(`
+      SELECT key, value
+      FROM ai_knowledge_meta
+      WHERE key IN ('last_reindex_at', 'vector_dims')
+    `).all() as Array<{ key: string; value: string }>;
+    const meta = Object.fromEntries(metaRows.map((row) => [row.key, row.value]));
     const cfg = await this.embedding.getConfig();
     return {
-      dbPath: this.dbPath(),
+      dbPath: resolvedDbPath,
+      dbDirectory: path.dirname(resolvedDbPath),
+      dbFileName: path.basename(resolvedDbPath),
+      dbExists,
+      dbSizeBytes: dbStats?.size ?? 0,
+      configuredDbPath: process.env.AI_KNOWLEDGE_DB_PATH || null,
+      usesDefaultDbPath: !process.env.AI_KNOWLEDGE_DB_PATH,
+      envKey: 'AI_KNOWLEDGE_DB_PATH',
       vectorEnabled: this.vectorEnabled,
+      sqliteVecStatus: this.vectorEnabled ? 'loaded' : 'unavailable',
+      vectorTableExists: this.hasTable('ai_knowledge_vec'),
+      ftsTableExists: this.hasTable('ai_knowledge_fts'),
+      vectorDims: meta.vector_dims ? Number(meta.vector_dims) : null,
+      vectorRows: this.hasTable('ai_knowledge_vec') ? this.countTableRows('ai_knowledge_vec') : null,
+      ftsRows: this.hasTable('ai_knowledge_fts') ? this.countTableRows('ai_knowledge_fts') : null,
+      embeddingRows: this.countTableRows('ai_knowledge_embeddings'),
+      lastReindexAt: meta.last_reindex_at ?? null,
       chunks: chunkCount,
       provider: cfg.provider,
       model: cfg.model,
@@ -154,11 +195,12 @@ export class AiKnowledgeService implements OnModuleInit {
     };
   }
 
-  async reindex(): Promise<KnowledgeReindexResult> {
+  async reindex(options: KnowledgeReindexOptions = {}): Promise<KnowledgeReindexResult> {
     const db = await this.open();
     const cfg = await this.embedding.getConfig();
     this.ensureVectorSchema(cfg.dims);
-    const documents = await this.collectDocuments();
+    const targets = this.resolveTargets(options.targets);
+    const documents = await this.collectDocuments(targets);
     const chunks = documents.flatMap((doc) => chunkMarkdown(doc));
     const now = new Date().toISOString();
     const embeddingRows = await this.resolveChunkEmbeddings(chunks, cfg.provider, cfg.model, cfg.dims, now);
@@ -217,6 +259,7 @@ export class AiKnowledgeService implements OnModuleInit {
     return {
       ok: true,
       vectorEnabled: this.vectorEnabled,
+      targets: targets.map((target) => target.path),
       documents: documents.length,
       chunks: chunks.length,
       embedded,
@@ -341,6 +384,15 @@ export class AiKnowledgeService implements OnModuleInit {
     return !!row;
   }
 
+  private countTableRows(tableName: string): number | null {
+    if (!this.db || !this.hasTable(tableName)) return null;
+    try {
+      return this.db.prepare(`SELECT COUNT(*) AS count FROM ${tableName}`).get().count as number;
+    } catch {
+      return null;
+    }
+  }
+
   private embeddingText(chunk: KnowledgeChunk): string {
     return [chunk.title, chunk.heading, chunk.summary, chunk.keywords.join(' '), chunk.content].filter(Boolean).join('\n');
   }
@@ -350,24 +402,53 @@ export class AiKnowledgeService implements OnModuleInit {
     return tokens.slice(0, 8).map((token) => `"${token.replace(/"/g, '""')}"`).join(' OR ');
   }
 
-  private async collectDocuments(): Promise<Array<{ sourcePath: string; docType: string; language: string; raw: string }>> {
+  private resolveTargets(input?: string[]): KnowledgeTarget[] {
+    if (!input || input.length === 0) return DEFAULT_KNOWLEDGE_TARGETS;
+    const defaultsByPath = new Map(DEFAULT_KNOWLEDGE_TARGETS.map((target) => [target.path, target.docType]));
+    const normalized = Array.from(new Set(input.map((item) => this.normalizeTargetPath(item)).filter(Boolean)));
+    if (normalized.length === 0) throw new BadRequestException('청킹 대상이 선택되지 않았습니다.');
+    return normalized.map((targetPath) => ({
+      path: targetPath,
+      docType: defaultsByPath.get(targetPath) ?? this.inferDocType(targetPath),
+    }));
+  }
+
+  private normalizeTargetPath(input: string): string {
+    const raw = String(input ?? '').trim().replace(/\\/g, '/').replace(/^\/+/, '');
+    if (!raw) return '';
+    const normalized = path.posix.normalize(raw);
+    if (normalized === '.' || normalized.startsWith('../') || normalized.includes('/../') || path.isAbsolute(raw)) {
+      throw new BadRequestException(`허용되지 않는 청킹 대상 경로입니다: ${input}`);
+    }
+    return normalized;
+  }
+
+  private inferDocType(targetPath: string): string {
+    if (targetPath.startsWith('apps/frontend/public/help/')) return 'help';
+    if (targetPath.startsWith('docs/standards')) return 'standard';
+    if (targetPath.startsWith('docs/specs')) return 'spec';
+    if (targetPath.startsWith('docs/plans')) return 'plan';
+    if (targetPath.includes('catalog')) return 'catalog';
+    return 'document';
+  }
+
+  private async collectDocuments(targets: KnowledgeTarget[]): Promise<KnowledgeDocument[]> {
     const root = this.projectRoot();
-    const targets = [
-      { dir: path.resolve(root, 'apps/frontend/public/help/user/ko'), docType: 'help' },
-      { dir: path.resolve(root, 'apps/frontend/public/help/operator/ko'), docType: 'help' },
-      { dir: path.resolve(root, 'docs/standards'), docType: 'standard' },
-      { dir: path.resolve(root, 'docs/specs'), docType: 'spec' },
-      { dir: path.resolve(root, 'docs/plans'), docType: 'plan' },
-      { file: path.resolve(root, 'apps/backend/data/ai-table-catalog.md'), docType: 'catalog' },
-    ];
-    const docs: Array<{ sourcePath: string; docType: string; language: string; raw: string }> = [];
+    const docs: KnowledgeDocument[] = [];
     for (const target of targets) {
-      if ('file' in target) {
-        if (fsSync.existsSync(target.file)) docs.push({ sourcePath: path.relative(root, target.file), docType: target.docType, language: 'ko', raw: await fs.readFile(target.file, 'utf8') });
+      const resolved = path.resolve(root, target.path);
+      const relative = path.relative(root, resolved);
+      if (relative.startsWith('..') || path.isAbsolute(relative)) {
+        throw new BadRequestException(`프로젝트 밖의 청킹 대상은 허용되지 않습니다: ${target.path}`);
+      }
+      if (!fsSync.existsSync(resolved)) continue;
+      const stat = await fs.stat(resolved);
+      if (stat.isFile()) {
+        if (resolved.toLowerCase().endsWith('.md')) docs.push({ sourcePath: path.relative(root, resolved), docType: target.docType, language: 'ko', raw: await fs.readFile(resolved, 'utf8') });
         continue;
       }
-      if (!fsSync.existsSync(target.dir)) continue;
-      for (const file of await this.listMarkdownFiles(target.dir)) {
+      if (!stat.isDirectory()) continue;
+      for (const file of await this.listMarkdownFiles(resolved)) {
         docs.push({ sourcePath: path.relative(root, file), docType: target.docType, language: 'ko', raw: await fs.readFile(file, 'utf8') });
       }
     }

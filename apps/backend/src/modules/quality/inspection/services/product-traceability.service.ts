@@ -44,8 +44,11 @@ import {
   DefectRecord,
   RepairRecord,
   TraceCandidate,
+  TraceCandidatesResult,
   TraceSearchMode,
 } from '../dto/product-traceability.dto';
+
+const TRACE_CANDIDATE_CONFIRM_LIMIT = 500;
 
 @Injectable()
 export class ProductTraceabilityService {
@@ -552,37 +555,47 @@ export class ProductTraceabilityService {
 
   async findCandidates(
     mode: TraceSearchMode,
-    input: { value?: string; equipCode?: string; dateFrom?: string; dateTo?: string },
+    input: { value?: string; equipCode?: string; dateFrom?: string; dateTo?: string; confirmLarge?: boolean },
     company: string,
     plant: string,
-  ): Promise<TraceCandidate[]> {
+  ): Promise<TraceCandidatesResult> {
     const value = input.value?.trim() ?? '';
-    if (mode !== 'equipment' && !value) return [];
+    if (mode !== 'equipment' && !value) return this.toCandidateResult([]);
 
     switch (mode) {
       case 'product':
-        return this.resolveProductCandidates(value, company, plant);
+        return this.toCandidateResult(await this.resolveProductCandidates(value, company, plant));
       case 'material':
-        return this.resolveMaterialCandidates(value, company, plant);
+        return this.resolveMaterialCandidates(value, company, plant, input.confirmLarge === true);
       case 'supplierLot':
-        return this.resolveSupplierLotCandidates(value, company, plant);
+        return this.resolveSupplierLotCandidates(value, company, plant, input.confirmLarge === true);
       case 'box':
-        return this.resolveBoxCandidates(value, company, plant);
+        return this.toCandidateResult(await this.resolveBoxCandidates(value, company, plant));
       case 'pallet':
-        return this.resolvePalletCandidates(value, company, plant);
+        return this.toCandidateResult(await this.resolvePalletCandidates(value, company, plant));
       case 'shipOrder':
-        return this.resolveShipOrderCandidates(value, company, plant);
+        return this.toCandidateResult(await this.resolveShipOrderCandidates(value, company, plant));
       case 'equipment':
-        return this.resolveEquipmentCandidates(input.equipCode?.trim() ?? '', input.dateFrom ?? '', input.dateTo ?? '', company, plant);
+        return this.toCandidateResult(await this.resolveEquipmentCandidates(input.equipCode?.trim() ?? '', input.dateFrom ?? '', input.dateTo ?? '', company, plant));
       case 'operator':
-        return this.resolveOperatorCandidates(value, input.dateFrom ?? '', input.dateTo ?? '', company, plant);
+        return this.toCandidateResult(await this.resolveOperatorCandidates(value, input.dateFrom ?? '', input.dateTo ?? '', company, plant));
       case 'workOrder':
-        return this.resolveWorkOrderCandidates(value, company, plant);
+        return this.toCandidateResult(await this.resolveWorkOrderCandidates(value, company, plant));
       case 'sg':
-        return this.resolveSgCandidates(value, company, plant);
+        return this.toCandidateResult(await this.resolveSgCandidates(value, company, plant));
       default:
-        return [];
+        return this.toCandidateResult([]);
     }
+  }
+
+  private toCandidateResult(candidates: TraceCandidate[]): TraceCandidatesResult {
+    return {
+      candidates,
+      requiresConfirmation: false,
+      total: candidates.length,
+      limit: TRACE_CANDIDATE_CONFIRM_LIMIT,
+      message: null,
+    };
   }
 
   private async resolveProductCandidates(value: string, company: string, plant: string): Promise<TraceCandidate[]> {
@@ -597,22 +610,14 @@ export class ProductTraceabilityService {
     return this.fgRowsToCandidates(rows, '제품 바코드', value, company, plant);
   }
 
-  private async resolveMaterialCandidates(value: string, company: string, plant: string): Promise<TraceCandidate[]> {
-    const lotRows = await this.matLotRepo.find({
-      where: [
-        { matUid: value, company, plant },
-        { matUid: Like(`%${value}%`), company, plant },
-        { poNo: value, company, plant },
-        { arrivalNo: value, company, plant },
-      ],
-      take: 200,
-    });
-    const matUids = [...new Set([value, ...lotRows.map((lot) => lot.matUid)].filter(Boolean))];
-    return this.resolveFgCandidatesByMatUids(matUids, '자재 UID/LOT', value, company, plant);
+  private async resolveMaterialCandidates(value: string, company: string, plant: string, confirmLarge: boolean): Promise<TraceCandidatesResult> {
+    const lot = await this.matLotRepo.findOne({ where: { matUid: value, company, plant } });
+    if (!lot) return this.toCandidateResult([]);
+    return this.resolveFgCandidatesByMatUids([lot.matUid], '자재 UID', value, company, plant, confirmLarge);
   }
 
   /** 원자재 업체 LOT(= MAT_LOTS.INVOICE_NO 송장번호) 기준으로 투입 제품을 역추적 */
-  private async resolveSupplierLotCandidates(value: string, company: string, plant: string): Promise<TraceCandidate[]> {
+  private async resolveSupplierLotCandidates(value: string, company: string, plant: string, confirmLarge: boolean): Promise<TraceCandidatesResult> {
     const lotRows = await this.matLotRepo.find({
       where: [
         { invoiceNo: value, company, plant },
@@ -621,7 +626,7 @@ export class ProductTraceabilityService {
       take: 200,
     });
     const matUids = [...new Set(lotRows.map((lot) => lot.matUid).filter(Boolean))];
-    return this.resolveFgCandidatesByMatUids(matUids, '원자재 업체 LOT', value, company, plant);
+    return this.resolveFgCandidatesByMatUids(matUids, '원자재 업체 LOT', value, company, plant, confirmLarge);
   }
 
   /** 자재 UID 집합 → 계보(genealogy)·투입이력으로 연결된 FG 후보로 변환 (자재/업체LOT 공통) */
@@ -631,45 +636,52 @@ export class ProductTraceabilityService {
     sourceValue: string,
     company: string,
     plant: string,
-  ): Promise<TraceCandidate[]> {
+    confirmLarge: boolean,
+  ): Promise<TraceCandidatesResult> {
     const matUids = [...new Set(matUidsInput.filter(Boolean))];
-    if (matUids.length === 0) return [];
+    if (matUids.length === 0) return this.toCandidateResult([]);
 
     const fgKeys = new Set<string>();
     const fgLinks = await this.genealogyRepo.find({
       where: { childType: 'MAT_LOT', childKey: In(matUids), parentType: 'FG', company, plant },
-      take: 500,
     });
     for (const link of fgLinks) fgKeys.add(link.parentKey);
 
     const sgLinks = await this.genealogyRepo.find({
       where: { childType: 'MAT_LOT', childKey: In(matUids), parentType: 'SG', company, plant },
-      take: 500,
     });
     const sgKeys = [...new Set(sgLinks.map((link) => link.parentKey))];
     if (sgKeys.length > 0) {
       const parentFgLinks = await this.genealogyRepo.find({
         where: { parentType: 'FG', childType: 'SG', childKey: In(sgKeys), company, plant },
-        take: 500,
       });
       for (const link of parentFgLinks) fgKeys.add(link.parentKey);
     }
 
     const matIssues = await this.matIssueRepo.find({
       where: { matUid: In(matUids), company, plant },
-      take: 500,
       order: { issueDate: 'DESC' },
     });
     const orderNos = [...new Set(matIssues.map((issue) => issue.orderNo).filter((v): v is string => !!v))];
     const byOrder = orderNos.length
-      ? await this.fgLabelRepo.find({ where: { orderNo: In(orderNos), company, plant }, take: 500, order: { issuedAt: 'DESC' } })
+      ? await this.fgLabelRepo.find({ where: { orderNo: In(orderNos), company, plant }, order: { issuedAt: 'DESC' } })
       : [];
     for (const fg of byOrder) fgKeys.add(fg.fgBarcode);
 
+    if (fgKeys.size > TRACE_CANDIDATE_CONFIRM_LIMIT && !confirmLarge) {
+      return {
+        candidates: [],
+        requiresConfirmation: true,
+        total: fgKeys.size,
+        limit: TRACE_CANDIDATE_CONFIRM_LIMIT,
+        message: `연결 제품 후보가 ${fgKeys.size}건입니다. 조회 시간이 길어질 수 있습니다. 계속 조회할지 확인이 필요합니다.`,
+      };
+    }
+
     const fgs = fgKeys.size
-      ? await this.fgLabelRepo.find({ where: { fgBarcode: In([...fgKeys]), company, plant }, take: 500, order: { issuedAt: 'DESC' } })
+      ? await this.fgLabelRepo.find({ where: { fgBarcode: In([...fgKeys]), company, plant }, order: { issuedAt: 'DESC' } })
       : [];
-    return this.fgRowsToCandidates(fgs, sourceLabel, sourceValue, company, plant);
+    return this.toCandidateResult(await this.fgRowsToCandidates(fgs, sourceLabel, sourceValue, company, plant));
   }
 
   private async resolveBoxCandidates(value: string, company: string, plant: string): Promise<TraceCandidate[]> {

@@ -74,3 +74,8 @@ pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false
 
 - 작업이 중간에 멈추거나 검증/배포/데이터 정리가 끝나지 않았으면 `docs/standards/unfinished-work-record.md` 기준으로 `docs/reports/unfinished-work/`에 기록한다.
 - 다음 세션은 관련 미완료 기록을 현재 코드와 DB 상태로 재검증한 뒤 이어간다.
+
+## 7. 브라우저 자동화
+
+- 브라우저 자동화는 `claude-in-chrome`을 기본으로 사용한다. 사용자의 기존 크롬 세션에 붙어 HANES 로그인 상태를 유지한 채 화면을 조작/캡처할 수 있다.
+- `chrome-devtools`는 lighthouse 감사, heap snapshot, 정밀 퍼포먼스 트레이스 등 `claude-in-chrome`에 없는 devtools 전용 기능이 필요할 때만 예외적으로 사용한다.

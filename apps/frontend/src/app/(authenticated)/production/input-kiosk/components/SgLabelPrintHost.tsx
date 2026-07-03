@@ -2,11 +2,11 @@
 
 /**
  * @file components/SgLabelPrintHost.tsx
- * @description 키오스크 SG(반제품) 라벨 자동 출력 호스트.
+ * @description 키오스크 SFG(반제품) 라벨 자동 출력 호스트.
  *
  * 동작:
  * - 마운트 시 /master/label-templates?category=sg 의 기본 템플릿(없으면 기본 디자인)을 로드.
- * - printByResultNo(resultNo): 해당 생산실적에서 발행된 SG_LABELS를 조회해, 발행분이 있으면
+ * - printByResultNo(resultNo): 해당 생산실적에서 발행된 SFG 라벨(SG_LABELS)을 조회해, 발행분이 있으면
  *   오프스크린 LabelPrintRenderer로 렌더 → PNG 변환 → HANES Print Agent(printAgentPng)로 모달 없이 출력.
  * - 라우팅 ISSUE_LABEL_TYPE 이 SG/BUNDLE 이 아닌 공정은 백엔드에서 SG를 발행하지 않으므로 조회 결과가 비어 자동으로 출력하지 않는다.
  */
@@ -30,7 +30,7 @@ import {
 } from "../../../master/label/types";
 import { LabelPrintRenderer } from "../../../master/label/components/LabelDesignRenderer";
 
-/** 생산실적별 SG 라벨 조회 응답 행(필요 필드만) */
+/** 생산실적별 SFG 라벨 조회 응답 행(필요 필드만) */
 interface SgLabelRow {
   sgBarcode: string;
   itemCode: string;
@@ -56,9 +56,9 @@ export interface SgPrintRow {
 }
 
 export interface SgLabelPrintHandle {
-  /** 생산실적에서 발행된 SG 라벨을 조회해 에이전트로 출력(발행분 없으면 무동작) */
+  /** 생산실적에서 발행된 SFG 라벨을 조회해 에이전트로 출력(발행분 없으면 무동작) */
   printByResultNo: (resultNo: string) => Promise<void>;
-  /** 실적 채번 전 발행된 SG 라벨을 바코드+컨텍스트로 직접 출력(빈 배열이면 무동작) */
+  /** 실적 채번 전 발행된 SFG 라벨을 바코드+컨텍스트로 직접 출력(빈 배열이면 무동작) */
   printBySgBarcodes: (rows: SgPrintRow[]) => Promise<void>;
 }
 
@@ -74,7 +74,7 @@ const SgLabelPrintHost = forwardRef<SgLabelPrintHandle>(function SgLabelPrintHos
   const [design, setDesign] = useState<LabelDesign>(() => createDefaultLabelDesign("sg"));
   const [items, setItems] = useState<PrintItem[]>([]);
 
-  // 기본 SG 라벨 템플릿 로드(없으면 기본 디자인 유지)
+  // 기본 SFG 라벨 템플릿 로드(없으면 기본 디자인 유지)
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -104,20 +104,20 @@ const SgLabelPrintHost = forwardRef<SgLabelPrintHandle>(function SgLabelPrintHos
         const nodes = Array.from(printRef.current?.children ?? [])
           .filter((node): node is HTMLElement => node instanceof HTMLElement);
         if (nodes.length !== printItems.length) {
-          throw new Error(t("kiosk.sgLabel.prepareFailed", "SG 라벨 출력 화면을 준비하지 못했습니다."));
+          throw new Error(t("kiosk.sgLabel.prepareFailed", "SFG 라벨 출력 화면을 준비하지 못했습니다."));
         }
         await printLabelNodesViaAgent(
           nodes.map((node, index) => ({ node, jobId: `SG-${printItems[index].key}` })),
           design.labelWidth,
           design.labelHeight,
         );
-        toast.success(t("kiosk.sgLabel.printSent", "SG 라벨 {{count}}건을 프린터로 전송했습니다.", { count: printItems.length }));
+        toast.success(t("kiosk.sgLabel.printSent", "SFG 라벨 {{count}}건을 프린터로 전송했습니다.", { count: printItems.length }));
       } catch (error: unknown) {
         const message = error instanceof PrintAgentUnavailableError
           ? t("kiosk.sgLabel.agentUnavailable", "라벨 프린트 에이전트에 연결할 수 없습니다. PC에 HANES Print Agent가 설치·실행 중인지 확인한 뒤 다시 시도하세요.")
           : error instanceof Error && error.message
             ? error.message
-            : t("kiosk.sgLabel.printError", "SG 라벨 출력 중 오류가 발생했습니다.");
+            : t("kiosk.sgLabel.printError", "SFG 라벨 출력 중 오류가 발생했습니다.");
         toast.error(message);
       } finally {
         setItems([]);

@@ -332,6 +332,7 @@
     "production.inputAssembly": "실적입력(조립)",
     "production.order": "작업지시관리",
     "production.result": "생산실적조회",
+    "production.orderResult": "작업지시대비실적",
     "production.progress": "작업지시현황조회",
     "production.inputKiosk": "실적입력(가공)",
     "production.inputInspect": "실적입력(단순검사)",
@@ -4254,6 +4255,26 @@
         "defectTotal": "총 불량수량",
         "yieldRate": "전체 양품률"
       }
+    },
+    "orderResult": {
+      "title": "작업지시대비실적",
+      "description": "작업지시 계획수량 대비 실적 유무와 달성률을 조회합니다",
+      "orderNo": "작업지시",
+      "status": "상태",
+      "planDate": "계획일",
+      "line": "라인",
+      "process": "공정",
+      "orderKind": "지시종류",
+      "planQty": "계획수량",
+      "goodQty": "양품수량",
+      "defectQty": "불량수량",
+      "totalQty": "총실적",
+      "remainingQty": "잔량",
+      "achievementRate": "달성률",
+      "defectRate": "불량률",
+      "resultCount": "실적건수",
+      "lastResultAt": "최근실적일",
+      "searchPlaceholder": "작업지시, 품목코드, 품목명 검색..."
     },
     "packResult": {
       "title": "포장실적조회",

@@ -2,8 +2,8 @@
 
 /**
  * @file components/InputSgScanPanel.tsx
- * @description 서브공정 키팅 — 이전 공정 SG 라벨 스캔 패널.
- *   키오스크 공정에서 부착되어 온 SG 라벨을 스캔해 누적하고, BOM(반제품 자식) 오투입을 차단한다.
+ * @description 서브공정 키팅 — 이전 공정 SFG 라벨 스캔 패널.
+ *   키오스크 공정에서 부착되어 온 SFG 라벨을 스캔해 누적하고, BOM(반제품 자식) 오투입을 차단한다.
  *   input-assembly의 SgScanPanel 거울상(완제품 FG가 아니라 반제품 서브를 만든다).
  */
 import type { JSX } from "react";
@@ -69,7 +69,7 @@ export default function InputSgScanPanel({
 
       if (/^FG\d/i.test(trimmed)) {
         toast.error(
-          t("production.subprocess.scanIsFgLabel", "완제품(FG) 바코드입니다. 이전 공정 반제품(SG) 라벨을 스캔하세요."),
+          t("production.subprocess.scanIsFgLabel", "완제품(FG) 바코드입니다. 이전 공정 반제품(SFG) 라벨을 스캔하세요."),
         );
         setScanInput("");
         return;
@@ -83,7 +83,7 @@ export default function InputSgScanPanel({
         const data = res.data?.data as SgLabelInfo;
 
         if (data.remainQty <= 0) {
-          toast.error(t("production.kitting.warnZeroQty", "잔량이 없는 SG 라벨입니다."));
+          toast.error(t("production.kitting.warnZeroQty", "잔량이 없는 SFG 라벨입니다."));
           setScanInput("");
           return;
         }
@@ -91,7 +91,7 @@ export default function InputSgScanPanel({
         const validStatuses = ["IN_STOCK", "MOUNTED"];
         if (!validStatuses.includes(data.status?.toUpperCase())) {
           toast.error(
-            `${t("production.kitting.warnInvalidStatus", "사용할 수 없는 SG 라벨 상태입니다.")} (${data.status})`,
+            `${t("production.kitting.warnInvalidStatus", "사용할 수 없는 SFG 라벨 상태입니다.")} (${data.status})`,
           );
           setScanInput("");
           return;
@@ -113,7 +113,7 @@ export default function InputSgScanPanel({
       } catch (error: unknown) {
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          t("production.subprocess.scanNotFound", "SG 라벨을 찾을 수 없습니다.");
+          t("production.subprocess.scanNotFound", "SFG 라벨을 찾을 수 없습니다.");
         toast.error(message);
         setScanInput("");
       } finally {
@@ -129,14 +129,14 @@ export default function InputSgScanPanel({
       <div className="p-4 flex-shrink-0 border-b border-border">
         <h2 className="font-bold text-text mb-3 flex items-center gap-2">
           <Scan className="w-5 h-5 text-primary" />
-          {t("production.subprocess.inputScanSection", "이전 공정 SG 스캔")}
+          {t("production.subprocess.inputScanSection", "이전 공정 SFG 스캔")}
         </h2>
         <BarcodeScanInput
           ref={scanRef}
           value={scanInput}
           onChange={setScanInput}
           onScan={handleScan}
-          placeholder={t("production.subprocess.inputScanPlaceholder", "이전 공정 SG 바코드 스캔 또는 입력 후 Enter")}
+          placeholder={t("production.subprocess.inputScanPlaceholder", "이전 공정 SFG 바코드 스캔 또는 입력 후 Enter")}
           disabled={!orderNo || loading}
           fullWidth
         />
@@ -154,7 +154,7 @@ export default function InputSgScanPanel({
                 <tr className="text-text-muted text-xs">
                   <th className="px-3 py-2 text-left font-semibold">#</th>
                   <th className="px-3 py-2 text-left font-semibold">
-                    {t("production.kitting.sgBarcode", "SG 바코드")}
+                    {t("production.kitting.sgBarcode", "SFG 바코드")}
                   </th>
                   <th className="px-3 py-2 text-left font-semibold">
                     {t("common.itemCode", "품번")}

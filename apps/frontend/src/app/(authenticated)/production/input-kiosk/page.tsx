@@ -317,7 +317,7 @@ export default function InputKioskPage() {
     setHistoryKey(k => k + 1);
   }, [savedResultCount, firstInspectDone, refreshProgress]);
 
-  // 실적 저장 성공 시: 라우팅 발행공정이면 백엔드가 발행한 SG 라벨을 조회해 Print Agent로 자동 출력.
+  // 실적 저장 성공 시: 라우팅 발행공정이면 백엔드가 발행한 SFG 라벨을 조회해 Print Agent로 자동 출력.
   const sgPrinterRef = useRef<SgLabelPrintHandle>(null);
   const handleResultSaved = useCallback((resultNo: string) => {
     void sgPrinterRef.current?.printByResultNo(resultNo);
@@ -520,7 +520,7 @@ export default function InputKioskPage() {
         />
       )}
 
-      {/* SG(반제품) 라벨 자동 출력 호스트 — 오프스크린 렌더 후 Print Agent 전송 */}
+      {/* SFG(반제품) 라벨 자동 출력 호스트 — 오프스크린 렌더 후 Print Agent 전송 */}
       <SgLabelPrintHost ref={sgPrinterRef} />
     </div>
   );

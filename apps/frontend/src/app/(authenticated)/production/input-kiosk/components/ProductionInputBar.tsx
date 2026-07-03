@@ -20,7 +20,7 @@ import { formatQty, parseQty } from '@/utils/qty';
 
 interface ProductionInputBarProps {
   onSaved: () => void;
-  /** 실적 저장 성공 후 생성된 생산실적번호 전달 — SG 라벨 자동 출력 등 후처리에 사용 */
+  /** 실적 저장 성공 후 생성된 생산실적번호 전달 — SFG 라벨 자동 출력 등 후처리에 사용 */
   onResultSaved?: (resultNo: string) => void;
   /** 준비단계 인터락 모두 완료 여부 — false면 실적입력 비활성화 */
   interlockDone?: boolean;
@@ -132,7 +132,7 @@ export default function ProductionInputBar({
       setDefectQty('');
       onSaved();
 
-      // 발행공정이면 백엔드가 SG_LABELS를 발행한다 → 발행분을 조회해 라벨 출력(발행 없으면 무동작).
+      // 발행공정이면 백엔드가 SFG 라벨(SG_LABELS)을 발행한다 → 발행분을 조회해 라벨 출력(발행 없으면 무동작).
       const savedResultNo = (res?.data?.data?.resultNo ?? '') as string;
       if (savedResultNo) onResultSaved?.(savedResultNo);
     } catch (e: unknown) {

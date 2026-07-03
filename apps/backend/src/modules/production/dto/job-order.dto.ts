@@ -197,6 +197,11 @@ export class JobOrderQueryDto extends PaginationQueryDto {
   @IsString()
   equipCode?: string;
 
+  @ApiPropertyOptional({ description: '작업 할당 가능 설비 필터 (작업지시 설비 미배정 또는 동일 설비)' })
+  @IsOptional()
+  @IsString()
+  assignableEquipCode?: string;
+
   @ApiPropertyOptional({
     description: '상태 필터 (단일 값)',
     enum: [...JOB_ORDER_STATUS_VALUES],

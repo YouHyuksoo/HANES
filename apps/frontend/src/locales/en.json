@@ -331,6 +331,7 @@
     "production.inputAssembly": "Assembly Input",
     "production.order": "Work Order Mgmt",
     "production.result": "Production Result Inquiry",
+    "production.orderResult": "Work Order vs Result",
     "production.progress": "Order Progress Inquiry",
     "production.inputKiosk": "Input (Machining)",
     "production.inputInspect": "Input (Inspect)",
@@ -3840,6 +3841,26 @@
         "defectTotal": "Total Defect Qty",
         "yieldRate": "Overall Yield Rate"
       }
+    },
+    "orderResult": {
+      "title": "Work Order vs Result",
+      "description": "View result existence and achievement rate against work order plan quantity",
+      "orderNo": "Work Order",
+      "status": "Status",
+      "planDate": "Plan Date",
+      "line": "Line",
+      "process": "Process",
+      "orderKind": "Order Kind",
+      "planQty": "Plan Qty",
+      "goodQty": "Good Qty",
+      "defectQty": "Defect Qty",
+      "totalQty": "Total Result",
+      "remainingQty": "Remaining",
+      "achievementRate": "Achievement",
+      "defectRate": "Defect Rate",
+      "resultCount": "Results",
+      "lastResultAt": "Last Result",
+      "searchPlaceholder": "Search work order, part code, part name..."
     },
     "packResult": {
       "title": "Pack Result",

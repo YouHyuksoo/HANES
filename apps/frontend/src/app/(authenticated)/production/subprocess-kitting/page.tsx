@@ -3,10 +3,10 @@
 /**
  * @file production/subprocess-kitting/page.tsx
  * @description 실적입력(서브공정) — 2영역 스캔 키팅.
- *   키오스크 공정에서 부착되어 온 이전 공정 SG 라벨을 스캔해 회로별 새 SG(반제품 서브)를 만든다.
- *   input-assembly의 거울상(완제품 FG가 아니라 한 단계 아래 반제품 SG를 만든다).
- *   흐름: 작업지시·공정·설비·회로 선택 → (좌)설비 자재 장착 + (우)이전 공정 SG 스캔
- *        → "키팅 실행"으로 새 SG 발행+자동출력 → 실물 새 SG 스캔으로 확정.
+ *   키오스크 공정에서 부착되어 온 이전 공정 SFG 라벨을 스캔해 회로별 새 SFG(반제품 서브)를 만든다.
+ *   input-assembly의 거울상(완제품 FG가 아니라 한 단계 아래 반제품 SFG를 만든다).
+ *   흐름: 작업지시·공정·설비·회로 선택 → (좌)설비 자재 장착 + (우)이전 공정 SFG 스캔
+ *        → "키팅 실행"으로 새 SFG 발행+자동출력 → 실물 새 SFG 스캔으로 확정.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -74,6 +74,8 @@ const toJobOrderPick = (jo: JobOrder): JobOrderPick => ({
   processCode: jo.processCode,
 });
 
+const SUBKIT_SELECTED_EQUIP_KEY = "hanes:production:subprocess-kitting:selected-equip";
+
 export default function SubprocessKittingPage() {
   const { t } = useTranslation();
 
@@ -99,6 +101,8 @@ export default function SubprocessKittingPage() {
 
   const orderScanRef = useRef<HTMLInputElement>(null);
   const sgPrinterRef = useRef<SgLabelPrintHandle>(null);
+  const restoredEquipRef = useRef<string | null>(null);
+  const initialRestoreDoneRef = useRef(false);
 
   // 설비 목록 로드(공정 정보 포함) — input-kiosk와 동일 소스
   useEffect(() => {
@@ -157,17 +161,33 @@ export default function SubprocessKittingPage() {
     };
   }, [selectedOrder, t]);
 
-  const selectOrder = useCallback((order: JobOrderPick) => {
+  const persistCurrentJobOrder = useCallback(async (orderNo: string | null, targetEquipCode = equipCode) => {
+    if (!targetEquipCode) return;
+    await api.patch(
+      `/equipment/equips/${encodeURIComponent(targetEquipCode)}/job-order`,
+      { orderNo },
+      { suppressErrorModal: true },
+    );
+  }, [equipCode]);
+
+  const selectOrder = useCallback((order: JobOrderPick, options?: { persist?: boolean }) => {
     setSelectedOrder(order);
     setOrderScan("");
     setSgList([]);
     setIssuedSg(null);
     setCircuitNo("");
-  }, []);
+    if (options?.persist !== false) {
+      void persistCurrentJobOrder(order.orderNo).catch((error: unknown) => {
+        const message =
+          (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          t("production.subprocess.assignOrderFailed", "설비 현재 작업지시 저장에 실패했습니다.");
+        toast.error(message);
+      });
+    }
+  }, [persistCurrentJobOrder, t]);
 
-  // 설비 선택 — 설비가 공정을 결정한다(설비→공정 자동). 작업지시 조회조건이 바뀌므로
-  // 작업지시·회로·스캔을 모두 초기화한다.
-  const handleEquipSelect = useCallback((equip: EquipOption) => {
+  const restoreEquipmentCurrentState = useCallback(async (equip: EquipOption) => {
+    restoredEquipRef.current = equip.equipCode;
     setEquipCode(equip.equipCode);
     setEquipName(equip.equipName);
     setProcessCode(equip.processCode ?? "");
@@ -179,7 +199,48 @@ export default function SubprocessKittingPage() {
     setCircuits([]);
     setSgList([]);
     setIssuedSg(null);
-  }, []);
+    window.localStorage.setItem(SUBKIT_SELECTED_EQUIP_KEY, equip.equipCode);
+
+    try {
+      const equipRes = await api.get(`/equipment/equips/${encodeURIComponent(equip.equipCode)}`);
+      const current = equipRes.data?.data ?? {};
+      const currentJobOrderId = current.currentJobOrderId ?? equip.currentJobOrderId ?? null;
+
+      if (currentJobOrderId) {
+        const orderRes = await api.get(
+          `/production/job-orders/order-no/${encodeURIComponent(currentJobOrderId)}`,
+        );
+        const restored = orderRes.data?.data as JobOrder | null | undefined;
+        if (restored?.orderNo) {
+          if (restored.itemType && restored.itemType !== "SEMI_PRODUCT") {
+            await persistCurrentJobOrder(null, equip.equipCode);
+            setTimeout(() => orderScanRef.current?.focus(), 80);
+            return;
+          }
+          selectOrder(toJobOrderPick(restored), { persist: false });
+          return;
+        }
+      }
+      setTimeout(() => orderScanRef.current?.focus(), 80);
+    } catch {
+      toast.error(t("production.subprocess.restoreError", "설비 현재 작업 상태를 불러오지 못했습니다."));
+      setTimeout(() => orderScanRef.current?.focus(), 80);
+    }
+  }, [persistCurrentJobOrder, selectOrder, t]);
+
+  useEffect(() => {
+    if (initialRestoreDoneRef.current || equips.length === 0) return;
+    initialRestoreDoneRef.current = true;
+    const savedEquipCode = window.localStorage.getItem(SUBKIT_SELECTED_EQUIP_KEY);
+    if (!savedEquipCode) return;
+    const savedEquip = equips.find((equip) => equip.equipCode === savedEquipCode);
+    if (savedEquip) void restoreEquipmentCurrentState(savedEquip);
+  }, [equips, restoreEquipmentCurrentState]);
+
+  // 설비 선택 — 설비가 공정을 결정한다(설비→공정 자동). 저장된 설비 현재 작업지시가 있으면 함께 복원한다.
+  const handleEquipSelect = useCallback((equip: EquipOption) => {
+    void restoreEquipmentCurrentState(equip);
+  }, [restoreEquipmentCurrentState]);
 
   const fetchOrderByNo = useCallback(
     async (no: string) => {
@@ -199,7 +260,7 @@ export default function SubprocessKittingPage() {
             limit: 20,
             search: trimmed,
             statuses: "WAITING,RUNNING",
-            equipCode,
+            assignableEquipCode: equipCode,
             itemType: "SEMI_PRODUCT",
             orderKind: "OPERATION",
             ...(processCode ? { processCode } : {}),
@@ -227,10 +288,14 @@ export default function SubprocessKittingPage() {
     setCircuitNo("");
     setSgList([]);
     setIssuedSg(null);
+    void persistCurrentJobOrder(null).catch(() => {
+      toast.error(t("production.subprocess.clearOrderFailed", "설비 현재 작업지시 해제에 실패했습니다."));
+    });
     setTimeout(() => orderScanRef.current?.focus(), 50);
   };
 
   const resetAll = () => {
+    const prevEquipCode = equipCode;
     setSelectedOrder(null);
     setOrderScan("");
     setProcessCode("");
@@ -242,6 +307,12 @@ export default function SubprocessKittingPage() {
     setCircuits([]);
     setSgList([]);
     setIssuedSg(null);
+    window.localStorage.removeItem(SUBKIT_SELECTED_EQUIP_KEY);
+    if (prevEquipCode) {
+      void persistCurrentJobOrder(null, prevEquipCode).catch(() => {
+        toast.error(t("production.subprocess.clearOrderFailed", "설비 현재 작업지시 해제에 실패했습니다."));
+      });
+    }
     setTimeout(() => orderScanRef.current?.focus(), 50);
   };
 
@@ -270,7 +341,7 @@ export default function SubprocessKittingPage() {
       return;
     }
     if (sgList.length === 0) {
-      toast.error(t("production.inputAssembly.requireScan", "SG 라벨을 스캔하세요."));
+      toast.error(t("production.inputAssembly.requireScan", "SFG 라벨을 스캔하세요."));
       return;
     }
     if (circuits.length > 0 && !circuitNo) {
@@ -290,7 +361,7 @@ export default function SubprocessKittingPage() {
       const data = res.data?.data as { sgBarcode: string };
       setIssuedSg(data.sgBarcode);
       toast.success(
-        t("production.subprocess.issueSuccess", "SG 라벨이 발행되었습니다. 실물 라벨을 스캔하세요."),
+        t("production.subprocess.issueSuccess", "SFG 라벨이 발행되었습니다. 실물 라벨을 스캔하세요."),
       );
 
       // 발행 즉시 키오스크와 동일하게 Print Agent로 자동 출력(실적 채번 전이므로 바코드 직접 전달).
@@ -306,7 +377,7 @@ export default function SubprocessKittingPage() {
     } catch (error: unknown) {
       const message =
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        t("production.subprocess.issueFailed", "SG 라벨 발행에 실패했습니다.");
+        t("production.subprocess.issueFailed", "SFG 라벨 발행에 실패했습니다.");
       toast.error(message);
     } finally {
       setIssuing(false);
@@ -367,7 +438,7 @@ export default function SubprocessKittingPage() {
           <p className="text-text-muted mt-1">
             {t(
               "production.subprocess.scanDescription",
-              "이전 공정 SG 라벨을 스캔하여 회로별 반제품 서브를 만듭니다.",
+              "이전 공정 SFG 라벨을 스캔하여 회로별 반제품 서브를 만듭니다.",
             )}
           </p>
         </div>
@@ -484,10 +555,16 @@ export default function SubprocessKittingPage() {
         </CardContent>
       </Card>
 
-      {/* 본문 3영역 — input-kiosk 스타일: 좌(설비 자재 장착) | 중앙(작업지도서) | 우(이전 공정 SG 스캔).
+      {/* 본문 3영역 — input-kiosk 스타일: 좌(설비 자재 장착) | 중앙(작업지도서) | 우(이전 공정 SFG 스캔).
           좌·우는 고정폭으로 축소하고 중앙 작업지도서를 넓게 둔다. */}
       <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)_340px] gap-3 flex-1 min-h-0">
-        <EquipMaterialMountPanel equipCode={equipCode} />
+        <EquipMaterialMountPanel
+          equipCode={equipCode}
+          orderNo={selectedOrder?.orderNo}
+          itemCode={selectedOrder?.itemCode}
+          expectedItemTypes={["RAW_MATERIAL"]}
+          autoFocusKey={selectedOrder?.orderNo}
+        />
         {/* 중앙: 작업지도서 — 선택된 작업지시 품목 + 공정 기준 조회 */}
         <div className="flex flex-col h-full min-h-0 overflow-hidden rounded border border-border bg-card">
           <WorkInstructionView
@@ -540,7 +617,7 @@ export default function SubprocessKittingPage() {
         onSelect={handleEquipSelect}
       />
 
-      {/* SG(반제품) 라벨 자동 출력 호스트 — 키오스크와 동일, 오프스크린 렌더 후 Print Agent 전송 */}
+      {/* SFG(반제품) 라벨 자동 출력 호스트 — 키오스크와 동일, 오프스크린 렌더 후 Print Agent 전송 */}
       <SgLabelPrintHost ref={sgPrinterRef} />
     </div>
   );
