@@ -452,6 +452,8 @@
     "play": "播放",
     "openMenu": "打开菜单",
     "searchPlaceholder": "搜索 (Ctrl+K)",
+    "searchNoResults": "未找到结果",
+    "searchResultsLabel": "菜单搜索结果",
     "switchToLight": "切换到亮色模式",
     "switchToDark": "切换到暗色模式",
     "colorTheme": "切换颜色主题",

@@ -452,6 +452,8 @@
     "play": "Phát",
     "openMenu": "Mở menu",
     "searchPlaceholder": "Tìm kiếm (Ctrl+K)",
+    "searchNoResults": "Không tìm thấy kết quả",
+    "searchResultsLabel": "Kết quả tìm kiếm menu",
     "switchToLight": "Chuyển sang chế độ sáng",
     "switchToDark": "Chuyển sang chế độ tối",
     "colorTheme": "Chuyển đổi chủ đề màu",

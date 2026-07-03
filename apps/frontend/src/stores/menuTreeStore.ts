@@ -58,6 +58,7 @@ export const useMenuTreeStore = create<MenuTreeStore>()(
       error: null,
 
       load: async () => {
+        if (get().loading) return;
         set({ loading: true, error: null });
         try {
           const tree: CategoryTreeNode[] = await menuCategoriesApi.tree();

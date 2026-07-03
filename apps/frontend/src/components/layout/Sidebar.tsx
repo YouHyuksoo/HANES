@@ -9,25 +9,13 @@
  * 3. __ROOT__ 카테고리의 자식은 평탄화하여 사이드바 최상위에 표시 (DASHBOARD/WORKFLOW)
  * 4. 권한 필터링 로직(allowedMenus + 부모-자식 합)은 그대로 유지
  */
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import {
-  Folder, LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck,
-  Database, FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog,
-  ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler, GitBranch,
-  BookOpen,
-} from "lucide-react";
-import { menuConfig, type MenuConfigItem } from "@/config/menuConfig";
-import { useAuthStore } from "@/stores/authStore";
-import { useMenuTreeStore } from "@/stores/menuTreeStore";
+import { BookOpen } from "lucide-react";
+import { type MenuConfigItem } from "@/config/menuConfig";
+import { useMenuTree } from "@/hooks/useMenuTree";
 import SidebarMenu from "./SidebarMenu";
-
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck,
-  Database, FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog,
-  ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler, GitBranch,
-};
 
 const HELP_MENU_PATH = "/help";
 const HELP_MENU_ITEM: MenuConfigItem = {
@@ -36,18 +24,6 @@ const HELP_MENU_ITEM: MenuConfigItem = {
   path: HELP_MENU_PATH,
   icon: BookOpen,
 };
-
-function excludeHelpMenuItems(items: MenuConfigItem[]): MenuConfigItem[] {
-  return items.flatMap((item) => {
-    if (item.path === HELP_MENU_PATH) return [];
-    if (!item.children) return [item];
-
-    const children = excludeHelpMenuItems(item.children);
-    if (children.length === 0) return [];
-
-    return [{ ...item, children }];
-  });
-}
 
 interface SidebarProps {
   isOpen: boolean;
@@ -59,53 +35,8 @@ interface SidebarProps {
 function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
   const { t } = useTranslation();
   const pathname = usePathname();
-  const { user, allowedMenus } = useAuthStore();
-  const groups = useMenuTreeStore((s) => s.groups);
-  const loadTree = useMenuTreeStore((s) => s.load);
+  const { items, isMenuDisabled } = useMenuTree();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["DASHBOARD"]);
-  const isAdmin = user?.role === "ADMIN";
-
-  // 마운트 시 항상 DB에서 갱신 (persist로 캐시된 값이 있어도 최신화)
-  // 레이아웃 컴포넌트는 클라이언트 내비게이션 시 재마운트되지 않으므로 호출 1회
-  useEffect(() => {
-    loadTree();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  /** DB 머지된 트리를 SidebarMenu가 받는 MenuConfigItem 형식으로 변환. groups가 null이면 코드 menuConfig 사용. */
-  const items: MenuConfigItem[] = useMemo(() => {
-    if (!groups) return excludeHelpMenuItems(menuConfig);
-    const leafLookup = new Map<string, MenuConfigItem>();
-    const walk = (arr: MenuConfigItem[]) => {
-      for (const x of arr) {
-        if (x.path) leafLookup.set(x.code, x);
-        if (x.children) walk(x.children);
-      }
-    };
-    walk(menuConfig);
-
-    const result: MenuConfigItem[] = [];
-    for (const g of groups) {
-      const childrenLeaf = g.children
-        .map((c) => leafLookup.get(c.code))
-        .filter((x): x is MenuConfigItem => !!x);
-
-      if (g.categoryCode === '__ROOT__') {
-        // 단독 메뉴 — 평탄화하여 최상위에 배치
-        for (const leaf of childrenLeaf) {
-          result.push(leaf);
-        }
-        continue;
-      }
-      result.push({
-        code: g.categoryCode,
-        labelKey: g.labelKey,
-        icon: ICON_MAP[g.iconName || ''] ?? Folder,
-        children: childrenLeaf,
-      });
-    }
-    return excludeHelpMenuItems(result);
-  }, [groups]);
 
   const toggleMenu = (menuCode: string) => {
     if (collapsed) return;
@@ -118,15 +49,6 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
     if (item.path) return pathname === item.path;
     return item.children?.some((child) => pathname === child.path);
   };
-
-  const isMenuDisabled = useCallback(
-    (item: MenuConfigItem): boolean => {
-      if (isAdmin) return false;
-      if (item.children) return !item.children.some((child) => allowedMenus.includes(child.code));
-      return !allowedMenus.includes(item.code);
-    },
-    [isAdmin, allowedMenus],
-  );
 
   const sidebarWidth = collapsed ? "var(--sidebar-collapsed-width)" : "var(--sidebar-width)";
 

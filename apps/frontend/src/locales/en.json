@@ -452,6 +452,8 @@
     "play": "Play",
     "openMenu": "Open menu",
     "searchPlaceholder": "Search (Ctrl+K)",
+    "searchNoResults": "No results found",
+    "searchResultsLabel": "Menu search results",
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode",
     "colorTheme": "Toggle color theme",

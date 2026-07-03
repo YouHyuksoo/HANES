@@ -452,6 +452,8 @@
     "play": "재생",
     "openMenu": "메뉴 열기",
     "searchPlaceholder": "검색 (Ctrl+K)",
+    "searchNoResults": "검색 결과가 없습니다",
+    "searchResultsLabel": "메뉴 검색 결과",
     "switchToLight": "라이트 모드로 전환",
     "switchToDark": "다크 모드로 전환",
     "colorTheme": "컬러 테마 전환",

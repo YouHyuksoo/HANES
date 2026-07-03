@@ -12,19 +12,19 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { Sun, Moon, Search, User, LogOut, Settings, Menu, PanelLeftClose, PanelLeftOpen, Building, BadgeCheck, Building2, Mail, Palette, Database } from "lucide-react";
+import { Sun, Moon, User, LogOut, Settings, Menu, PanelLeftClose, PanelLeftOpen, Building, BadgeCheck, Building2, Mail, Palette, Database } from "lucide-react";
 // 스케줄러 알림 벨 임시 비활성화 (재활성화 시 주석 해제)
 // import NotificationBell from "@/components/shared/NotificationBell";
 import api from "@/services/api";
 import { useTheme } from "@/hooks/useTheme";
 import { useThemeStore, type ColorTheme } from "@/stores/themeStore";
 import { useAuthStore } from "@/stores/authStore";
-import Input from "@/components/ui/Input";
 import Modal from "@/components/ui/Modal";
 import LanguageSwitcher from "./LanguageSwitcher";
 import SerialIndicator from "./SerialIndicator";
 import PrintAgentIndicator from "./PrintAgentIndicator";
 import HelpButton from "@/components/help/HelpButton";
+import HeaderMenuSearch from "./HeaderMenuSearch";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -140,12 +140,7 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
 
       {/* Center Section - Search */}
       <div className="hidden md:flex flex-1 max-w-md mx-8">
-        <Input
-          placeholder={t('header.searchPlaceholder')}
-          leftIcon={<Search className="w-4 h-4" />}
-          fullWidth
-          className="bg-background"
-        />
+        <HeaderMenuSearch />
       </div>
 
       {/* Right Section - Actions */}
