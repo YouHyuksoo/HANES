@@ -58,6 +58,7 @@ __pycache__/
 db_backups/
 db_dumps/
 apps/backend/data/ai-knowledge/*.sqlite*
+apps/backend/data/ai-knowledge/*.jsonl
 
 # Misc
 *.tsbuildinfo

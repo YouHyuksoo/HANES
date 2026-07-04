@@ -3,6 +3,8 @@
  * @description 질의이해→RRF→그래프확장→리랭크 파이프라인 단위 테스트 (LLM/검색 mock)
  */
 jest.mock('@mistralai/mistralai', () => ({ Mistral: jest.fn() }));
+// appendTrace가 테스트 실행 중 실제 트레이스 파일을 쓰지 않도록 차단한다.
+jest.mock('fs/promises', () => ({ appendFile: jest.fn().mockResolvedValue(undefined) }));
 
 import { KnowledgePipelineService } from './knowledge-pipeline.service';
 
