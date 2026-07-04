@@ -23,3 +23,14 @@ test("HelpPanel has user/operator tabs and full-help link", () => {
 test("HelpPanel shows fallback when notFound", () => {
   assert.match(panel, /notFound/);
 });
+
+test("HelpPanel opens with double-width default panel", () => {
+  assert.match(panel, /useState\(896\)/);
+});
+
+test("HelpPanel provides in-panel document search controls", () => {
+  assert.match(panel, /searchQuery/);
+  assert.match(panel, /help\.searchInCurrentDoc/);
+  assert.match(panel, /data-help-search-match/);
+  assert.match(panel, /scrollIntoView/);
+});

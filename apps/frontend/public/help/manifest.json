@@ -124,6 +124,17 @@
       ]
     },
     {
+      "key": "system",
+      "title": "시스템관리",
+      "items": [
+        {
+          "menuCode": "SYS_CONFIG",
+          "title": "환경설정",
+          "path": "/system/config"
+        }
+      ]
+    },
+    {
       "key": "material",
       "title": "자재수불관리",
       "items": [
