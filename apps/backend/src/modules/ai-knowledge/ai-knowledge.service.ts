@@ -7,7 +7,7 @@ import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
 import * as path from 'path';
 import { EmbeddingService } from './embedding.service';
-import { KnowledgeChunk, chunkMarkdown } from './markdown-chunker';
+import { KnowledgeChunk, chunkMarkdown, withContextHeader } from './markdown-chunker';
 import { WorkflowDoc, parseWorkflowDoc } from './workflow-parser';
 
 type DatabaseInstance = any;
@@ -263,7 +263,10 @@ export class AiKnowledgeService implements OnModuleInit {
       if (parsed) workflowDocs.push(parsed);
       workflowErrors.push(...errors);
     }
-    const chunks = documents.flatMap((doc) => chunkMarkdown(doc));
+    const chunks = documents.flatMap((doc) => chunkMarkdown(doc)).map((chunk) => {
+      const header = this.buildContextHeader(chunk, workflowDocs);
+      return header ? withContextHeader(chunk, header) : chunk;
+    });
     const helpMenuCodes = new Set(chunks.filter((c) => c.docType === 'help' && c.menuCode).map((c) => c.menuCode as string));
     for (const wf of workflowDocs) {
       for (const step of wf.steps) {
@@ -285,8 +288,8 @@ export class AiKnowledgeService implements OnModuleInit {
       const insertChunk = db.prepare(`
         INSERT INTO ai_knowledge_chunks(
           chunk_id, doc_type, source_path, source_hash, language, menu_code, audience, title, heading, summary,
-          keywords_json, related_json, content, token_estimate, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          keywords_json, related_json, content, token_estimate, context_header, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
       const insertFts = db.prepare(`INSERT INTO ai_knowledge_fts(chunk_id, title, heading, summary, keywords, content) VALUES (?, ?, ?, ?, ?, ?)`);
       const insertVec = this.vectorEnabled ? db.prepare(`INSERT INTO ai_knowledge_vec(chunk_id, embedding) VALUES (?, ?)`) : null;
@@ -311,9 +314,17 @@ export class AiKnowledgeService implements OnModuleInit {
           JSON.stringify(chunk.related),
           chunk.content,
           chunk.tokenEstimate,
+          chunk.contextHeader ?? null,
           now,
         );
-        insertFts.run(chunk.chunkId, chunk.title ?? '', chunk.heading ?? '', chunk.summary ?? '', chunk.keywords.join(' '), chunk.content);
+        insertFts.run(
+          chunk.chunkId,
+          chunk.title ?? '',
+          chunk.heading ?? '',
+          [chunk.summary ?? '', chunk.contextHeader ?? ''].filter(Boolean).join('\n'),
+          chunk.keywords.join(' '),
+          chunk.content,
+        );
         if (insertVec) insertVec.run(chunk.chunkId, embeddings[index]);
         upsertEmbedding.run(chunk.chunkId, cfg.provider, cfg.model, cfg.dims, JSON.stringify(Array.from(embeddings[index])), now);
       });
@@ -343,6 +354,29 @@ export class AiKnowledgeService implements OnModuleInit {
       workflowWarnings,
       graphEdges,
     };
+  }
+
+  /** 규칙 기반 맥락 헤더. 워크플로우 그래프와 frontmatter만 사용한다 (LLM 불필요). */
+  private buildContextHeader(chunk: KnowledgeChunk, workflowDocs: WorkflowDoc[]): string {
+    const parts: string[] = [];
+    if (chunk.docType === 'workflow') {
+      const wf = workflowDocs.find((doc) => doc.sourcePath === chunk.sourcePath);
+      parts.push(`워크플로우 정의: ${wf?.title ?? chunk.title ?? ''}${wf ? ` (${wf.workflowId}, ${wf.steps.length}단계)` : ''}`);
+    } else {
+      const audienceLabel = chunk.audience === 'operator' ? '운영자 도움말' : chunk.audience === 'user' ? '사용자 도움말' : chunk.docType;
+      parts.push(`${chunk.title ?? ''}${chunk.menuCode ? `(${chunk.menuCode})` : ''} ${audienceLabel}`.trim());
+      if (chunk.menuCode) {
+        for (const wf of workflowDocs) {
+          const index = wf.steps.findIndex((step) => step.menu === chunk.menuCode);
+          if (index === -1) continue;
+          const prev = index > 0 ? wf.steps[index - 1].menu : null;
+          const next = index < wf.steps.length - 1 ? wf.steps[index + 1].menu : null;
+          parts.push(`${wf.title} ${index + 1}/${wf.steps.length}단계${prev ? ` | 선행: ${prev}` : ''}${next ? ` | 후행: ${next}` : ''}`);
+        }
+      }
+    }
+    const joined = parts.filter(Boolean).join(' | ');
+    return joined ? `[${joined}]` : '';
   }
 
   /** workflows 문서에서 그래프/단계/트러블슈팅 테이블을 전량 재구축한다. */
@@ -693,7 +727,9 @@ export class AiKnowledgeService implements OnModuleInit {
   }
 
   private embeddingText(chunk: KnowledgeChunk): string {
-    return [chunk.title, chunk.heading, chunk.summary, chunk.keywords.join(' '), chunk.content].filter(Boolean).join('\n');
+    return [chunk.contextHeader, chunk.title, chunk.heading, chunk.summary, chunk.keywords.join(' '), chunk.content]
+      .filter(Boolean)
+      .join('\n');
   }
 
   private toFtsQuery(query: string): string {

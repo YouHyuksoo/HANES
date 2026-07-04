@@ -27,6 +27,8 @@ export interface KnowledgeChunk {
   related: string[];
   content: string;
   tokenEstimate: number;
+  /** 검색(임베딩/FTS) 입력에만 붙는 문서/워크플로우 맥락 헤더. 표시용 content에는 포함하지 않는다. */
+  contextHeader?: string;
 }
 
 interface FrontMatter {
@@ -168,4 +170,17 @@ export function chunkMarkdown({ sourcePath, docType, language = 'ko', raw }: Kno
     });
   }
   return chunks;
+}
+
+/**
+ * 청크에 맥락 헤더를 설정하고 chunkId 해시 suffix를 재계산한다.
+ * 헤더가 바뀌면(워크플로우 문서 수정 등) chunkId가 바뀌어 임베딩 캐시가 자연 무효화된다.
+ */
+export function withContextHeader(chunk: KnowledgeChunk, header: string): KnowledgeChunk {
+  const idBase = chunk.chunkId.split(':').slice(0, -1).join(':');
+  return {
+    ...chunk,
+    contextHeader: header,
+    chunkId: `${idBase}:${sha256(`${header}\n${chunk.content}`).slice(0, 10)}`,
+  };
 }
