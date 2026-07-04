@@ -622,7 +622,7 @@ export default function AiEmbeddingPanel() {
               <CompactMetric label="Embedding Rows" value={status?.embeddingRows} />
               <CompactMetric label="FTS Rows" value={status?.ftsRows} />
             </div>
-            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+            <div className="mt-1.5 grid grid-cols-1 gap-1.5">
               <PathRow label="환경변수" value={status?.envKey ?? "AI_KNOWLEDGE_DB_PATH"} />
               <PathRow label="설정값" value={status?.configuredDbPath || "미설정 — 서버 기본 경로 사용"} />
               <PathRow label="파일명" value={status?.dbFileName ?? "-"} />
