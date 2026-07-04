@@ -30,6 +30,7 @@ function makeService(overrides: { complete?: jest.Mock; knowledge?: Record<strin
     getMenuOverviewChunks: jest.fn().mockReturnValue([]),
     getWorkflowDocChunks: jest.fn().mockReturnValue([]),
     getBusinessLogicChunks: jest.fn().mockReturnValue([]),
+    getMenuCatalog: jest.fn().mockReturnValue([]),
     searchTroubleshooting: jest.fn().mockReturnValue([]),
     formatContext: jest.fn((chunks: unknown[]) => (chunks as Array<{ chunkId: string }>).map((c, i) => `[${i + 1}] ${c.chunkId}`).join('\n')),
     ...overrides.knowledge,

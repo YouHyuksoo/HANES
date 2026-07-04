@@ -30,8 +30,8 @@ interface QueryUnderstanding {
 const UNDERSTAND_PROMPT = `당신은 MES 도움말 검색을 위한 질의 분석기입니다. 사용자 질문을 분석해 JSON만 출력하세요.
 {"intent":"usage|workflow|troubleshoot|engineer","queries":["검색질의1","검색질의2"],"menus":["언급된 메뉴코드"]}
 - intent: usage=단일 화면 사용법, workflow=업무 흐름/전후관계("다음에 뭐", "전에 뭘"), troubleshoot=안 됨/오류/원인, engineer=테이블/API/로직 구조.
-- queries: 검색에 유리하게 재작성한 한국어 질의 1~3개. 동의어/업무용어를 반영하되 질문의 의미를 바꾸지 마세요.
-- menus: 질문에 명시된 화면/메뉴가 있으면 메뉴코드 추정값(모르면 빈 배열).
+- queries: 검색에 유리하게 재작성한 한국어 질의 1~3개. 아래 메뉴 사전의 공식 화면명(예: "박스입고"→"제품입고")을 반영하되 질문의 의미를 바꾸지 마세요.
+- menus: 질문이 가리키는 화면을 아래 메뉴 사전에서 골라 메뉴코드로 반환(최대 3개). 사전에 없는 코드를 지어내지 마세요. 확신 없으면 빈 배열.
 JSON 외 다른 텍스트 금지.`;
 
 const RERANK_PROMPT = `당신은 검색 결과 리랭커입니다. 질문과 후보 문서 목록을 보고, 질문에 답하는 데 유용한 순서로 후보 번호를 JSON 배열로만 출력하세요. 관련 없는 후보는 제외하세요. 예: [3,1,5]`;
@@ -108,8 +108,18 @@ export class KnowledgePipelineService {
   private async understand(userMessage: string): Promise<QueryUnderstanding> {
     const fallback: QueryUnderstanding = { intent: 'usage', queries: [userMessage], menus: [] };
     try {
+      // 메뉴 사전을 주입해 사용자 용어("박스입고")를 공식 메뉴코드(PROD_RECEIVE)로 매핑할 수 있게 한다.
+      let vocab = '';
+      try {
+        const catalog = this.knowledge.getMenuCatalog();
+        if (catalog.length > 0) {
+          vocab = `\n\n## 메뉴 사전 (menuCode=화면명)\n${catalog.map((item) => `${item.menuCode}=${item.title}`).join('\n')}`;
+        }
+      } catch (error: unknown) {
+        this.logger.warn(`메뉴 사전 조회 실패(사전 없이 진행): ${error instanceof Error ? error.message : String(error)}`);
+      }
       const res = await this.aiService.complete([
-        { role: 'system', content: UNDERSTAND_PROMPT },
+        { role: 'system', content: `${UNDERSTAND_PROMPT}${vocab}` },
         { role: 'user', content: userMessage },
       ]);
       const start = res.indexOf('{');

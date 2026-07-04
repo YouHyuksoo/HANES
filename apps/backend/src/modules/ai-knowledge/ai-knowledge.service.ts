@@ -494,6 +494,20 @@ export class AiKnowledgeService implements OnModuleInit {
     return rows.map((row) => ({ ...row, score: 0 }));
   }
 
+  /** 도움말 인덱스의 메뉴코드-제목 사전 — 질의이해 LLM이 사용자 용어를 메뉴코드로 매핑할 때 사용. */
+  getMenuCatalog(limit = 400): Array<{ menuCode: string; title: string }> {
+    const db = this.db!;
+    const rows = db.prepare(`
+      SELECT menu_code AS menuCode, MIN(title) AS title
+      FROM ai_knowledge_chunks
+      WHERE doc_type = 'help' AND menu_code IS NOT NULL AND title IS NOT NULL
+      GROUP BY menu_code
+      ORDER BY menu_code
+      LIMIT ?
+    `).all(limit) as Array<{ menuCode: string; title: string }>;
+    return rows;
+  }
+
   /** 메뉴들의 business-logics 청크를 반환한다 — engineer 의도 강제 포함용. */
   getBusinessLogicChunks(menuCodes: string[], limit: number): KnowledgeSearchResult[] {
     if (menuCodes.length === 0) return [];
