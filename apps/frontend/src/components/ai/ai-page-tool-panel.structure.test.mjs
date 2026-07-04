@@ -28,6 +28,35 @@ test('AI chat panel has chat tools and log tabs', () => {
   assert.match(source, /openToolsTab/);
 });
 
+test('AI chat panel lets users choose a persona for questions', () => {
+  const source = read('apps/frontend/src/components/ai/AiChatPanel.tsx');
+  assert.match(source, /AI_PERSONAS/);
+  assert.match(source, /setPersona/);
+  assert.match(source, /일반사용자/);
+  assert.match(source, /운영관리자/);
+  assert.match(source, /시스템엔지니어/);
+  assert.match(source, /persona/);
+});
+
+test('AI persona selector explains answer style on hover', () => {
+  const source = read('apps/frontend/src/components/ai/AiChatPanel.tsx');
+  assert.match(source, /description/);
+  assert.match(source, /group-hover:opacity-100/);
+  assert.match(source, /group-focus-within:opacity-100/);
+  assert.match(source, /사용자 도움말/);
+  assert.match(source, /운영 절차/);
+  assert.match(source, /API/);
+});
+
+test('AI chat store persists conversation history and persona', () => {
+  const source = read('apps/frontend/src/stores/aiChatStore.ts');
+  assert.match(source, /persist/);
+  assert.match(source, /hanes\.aiChat\.v1/);
+  assert.match(source, /messages/);
+  assert.match(source, /persona/);
+  assert.match(source, /setPersona/);
+});
+
 test('page AI tools hook registers manifest and frontend executors', () => {
   const source = read('apps/frontend/src/ai-page-tools/usePageAiTools.ts');
   assert.match(source, /\/ai\/page-tools\/\$\{pageId\}/);

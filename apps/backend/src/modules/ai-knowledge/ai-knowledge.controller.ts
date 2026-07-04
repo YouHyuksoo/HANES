@@ -3,7 +3,7 @@
  * @description AI 문서 RAG 인덱스 관리/검색 API.
  */
 import { Body, Controller, Get, Post } from '@nestjs/common';
-import { IsArray, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsArray, IsIn, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { AiKnowledgeService, KnowledgeSearchContext } from './ai-knowledge.service';
 
 class KnowledgeSearchDto implements KnowledgeSearchContext {
@@ -21,6 +21,14 @@ class KnowledgeSearchDto implements KnowledgeSearchContext {
   @IsOptional()
   @IsString()
   language?: string;
+
+  @IsOptional()
+  @IsString()
+  audience?: string;
+
+  @IsOptional()
+  @IsIn(['user', 'operator', 'engineer'])
+  persona?: string;
 
   @IsOptional()
   @IsNumber()

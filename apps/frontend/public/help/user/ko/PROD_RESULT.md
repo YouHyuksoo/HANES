@@ -5,7 +5,7 @@ title: 생산실적
 summary: 작업지시별 생산실적을 조회하고 수정, 취소, 삭제를 수행합니다.
 tags: [생산관리, 생산, HANES]
 keywords: [생산실적, PROD_RESULT, 생산실적, 작업지시, 재고, 추적성]
-related: [PROD_ORDER, PROD_RESULT]
+related: [PROD_ORDER, PROD_INPUT_KIOSK, PROD_RESULT_SUMMARY]
 ---
 
 # 생산실적

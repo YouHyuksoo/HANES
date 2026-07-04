@@ -80,14 +80,25 @@ const SQL_GEN_PROMPT = `당신은 Oracle SQL 생성 AI입니다.
 
 const ANALYSIS_PROMPT = `당신은 HANES MES 데이터 분석 AI입니다. 한국어 마크다운으로 답합니다.
 규칙:
-- 핵심 요약을 먼저, 데이터는 마크다운 표로 정리하세요.
-- 결과가 0건이면 "조회 결과가 없습니다"라고만 답하고 표를 만들지 마세요(환각 금지).
+- 반드시 실행 SQL 결과(JSON)와 참고 문서에 있는 내용만 사용하세요. 모델이 학습한 일반 지식으로 절차, 규칙, 원인, API, 상태값을 보태지 마세요.
+- 결과와 참고 문서에 없는 내용은 "제공된 출처에서는 확인되지 않습니다"라고 답하세요.
+- 질문에 바로 답한 뒤, 조회 조건과 확인한 데이터를 기준으로 설명하세요.
+- 결과가 있으면 핵심 요약, 조회 조건, 확인한 데이터, 판단 근거, 추가 확인 순서로 정리하세요.
+- 데이터는 필요한 경우 마크다운 표로 정리하되, 표만 던지지 말고 사용자가 어떻게 해석해야 하는지 설명하세요.
+- 결과가 0건이면 "조회 결과가 없습니다"라고 답하고, 확인한 조회 조건과 사용자가 다시 확인할 만한 조건을 짧게 덧붙이세요.
 - 결과에 없는 데이터를 지어내지 마세요.`;
 
 const GENERAL_PROMPT =
-  '당신은 HANES MES(제조실행시스템) 운영을 돕는 AI 비서입니다. 한국어로 간결하고 정확하게 답합니다. ' +
+  '당신은 HANES MES(제조실행시스템) 운영을 돕는 AI 비서입니다. 한국어로 정확하고 실무자가 바로 판단할 수 있게 답합니다. ' +
+  '반드시 제공된 도움말/문서 출처에 있는 내용만 사용하세요. 출처에 없는 절차, 규칙, API, 상태값, 원인을 모델 지식으로 보태면 안 됩니다. ' +
+  '출처에서 확인되지 않는 내용은 "제공된 출처에서는 확인되지 않습니다"라고 답하세요. ' +
+  '질문에 바로 답한 뒤, 필요한 경우 확인한 근거, 업무 영향, 다음 확인 항목을 함께 제시하세요. ' +
+  '단순한 한 줄 답변으로 끝내지 말고 어떤 기준으로 판단했는지 설명하세요. ' +
   '회사·거래처·인물·품목·생산·재고 등 MES에 있을 법한 정보는 학습된 일반 지식으로 추측해 답하지 마세요. ' +
   'MES 데이터로 확인이 필요한 질문이면 "MES 데이터에서 확인이 필요합니다"라고 안내하세요.';
+
+const NO_KNOWLEDGE_RESPONSE =
+  '도움말/문서 출처를 찾지 못했습니다. 현재 설정에서는 출처 없는 LLM 일반지식 답변을 생성하지 않습니다. 관련 도움말을 추가하거나 임베딩 재생성을 실행한 뒤 다시 질문해 주세요.';
 
 const PAGE_WORKFLOW_KEYWORDS = [
   '등록',
@@ -144,7 +155,7 @@ export class AiSqlService {
       this.logger.warn(`AI 지식 검색 실패: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    const result = await this.processWithKnowledge(userMessage, messages, pageToolContext, knowledgePrompt);
+    const result = await this.processWithKnowledge(userMessage, messages, pageToolContext, knowledgePrompt, knowledgeContext);
     return this.withSources(result, knowledgeChunks);
   }
 
@@ -171,6 +182,7 @@ export class AiSqlService {
     messages: AiChatMessageDto[],
     pageToolContext: AiPageToolContextDto | undefined,
     knowledgePrompt: string,
+    knowledgeContext?: AiKnowledgeContextDto,
   ): Promise<AiSqlResult> {
     if (pageToolContext && this.looksLikePageWorkflowRequest(userMessage)) {
       // 등록/처리 요청 → 페이지의 write 도구로 매핑(있으면 승인 카드로 제안)
@@ -182,18 +194,18 @@ export class AiSqlService {
           requiresApproval: true,
         };
       }
-      return this.generalChat(messages, pageToolContext, knowledgePrompt);
+      return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext);
     }
 
     // [1단계] 관련 테이블 선택 (없으면 일반 대화)
     const tables = await this.selectTables(userMessage);
-    if (tables.length === 0) return this.generalChat(messages, pageToolContext, knowledgePrompt);
+    if (tables.length === 0) return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext);
 
     // [2단계] SQL 생성 (스키마 + 카탈로그 관계(JOIN 키) 주입)
     const schemaText = await this.schemaInfo.getSchemaText(tables);
     const relations = await this.catalog.getRelationsText(tables);
     const rawSql = await this.generateSql(userMessage, relations ? `${schemaText}\n\n${relations}` : schemaText);
-    if (!rawSql) return this.generalChat(messages, pageToolContext, knowledgePrompt);
+    if (!rawSql) return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext);
 
     // [검증]
     const v = this.validator.validate(rawSql);
@@ -214,7 +226,7 @@ export class AiSqlService {
     // 조회: 즉시 실행 + 분석
     try {
       const rows = await this.runSelect(sql);
-      const analysis = await this.analyze(userMessage, sql, rows, knowledgePrompt);
+      const analysis = await this.analyze(userMessage, sql, rows, knowledgePrompt, knowledgeContext);
       return { content: analysis, sql, executed: true, rowCount: rows.length };
     } catch (error: unknown) {
       this.logger.error(
@@ -299,13 +311,14 @@ export class AiSqlService {
     sql: string,
     rows: Record<string, unknown>[],
     knowledgePrompt = '',
+    knowledgeContext?: AiKnowledgeContextDto,
   ): Promise<string> {
     const json = JSON.stringify(rows).slice(0, 9000);
     return this.aiService.complete([
-      { role: 'system', content: ANALYSIS_PROMPT },
+      { role: 'system', content: [ANALYSIS_PROMPT, this.formatPersonaPrompt(knowledgeContext)].filter(Boolean).join('\n\n') },
       {
         role: 'user',
-        content: `${knowledgePrompt ? `## 참고 문서\n${knowledgePrompt}\n\n` : ''}## 질문\n${userMessage}\n\n## 실행 SQL\n${sql}\n\n## 결과(JSON, 최대 100행)\n${json}\n\n위 결과를 분석해 한국어 마크다운으로 답하세요. 문서를 참고했다면 마지막에 근거를 짧게 표시하세요.`,
+        content: `${knowledgePrompt ? `## 참고 문서\n${knowledgePrompt}\n\n` : ''}## 질문\n${userMessage}\n\n## 실행 SQL\n${sql}\n\n## 결과 행 수: ${rows.length}\n\n## 결과(JSON, 최대 100행)\n${json}\n\n위 결과를 분석해 한국어 마크다운으로 답하세요. 문서를 참고했다면 마지막에 근거를 짧게 표시하세요.`,
       },
     ]);
   }
@@ -373,16 +386,32 @@ export class AiSqlService {
     messages: AiChatMessageDto[],
     pageToolContext?: AiPageToolContextDto,
     knowledgePrompt = '',
+    knowledgeContext?: AiKnowledgeContextDto,
   ): Promise<AiSqlResult> {
+    if (!knowledgePrompt.trim()) {
+      return { content: NO_KNOWLEDGE_RESPONSE };
+    }
     const pageToolPrompt = this.formatPageToolContext(pageToolContext);
+    const personaPrompt = this.formatPersonaPrompt(knowledgeContext);
     const knowledgeSystem = knowledgePrompt
-      ? `아래 참고 문서가 질문과 관련될 수 있습니다. 답변은 참고 문서를 우선하고, 추측하지 마세요. 마지막에 근거를 짧게 표시하세요.\n\n## 참고 문서\n${knowledgePrompt}`
+      ? `아래 참고 문서만 답변 근거로 사용할 수 있습니다. 선택된 페르소나에 맞는 출처를 먼저 반영하고, 다른 문서는 보조 근거로 사용하세요. 참고 문서에 없는 내용은 절대 추가하지 말고 "제공된 출처에서는 확인되지 않습니다"라고 답하세요. 참고한 문서가 있으면 확인한 근거로 표시하세요.\n\n## 참고 문서\n${knowledgePrompt}`
       : '';
-    const systemParts = [GENERAL_PROMPT, pageToolPrompt, knowledgeSystem].filter(Boolean).join('\n\n');
+    const systemParts = [GENERAL_PROMPT, personaPrompt, pageToolPrompt, knowledgeSystem].filter(Boolean).join('\n\n');
     const content = await this.aiService.complete([
       { role: 'system', content: systemParts },
       ...messages,
     ]);
     return { content };
+  }
+
+  private formatPersonaPrompt(knowledgeContext?: AiKnowledgeContextDto): string {
+    switch (knowledgeContext?.persona) {
+      case 'operator':
+        return '현재 페르소나: 운영관리자. 운영자 도움말과 운영 절차를 우선하고, 취소/복원/인터록/장애 조치와 업무 영향을 분명히 설명하세요.';
+      case 'engineer':
+        return '현재 페르소나: 시스템엔지니어. 비즈니스 로직, API, 서비스 메서드, DB 테이블, 트랜잭션 흐름을 근거 중심으로 설명하세요.';
+      default:
+        return '현재 페르소나: 일반사용자. 사용자 도움말을 우선하고, 화면 사용 순서와 처리 전 확인사항을 쉬운 업무 용어로 설명하세요.';
+    }
   }
 }

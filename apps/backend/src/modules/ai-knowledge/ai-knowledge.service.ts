@@ -27,6 +27,8 @@ export interface KnowledgeSearchContext {
   route?: string;
   menuCode?: string;
   language?: string;
+  audience?: string;
+  persona?: string;
 }
 
 export interface KnowledgeSearchResult {
@@ -273,6 +275,13 @@ export class AiKnowledgeService implements OnModuleInit {
   async search(query: string, context: KnowledgeSearchContext = {}, topK = 6): Promise<KnowledgeSearchResult[]> {
     const db = await this.open();
     const scores = new Map<string, number>();
+    const groundedScores = new Map<string, number>();
+    const persona = context.persona || context.audience || 'user';
+    const preferredAudience = persona === 'operator' ? 'operator' : 'user';
+    const addScore = (chunkId: string, score: number, grounded = false) => {
+      scores.set(chunkId, (scores.get(chunkId) ?? 0) + score);
+      if (grounded) groundedScores.set(chunkId, (groundedScores.get(chunkId) ?? 0) + score);
+    };
 
     if (this.vectorEnabled && this.hasTable('ai_knowledge_vec')) {
       const queryEmbedding = await this.embedding.embed(query);
@@ -283,7 +292,7 @@ export class AiKnowledgeService implements OnModuleInit {
         ORDER BY distance
         LIMIT 30
       `).all(queryEmbedding.vector) as Array<{ chunkId: string; distance: number }>;
-      for (const row of vecRows) scores.set(row.chunkId, (scores.get(row.chunkId) ?? 0) + 0.6 * (1 / (1 + row.distance)));
+      for (const row of vecRows) addScore(row.chunkId, 0.6 * (1 / (1 + row.distance)));
     }
 
     const ftsQuery = this.toFtsQuery(query);
@@ -298,19 +307,86 @@ export class AiKnowledgeService implements OnModuleInit {
         // bm25()는 값이 작을수록(더 음수일수록) 더 좋은 매치다. Math.abs를 취하면 순위가 뒤집히므로 음수를 그대로 relevance로 쓴다.
         for (const row of ftsRows) {
           const relevance = Math.max(0, -row.rank);
-          scores.set(row.chunkId, (scores.get(row.chunkId) ?? 0) + 0.3 * (relevance / (1 + relevance)));
+          addScore(row.chunkId, 0.3 * (relevance / (1 + relevance)), true);
         }
       } catch {
         // FTS syntax errors should not break chat.
       }
     }
 
-    if (context.menuCode) {
-      const menuRows = db.prepare(`SELECT chunk_id AS chunkId FROM ai_knowledge_chunks WHERE menu_code = ? LIMIT 20`).all(context.menuCode) as Array<{ chunkId: string }>;
-      for (const row of menuRows) scores.set(row.chunkId, (scores.get(row.chunkId) ?? 0) + 0.15);
+    const lexicalTerms = this.buildLexicalTerms(query);
+    if (lexicalTerms.length > 0) {
+      const lookupTerms = this.lexicalLookupTerms(lexicalTerms);
+      const likeClauses = lookupTerms
+        .map(() => `(title LIKE ? OR heading LIKE ? OR summary LIKE ? OR keywords_json LIKE ? OR content LIKE ?)`)
+        .join(' OR ');
+      const likeParams = lookupTerms.flatMap((term) => Array(5).fill(`%${term}%`));
+      const lexicalRows = db.prepare(`
+        SELECT chunk_id AS chunkId, doc_type AS docType, audience, source_path AS sourcePath,
+               title, heading, summary, keywords_json AS keywordsJson, content
+        FROM ai_knowledge_chunks
+        WHERE ${likeClauses}
+        LIMIT 200
+      `).all(...likeParams) as Array<{
+        chunkId: string;
+        docType?: string;
+        audience?: string | null;
+        sourcePath?: string;
+        title?: string | null;
+        heading?: string | null;
+        summary?: string | null;
+        keywordsJson?: string | null;
+        content?: string | null;
+      }>;
+      for (const row of lexicalRows) {
+        const lexicalScore = this.scoreLexicalRow(row, lexicalTerms, query, preferredAudience, persona);
+        if (lexicalScore > 0) addScore(row.chunkId, lexicalScore, true);
+      }
     }
 
-    const ids = Array.from(scores.entries()).sort((a, b) => b[1] - a[1]).slice(0, topK).map(([id]) => id);
+    if (context.menuCode) {
+      const menuRows = db.prepare(`
+        SELECT chunk_id AS chunkId, doc_type AS docType, audience, source_path AS sourcePath, related_json AS relatedJson
+        FROM ai_knowledge_chunks
+        WHERE menu_code = ?
+        LIMIT 30
+      `).all(context.menuCode) as Array<{ chunkId: string; docType?: string; audience?: string | null; sourcePath?: string; relatedJson?: string | null }>;
+      const relatedMenuCodes = new Set<string>();
+      for (const row of menuRows) {
+        let boost = 0.15;
+        const isBusinessLogic = row.sourcePath?.replace(/\\/g, '/').startsWith('docs/business-logics/');
+        if (persona === 'engineer' && isBusinessLogic) boost += 0.7;
+        else if (row.docType === 'help' && row.audience === preferredAudience) boost += 0.5;
+        else if (row.docType === 'help') boost += 0.05;
+        addScore(row.chunkId, boost, true);
+        for (const menuCode of this.parseRelatedMenuCodes(row.relatedJson)) {
+          if (menuCode !== context.menuCode) relatedMenuCodes.add(menuCode);
+        }
+      }
+      if (relatedMenuCodes.size > 0) {
+        const relatedCodes = Array.from(relatedMenuCodes).slice(0, 12);
+        const placeholders = relatedCodes.map(() => '?').join(',');
+        const relatedRows = db.prepare(`
+          SELECT chunk_id AS chunkId, doc_type AS docType, audience, source_path AS sourcePath
+          FROM ai_knowledge_chunks
+          WHERE menu_code IN (${placeholders})
+          LIMIT 60
+        `).all(...relatedCodes) as Array<{ chunkId: string; docType?: string; audience?: string | null; sourcePath?: string }>;
+        for (const row of relatedRows) {
+          let boost = this.isActionHowToQuery(query) ? 0.75 : 0.25;
+          const isBusinessLogic = row.sourcePath?.replace(/\\/g, '/').startsWith('docs/business-logics/');
+          if (persona === 'engineer' && isBusinessLogic) boost += 0.35;
+          else if (row.docType === 'help' && row.audience === preferredAudience) boost += 0.35;
+          else if (row.docType === 'help') boost += 0.05;
+          addScore(row.chunkId, boost, true);
+        }
+      }
+    }
+
+    const candidates = groundedScores.size > 0
+      ? Array.from(scores.entries()).filter(([id]) => groundedScores.has(id))
+      : [];
+    const ids = candidates.sort((a, b) => b[1] - a[1]).slice(0, topK).map(([id]) => id);
     if (ids.length === 0) return [];
     const placeholders = ids.map(() => '?').join(',');
     const rows = db.prepare(`
@@ -327,12 +403,24 @@ export class AiKnowledgeService implements OnModuleInit {
     if (chunks.length === 0) return '';
     return chunks
       .map((chunk, index) => [
-        `[${index + 1}] ${chunk.title ?? chunk.menuCode ?? chunk.docType} > ${chunk.heading ?? '본문'}`,
+        `[${index + 1}] ${this.formatContextTitle(chunk)} > ${chunk.heading ?? '본문'}`,
         `source=${chunk.sourcePath}`,
         chunk.summary ? `summary=${chunk.summary}` : '',
         chunk.content.slice(0, 2500),
       ].filter(Boolean).join('\n'))
       .join('\n\n---\n\n');
+  }
+
+  private formatContextTitle(chunk: KnowledgeSearchResult): string {
+    const audienceLabel =
+      chunk.audience === 'user'
+        ? '사용자 도움말'
+        : chunk.audience === 'operator'
+          ? '운영자 도움말'
+          : chunk.sourcePath.startsWith('docs/business-logics/')
+            ? '비즈니스 로직'
+            : chunk.docType;
+    return `${chunk.title ?? chunk.menuCode ?? chunk.docType} (${audienceLabel})`;
   }
 
 
@@ -398,8 +486,122 @@ export class AiKnowledgeService implements OnModuleInit {
   }
 
   private toFtsQuery(query: string): string {
-    const tokens = query.match(/[0-9a-zA-Z가-힣_]+/g) ?? [];
+    const tokens: string[] = query.match(/[0-9a-zA-Z가-힣_]+/g) ?? [];
     return tokens.slice(0, 8).map((token) => `"${token.replace(/"/g, '""')}"`).join(' OR ');
+  }
+
+  private buildLexicalTerms(query: string): string[] {
+    const stopWords = new Set(['알려줘', '알려', '주세요', '방법', '사용법', '어떻게', '무엇', '뭐야', '좀']);
+    const tokens = query.match(/[0-9a-zA-Z가-힣_]+/g) ?? [];
+    const terms = new Set<string>();
+    const add = (value: string) => {
+      const term = this.stripKoreanParticle(value.trim());
+      if (term.length < 2 || stopWords.has(term)) return;
+      terms.add(term);
+    };
+
+    for (const token of tokens) {
+      add(token);
+      const normalized = this.stripKoreanParticle(token);
+      for (const action of ['등록', '입력', '저장', '조회', '수정', '삭제', '취소', '처리']) {
+        if (normalized.includes(action)) add(action);
+      }
+      if (/^[가-힣]+$/.test(normalized) && normalized.length >= 5) {
+        for (let length = 3; length <= Math.min(6, normalized.length); length += 1) {
+          for (let index = 0; index <= normalized.length - length; index += 1) {
+            add(normalized.slice(index, index + length));
+          }
+        }
+      }
+    }
+
+    return Array.from(terms)
+      .sort((a, b) => b.length - a.length)
+      .slice(0, 24);
+  }
+
+  private lexicalLookupTerms(terms: string[]): string[] {
+    const subjectTerms = terms.filter((term) => term.length >= 3 && !/등록|입력|저장|조회|수정|삭제|취소|처리/.test(term));
+    return (subjectTerms.length > 0 ? subjectTerms : terms).slice(0, 16);
+  }
+
+  private stripKoreanParticle(value: string): string {
+    return value.replace(/(으로|에서|에게|한테|부터|까지|처럼|보다|만큼|하고|이며|이고|을|를|은|는|이|가|의|에|로|와|과|도|만)$/u, '');
+  }
+
+  private scoreLexicalRow(
+    row: {
+      docType?: string;
+      audience?: string | null;
+      sourcePath?: string;
+      title?: string | null;
+      heading?: string | null;
+      summary?: string | null;
+      keywordsJson?: string | null;
+      content?: string | null;
+    },
+    terms: string[],
+    query: string,
+    preferredAudience: string,
+    persona: string,
+  ): number {
+    const title = row.title ?? '';
+    const heading = row.heading ?? '';
+    const summary = row.summary ?? '';
+    const keywords = row.keywordsJson ?? '';
+    const content = row.content ?? '';
+    const coreMetadata = `${title}\n${summary}\n${keywords}`;
+    const metadata = `${title}\n${heading}\n${summary}\n${keywords}`;
+    const haystack = `${title}\n${heading}\n${summary}\n${keywords}\n${content}`;
+    let score = 0;
+    for (const term of terms) {
+      if (!haystack.includes(term)) continue;
+      const lengthWeight = Math.min(term.length, 6) / 6;
+      let fieldWeight = content.includes(term) ? 0.025 : 0;
+      if (title.includes(term)) fieldWeight += 0.18;
+      if (heading.includes(term)) fieldWeight += 0.1;
+      if (summary.includes(term)) fieldWeight += 0.14;
+      if (keywords.includes(term)) fieldWeight += 0.18;
+      score += fieldWeight * lengthWeight;
+    }
+    if (score <= 0) return 0;
+    if (this.isActionHowToQuery(query)) {
+      const actionPattern = /등록|입력|저장|사용 순서|처리합니다/;
+      const subjectTerms = terms.filter((term) => term.length >= 3 && !/등록|입력|저장|조회|수정|삭제|취소|처리/.test(term));
+      const metadataHasSubject = subjectTerms.some((term) => metadata.includes(term));
+      const haystackHasSubject = subjectTerms.some((term) => haystack.includes(term));
+      const metadataHasAction = actionPattern.test(metadata);
+      const haystackHasAction = actionPattern.test(haystack);
+      if (metadataHasSubject && metadataHasAction) score += 0.65;
+      else if (haystackHasSubject && metadataHasAction) score += 0.45;
+      else if (metadataHasSubject && haystackHasAction) score += 0.25;
+      else if (haystackHasSubject && haystackHasAction) score += 0.05;
+      if (/등록|입력|저장/.test(query.replace(/\s+/g, ''))) {
+        if (/등록|입력|저장/.test(coreMetadata)) score += 0.5;
+        else score *= 0.55;
+        if (/조회|통합조회/.test(title)) score *= 0.5;
+      }
+    }
+    const isBusinessLogic = row.sourcePath?.replace(/\\/g, '/').startsWith('docs/business-logics/');
+    if (persona === 'engineer' && isBusinessLogic) score += 0.2;
+    else if (row.docType === 'help' && row.audience === preferredAudience) score += 0.25;
+    else if (row.docType === 'help') score += 0.05;
+    return Math.min(score, 3);
+  }
+
+  private isActionHowToQuery(query: string): boolean {
+    const compact = query.replace(/\s+/g, '');
+    return /등록|입력|저장|사용법|방법|어떻게/.test(compact);
+  }
+
+  private parseRelatedMenuCodes(raw?: string | null): string[] {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.map((item) => String(item).trim()).filter(Boolean) : [];
+    } catch {
+      return [];
+    }
   }
 
   private resolveTargets(input?: string[]): KnowledgeTarget[] {

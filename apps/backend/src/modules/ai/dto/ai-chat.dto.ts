@@ -64,6 +64,14 @@ export class AiKnowledgeContextDto {
   @IsOptional()
   @IsString()
   language?: string;
+
+  @IsOptional()
+  @IsString()
+  audience?: string;
+
+  @IsOptional()
+  @IsIn(['user', 'operator', 'engineer'])
+  persona?: 'user' | 'operator' | 'engineer';
 }
 
 export class AiChatDto {

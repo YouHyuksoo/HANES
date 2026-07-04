@@ -15,7 +15,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import api from "@/services/api";
 import { usePageToolStore } from "@/ai-page-tools/pageToolStore";
-import { useAiChatStore, type AiChatMessage, type AiChatSource } from "@/stores/aiChatStore";
+import { useAiChatStore, type AiChatMessage, type AiChatPersona, type AiChatSource } from "@/stores/aiChatStore";
 import { useHelpStore } from "@/stores/helpStore";
 import { findMenuCodeByPath } from "@/config/menuConfig";
 import { slugify } from "@/lib/help";
@@ -46,10 +46,36 @@ const AI_PROVIDER_LABELS: Record<string, string> = {
   openrouter: "OpenRouter",
 };
 
+const AI_PERSONAS: Array<{
+  value: AiChatPersona;
+  label: string;
+  audience: "user" | "operator" | "engineer";
+  description: string;
+}> = [
+  {
+    value: "user",
+    label: "일반사용자",
+    audience: "user",
+    description: "사용자 도움말을 우선해 화면 사용 순서와 처리 전 확인사항을 쉽게 설명합니다.",
+  },
+  {
+    value: "operator",
+    label: "운영관리자",
+    audience: "operator",
+    description: "운영 절차, 취소/복원, 인터록, 장애 조치와 업무 영향을 중심으로 답합니다.",
+  },
+  {
+    value: "engineer",
+    label: "시스템엔지니어",
+    audience: "engineer",
+    description: "API, 서비스, DB 테이블, 트랜잭션 흐름을 근거 중심으로 설명합니다.",
+  },
+];
+
 export default function AiChatPanel() {
   const { t } = useTranslation();
   const pathname = usePathname();
-  const { isOpen, messages, close, addMessage, clear } = useAiChatStore();
+  const { isOpen, messages, persona, setPersona, close, addMessage, clear } = useAiChatStore();
   const activeTab = usePageToolStore((state) => state.activeTab);
   const manifest = usePageToolStore((state) => state.manifest);
   const openChatTab = usePageToolStore((state) => state.openChatTab);
@@ -121,6 +147,8 @@ export default function AiChatPanel() {
         route: pathname,
         menuCode: findMenuCodeByPath(pathname),
         language: "ko",
+        audience: AI_PERSONAS.find((item) => item.value === persona)?.audience ?? "user",
+        persona,
       };
       const res = await api.post("/ai/chat", { messages: history, pageToolContext, knowledgeContext });
       const data = res.data?.data ?? {};
@@ -140,7 +168,7 @@ export default function AiChatPanel() {
       setSending(false);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [input, sending, messages, addMessage, t, manifest, pathname]);
+  }, [input, sending, messages, addMessage, t, manifest, pathname, persona]);
 
   const approve = useCallback(
     async (idx: number, sql?: string) => {
@@ -337,6 +365,36 @@ export default function AiChatPanel() {
         >
           {t("ai.chat.tab.log", "실행로그")}
         </button>
+      </div>
+
+      <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+        <span className="text-[11px] font-medium text-text-muted">{t("ai.chat.persona", "페르소나")}</span>
+        <div className="grid flex-1 grid-cols-3 rounded-md border border-border bg-surface p-0.5">
+          {AI_PERSONAS.map((item) => (
+            <div key={item.value} className="group relative min-w-0">
+              <button
+                type="button"
+                onClick={() => setPersona(item.value)}
+                className={`h-7 w-full min-w-0 rounded px-2 text-xs font-medium ${
+                  persona === item.value
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-text-muted hover:bg-background hover:text-text"
+                }`}
+                aria-describedby={`ai-persona-tip-${item.value}`}
+                aria-pressed={persona === item.value}
+              >
+                {item.label}
+              </button>
+              <div
+                id={`ai-persona-tip-${item.value}`}
+                role="tooltip"
+                className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 w-56 -translate-x-1/2 rounded-md border border-border bg-background px-3 py-2 text-left text-[11px] leading-4 text-text shadow-lg opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+              >
+                {item.description}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {activeTab === "tools" && (

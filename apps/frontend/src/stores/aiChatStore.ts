@@ -2,9 +2,12 @@
  * @file src/stores/aiChatStore.ts
  * @description AI 채팅 패널 전역 상태 (열림 여부 + 세션 메시지)
  *
- * 1단계: 대화 이력은 세션 메모리만 유지(패널 닫아도 유지, 새로고침 시 초기화).
+ * 대화 이력과 페르소나는 브라우저 localStorage에 유지한다.
  */
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+
+export type AiChatPersona = "user" | "operator" | "engineer";
 
 /** 승인 후 실행할 페이지 도구 호출 제안(write 도구) */
 export interface AiPageToolCallProposal {
@@ -43,19 +46,32 @@ export interface AiChatMessage {
 interface AiChatState {
   isOpen: boolean;
   messages: AiChatMessage[];
+  persona: AiChatPersona;
   open: () => void;
   close: () => void;
   toggle: () => void;
   addMessage: (message: AiChatMessage) => void;
+  setPersona: (persona: AiChatPersona) => void;
   clear: () => void;
 }
 
-export const useAiChatStore = create<AiChatState>((set) => ({
-  isOpen: false,
-  messages: [],
-  open: () => set({ isOpen: true }),
-  close: () => set({ isOpen: false }),
-  toggle: () => set((state) => ({ isOpen: !state.isOpen })),
-  addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
-  clear: () => set({ messages: [] }),
-}));
+export const useAiChatStore = create<AiChatState>()(
+  persist(
+    (set) => ({
+      isOpen: false,
+      messages: [],
+      persona: "user",
+      open: () => set({ isOpen: true }),
+      close: () => set({ isOpen: false }),
+      toggle: () => set((state) => ({ isOpen: !state.isOpen })),
+      addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
+      setPersona: (persona) => set({ persona }),
+      clear: () => set({ messages: [] }),
+    }),
+    {
+      name: "hanes.aiChat.v1",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ messages: state.messages, persona: state.persona }),
+    },
+  ),
+);
