@@ -470,6 +470,7 @@ export default function AiEmbeddingPanel() {
                   variant={addMode === "file" ? "primary" : "ghost"}
                   size="sm"
                   onClick={() => setAddMode("file")}
+                  aria-pressed={addMode === "file"}
                 >
                   <FileText className="h-4 w-4" />
                   파일
@@ -478,6 +479,7 @@ export default function AiEmbeddingPanel() {
                   variant={addMode === "folder" ? "primary" : "ghost"}
                   size="sm"
                   onClick={() => setAddMode("folder")}
+                  aria-pressed={addMode === "folder"}
                 >
                   <Folder className="h-4 w-4" />
                   폴더
