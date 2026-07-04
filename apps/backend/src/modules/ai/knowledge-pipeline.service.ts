@@ -5,6 +5,8 @@
  * 모든 LLM 단계는 실패해도 폴백으로 진행한다 — 파이프라인 오류가 채팅 실패로 전파되지 않는다.
  */
 import { Injectable, Logger } from '@nestjs/common';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import { AiService } from './ai.service';
 import {
   AiKnowledgeService,
@@ -101,7 +103,27 @@ export class KnowledgePipelineService {
       context,
       businessLogicChunks,
     );
+    // 검색 튜닝용 트레이스(best-effort). 실패해도 파이프라인에 영향 없음.
+    void this.appendTrace({
+      ts: new Date().toISOString(),
+      q: userMessage,
+      intent: understanding.intent,
+      queries: understanding.queries,
+      llmMenus: understanding.menus,
+      menuCodes,
+      chunks: chunks.slice(0, 12).map((c) => `${c.sourcePath}#${c.heading ?? ''}`),
+    });
     return { chunks, prompt, intent: understanding.intent };
+  }
+
+  /** 파이프라인 트레이스를 jsonl로 남긴다 — 검색 품질 튜닝/디버깅용. */
+  private async appendTrace(entry: Record<string, unknown>): Promise<void> {
+    try {
+      const file = path.resolve(process.cwd(), 'data', 'ai-knowledge', 'pipeline-trace.jsonl');
+      await fs.appendFile(file, `${JSON.stringify(entry)}\n`, 'utf8');
+    } catch {
+      // 트레이스는 부가 기능 — 조용히 무시한다.
+    }
   }
 
   /** [1] 질의 이해. 실패 시 원문 단일 질의 + usage 의도로 폴백. */
