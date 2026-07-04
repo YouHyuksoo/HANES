@@ -153,9 +153,12 @@ export class KnowledgePipelineService {
       const start = res.indexOf('[');
       const end = res.lastIndexOf(']');
       if (start === -1 || end === -1) return candidates;
-      const order = (JSON.parse(res.slice(start, end + 1)) as unknown[])
-        .map((n) => Number(n))
-        .filter((n) => Number.isInteger(n) && n >= 1 && n <= input.length);
+      // LLM이 중복 인덱스를 반환해도 프롬프트에 같은 청크가 중복 노출되지 않도록 dedupe한다.
+      const order = Array.from(new Set(
+        (JSON.parse(res.slice(start, end + 1)) as unknown[])
+          .map((n) => Number(n))
+          .filter((n) => Number.isInteger(n) && n >= 1 && n <= input.length),
+      ));
       if (order.length === 0) return candidates;
       const picked = order.map((n) => input[n - 1]);
       const rest = input.filter((c) => !picked.includes(c));
