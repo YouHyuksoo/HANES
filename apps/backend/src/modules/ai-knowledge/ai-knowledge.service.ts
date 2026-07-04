@@ -23,6 +23,8 @@ const DEFAULT_KNOWLEDGE_TARGETS: KnowledgeTarget[] = [
   { path: 'docs/plans', docType: 'plan' },
   // docs/workflows 루트에는 구형 가이드 문서가 있어 정의 문서 전용 하위 폴더만 대상으로 한다.
   { path: 'docs/workflows/definitions', docType: 'workflow' },
+  // engineer 페르소나의 근거 문서. 검색 부스트가 sourcePath(docs/business-logics/) 기준이라 docType은 document를 쓴다.
+  { path: 'docs/business-logics', docType: 'document' },
   { path: 'apps/backend/data/ai-table-catalog.md', docType: 'catalog' },
 ];
 
