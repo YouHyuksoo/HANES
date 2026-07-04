@@ -512,31 +512,39 @@ export default function AiEmbeddingPanel() {
                 </p>
               )}
               <div className="mt-2 grid grid-cols-1 gap-1.5 lg:grid-cols-2">
-                {chunkTargets.map((target) => (
-                  <label key={target.path} className="flex min-w-0 items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-xs">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 shrink-0 accent-primary"
-                      checked={selectedTargetPaths.has(target.path)}
-                      onChange={() => handleToggleTarget(target.path)}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium text-text">{target.label}</span>
-                      <span className="block truncate font-mono text-[11px] text-text-muted" title={target.path}>{target.path}</span>
-                    </span>
-                    <button
-                      type="button"
-                      className="rounded-md p-1 text-text-muted hover:bg-error/10 hover:text-error"
-                      title="대상 삭제"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleDeleteTarget(target.path);
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </label>
-                ))}
+                {chunkTargets.map((target) => {
+                  const isFile = target.path.toLowerCase().endsWith(".md");
+                  return (
+                    <label key={target.path} className="flex min-w-0 items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-xs">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 shrink-0 accent-primary"
+                        checked={selectedTargetPaths.has(target.path)}
+                        onChange={() => handleToggleTarget(target.path)}
+                      />
+                      {isFile ? (
+                        <FileText className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+                      ) : (
+                        <Folder className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+                      )}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium text-text">{target.label}</span>
+                        <span className="block truncate font-mono text-[11px] text-text-muted" title={target.path}>{target.path}</span>
+                      </span>
+                      <button
+                        type="button"
+                        className="rounded-md p-1 text-text-muted hover:bg-error/10 hover:text-error"
+                        title="대상 삭제"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleDeleteTarget(target.path);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </label>
+                  );
+                })}
                 {chunkTargets.length === 0 && (
                   <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-text-muted">
                     등록된 대상이 없습니다.
