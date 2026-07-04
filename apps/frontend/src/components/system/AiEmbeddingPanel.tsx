@@ -6,7 +6,7 @@
  */
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Database, LoaderCircle, Play, Plug, Plus, RefreshCw, RotateCcw, Save, Search, Trash2 } from "lucide-react";
+import { Database, FileText, Folder, LoaderCircle, Play, Plug, Plus, RefreshCw, RotateCcw, Save, Search, Trash2 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select } from "@/components/ui";
 import { api } from "@/services/api";
 import toast from "react-hot-toast";
@@ -155,6 +155,7 @@ export default function AiEmbeddingPanel() {
   const [chunkTargets, setChunkTargets] = useState<ChunkTarget[]>(DEFAULT_CHUNK_TARGETS);
   const [selectedTargetPaths, setSelectedTargetPaths] = useState<Set<string>>(() => new Set(DEFAULT_CHUNK_TARGETS.map((target) => target.path)));
   const [newTargetPath, setNewTargetPath] = useState("");
+  const [addMode, setAddMode] = useState<"file" | "folder">("file");
   const [chunkTargetsLoaded, setChunkTargetsLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -464,7 +465,25 @@ export default function AiEmbeddingPanel() {
               </Button>
             </div>
             <div className="rounded-md border border-border bg-surface-secondary/50 p-2">
-              <div className="flex flex-col gap-2 lg:flex-row">
+              <div className="flex gap-1.5">
+                <Button
+                  variant={addMode === "file" ? "primary" : "ghost"}
+                  size="sm"
+                  onClick={() => setAddMode("file")}
+                >
+                  <FileText className="h-4 w-4" />
+                  파일
+                </Button>
+                <Button
+                  variant={addMode === "folder" ? "primary" : "ghost"}
+                  size="sm"
+                  onClick={() => setAddMode("folder")}
+                >
+                  <Folder className="h-4 w-4" />
+                  폴더
+                </Button>
+              </div>
+              <div className="mt-2 flex flex-col gap-2 lg:flex-row">
                 <Input
                   value={newTargetPath}
                   onChange={(e) => setNewTargetPath(e.target.value)}
@@ -474,19 +493,24 @@ export default function AiEmbeddingPanel() {
                       handleAddTarget();
                     }
                   }}
-                  placeholder="docs/custom 또는 docs/custom/file.md"
+                  placeholder={addMode === "folder" ? "docs/custom" : "docs/custom/file.md"}
                   fullWidth
                 />
                 <div className="flex gap-2">
                   <Button variant="secondary" size="sm" onClick={handleAddTarget} disabled={!newTargetPath.trim()}>
                     <Plus className="h-4 w-4" />
-                    추가
+                    {addMode === "folder" ? "폴더 추가" : "문서 추가"}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={handleRestoreDefaultTargets} title="기본 대상 복원">
                     <RotateCcw className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
+              {addMode === "folder" && (
+                <p className="mt-1 text-[11px] text-text-muted">
+                  폴더 경로를 입력하면 하위 .md 파일을 모두 재귀적으로 청킹합니다.
+                </p>
+              )}
               <div className="mt-2 grid grid-cols-1 gap-1.5 lg:grid-cols-2">
                 {chunkTargets.map((target) => (
                   <label key={target.path} className="flex min-w-0 items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-xs">
