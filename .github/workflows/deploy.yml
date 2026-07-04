@@ -42,6 +42,10 @@ jobs:
         run: pnpm install --frozen-lockfile
         shell: cmd
 
+      - name: Build
+        run: pnpm build
+        shell: cmd
+
       - name: Backend Jest
         run: pnpm run test:backend:ci
         shell: cmd
@@ -52,10 +56,6 @@ jobs:
 
       - name: Frontend typecheck
         run: pnpm run typecheck:frontend
-        shell: cmd
-
-      - name: Build
-        run: pnpm build
         shell: cmd
 
       - name: Generate runtime seed upload assets
