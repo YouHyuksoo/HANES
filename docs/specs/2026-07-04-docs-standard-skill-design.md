@@ -77,6 +77,14 @@ HANES 예:
 | `/managing-docs init` | core 8 폴더 + manifest 스캐폴드 생성. 기존 docs가 있으면 먼저 audit을 실행해 마이그레이션 계획을 제시하고 승인 후 재편 |
 | `/managing-docs new <유형> <주제>` | 표준 경로·파일명·유형별 템플릿으로 문서 생성. 유형이 애매하면 분류 기준으로 질문 |
 | `/managing-docs audit` | manifest 대비 실태 점검: 미등록 폴더, 명명 위반, 위치 오류, 루트 오염, 외부 문서 집합 규정(frontmatter 등) → 리포트 제시 → **사용자 승인 후** 이동/정리 실행 |
+| `/managing-docs update` | **최신화**: 프로젝트 manifest의 `standardVersion`을 스킬의 canonical 버전과 비교 → 버전 간 변경 내역(추가/변경된 규정, 폴더, 명명규칙)을 리포트 → 승인 후 manifest 갱신 + 필요한 구조 마이그레이션 실행. 프로젝트가 등록한 특화 폴더·로컬 규정은 보존 |
+
+### 표준 버전 관리 (최신화의 기반)
+
+- 스킬의 `SKILL.md`가 canonical 표준 버전(`standardVersion: N`)과 버전별 변경 이력(`references/changelog.md`)을 가진다.
+- 각 프로젝트 manifest frontmatter에 `standardVersion: N` 기록 — init/update 시 스킬이 스탬프.
+- 표준을 바꿀 때의 절차: 스킬의 SKILL.md·템플릿·changelog 갱신(버전 +1) → 각 프로젝트에서 `/managing-docs update` 실행하면 그 프로젝트가 최신 표준으로 승급.
+- update는 **manifest의 공통 규정 블록만** 교체하고, 프로젝트 로컬 블록(특화 폴더 등록부, 외부 문서 집합, 프로젝트 참고사항)은 그대로 보존한다 — manifest를 공통부/로컬부로 구획해 이를 기계적으로 안전하게 만든다.
 
 ### 자동 트리거
 
@@ -109,7 +117,7 @@ HANES 예:
 
 ## 6. 검증
 
-- 스킬: superpowers:writing-skills 절차로 작성·검증 (신규 임시 프로젝트에서 init→new→audit 시나리오 실행).
+- 스킬: superpowers:writing-skills 절차로 작성·검증 (신규 임시 프로젝트에서 init→new→audit→update 시나리오 실행. update는 changelog에 가짜 v2를 만들어 승급 동작 검증).
 - HANES 재편 후: `/managing-docs audit` 클린 통과, 이동 경로 참조 전수 grep 0건(구경로), superpowers 스킬로 spec/plan 생성 시 새 경로에 저장되는지 확인.
 
 ## 7. 제외한 대안
