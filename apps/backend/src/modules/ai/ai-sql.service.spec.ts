@@ -49,7 +49,7 @@ describe('AiSqlService response quality prompts', () => {
       dataSource as any,
     );
 
-    return { target, catalog, schemaInfo, validator, dataSource, knowledge };
+    return { target, catalog, schemaInfo, validator, dataSource, knowledge, pageTools };
   };
 
   it('일반 대화 system prompt는 단순 답변 대신 근거와 후속 확인을 요구한다', async () => {
@@ -107,6 +107,119 @@ describe('AiSqlService response quality prompts', () => {
     expect(analysisSystemPrompt).toContain('판단 근거');
     expect(analysisSystemPrompt).toContain('추가 확인');
     expect(analysisUserPrompt).toContain('결과 행 수: 1');
+  });
+
+  it('/MES 명시 모드는 page tool context가 있어도 SQL 조회를 우선한다', async () => {
+    const complete = jest
+      .fn()
+      .mockResolvedValueOnce('["ITEM_MASTERS"]')
+      .mockResolvedValueOnce('SELECT COUNT(*) AS ITEM_MASTER_COUNT FROM ITEM_MASTERS')
+      .mockResolvedValueOnce('품목마스터는 34건입니다.');
+    const { target, catalog, schemaInfo, dataSource, pageTools } = createTarget(complete);
+    catalog.getSelectionCatalog.mockResolvedValueOnce({
+      catalog: 'ITEM_MASTERS: 품목 마스터 (동의어: 품목, 품목마스터, 품목 마스터)',
+      tables: ['ITEM_MASTERS'],
+    });
+    schemaInfo.getSchemaText.mockResolvedValueOnce('ITEM_MASTERS(ITEM_CODE -- 품목코드)');
+    dataSource.query.mockResolvedValueOnce([{ ITEM_MASTER_COUNT: 34 }]);
+
+    const result = await target.process(
+      [{ role: 'user', content: '/MES 품목 마스터 등록건수 알려줘' }],
+      { pageId: 'MST_PART', executionLevel: 'assist', tools: [] } as any,
+    );
+
+    expect(pageTools.getManifest).not.toHaveBeenCalled();
+    expect(result.executed).toBe(true);
+    expect(result.sql).toContain('ITEM_MASTERS');
+    expect(dataSource.query).toHaveBeenCalledWith(
+      expect.stringContaining('SELECT COUNT(*) AS ITEM_MASTER_COUNT FROM ITEM_MASTERS'),
+    );
+  });
+
+  it('등록건수 같은 조회 질문은 page tool context가 있어도 SQL 조회를 우선한다', async () => {
+    const complete = jest
+      .fn()
+      .mockResolvedValueOnce('["ITEM_MASTERS"]')
+      .mockResolvedValueOnce('SELECT COUNT(*) AS ITEM_MASTER_COUNT FROM ITEM_MASTERS')
+      .mockResolvedValueOnce('품목마스터는 34건입니다.');
+    const { target, catalog, schemaInfo, dataSource, pageTools } = createTarget(complete);
+    catalog.getSelectionCatalog.mockResolvedValueOnce({
+      catalog: 'ITEM_MASTERS: 품목 마스터 (동의어: 품목, 품목마스터, 품목 마스터)',
+      tables: ['ITEM_MASTERS'],
+    });
+    schemaInfo.getSchemaText.mockResolvedValueOnce('ITEM_MASTERS(ITEM_CODE -- 품목코드)');
+    dataSource.query.mockResolvedValueOnce([{ ITEM_MASTER_COUNT: 34 }]);
+
+    const result = await target.process(
+      [{ role: 'user', content: '품목 마스터 등록건수 알려줘' }],
+      { pageId: 'MST_PART', executionLevel: 'assist', tools: [] } as any,
+    );
+
+    expect(pageTools.getManifest).not.toHaveBeenCalled();
+    expect(result.executed).toBe(true);
+    expect(result.sql).toContain('ITEM_MASTERS');
+  });
+
+  it('/HELP 명시 모드는 SQL 테이블 선택 없이 도움말 답변으로 보낸다', async () => {
+    const complete = jest.fn().mockResolvedValueOnce('도움말 답변');
+    const { target, catalog, knowledge } = createTarget(complete);
+    knowledge.search.mockResolvedValueOnce([
+      {
+        chunkId: 'help:user:mst-part',
+        score: 0.9,
+        sourcePath: 'apps/frontend/public/help/user/ko/MST_PART.md',
+        docType: 'help',
+        menuCode: 'MST_PART',
+        audience: 'user',
+        title: '품목마스터',
+        heading: '사용 순서',
+        content: '품목마스터 사용 순서',
+      },
+    ]);
+    knowledge.formatContext.mockReturnValueOnce('[1] 품목마스터 > 사용 순서\n품목마스터 사용 순서');
+
+    const result = await target.process([{ role: 'user', content: '/HELP 품목 마스터 등록 방법 알려줘' }]);
+
+    expect(catalog.getSelectionCatalog).not.toHaveBeenCalled();
+    expect(result.content).toBe('도움말 답변');
+  });
+
+  it('/DO 명시 모드는 작업 동사가 없어도 page tool 후보를 선택한다', async () => {
+    const complete = jest.fn().mockResolvedValueOnce('{"toolName":"createPart","input":{"itemCode":"A001"}}');
+    const { target, pageTools } = createTarget(complete);
+    pageTools.getManifest.mockReturnValueOnce({
+      tools: [
+        {
+          name: 'createPart',
+          label: '품목 등록',
+          description: '품목을 등록한다.',
+          source: 'backend',
+          riskLevel: 'write',
+          inputSchema: {},
+        },
+      ],
+    });
+
+    const result = await target.process(
+      [{ role: 'user', content: '/DO 품목 A001' }],
+      { pageId: 'MST_PART', executionLevel: 'assist', tools: [] } as any,
+    );
+
+    expect(result.requiresApproval).toBe(true);
+    expect(result.pageToolCall?.toolName).toBe('createPart');
+    expect(result.pageToolCall?.input).toEqual({ itemCode: 'A001' });
+  });
+
+  it('/WEB 명시 모드는 현재 미연결 상태를 안내하고 LLM이나 SQL을 호출하지 않는다', async () => {
+    const complete = jest.fn();
+    const { target, catalog, dataSource } = createTarget(complete);
+
+    const result = await target.process([{ role: 'user', content: '/WEB Oracle 23ai JSON duality view 찾아줘' }]);
+
+    expect(result.content).toContain('/WEB 외부 웹 검색은 현재 HANES 백엔드 AI 채팅 파이프라인에 연결되어 있지 않습니다');
+    expect(complete).not.toHaveBeenCalled();
+    expect(catalog.getSelectionCatalog).not.toHaveBeenCalled();
+    expect(dataSource.query).not.toHaveBeenCalled();
   });
 });
 

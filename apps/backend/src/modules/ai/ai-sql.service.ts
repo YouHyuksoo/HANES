@@ -46,6 +46,8 @@ export interface AiSqlResult {
   sources?: AiKnowledgeSourceSummary[];
 }
 
+type AiChatRouteMode = 'auto' | 'mes' | 'help' | 'do' | 'web';
+
 const TOOL_SELECT_PROMPT = `당신은 사용자의 등록/처리 요청을 "페이지 도구 호출"로 변환하는 AI입니다.
 규칙:
 - 아래 '도구 목록'에서 요청에 가장 맞는 도구 하나를 고르고, 그 도구의 inputSchema에 맞는 입력값을 추출합니다.
@@ -145,8 +147,16 @@ export class AiSqlService {
     pageToolContext?: AiPageToolContextDto,
     knowledgeContext?: AiKnowledgeContextDto,
   ): Promise<AiSqlResult> {
-    const userMessage = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+    const rawUserMessage = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+    const route = this.parseRouteMode(rawUserMessage);
+    const userMessage = route.message;
     if (!userMessage.trim()) return { content: '질문을 입력해 주세요.' };
+    if (route.mode === 'web') {
+      return {
+        content:
+          '/WEB 외부 웹 검색은 현재 HANES 백엔드 AI 채팅 파이프라인에 연결되어 있지 않습니다. MES 데이터는 /MES, 화면 도움말은 /HELP로 질문해 주세요.',
+      };
+    }
 
     let knowledgePrompt = '';
     let knowledgeChunks: KnowledgeSearchResult[] = [];
@@ -166,7 +176,16 @@ export class AiSqlService {
       }
     }
 
-    const result = await this.processWithKnowledge(userMessage, messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent);
+    const effectiveMessages = this.replaceLastUserMessage(messages, userMessage);
+    const result = await this.processWithKnowledge(
+      userMessage,
+      effectiveMessages,
+      pageToolContext,
+      knowledgePrompt,
+      knowledgeContext,
+      knowledgeIntent,
+      route.mode,
+    );
     return this.withSources(result, knowledgeChunks);
   }
 
@@ -195,8 +214,17 @@ export class AiSqlService {
     knowledgePrompt: string,
     knowledgeContext?: AiKnowledgeContextDto,
     knowledgeIntent: KnowledgeIntent = 'usage',
+    routeMode: AiChatRouteMode = 'auto',
   ): Promise<AiSqlResult> {
-    if (pageToolContext && this.looksLikePageWorkflowRequest(userMessage)) {
+    if (routeMode === 'help') {
+      return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent);
+    }
+
+    const shouldTryPageTool =
+      pageToolContext &&
+      routeMode !== 'mes' &&
+      (routeMode === 'do' || (this.looksLikePageWorkflowRequest(userMessage) && !this.looksLikeDataQueryRequest(userMessage)));
+    if (shouldTryPageTool) {
       // 등록/처리 요청 → 페이지의 write 도구로 매핑(있으면 승인 카드로 제안)
       const call = await this.selectPageTool(userMessage, pageToolContext.pageId);
       if (call) {
@@ -318,6 +346,20 @@ export class AiSqlService {
     return this.dataSource.query(limited);
   }
 
+  private parseRouteMode(rawMessage: string): { mode: AiChatRouteMode; message: string } {
+    const trimmed = rawMessage.trim();
+    const match = /^\/(MES|HELP|DO|WEB)\b\s*/i.exec(trimmed);
+    if (!match) return { mode: 'auto', message: rawMessage };
+    const mode = match[1].toLowerCase() as AiChatRouteMode;
+    return { mode, message: trimmed.slice(match[0].length).trim() };
+  }
+
+  private replaceLastUserMessage(messages: AiChatMessageDto[], content: string): AiChatMessageDto[] {
+    const lastUserIndex = messages.map((m) => m.role).lastIndexOf('user');
+    if (lastUserIndex === -1) return messages;
+    return messages.map((message, index) => (index === lastUserIndex ? { ...message, content } : message));
+  }
+
   private async analyze(
     userMessage: string,
     sql: string,
@@ -343,6 +385,14 @@ export class AiSqlService {
 
   private looksLikePageWorkflowRequest(userMessage: string): boolean {
     return PAGE_WORKFLOW_KEYWORDS.some((keyword) => userMessage.includes(keyword));
+  }
+
+  private looksLikeDataQueryRequest(userMessage: string): boolean {
+    const normalized = userMessage.replace(/\s+/g, '');
+    return (
+      /등록건수|건수|몇건|몇개|총수|전체수|카운트|count/i.test(normalized) ||
+      /(조회|목록|리스트|현황|검색|보여줘|찾아줘)/.test(userMessage)
+    );
   }
 
   /** 사용자 요청 → 페이지의 backend write 도구 호출 매핑(LLM). 없으면 null */

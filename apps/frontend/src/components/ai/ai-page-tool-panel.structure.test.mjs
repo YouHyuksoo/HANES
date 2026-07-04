@@ -48,6 +48,16 @@ test('AI persona selector explains answer style on hover', () => {
   assert.match(source, /API/);
 });
 
+test('AI chat panel exposes explicit route mode prefix buttons', () => {
+  const source = read('apps/frontend/src/components/ai/AiChatPanel.tsx');
+  assert.match(source, /AI_ROUTE_MODES/);
+  assert.match(source, /applyRoutePrefix/);
+  assert.match(source, /\/MES/);
+  assert.match(source, /\/HELP/);
+  assert.match(source, /\/DO/);
+  assert.match(source, /\/WEB/);
+});
+
 test('AI chat store persists conversation history and persona', () => {
   const source = read('apps/frontend/src/stores/aiChatStore.ts');
   assert.match(source, /persist/);

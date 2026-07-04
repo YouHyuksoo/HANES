@@ -72,6 +72,13 @@ const AI_PERSONAS: Array<{
   },
 ];
 
+const AI_ROUTE_MODES = [
+  { prefix: "/MES", label: "/MES", title: "MES 데이터 조회" },
+  { prefix: "/HELP", label: "/HELP", title: "도움말 검색" },
+  { prefix: "/DO", label: "/DO", title: "현재 화면 작업" },
+  { prefix: "/WEB", label: "/WEB", title: "외부 웹 검색" },
+];
+
 export default function AiChatPanel() {
   const { t } = useTranslation();
   const pathname = usePathname();
@@ -180,6 +187,14 @@ export default function AiChatPanel() {
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [input, sending, messages, addMessage, t, manifest, pathname, persona]);
+
+  const applyRoutePrefix = useCallback((prefix: string) => {
+    setInput((prev) => {
+      const withoutPrefix = prev.trimStart().replace(/^\/(MES|HELP|DO|WEB)\b\s*/i, "");
+      return `${prefix} ${withoutPrefix}`.trimEnd();
+    });
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }, []);
 
   const approve = useCallback(
     async (idx: number, sql?: string) => {
@@ -576,25 +591,44 @@ export default function AiChatPanel() {
       </div>
 
       {/* 입력 */}
-      <div className={`items-end gap-2 border-t border-border p-3 ${activeTab === "chat" ? "flex" : "hidden"}`}>
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={onKeyDown}
-          rows={1}
-          placeholder={t("ai.chat.inputPlaceholder", "메시지를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)")}
-          className="max-h-32 min-h-[40px] flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-        />
-        <button
-          type="button"
-          onClick={send}
-          disabled={!input.trim() || sending}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-white transition-colors hover:bg-primary-dark disabled:opacity-40"
-          title={t("ai.chat.send", "전송")}
-        >
-          <Send className="h-4 w-4" />
-        </button>
+      <div className={`border-t border-border p-3 ${activeTab === "chat" ? "block" : "hidden"}`}>
+        <div className="mb-2 flex flex-wrap gap-1">
+          {AI_ROUTE_MODES.map((mode) => (
+            <button
+              key={mode.prefix}
+              type="button"
+              onClick={() => applyRoutePrefix(mode.prefix)}
+              title={mode.title}
+              className={`h-7 rounded border px-2 text-[11px] font-medium ${
+                input.trimStart().toUpperCase().startsWith(mode.prefix)
+                  ? "border-primary bg-primary text-white"
+                  : "border-border bg-surface text-text-muted hover:bg-surface-secondary hover:text-text"
+              }`}
+            >
+              {mode.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-end gap-2">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            rows={1}
+            placeholder={t("ai.chat.inputPlaceholder", "메시지를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)")}
+            className="max-h-32 min-h-[40px] flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+          />
+          <button
+            type="button"
+            onClick={send}
+            disabled={!input.trim() || sending}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-white transition-colors hover:bg-primary-dark disabled:opacity-40"
+            title={t("ai.chat.send", "전송")}
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
