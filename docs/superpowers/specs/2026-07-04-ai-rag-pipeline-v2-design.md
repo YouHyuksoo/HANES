@@ -135,8 +135,10 @@ CREATE TABLE ai_knowledge_troubleshooting (
       출력(JSON): { intent: usage|workflow|troubleshoot|engineer,
                     queries: [검색질의 2~3개], menus: [언급 메뉴코드] }
  → [2] 하이브리드 검색
-      질의별 vector top-30 + FTS top-30 → RRF(Reciprocal Rank Fusion) 융합
-      기존 0.6/0.3 가중치·정규식 휴리스틱 폐기
+      질의별로 기존 search()(vector+FTS+lexical 융합)를 호출하고,
+      질의 간 결과는 RRF(Reciprocal Rank Fusion)로 융합
+      ※ 단일 질의 내부 점수 체계(2026-07-04 기준 lexical 개선 포함)는 기존
+        테스트가 보증하므로 유지한다. RRF는 멀티 질의 융합에만 적용.
  → [3] 그래프 확장 (LLM 없음)
       매칭 청크의 menuCode → ai_knowledge_graph 1~2홉 이웃(선행/후행) 문서의
       대표 청크(개요 섹션)를 컨텍스트에 강제 포함.
