@@ -16,6 +16,9 @@ steps:
   - menu: SHIP_PALLET
     requires: [QC_OQC]
     transitions: "PALLET_STATUS OPEN→CLOSED→LOADED→SHIPPED"
+  - menu: SHIP_PALLET_SHIP
+    requires: [SHIP_ORDER=CONFIRMED, SHIP_PALLET=CLOSED]
+    transitions: "PALLET_STATUS CLOSED→SHIPPED"
   - menu: SHIP_BOX_STOCK
     requires: [SHIP_PACK]
   - menu: SHIP_CONFIRM
@@ -59,6 +62,9 @@ relatedWorkflows: [PROD_FLOW, QC_FLOW]
 
 ### 5. 팔레트관리(SHIP_PALLET)
 OQC 합격(PASS) 박스만 팔레트에 적재할 수 있다. `OPEN`(적재중)에서 박스를 담고 `CLOSED`(마감)로 전환한 뒤 출하에 할당하면 `LOADED`가 된다. 출하 완료 시 `SHIPPED`로 종결된다. 박스 단위가 아닌 팔레트 단위로 출하를 관리하는 이유는 실제 상차/배송이 팔레트 단위로 이뤄지기 때문이다.
+
+### 5-1. 팔레트출하(SHIP_PALLET_SHIP)
+적재 완료(CLOSED) 팔레트를 바코드 스캔으로 조회해 팔레트 단위로 최종 출하 확정(SHIPPED)하는 화면이다. 확정(CONFIRMED) 상태의 출하지시를 선택하고 팔레트를 스캔하면 출하확정 버튼이 활성화된다. 출하확정(SHIP_CONFIRM)의 출하 단계와 병행하는 팔레트 스캔 중심 경로다. 참고로 PDA 출하는 박스 단위만 지원하며 팔레트 스캔은 PDA에서 처리할 수 없다(결정 D-20260611-PDA-SHIPPING-BOX-ONLY).
 
 ### 6. 박스입고재고(SHIP_BOX_STOCK)
 FG_LABELS 기준으로 박스별 미출하 재고를 조회한다. 팔레트 적재 전, 어떤 박스가 아직 출하되지 않았는지 확인하는 조회 화면이다.
