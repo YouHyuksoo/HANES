@@ -8745,7 +8745,9 @@
       "copied": "복사됨",
       "like": "좋아요",
       "dislike": "싫어요",
-      "resize": "드래그하여 너비 조절"
+      "resize": "드래그하여 너비 조절",
+      "embeddingDegraded": "의미 검색 비활성",
+      "embeddingDegradedHint": "임베딩 API 키가 없어 의미 검색이 비활성화되었습니다. 시스템 설정에서 AI 임베딩 키를 등록하세요."
     },
     "config": {
       "provider": "AI 제공자",

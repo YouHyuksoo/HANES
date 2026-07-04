@@ -8738,7 +8738,9 @@
       "copied": "Đã sao chép",
       "like": "Thích",
       "dislike": "Không thích",
-      "resize": "Kéo để thay đổi kích thước"
+      "resize": "Kéo để thay đổi kích thước",
+      "embeddingDegraded": "Tắt tìm kiếm ngữ nghĩa",
+      "embeddingDegradedHint": "Tìm kiếm ngữ nghĩa bị tắt vì chưa có khóa API embedding. Hãy đăng ký khóa AI embedding trong Cấu hình hệ thống."
     },
     "config": {
       "provider": "Nhà cung cấp",

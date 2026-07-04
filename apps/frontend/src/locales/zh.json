@@ -8738,7 +8738,9 @@
       "copied": "已复制",
       "like": "赞",
       "dislike": "踩",
-      "resize": "拖动调整宽度"
+      "resize": "拖动调整宽度",
+      "embeddingDegraded": "语义搜索未启用",
+      "embeddingDegradedHint": "未配置嵌入 API 密钥，语义搜索已停用。请在系统设置中注册 AI 嵌入密钥。"
     },
     "config": {
       "provider": "提供商",

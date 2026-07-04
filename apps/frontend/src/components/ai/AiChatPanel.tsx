@@ -90,6 +90,7 @@ export default function AiChatPanel() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [width, setWidth] = useState(440);
   const [aiStatus, setAiStatus] = useState<{ provider: string; model: string } | null>(null);
+  const [embeddingDegraded, setEmbeddingDegraded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -113,6 +114,16 @@ export default function AiChatPanel() {
       })
       .catch(() => {
         /* 상태 배지는 부가 정보 — 조회 실패해도 채팅 흐름을 막지 않는다 */
+      });
+    api
+      .get("/ai/knowledge/status")
+      .then((res) => {
+        if (cancelled) return;
+        const data = res.data?.data ?? res.data ?? {};
+        setEmbeddingDegraded(data.realEmbeddingProvider === false);
+      })
+      .catch(() => {
+        /* 배지는 부가 정보 — 실패해도 채팅 흐름을 막지 않는다 */
       });
     return () => {
       cancelled = true;
@@ -319,6 +330,14 @@ export default function AiChatPanel() {
           {aiStatus && (
             <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-normal text-text-muted">
               {AI_PROVIDER_LABELS[aiStatus.provider] ?? aiStatus.provider} · {aiStatus.model}
+            </span>
+          )}
+          {embeddingDegraded && (
+            <span
+              className="rounded-full border border-amber-500 px-2 py-0.5 text-[11px] font-normal text-amber-600"
+              title={t("ai.chat.embeddingDegradedHint", "임베딩 API 키가 없어 의미 검색이 비활성화되었습니다. 시스템 설정에서 AI 임베딩 키를 등록하세요.")}
+            >
+              {t("ai.chat.embeddingDegraded", "의미 검색 비활성")}
             </span>
           )}
         </h2>

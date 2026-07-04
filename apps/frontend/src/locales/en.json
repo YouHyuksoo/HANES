@@ -8738,7 +8738,9 @@
       "copied": "Copied",
       "like": "Like",
       "dislike": "Dislike",
-      "resize": "Drag to resize"
+      "resize": "Drag to resize",
+      "embeddingDegraded": "Semantic search off",
+      "embeddingDegradedHint": "Semantic search is disabled because no embedding API key is set. Register an AI embedding key in System Config."
     },
     "config": {
       "provider": "Provider",
