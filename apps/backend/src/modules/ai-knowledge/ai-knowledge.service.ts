@@ -21,7 +21,8 @@ const DEFAULT_KNOWLEDGE_TARGETS: KnowledgeTarget[] = [
   { path: 'docs/standards', docType: 'standard' },
   { path: 'docs/specs', docType: 'spec' },
   { path: 'docs/plans', docType: 'plan' },
-  { path: 'docs/workflows', docType: 'workflow' },
+  // docs/workflows 루트에는 구형 가이드 문서가 있어 정의 문서 전용 하위 폴더만 대상으로 한다.
+  { path: 'docs/workflows/definitions', docType: 'workflow' },
   { path: 'apps/backend/data/ai-table-catalog.md', docType: 'catalog' },
 ];
 
@@ -263,7 +264,7 @@ export class AiKnowledgeService implements OnModuleInit {
       workflowErrors.push(...errors);
     }
     const chunks = documents.flatMap((doc) => chunkMarkdown(doc));
-    const helpMenuCodes = new Set(chunks.filter((c) => c.menuCode).map((c) => c.menuCode as string));
+    const helpMenuCodes = new Set(chunks.filter((c) => c.docType === 'help' && c.menuCode).map((c) => c.menuCode as string));
     for (const wf of workflowDocs) {
       for (const step of wf.steps) {
         if (!helpMenuCodes.has(step.menu)) {

@@ -26,13 +26,13 @@
 
 | 결정 | 선택 | 근거 |
 |---|---|---|
-| 워크플로우 지식 출처 | `docs/workflows/*.md` 신설 (단일 출처) | 사람 검수된 정확한 그래프. LLM 자동 추출(GraphRAG)은 추출 오류 검수 부담으로 제외 |
+| 워크플로우 지식 출처 | `docs/workflows/definitions/*.md` 신설(루트에 구형 가이드 문서가 있어 하위 폴더 분리) (단일 출처) | 사람 검수된 정확한 그래프. LLM 자동 추출(GraphRAG)은 추출 오류 검수 부담으로 제외 |
 | 런타임 깊이 | 풀 파이프라인 (LLM 3회: 질의이해→리랭크→답변) | 복합 질문 품질 우선, 체감 3~6초 허용 |
 | 벡터 저장소 | sqlite-vec 유지 | 4.5MB 코퍼스에 충분, 외부 벡터DB는 운영 부담만 증가 |
 
 ## 4. 소스데이터 계약
 
-### 4-A. 워크플로우 정의 문서 (신설) — `docs/workflows/*.md`
+### 4-A. 워크플로우 정의 문서 (신설) — `docs/workflows/definitions/*.md`
 
 업무 흐름 하나당 파일 하나 (핵심 흐름 8~15개 예상: 생산, 자재입출고, 검사, 출하 등).
 frontmatter = 기계가 읽는 그래프, 본문 = 사람이 읽는 단계별 설명.
@@ -120,7 +120,7 @@ CREATE TABLE ai_knowledge_troubleshooting (
 
 - 도움말 청크는 `menu_code`로 그래프 노드에 연결된다 (기존 컬럼 재사용).
 - reindex 시 workflows 문서도 함께 파싱·재구축.
-- `DEFAULT_KNOWLEDGE_TARGETS`에 `docs/workflows` (docType: `workflow`) 추가.
+- `DEFAULT_KNOWLEDGE_TARGETS`에 `docs/workflows/definitions` (docType: `workflow`) 추가.
 
 ### 5-3. 하이브리드 검색 저장소
 

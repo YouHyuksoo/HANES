@@ -36,7 +36,7 @@ apps/backend/src/modules/ai/
   knowledge-pipeline.service.spec.ts  (신규)
   ai-sql.service.ts               (수정) process()가 파이프라인 사용
   ai.module.ts                    (수정) KnowledgePipelineService provider 등록
-docs/workflows/                   (신규) 워크플로우 정의 문서 5개(초안→사용자 검수)
+docs/workflows/definitions/       (신규) 워크플로우 정의 문서 5개(초안→사용자 검수)
 tools/help-frontmatter-audit.mjs  (신규) 도움말 frontmatter 누락 점검
 apps/frontend/src/components/ai/AiChatPanel.tsx  (수정) 임베딩 degrade 경고 배지
 apps/frontend/src/locales/{ko,en,zh,vi}/translation.json (수정) 배지 문구 4개 언어
@@ -1538,22 +1538,22 @@ git commit -m "feat(ai): 채팅이 지식 풀 파이프라인 사용 (폴백 포
 ### Task 6: 워크플로우 문서 초안 5개 생성 (사용자 검수 게이트)
 
 **Files:**
-- Create: `docs/workflows/production-flow.md`
-- Create: `docs/workflows/material-flow.md`
-- Create: `docs/workflows/quality-flow.md`
-- Create: `docs/workflows/shipping-flow.md`
-- Create: `docs/workflows/label-serial-flow.md`
+- Create: `docs/workflows/definitions/production-flow.md`
+- Create: `docs/workflows/definitions/material-flow.md`
+- Create: `docs/workflows/definitions/quality-flow.md`
+- Create: `docs/workflows/definitions/shipping-flow.md`
+- Create: `docs/workflows/definitions/label-serial-flow.md`
 
 **절차 (코드 아님 — 콘텐츠 작업):**
 
 - [ ] **Step 1: 소스 수집** — `apps/frontend/src/config/menuConfig*`에서 메뉴코드 체계 확인, `docs/business-logics/*.md`와 `apps/frontend/public/help/user/ko/*.md`에서 각 영역의 상태 전이/선행 조건을 확인한다. 메뉴코드는 반드시 도움말 frontmatter의 실제 `menuCode` 값을 사용한다(추측 금지 — Task 2의 reindex 경고가 오타를 잡지만 처음부터 실측).
 - [ ] **Step 2: 초안 작성** — 스펙 4-A 스키마(workflowId/title/steps[menu,requires,transitions,produces]/troubleshooting/relatedWorkflows)로 5개 영역 초안 작성. 각 문서 본문에는 단계별 설명(왜 이 순서인지, 상태 전이 의미)을 포함한다.
-- [ ] **Step 3: 파서 검증** — 임시 스크립트가 아니라 reindex 호출로 검증한다: 백엔드 dev 서버가 떠 있으면 `POST /api/v1/ai/knowledge/reindex` (targets: ["docs/workflows"]) 후 응답의 `workflowErrors`/`workflowWarnings`가 비어 있는지 확인. 서버가 없으면 jest 임시 테스트로 5개 파일 각각 `parseWorkflowDoc` errors=[] 확인.
+- [ ] **Step 3: 파서 검증** — 임시 스크립트가 아니라 reindex 호출로 검증한다: 백엔드 dev 서버가 떠 있으면 `POST /api/v1/ai/knowledge/reindex` (targets: ["docs/workflows/definitions"]) 후 응답의 `workflowErrors`/`workflowWarnings`가 비어 있는지 확인. 서버가 없으면 jest 임시 테스트로 5개 파일 각각 `parseWorkflowDoc` errors=[] 확인.
 - [ ] **Step 4: 사용자 검수 요청** — 5개 초안을 사용자에게 보여주고 업무 흐름이 실제와 맞는지 확인받는다. **검수 승인 전에는 커밋하지 않는다.**
 - [ ] **Step 5: 검수 반영 후 커밋**
 
 ```bash
-git add docs/workflows/production-flow.md docs/workflows/material-flow.md docs/workflows/quality-flow.md docs/workflows/shipping-flow.md docs/workflows/label-serial-flow.md
+git add docs/workflows/definitions/production-flow.md docs/workflows/definitions/material-flow.md docs/workflows/definitions/quality-flow.md docs/workflows/definitions/shipping-flow.md docs/workflows/definitions/label-serial-flow.md
 git commit -m "docs(workflows): 핵심 업무 흐름 워크플로우 정의 5종 (검수 완료)"
 ```
 
