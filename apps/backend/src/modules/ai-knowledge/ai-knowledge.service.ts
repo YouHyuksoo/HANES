@@ -8,6 +8,7 @@ import * as fsSync from 'fs';
 import * as path from 'path';
 import { EmbeddingService } from './embedding.service';
 import { KnowledgeChunk, chunkMarkdown } from './markdown-chunker';
+import { WorkflowDoc, parseWorkflowDoc } from './workflow-parser';
 
 type DatabaseInstance = any;
 
@@ -20,6 +21,7 @@ const DEFAULT_KNOWLEDGE_TARGETS: KnowledgeTarget[] = [
   { path: 'docs/standards', docType: 'standard' },
   { path: 'docs/specs', docType: 'spec' },
   { path: 'docs/plans', docType: 'plan' },
+  { path: 'docs/workflows', docType: 'workflow' },
   { path: 'apps/backend/data/ai-table-catalog.md', docType: 'catalog' },
 ];
 
@@ -44,6 +46,20 @@ export interface KnowledgeSearchResult {
   content: string;
 }
 
+export interface WorkflowMenuContext {
+  workflows: Array<{ workflowId: string; title: string; stepIndex: number; totalSteps: number }>;
+  prevMenus: string[];
+  nextMenus: string[];
+  requires: string[];
+}
+
+export interface TroubleshootingHit {
+  workflowId: string;
+  symptom: string;
+  causes: string[];
+  resolutions: string[];
+}
+
 export interface KnowledgeReindexResult {
   ok: boolean;
   vectorEnabled: boolean;
@@ -55,6 +71,9 @@ export interface KnowledgeReindexResult {
   provider: string;
   model: string;
   dims: number;
+  workflowErrors: string[];
+  workflowWarnings: string[];
+  graphEdges: number;
 }
 
 export interface KnowledgeReindexOptions {
@@ -143,7 +162,39 @@ export class AiKnowledgeService implements OnModuleInit {
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS ai_knowledge_graph (
+        workflow_id TEXT NOT NULL,
+        workflow_title TEXT NOT NULL,
+        from_menu TEXT NOT NULL,
+        to_menu TEXT NOT NULL,
+        edge_type TEXT NOT NULL,
+        detail TEXT,
+        step_index INTEGER,
+        PRIMARY KEY (workflow_id, from_menu, to_menu, edge_type)
+      );
+      CREATE TABLE IF NOT EXISTS ai_knowledge_workflow_steps (
+        workflow_id TEXT NOT NULL,
+        workflow_title TEXT NOT NULL,
+        source_path TEXT NOT NULL,
+        menu_code TEXT NOT NULL,
+        step_index INTEGER NOT NULL,
+        total_steps INTEGER NOT NULL,
+        requires_json TEXT NOT NULL,
+        PRIMARY KEY (workflow_id, menu_code)
+      );
+      CREATE TABLE IF NOT EXISTS ai_knowledge_troubleshooting (
+        workflow_id TEXT NOT NULL,
+        symptom TEXT NOT NULL,
+        causes_json TEXT NOT NULL,
+        resolutions_json TEXT NOT NULL,
+        PRIMARY KEY (workflow_id, symptom)
+      );
     `);
+    try {
+      db.exec(`ALTER TABLE ai_knowledge_chunks ADD COLUMN context_header TEXT`);
+    } catch {
+      // 이미 컬럼이 있으면 무시한다.
+    }
   }
 
   private ensureVectorSchema(dims: number): void {
@@ -203,12 +254,29 @@ export class AiKnowledgeService implements OnModuleInit {
     this.ensureVectorSchema(cfg.dims);
     const targets = this.resolveTargets(options.targets);
     const documents = await this.collectDocuments(targets);
+    const workflowErrors: string[] = [];
+    const workflowWarnings: string[] = [];
+    const workflowDocs: WorkflowDoc[] = [];
+    for (const doc of documents.filter((d) => d.docType === 'workflow')) {
+      const { doc: parsed, errors } = parseWorkflowDoc(doc.raw, doc.sourcePath);
+      if (parsed) workflowDocs.push(parsed);
+      workflowErrors.push(...errors);
+    }
     const chunks = documents.flatMap((doc) => chunkMarkdown(doc));
+    const helpMenuCodes = new Set(chunks.filter((c) => c.menuCode).map((c) => c.menuCode as string));
+    for (const wf of workflowDocs) {
+      for (const step of wf.steps) {
+        if (!helpMenuCodes.has(step.menu)) {
+          workflowWarnings.push(`${wf.sourcePath}: 도움말에 없는 메뉴코드 ${step.menu} (오타 확인)`);
+        }
+      }
+    }
     const now = new Date().toISOString();
     const embeddingRows = await this.resolveChunkEmbeddings(chunks, cfg.provider, cfg.model, cfg.dims, now);
     const embeddings = embeddingRows.map((row) => row.vector);
     const embedded = embeddingRows.filter((row) => !row.reused).length;
     const reused = embeddingRows.length - embedded;
+    let graphEdges = 0;
     const tx = db.transaction(() => {
       db.exec(`DELETE FROM ai_knowledge_chunks; DELETE FROM ai_knowledge_fts;`);
       if (this.vectorEnabled) db.exec(`DELETE FROM ai_knowledge_vec;`);
@@ -254,6 +322,7 @@ export class AiKnowledgeService implements OnModuleInit {
         const deleteEmbedding = db.prepare(`DELETE FROM ai_knowledge_embeddings WHERE chunk_id = ?`);
         for (const row of existingIds) if (!activeIds.has(row.chunkId)) deleteEmbedding.run(row.chunkId);
       }
+      graphEdges = this.rebuildWorkflowGraph(workflowDocs);
       db.prepare(`INSERT OR REPLACE INTO ai_knowledge_meta(key, value) VALUES ('last_reindex_at', ?)`).run(now);
     });
     tx();
@@ -269,7 +338,148 @@ export class AiKnowledgeService implements OnModuleInit {
       provider: cfg.provider,
       model: cfg.model,
       dims: cfg.dims,
+      workflowErrors,
+      workflowWarnings,
+      graphEdges,
     };
+  }
+
+  /** workflows 문서에서 그래프/단계/트러블슈팅 테이블을 전량 재구축한다. */
+  private rebuildWorkflowGraph(docs: WorkflowDoc[]): number {
+    const db = this.db!;
+    db.exec(`DELETE FROM ai_knowledge_graph; DELETE FROM ai_knowledge_workflow_steps; DELETE FROM ai_knowledge_troubleshooting;`);
+    const insertEdge = db.prepare(`
+      INSERT OR REPLACE INTO ai_knowledge_graph(workflow_id, workflow_title, from_menu, to_menu, edge_type, detail, step_index)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const insertStep = db.prepare(`
+      INSERT OR REPLACE INTO ai_knowledge_workflow_steps(workflow_id, workflow_title, source_path, menu_code, step_index, total_steps, requires_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const insertTrouble = db.prepare(`
+      INSERT OR REPLACE INTO ai_knowledge_troubleshooting(workflow_id, symptom, causes_json, resolutions_json)
+      VALUES (?, ?, ?, ?)
+    `);
+    let edges = 0;
+    for (const doc of docs) {
+      doc.steps.forEach((step, index) => {
+        insertStep.run(doc.workflowId, doc.title, doc.sourcePath, step.menu, index + 1, doc.steps.length, JSON.stringify(step.requires));
+        if (index > 0) {
+          insertEdge.run(doc.workflowId, doc.title, doc.steps[index - 1].menu, step.menu, 'precedes', step.transitions ?? null, index + 1);
+          edges += 1;
+        }
+        for (const requirement of step.requires) {
+          const [reqMenu, reqState] = requirement.split('=');
+          insertEdge.run(doc.workflowId, doc.title, reqMenu.trim(), step.menu, 'requires', reqState?.trim() ?? null, index + 1);
+          edges += 1;
+        }
+        for (const artifact of step.produces) {
+          insertEdge.run(doc.workflowId, doc.title, step.menu, artifact, 'produces', null, index + 1);
+          edges += 1;
+        }
+      });
+      for (const trouble of doc.troubleshooting) {
+        insertTrouble.run(doc.workflowId, trouble.symptom, JSON.stringify(trouble.causes), JSON.stringify(trouble.resolutions));
+      }
+    }
+    return edges;
+  }
+
+  /** 메뉴가 속한 워크플로우와 선행/후행 메뉴를 반환한다 (그래프 1홉). */
+  getWorkflowContext(menuCode: string): WorkflowMenuContext {
+    const db = this.db!;
+    const stepRows = db.prepare(`
+      SELECT workflow_id AS workflowId, workflow_title AS title, step_index AS stepIndex, total_steps AS totalSteps, requires_json AS requiresJson
+      FROM ai_knowledge_workflow_steps
+      WHERE menu_code = ?
+      ORDER BY workflow_id
+    `).all(menuCode) as Array<{ workflowId: string; title: string; stepIndex: number; totalSteps: number; requiresJson: string }>;
+    const prevRows = db.prepare(`
+      SELECT DISTINCT from_menu AS menu FROM ai_knowledge_graph WHERE to_menu = ? AND edge_type = 'precedes'
+    `).all(menuCode) as Array<{ menu: string }>;
+    const nextRows = db.prepare(`
+      SELECT DISTINCT to_menu AS menu FROM ai_knowledge_graph WHERE from_menu = ? AND edge_type = 'precedes'
+    `).all(menuCode) as Array<{ menu: string }>;
+    const requires = new Set<string>();
+    for (const row of stepRows) {
+      for (const item of this.parseRelatedMenuCodes(row.requiresJson)) requires.add(item);
+    }
+    return {
+      workflows: stepRows.map(({ workflowId, title, stepIndex, totalSteps }) => ({ workflowId, title, stepIndex, totalSteps })),
+      prevMenus: prevRows.map((row) => row.menu),
+      nextMenus: nextRows.map((row) => row.menu),
+      requires: Array.from(requires),
+    };
+  }
+
+  /** 메뉴들의 대표(첫 번째) 청크를 audience 우선으로 반환한다 — 그래프 확장 컨텍스트용. */
+  getMenuOverviewChunks(menuCodes: string[], audience: string, limit: number): KnowledgeSearchResult[] {
+    if (menuCodes.length === 0) return [];
+    const db = this.db!;
+    const placeholders = menuCodes.map(() => '?').join(',');
+    const rows = db.prepare(`
+      SELECT chunk_id AS chunkId, doc_type AS docType, source_path AS sourcePath, menu_code AS menuCode, audience,
+             title, heading, summary, content
+      FROM ai_knowledge_chunks
+      WHERE menu_code IN (${placeholders}) AND doc_type = 'help'
+      ORDER BY menu_code, CASE WHEN audience = ? THEN 0 ELSE 1 END, chunk_id
+    `).all(...menuCodes, audience) as Omit<KnowledgeSearchResult, 'score'>[];
+    const seen = new Set<string>();
+    const out: KnowledgeSearchResult[] = [];
+    for (const row of rows) {
+      const key = row.menuCode ?? row.sourcePath;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ ...row, score: 0 });
+      if (out.length >= limit) break;
+    }
+    return out;
+  }
+
+  /** 워크플로우 정의 문서 자체의 청크를 반환한다 (workflow_steps의 source_path로 매칭). */
+  getWorkflowDocChunks(workflowIds: string[], limit: number): KnowledgeSearchResult[] {
+    if (workflowIds.length === 0) return [];
+    const db = this.db!;
+    const idPlaceholders = workflowIds.map(() => '?').join(',');
+    const pathRows = db.prepare(`
+      SELECT DISTINCT source_path AS sourcePath FROM ai_knowledge_workflow_steps WHERE workflow_id IN (${idPlaceholders})
+    `).all(...workflowIds) as Array<{ sourcePath: string }>;
+    if (pathRows.length === 0) return [];
+    const pathPlaceholders = pathRows.map(() => '?').join(',');
+    const rows = db.prepare(`
+      SELECT chunk_id AS chunkId, doc_type AS docType, source_path AS sourcePath, menu_code AS menuCode, audience,
+             title, heading, summary, content
+      FROM ai_knowledge_chunks
+      WHERE doc_type = 'workflow' AND source_path IN (${pathPlaceholders})
+      LIMIT ?
+    `).all(...pathRows.map((row) => row.sourcePath), limit) as Omit<KnowledgeSearchResult, 'score'>[];
+    return rows.map((row) => ({ ...row, score: 0 }));
+  }
+
+  /** 증상/원인 텍스트 부분 매칭 — 문제해결 의도 질문용. */
+  searchTroubleshooting(query: string, limit: number): TroubleshootingHit[] {
+    const db = this.db!;
+    const terms = this.buildLexicalTerms(query);
+    if (terms.length === 0) return [];
+    const rows = db.prepare(`
+      SELECT workflow_id AS workflowId, symptom, causes_json AS causesJson, resolutions_json AS resolutionsJson
+      FROM ai_knowledge_troubleshooting
+    `).all() as Array<{ workflowId: string; symptom: string; causesJson: string; resolutionsJson: string }>;
+    const scored = rows
+      .map((row) => {
+        const haystack = `${row.symptom}\n${row.causesJson}`;
+        const hits = terms.filter((term) => haystack.includes(term));
+        return { row, score: hits.reduce((sum, term) => sum + Math.min(term.length, 6), 0) };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+    return scored.map(({ row }) => ({
+      workflowId: row.workflowId,
+      symptom: row.symptom,
+      causes: this.parseRelatedMenuCodes(row.causesJson),
+      resolutions: this.parseRelatedMenuCodes(row.resolutionsJson),
+    }));
   }
 
   async search(query: string, context: KnowledgeSearchContext = {}, topK = 6): Promise<KnowledgeSearchResult[]> {
@@ -630,6 +840,7 @@ export class AiKnowledgeService implements OnModuleInit {
     if (targetPath.startsWith('docs/standards')) return 'standard';
     if (targetPath.startsWith('docs/specs')) return 'spec';
     if (targetPath.startsWith('docs/plans')) return 'plan';
+    if (targetPath.startsWith('docs/workflows')) return 'workflow';
     if (targetPath.includes('catalog')) return 'catalog';
     return 'document';
   }

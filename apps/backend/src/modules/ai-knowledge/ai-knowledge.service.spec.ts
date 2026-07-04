@@ -342,3 +342,81 @@ describe('AiKnowledgeService search ranking', () => {
     expect(result[0].sourcePath).toBe('apps/frontend/public/help/user/ko/PROD_INPUT_KIOSK.md');
   });
 });
+
+describe('AiKnowledgeService workflow graph', () => {
+  function makeServiceWithDb() {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const Database = require('better-sqlite3');
+    const db = new Database(':memory:');
+    const service = new AiKnowledgeService({ embed: jest.fn() } as any);
+    (service as any).db = db;
+    (service as any).vectorEnabled = false;
+    (service as any).ensureBaseSchema();
+    return { service, db };
+  }
+
+  it('rebuildWorkflowGraph가 steps를 precedes/requires/produces 엣지로 저장한다', () => {
+    const { service, db } = makeServiceWithDb();
+    (service as any).rebuildWorkflowGraph([
+      {
+        workflowId: 'PROD_FLOW',
+        title: '생산 흐름',
+        sourcePath: 'docs/workflows/prod.md',
+        body: '',
+        relatedWorkflows: [],
+        troubleshooting: [{ symptom: '라벨 발행이 안 됨', causes: ['JOB_ORDER 상태 오류'], resolutions: ['상태 확인'] }],
+        steps: [
+          { menu: 'PROD_PLAN', requires: [], produces: [] },
+          { menu: 'JOB_ORDER', requires: ['PROD_PLAN'], transitions: 'WAITING→RUNNING', produces: [] },
+          { menu: 'PROD_INPUT_KIOSK', requires: ['JOB_ORDER=RUNNING'], produces: ['FG_LABEL'] },
+        ],
+      },
+    ]);
+    const edges = db.prepare(`SELECT edge_type AS edgeType, from_menu AS fromMenu, to_menu AS toMenu FROM ai_knowledge_graph ORDER BY edge_type, from_menu`).all();
+    expect(edges).toContainEqual({ edgeType: 'precedes', fromMenu: 'PROD_PLAN', toMenu: 'JOB_ORDER' });
+    expect(edges).toContainEqual({ edgeType: 'precedes', fromMenu: 'JOB_ORDER', toMenu: 'PROD_INPUT_KIOSK' });
+    expect(edges).toContainEqual({ edgeType: 'requires', fromMenu: 'JOB_ORDER', toMenu: 'PROD_INPUT_KIOSK' });
+    expect(edges).toContainEqual({ edgeType: 'produces', fromMenu: 'PROD_INPUT_KIOSK', toMenu: 'FG_LABEL' });
+    const troubles = db.prepare(`SELECT symptom FROM ai_knowledge_troubleshooting`).all();
+    expect(troubles).toHaveLength(1);
+  });
+
+  it('getWorkflowContext가 선행/후행 메뉴와 단계 위치를 반환한다', () => {
+    const { service } = makeServiceWithDb();
+    (service as any).rebuildWorkflowGraph([
+      {
+        workflowId: 'PROD_FLOW', title: '생산 흐름', sourcePath: 'docs/workflows/prod.md', body: '', relatedWorkflows: [], troubleshooting: [],
+        steps: [
+          { menu: 'PROD_PLAN', requires: [], produces: [] },
+          { menu: 'JOB_ORDER', requires: [], produces: [] },
+          { menu: 'FG_RECEIVE', requires: ['FG_LABEL'], produces: [] },
+        ],
+      },
+    ]);
+    const ctx = service.getWorkflowContext('JOB_ORDER');
+    expect(ctx.workflows).toEqual([{ workflowId: 'PROD_FLOW', title: '생산 흐름', stepIndex: 2, totalSteps: 3 }]);
+    expect(ctx.prevMenus).toEqual(['PROD_PLAN']);
+    expect(ctx.nextMenus).toEqual(['FG_RECEIVE']);
+    const ctxLast = service.getWorkflowContext('FG_RECEIVE');
+    expect(ctxLast.requires).toEqual(['FG_LABEL']);
+    expect(ctxLast.nextMenus).toEqual([]);
+  });
+
+  it('searchTroubleshooting이 증상/원인 텍스트를 부분 매칭한다', () => {
+    const { service } = makeServiceWithDb();
+    (service as any).rebuildWorkflowGraph([
+      {
+        workflowId: 'PROD_FLOW', title: '생산 흐름', sourcePath: 'docs/workflows/prod.md', body: '', relatedWorkflows: [],
+        troubleshooting: [
+          { symptom: '라벨 발행이 안 됨', causes: ['작업지시 상태가 RUNNING 아님'], resolutions: ['상태 확인'] },
+          { symptom: '입고 수량 불일치', causes: ['박스 스캔 누락'], resolutions: ['재스캔'] },
+        ],
+        steps: [{ menu: 'PROD_PLAN', requires: [], produces: [] }],
+      },
+    ]);
+    const hits = service.searchTroubleshooting('라벨 발행이 왜 안 되지', 5);
+    expect(hits).toHaveLength(1);
+    expect(hits[0].symptom).toBe('라벨 발행이 안 됨');
+    expect(hits[0].causes).toEqual(['작업지시 상태가 RUNNING 아님']);
+  });
+});
