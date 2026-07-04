@@ -29,6 +29,11 @@ describe('AiSqlService response quality prompts', () => {
       search: jest.fn().mockResolvedValue([]),
       formatContext: jest.fn().mockReturnValue(''),
     };
+    // 지식 풀 파이프라인은 실패시켜 기존 단일 검색(this.knowledge.search) 폴백 경로를 타게 한다.
+    // (이 스펙의 테스트들은 knowledge.search/formatContext 목의 반환값으로 시나리오를 검증하므로 의도를 보존한다)
+    const knowledgePipeline = {
+      retrieve: jest.fn().mockRejectedValue(new Error('pipeline test stub')),
+    };
     const dataSource = {
       query: jest.fn().mockResolvedValue([{ PARTNER_NAME: '테스트 거래처' }]),
     };
@@ -40,6 +45,7 @@ describe('AiSqlService response quality prompts', () => {
       validator as any,
       pageTools as any,
       knowledge as any,
+      knowledgePipeline as any,
       dataSource as any,
     );
 
@@ -101,5 +107,68 @@ describe('AiSqlService response quality prompts', () => {
     expect(analysisSystemPrompt).toContain('판단 근거');
     expect(analysisSystemPrompt).toContain('추가 확인');
     expect(analysisUserPrompt).toContain('결과 행 수: 1');
+  });
+});
+
+describe('AiSqlService knowledge pipeline 연동', () => {
+  it('process가 KnowledgePipelineService.retrieve 결과를 knowledgePrompt와 sources로 사용한다', async () => {
+    const pipeline = {
+      retrieve: jest.fn().mockResolvedValue({
+        intent: 'workflow',
+        prompt: '## 워크플로우 전후 단계\n내용',
+        chunks: [
+          {
+            chunkId: 'c1', score: 0.5, sourcePath: 'docs/workflows/prod.md', docType: 'workflow',
+            menuCode: 'JOB_ORDER', audience: undefined, title: '생산 흐름', heading: '개요', content: '...',
+          },
+        ],
+      }),
+    };
+    const aiService = { complete: jest.fn().mockResolvedValue('답변') };
+    const service = new AiSqlService(
+      aiService as any,
+      { getSelectionCatalog: jest.fn().mockResolvedValue({ catalog: '', tables: [] }), getRelationsText: jest.fn() } as any,
+      { getSelectionCatalog: jest.fn().mockResolvedValue({ catalog: '', tables: [] }), getSchemaText: jest.fn() } as any,
+      { validate: jest.fn(), stripFences: jest.fn((s: string) => s) } as any,
+      { getManifest: jest.fn() } as any,
+      { formatContext: jest.fn() } as any,
+      pipeline as any,
+      {} as any,
+    );
+    // selectTables가 빈 배열 → generalChat 경로
+    jest.spyOn(service as any, 'selectTables').mockResolvedValue([]);
+
+    const result = await service.process([{ role: 'user', content: '작업지시 다음엔 뭐 해?' }], undefined, { persona: 'user' } as any);
+
+    expect(pipeline.retrieve).toHaveBeenCalledWith('작업지시 다음엔 뭐 해?', { persona: 'user' });
+    expect(result.sources?.[0].chunkId).toBe('c1');
+    // generalChat system 프롬프트에 파이프라인 prompt가 포함되어야 한다
+    const systemContent = aiService.complete.mock.calls[0][0][0].content as string;
+    expect(systemContent).toContain('워크플로우 전후 단계');
+  });
+
+  it('파이프라인 실패 시 기존 단일 검색으로 폴백한다', async () => {
+    const pipeline = { retrieve: jest.fn().mockRejectedValue(new Error('LLM down')) };
+    const knowledge = {
+      search: jest.fn().mockResolvedValue([]),
+      formatContext: jest.fn().mockReturnValue(''),
+    };
+    const aiService = { complete: jest.fn().mockResolvedValue('답변') };
+    const service = new AiSqlService(
+      aiService as any,
+      { getSelectionCatalog: jest.fn().mockResolvedValue({ catalog: '', tables: [] }), getRelationsText: jest.fn() } as any,
+      { getSelectionCatalog: jest.fn().mockResolvedValue({ catalog: '', tables: [] }), getSchemaText: jest.fn() } as any,
+      { validate: jest.fn(), stripFences: jest.fn((s: string) => s) } as any,
+      { getManifest: jest.fn() } as any,
+      knowledge as any,
+      pipeline as any,
+      {} as any,
+    );
+    jest.spyOn(service as any, 'selectTables').mockResolvedValue([]);
+
+    const result = await service.process([{ role: 'user', content: '질문' }], undefined, {} as any);
+
+    expect(knowledge.search).toHaveBeenCalled();
+    expect(result.content).toBeTruthy();
   });
 });

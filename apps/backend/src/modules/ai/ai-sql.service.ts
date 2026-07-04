@@ -15,6 +15,7 @@ import { SqlValidatorService } from './sql-validator.service';
 import { AiPageToolsService } from '../ai-page-tools/ai-page-tools.service';
 import { AiChatMessageDto, AiKnowledgeContextDto, AiPageToolContextDto } from './dto/ai-chat.dto';
 import { AiKnowledgeService, KnowledgeSearchResult } from '../ai-knowledge/ai-knowledge.service';
+import { KnowledgeIntent, KnowledgePipelineService } from './knowledge-pipeline.service';
 
 export interface AiPageToolCallProposal {
   pageId: string;
@@ -135,6 +136,7 @@ export class AiSqlService {
     private readonly validator: SqlValidatorService,
     private readonly pageTools: AiPageToolsService,
     private readonly knowledge: AiKnowledgeService,
+    private readonly knowledgePipeline: KnowledgePipelineService,
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
@@ -148,14 +150,23 @@ export class AiSqlService {
 
     let knowledgePrompt = '';
     let knowledgeChunks: KnowledgeSearchResult[] = [];
+    let knowledgeIntent: KnowledgeIntent = 'usage';
     try {
-      knowledgeChunks = await this.knowledge.search(userMessage, knowledgeContext, 5);
-      knowledgePrompt = this.knowledge.formatContext(knowledgeChunks);
-    } catch (error) {
-      this.logger.warn(`AI 지식 검색 실패: ${error instanceof Error ? error.message : String(error)}`);
+      const pipelineResult = await this.knowledgePipeline.retrieve(userMessage, knowledgeContext);
+      knowledgePrompt = pipelineResult.prompt;
+      knowledgeChunks = pipelineResult.chunks;
+      knowledgeIntent = pipelineResult.intent;
+    } catch (error: unknown) {
+      this.logger.warn(`지식 파이프라인 실패, 단일 검색 폴백: ${error instanceof Error ? error.message : String(error)}`);
+      try {
+        knowledgeChunks = await this.knowledge.search(userMessage, knowledgeContext, 5);
+        knowledgePrompt = this.knowledge.formatContext(knowledgeChunks);
+      } catch (fallbackError: unknown) {
+        this.logger.warn(`AI 지식 검색 실패: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`);
+      }
     }
 
-    const result = await this.processWithKnowledge(userMessage, messages, pageToolContext, knowledgePrompt, knowledgeContext);
+    const result = await this.processWithKnowledge(userMessage, messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent);
     return this.withSources(result, knowledgeChunks);
   }
 
@@ -183,6 +194,7 @@ export class AiSqlService {
     pageToolContext: AiPageToolContextDto | undefined,
     knowledgePrompt: string,
     knowledgeContext?: AiKnowledgeContextDto,
+    knowledgeIntent: KnowledgeIntent = 'usage',
   ): Promise<AiSqlResult> {
     if (pageToolContext && this.looksLikePageWorkflowRequest(userMessage)) {
       // 등록/처리 요청 → 페이지의 write 도구로 매핑(있으면 승인 카드로 제안)
@@ -194,18 +206,18 @@ export class AiSqlService {
           requiresApproval: true,
         };
       }
-      return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext);
+      return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent);
     }
 
     // [1단계] 관련 테이블 선택 (없으면 일반 대화)
     const tables = await this.selectTables(userMessage);
-    if (tables.length === 0) return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext);
+    if (tables.length === 0) return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent);
 
     // [2단계] SQL 생성 (스키마 + 카탈로그 관계(JOIN 키) 주입)
     const schemaText = await this.schemaInfo.getSchemaText(tables);
     const relations = await this.catalog.getRelationsText(tables);
     const rawSql = await this.generateSql(userMessage, relations ? `${schemaText}\n\n${relations}` : schemaText);
-    if (!rawSql) return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext);
+    if (!rawSql) return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent);
 
     // [검증]
     const v = this.validator.validate(rawSql);
@@ -226,7 +238,7 @@ export class AiSqlService {
     // 조회: 즉시 실행 + 분석
     try {
       const rows = await this.runSelect(sql);
-      const analysis = await this.analyze(userMessage, sql, rows, knowledgePrompt, knowledgeContext);
+      const analysis = await this.analyze(userMessage, sql, rows, knowledgePrompt, knowledgeContext, knowledgeIntent);
       return { content: analysis, sql, executed: true, rowCount: rows.length };
     } catch (error: unknown) {
       this.logger.error(
@@ -312,10 +324,16 @@ export class AiSqlService {
     rows: Record<string, unknown>[],
     knowledgePrompt = '',
     knowledgeContext?: AiKnowledgeContextDto,
+    knowledgeIntent: KnowledgeIntent = 'usage',
   ): Promise<string> {
     const json = JSON.stringify(rows).slice(0, 9000);
     return this.aiService.complete([
-      { role: 'system', content: [ANALYSIS_PROMPT, this.formatPersonaPrompt(knowledgeContext)].filter(Boolean).join('\n\n') },
+      {
+        role: 'system',
+        content: [ANALYSIS_PROMPT, this.formatPersonaPrompt(knowledgeContext), this.formatIntentPrompt(knowledgeIntent)]
+          .filter(Boolean)
+          .join('\n\n'),
+      },
       {
         role: 'user',
         content: `${knowledgePrompt ? `## 참고 문서\n${knowledgePrompt}\n\n` : ''}## 질문\n${userMessage}\n\n## 실행 SQL\n${sql}\n\n## 결과 행 수: ${rows.length}\n\n## 결과(JSON, 최대 100행)\n${json}\n\n위 결과를 분석해 한국어 마크다운으로 답하세요. 문서를 참고했다면 마지막에 근거를 짧게 표시하세요.`,
@@ -387,6 +405,7 @@ export class AiSqlService {
     pageToolContext?: AiPageToolContextDto,
     knowledgePrompt = '',
     knowledgeContext?: AiKnowledgeContextDto,
+    knowledgeIntent: KnowledgeIntent = 'usage',
   ): Promise<AiSqlResult> {
     if (!knowledgePrompt.trim()) {
       return { content: NO_KNOWLEDGE_RESPONSE };
@@ -396,12 +415,28 @@ export class AiSqlService {
     const knowledgeSystem = knowledgePrompt
       ? `아래 참고 문서만 답변 근거로 사용할 수 있습니다. 선택된 페르소나에 맞는 출처를 먼저 반영하고, 다른 문서는 보조 근거로 사용하세요. 참고 문서에 없는 내용은 절대 추가하지 말고 "제공된 출처에서는 확인되지 않습니다"라고 답하세요. 참고한 문서가 있으면 확인한 근거로 표시하세요.\n\n## 참고 문서\n${knowledgePrompt}`
       : '';
-    const systemParts = [GENERAL_PROMPT, personaPrompt, pageToolPrompt, knowledgeSystem].filter(Boolean).join('\n\n');
+    const systemParts = [GENERAL_PROMPT, personaPrompt, this.formatIntentPrompt(knowledgeIntent), pageToolPrompt, knowledgeSystem]
+      .filter(Boolean)
+      .join('\n\n');
     const content = await this.aiService.complete([
       { role: 'system', content: systemParts },
       ...messages,
     ]);
     return { content };
+  }
+
+  /** 검색 파이프라인이 분류한 질문 의도별 답변 지침 (근거 섹션을 어떤 순서/관점으로 활용할지 지시) */
+  private formatIntentPrompt(intent: KnowledgeIntent): string {
+    switch (intent) {
+      case 'workflow':
+        return '이 질문은 업무 흐름(전후관계) 질문입니다. "워크플로우 전후 단계" 섹션을 근거로 선행 단계 → 현재 단계 → 후행 단계 순서로 답하고, 각 단계의 메뉴 이름을 명시하세요.';
+      case 'troubleshoot':
+        return '이 질문은 문제 해결 질문입니다. "문제 해결" 섹션과 문서 근거로 증상 → 원인 후보 → 확인/조치 순서로 답하세요. 선행 조건 미충족 가능성을 우선 확인하세요.';
+      case 'engineer':
+        return '이 질문은 기술 구조 질문입니다. 비즈니스 로직 문서를 근거로 테이블/API/상태 전이를 중심으로 답하세요.';
+      default:
+        return '';
+    }
   }
 
   private formatPersonaPrompt(knowledgeContext?: AiKnowledgeContextDto): string {
