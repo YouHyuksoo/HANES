@@ -29,6 +29,7 @@ function makeService(overrides: { complete?: jest.Mock; knowledge?: Record<strin
     getWorkflowContext: jest.fn().mockReturnValue({ workflows: [], prevMenus: [], nextMenus: [], requires: [] }),
     getMenuOverviewChunks: jest.fn().mockReturnValue([]),
     getWorkflowDocChunks: jest.fn().mockReturnValue([]),
+    getBusinessLogicChunks: jest.fn().mockReturnValue([]),
     searchTroubleshooting: jest.fn().mockReturnValue([]),
     formatContext: jest.fn((chunks: unknown[]) => (chunks as Array<{ chunkId: string }>).map((c, i) => `[${i + 1}] ${c.chunkId}`).join('\n')),
     ...overrides.knowledge,
@@ -114,5 +115,22 @@ describe('KnowledgePipelineService', () => {
     });
     const result = await service.retrieve('질문', {} as any);
     expect(result.chunks.map((c) => c.chunkId)).toEqual(['second', 'first']);
+  });
+
+  it('engineer 의도면 매칭 메뉴의 business-logics 청크를 강제 포함하고 비즈니스 로직 섹션을 만든다', async () => {
+    const understanding = JSON.stringify({ intent: 'engineer', queries: ['박스입고 테이블 변경'], menus: [] });
+    const { service, knowledge } = makeService({
+      complete: jest.fn().mockResolvedValueOnce(understanding).mockResolvedValue('[]'),
+      knowledge: {
+        search: jest.fn().mockResolvedValue([chunk('prod_receive')]),
+        getBusinessLogicChunks: jest.fn().mockReturnValue([
+          chunk('bl', { sourcePath: 'docs/business-logics/PROD_RECEIVE.md', docType: 'document', audience: undefined }),
+        ]),
+      },
+    });
+    const result = await service.retrieve('박스입고 저장하면 어떤 테이블이 바뀌어?', {} as any);
+    expect(knowledge.getBusinessLogicChunks).toHaveBeenCalledWith(['PROD_RECEIVE'], 8);
+    expect(result.chunks.map((c) => c.chunkId)).toContain('bl');
+    expect(result.prompt).toContain('비즈니스 로직');
   });
 });

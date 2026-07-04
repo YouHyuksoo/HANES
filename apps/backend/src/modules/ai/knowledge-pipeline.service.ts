@@ -81,13 +81,26 @@ export class KnowledgePipelineService {
     if (understanding.intent === 'troubleshoot') {
       troubles = this.knowledge.searchTroubleshooting(userMessage, 4);
     }
+    // engineer 의도: 매칭 메뉴의 business-logics 문서를 컨텍스트에 강제 포함한다 (스펙 6장 [3])
+    let businessLogicChunks: KnowledgeSearchResult[] = [];
+    if (understanding.intent === 'engineer') {
+      businessLogicChunks = this.knowledge.getBusinessLogicChunks(menuCodes.slice(0, 3), 8);
+    }
 
-    // [4] 리랭크 — 그래프 확장 청크는 리랭크와 무관하게 유지
+    // [4] 리랭크 — 그래프 확장/비즈니스 로직 청크는 리랭크와 무관하게 유지
     const reranked = await this.rerank(userMessage, fused);
-    const chunks = this.mergeUnique([...reranked.slice(0, FINAL_TOP_K), ...graphChunks]);
+    const chunks = this.mergeUnique([...reranked.slice(0, FINAL_TOP_K), ...graphChunks, ...businessLogicChunks]);
 
     // [5] 구조화 컨텍스트
-    const prompt = this.buildStructuredPrompt(chunks, reranked.slice(0, FINAL_TOP_K), graphChunks, workflowLines, troubles, context);
+    const prompt = this.buildStructuredPrompt(
+      chunks,
+      reranked.slice(0, FINAL_TOP_K),
+      graphChunks,
+      workflowLines,
+      troubles,
+      context,
+      businessLogicChunks,
+    );
     return { chunks, prompt, intent: understanding.intent };
   }
 
@@ -200,9 +213,10 @@ export class KnowledgePipelineService {
     workflowLines: string[],
     troubles: TroubleshootingHit[],
     context?: AiKnowledgeContextDto,
+    businessLogicChunks: KnowledgeSearchResult[] = [],
   ): string {
     if (all.length === 0) return '';
-    const graphIds = new Set(graphChunks.map((c) => c.chunkId));
+    const graphIds = new Set([...graphChunks, ...businessLogicChunks].map((c) => c.chunkId));
     const currentMenu = context?.menuCode;
     const sections: string[] = [];
 
@@ -221,6 +235,9 @@ export class KnowledgePipelineService {
         (t) => `- 증상: ${t.symptom}\n  원인 후보: ${t.causes.join(' / ') || '-'}\n  조치: ${t.resolutions.join(' / ') || '-'}`,
       );
       sections.push(`## 문제 해결\n${lines.join('\n')}`);
+    }
+    if (businessLogicChunks.length > 0) {
+      sections.push(`## 비즈니스 로직 (데이터/트랜잭션 근거)\n${this.knowledge.formatContext(businessLogicChunks)}`);
     }
     if (related.length > 0) sections.push(`## 관련 화면 문서\n${this.knowledge.formatContext(related)}`);
     return sections.join('\n\n');

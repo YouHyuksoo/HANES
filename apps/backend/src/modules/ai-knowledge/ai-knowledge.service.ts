@@ -265,7 +265,8 @@ export class AiKnowledgeService implements OnModuleInit {
       if (parsed) workflowDocs.push(parsed);
       workflowErrors.push(...errors);
     }
-    const chunks = documents.flatMap((doc) => chunkMarkdown(doc)).map((chunk) => {
+    const chunks = documents.flatMap((doc) => chunkMarkdown(doc)).map((raw) => {
+      const chunk = this.enrichBusinessLogicMenuCode(raw);
       const header = this.buildContextHeader(chunk, workflowDocs);
       return header ? withContextHeader(chunk, header) : chunk;
     });
@@ -491,6 +492,30 @@ export class AiKnowledgeService implements OnModuleInit {
       LIMIT ?
     `).all(...pathRows.map((row) => row.sourcePath), limit) as Omit<KnowledgeSearchResult, 'score'>[];
     return rows.map((row) => ({ ...row, score: 0 }));
+  }
+
+  /** 메뉴들의 business-logics 청크를 반환한다 — engineer 의도 강제 포함용. */
+  getBusinessLogicChunks(menuCodes: string[], limit: number): KnowledgeSearchResult[] {
+    if (menuCodes.length === 0) return [];
+    const db = this.db!;
+    const placeholders = menuCodes.map(() => '?').join(',');
+    const rows = db.prepare(`
+      SELECT chunk_id AS chunkId, doc_type AS docType, source_path AS sourcePath, menu_code AS menuCode, audience,
+             title, heading, summary, content
+      FROM ai_knowledge_chunks
+      WHERE menu_code IN (${placeholders}) AND source_path LIKE 'docs/business-logics/%'
+      ORDER BY menu_code, chunk_id
+      LIMIT ?
+    `).all(...menuCodes, limit) as Omit<KnowledgeSearchResult, 'score'>[];
+    return rows.map((row) => ({ ...row, score: 0 }));
+  }
+
+  /** business-logics 문서는 frontmatter가 없어 파일명(=메뉴코드)으로 menuCode를 보강한다. */
+  private enrichBusinessLogicMenuCode(chunk: KnowledgeChunk): KnowledgeChunk {
+    if (chunk.menuCode) return chunk;
+    const normalized = chunk.sourcePath.replace(/\\/g, '/');
+    if (!normalized.startsWith('docs/business-logics/')) return chunk;
+    return { ...chunk, menuCode: path.basename(normalized, '.md') };
   }
 
   /** 증상/원인 텍스트 부분 매칭 — 문제해결 의도 질문용. */
