@@ -508,20 +508,27 @@ export class AiKnowledgeService implements OnModuleInit {
     return rows;
   }
 
-  /** 메뉴들의 business-logics 청크를 반환한다 — engineer 의도 강제 포함용. */
+  /** 메뉴들의 business-logics 청크를 반환한다 — engineer 의도 강제 포함용.
+   * 입력 menuCodes 순서 = 우선순위. 첫 메뉴가 슬롯을 독식하지 않도록 메뉴당 상한을 나눠 배분한다. */
   getBusinessLogicChunks(menuCodes: string[], limit: number): KnowledgeSearchResult[] {
     if (menuCodes.length === 0) return [];
     const db = this.db!;
-    const placeholders = menuCodes.map(() => '?').join(',');
-    const rows = db.prepare(`
+    const perMenu = Math.max(2, Math.ceil(limit / menuCodes.length));
+    const stmt = db.prepare(`
       SELECT chunk_id AS chunkId, doc_type AS docType, source_path AS sourcePath, menu_code AS menuCode, audience,
              title, heading, summary, content
       FROM ai_knowledge_chunks
-      WHERE menu_code IN (${placeholders}) AND source_path LIKE 'docs/business-logics/%'
-      ORDER BY menu_code, chunk_id
+      WHERE menu_code = ? AND source_path LIKE 'docs/business-logics/%'
+      ORDER BY chunk_id
       LIMIT ?
-    `).all(...menuCodes, limit) as Omit<KnowledgeSearchResult, 'score'>[];
-    return rows.map((row) => ({ ...row, score: 0 }));
+    `);
+    const out: KnowledgeSearchResult[] = [];
+    for (const menuCode of menuCodes) {
+      if (out.length >= limit) break;
+      const rows = stmt.all(menuCode, Math.min(perMenu, limit - out.length)) as Omit<KnowledgeSearchResult, 'score'>[];
+      out.push(...rows.map((row) => ({ ...row, score: 0 })));
+    }
+    return out;
   }
 
   /** business-logics 문서는 frontmatter가 없어 파일명(=메뉴코드)으로 menuCode를 보강한다. */

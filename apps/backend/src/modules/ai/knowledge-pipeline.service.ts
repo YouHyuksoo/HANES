@@ -74,10 +74,11 @@ export class KnowledgePipelineService {
       if (wfCtx.nextMenus.length > 0) workflowLines.push(`  후행 메뉴: ${wfCtx.nextMenus.join(', ')}`);
       if (wfCtx.requires.length > 0) workflowLines.push(`  선행 조건: ${wfCtx.requires.join(', ')}`);
       const neighborMenus = [...wfCtx.prevMenus, ...wfCtx.nextMenus].filter((menu) => menu !== menuCode);
-      graphChunks.push(...this.knowledge.getMenuOverviewChunks(neighborMenus, audience, 4));
+      // 메뉴당 이웃 2개로 제한 — 출처 목록 과다(~20건) 방지. 상세는 리랭크된 primary가 담당한다.
+      graphChunks.push(...this.knowledge.getMenuOverviewChunks(neighborMenus, audience, 2));
     }
     if (understanding.intent === 'workflow' || understanding.intent === 'troubleshoot') {
-      graphChunks.push(...this.knowledge.getWorkflowDocChunks(Array.from(workflowIds), 4));
+      graphChunks.push(...this.knowledge.getWorkflowDocChunks(Array.from(workflowIds), 3));
     }
     let troubles: TroubleshootingHit[] = [];
     if (understanding.intent === 'troubleshoot') {

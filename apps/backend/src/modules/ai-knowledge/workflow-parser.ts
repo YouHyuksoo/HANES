@@ -49,7 +49,7 @@ export function parseWorkflowDoc(raw: string, sourcePath: string): WorkflowParse
   try {
     const parsed = parseYaml(match[1]);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return { doc: null, errors: [`${sourcePath}: frontmatter이 객체가 아닙니다.`] };
+      return { doc: null, errors: [`${sourcePath}: frontmatter가 객체가 아닙니다.`] };
     }
     meta = parsed as Record<string, unknown>;
   } catch (error: unknown) {
