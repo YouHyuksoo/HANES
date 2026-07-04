@@ -58,6 +58,27 @@ test('AI chat panel exposes explicit route mode prefix buttons', () => {
   assert.match(source, /\/WEB/);
 });
 
+test('AI chat panel supports voice input, speech output, and image attachments', () => {
+  const source = read('apps/frontend/src/components/ai/AiChatPanel.tsx');
+  const store = read('apps/frontend/src/stores/aiChatStore.ts');
+  assert.match(source, /SpeechRecognition/);
+  assert.match(source, /speechSynthesis/);
+  assert.match(source, /ImagePlus/);
+  assert.match(source, /accept="image\/\*"/);
+  assert.match(source, /attachments/);
+  assert.match(store, /AiChatAttachment/);
+  assert.match(store, /attachments\?: AiChatAttachment\[\]/);
+});
+
+test('AI chat panel opens at double width and accepts pasted screenshots', () => {
+  const source = read('apps/frontend/src/components/ai/AiChatPanel.tsx');
+  assert.match(source, /DEFAULT_AI_CHAT_WIDTH\s*=\s*880/);
+  assert.match(source, /useState\(DEFAULT_AI_CHAT_WIDTH\)/);
+  assert.match(source, /handlePaste/);
+  assert.match(source, /clipboardData\.files/);
+  assert.match(source, /onPaste=\{handlePaste\}/);
+});
+
 test('AI chat store persists conversation history and persona', () => {
   const source = read('apps/frontend/src/stores/aiChatStore.ts');
   assert.match(source, /persist/);

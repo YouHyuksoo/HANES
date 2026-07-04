@@ -12,7 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Mistral } from '@mistralai/mistralai';
 import { SysConfig } from '../../entities/sys-config.entity';
-import { AiChatMessageDto } from './dto/ai-chat.dto';
+import { AiChatAttachmentDto, AiChatMessageDto } from './dto/ai-chat.dto';
 
 const SYSTEM_PROMPT =
   '당신은 HANES MES(제조실행시스템) 운영을 돕는 AI 비서입니다. 한국어로 간결하고 정확하게 답합니다.';
@@ -23,7 +23,11 @@ const PROVIDER_DEFAULT_MODEL: Record<string, string> = {
   openrouter: 'openai/gpt-oss-120b:free',
 };
 
-type LlmMessage = { role: 'system' | 'user' | 'assistant'; content: string };
+type LlmMessage = { role: 'system' | 'user' | 'assistant'; content: string; attachments?: AiChatAttachmentDto[] };
+type OpenAIContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } };
+type OpenAIMessage = { role: 'system' | 'user' | 'assistant'; content: string | OpenAIContentPart[] };
 
 @Injectable()
 export class AiService {
@@ -116,6 +120,9 @@ export class AiService {
   }
 
   private async callMistral(model: string, apiKey: string, messages: LlmMessage[]): Promise<string> {
+    if (this.hasImageAttachments(messages)) {
+      throw new BadRequestException('현재 Mistral 설정은 이미지 첨부 분석을 지원하지 않습니다. OpenAI 또는 vision 지원 OpenRouter 모델로 변경해 주세요.');
+    }
     const client = new Mistral({ apiKey });
     const res = await client.chat.complete({ model, messages });
     const content = res.choices?.[0]?.message?.content;
@@ -131,10 +138,11 @@ export class AiService {
     messages: LlmMessage[],
     extraHeaders: Record<string, string> = {},
   ): Promise<string> {
+    const providerMessages = this.toOpenAICompatibleMessages(messages);
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}`, ...extraHeaders },
-      body: JSON.stringify({ model, messages }),
+      body: JSON.stringify({ model, messages: providerMessages }),
     });
     if (!res.ok) {
       const body = await res.text();
@@ -183,5 +191,21 @@ export class AiService {
   async chat(messages: AiChatMessageDto[]): Promise<{ content: string }> {
     const content = await this.complete([{ role: 'system', content: SYSTEM_PROMPT }, ...messages]);
     return { content };
+  }
+
+  private hasImageAttachments(messages: LlmMessage[]): boolean {
+    return messages.some((message) => (message.attachments ?? []).some((attachment) => attachment.type === 'image'));
+  }
+
+  private toOpenAICompatibleMessages(messages: LlmMessage[]): OpenAIMessage[] {
+    return messages.map((message) => {
+      const images = (message.attachments ?? []).filter((attachment) => attachment.type === 'image');
+      if (images.length === 0) return { role: message.role, content: message.content };
+      const parts: OpenAIContentPart[] = [
+        { type: 'text', text: message.content || '첨부 이미지를 분석해 주세요.' },
+        ...images.map((image) => ({ type: 'image_url' as const, image_url: { url: image.dataUrl } })),
+      ];
+      return { role: message.role, content: parts };
+    });
   }
 }

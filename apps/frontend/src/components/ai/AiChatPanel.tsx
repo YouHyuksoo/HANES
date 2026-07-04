@@ -10,17 +10,39 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { Sparkles, X, Send, LoaderCircle, Trash2, Database, Play, Copy, Check, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Sparkles, X, Send, LoaderCircle, Trash2, Database, Play, Copy, Check, ThumbsUp, ThumbsDown, Mic, MicOff, Volume2, VolumeX, ImagePlus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import api from "@/services/api";
 import { usePageToolStore } from "@/ai-page-tools/pageToolStore";
-import { useAiChatStore, type AiChatMessage, type AiChatPersona, type AiChatSource } from "@/stores/aiChatStore";
+import { useAiChatStore, type AiChatAttachment, type AiChatMessage, type AiChatPersona, type AiChatSource } from "@/stores/aiChatStore";
 import { useHelpStore } from "@/stores/helpStore";
 import { findMenuCodeByPath } from "@/config/menuConfig";
 import { slugify } from "@/lib/help";
 import PageToolExecutionLog from "./PageToolExecutionLog";
 import PageToolInspector from "./PageToolInspector";
+
+interface SpeechRecognitionEventLike {
+  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+}
+
+interface BrowserSpeechRecognition {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition?: new () => BrowserSpeechRecognition;
+    webkitSpeechRecognition?: new () => BrowserSpeechRecognition;
+  }
+}
 
 const MD_COMPONENTS = {
   table: ({ node: _n, ...p }: { node?: unknown }) => (
@@ -79,6 +101,10 @@ const AI_ROUTE_MODES = [
   { prefix: "/WEB", label: "/WEB", title: "외부 웹 검색" },
 ];
 
+const DEFAULT_AI_CHAT_WIDTH = 880;
+const MAX_IMAGE_ATTACHMENTS = 3;
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+
 export default function AiChatPanel() {
   const { t } = useTranslation();
   const pathname = usePathname();
@@ -95,11 +121,16 @@ export default function AiChatPanel() {
   const [expandedSources, setExpandedSources] = useState<Set<number>>(new Set());
   const [feedbackByIdx, setFeedbackByIdx] = useState<Map<number, { feedbackId: number; rating: "LIKE" | "DISLIKE" }>>(new Map());
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
-  const [width, setWidth] = useState(440);
+  const [width, setWidth] = useState(DEFAULT_AI_CHAT_WIDTH);
   const [aiStatus, setAiStatus] = useState<{ provider: string; model: string } | null>(null);
   const [embeddingDegraded, setEmbeddingDegraded] = useState(false);
+  const [attachments, setAttachments] = useState<AiChatAttachment[]>([]);
+  const [listening, setListening] = useState(false);
+  const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -137,15 +168,28 @@ export default function AiChatPanel() {
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
+
   const send = useCallback(async () => {
     const content = input.trim();
-    if (!content || sending) return;
-    const userMsg = { role: "user" as const, content };
+    if ((!content && attachments.length === 0) || sending) return;
+    const effectiveContent = content || "첨부 이미지 분석해줘";
+    const userMsg = {
+      role: "user" as const,
+      content: effectiveContent,
+      attachments: attachments.length > 0 ? attachments : undefined,
+    };
     addMessage(userMsg);
     setInput("");
+    setAttachments([]);
     setSending(true);
     try {
-      const history = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }));
+      const history = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content, attachments: m.attachments }));
       const pageToolContext = manifest
         ? {
             pageId: manifest.pageId,
@@ -186,7 +230,7 @@ export default function AiChatPanel() {
       setSending(false);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [input, sending, messages, addMessage, t, manifest, pathname, persona]);
+  }, [input, attachments, sending, messages, addMessage, t, manifest, pathname, persona]);
 
   const applyRoutePrefix = useCallback((prefix: string) => {
     setInput((prev) => {
@@ -195,6 +239,103 @@ export default function AiChatPanel() {
     });
     setTimeout(() => inputRef.current?.focus(), 0);
   }, []);
+
+  const readImageAttachment = useCallback((file: File): Promise<AiChatAttachment | null> => {
+    if (!file.type.startsWith("image/") || file.size > MAX_IMAGE_BYTES) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = typeof reader.result === "string" ? reader.result : "";
+        resolve(dataUrl ? { type: "image", name: file.name, mimeType: file.type, dataUrl } : null);
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
+  const appendImageFiles = useCallback(
+    async (sourceFiles: Iterable<File>) => {
+      const files = Array.from(sourceFiles)
+        .filter((file) => file.type.startsWith("image/"))
+        .slice(0, MAX_IMAGE_ATTACHMENTS);
+      if (files.length === 0) return;
+      const loaded = (await Promise.all(files.map(readImageAttachment))).filter((item): item is AiChatAttachment => Boolean(item));
+      if (loaded.length > 0) setAttachments((prev) => [...prev, ...loaded].slice(0, MAX_IMAGE_ATTACHMENTS));
+      setTimeout(() => inputRef.current?.focus(), 0);
+    },
+    [readImageAttachment],
+  );
+
+  const attachImages = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const input = event.currentTarget;
+      const files = Array.from(input.files ?? []);
+      await appendImageFiles(files);
+      input.value = "";
+    },
+    [appendImageFiles],
+  );
+
+  const handlePaste = useCallback(
+    (event: React.ClipboardEvent<HTMLElement>) => {
+      const files = Array.from(event.clipboardData.files).filter((file) => file.type.startsWith("image/"));
+      if (files.length === 0) return;
+      event.preventDefault();
+      void appendImageFiles(files);
+    },
+    [appendImageFiles],
+  );
+
+  const removeAttachment = useCallback((index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const toggleVoiceInput = useCallback(() => {
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+    const Recognition = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    if (!Recognition) {
+      addMessage({ role: "assistant", content: "이 브라우저는 음성입력을 지원하지 않습니다. Chrome 또는 Edge에서 다시 시도해 주세요." });
+      return;
+    }
+    const recognition = new Recognition();
+    recognition.lang = "ko-KR";
+    recognition.interimResults = false;
+    recognition.continuous = false;
+    recognition.onresult = (event) => {
+      const transcript = Array.from({ length: event.results.length }, (_, index) => event.results[index][0]?.transcript ?? "")
+        .join(" ")
+        .trim();
+      if (transcript) setInput((prev) => [prev.trim(), transcript].filter(Boolean).join(" "));
+    };
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setListening(false);
+    recognitionRef.current = recognition;
+    setListening(true);
+    recognition.start();
+  }, [addMessage, listening]);
+
+  const speakMessage = useCallback(
+    (idx: number, content: string) => {
+      if (!window.speechSynthesis) return;
+      if (speakingIdx === idx) {
+        window.speechSynthesis.cancel();
+        setSpeakingIdx(null);
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(content.replace(/[`*_#>\[\]()]/g, " "));
+      utterance.lang = "ko-KR";
+      utterance.onend = () => setSpeakingIdx(null);
+      utterance.onerror = () => setSpeakingIdx(null);
+      setSpeakingIdx(idx);
+      window.speechSynthesis.speak(utterance);
+    },
+    [speakingIdx],
+  );
 
   const approve = useCallback(
     async (idx: number, sql?: string) => {
@@ -330,7 +471,11 @@ export default function AiChatPanel() {
   if (!isOpen) return null;
 
   return (
-    <div style={{ width }} className="fixed right-0 top-[var(--header-height)] bottom-0 z-[55] flex max-w-[95vw] flex-col border-l border-border bg-background shadow-2xl animate-slide-in-right">
+    <div
+      style={{ width }}
+      onPaste={handlePaste}
+      className="fixed right-0 top-[var(--header-height)] bottom-0 z-[55] flex max-w-[95vw] flex-col border-l border-border bg-background shadow-2xl animate-slide-in-right"
+    >
       {/* 좌측 리사이즈 핸들 (드래그하여 너비 조절) */}
       <div
         onMouseDown={startResize}
@@ -460,7 +605,21 @@ export default function AiChatPanel() {
                 }`}
               >
                 {m.role === "user" ? (
-                  m.content
+                  <>
+                    {m.content}
+                    {m.attachments && m.attachments.length > 0 && (
+                      <div className="mt-2 grid grid-cols-3 gap-1.5">
+                        {m.attachments.map((attachment, ai) => (
+                          <img
+                            key={`${attachment.name}-${ai}`}
+                            src={attachment.dataUrl}
+                            alt={attachment.name}
+                            className="h-16 w-full rounded border border-white/30 object-cover"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="ai-md text-sm [&_p]:my-1 [&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-semibold">
                     <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>
@@ -545,6 +704,14 @@ export default function AiChatPanel() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => speakMessage(i, m.content)}
+                      title={speakingIdx === i ? "읽기 중지" : "답변 읽기"}
+                      className={`rounded p-1 hover:bg-surface ${speakingIdx === i ? "text-primary" : "text-text-muted hover:text-text"}`}
+                    >
+                      {speakingIdx === i ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => rate(i, m, "LIKE")}
                       title={t("ai.chat.like", "좋아요")}
                       className={`rounded p-1 hover:bg-surface ${feedbackByIdx.get(i)?.rating === "LIKE" ? "text-primary" : "text-text-muted hover:text-text"}`}
@@ -609,7 +776,45 @@ export default function AiChatPanel() {
             </button>
           ))}
         </div>
+        {attachments.length > 0 && (
+          <div className="mb-2 flex gap-2 overflow-x-auto">
+            {attachments.map((attachment, index) => (
+              <div key={`${attachment.name}-${index}`} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-border bg-surface">
+                <img src={attachment.dataUrl} alt={attachment.name} className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeAttachment(index)}
+                  title="첨부 제거"
+                  className="absolute right-0.5 top-0.5 rounded bg-background/90 p-0.5 text-text-muted hover:text-text"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex items-end gap-2">
+          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={attachImages} />
+          <button
+            type="button"
+            onClick={toggleVoiceInput}
+            disabled={sending}
+            title={listening ? "음성입력 중지" : "음성입력"}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border ${
+              listening ? "bg-primary text-white" : "bg-surface text-text-muted hover:bg-surface-secondary hover:text-text"
+            } disabled:opacity-40`}
+          >
+            {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending || attachments.length >= MAX_IMAGE_ATTACHMENTS}
+            title="이미지 첨부"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-text-muted hover:bg-surface-secondary hover:text-text disabled:opacity-40"
+          >
+            <ImagePlus className="h-4 w-4" />
+          </button>
           <textarea
             ref={inputRef}
             value={input}

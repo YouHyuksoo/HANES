@@ -28,9 +28,17 @@ export interface AiChatSource {
   score: number;
 }
 
+export interface AiChatAttachment {
+  type: "image";
+  name: string;
+  mimeType: string;
+  dataUrl: string;
+}
+
 export interface AiChatMessage {
   role: "user" | "assistant";
   content: string;
+  attachments?: AiChatAttachment[];
   /** 생성/실행된 SQL (조회·쓰기 공통) */
   sql?: string;
   /** INSERT/UPDATE 승인 대기 여부 */

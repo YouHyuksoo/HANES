@@ -5,6 +5,23 @@
 import { IsArray, IsString, IsIn, IsNumber, ValidateNested, ArrayNotEmpty, MaxLength, IsOptional, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
+export class AiChatAttachmentDto {
+  @IsIn(['image'])
+  type: 'image';
+
+  @IsString()
+  @MaxLength(255)
+  name: string;
+
+  @IsString()
+  @MaxLength(100)
+  mimeType: string;
+
+  @IsString()
+  @MaxLength(7000000)
+  dataUrl: string;
+}
+
 export class AiChatMessageDto {
   @IsIn(['system', 'user', 'assistant'])
   role: 'system' | 'user' | 'assistant';
@@ -12,6 +29,12 @@ export class AiChatMessageDto {
   @IsString()
   @MaxLength(8000)
   content: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AiChatAttachmentDto)
+  attachments?: AiChatAttachmentDto[];
 }
 
 export class AiPageToolContextToolDto {
