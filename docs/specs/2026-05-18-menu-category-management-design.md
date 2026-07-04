@@ -246,7 +246,7 @@ HANES 표준 패턴 — DataGrid + FormPanel + 드래그앤드롭 트리 하이�
 
 ### 7.4 새 페이지 추가 워크플로우 (개발자용)
 
-문서: `docs/workflows/menu-add-workflow.md` 추가
+문서: `docs/standards/menu-add-workflow.md` 추가
 
 ```
 1. 페이지 라우트 파일 생성

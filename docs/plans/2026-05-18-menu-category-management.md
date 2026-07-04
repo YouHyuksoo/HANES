@@ -38,7 +38,7 @@
 - `apps/frontend/src/app/(authenticated)/system/menu-categories/components/CategoryFormPanel.tsx`
 - `apps/frontend/src/app/(authenticated)/system/menu-categories/components/MenuItemPanel.tsx`
 - `apps/frontend/src/app/(authenticated)/system/menu-categories/components/UnassignedTray.tsx`
-- `docs/workflows/menu-add-workflow.md` — 신규 페이지 추가 워크플로우 문서
+- `docs/standards/menu-add-workflow.md` — 신규 페이지 추가 워크플로우 문서
 
 ### 수정 파일
 
@@ -2420,7 +2420,7 @@ curl -X DELETE -H "Authorization: Bearer $TOKEN" http://localhost:3001/menu-cate
 
 - [ ] **Step 14-7: 워크플로우 문서 작성**
 
-`docs/workflows/menu-add-workflow.md`:
+`docs/standards/menu-add-workflow.md`:
 
 ```markdown
 # 새 페이지/메뉴 추가 워크플로우
@@ -2446,7 +2446,7 @@ curl -X DELETE -H "Authorization: Bearer $TOKEN" http://localhost:3001/menu-cate
 - [ ] **Step 14-8: 최종 커밋**
 
 ```bash
-git add docs/workflows/menu-add-workflow.md
+git add docs/standards/menu-add-workflow.md
 git commit -m "docs(menu-category): 새 페이지 추가 워크플로우 문서 추가"
 ```
 
