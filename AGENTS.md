@@ -106,6 +106,7 @@
 - 기록 위치는 `docs/reports/unfinished-work/YYYY-MM-DD-HHMM-<short-slug>.md`다.
 - 다음 작업 시작 시 관련 미완료 기록을 먼저 확인하고, 기록 내용을 현재 코드/DB 상태로 재검증한다.
 - `.ai-coordination`이 비활성화되어 있어도 미완료 기록은 생략하지 않는다.
+- docs/ 아래 문서 생성·이동 시 docs/README.md 규정을 준수한다.
 
 ## 10. Windows와 도구 경로 주의
 

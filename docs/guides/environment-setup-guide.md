@@ -91,7 +91,7 @@
 
 - `apps/backend`
 - `apps/frontend`
-- `docs/standards`, `docs/design`, `docs/workflows`, `docs/setup`, `docs/specs`, `docs/plans`
+- `docs/standards`, `docs/architecture`, `docs/workflows`, `docs/guides`, `docs/specs`, `docs/plans`
 - `exports`
 - `packages/shared` (공용 타입과 유틸)
 - `packages/config/eslint`, `packages/config/typescript` (공통 설정)

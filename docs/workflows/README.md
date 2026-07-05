@@ -5,7 +5,7 @@
 ## 구조
 
 - `definitions/*.md` — 업무 흐름 정의 문서. frontmatter(YAML)가 기계가 읽는 그래프(steps/requires/transitions/produces/troubleshooting)이고, 본문이 사람이 읽는 단계별 설명이다.
-  - 스키마: `docs/superpowers/specs/2026-07-04-ai-rag-pipeline-v2-design.md` 4-A 참조.
+  - 스키마: `docs/specs/2026-07-04-ai-rag-pipeline-v2-design.md` 4-A 참조.
   - reindex(`POST /ai/knowledge/reindex`) 시 `ai_knowledge_graph` 등 그래프 테이블로 변환되어, AI 채팅이 "이 작업 다음에 뭐 해?" 같은 전후관계 질문에 답하는 근거가 된다.
   - `steps[].menu`는 반드시 도움말 frontmatter의 실제 `menuCode`여야 한다(오타는 reindex 응답의 `workflowWarnings`로 감지).
 

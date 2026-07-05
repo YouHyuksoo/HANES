@@ -7,9 +7,9 @@
 | 카테고리 | 경로 | 주요 내용 |
 |---|---|---|
 | **standards** | `docs/standards/` | 코딩 규칙, 아키텍처 원칙, DB 컬럼 도메인 사전, UI 화면 패턴, RBAC·다국어·인증 스펙, anti-patterns, 용어 사전 등 전체 표준 규정 |
-| **design** | `docs/design/` | 시스템 아키텍처, 데이터 모델 ERD, 프론트엔드 라우팅, 백엔드 API 명세, 모듈 지도 등 설계 문서 |
+| **architecture** | `docs/architecture/` | 시스템 아키텍처, 데이터 모델 ERD, 프론트엔드 라우팅, 백엔드 API 명세, 모듈 지도 등 설계 문서 |
 | **workflows** | `docs/workflows/` | 자재/생산/품질/출하/설비 도메인별 상태 전이 및 업무 흐름, 메뉴 추가 가이드 |
-| **setup** | `docs/setup/` | 개발 환경 설정, AI 부트스트랩, 기술 스택, 프로젝트 체크리스트 |
+| **guides** | `docs/guides/` | 개발 환경 설정, AI 부트스트랩, 기술 스택, 프로젝트 체크리스트 |
 | **specs** | `docs/specs/` | 기능별 설계 명세 (live design docs, 신규 기능 개발 시最先 작성) |
 | **plans** | `docs/plans/` | 기능별 구현 계획 (spec → task 분해) |
 | **reports** | `docs/reports/` | DB 스키마 ERD (자동 생성) |

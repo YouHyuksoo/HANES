@@ -60,7 +60,7 @@
 - `packages/shared`: 공용 타입과 공용 유틸
 - `packages/config/eslint`: ESLint 공통 설정
 - `packages/config/typescript`: TypeScript 공통 tsconfig
-- `docs/standards`, `docs/design`, `docs/workflows`, `docs/setup`, `docs/specs`, `docs/plans`: 개발 문서
+- `docs/standards`, `docs/architecture`, `docs/workflows`, `docs/guides`, `docs/specs`, `docs/plans`: 개발 문서
 - `exports`: 생성 산출물
 
 ## 패키지 매니저 및 모노레포 기준
