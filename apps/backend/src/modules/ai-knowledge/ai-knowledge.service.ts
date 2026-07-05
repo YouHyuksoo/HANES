@@ -15,6 +15,8 @@ type DatabaseInstance = any;
 type KnowledgeDocument = { sourcePath: string; docType: string; language: string; raw: string };
 type KnowledgeTarget = { path: string; docType: string };
 
+// 프론트 임베딩 탭 목록(AiEmbeddingPanel.tsx DEFAULT_KNOWLEDGE_TARGETS)과 동일 집합이어야 한다.
+// 폴더 추가/개명 시 양쪽을 함께 갱신한다.
 const DEFAULT_KNOWLEDGE_TARGETS: KnowledgeTarget[] = [
   { path: 'apps/frontend/public/help/user/ko', docType: 'help' },
   { path: 'apps/frontend/public/help/operator/ko', docType: 'help' },

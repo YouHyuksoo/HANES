@@ -24,16 +24,23 @@ const EMBEDDING_MODEL_OPTIONS: Record<string, { value: string; label: string; di
   ],
 };
 
-const CHUNK_TARGET_STORAGE_KEY = "hanes.aiEmbedding.chunkTargets.v1";
-const DEFAULT_CHUNK_TARGETS = [
+// v2: 백엔드 DEFAULT_KNOWLEDGE_TARGETS(ai-knowledge.service.ts)와 동일 집합으로 맞춤.
+// 두 목록은 같은 개념이므로 폴더 추가/개명 시 양쪽을 함께 갱신한다.
+const KNOWLEDGE_TARGET_STORAGE_KEY = "hanes.aiEmbedding.chunkTargets.v2";
+const DEFAULT_KNOWLEDGE_TARGETS = [
   { path: "apps/frontend/public/help/user/ko", label: "사용자 도움말" },
   { path: "apps/frontend/public/help/operator/ko", label: "작업자 도움말" },
   { path: "docs/standards", label: "표준 문서" },
+  { path: "docs/design", label: "디자인 시스템" },
+  { path: "docs/architecture", label: "아키텍처" },
+  { path: "docs/database", label: "DB 스키마/ERD" },
   { path: "docs/specs", label: "사양 문서" },
   { path: "docs/plans", label: "계획 문서" },
+  { path: "docs/workflows/definitions", label: "워크플로우 정의" },
+  { path: "docs/business-logics", label: "비즈니스 로직" },
   { path: "apps/backend/data/ai-table-catalog.md", label: "테이블 카탈로그" },
 ];
-const DEFAULT_CHUNK_TARGET_LABELS = new Map(DEFAULT_CHUNK_TARGETS.map((target) => [target.path, target.label]));
+const DEFAULT_KNOWLEDGE_TARGET_LABELS = new Map(DEFAULT_KNOWLEDGE_TARGETS.map((target) => [target.path, target.label]));
 
 type ConfigRow = { configKey: string; configValue: string };
 type ChunkTarget = { path: string; label: string };
@@ -115,17 +122,17 @@ function normalizeTargetPath(value: string): string {
 function toChunkTarget(pathValue: string): ChunkTarget | null {
   const path = normalizeTargetPath(pathValue);
   if (!path || path === "." || path.split("/").includes("..") || /^[a-zA-Z]:/.test(path)) return null;
-  return { path, label: DEFAULT_CHUNK_TARGET_LABELS.get(path) ?? path };
+  return { path, label: DEFAULT_KNOWLEDGE_TARGET_LABELS.get(path) ?? path };
 }
 
 function loadStoredChunkTargets(): { targets: ChunkTarget[]; selectedPaths: string[] } {
   const fallback = {
-    targets: DEFAULT_CHUNK_TARGETS,
-    selectedPaths: DEFAULT_CHUNK_TARGETS.map((target) => target.path),
+    targets: DEFAULT_KNOWLEDGE_TARGETS,
+    selectedPaths: DEFAULT_KNOWLEDGE_TARGETS.map((target) => target.path),
   };
   if (typeof window === "undefined") return fallback;
   try {
-    const raw = window.localStorage.getItem(CHUNK_TARGET_STORAGE_KEY);
+    const raw = window.localStorage.getItem(KNOWLEDGE_TARGET_STORAGE_KEY);
     if (!raw) return fallback;
     const stored = JSON.parse(raw) as { targets?: string[]; selectedPaths?: string[] };
     const targets = Array.from(new Set((stored.targets ?? []).map(normalizeTargetPath)))
@@ -152,8 +159,8 @@ export default function AiEmbeddingPanel() {
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("출하지시 확정취소 언제 가능해?");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [chunkTargets, setChunkTargets] = useState<ChunkTarget[]>(DEFAULT_CHUNK_TARGETS);
-  const [selectedTargetPaths, setSelectedTargetPaths] = useState<Set<string>>(() => new Set(DEFAULT_CHUNK_TARGETS.map((target) => target.path)));
+  const [chunkTargets, setChunkTargets] = useState<ChunkTarget[]>(DEFAULT_KNOWLEDGE_TARGETS);
+  const [selectedTargetPaths, setSelectedTargetPaths] = useState<Set<string>>(() => new Set(DEFAULT_KNOWLEDGE_TARGETS.map((target) => target.path)));
   const [newTargetPath, setNewTargetPath] = useState("");
   const [addMode, setAddMode] = useState<"file" | "folder">("file");
   const [chunkTargetsLoaded, setChunkTargetsLoaded] = useState(false);
@@ -206,7 +213,7 @@ export default function AiEmbeddingPanel() {
 
   useEffect(() => {
     if (!chunkTargetsLoaded || typeof window === "undefined") return;
-    window.localStorage.setItem(CHUNK_TARGET_STORAGE_KEY, JSON.stringify({
+    window.localStorage.setItem(KNOWLEDGE_TARGET_STORAGE_KEY, JSON.stringify({
       targets: chunkTargets.map((target) => target.path),
       selectedPaths: Array.from(selectedTargetPaths),
     }));
@@ -375,8 +382,8 @@ export default function AiEmbeddingPanel() {
   }, []);
 
   const handleRestoreDefaultTargets = useCallback(() => {
-    setChunkTargets(DEFAULT_CHUNK_TARGETS);
-    setSelectedTargetPaths(new Set(DEFAULT_CHUNK_TARGETS.map((target) => target.path)));
+    setChunkTargets(DEFAULT_KNOWLEDGE_TARGETS);
+    setSelectedTargetPaths(new Set(DEFAULT_KNOWLEDGE_TARGETS.map((target) => target.path)));
   }, []);
 
   const handleSearch = useCallback(async () => {
