@@ -1,5 +1,10 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/common/guards/jwt-auth.guard.ts
+  - apps/backend/src/modules/consumables/controllers/consumables.controller.ts
+  - apps/backend/src/modules/consumables/services/consumables.service.ts
+  - apps/frontend/src/app/(authenticated)/consumables/master/components/ConsumableFormPanel.tsx
+  - apps/frontend/src/app/(authenticated)/consumables/master/components/ConsumableUsageMapPanel.tsx
 verifiedCommit: 8a7e96ea
 ---
 

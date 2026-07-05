@@ -1,5 +1,9 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/common/guards/inventory-freeze.guard.ts
+  - apps/backend/src/modules/material/services/receive-label.service.ts
+  - apps/backend/src/modules/material/services/receiving.service.ts
+  - apps/backend/src/shared/numbering.service.ts
 verifiedCommit: 8a7e96ea
 ---
 

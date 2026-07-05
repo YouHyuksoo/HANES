@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 2e8d7f56
+---
+
 ﻿# AI 프로젝트 부트스트랩
 
 ## 목적

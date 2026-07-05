@@ -1,3 +1,10 @@
+---
+sources:
+  - apps/backend/src/app.module.ts
+  - apps/backend/src/modules/master/controllers/com-code.controller.ts
+verifiedCommit: 2e8d7f56
+---
+
 ﻿# API 계약 가이드
 
 ## 목적

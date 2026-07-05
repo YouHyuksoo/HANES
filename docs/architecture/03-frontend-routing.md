@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 2e8d7f56
+---
+
 ﻿# HANES MES 프론트엔드 라우팅 인덱스
 
 ## 목적

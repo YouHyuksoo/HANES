@@ -1,5 +1,6 @@
 ---
-sources: []
+sources:
+  - apps/frontend/src/stores/inputEquipStore.ts
 verifiedCommit: 8a7e96ea
 ---
 

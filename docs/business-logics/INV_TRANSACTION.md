@@ -1,5 +1,6 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/inventory/services/inventory.service.ts
 verifiedCommit: 8a7e96ea
 ---
 

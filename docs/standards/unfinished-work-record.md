@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 2e8d7f56
+---
+
 # 미완료 작업 기록 표준
 
 ## 목적

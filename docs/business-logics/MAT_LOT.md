@@ -1,5 +1,6 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/material/services/mat-lot.service.ts
 verifiedCommit: 8a7e96ea
 ---
 

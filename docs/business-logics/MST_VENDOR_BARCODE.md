@@ -1,5 +1,7 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/master/controllers/vendor-barcode-mapping.controller.ts
+  - apps/frontend/src/app/(authenticated)/master/vendor-barcode/components/VendorBarcodeFormPanel.tsx
 verifiedCommit: 8a7e96ea
 ---
 

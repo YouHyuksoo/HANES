@@ -1,3 +1,10 @@
+---
+sources:
+  - apps/frontend/src/config/menuConfig.ts
+  - apps/frontend/src/lib/i18n.ts
+verifiedCommit: 2e8d7f56
+---
+
 ﻿# 다국어 스펙
 
 ## 목적

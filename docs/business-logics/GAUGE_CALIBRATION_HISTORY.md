@@ -1,5 +1,6 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/quality/spc/controllers/msa.controller.ts
 verifiedCommit: 8a7e96ea
 ---
 

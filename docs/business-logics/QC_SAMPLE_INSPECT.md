@@ -1,5 +1,6 @@
 ---
-sources: []
+sources:
+  - apps/frontend/src/app/(authenticated)/production/sample-inspect/components/SampleInspectInputModal.tsx
 verifiedCommit: 8a7e96ea
 ---
 

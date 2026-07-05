@@ -1,5 +1,9 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/production/controllers/prod-result.controller.ts
+  - apps/backend/src/modules/production/services/prod-result.service.ts
+  - apps/frontend/src/components/production/JobOrderSelectModal.tsx
+  - apps/frontend/src/stores/inputInspectStore.ts
 verifiedCommit: 8a7e96ea
 ---
 

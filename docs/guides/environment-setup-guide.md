@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 2e8d7f56
+---
+
 ﻿# 환경 설정 가이드
 
 ## 목적

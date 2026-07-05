@@ -1,5 +1,16 @@
 ---
-sources: []
+sources:
+  - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/ConsumableScanModal.tsx
+  - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/DailyInspectModal.tsx
+  - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/DefectInputModal.tsx
+  - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/DefectSummaryPanel.tsx
+  - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/MaterialListPanel.tsx
+  - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/MaterialScanModal.tsx
+  - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/SelfInspectModal.tsx
+  - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/SelfInspectPanel.tsx
+  - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/WorkHistoryPanel.tsx
+  - apps/frontend/src/app/(authenticated)/production/input-kiosk/components/WorkerInspectModal.tsx
+  - apps/frontend/src/stores/kioskStore.ts
 verifiedCommit: 8a7e96ea
 ---
 

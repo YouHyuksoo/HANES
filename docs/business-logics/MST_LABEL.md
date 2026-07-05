@@ -1,5 +1,6 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/master/controllers/label-template.controller.ts
 verifiedCommit: 8a7e96ea
 ---
 

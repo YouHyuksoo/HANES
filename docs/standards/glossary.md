@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 2e8d7f56
+---
+
 # HANES MES 용어집 (Glossary)
 
 > 본 문서는 HANES MES 프로젝트의 소스 코드(엔티티, DTO, 서비스)에서 실제 사용되는 용어를 추출하여 작성되었습니다.

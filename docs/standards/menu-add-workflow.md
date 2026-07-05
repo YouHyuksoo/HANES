@@ -1,3 +1,10 @@
+---
+sources:
+  - apps/backend/src/modules/menu-categories/utils/menu-code-validator.ts
+  - apps/frontend/src/config/menuConfig.ts
+verifiedCommit: 2e8d7f56
+---
+
 # 새 페이지/메뉴 추가 워크플로우
 
 좌측 사이드바에 새 메뉴 항목을 추가할 때 반드시 다음 단계를 모두 수행한다.

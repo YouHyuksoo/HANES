@@ -1,5 +1,7 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/common/guards/inventory-freeze.guard.ts
+  - apps/backend/src/modules/material/controllers/mat-issue.controller.ts
 verifiedCommit: 8a7e96ea
 ---
 

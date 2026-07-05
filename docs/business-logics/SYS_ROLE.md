@@ -1,5 +1,7 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/common/guards/roles.guard.ts
+  - apps/frontend/src/app/(authenticated)/system/users/components/UserFormPanel.tsx
 verifiedCommit: 8a7e96ea
 ---
 

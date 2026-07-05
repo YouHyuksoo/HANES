@@ -1,5 +1,14 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/interface/controllers/interface.controller.ts
+  - apps/backend/src/modules/interface/services/interface.service.ts
+  - apps/backend/src/modules/master/controllers/part.controller.ts
+  - apps/backend/src/modules/master/dto/part.dto.ts
+  - apps/backend/src/modules/master/services/part.service.ts
+  - apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx
+  - apps/frontend/src/components/ui/Modal.tsx
+  - apps/frontend/src/hooks/useMasterOptions.ts
+  - apps/frontend/src/hooks/useUnsavedGuard.ts
 verifiedCommit: 8a7e96ea
 ---
 

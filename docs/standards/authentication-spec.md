@@ -1,3 +1,13 @@
+---
+sources:
+  - apps/backend/src/common/guards/jwt-auth.guard.ts
+  - apps/backend/src/modules/auth/auth.controller.ts
+  - apps/backend/src/modules/auth/auth.service.ts
+  - apps/frontend/src/components/layout/AuthGuard.tsx
+  - apps/frontend/src/stores/authStore.ts
+verifiedCommit: 2e8d7f56
+---
+
 ﻿# 인증 스펙
 
 ## 목적

@@ -1,3 +1,11 @@
+---
+sources:
+  - apps/backend/src/modules/material/services/physical-inv.service.ts
+  - apps/backend/src/modules/production/services/prod-result.service.ts
+  - apps/backend/src/modules/shipping/services/shipment.service.ts
+verifiedCommit: 2e8d7f56
+---
+
 ﻿# 안티패턴
 
 ## 목적

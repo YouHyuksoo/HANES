@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 2e8d7f56
+---
+
 # HANES MES 채번 규칙
 
 > 원본: `HANES_MES_채번규칙.pdf` (2026-05-19)

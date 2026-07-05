@@ -1,5 +1,7 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/master/controllers/process-capa.controller.ts
+  - apps/backend/src/modules/master/controllers/process.controller.ts
 verifiedCommit: 8a7e96ea
 ---
 

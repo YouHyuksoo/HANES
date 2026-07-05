@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 2e8d7f56
+---
+
 ﻿# 프로젝트 부트스트랩 체크리스트
 
 ## 목적

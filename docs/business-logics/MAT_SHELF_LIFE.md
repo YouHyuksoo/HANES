@@ -1,5 +1,6 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/material/services/shelf-life.service.ts
 verifiedCommit: 8a7e96ea
 ---
 

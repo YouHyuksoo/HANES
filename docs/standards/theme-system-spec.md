@@ -1,3 +1,10 @@
+---
+sources:
+  - apps/frontend/src/hooks/useTheme.ts
+  - apps/frontend/src/stores/themeStore.ts
+verifiedCommit: 2e8d7f56
+---
+
 ﻿# 테마 시스템 스펙
 
 ## 목적

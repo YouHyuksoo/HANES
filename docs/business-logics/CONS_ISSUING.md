@@ -1,5 +1,11 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/common/guards/jwt-auth.guard.ts
+  - apps/backend/src/modules/consumables/controllers/consumable-label.controller.ts
+  - apps/backend/src/modules/consumables/services/consumable-label.service.ts
+  - apps/frontend/src/components/consumables/IssuingFormPanel.tsx
+  - apps/frontend/src/components/consumables/IssuingReturnPanel.tsx
+  - apps/frontend/src/hooks/consumables/useIssuingData.ts
 verifiedCommit: 8a7e96ea
 ---
 

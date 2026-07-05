@@ -1,5 +1,8 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/common/guards/jwt-auth.guard.ts
+  - apps/backend/src/modules/equipment/controllers/consumable.controller.ts
+  - apps/backend/src/modules/equipment/services/consumable.service.ts
 verifiedCommit: 8a7e96ea
 ---
 

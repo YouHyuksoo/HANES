@@ -1,5 +1,11 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/master/controllers/bom.controller.ts
+  - apps/backend/src/modules/master/controllers/routing-group.controller.ts
+  - apps/backend/src/modules/master/services/bom.service.ts
+  - apps/backend/src/modules/master/services/routing-group.service.ts
+  - apps/frontend/src/app/(authenticated)/master/bom/components/BomFormModal.tsx
+  - apps/frontend/src/app/(authenticated)/master/bom/components/BomUploadModal.tsx
 verifiedCommit: 8a7e96ea
 ---
 

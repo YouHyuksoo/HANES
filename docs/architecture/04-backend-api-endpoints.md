@@ -1,3 +1,9 @@
+---
+sources:
+  - apps/backend/src/app.module.ts
+verifiedCommit: 2e8d7f56
+---
+
 ﻿# HANES MES 백엔드 API 인덱스
 
 ## 목적

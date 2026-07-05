@@ -1,5 +1,8 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/common/guards/jwt-auth.guard.ts
+  - apps/backend/src/modules/outsourcing/controllers/outsourcing.controller.ts
+  - apps/backend/src/modules/outsourcing/services/outsourcing.service.ts
 verifiedCommit: 8a7e96ea
 ---
 

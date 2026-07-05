@@ -1,5 +1,9 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/material/services/issue-request.service.ts
+  - apps/backend/src/modules/material/services/mat-issue.service.ts
+  - apps/frontend/src/components/material/IssueRequestDetailModal.tsx
+  - apps/frontend/src/components/material/WorkOrderRequestPanel.tsx
 verifiedCommit: 8a7e96ea
 ---
 

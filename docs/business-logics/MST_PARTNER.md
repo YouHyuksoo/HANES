@@ -1,5 +1,9 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/master/controllers/partner.controller.ts
+  - apps/backend/src/modules/master/dto/partner.dto.ts
+  - apps/frontend/src/app/(authenticated)/master/partner/components/PartnerFormPanel.tsx
+  - apps/frontend/src/components/ui/Modal.tsx
 verifiedCommit: 8a7e96ea
 ---
 

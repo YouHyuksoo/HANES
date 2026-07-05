@@ -1,5 +1,7 @@
 ---
-sources: []
+sources:
+  - apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcSpecPanel.tsx
+  - apps/frontend/src/app/(authenticated)/master/iqc-item/components/ItemListPanel.tsx
 verifiedCommit: 8a7e96ea
 ---
 

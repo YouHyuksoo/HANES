@@ -1,5 +1,13 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/common/guards/jwt-auth.guard.ts
+  - apps/backend/src/modules/consumables/services/consumable-label.service.ts
+  - apps/backend/src/modules/consumables/services/consumables.service.ts
+  - apps/frontend/src/components/consumables/BarcodeScanPanel.tsx
+  - apps/frontend/src/components/consumables/ReceivingFormPanel.tsx
+  - apps/frontend/src/components/consumables/ReceivingReturnPanel.tsx
+  - apps/frontend/src/components/shared/ConsumableSearchModal.tsx
+  - apps/frontend/src/hooks/useMasterOptions.ts
 verifiedCommit: 8a7e96ea
 ---
 

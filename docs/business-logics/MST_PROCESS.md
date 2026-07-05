@@ -1,5 +1,8 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/equipment/controllers/equip-master.controller.ts
+  - apps/backend/src/modules/master/controllers/process.controller.ts
+  - apps/frontend/src/components/ui/Modal.tsx
 verifiedCommit: 8a7e96ea
 ---
 

@@ -1,5 +1,7 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/inventory/inventory.controller.ts
+  - apps/backend/src/modules/master/controllers/transfer-rule.controller.ts
 verifiedCommit: 8a7e96ea
 ---
 

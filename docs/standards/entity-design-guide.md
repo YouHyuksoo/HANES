@@ -1,3 +1,10 @@
+---
+sources:
+  - apps/backend/src/entities/com-code.entity.ts
+  - apps/backend/src/modules/production/services/prod-result.service.ts
+verifiedCommit: 2e8d7f56
+---
+
 ﻿# 엔티티 설계 가이드
 
 ## 목적

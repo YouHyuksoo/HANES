@@ -1,5 +1,7 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/master/controllers/worker.controller.ts
+  - apps/frontend/src/app/(authenticated)/master/worker/components/WorkerFormPanel.tsx
 verifiedCommit: 8a7e96ea
 ---
 

@@ -1,5 +1,7 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/equipment/controllers/pm-plan.controller.ts
+  - apps/frontend/src/app/(authenticated)/equipment/pm-calendar/components/PmExecuteModal.tsx
 verifiedCommit: 8a7e96ea
 ---
 

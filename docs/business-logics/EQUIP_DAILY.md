@@ -1,5 +1,8 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/equipment/controllers/daily-inspect.controller.ts
+  - apps/frontend/src/app/(authenticated)/equipment/daily-inspect/components/EquipListPanel.tsx
+  - apps/frontend/src/app/(authenticated)/equipment/daily-inspect/components/InspectEntryPanel.tsx
 verifiedCommit: 8a7e96ea
 ---
 

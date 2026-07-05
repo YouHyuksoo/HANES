@@ -1,5 +1,7 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/production/controllers/production-views.controller.ts
+  - apps/backend/src/modules/production/services/production-views.service.ts
 verifiedCommit: 8a7e96ea
 ---
 

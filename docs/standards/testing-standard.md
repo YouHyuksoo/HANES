@@ -1,3 +1,9 @@
+---
+sources:
+  - apps/backend/src/shared/transaction.service.ts
+verifiedCommit: 2e8d7f56
+---
+
 # HANES Test Standard
 
 ## 목적

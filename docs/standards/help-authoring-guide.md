@@ -1,3 +1,10 @@
+---
+sources:
+  - apps/frontend/src/config/menuConfig.ts
+  - apps/frontend/src/hooks/useHelpDoc.ts
+verifiedCommit: 2e8d7f56
+---
+
 # 도움말(Help) 콘텐츠 작성 가이드
 
 - 대상: 화면 도움말을 작성·수정하는 사람(운영자, 기획, AI 세션)

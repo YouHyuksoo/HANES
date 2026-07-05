@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 2e8d7f56
+---
+
 ﻿# HANES MES 데이터 모델 인덱스
 
 ## 목적

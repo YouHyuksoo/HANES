@@ -1,5 +1,7 @@
 ---
-sources: []
+sources:
+  - apps/frontend/src/app/(authenticated)/production/input-assembly/components/EquipMaterialMountPanel.tsx
+  - apps/frontend/src/app/(authenticated)/production/input-assembly/components/SgScanPanel.tsx
 verifiedCommit: 8a7e96ea
 ---
 

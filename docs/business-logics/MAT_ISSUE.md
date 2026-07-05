@@ -1,5 +1,8 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/common/guards/inventory-freeze.guard.ts
+  - apps/backend/src/modules/inventory/services/proc-mat-stock.service.ts
+  - apps/backend/src/modules/material/services/mat-issue.service.ts
 verifiedCommit: 8a7e96ea
 ---
 

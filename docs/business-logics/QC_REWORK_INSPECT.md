@@ -1,5 +1,6 @@
 ---
-sources: []
+sources:
+  - apps/frontend/src/app/(authenticated)/quality/rework-inspect/components/InspectFormPanel.tsx
 verifiedCommit: 8a7e96ea
 ---
 

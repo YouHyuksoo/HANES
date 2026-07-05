@@ -1,5 +1,12 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/master/controllers/process.controller.ts
+  - apps/backend/src/modules/master/controllers/shift-pattern.controller.ts
+  - apps/backend/src/modules/master/controllers/work-calendar.controller.ts
+  - apps/frontend/src/app/(authenticated)/master/work-calendar/components/AddCalendarModal.tsx
+  - apps/frontend/src/app/(authenticated)/master/work-calendar/components/CalendarFormPanel.tsx
+  - apps/frontend/src/app/(authenticated)/master/work-calendar/components/DayEditModal.tsx
+  - apps/frontend/src/components/ui/Modal.tsx
 verifiedCommit: 8a7e96ea
 ---
 

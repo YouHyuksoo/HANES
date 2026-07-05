@@ -1,5 +1,8 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/master/controllers/work-instruction.controller.ts
+  - apps/frontend/src/app/(authenticated)/master/work-instruction/components/WorkInstructionFormPanel.tsx
+  - apps/frontend/src/app/(authenticated)/master/work-instruction/components/WorkInstructionPreviewPanel.tsx
 verifiedCommit: 8a7e96ea
 ---
 

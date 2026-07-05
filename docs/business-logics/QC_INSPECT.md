@@ -1,5 +1,6 @@
 ---
-sources: []
+sources:
+  - apps/frontend/src/app/(authenticated)/quality/inspect/components/VisualInspectPanel.tsx
 verifiedCommit: 8a7e96ea
 ---
 

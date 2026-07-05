@@ -1,5 +1,12 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/common/guards/jwt-auth.guard.ts
+  - apps/backend/src/modules/consumables/controllers/consumable-label.controller.ts
+  - apps/backend/src/modules/consumables/services/consumable-label.service.ts
+  - apps/backend/src/shared/numbering.service.ts
+  - apps/frontend/src/app/(authenticated)/consumables/label/components/ConLabelColumns.tsx
+  - apps/frontend/src/app/(authenticated)/consumables/label/components/ConLabelDetailPanel.tsx
+  - apps/frontend/src/app/(authenticated)/consumables/label/components/useConLabelIssue.ts
 verifiedCommit: 8a7e96ea
 ---
 

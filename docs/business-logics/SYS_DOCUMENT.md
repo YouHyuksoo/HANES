@@ -1,5 +1,7 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/system/controllers/document.controller.ts
+  - apps/frontend/src/app/(authenticated)/system/document/components/DocumentFormPanel.tsx
 verifiedCommit: 8a7e96ea
 ---
 

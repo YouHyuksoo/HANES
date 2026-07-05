@@ -1,5 +1,10 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/material/services/arrival.service.ts
+  - apps/frontend/src/app/(authenticated)/material/arrival/components/ManualArrivalPanel.tsx
+  - apps/frontend/src/app/(authenticated)/material/arrival/components/MatLabelPreviewModal.tsx
+  - apps/frontend/src/app/(authenticated)/material/arrival/components/PoLineReceiptModal.tsx
+  - apps/frontend/src/app/(authenticated)/material/arrival/components/SerialIssueConfirmModal.tsx
 verifiedCommit: 8a7e96ea
 ---
 

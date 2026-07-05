@@ -1,5 +1,7 @@
 ---
-sources: []
+sources:
+  - apps/backend/src/modules/production/controllers/prod-result.controller.ts
+  - apps/backend/src/modules/production/services/prod-result.service.ts
 verifiedCommit: 8a7e96ea
 ---
 

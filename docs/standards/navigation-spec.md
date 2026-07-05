@@ -1,3 +1,11 @@
+---
+sources:
+  - apps/frontend/src/components/pda/pdaMenuConfig.ts
+  - apps/frontend/src/config/menuConfig.ts
+  - apps/frontend/src/stores/authStore.ts
+verifiedCommit: 2e8d7f56
+---
+
 # 네비게이션 스펙
 
 ## 목적

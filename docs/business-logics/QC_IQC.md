@@ -1,5 +1,6 @@
 ---
-sources: []
+sources:
+  - apps/frontend/src/components/material/IqcModal.tsx
 verifiedCommit: 8a7e96ea
 ---
 

@@ -1,3 +1,11 @@
+---
+sources:
+  - apps/backend/src/modules/material/services/mat-stock.service.ts
+  - apps/backend/src/modules/production/services/prod-result.service.ts
+  - apps/frontend/src/hooks/useComCode.ts
+verifiedCommit: 2e8d7f56
+---
+
 # 구현 규칙
 
 ## 목적

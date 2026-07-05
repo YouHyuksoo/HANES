@@ -1,5 +1,6 @@
 ---
-sources: []
+sources:
+  - apps/frontend/src/app/(authenticated)/system/training/components/TrainingFormPanel.tsx
 verifiedCommit: 8a7e96ea
 ---
 

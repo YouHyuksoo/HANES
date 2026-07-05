@@ -1,3 +1,10 @@
+---
+sources:
+  - apps/backend/src/app.module.ts
+  - apps/backend/src/common/modules/oracle.module.ts
+verifiedCommit: 2e8d7f56
+---
+
 ﻿# HANES MES 시스템 아키텍처 인덱스
 
 ## 목적

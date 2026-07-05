@@ -1,5 +1,7 @@
 ---
-sources: []
+sources:
+  - apps/frontend/src/components/shared/PartSearchModal.tsx
+  - apps/frontend/src/components/ui/Modal.tsx
 verifiedCommit: 8a7e96ea
 ---
 

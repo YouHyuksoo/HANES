@@ -1,5 +1,8 @@
 ---
-sources: []
+sources:
+  - apps/frontend/src/app/(authenticated)/production/input-assembly/components/EquipMaterialMountPanel.tsx
+  - apps/frontend/src/app/(authenticated)/production/subprocess-kitting/components/InputSgScanPanel.tsx
+  - apps/frontend/src/components/production/JobOrderSelectModal.tsx
 verifiedCommit: b554222e
 ---
 
