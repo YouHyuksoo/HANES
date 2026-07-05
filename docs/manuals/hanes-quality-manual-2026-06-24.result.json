@@ -1,0 +1,210 @@
+{
+  "title": "HANES MES 품질관리 사용자 매뉴얼",
+  "outPath": "C:\\Project\\HANES\\docs\\manuals\\hanes-quality-manual-2026-06-24.html",
+  "date": "2026-06-24",
+  "total": 25,
+  "missingHelp": [],
+  "missingCapture": [],
+  "sections": [
+    {
+      "code": "QC_IQC_ITEM",
+      "title": "검사항목마스터",
+      "path": "/master/iqc-item",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_IQC_PART_SPEC",
+      "title": "품목별 IQC 항목관리",
+      "path": "/master/iqc-part-spec",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_AQL",
+      "title": "AQL 기준관리",
+      "path": "/quality/aql",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_IQC",
+      "title": "수입검사(IQC)",
+      "path": "/material/iqc",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_IQC_HISTORY",
+      "title": "IQC 검사이력",
+      "path": "/material/iqc-history",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_CONCESSION",
+      "title": "특채관리",
+      "path": "/material/concession",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_DEFECT",
+      "title": "불량등록관리",
+      "path": "/quality/defect",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_DEFECT_CODE",
+      "title": "불량코드관리",
+      "path": "/quality/defect-code",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_REWORK_INSPECT",
+      "title": "재작업 후 검사",
+      "path": "/quality/rework-inspect",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_INSPECT",
+      "title": "외관검사",
+      "path": "/quality/inspect",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_REQUEST_INSPECT",
+      "title": "의뢰검사 입력",
+      "path": "/quality/request-inspect",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_SELF_INSPECT_HISTORY",
+      "title": "자주검사 이력",
+      "path": "/quality/self-inspect-history",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_SAMPLE_INSPECT",
+      "title": "공정샘플검사",
+      "path": "/production/sample-inspect",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_OQC",
+      "title": "출하검사",
+      "path": "/quality/oqc",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_OQC_HISTORY",
+      "title": "출하검사 이력",
+      "path": "/quality/oqc-history",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_TRACE",
+      "title": "추적성 종합 조회",
+      "path": "/quality/trace",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_CHANGE",
+      "title": "변경관리",
+      "path": "/quality/change-control",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_COMPLAINT",
+      "title": "고객불만관리",
+      "path": "/quality/complaint",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_CAPA",
+      "title": "CAPA 관리",
+      "path": "/quality/capa",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_FAI",
+      "title": "초도품검사",
+      "path": "/quality/fai",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_PPAP",
+      "title": "PPAP 관리",
+      "path": "/quality/ppap",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_SPC",
+      "title": "SPC 관리",
+      "path": "/quality/spc",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_CONTROL_PLAN",
+      "title": "관리계획서",
+      "path": "/quality/control-plan",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "QC_AUDIT",
+      "title": "품질감사",
+      "path": "/quality/audit",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "SYS_TRAINING",
+      "title": "교육훈련관리",
+      "path": "/system/training",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    }
+  ]
+}

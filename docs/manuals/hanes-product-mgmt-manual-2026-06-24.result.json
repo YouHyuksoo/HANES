@@ -1,0 +1,42 @@
+{
+  "title": "HANES MES 제품수불관리 사용자 매뉴얼",
+  "outPath": "C:\\Project\\HANES\\docs\\manuals\\hanes-product-mgmt-manual-2026-06-24.html",
+  "date": "2026-06-24",
+  "total": 4,
+  "missingHelp": [],
+  "missingCapture": [],
+  "sections": [
+    {
+      "code": "PROD_RECEIVE",
+      "title": "제품입고",
+      "path": "/product/receive",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_RECEIPT_CANCEL",
+      "title": "제품입고취소",
+      "path": "/product/receipt-cancel",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_ISSUE",
+      "title": "제품출고",
+      "path": "/product/issue",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "PROD_ISSUE_CANCEL",
+      "title": "제품출고취소",
+      "path": "/product/issue-cancel",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    }
+  ]
+}

@@ -44,6 +44,7 @@ standardVersion: 1
 | workflows/ | AI RAG 워크플로우 그래프 단일 출처 (definitions/*.md, 스키마는 docs/specs/2026-07-04-ai-rag-pipeline-v2-design.md 4-A) | definitions/kebab-case.md |
 | architecture/ | 시스템 아키텍처 참조 (ERD, 라우팅, API 인덱스, 모듈맵) — 살아있는 문서로 취급 | NN-kebab-case.md 또는 kebab-case.md |
 | presentation/ | 고객 발표 자료 (pptx/html/assets 포함) | 자유 |
+| manuals/ | help-manual-export 스킬이 생성한 배포용 매뉴얼 산출물 (HTML/zip/result.json) | hanes-<도메인>-manual-YYYY-MM-DD.<ext> |
 
 ## 외부 문서 집합 (위치를 앱이 결정하는 문서)
 

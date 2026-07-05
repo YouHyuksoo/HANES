@@ -1,0 +1,58 @@
+{
+  "title": "HANES MES 검사관리 사용자 매뉴얼",
+  "outPath": "C:\\Project\\HANES\\docs\\manuals\\hanes-inspection-manual-2026-06-24.html",
+  "date": "2026-06-24",
+  "total": 6,
+  "missingHelp": [],
+  "missingCapture": [],
+  "sections": [
+    {
+      "code": "INSP_INTEGRATED",
+      "title": "통합검사",
+      "path": "/inspection/integrated",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "INSP_STRUCTURE",
+      "title": "구조검사",
+      "path": "/inspection/structure",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "INSP_RESULT",
+      "title": "검사결과조회",
+      "path": "/inspection/result",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "INSP_TERMINAL_RESULT",
+      "title": "단자검사결과",
+      "path": "/inspection/terminal-result",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "INSP_HISTORY",
+      "title": "검사이력",
+      "path": "/inspection/history",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "INSP_PROTOCOL",
+      "title": "검사프로토콜",
+      "path": "/inspection/protocol",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    }
+  ]
+}

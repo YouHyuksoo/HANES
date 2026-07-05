@@ -1,0 +1,82 @@
+{
+  "title": "HANES MES 출하관리 사용자 매뉴얼",
+  "outPath": "C:\\Project\\HANES\\docs\\manuals\\hanes-shipping-manual-2026-06-24.html",
+  "date": "2026-06-24",
+  "total": 9,
+  "missingHelp": [],
+  "missingCapture": [],
+  "sections": [
+    {
+      "code": "SHIP_PACK_RESULT",
+      "title": "포장실적조회",
+      "path": "/production/pack-result",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "SHIP_PACK",
+      "title": "포장관리",
+      "path": "/shipping/pack",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "SHIP_ORDER",
+      "title": "출하지시관리",
+      "path": "/shipping/order",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "SHIP_BOX_STOCK",
+      "title": "박스재고조회",
+      "path": "/shipping/box-stock",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "SHIP_CONFIRM",
+      "title": "출하확정",
+      "path": "/shipping/confirm",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "SHIP_PALLET",
+      "title": "팔레트관리",
+      "path": "/shipping/pallet",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "SHIP_PALLET_SHIP",
+      "title": "팔레트출하",
+      "path": "/shipping/pallet-ship",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "SHIP_HISTORY",
+      "title": "출하이력",
+      "path": "/shipping/history",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    },
+    {
+      "code": "SHIP_RETURN",
+      "title": "출하취소",
+      "path": "/shipping/return",
+      "hasUser": true,
+      "hasOperator": true,
+      "hasShot": true
+    }
+  ]
+}
