@@ -13,7 +13,7 @@ related: [MAT_LOT, MAT_LOT_MERGE, MAT_ARRIVAL, MAT_ISSUE]
 ## System Purpose & Role
 This screen splits one receive-completed material LOT (`MAT_LOTS`) serial into **two new serials**. The split does not simply separate the original — it **disposes of the original serial (STATUS='SPLIT', stock 0) and generates each split piece (split quantity and remaining quantity) as a new serial**. All quantity movements are recorded in `STOCK_TRANSACTIONS` as `LOT_SPLIT_OUT` (full original issue) / `LOT_SPLIT_IN` (new piece receipt), and new LOTs inherit `ORIGIN` (original serial) for traceability.
 
-> Design basis: `docs/specs/2026-06-08-lot-split-merge-redesign.md`. Full original disposal → both resulting pieces as new serials.
+> Design basis: `docs/specs/2026-06-08-lot-split-merge-redesign-design.md`. Full original disposal → both resulting pieces as new serials.
 
 ## Data Structure
 ```

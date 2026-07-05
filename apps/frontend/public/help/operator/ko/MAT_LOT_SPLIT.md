@@ -13,7 +13,7 @@ related: [MAT_LOT, MAT_LOT_MERGE, MAT_ARRIVAL, MAT_ISSUE]
 ## 시스템 목적·역할
 입고완료된 자재 LOT(`MAT_LOTS`) 시리얼 하나를 **두 개의 신규 시리얼로 분할**하는 화면입니다. 분할은 원본을 단순 분리하지 않고, **원본 시리얼을 폐기(STATUS='SPLIT', 재고 0)한 뒤 분할수량 조각·잔량 조각을 각각 새 시리얼로 발번**합니다. 모든 수량 이동은 `STOCK_TRANSACTIONS` 수불 원장에 `LOT_SPLIT_OUT`(원본 전량 출고) / `LOT_SPLIT_IN`(신규 조각 입고)으로 기록되며, 신규 LOT은 `ORIGIN`(최초 시리얼)을 계승해 추적성을 유지합니다.
 
-> 설계 근거: `docs/specs/2026-06-08-lot-split-merge-redesign.md`. 원 시리얼 전부 폐기 → 결과 2조각 모두 신규 발번 방식.
+> 설계 근거: `docs/specs/2026-06-08-lot-split-merge-redesign-design.md`. 원 시리얼 전부 폐기 → 결과 2조각 모두 신규 발번 방식.
 
 ## 데이터 구조
 ```

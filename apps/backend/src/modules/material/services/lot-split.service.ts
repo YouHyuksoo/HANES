@@ -2,7 +2,7 @@
  * @file src/modules/material/services/lot-split.service.ts
  * @description 자재 LOT 분할 비즈니스 로직 (TypeORM)
  *
- * 재설계(2026-06-08, spec: docs/specs/2026-06-08-lot-split-merge-redesign.md):
+ * 재설계(2026-06-08, spec: docs/specs/2026-06-08-lot-split-merge-redesign-design.md):
  * - 원 시리얼 전부 폐기(status='SPLIT', 재고0) → 결과 2조각을 모두 신규 시리얼로 발번(nextMatSerial).
  * - 입고완료(RECEIVE 합 >= initQty) LOT만 분할 가능(게이팅).
  * - 채번은 NumberingService 사용(시리얼: SEQ_MAT_SERIAL_DAILY, 수불: STOCK_TX).

@@ -14,7 +14,7 @@ standardVersion: 1
 
 | 폴더 | 용도 | 명명규칙 | 계층 |
 |---|---|---|---|
-| adr/ | 아키텍처 결정기록 | `ADR-NNN-kebab-제목.md` | 기록형 |
+| adr/ | 아키텍처 결정기록 | `NNNN-kebab-제목.md` | 기록형 |
 | specs/ | 설계문서 (구현 전 의도) | `YYYY-MM-DD-주제-design.md` | 기록형 |
 | plans/ | 구현계획 | `YYYY-MM-DD-주제.md` | 기록형 |
 | standards/ | 코드·업무 규칙, 컨벤션, 절차 | `kebab-case.md` | 살아있음 |

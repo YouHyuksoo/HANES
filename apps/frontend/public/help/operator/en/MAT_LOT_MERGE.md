@@ -13,7 +13,7 @@ related: [MAT_LOT_SPLIT, MAT_ARRIVAL, QC_IQC]
 ## System Purpose & Role
 This screen merges multiple material LOTs (`MAT_LOTS`) of the **same item and same arrival** into **one new integrated serial**. On merge, all original LOTs are disposed of (`STATUS='MERGED'`, stock 0), and **1 new `MAT_UID`** with the combined quantity is generated. Stock (`MAT_STOCKS`) and the stock transaction ledger (`STOCK_TRANSACTIONS`) are updated transactionally with consistency. This is the symmetric counterpart to material split (LOT split), and re-processing (merging split results, splitting merged results) is supported.
 
-Design basis: `docs/specs/2026-06-08-lot-split-merge-redesign.md`.
+Design basis: `docs/specs/2026-06-08-lot-split-merge-redesign-design.md`.
 
 ## Data Structure
 ```

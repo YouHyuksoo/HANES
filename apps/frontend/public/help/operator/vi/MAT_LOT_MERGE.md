@@ -13,7 +13,7 @@ related: [MAT_LOT_SPLIT, MAT_ARRIVAL, QC_IQC]
 ## Mục đích & vai trò hệ thống
 Màn hình gộp nhiều LOT vật tư (`MAT_LOTS`) của cùng hạng mục·cùng đợt nhập hàng thành **một serial hợp nhất mới**. Khi gộp, tất cả LOT gốc bị hủy bỏ (`STATUS='MERGED'`, tồn kho 0) và **1 `MAT_UID` mới** có tổng số lượng được đánh số. Tồn kho (`MAT_STOCKS`) và sổ cái nhập xuất (`STOCK_TRANSACTIONS`) được cập nhật nhất quán theo đơn vị giao dịch. Đây là thao tác đối xứng với chia LOT, hỗ trợ tái gia công chia/gộp (kết quả chia có thể gộp lại, kết quả gộp có thể chia lại).
 
-Cơ sở thiết kế: `docs/specs/2026-06-08-lot-split-merge-redesign.md`.
+Cơ sở thiết kế: `docs/specs/2026-06-08-lot-split-merge-redesign-design.md`.
 
 ## Cấu trúc dữ liệu
 ```

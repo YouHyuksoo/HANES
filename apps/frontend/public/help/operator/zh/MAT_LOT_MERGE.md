@@ -13,7 +13,7 @@ related: [MAT_LOT_SPLIT, MAT_ARRIVAL, QC_IQC]
 ## 系统目的·角色
 将同一物料·同一入货批次的多个材料LOT(`MAT_LOTS`)**合并为一个新的统一序列号**的界面。合并时原LOT全部废弃(`STATUS='MERGED'`, 库存为0)，发行合计数量的**1个新`MAT_UID`**。库存(`MAT_STOCKS`)和收发台账(`STOCK_TRANSACTIONS`)按事务单位一致更新。与材料分割(LOT分割)对称操作，支持分割/合并再加工(分割结果再次合并，合并结果再次分割)。
 
-设计依据: `docs/specs/2026-06-08-lot-split-merge-redesign.md`。
+设计依据: `docs/specs/2026-06-08-lot-split-merge-redesign-design.md`。
 
 ## 数据结构
 ```

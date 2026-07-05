@@ -13,7 +13,7 @@ related: [MAT_LOT_SPLIT, MAT_ARRIVAL, QC_IQC]
 ## 시스템 목적·역할
 같은 품목·같은 입하건의 자재 LOT(`MAT_LOTS`) 여러 개를 **하나의 신규 통합 시리얼로 합치는** 화면입니다. 병합 시 원본 LOT은 전부 폐기(`STATUS='MERGED'`, 재고 0)되고, 합산 수량을 가진 **신규 `MAT_UID` 1개**가 발번됩니다. 재고(`MAT_STOCKS`)와 수불 원장(`STOCK_TRANSACTIONS`)이 트랜잭션 단위로 정합성 있게 갱신됩니다. 자재분할(LOT 분할)과 대칭 동작이며, 분할/병합 재가공(분할 결과를 다시 병합, 병합 결과를 다시 분할)을 지원합니다.
 
-설계 근거: `docs/specs/2026-06-08-lot-split-merge-redesign.md`.
+설계 근거: `docs/specs/2026-06-08-lot-split-merge-redesign-design.md`.
 
 ## 데이터 구조
 ```

@@ -13,7 +13,7 @@ related: [MAT_LOT, MAT_LOT_MERGE, MAT_ARRIVAL, MAT_ISSUE]
 ## Mục đích & vai trò hệ thống
 Màn hình chia một serial LOT vật tư (`MAT_LOTS`) đã nhập kho hoàn tất thành **hai serial mới**. Việc chia không đơn thuần tách rời bản gốc, mà **hủy bỏ serial gốc (STATUS='SPLIT', tồn kho 0) rồi đánh số mảnh số lượng chia·mảnh số lượng còn lại thành serial mới**. Mọi di chuyển số lượng được ghi vào sổ cái `STOCK_TRANSACTIONS` với `LOT_SPLIT_OUT`(xuất toàn bộ gốc) / `LOT_SPLIT_IN`(nhập mảnh mới), LOT mới kế thừa `ORIGIN`(serial đầu tiên) để duy trì khả năng truy xuất.
 
-> Cơ sở thiết kế: `docs/specs/2026-06-08-lot-split-merge-redesign.md`. Phương thức hủy bỏ toàn bộ serial gốc → cả 2 mảnh kết quả đều là đánh số mới.
+> Cơ sở thiết kế: `docs/specs/2026-06-08-lot-split-merge-redesign-design.md`. Phương thức hủy bỏ toàn bộ serial gốc → cả 2 mảnh kết quả đều là đánh số mới.
 
 ## Cấu trúc dữ liệu
 ```

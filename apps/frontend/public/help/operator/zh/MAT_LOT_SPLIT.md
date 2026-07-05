@@ -13,7 +13,7 @@ related: [MAT_LOT, MAT_LOT_MERGE, MAT_ARRIVAL, MAT_ISSUE]
 ## 系统目的·角色
 将入库完成的一个材料LOT(`MAT_LOTS`)序列号**分割为两个新序列号**的界面。分割不是简单分离原，而是**废弃原序列号(STATUS='SPLIT', 库存为0)后将分割数量片段·余量片段分别发行新序列号**。所有数量移动通过`STOCK_TRANSACTIONS`收发台账以`LOT_SPLIT_OUT`(原全部出库) / `LOT_SPLIT_IN`(新片段入库)记录，新LOT继承`ORIGIN`(首次序列号)以保持可追溯性。
 
-> 设计依据: `docs/specs/2026-06-08-lot-split-merge-redesign.md`。原序列号全部废弃→结果2个片段均以新发行方式。
+> 设计依据: `docs/specs/2026-06-08-lot-split-merge-redesign-design.md`。原序列号全部废弃→结果2个片段均以新发行方式。
 
 ## 数据结构
 ```
