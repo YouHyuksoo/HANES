@@ -136,10 +136,16 @@ function splitLongContent(content: string, maxChars = 3500): string[] {
   return out;
 }
 
+/** mermaid 코드펜스 블록을 임베딩 입력에서 제거한다. ER 다이어그램 등은 순수 시각 자료라
+ *  청킹하면 문법 조각만 남아 검색 무용지물이 된다(파일 원본에는 영향 없음, 인덱스에서만 제외). */
+function stripMermaidBlocks(body: string): string {
+  return body.replace(/```mermaid[\s\S]*?```/g, '(다이어그램 생략)');
+}
+
 export function chunkMarkdown({ sourcePath, docType, language = 'ko', raw }: KnowledgeChunkInput): KnowledgeChunk[] {
   const { meta, body } = parseFrontMatter(raw);
   const sourceHash = sha256(raw);
-  const sections = splitByHeadings(body);
+  const sections = splitByHeadings(stripMermaidBlocks(body));
   const title = meta.title || sections[0]?.heading || path.basename(sourcePath);
   const keywords = [...(meta.keywords ?? []), ...(meta.tags ?? [])];
   const related = meta.related ?? [];
