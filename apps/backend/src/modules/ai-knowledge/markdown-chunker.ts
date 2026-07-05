@@ -99,9 +99,28 @@ function splitByHeadings(body: string): Array<{ heading: string; content: string
   return chunks.map((chunk) => ({ heading: chunk.heading, content: chunk.content.join('\n').trim() }));
 }
 
+/** maxChars를 넘는 단일 블록(빈 줄 없는 거대한 코드/표, 예: 자동생성 ERD mermaid)을
+ *  줄 경계 우선, 안 되면 문자 윈도로 강제 분할한다. 임베딩 토큰 한도 초과를 막는다. */
+function hardSplit(block: string, maxChars: number): string[] {
+  if (block.length <= maxChars) return [block];
+  const out: string[] = [];
+  let buf = '';
+  for (const line of block.split('\n')) {
+    if (line.length > maxChars) {
+      if (buf) { out.push(buf); buf = ''; }
+      for (let i = 0; i < line.length; i += maxChars) out.push(line.slice(i, i + maxChars));
+      continue;
+    }
+    const next = buf ? `${buf}\n${line}` : line;
+    if (next.length > maxChars) { out.push(buf); buf = line; } else buf = next;
+  }
+  if (buf) out.push(buf);
+  return out;
+}
+
 function splitLongContent(content: string, maxChars = 3500): string[] {
   if (content.length <= maxChars) return [content];
-  const paragraphs = content.split(/\n{2,}/);
+  const paragraphs = content.split(/\n{2,}/).flatMap((p) => hardSplit(p, maxChars));
   const out: string[] = [];
   let buf = '';
   for (const paragraph of paragraphs) {
