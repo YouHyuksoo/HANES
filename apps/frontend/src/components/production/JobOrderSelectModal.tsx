@@ -32,9 +32,17 @@ interface JobOrderSelectModalProps {
   itemType?: string;
   /** 작업지시 종류 필터 — ITEM | OPERATION */
   orderKind?: 'ITEM' | 'OPERATION';
+  /** ITEM 작업지시는 공정 무관 허용, OPERATION 작업지시는 현재 공정만 표시 */
+  includeItemOrdersForProcess?: boolean;
   /** 설비 미배정 작업지시도 현재 설비에서 선택 가능하게 허용 */
   allowUnassignedEquip?: boolean;
 }
+
+const getOrderKindLabel = (orderKind?: string | null) => {
+  if (orderKind === 'ITEM') return '품목지시';
+  if (orderKind === 'OPERATION') return '공정지시';
+  return '지시구분';
+};
 
 export default function JobOrderSelectModal({
   isOpen,
@@ -45,6 +53,7 @@ export default function JobOrderSelectModal({
   processCode,
   itemType,
   orderKind,
+  includeItemOrdersForProcess = false,
   allowUnassignedEquip = true,
 }: JobOrderSelectModalProps) {
   const { t } = useTranslation();
@@ -66,7 +75,7 @@ export default function JobOrderSelectModal({
         params: {
           statuses: statusesKey,
           limit: 500,
-          ...(processCode ? { processCode } : {}),
+          ...(processCode && !includeItemOrdersForProcess ? { processCode } : {}),
           ...(itemType ? { itemType } : {}),
           ...(orderKind ? { orderKind } : {}),
           ...(equipCode && allowUnassignedEquip ? { assignableEquipCode: equipCode } : {}),
@@ -106,7 +115,7 @@ export default function JobOrderSelectModal({
     } finally {
       setLoading(false);
     }
-  }, [isOpen, statusesKey, equipCode, processCode, itemType, orderKind, allowUnassignedEquip]);
+  }, [isOpen, statusesKey, equipCode, processCode, itemType, orderKind, includeItemOrdersForProcess, allowUnassignedEquip]);
 
   const isCurrentOrUnassigned = useCallback((item: JobOrder) => {
     if (!equipCode) return true;
@@ -124,9 +133,12 @@ export default function JobOrderSelectModal({
   }, [isOpen, fetchJobOrders]);
 
   const displayData = useMemo(() => {
-    const base = showAll || !equipCode
+    let base = showAll || !equipCode
       ? rawData
       : rawData.filter(isCurrentOrUnassigned);
+    if (includeItemOrdersForProcess && processCode) {
+      base = base.filter((item) => item.orderKind === 'ITEM' || item.processCode === processCode);
+    }
 
     if (!searchText) return base;
     const s = searchText.toLowerCase();
@@ -137,7 +149,7 @@ export default function JobOrderSelectModal({
         item.itemName.toLowerCase().includes(s) ||
         (item.processCode?.toLowerCase().includes(s) ?? false),
     );
-  }, [rawData, searchText, showAll, equipCode, isCurrentOrUnassigned]);
+  }, [rawData, searchText, showAll, equipCode, isCurrentOrUnassigned, includeItemOrdersForProcess, processCode]);
 
   const isSelectable = (item: JobOrder) => {
     if (!equipCode) return true;
@@ -192,9 +204,16 @@ export default function JobOrderSelectModal({
         cell: ({ row }) => {
           const selectable = isSelectable(row.original);
           return (
-            <span className={`font-mono text-sm font-medium ${!selectable ? 'opacity-40' : ''}`}>
-              {row.original.orderNo}
-            </span>
+            <div className={`flex flex-col gap-1 ${!selectable ? 'opacity-40' : ''}`}>
+              <span className="font-mono text-sm font-medium">{row.original.orderNo}</span>
+              <span className={`w-fit rounded border px-1.5 py-0.5 text-[10px] font-semibold ${
+                row.original.orderKind === 'ITEM'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300'
+                  : 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-900/20 dark:text-sky-300'
+              }`}>
+                {getOrderKindLabel(row.original.orderKind)}
+              </span>
+            </div>
           );
         },
       },
@@ -366,6 +385,13 @@ export default function JobOrderSelectModal({
               </span>
               <span className="text-sm text-black/60 dark:text-white/60">—</span>
               <span className="text-sm text-black dark:text-white">{selectedJobOrder.itemName}</span>
+              <span className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${
+                selectedJobOrder.orderKind === 'ITEM'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300'
+                  : 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-900/20 dark:text-sky-300'
+              }`}>
+                {getOrderKindLabel(selectedJobOrder.orderKind)}
+              </span>
               <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={selectedJobOrder.status ?? ''} />
             </div>
           </div>

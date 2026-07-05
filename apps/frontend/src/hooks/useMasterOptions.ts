@@ -289,6 +289,31 @@ export function useEquipOptions(processCode?: string) {
 }
 
 /**
+ * 공정에 배치된 설비 목록을 SelectOption[]으로 반환
+ */
+export function useProcessEquipmentOptions(processCode?: string, equipType?: string, enabled = true) {
+  const queryEnabled = enabled && !!processCode;
+  const { data, isLoading } = useApiQuery<{ data: EquipItem[] }>(
+    ["process-equips", "options", processCode ?? "none", equipType ?? "all"],
+    processCode ? `/master/processes/${encodeURIComponent(processCode)}/equipments` : null,
+    { staleTime: 5 * 60 * 1000, enabled: queryEnabled },
+  );
+
+  const options = useMemo<SelectOption[]>(() => {
+    const response = data?.data as unknown as ApiResponse<EquipItem[]> | EquipItem[] | undefined;
+    const list = Array.isArray(response) ? response : response?.data ?? [];
+    return list
+      .filter((e) => !equipType || e.equipType === equipType)
+      .map((e) => ({
+        value: e.equipCode,
+        label: `${e.equipCode} - ${e.equipName}`,
+      }));
+  }, [data, equipType]);
+
+  return { options, isLoading: queryEnabled ? isLoading : false };
+}
+
+/**
  * 거래처 목록을 SelectOption[]으로 반환
  * @param partnerType - 'SUPPLIER' | 'CUSTOMER' (미지정 시 전체)
  */

@@ -477,6 +477,18 @@ export class SubprocessKittingService {
   ): Promise<{ resultNo: string; sgBarcode: string }> {
     const tenantWhere = { company, plant };
     const { newSgBarcode, orderNo, equipCode, processCode, circuitNo } = dto;
+    const goodQty = dto.goodQty ?? 1;
+    const defectQty = dto.defectQty ?? 0;
+    if (
+      !Number.isInteger(goodQty) ||
+      !Number.isInteger(defectQty) ||
+      goodQty < 0 ||
+      defectQty < 0 ||
+      goodQty + defectQty !== 1
+    ) {
+      throw new BadRequestException('서브 키팅 확정 실적은 양품 1 또는 불량 1로만 등록할 수 있습니다.');
+    }
+    const qualityStatus = defectQty > 0 ? 'DEFECT' : 'GOOD';
 
     return this.tx.run(async (qr) => {
       // 1. 새 SgLabel 조회 — status='ISSUED' + orderNo 일치 확인
@@ -662,8 +674,8 @@ export class SubprocessKittingService {
         });
       }
 
-      // 6. 새 SFG 승격: ISSUED → IN_STOCK + resultNo 채움 + currentProcessCode.
-      newSg.status = 'IN_STOCK';
+      // 6. 새 SFG 승격: 양품은 IN_STOCK, 불량은 DEFECT로 격리 + resultNo 채움 + currentProcessCode.
+      newSg.status = qualityStatus === 'DEFECT' ? 'DEFECT' : 'IN_STOCK';
       newSg.resultNo = resultNoForRef;
       newSg.currentProcessCode = processCode;
       await qr.manager.save(SgLabel, newSg);
@@ -674,8 +686,8 @@ export class SubprocessKittingService {
         resultNo: resultNoForRef,
         orderNo,
         processCode,
-        goodQty: 1,
-        defectQty: 0,
+        goodQty,
+        defectQty,
         status: 'DONE',
         startAt: now,
         endAt: now,
@@ -701,6 +713,7 @@ export class SubprocessKittingService {
         itemType: 'SEMI_PRODUCT',
         qty: 1,
         transType: 'WIP_IN',
+        qualityStatus,
         orderNo,
         processCode,
         refType: 'SUBKIT',

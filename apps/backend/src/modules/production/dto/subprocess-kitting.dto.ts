@@ -10,6 +10,8 @@ import {
   IsArray,
   IsNotEmpty,
   ArrayNotEmpty,
+  IsInt,
+  Min,
 } from 'class-validator';
 
 
@@ -101,4 +103,14 @@ export class ConfirmSubKitDto {
   @IsOptional()
   @IsString()
   circuitNo?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  goodQty?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  defectQty?: number;
 }

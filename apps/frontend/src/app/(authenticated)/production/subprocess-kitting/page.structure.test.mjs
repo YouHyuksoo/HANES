@@ -8,6 +8,16 @@ const pagePath = join(
   'apps/frontend/src/app/(authenticated)/production/subprocess-kitting/page.tsx',
 );
 const source = readFileSync(pagePath, 'utf8');
+const jobOrderModalPath = join(
+  process.cwd(),
+  'apps/frontend/src/components/production/JobOrderSelectModal.tsx',
+);
+const jobOrderModalSource = readFileSync(jobOrderModalPath, 'utf8');
+const actionBarPath = join(
+  process.cwd(),
+  'apps/frontend/src/app/(authenticated)/production/subprocess-kitting/components/SubKitActionBar.tsx',
+);
+const actionBarSource = readFileSync(actionBarPath, 'utf8');
 const equipMaterialMountPanelPath = join(
   process.cwd(),
   'apps/frontend/src/app/(authenticated)/production/input-assembly/components/EquipMaterialMountPanel.tsx',
@@ -40,19 +50,42 @@ test('/production/subprocess-kitting: SEMI_PRODUCT job order filter', () => {
   assert.match(source, /SEMI_PRODUCT/);
 });
 
-test('/production/subprocess-kitting: job order modal uses kiosk-equivalent filters', () => {
+test('/production/subprocess-kitting: job order modal accepts item and routing operation orders explicitly', () => {
   assert.match(source, /filterStatus=\{\['WAITING', 'RUNNING'\]\}/);
   assert.match(source, /equipCode=\{equipCode \|\| undefined\}/);
-  assert.match(source, /orderKind="OPERATION"/);
-  assert.match(source, /processCode=\{processCode \|\| undefined\}/);
+  assert.doesNotMatch(source, /orderKind="OPERATION"/);
+  assert.match(source, /includeItemOrdersForProcess/);
   assert.match(source, /itemType="SEMI_PRODUCT"/);
+  assert.match(source, /SUBKIT_ORDER_KIND_META/);
+  assert.match(source, /품목지시/);
+  assert.match(source, /공정지시/);
 });
 
-test('/production/subprocess-kitting: typed job order lookup uses kiosk-equivalent filters', () => {
+test('/production/subprocess-kitting: typed job order lookup accepts item and routing operation orders', () => {
   assert.match(source, /statuses: "WAITING,RUNNING"/);
-  assert.match(source, /orderKind: "OPERATION"/);
+  assert.doesNotMatch(source, /orderKind: "OPERATION"/);
   assert.match(source, /assignableEquipCode: equipCode/);
   assert.match(source, /itemType: "SEMI_PRODUCT"/);
+  assert.match(source, /isSubkitSelectableOrder/);
+});
+
+test('/production/subprocess-kitting: job order modal filters operation orders by current process while allowing item orders', () => {
+  assert.match(jobOrderModalSource, /includeItemOrdersForProcess\?: boolean/);
+  assert.match(jobOrderModalSource, /item\.orderKind === 'ITEM'/);
+  assert.match(jobOrderModalSource, /item\.processCode === processCode/);
+  assert.match(jobOrderModalSource, /getOrderKindLabel/);
+  assert.match(jobOrderModalSource, /품목지시/);
+  assert.match(jobOrderModalSource, /공정지시/);
+});
+
+test('/production/subprocess-kitting: confirm payload carries good-vs-defect result split', () => {
+  assert.match(source, /resultQuality/);
+  assert.match(source, /goodQty:\s*resultQuality === "GOOD" \? 1 : 0/);
+  assert.match(source, /defectQty:\s*resultQuality === "DEFECT" \? 1 : 0/);
+  assert.match(actionBarSource, /resultQuality:\s*"GOOD" \| "DEFECT"/);
+  assert.match(actionBarSource, /onResultQualityChange/);
+  assert.match(actionBarSource, /양품/);
+  assert.match(actionBarSource, /불량/);
 });
 
 test('/production/subprocess-kitting: no alert/confirm/prompt usage', () => {
@@ -93,7 +126,9 @@ test('/production/subprocess-kitting: equipment current job order is restored fr
   assert.match(source, /restoreEquipmentCurrentState/);
   assert.match(source, /currentJobOrderId/);
   assert.match(source, /\/production\/job-orders\/order-no\/\$\{encodeURIComponent\(currentJobOrderId\)\}/);
-  assert.match(source, /selectOrder\(toJobOrderPick\(restored\), \{ persist: false \}\)/);
+  assert.match(source, /const restoredOrder = toJobOrderPick\(restored\)/);
+  assert.match(source, /isSubkitSelectableOrder\(restoredOrder, equip\.processCode \?\? ""\)/);
+  assert.match(source, /selectOrder\(restoredOrder, \{ persist: false \}\)/);
 });
 
 test('/production/subprocess-kitting: job order selection persists to equipment current state', () => {

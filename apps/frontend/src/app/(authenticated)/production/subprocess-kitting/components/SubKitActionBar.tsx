@@ -8,7 +8,7 @@
 import type { JSX } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Play, RotateCcw, Scan } from "lucide-react";
+import { CheckCircle2, Play, RotateCcw, XCircle } from "lucide-react";
 import { BarcodeScanInput } from "@/components/shared";
 import { Button } from "@/components/ui";
 
@@ -20,6 +20,8 @@ export default function SubKitActionBar({
   confirming,
   onConfirmScan,
   onResetIssued,
+  resultQuality,
+  onResultQualityChange,
 }: {
   canIssue: boolean;
   issuing: boolean;
@@ -28,6 +30,8 @@ export default function SubKitActionBar({
   confirming: boolean;
   onConfirmScan: (scannedBarcode: string) => void;
   onResetIssued: () => void;
+  resultQuality: "GOOD" | "DEFECT";
+  onResultQualityChange: (quality: "GOOD" | "DEFECT") => void;
 }): JSX.Element {
   const { t } = useTranslation();
 
@@ -47,6 +51,35 @@ export default function SubKitActionBar({
 
   return (
     <div className="flex flex-col gap-3 border-t border-border pt-3 lg:flex-row lg:items-center">
+      <div className="flex shrink-0 items-center rounded-lg border border-border bg-surface p-1 text-sm">
+        <button
+          type="button"
+          onClick={() => onResultQualityChange("GOOD")}
+          disabled={!!issuedSg || issuing || confirming}
+          className={`flex h-9 items-center gap-1.5 rounded-md px-3 font-semibold transition-colors ${
+            resultQuality === "GOOD"
+              ? "bg-emerald-600 text-white shadow-sm"
+              : "text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:text-emerald-300 dark:hover:bg-emerald-900/20"
+          }`}
+        >
+          <CheckCircle2 className="h-4 w-4" />
+          양품
+        </button>
+        <button
+          type="button"
+          onClick={() => onResultQualityChange("DEFECT")}
+          disabled={!!issuedSg || issuing || confirming}
+          className={`flex h-9 items-center gap-1.5 rounded-md px-3 font-semibold transition-colors ${
+            resultQuality === "DEFECT"
+              ? "bg-red-600 text-white shadow-sm"
+              : "text-red-700 hover:bg-red-50 disabled:opacity-50 dark:text-red-300 dark:hover:bg-red-900/20"
+          }`}
+        >
+          <XCircle className="h-4 w-4" />
+          불량
+        </button>
+      </div>
+
       <div className="flex-shrink-0">
         <Button
           size="lg"

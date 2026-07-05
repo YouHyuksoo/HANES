@@ -11,12 +11,12 @@
  * 4. API: POST /production/job-orders (생성), PUT /production/job-orders/:id (수정)
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Loader2 } from "lucide-react";
-import { Button, Input } from "@/components/ui";
+import { Button, Input, Select } from "@/components/ui";
 import { PartSearchModal, LineSelect, ProcessSelect, QtyInput } from "@/components/shared";
-import { useEquipOptions } from "@/hooks/useMasterOptions";
+import { useProcessEquipmentOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
 export interface JobOrderFormData {
@@ -35,7 +35,13 @@ export interface JobOrderFormData {
 interface RoutingInfo {
   routingCode: string;
   routingName: string;
-  processes: Array<{ seq: number; processCode: string; processName: string }>;
+  processes: Array<{
+    seq: number;
+    processCode: string;
+    processName: string;
+    equipType?: string | null;
+    jobOrderYn?: string | null;
+  }>;
 }
 
 interface Props {
@@ -69,9 +75,28 @@ export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, o
 
   const [form, setForm] = useState({ ...INIT_FORM });
 
-  /** 선택한 공정에 매핑된 설비 유무 — 없으면 설비 선택 영역 아래 안내 표시 */
-  const { options: equipOptions, isLoading: equipLoading } = useEquipOptions(form.processCode || undefined);
+  const routingProcessOptions = useMemo(() => {
+    if (!routingInfo) return [];
+    return routingInfo.processes
+      .filter((proc) => (proc.jobOrderYn ?? "Y") === "Y")
+      .map((proc) => ({
+        value: proc.processCode,
+        label: `${proc.seq}. ${proc.processName} (${proc.processCode})`,
+      }));
+  }, [routingInfo]);
+  const selectedRoutingProcess = useMemo(
+    () => routingInfo?.processes.find((proc) => proc.processCode === form.processCode) ?? null,
+    [routingInfo, form.processCode],
+  );
+  const { options: equipOptions, isLoading: equipLoading } = useProcessEquipmentOptions(
+    form.processCode || undefined,
+    selectedRoutingProcess?.equipType ?? undefined,
+    !!form.processCode,
+  );
   const noEquipForProcess = !!form.processCode && !equipLoading && equipOptions.length === 0;
+  const jobOrderProcessCount = routingInfo
+    ? routingInfo.processes.filter((proc) => (proc.jobOrderYn ?? "Y") === "Y").length
+    : 0;
 
   /** 품목 기반 라우팅 자동 조회 */
   const fetchRouting = useCallback(async (itemCode: string) => {
@@ -240,6 +265,24 @@ export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, o
                     </span>
                   ))}
                 </div>
+                {!isEdit && routingInfo && (
+                  <div className="rounded-lg border border-border bg-background px-3 py-2">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-text">저장 시 생성 구조</span>
+                      <span className="text-[11px] text-text-muted">{routingInfo.routingCode}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded border border-sky-300 bg-sky-50 px-2 py-1.5 text-sky-700 dark:border-sky-700 dark:bg-sky-950/30 dark:text-sky-300">
+                        <div className="text-[11px] font-semibold">품목지시</div>
+                        <div className="text-sm font-bold">1건</div>
+                      </div>
+                      <div className="rounded border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                        <div className="text-[11px] font-semibold">공정지시</div>
+                        <div className="text-sm font-bold">{jobOrderProcessCount.toLocaleString()}건</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : form.itemCode ? (
               <p className="text-xs text-amber-500 dark:text-amber-400 p-2">
@@ -253,8 +296,20 @@ export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, o
             <div className="grid grid-cols-2 gap-3">
               <LineSelect label={t("production.order.line")} value={form.lineCode}
                 onChange={v => setField("lineCode", v)} fullWidth />
-              <ProcessSelect label={t("production.order.process")} value={form.processCode}
-                onChange={v => setField("processCode", v)} fullWidth />
+              {routingInfo ? (
+                <Select
+                  label={t("production.order.process")}
+                  value={form.processCode}
+                  onChange={v => setField("processCode", v)}
+                  options={routingProcessOptions}
+                  placeholder={t("production.order.selectRoutingProcess", "라우팅 공정 선택")}
+                  disabled={routingProcessOptions.length === 0}
+                  fullWidth
+                />
+              ) : (
+                <ProcessSelect label={t("production.order.process")} value={form.processCode}
+                  onChange={v => setField("processCode", v)} fullWidth />
+              )}
             </div>
             <div>
               <div className="mb-1 flex items-center justify-between">
@@ -298,7 +353,9 @@ export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, o
                 })}
                 {!equipLoading && equipOptions.length === 0 && (
                   <div className="col-span-2 rounded border border-dashed border-border px-2 py-2 text-xs text-text-muted">
-                    {t("production.order.noEquipForProcess")}
+                    {form.processCode
+                      ? t("production.order.noEquipForProcess")
+                      : t("production.order.selectProcessFirstForEquip", "공정을 먼저 선택하면 해당 공정 설비만 표시됩니다.")}
                   </div>
                 )}
               </div>
@@ -325,7 +382,7 @@ export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, o
         onClose={() => setPartSearchOpen(false)}
         allowedItemTypes={["FINISHED", "SEMI_PRODUCT"]}
         onSelect={(part) => {
-          setForm(p => ({ ...p, itemCode: part.itemCode }));
+          setForm(p => ({ ...p, itemCode: part.itemCode, processCode: "", equipCode: "" }));
           fetchRouting(part.itemCode);
         }}
       />

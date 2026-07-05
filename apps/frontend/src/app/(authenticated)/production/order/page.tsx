@@ -8,18 +8,17 @@
  * 1. **작업지시**: 완제품/반제품 생산 명령 (WAITING → RUNNING → DONE)
  * 2. **액션바**: 행 선택 시 상단에 상태별 액션 버튼 표시
  * 3. **홀딩**: HOLD 상태 시 실적등록/출하 전부 차단
- * 4. **우측 패널**: 생성/수정 폼을 오른쪽 슬라이드 패널로 표시
+ * 4. **생성/수정**: 생성은 공정별 설비 배정 모달, 수정은 오른쪽 슬라이드 패널
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import toast from "react-hot-toast";
 import {
   Search, RefreshCw, ClipboardList, Plus,
   Play, CheckCircle2, PauseCircle, PlayCircle, XCircle,
   Printer, Wrench,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, ComCodeBadge, ConfirmModal, Modal } from "@/components/ui";
+import { Card, CardContent, Button, Input, Select, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect, EquipSelect } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -30,6 +29,7 @@ import { usePageToolStore } from "@/ai-page-tools/pageToolStore";
 import { useAiChatStore } from "@/stores/aiChatStore";
 import JobOrderFormPanel from "./components/JobOrderFormPanel";
 import type { JobOrderFormData } from "./components/JobOrderFormPanel";
+import JobOrderCreateModal from "./components/JobOrderCreateModal";
 import JobOrderPrintModal from "./components/JobOrderPrintModal";
 import type { ProductionJobOrderRow } from "@harness/shared";
 
@@ -89,6 +89,7 @@ export default function JobOrderPage() {
   const [selectedRow, setSelectedRow] = useState<JobOrderItem | null>(null);
 
   // 패널 상태
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<JobOrderFormData | null>(null);
   const [aiDraft, setAiDraft] = useState<AiJobOrderDraft | null>(null);
@@ -135,14 +136,13 @@ export default function JobOrderPage() {
     setAiDraft(draft);
     setAiDraftVersion((version) => version + 1);
     setEditingOrder(null);
-    panelAnimateRef.current = true;
-    setIsPanelOpen(true);
+    setCreateModalOpen(true);
     addExecutionLog({
       pageId: "production.order",
       toolName: "applyJobOrderDraft",
       input: draft,
       status: "success",
-      summary: "AI 작업지시 초안을 입력 패널에 반영했습니다. 저장은 사용자가 직접 실행해야 합니다.",
+      summary: "AI 작업지시 초안을 생성 모달에 반영했습니다. 저장은 사용자가 직접 실행해야 합니다.",
     });
     return { accepted: true, mode: "draft-only" };
   }, [addExecutionLog]);
@@ -207,10 +207,9 @@ export default function JobOrderPage() {
 
   // ===== 패널 로직 =====
   const handleCreate = () => {
-    panelAnimateRef.current = true;
     setEditingOrder(null);
     setAiDraft(null);
-    setIsPanelOpen(true);
+    setCreateModalOpen(true);
   };
 
   const handleEdit = (row: JobOrderItem) => {
@@ -367,16 +366,26 @@ export default function JobOrderPage() {
       </div>
 
       {/* 우측: 패널 */}
-      {isPanelOpen && (
+      {isPanelOpen && editingOrder && (
         <JobOrderFormPanel
-          key={editingOrder?.orderNo ?? (aiDraft ? `__ai_draft_${aiDraftVersion}` : "__new__")}
+          key={editingOrder.orderNo}
           editingOrder={editingOrder}
-          draftOrder={aiDraft ?? undefined}
           onClose={handlePanelClose}
           onSave={fetchData}
           animate={panelAnimateRef.current}
         />
       )}
+
+      <JobOrderCreateModal
+        key={aiDraft ? `__ai_draft_${aiDraftVersion}` : "__new__"}
+        isOpen={createModalOpen}
+        draftOrder={aiDraft ?? undefined}
+        onClose={() => {
+          setCreateModalOpen(false);
+          setAiDraft(null);
+        }}
+        onSave={fetchData}
+      />
 
       {/* 작업지시서 출력 (A4: 상단 작업지시 + 하단 자재요청) */}
       <JobOrderPrintModal

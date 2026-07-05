@@ -24,12 +24,45 @@ import {
   Max,
   MaxLength,
   IsIn,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { JOB_ORDER_STATUS_VALUES, USE_YN_VALUES } from '@harness/shared';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 export type JobOrderStatus = typeof JOB_ORDER_STATUS_VALUES[number];
+
+export class CreateJobOrderOperationAssignmentDto {
+  @ApiPropertyOptional({ description: '설비 배정 대상 품목 코드. 미입력 시 루트 품목 호환 배정', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  itemCode?: string;
+
+  @ApiPropertyOptional({ description: '설비 배정 대상 라우팅 코드', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  routingCode?: string;
+
+  @ApiPropertyOptional({ description: '라우팅 공정 순번', minimum: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  routingSeq?: number;
+
+  @ApiProperty({ description: '공정 코드', maxLength: 50 })
+  @IsString()
+  @MaxLength(50)
+  processCode: string;
+
+  @ApiPropertyOptional({ description: '공정 작업지시에 배정할 설비 코드. 미지정 허용', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  equipCode?: string;
+}
 
 /**
  * 작업지시 생성 DTO
@@ -118,6 +151,16 @@ export class CreateJobOrderDto {
   @IsInt()
   @Min(1)
   routingSeq?: number;
+
+  @ApiPropertyOptional({
+    description: '라우팅 공정별 설비 배정. 미지정 공정은 equipCode 없이 전달 가능',
+    type: [CreateJobOrderOperationAssignmentDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateJobOrderOperationAssignmentDto)
+  operationAssignments?: CreateJobOrderOperationAssignmentDto[];
 }
 
 /**

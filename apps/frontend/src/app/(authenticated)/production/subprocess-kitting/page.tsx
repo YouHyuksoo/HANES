@@ -62,19 +62,53 @@ interface JobOrderPick {
   planQty?: number;
   status?: string;
   processCode?: string;
+  orderKind?: string | null;
+  routingSeq?: number | null;
 }
 
 /** 공용 모달 JobOrder → 화면 JobOrderPick 매핑 */
-const toJobOrderPick = (jo: JobOrder): JobOrderPick => ({
+const toJobOrderPick = (jo: JobOrder & { part?: { itemName?: string } }): JobOrderPick => ({
   orderNo: jo.orderNo,
   itemCode: jo.itemCode,
-  itemName: jo.itemName,
+  itemName: jo.itemName ?? jo.part?.itemName,
   planQty: jo.planQty,
   status: jo.status,
   processCode: jo.processCode,
+  orderKind: jo.orderKind,
+  routingSeq: jo.routingSeq,
 });
 
 const SUBKIT_SELECTED_EQUIP_KEY = "hanes:production:subprocess-kitting:selected-equip";
+
+const SUBKIT_ORDER_KIND_META = {
+  ITEM: {
+    label: "품목지시",
+    description: "반제품 품목 단위",
+    className:
+      "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300",
+  },
+  OPERATION: {
+    label: "공정지시",
+    description: "라우팅 공정 단위",
+    className:
+      "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-900/20 dark:text-sky-300",
+  },
+  UNKNOWN: {
+    label: "지시구분",
+    description: "구분 미지정",
+    className:
+      "border-border bg-surface text-text-muted",
+  },
+} as const;
+
+const getOrderKindMeta = (orderKind?: string | null) => {
+  if (orderKind === "ITEM") return SUBKIT_ORDER_KIND_META.ITEM;
+  if (orderKind === "OPERATION") return SUBKIT_ORDER_KIND_META.OPERATION;
+  return SUBKIT_ORDER_KIND_META.UNKNOWN;
+};
+
+const isSubkitSelectableOrder = (order: JobOrderPick, currentProcessCode: string) =>
+  order.orderKind === "ITEM" || !currentProcessCode || order.processCode === currentProcessCode;
 
 export default function SubprocessKittingPage() {
   const { t } = useTranslation();
@@ -98,6 +132,7 @@ export default function SubprocessKittingPage() {
   const [issuedSg, setIssuedSg] = useState<string | null>(null);
   const [issuing, setIssuing] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [resultQuality, setResultQuality] = useState<"GOOD" | "DEFECT">("GOOD");
 
   const orderScanRef = useRef<HTMLInputElement>(null);
   const sgPrinterRef = useRef<SgLabelPrintHandle>(null);
@@ -175,6 +210,7 @@ export default function SubprocessKittingPage() {
     setOrderScan("");
     setSgList([]);
     setIssuedSg(null);
+    setResultQuality("GOOD");
     setCircuitNo("");
     if (options?.persist !== false) {
       void persistCurrentJobOrder(order.orderNo).catch((error: unknown) => {
@@ -199,6 +235,7 @@ export default function SubprocessKittingPage() {
     setCircuits([]);
     setSgList([]);
     setIssuedSg(null);
+    setResultQuality("GOOD");
     window.localStorage.setItem(SUBKIT_SELECTED_EQUIP_KEY, equip.equipCode);
 
     try {
@@ -217,7 +254,13 @@ export default function SubprocessKittingPage() {
             setTimeout(() => orderScanRef.current?.focus(), 80);
             return;
           }
-          selectOrder(toJobOrderPick(restored), { persist: false });
+          const restoredOrder = toJobOrderPick(restored);
+          if (!isSubkitSelectableOrder(restoredOrder, equip.processCode ?? "")) {
+            await persistCurrentJobOrder(null, equip.equipCode);
+            setTimeout(() => orderScanRef.current?.focus(), 80);
+            return;
+          }
+          selectOrder(restoredOrder, { persist: false });
           return;
         }
       }
@@ -262,12 +305,13 @@ export default function SubprocessKittingPage() {
             statuses: "WAITING,RUNNING",
             assignableEquipCode: equipCode,
             itemType: "SEMI_PRODUCT",
-            orderKind: "OPERATION",
-            ...(processCode ? { processCode } : {}),
           },
         });
-        const list: JobOrderPick[] = Array.isArray(res.data?.data) ? res.data.data : [];
-        const found = list.find((r) => r.orderNo === trimmed) ?? list[0];
+        const list: JobOrderPick[] = Array.isArray(res.data?.data)
+          ? res.data.data.map((row: JobOrder & { part?: { itemName?: string } }) => toJobOrderPick(row))
+          : [];
+        const selectableList = list.filter((row) => isSubkitSelectableOrder(row, processCode));
+        const found = selectableList.find((r) => r.orderNo === trimmed) ?? selectableList[0];
         if (found) {
           selectOrder(found);
         } else {
@@ -288,6 +332,7 @@ export default function SubprocessKittingPage() {
     setCircuitNo("");
     setSgList([]);
     setIssuedSg(null);
+    setResultQuality("GOOD");
     void persistCurrentJobOrder(null).catch(() => {
       toast.error(t("production.subprocess.clearOrderFailed", "설비 현재 작업지시 해제에 실패했습니다."));
     });
@@ -307,6 +352,7 @@ export default function SubprocessKittingPage() {
     setCircuits([]);
     setSgList([]);
     setIssuedSg(null);
+    setResultQuality("GOOD");
     window.localStorage.removeItem(SUBKIT_SELECTED_EQUIP_KEY);
     if (prevEquipCode) {
       void persistCurrentJobOrder(null, prevEquipCode).catch(() => {
@@ -406,10 +452,13 @@ export default function SubprocessKittingPage() {
           equipCode,
           inputSgBarcodes: sgList.map((s) => s.sgBarcode),
           circuitNo: circuitNo || undefined,
+          goodQty: resultQuality === "GOOD" ? 1 : 0,
+          defectQty: resultQuality === "DEFECT" ? 1 : 0,
         });
         toast.success(t("production.subprocess.confirmSuccess", "서브 키팅이 확정되었습니다."));
         setSgList([]);
         setIssuedSg(null);
+        setResultQuality("GOOD");
       } catch (error: unknown) {
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -419,7 +468,7 @@ export default function SubprocessKittingPage() {
         setConfirming(false);
       }
     },
-    [circuitNo, circuits.length, equipCode, issuedSg, processCode, selectedOrder, sgList, t],
+    [circuitNo, circuits.length, equipCode, issuedSg, processCode, resultQuality, selectedOrder, sgList, t],
   );
 
   const onResetIssued = useCallback(() => {
@@ -496,13 +545,20 @@ export default function SubprocessKittingPage() {
             <div className="flex-1 min-w-0">
               {selectedOrder ? (
                 <div className="flex items-center justify-between gap-3 rounded border border-primary/40 bg-primary/5 px-3 py-2">
-                  <div className="min-w-0 text-sm">
-                    <span className="font-mono text-text">{selectedOrder.orderNo}</span>
-                    <span className="text-text-muted">
-                      {" · "}
-                      {selectedOrder.itemCode}
-                      {selectedOrder.itemName ? ` · ${selectedOrder.itemName}` : ""}
+                  <div className="flex min-w-0 items-center gap-2 text-sm">
+                    <span className={`shrink-0 rounded border px-2 py-1 text-xs font-semibold ${getOrderKindMeta(selectedOrder.orderKind).className}`}>
+                      {getOrderKindMeta(selectedOrder.orderKind).label}
                     </span>
+                    <div className="min-w-0">
+                      <span className="font-mono text-text">{selectedOrder.orderNo}</span>
+                      <span className="text-text-muted">
+                        {" · "}
+                        {selectedOrder.itemCode}
+                        {selectedOrder.itemName ? ` · ${selectedOrder.itemName}` : ""}
+                        {" · "}
+                        {getOrderKindMeta(selectedOrder.orderKind).description}
+                      </span>
+                    </div>
                   </div>
                   <Button variant="secondary" size="sm" onClick={clearOrder}>
                     {t("common.change", "변경")}
@@ -591,6 +647,8 @@ export default function SubprocessKittingPage() {
           confirming={confirming}
           onConfirmScan={onConfirmScan}
           onResetIssued={onResetIssued}
+          resultQuality={resultQuality}
+          onResultQualityChange={setResultQuality}
         />
       </div>
 
@@ -606,7 +664,7 @@ export default function SubprocessKittingPage() {
         equipCode={equipCode || undefined}
         processCode={processCode || undefined}
         itemType="SEMI_PRODUCT"
-        orderKind="OPERATION"
+        includeItemOrdersForProcess
       />
 
       {/* 설비 선택 모달 — input-kiosk 공용. 설비 선택 시 공정 자동 도출. */}

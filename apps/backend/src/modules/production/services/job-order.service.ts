@@ -30,6 +30,7 @@ import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import {
+  CreateJobOrderOperationAssignmentDto,
   CreateJobOrderDto,
   UpdateJobOrderDto,
   JobOrderQueryDto,
@@ -149,14 +150,87 @@ export class JobOrderService {
     return routingProcesses.filter((process) => (process.jobOrderYn ?? 'Y') === 'Y');
   }
 
+  private validateOperationAssignment(
+    assignment: CreateJobOrderOperationAssignmentDto,
+    routingProcesses: RoutingProcess[],
+  ): RoutingProcess {
+    const process = routingProcesses.find((candidate) => (
+      (assignment.routingSeq == null || Number(candidate.seq) === Number(assignment.routingSeq))
+      && candidate.processCode === assignment.processCode
+    ));
+    if (!process) {
+      throw new BadRequestException(
+        `라우팅에 없는 공정 설비 배정입니다: seq=${assignment.routingSeq ?? '-'}, process=${assignment.processCode}`,
+      );
+    }
+    return process;
+  }
+
+  private buildOperationAssignmentKey(
+    itemCode: string,
+    routingCode: string,
+    routingSeq: number,
+    processCode: string,
+  ): string {
+    return `${itemCode}::${routingCode}::${routingSeq}::${processCode}`;
+  }
+
+  private buildOperationAssignmentMap(
+    assignments: CreateJobOrderOperationAssignmentDto[] | undefined,
+    itemCode: string,
+    routingCode: string,
+    routingProcesses: RoutingProcess[],
+    includeLegacyAssignments = false,
+  ): Map<number, { processCode: string; equipCode: string | null }> {
+    const operationAssignmentMap = new Map<number, { processCode: string; equipCode: string | null }>();
+    if (!assignments?.length) return operationAssignmentMap;
+
+    for (const assignment of assignments) {
+      const isLegacyAssignment = !assignment.itemCode && !assignment.routingCode;
+      const matchesItem = assignment.itemCode === itemCode;
+      const matchesRouting = !assignment.routingCode || assignment.routingCode === routingCode;
+      if (!(matchesItem && matchesRouting) && !(includeLegacyAssignments && isLegacyAssignment)) {
+        continue;
+      }
+      const process = this.validateOperationAssignment(assignment, routingProcesses);
+      if (operationAssignmentMap.has(Number(process.seq))) {
+        const assignmentKey = this.buildOperationAssignmentKey(itemCode, routingCode, Number(process.seq), process.processCode);
+        throw new BadRequestException(`중복된 공정 설비 배정입니다: ${assignmentKey}`);
+      }
+      operationAssignmentMap.set(Number(process.seq), {
+        processCode: process.processCode,
+        equipCode: assignment.equipCode?.trim() || null,
+      });
+    }
+    return operationAssignmentMap;
+  }
+
+  private getAssignmentsForItemRouting(
+    assignments: CreateJobOrderOperationAssignmentDto[] | undefined,
+    itemCode: string,
+    routingCode: string,
+    routingProcesses: RoutingProcess[],
+    includeLegacyAssignments = false,
+  ): Map<number, { processCode: string; equipCode: string | null }> {
+    return this.buildOperationAssignmentMap(
+      assignments,
+      itemCode,
+      routingCode,
+      routingProcesses,
+      includeLegacyAssignments,
+    );
+  }
+
   private async createRoutingOperationOrders(
     queryRunner: QueryRunner,
     itemOrder: JobOrder,
     routingProcesses: RoutingProcess[],
     rootOrderNo: string,
+    operationAssignmentMap: Map<number, { processCode: string; equipCode: string | null }>,
   ): Promise<void> {
     for (const process of this.getJobOrderRoutingProcesses(routingProcesses)) {
       const operationOrderNo = await this.numbering.nextJobOrderNo(queryRunner);
+      const assignment = operationAssignmentMap.get(Number(process.seq));
       await queryRunner.manager.save(
         queryRunner.manager.create(JobOrder, {
           orderNo: operationOrderNo,
@@ -168,7 +242,7 @@ export class JobOrderService {
           processCode: process.processCode,
           orderKind: 'OPERATION',
           routingSeq: process.seq,
-          equipCode: null,
+          equipCode: assignment?.equipCode ?? null,
           planQty: itemOrder.planQty,
           planDate: itemOrder.planDate,
           priority: itemOrder.priority,
@@ -384,6 +458,13 @@ export class JobOrderService {
 
     return this.tx.run(async (queryRunner) => {
       const routingProcesses = await this.findRoutingProcessesByCode(routingCode, company, plant);
+      const operationAssignmentMap = this.getAssignmentsForItemRouting(
+        dto.operationAssignments,
+        dto.itemCode,
+        routingCode,
+        this.getJobOrderRoutingProcesses(routingProcesses),
+        true,
+      );
       const processCode = this.resolveProcessCodeForCreate(
         dto.processCode,
         routingCode,
@@ -413,7 +494,7 @@ export class JobOrderService {
       });
       const saved = await queryRunner.manager.save(jobOrder);
 
-      await this.createRoutingOperationOrders(queryRunner, saved, routingProcesses, saved.orderNo);
+      await this.createRoutingOperationOrders(queryRunner, saved, routingProcesses, saved.orderNo, operationAssignmentMap);
       await this.createChildOrdersRecursive(queryRunner, saved, dto, saved.orderNo, 0, new Set());
 
       return this.jobOrderRepository.findOne({
@@ -515,7 +596,13 @@ export class JobOrderService {
         }),
       );
 
-      await this.createRoutingOperationOrders(queryRunner, child, childRoutingProcesses, rootOrderNo);
+      const childOperationAssignmentMap = this.getAssignmentsForItemRouting(
+        dto.operationAssignments,
+        child.itemCode,
+        childRoutingCode,
+        this.getJobOrderRoutingProcesses(childRoutingProcesses),
+      );
+      await this.createRoutingOperationOrders(queryRunner, child, childRoutingProcesses, rootOrderNo, childOperationAssignmentMap);
       await this.createChildOrdersRecursive(queryRunner, child, dto, rootOrderNo, depth + 1, nextAncestors);
     }
   }
