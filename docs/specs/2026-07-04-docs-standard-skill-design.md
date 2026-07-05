@@ -138,8 +138,8 @@ HANES business-logics의 기존 관례(`> 분석 기준 커밋:` 본문 표기)�
 | 대상 | 처리 |
 |---|---|
 | `superpowers/specs/*` → `specs/` | git mv (파일명 이미 규격 호환), `superpowers/plans/*` → `plans/`, 빈 superpowers/ 제거 |
-| `setup/`(5) + `manuals/`(빈) + `presentation/`(1) | `guides/`로 통합 (presentation 1건은 내용 확인 후 배치) |
-| `design/`(6) | 2장 design 정형 구성으로 재배치·재작성. 메모리에 산재한 디자인 규칙(파스텔 금지, 모달 최대폭, 패널 버튼 상단, QtyInput, BarcodeScanInput 등)을 성문화해 단일출처화 |
+| `setup/`(5) + `manuals/`(빈) | `guides/`로 통합, manuals 제거. `presentation/`은 pptx/html/assets 포함 발표자료라 이동 없이 특화 폴더로 manifest 등록 |
+| `design/`(6) | 실측 결과 기존 내용은 UI가 아니라 시스템 아키텍처 참조(ERD/라우팅/API인덱스/모듈맵) → `architecture/` 특화 폴더로 개명·등록. `design/`은 2장 정형 구성으로 신규 작성 — 메모리에 산재한 디자인 규칙(파스텔 금지, 모달 최대폭, 패널 버튼 상단, QtyInput, BarcodeScanInput 등)을 실코드 실측과 함께 성문화 |
 | `workflows/` | manifest 특화 폴더 등록 (AI RAG 그래프 단일 출처) |
 | `business-logics/`(163) | core라 이동 없음, manifest 반영. 본문의 `분석 기준 커밋` 표기를 frontmatter(sources/verifiedCommit)로 승격(스크립트 일괄) |
 | `docs/readme.md` | 표준 manifest `README.md`로 대체 |
