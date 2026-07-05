@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """HNS02 제품재고 100개 BOM 완전 다단계 정합 시드.
-spec: docs/superpowers/specs/2026-06-19-hns02-product-stock-100-seed-design.md
+spec: docs/specs/2026-06-19-hns02-product-stock-100-seed-design.md
 사용: python tools/seed/seed_hns02_stock100.py [--commit]
   --commit 없으면 dry-run(rollback). 검증 쿼리는 양쪽 모두 출력.
 """

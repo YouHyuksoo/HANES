@@ -2,7 +2,7 @@
  * @file src/modules/material/services/lot-merge.service.ts
  * @description 자재 LOT 병합 비즈니스 로직 (TypeORM)
  *
- * 재설계(2026-06-08, spec: docs/superpowers/specs/2026-06-08-lot-split-merge-redesign.md):
+ * 재설계(2026-06-08, spec: docs/specs/2026-06-08-lot-split-merge-redesign.md):
  * - 원 시리얼 전부 폐기(status='MERGED', 재고0) → 합산 수량의 신규 통합 시리얼 1개 발번.
  * - 동일 itemCode + 동일 입하번호(arrivalNo) + 입고완료 LOT만 병합 가능.
  *   (입하건 단위 병합 — 입하 라벨 재부착을 위해 동일 입하건으로 제한)

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """PROCESS_MASTERS 정비 — THN 제조공정 흐름도(03.제조공정_THN.pdf) 기준.
 
-설계: docs/superpowers/specs/2026-06-20-process-master-pdf-reorg-design.md
+설계: docs/specs/2026-06-20-process-master-pdf-reorg-design.md
 
 - LINE_TYPE 컬럼 추가(LV/HV/CM). nullable, 비파괴.
 - 기존 18개: 코드 유지, PROCESS_NAME/LINE_TYPE/SORT_ORDER 정비(UPDATE).
