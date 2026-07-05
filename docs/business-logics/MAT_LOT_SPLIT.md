@@ -4,7 +4,7 @@ sources:
   - apps/backend/src/modules/material/services/lot-split.service.ts
   - apps/backend/src/shared/numbering.service.ts
   - apps/frontend/src/app/(authenticated)/material/arrival/components/MatLabelPreviewModal.tsx
-verifiedCommit: 8a7e96ea
+verifiedCommit: 08949e5b
 ---
 
 # 자재분할 — 비즈니스 로직 & 데이터 흐름 분석

@@ -4,7 +4,7 @@ sources:
   - apps/frontend/src/components/ui/Modal.tsx
   - apps/frontend/src/components/ui/Badge.tsx
   - docs/standards/anti-patterns.md
-verifiedCommit: 90ecd475
+verifiedCommit: 08949e5b
 ---
 
 # 디자인 시스템 개요

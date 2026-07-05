@@ -4,7 +4,7 @@ sources:
   - apps/backend/src/modules/menu-categories/utils/menu-code-validator.ts
   - apps/backend/src/seeds/menu-config.json
   - docs/standards/menu-add-workflow.md
-verifiedCommit: 90ecd475
+verifiedCommit: 08949e5b
 ---
 
 # 내비게이션 디자인 규칙

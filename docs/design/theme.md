@@ -2,7 +2,7 @@
 sources:
   - apps/frontend/src/app/globals.css
   - docs/standards/theme-system-spec.md
-verifiedCommit: 90ecd475
+verifiedCommit: 08949e5b
 ---
 
 # 테마/토큰 디자인 규칙
