@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 8a7e96ea
+---
+
 # 생산라인 마스터 (MST_PROD_LINE) — 비즈니스 로직 & 데이터 흐름 분석
 
 > **분석 기준 커밋:** `8a7e96ea`

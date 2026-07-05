@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 8a7e96ea
+---
+
 # 불량코드관리 — 비즈니스 로직 & 데이터 흐름 분석
 
 > **Menu Code:** `QC_DEFECT_CODE`

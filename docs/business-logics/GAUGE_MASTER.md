@@ -1,3 +1,9 @@
+---
+sources:
+  - apps/backend/src/modules/quality/spc/controllers/msa.controller.ts
+verifiedCommit: 8a7e96ea
+---
+
 # 계측기 마스터 (GAUGE_MASTER) — 비즈니스 로직 & 데이터 흐름 분석
 > **분석 기준 커밋:** `8a7e96ea`
 > **분석 일자:** `2026-07-04`

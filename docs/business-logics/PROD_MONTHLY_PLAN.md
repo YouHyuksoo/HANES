@@ -1,3 +1,9 @@
+---
+sources:
+  - apps/backend/src/modules/production/controllers/prod-plan.controller.ts
+verifiedCommit: 8a7e96ea
+---
+
 # 월간생산계획 — 비즈니스 로직 & 데이터 흐름 분석
 
 > **Menu Code:** `PROD_MONTHLY_PLAN`

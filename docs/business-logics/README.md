@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 8a7e96ea
+---
+
 # Business Logic 분석 인덱스
 
 > **분석 기준 커밋:** `8a7e96ea`

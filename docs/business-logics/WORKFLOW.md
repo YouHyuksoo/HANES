@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 8a7e96ea
+---
+
 # 업무 가이드 — 비즈니스 로직 & 데이터 흐름 분석
 
 > **분석 기준 커밋:** `8a7e96ea8e9f2710bd79a8c5d12cbbc8ecc1ab26`

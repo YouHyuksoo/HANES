@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 8a7e96ea
+---
+
 # 생산실적 키오스크 — 비즈니스 로직 & 데이터 흐름 분석
 
 > **Menu Code:** `PROD_INPUT_KIOSK`

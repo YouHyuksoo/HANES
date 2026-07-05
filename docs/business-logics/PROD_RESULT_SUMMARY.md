@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 8a7e96ea
+---
+
 # 작업실적 통합 조회 — 비즈니스 로직 & 데이터 흐름 분석
 
 > **Menu Code:** `PROD_RESULT_SUMMARY`

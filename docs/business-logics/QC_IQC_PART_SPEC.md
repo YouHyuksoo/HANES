@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 8a7e96ea
+---
+
 # 품목별 IQC 항목관리 — 비즈니스 로직 & 데이터 흐름 분석
 
 > **Menu Code:** `QC_IQC_PART_SPEC`

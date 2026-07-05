@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 8a7e96ea
+---
+
 # 실적입력(조립) — 비즈니스 로직 & 데이터 흐름 분석
 
 > **Menu Code:** `PROD_INPUT_ASSEMBLY`

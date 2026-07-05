@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 8a7e96ea
+---
+
 # 공정샘플검사 이력 — 비즈니스 로직 & 데이터 흐름 분석
 
 > **Menu Code:** `QC_SELF_INSPECT_HISTORY`

@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 8a7e96ea
+---
+
 # 교육훈련 관리 — 비즈니스 로직 & 데이터 흐름 분석
 
 > **Menu Code:** `SYS_TRAINING`

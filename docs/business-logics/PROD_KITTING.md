@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: b554222e
+---
+
 # 실적입력(서브공정) — 비즈니스 로직 & 데이터 흐름 분석
 
 > **Menu Code:** `PROD_KITTING`

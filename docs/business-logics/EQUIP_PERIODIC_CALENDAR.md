@@ -1,3 +1,9 @@
+---
+sources:
+  - apps/backend/src/modules/equipment/controllers/periodic-inspect.controller.ts
+verifiedCommit: 8a7e96ea
+---
+
 # 설비 정기점검 캘린더 (EQUIP_PERIODIC_CALENDAR) — 비즈니스 로직 & 데이터 흐름 분석
 > **분석 기준 커밋:** `8a7e96ea`
 > **분석 일자:** `2026-07-04`

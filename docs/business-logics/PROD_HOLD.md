@@ -1,3 +1,9 @@
+---
+sources:
+  - apps/frontend/src/app/(authenticated)/inventory/product-hold/page.tsx
+verifiedCommit: 8a7e96ea
+---
+
 # 제품재고홀드 — 비즈니스 로직 & 데이터 흐름 분석
 > **분석 기준 커밋:** `8a7e96ea`
 > **분석 일자:** `2026-07-04`

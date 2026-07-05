@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 8a7e96ea
+---
+
 # 제조사 바코드 매핑 (MST_VENDOR_BARCODE) — 비즈니스 로직 & 데이터 흐름 분석
 
 > **분석 기준 커밋:** `8a7e96ea`

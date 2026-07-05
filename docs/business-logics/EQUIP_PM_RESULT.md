@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 8a7e96ea
+---
+
 # 설비 PM 실적 (EQUIP_PM_RESULT) — 비즈니스 로직 & 데이터 흐름 분석
 > **분석 기준 커밋:** `8a7e96ea`
 > **분석 일자:** `2026-07-04`

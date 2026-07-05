@@ -1,3 +1,8 @@
+---
+sources: []
+verifiedCommit: 8a7e96ea
+---
+
 # IQC 이력조회 — 비즈니스 로직 & 데이터 흐름 분석
 
 > **Menu Code:** `QC_IQC_HISTORY`

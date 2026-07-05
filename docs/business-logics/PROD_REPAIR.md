@@ -1,3 +1,9 @@
+---
+sources:
+  - apps/backend/src/modules/production/controllers/repair.controller.ts
+verifiedCommit: 8a7e96ea
+---
+
 # 수리관리 — 비즈니스 로직 & 데이터 흐름 분석
 
 > **Menu Code:** `PROD_REPAIR`
