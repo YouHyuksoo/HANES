@@ -3,7 +3,7 @@ sources:
   - docs/standards/master-part-page-standard.md
   - apps/frontend/src/hooks/useUnsavedGuard.ts
   - apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx
-verifiedCommit: 90ecd475
+verifiedCommit: 64cde39a
 ---
 
 # 레이아웃 디자인 규칙

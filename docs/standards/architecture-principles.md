@@ -3,7 +3,7 @@ sources:
   - apps/backend/src/app.module.ts
   - apps/backend/src/modules/production/services/job-order.service.ts
   - apps/backend/src/modules/shipping/services/shipment.service.ts
-verifiedCommit: 2e8d7f56
+verifiedCommit: 64cde39a
 ---
 
 ﻿# 아키텍처 원칙
