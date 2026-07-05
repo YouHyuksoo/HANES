@@ -52,9 +52,11 @@ standardVersion: 1
 | 위치 | 용도 | 관리 규정 (audit 점검 명령 포함) |
 |---|---|---|
 | apps/frontend/public/help/{user,operator}/ko/ | 화면 도움말 (Next.js 정적 서빙 + AI RAG) | docs/guides/help-authoring-guide 준수(존재 시), frontmatter 필수 — 점검: `node tools/help-frontmatter-audit.mjs` |
+| apps/backend/data/ai-table-catalog.md | text-to-SQL용 DB 테이블 메타데이터(설명/동의어/JOIN키) — 데이터 계층 문서지만 백엔드가 `AI_CATALOG_PATH`(기본 `data/ai-table-catalog.md`)로 읽고 `/system/config` UI로 편집하는 런타임 자산이라 이동 안 함. 개념상 database/ 소속 | `## TABLE — 설명` / `동의어:` / `관계:` 형식. `AiCatalogService`가 파싱·DB동기화 |
 
 ## 프로젝트 참고사항
 
-- AI RAG 인덱스가 docs/{standards,specs,plans,workflows/definitions,business-logics}를 청킹한다 — 폴더 개명 시 apps/backend/src/modules/ai-knowledge/ai-knowledge.service.ts DEFAULT_KNOWLEDGE_TARGETS 동기 필요.
+- AI RAG 인덱스가 docs/{standards,design,architecture,database,specs,plans,workflows/definitions,business-logics} + help + ai-table-catalog를 청킹한다 — 폴더 개명 시 apps/backend/src/modules/ai-knowledge/ai-knowledge.service.ts DEFAULT_KNOWLEDGE_TARGETS 동기 필요.
+- database/ = 데이터 계층 문서(스키마/ERD/컬럼도메인/엔티티). schema-erd.md는 `tools/generate_db_schema_doc.py`가 자동생성(frontmatter 포함). ai-table-catalog.md는 런타임 자산이라 외부 집합으로 관리(위 표).
 
 <!-- LOCAL:END -->
