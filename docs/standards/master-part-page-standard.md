@@ -1,3 +1,15 @@
+---
+sources:
+  - apps/backend/src/entities/item-master.entity.ts
+  - apps/backend/src/modules/master/dto/part.dto.ts
+  - apps/backend/src/modules/master/services/part.service.spec.ts
+  - apps/backend/src/modules/master/services/part.service.ts
+  - apps/frontend/src/app/(authenticated)/master/part/components/PartFormModal.tsx
+  - apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx
+  - packages/shared/src/utils/part-rules.ts
+verifiedCommit: 3a8cacfd
+---
+
 # 품목마스터 페이지 표준
 
 ## 목적

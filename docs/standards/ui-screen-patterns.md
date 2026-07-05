@@ -1,3 +1,9 @@
+---
+sources:
+  - apps/frontend/src/hooks/useComCode.ts
+verifiedCommit: 3a8cacfd
+---
+
 ﻿# UI 화면 패턴
 
 ## 목적

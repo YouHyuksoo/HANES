@@ -11,8 +11,8 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 
 const LIVING_DIRS = ['docs/standards', 'docs/business-logics', 'docs/guides', 'docs/architecture', 'docs/design'];
-// 다른 AI가 lock 중인 파일은 건드리지 않는다.
-const LOCKED = new Set(['docs/standards/master-part-page-standard.md', 'docs/standards/ui-screen-patterns.md']);
+// 다른 AI가 lock 중인 파일은 건드리지 않는다. (현재 lock 없음)
+const LOCKED = new Set([]);
 const APPLY = process.argv.includes('--commit');
 const HEAD = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
 const MAX_SOURCES = 12;
