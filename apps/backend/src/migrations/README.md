@@ -21,7 +21,7 @@ python tools/generate_db_schema_doc.py
 
 갱신 대상:
 
-- `docs/reports/db-schema-erd.md`
+- `docs/database/schema-erd.md`
 
 스키마 변경 작업은 마이그레이션 SQL만으로 완료된 것으로 보지 않습니다. 문서 갱신 결과를 같은 작업 범위에 포함하고, 검증 로그에 문서 재생성 명령을 남깁니다.
 

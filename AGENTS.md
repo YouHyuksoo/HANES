@@ -64,7 +64,7 @@
 - `SEQ` 또는 ID 채번은 Oracle `SEQUENCE.NEXTVAL`만 사용한다.
 - `MAX(SEQ)+1`, `NVL(MAX(...))+1`, 날짜별 1부터 재시작 채번은 금지한다.
 - `COMPANY`, `PLANT_CD`가 있는 업무 SQL은 명시적 공유 범위가 문서화되지 않는 한 tenant scope를 포함한다.
-- 테이블/컬럼/PK/FK/CHECK/코드 도메인 등 DB 스키마 변경 시 `python tools/generate_db_schema_doc.py`를 실행해 `docs/reports/db-schema-erd.md`를 함께 갱신한다.
+- 테이블/컬럼/PK/FK/CHECK/코드 도메인 등 DB 스키마 변경 시 `python tools/generate_db_schema_doc.py`를 실행해 `docs/database/schema-erd.md`를 함께 갱신한다.
 - 스키마 변경 PR/커밋 범위에는 migration SQL과 ERD 갱신을 같이 포함한다.
 
 ## 6. 코드와 UI 규칙

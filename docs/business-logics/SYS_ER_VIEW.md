@@ -157,5 +157,5 @@ flowchart TB
 
 - 서비스 파일이 942라인으로 가장 큰 파일 중 하나
 - 스키마 스냅샷 10분 TTL 캐시
-- DEV 모드에서는 ERD 문서(`docs/reports/db-schema-erd.md`) 자동 재생성
+- DEV 모드에서는 ERD 문서(`docs/database/schema-erd.md`) 자동 재생성
 - ReactFlow로 그래프 시각화 (노드 드래그, 미니맵, 줌)

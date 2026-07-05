@@ -1,3 +1,9 @@
+---
+sources: []
+verifiedCommit: 8ff64f1e
+generated: true
+---
+
 # HANES MES DB 스키마 및 ERD
 
 - 작성일: 2026-07-04 01:44:28

@@ -19,6 +19,12 @@ const DEFAULT_KNOWLEDGE_TARGETS: KnowledgeTarget[] = [
   { path: 'apps/frontend/public/help/user/ko', docType: 'help' },
   { path: 'apps/frontend/public/help/operator/ko', docType: 'help' },
   { path: 'docs/standards', docType: 'standard' },
+  // UI 디자인 시스템 규칙(버튼/모달/폼 등) — 신규 화면 제작 질문의 근거.
+  { path: 'docs/design', docType: 'standard' },
+  // 시스템 아키텍처 참조(라우팅/API 인덱스/모듈맵) — 엔지니어 질문 근거.
+  { path: 'docs/architecture', docType: 'document' },
+  // 데이터 계층(스키마/ERD/컬럼 도메인/엔티티) — 엔지니어 DB 질문 근거.
+  { path: 'docs/database', docType: 'document' },
   { path: 'docs/specs', docType: 'spec' },
   { path: 'docs/plans', docType: 'plan' },
   // docs/workflows 루트에는 구형 가이드 문서가 있어 정의 문서 전용 하위 폴더만 대상으로 한다.

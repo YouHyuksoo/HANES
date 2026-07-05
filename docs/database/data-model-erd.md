@@ -234,4 +234,4 @@ erDiagram
 2. 엔티티 군과 관계 축을 먼저 이해하는 용도로 사용한다.
 3. 컬럼 타입, 인덱스, FK 세부는 엔티티 파일을 직접 확인한다.
 4. 실제 업무 흐름은 [domain-workflows.md](../workflows/domain-workflows.md)와 [05-production-process-flow.md](../workflows/05-production-process-flow.md)를 함께 본다.
-5. 엔티티 설계 규칙 자체는 [entity-design-guide.md](../standards/entity-design-guide.md)를 기준으로 본다.
+5. 엔티티 설계 규칙 자체는 [entity-design-guide.md](../database/entity-design-guide.md)를 기준으로 본다.

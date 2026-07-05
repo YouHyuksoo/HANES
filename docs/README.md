@@ -10,7 +10,7 @@ standardVersion: 1
 
 <!-- COMMON:START (upgrade가 이 블록만 교체한다 — 직접 수정 금지) -->
 
-## 분류체계 (core 8)
+## 분류체계 (core 9)
 
 | 폴더 | 용도 | 명명규칙 | 계층 |
 |---|---|---|---|
@@ -19,6 +19,7 @@ standardVersion: 1
 | plans/ | 구현계획 | `YYYY-MM-DD-주제.md` | 기록형 |
 | standards/ | 코드·업무 규칙, 컨벤션, 절차 | `kebab-case.md` | 살아있음 |
 | design/ | UI 디자인 시스템 (화면 공용화·표준화 규칙) | overview/theme/layout/buttons/data-grid/navigation/modals/forms.md | 살아있음 |
+| database/ | 데이터 계층 문서 (스키마/ERD/컬럼 도메인/엔티티 설계) | `kebab-case.md` | 살아있음 |
 | business-logics/ | 화면/기능 단위 로직·데이터 흐름 분석 (구현 후 실측) | `MENU_CODE.md` 또는 `kebab-case.md` | 살아있음 |
 | guides/ | 설치·운영·사용 가이드 | `kebab-case.md` | 살아있음 |
 | reports/ | 산출물·감사·미완료기록 | `YYYY-MM-DD-주제.md` 또는 주제 폴더 | 기록형 |

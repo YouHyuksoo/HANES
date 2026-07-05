@@ -8,7 +8,7 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const LIVING_DIRS = ['docs/standards', 'docs/design', 'docs/business-logics', 'docs/guides', 'docs/architecture'];
+const LIVING_DIRS = ['docs/standards', 'docs/design', 'docs/business-logics', 'docs/guides', 'docs/architecture', 'docs/database'];
 const results = [];
 
 function listMd(dir) {

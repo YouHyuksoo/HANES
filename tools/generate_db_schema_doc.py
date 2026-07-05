@@ -1,13 +1,21 @@
 import json
 import os
+import subprocess
 from collections import defaultdict
 from datetime import datetime
 
 import oracledb
 
 
+def _git_head():
+    try:
+        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
+    except Exception:
+        return "UNKNOWN"
+
+
 SITE = os.environ.get("ORACLE_SITE", "MYDBPDB")
-OUTPUT = os.path.join("docs", "reports", "db-schema-erd.md")
+OUTPUT = os.path.join("docs", "database", "schema-erd.md")
 
 
 MODULE_RULES = [
@@ -312,6 +320,13 @@ def main():
 
     today = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     lines = [
+        # managing-docs 추적 계약: 이 문서는 Oracle DB에서 자동생성된다(git 소스 없음 → sources: []).
+        "---",
+        "sources: []",
+        f"verifiedCommit: {_git_head()}",
+        "generated: true",
+        "---",
+        "",
         "# HANES MES DB 스키마 및 ERD",
         "",
         f"- 작성일: {today}",

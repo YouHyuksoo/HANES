@@ -24,7 +24,7 @@ verifiedCommit: 2e8d7f56
 - 개발환경과 기술스택 기준은 [development-stack-guide.md](./development-stack-guide.md)
 - 구현 세부 규칙은 [implementation-rules.md](../standards/implementation-rules.md)
 - API 표면 규칙은 [api-contract-guide.md](../standards/api-contract-guide.md)
-- 엔티티 설계 기준은 [entity-design-guide.md](../standards/entity-design-guide.md)
+- 엔티티 설계 기준은 [entity-design-guide.md](../database/entity-design-guide.md)
 - UI 설계 기준은 [ui-screen-patterns.md](../standards/ui-screen-patterns.md)
 - 네비게이션 기준은 [navigation-spec.md](../standards/navigation-spec.md)
 - 테마 시스템 기준은 [theme-system-spec.md](../standards/theme-system-spec.md)
@@ -39,7 +39,7 @@ verifiedCommit: 2e8d7f56
 2. [architecture-principles.md](../standards/architecture-principles.md)
 3. [implementation-rules.md](../standards/implementation-rules.md)
 4. [api-contract-guide.md](../standards/api-contract-guide.md)
-5. [entity-design-guide.md](../standards/entity-design-guide.md)
+5. [entity-design-guide.md](../database/entity-design-guide.md)
 6. [ui-screen-patterns.md](../standards/ui-screen-patterns.md)
 7. [navigation-spec.md](../standards/navigation-spec.md)
 8. [theme-system-spec.md](../standards/theme-system-spec.md)
@@ -54,7 +54,7 @@ verifiedCommit: 2e8d7f56
 
 - [architecture-principles.md](../standards/architecture-principles.md)
 - [development-stack-guide.md](./development-stack-guide.md)
-- [entity-design-guide.md](../standards/entity-design-guide.md)
+- [entity-design-guide.md](../database/entity-design-guide.md)
 - [navigation-spec.md](../standards/navigation-spec.md)
 
 ### 백엔드 구현 중심일 때
