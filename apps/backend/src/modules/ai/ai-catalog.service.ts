@@ -44,10 +44,12 @@ export class AiCatalogService {
 
   constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
 
-  /** md 파일 경로 (env로 override 가능, 기본 backend cwd 기준 data/) */
+  /** md 파일 경로. 기본은 프로젝트 루트의 docs/database/table-catalog.md (docs 표준으로 관리).
+   *  env AI_CATALOG_PATH로 override 가능. 상대경로는 프로젝트 루트(backend cwd의 ../..) 기준. */
   private filePath(): string {
-    const p = process.env.AI_CATALOG_PATH || 'data/ai-table-catalog.md';
-    return path.isAbsolute(p) ? p : path.resolve(process.cwd(), p);
+    const root = path.resolve(process.cwd(), '..', '..');
+    const p = process.env.AI_CATALOG_PATH || 'docs/database/table-catalog.md';
+    return path.isAbsolute(p) ? p : path.resolve(root, p);
   }
 
   invalidate(): void {

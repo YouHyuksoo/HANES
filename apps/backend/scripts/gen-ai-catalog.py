@@ -57,7 +57,7 @@ def main():
     out = f"{head}\n{body}\n"
 
     out_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
-        os.path.dirname(__file__), "..", "data", "ai-table-catalog.md"
+        os.path.dirname(__file__), "..", "..", "..", "docs", "database", "table-catalog.md"
     )
     out_path = os.path.abspath(out_path)
     os.makedirs(os.path.dirname(out_path), exist_ok=True)

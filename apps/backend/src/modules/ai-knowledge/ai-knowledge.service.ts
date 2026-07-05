@@ -33,7 +33,8 @@ const DEFAULT_KNOWLEDGE_TARGETS: KnowledgeTarget[] = [
   { path: 'docs/workflows/definitions', docType: 'workflow' },
   // engineer 페르소나의 근거 문서. 검색 부스트가 sourcePath(docs/business-logics/) 기준이라 docType은 document를 쓴다.
   { path: 'docs/business-logics', docType: 'document' },
-  { path: 'apps/backend/data/ai-table-catalog.md', docType: 'catalog' },
+  // 테이블 카탈로그(table-catalog.md)는 docs/database 폴더에 포함돼 자동 청킹된다(별도 항목 불필요).
+  // text-to-SQL 테이블 선택/JOIN 주입은 AiCatalogService가 같은 파일을 직접 읽는다(임베딩과 별개 경로).
 ];
 
 export interface KnowledgeSearchContext {
