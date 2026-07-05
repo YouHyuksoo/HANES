@@ -75,16 +75,47 @@ HANES 예:
 | 명령 | 동작 |
 |---|---|
 | `/managing-docs init` | core 8 폴더 + manifest 스캐폴드 생성. 기존 docs가 있으면 먼저 audit을 실행해 마이그레이션 계획을 제시하고 승인 후 재편 |
-| `/managing-docs new <유형> <주제>` | 표준 경로·파일명·유형별 템플릿으로 문서 생성. 유형이 애매하면 분류 기준으로 질문 |
-| `/managing-docs audit` | manifest 대비 실태 점검: 미등록 폴더, 명명 위반, 위치 오류, 루트 오염, 외부 문서 집합 규정(frontmatter 등) → 리포트 제시 → **사용자 승인 후** 이동/정리 실행 |
-| `/managing-docs update` | **최신화**: 프로젝트 manifest의 `standardVersion`을 스킬의 canonical 버전과 비교 → 버전 간 변경 내역(추가/변경된 규정, 폴더, 명명규칙)을 리포트 → 승인 후 manifest 갱신 + 필요한 구조 마이그레이션 실행. 프로젝트가 등록한 특화 폴더·로컬 규정은 보존 |
+| `/managing-docs new <유형> <주제>` | 표준 경로·파일명·유형별 템플릿으로 문서 생성. 살아있는 문서 유형이면 `sources` 선언을 요구. 유형이 애매하면 분류 기준으로 질문 |
+| `/managing-docs audit` | manifest 대비 실태 점검: 미등록 폴더, 명명 위반, 위치 오류, 루트 오염, 살아있는 문서의 sources/verifiedCommit 누락, 외부 문서 집합 규정 → 리포트 제시 → **사용자 승인 후** 이동/정리 실행 |
+| `/managing-docs sync` | **소스↔문서 동기화 (최신화의 본체)**: 아래 "문서 2계층과 동기화" 참조 |
+| `/managing-docs upgrade` | 표준 버전 승급: 프로젝트 manifest의 `standardVersion`을 스킬의 canonical 버전과 비교 → 변경 내역 리포트 → 승인 후 manifest 공통부 갱신 + 구조 마이그레이션. 로컬 블록(특화 폴더 등록부 등)은 보존 |
 
-### 표준 버전 관리 (최신화의 기반)
+### 문서 2계층과 동기화 (`sync`)
+
+소스가 계속 변하면 문서와 불일치가 생긴다. 이를 감지·해소하는 것이 sync다. 전제는 문서 계층 구분:
+
+| 계층 | 폴더 | 동기화 |
+|---|---|---|
+| **기록형** (시점 고정) | adr, specs, plans, reports | 대상 아님 — 작성 시점의 기록이 존재 이유(설계·결정·계획은 낡는 게 정상) |
+| **살아있는 문서** (소스 추적) | standards, design, business-logics, guides, 외부 문서 집합(help) | **동기화 대상** — 항상 현재 소스와 일치해야 함 |
+
+살아있는 문서는 frontmatter로 추적 계약을 선언한다:
+
+```yaml
+---
+sources:                      # 이 문서가 설명하는 소스 파일/디렉토리(글롭 허용)
+  - apps/backend/src/modules/production/services/prod-receive.service.ts
+  - apps/frontend/src/app/(authenticated)/production/receive/
+verifiedCommit: 8a7e96ea      # 마지막으로 소스와 대조 확인한 커밋
+---
+```
+
+**sync 절차:**
+
+1. 살아있는 문서 전체 스캔 → 문서별 `git diff --stat {verifiedCommit}..HEAD -- {sources}` 실행
+2. 소스 변경이 있는 문서 = stale 후보 → 변경량 순 리포트 (예: `PROD_RECEIVE.md: 소스 3파일 +214/-87`)
+3. 사용자 승인(전체/선택) → 승인된 문서만 재검증: 소스 변경분과 문서를 대조해 갱신(문서 수가 많으면 서브에이전트 병렬)
+4. 갱신 후 `verifiedCommit`을 현재 HEAD로 재스탬프. 소스가 바뀌었어도 문서 내용이 여전히 정확하면 내용 수정 없이 스탬프만 갱신
+5. sources 선언이 없는 살아있는 문서는 sync가 처리 불가 → audit 위반 항목으로 노출하고, sync 리포트에 "추적 불가" 목록으로 표시
+
+HANES business-logics의 기존 관례(`> 분석 기준 커밋:` 본문 표기)를 frontmatter 계약으로 정형화한 것이다. 마이그레이션 시 기존 163개 문서의 본문 표기를 frontmatter로 승격한다.
+
+### 표준 버전 관리 (`upgrade`의 기반)
 
 - 스킬의 `SKILL.md`가 canonical 표준 버전(`standardVersion: N`)과 버전별 변경 이력(`references/changelog.md`)을 가진다.
-- 각 프로젝트 manifest frontmatter에 `standardVersion: N` 기록 — init/update 시 스킬이 스탬프.
-- 표준을 바꿀 때의 절차: 스킬의 SKILL.md·템플릿·changelog 갱신(버전 +1) → 각 프로젝트에서 `/managing-docs update` 실행하면 그 프로젝트가 최신 표준으로 승급.
-- update는 **manifest의 공통 규정 블록만** 교체하고, 프로젝트 로컬 블록(특화 폴더 등록부, 외부 문서 집합, 프로젝트 참고사항)은 그대로 보존한다 — manifest를 공통부/로컬부로 구획해 이를 기계적으로 안전하게 만든다.
+- 각 프로젝트 manifest frontmatter에 `standardVersion: N` 기록 — init/upgrade 시 스킬이 스탬프.
+- 표준을 바꿀 때의 절차: 스킬의 SKILL.md·템플릿·changelog 갱신(버전 +1) → 각 프로젝트에서 `/managing-docs upgrade` 실행하면 그 프로젝트가 최신 표준으로 승급.
+- upgrade는 **manifest의 공통 규정 블록만** 교체하고, 프로젝트 로컬 블록(특화 폴더 등록부, 외부 문서 집합, 프로젝트 참고사항)은 그대로 보존한다 — manifest를 공통부/로컬부로 구획해 이를 기계적으로 안전하게 만든다.
 
 ### 자동 트리거
 
@@ -110,14 +141,14 @@ HANES 예:
 | `setup/`(5) + `manuals/`(빈) + `presentation/`(1) | `guides/`로 통합 (presentation 1건은 내용 확인 후 배치) |
 | `design/`(6) | 2장 design 정형 구성으로 재배치·재작성. 메모리에 산재한 디자인 규칙(파스텔 금지, 모달 최대폭, 패널 버튼 상단, QtyInput, BarcodeScanInput 등)을 성문화해 단일출처화 |
 | `workflows/` | manifest 특화 폴더 등록 (AI RAG 그래프 단일 출처) |
-| `business-logics/`(163) | core라 이동 없음, manifest 반영 |
+| `business-logics/`(163) | core라 이동 없음, manifest 반영. 본문의 `분석 기준 커밋` 표기를 frontmatter(sources/verifiedCommit)로 승격(스크립트 일괄) |
 | `docs/readme.md` | 표준 manifest `README.md`로 대체 |
 | 참조 갱신 | 이동 경로를 참조하는 문서·메모리·지침(CLAUDE.md 등) 전수 grep 후 갱신. 특히 `docs/superpowers/` 참조 다수 |
 | 외부 집합 | help 경로 + `tools/help-frontmatter-audit.mjs`를 audit 절차에 연결 |
 
 ## 6. 검증
 
-- 스킬: superpowers:writing-skills 절차로 작성·검증 (신규 임시 프로젝트에서 init→new→audit→update 시나리오 실행. update는 changelog에 가짜 v2를 만들어 승급 동작 검증).
+- 스킬: superpowers:writing-skills 절차로 작성·검증 (신규 임시 프로젝트에서 init→new→audit→sync→upgrade 시나리오 실행. sync는 sources 선언 문서의 소스를 수정해 stale 감지→재스탬프를 검증, upgrade는 changelog에 가짜 v2를 만들어 승급 동작 검증).
 - HANES 재편 후: `/managing-docs audit` 클린 통과, 이동 경로 참조 전수 grep 0건(구경로), superpowers 스킬로 spec/plan 생성 시 새 경로에 저장되는지 확인.
 
 ## 7. 제외한 대안
