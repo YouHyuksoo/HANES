@@ -8,11 +8,11 @@ sources:
   - apps/frontend/src/components/consumables/ReceivingReturnPanel.tsx
   - apps/frontend/src/components/shared/ConsumableSearchModal.tsx
   - apps/frontend/src/hooks/useMasterOptions.ts
-verifiedCommit: 8a7e96ea
+verifiedCommit: 4f7ca9fa
 ---
 
 # 소모품 입고 관리 — 비즈니스 로직 & 데이터 흐름 분석
-> **분석 기준 커밋:** `8a7e96ea`
+> **분석 기준 커밋:** `4f7ca9fa`
 > **분석 일자:** `2026-07-04`
 
 ## 1. 화면 개요

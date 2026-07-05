@@ -9,12 +9,12 @@ sources:
   - apps/frontend/src/components/ui/Modal.tsx
   - apps/frontend/src/hooks/useMasterOptions.ts
   - apps/frontend/src/hooks/useUnsavedGuard.ts
-verifiedCommit: 8a7e96ea
+verifiedCommit: 4f7ca9fa
 ---
 
 # 품목 마스터 (MST_PART) — 비즈니스 로직 & 데이터 흐름 분석
 
-> **분석 기준 커밋:** `8a7e96ea`
+> **분석 기준 커밋:** `4f7ca9fa`
 > **분석 일자:** `2026-07-04`
 
 ## 1. 화면 개요
