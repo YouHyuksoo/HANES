@@ -2,122 +2,134 @@
 
 /**
  * @file src/app/(authenticated)/monitoring/quality-board/page.tsx
- * @description 품질 모니터링 보드 — 전광판 스타일: KPI 스트립 + 공정별 불량 차트 +
- *              불량유형 TOP 랭킹(막대) + 7일 추이. 카드박스 대신 괘선 구획.
+ * @description 품질 모니터링 보드(현장 TV) — 전광판 스킨 3종 전환:
+ *              A 관제탑(다크 네온) / B 출발 전광판(앰버 모노) / C 데이터 월(라이트 편집).
+ *
+ * 초보자 가이드:
+ * 1. 데이터는 GET /monitoring/boards/quality 하나로 조회, refetchSec 간격 자동 갱신
+ * 2. 스킨은 우상단 플로팅 컨트롤(A/B/C)로 전환, TV별 localStorage 저장
+ * 3. B(공정 행 목록)만 자동 순환을 쓴다 — 나머지는 고정 슬라이스
  */
 
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { ShieldCheck, RefreshCw, Settings } from "lucide-react";
-import { Button } from "@/components/ui";
+import { useState, useEffect, useCallback } from "react";
+import { Maximize2, Minimize2, RefreshCw, Settings } from "lucide-react";
 import { useApiQuery } from "@/hooks/useApi";
-import {
-  BoardChrome, BoardClock, BoardStat, BoardSectionTitle, MonitoringSettingsModal, useMonitoringConfig,
-} from "@/components/monitoring";
-import { ProcessDefectChart, DailyTrendChart } from "./components/QualityCharts";
+import { MonitoringSettingsModal, useMonitoringConfig, useRotation } from "@/components/monitoring";
+import ControlTowerSkin from "./components/skins/ControlTowerSkin";
+import DepartureBoardSkin from "./components/skins/DepartureBoardSkin";
+import DataWallSkin from "./components/skins/DataWallSkin";
 import type { QualityBoardData } from "./components/types";
 
+type SkinId = "control" | "departure" | "datawall";
+
+const SKIN_KEY = "monitoring:quality-board:skin";
+const SKIN_ROWS: Record<SkinId, number | null> = { control: null, departure: 6, datawall: null };
+const SKINS: { id: SkinId; label: string; title: string }[] = [
+  { id: "control", label: "A", title: "관제탑" },
+  { id: "departure", label: "B", title: "출발 전광판" },
+  { id: "datawall", label: "C", title: "데이터 월" },
+];
+
 export default function QualityBoardPage() {
-  const { t } = useTranslation();
   const { config, setConfig, loaded } = useMonitoringConfig("monitoring:quality-board");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tvMode, setTvMode] = useState(false);
+  const [skin, setSkinState] = useState<SkinId>("control");
 
-  const { data: response, isLoading, refetch, dataUpdatedAt } = useApiQuery<QualityBoardData>(
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem(SKIN_KEY);
+      if (s === "control" || s === "departure" || s === "datawall") setSkinState(s);
+    } catch {
+      // localStorage 접근 불가 환경은 기본 스킨 유지
+    }
+  }, []);
+
+  const setSkin = (s: SkinId) => {
+    setSkinState(s);
+    try {
+      localStorage.setItem(SKIN_KEY, s);
+    } catch {
+      // 저장 실패 무시
+    }
+  };
+
+  const toggleTvMode = useCallback(() => {
+    setTvMode((prev) => {
+      const next = !prev;
+      try {
+        if (next) void document.documentElement.requestFullscreen?.();
+        else if (document.fullscreenElement) void document.exitFullscreen();
+      } catch {
+        // 전체화면 미지원 환경에서는 오버레이만 적용
+      }
+      return next;
+    });
+  }, []);
+
+  const { data: response, refetch, dataUpdatedAt } = useApiQuery<QualityBoardData>(
     ["monitoring", "board", "quality"],
     "/monitoring/boards/quality",
     { refetchInterval: Math.max(5, config.refetchSec) * 1000, enabled: loaded },
   );
   const board = response?.data;
+  const byProcess = board?.byProcess ?? [];
+
+  const pageSize = SKIN_ROWS[skin] ?? Math.max(1, byProcess.length);
+  const { pageItems, page, pageCount } = useRotation(byProcess, pageSize, config.rollingSec);
   const updatedAt = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : "—";
-  const topDefects = board?.topDefects ?? [];
-  const maxDefectQty = topDefects.length > 0 ? Math.max(...topDefects.map((d) => d.qty)) : 0;
+
+  const skinProps = {
+    kpi: board?.kpi,
+    byProcess,
+    byProcessPageItems: pageItems,
+    page,
+    pageCount,
+    topDefects: board?.topDefects ?? [],
+    repair: board?.repair,
+    dailyTrend: board?.dailyTrend ?? [],
+    rollingSec: config.rollingSec,
+    updatedAt,
+  };
+
+  const ctlBtn = "w-8 h-8 flex items-center justify-center rounded hover:bg-white/20 transition-colors";
 
   return (
     <>
-      <BoardChrome
-        title={t("monitoring.board.quality.title")}
-        icon={<ShieldCheck className="w-5 h-5 text-primary" />}
-        optionBar={
-          <>
-            <BoardClock className="mr-3" />
-            <Button variant="secondary" size="sm" onClick={() => refetch()}>
+      <div className={tvMode ? "fixed inset-0 z-50" : "h-full"}>
+        <div className="relative w-full h-full overflow-hidden">
+          {skin === "control" && <ControlTowerSkin {...skinProps} />}
+          {skin === "departure" && <DepartureBoardSkin {...skinProps} />}
+          {skin === "datawall" && <DataWallSkin {...skinProps} />}
+
+          {/* 플로팅 컨트롤 — 평소 반투명, 호버 시 선명 */}
+          <div className="absolute top-3 right-3 z-20 flex items-center gap-0.5 rounded-lg bg-black/50 backdrop-blur px-1.5 py-1 text-white/90 opacity-30 hover:opacity-100 transition-opacity">
+            {SKINS.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                title={s.title}
+                onClick={() => setSkin(s.id)}
+                className={`w-8 h-8 rounded text-sm font-bold transition-colors ${
+                  skin === s.id ? "bg-white text-black" : "hover:bg-white/20"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+            <span className="w-px h-5 bg-white/25 mx-1" />
+            <button type="button" className={ctlBtn} onClick={() => refetch()}>
               <RefreshCw className="w-4 h-4" />
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setSettingsOpen(true)}>
+            </button>
+            <button type="button" className={ctlBtn} onClick={() => setSettingsOpen(true)}>
               <Settings className="w-4 h-4" />
-            </Button>
-          </>
-        }
-        statusLeft={<span>{t("monitoring.board.updatedAt")} {updatedAt}</span>}
-      >
-        {/* KPI 스트립 */}
-        <div className="flex divide-x divide-border py-4 border-b border-border flex-shrink-0">
-          <BoardStat label={t("monitoring.board.quality.totalQty")} value={(board?.kpi.totalQty ?? 0).toLocaleString()} />
-          <BoardStat
-            label={t("monitoring.board.kpi.defectQty")}
-            value={(board?.kpi.defectQty ?? 0).toLocaleString()}
-            valueClassName={(board?.kpi.defectQty ?? 0) > 0 ? "text-red-600 dark:text-red-400" : "text-text"}
-          />
-          <BoardStat
-            label={t("monitoring.board.quality.defectRate")}
-            value={`${board?.kpi.defectRate ?? 0}%`}
-            valueClassName={(board?.kpi.defectRate ?? 0) > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}
-          />
-          <BoardStat label={t("monitoring.board.quality.repairReceived")} value={board?.repair.received ?? 0} />
-          <BoardStat label={t("monitoring.board.quality.repairInRepair")} value={board?.repair.inRepair ?? 0} valueClassName="text-amber-600 dark:text-amber-400" />
-          <BoardStat label={t("monitoring.board.quality.repairCompletedToday")} value={board?.repair.completedToday ?? 0} valueClassName="text-primary" />
-        </div>
-
-        {/* 중단: 공정별 불량 + 불량유형 TOP — 세로 괘선으로 2분할 */}
-        <div className="flex-1 min-h-0 flex divide-x divide-border pt-3">
-          <div className="flex-[3] min-w-0 pr-5 flex flex-col">
-            <BoardSectionTitle className="mb-1">{t("monitoring.board.quality.byProcessTitle")}</BoardSectionTitle>
-            <div className="flex-1 min-h-0">
-              {isLoading && !board ? null : <ProcessDefectChart byProcess={board?.byProcess ?? []} />}
-            </div>
-          </div>
-
-          <div className="flex-[2] min-w-0 pl-5 flex flex-col overflow-hidden">
-            <BoardSectionTitle className="mb-2">{t("monitoring.board.quality.topDefectsTitle")}</BoardSectionTitle>
-            <div className="flex-1 min-h-0 overflow-hidden">
-              {topDefects.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-xl text-text-muted">
-                  {t("monitoring.board.noData")}
-                </div>
-              ) : (
-                <ol>
-                  {topDefects.map((d, i) => (
-                    <li key={d.defectCode} className="py-2 border-b border-border/60">
-                      <div className="flex items-baseline gap-3">
-                        <span className="w-8 text-right text-xl font-extrabold tabular-nums text-text-muted/70">{i + 1}</span>
-                        <span className="flex-1 min-w-0 truncate text-xl font-medium text-text">{d.defectName}</span>
-                        <span className="font-mono text-sm text-text-muted">{d.defectCode}</span>
-                        <span className="w-20 text-right text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">
-                          {d.qty.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="ml-11 mt-1 h-1 bg-border overflow-hidden">
-                        <div
-                          className="h-full bg-red-500/80"
-                          style={{ width: `${maxDefectQty > 0 ? Math.max(2, (d.qty / maxDefectQty) * 100) : 0}%` }}
-                        />
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </div>
+            </button>
+            <button type="button" className={ctlBtn} onClick={toggleTvMode}>
+              {tvMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
           </div>
         </div>
-
-        {/* 하단: 최근 7일 불량률 추이 */}
-        <div className="h-40 flex-shrink-0 flex flex-col pt-2 pb-1 border-t border-border mt-3">
-          <BoardSectionTitle className="mb-1">{t("monitoring.board.quality.dailyTrendTitle")}</BoardSectionTitle>
-          <div className="flex-1 min-h-0">
-            <DailyTrendChart dailyTrend={board?.dailyTrend ?? []} />
-          </div>
-        </div>
-      </BoardChrome>
+      </div>
 
       <MonitoringSettingsModal
         isOpen={settingsOpen}

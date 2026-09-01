@@ -42,3 +42,18 @@ export interface QualityBoardData {
   repair: RepairStatus;
   dailyTrend: DailyDefectPoint[];
 }
+
+/** 품질 전광판 스킨 공통 props — page.tsx가 데이터/순환 상태를 내려준다 */
+export interface QualitySkinProps {
+  kpi?: QualityKpi;
+  byProcess: ProcessDefect[];
+  /** 자동 순환된 공정 슬라이스 (목록형 스킨용) */
+  byProcessPageItems: ProcessDefect[];
+  page: number;
+  pageCount: number;
+  topDefects: TopDefect[];
+  repair?: RepairStatus;
+  dailyTrend: DailyDefectPoint[];
+  rollingSec: number;
+  updatedAt: string;
+}
