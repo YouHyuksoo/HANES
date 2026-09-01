@@ -25,7 +25,8 @@
     "db:migrate:run": "typeorm migration:run -d dist/database/data-source.js",
     "db:migrate:revert": "typeorm migration:revert -d dist/database/data-source.js",
     "db:test": "ts-node src/database/test-connection.ts",
-    "db:seed-roles": "ts-node src/seeds/seed-roles.ts"
+    "db:seed-roles": "ts-node src/seeds/seed-roles.ts",
+    "ai:reindex": "ts-node -r tsconfig-paths/register src/scripts/reindex-knowledge.ts"
   },
   "dependencies": {
     "@harness/shared": "workspace:*",
