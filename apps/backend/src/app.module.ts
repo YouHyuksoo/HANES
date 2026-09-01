@@ -36,6 +36,7 @@ import { OutsourcingModule } from './modules/outsourcing/outsourcing.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { SystemModule } from './modules/system/system.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
 import { RoleModule } from './modules/role/role.module';
 import { MenuCategoriesModule } from './modules/menu-categories/menu-categories.module';
@@ -116,6 +117,9 @@ import { PrintAgentModule } from './modules/print-agent/print-agent.module';
 
     // 대시보드 (KPI, 최근 생산현황)
     DashboardModule,
+
+    // 모니터링 (현장 TV/사이니지 보드 집계)
+    MonitoringModule,
 
     // 워크플로우 (노드별 상태 요약)
     WorkflowModule,
