@@ -29,6 +29,25 @@ describe('workflow knowledge graph', () => {
     expect(getCoverage('activity:arrival-register', 'constraints')).toBe('undocumented');
   });
 
+  it('includes evidence-backed representative knowledge across core domains', () => {
+    const representatives = [
+      ['master:iqc-part-spec', 'master', 'masters'],
+      ['constraint:iqc-pass-before-label', 'constraint', 'constraints'],
+      ['requiredTask:kitting-label-scan-confirmation', 'requiredTask', 'requiredTasks'],
+      ['exception:iqc-fail-defect-move', 'exception', 'exceptions'],
+      ['logic:arrival-lot-unit-quantity', 'logic', 'logic'],
+      ['constraint:shipping-pallet-scan', 'constraint', 'constraints'],
+    ] as const;
+    for (const [id, kind, category] of representatives) {
+      const item = workflowKnowledgeCatalog.nodes.find((node) => node.id === id);
+      expect(item?.kind).toBe(kind);
+      expect(workflowKnowledgeCatalog.relations.some((relation) => relation.category === category && (relation.source === id || relation.target === id))).toBe(true);
+      expect(workflowKnowledgeCatalog.relations.some((relation) => relation.source === id && relation.kind === 'evidencedBy' && relation.evidenceStatus === 'verified')).toBe(true);
+    }
+    const masterEvidence = workflowKnowledgeCatalog.relations.find((relation) => relation.source === 'master:iqc-part-spec' && relation.kind === 'evidencedBy');
+    expect(workflowKnowledgeCatalog.nodes.find((node) => node.id === masterEvidence?.target)?.source).toBe('packages/shared/src/workflow/legacy-map.ts');
+  });
+
   it('reports unknown targets and duplicate relation ids', () => {
     const invalid: KnowledgeCatalog = {
       nodes: [node('activity:a'), node('activity:b')],
@@ -84,6 +103,42 @@ describe('workflow knowledge graph', () => {
     expect(errors).toContain('invalid API identifier');
   });
 
+  it('runtime-validates node, relation, evidence, and coverage allowlists', () => {
+    const invalid = {
+      nodes: [node('activity:a'), node('activity:b')],
+      relations: [relation('a-b', 'activity:a', 'activity:b')],
+    } as KnowledgeCatalog;
+    (invalid.nodes[0] as any).kind = 'madeUp';
+    (invalid.nodes[0].coverage as any).flow = 'maybe';
+    (invalid.relations[0] as any).kind = 'connects';
+    (invalid.relations[0] as any).evidenceStatus = 'trusted';
+    const errors = validateKnowledgeCatalog(invalid).join('\n');
+    expect(errors).toContain('invalid node kind');
+    expect(errors).toContain('invalid coverage status');
+    expect(errors).toContain('invalid relation kind');
+    expect(errors).toContain('invalid evidence status');
+  });
+
+  it('requires exactly all seven coverage category keys on center-capable nodes', () => {
+    const missing = node('activity:missing');
+    delete (missing.coverage as Partial<typeof missing.coverage>).masters;
+    (missing.coverage as any).extra = 'undocumented';
+    const errors = validateKnowledgeCatalog({ nodes: [missing], relations: [] }).join('\n');
+    expect(errors).toContain('invalid coverage keys');
+  });
+
+  it('requires every legacy workflow activity in runtime validation', () => {
+    const catalog: KnowledgeCatalog = {
+      nodes: workflowKnowledgeCatalog.nodes.filter((node) => node.id !== 'activity:arrival-register'),
+      relations: workflowKnowledgeCatalog.relations.filter((relation) => relation.source !== 'activity:arrival-register' && relation.target !== 'activity:arrival-register'),
+    };
+    expect(validateKnowledgeCatalog(catalog).join('\n')).toContain('missing legacy activity: arrival-register');
+  });
+
+  it('collapses repeated internal whitespace during search normalization', () => {
+    expect(searchKnowledge('입하   등록')[0]?.node.id).toBe('activity:arrival-register');
+  });
+
   it('rejects unallowed cycles and orphan nodes', () => {
     const catalog: KnowledgeCatalog = {
       nodes: [node('activity:a'), node('activity:b'), node('activity:orphan')],
@@ -109,7 +164,7 @@ describe('workflow knowledge graph', () => {
         { ...relation('b-a', 'activity:b', 'activity:a', 'recoversWith', 'exceptions'), cycle: 'recovery' },
       ],
     };
-    expect(validateKnowledgeCatalog(catalog)).toEqual([]);
+    expect(validateKnowledgeCatalog(catalog).join('\n')).not.toContain('unallowed cycle');
   });
 
   it.each(KNOWLEDGE_CATEGORIES)('filters neighborhood relations for %s', (category) => {

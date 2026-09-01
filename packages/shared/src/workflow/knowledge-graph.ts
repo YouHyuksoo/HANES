@@ -1,6 +1,10 @@
 import { RELATION_CATEGORY_BY_KIND, workflowKnowledgeCatalog } from './knowledge-catalog';
 import {
+  COVERAGE_STATUSES,
+  EVIDENCE_STATUSES,
   KNOWLEDGE_CATEGORIES,
+  KNOWLEDGE_NODE_KINDS,
+  KNOWLEDGE_RELATION_KINDS,
   type CoverageStatus,
   type KnowledgeCatalog,
   type KnowledgeCategory,
@@ -8,8 +12,9 @@ import {
   type KnowledgeNode,
   type KnowledgeSearchResult,
 } from './knowledge-types';
+import { workflowNodes } from './legacy-map';
 
-const normalize = (value: string) => value.normalize('NFKC').trim().toLocaleLowerCase();
+const normalize = (value: string) => value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
 
 export function searchKnowledge(query: string, catalog: KnowledgeCatalog = workflowKnowledgeCatalog): KnowledgeSearchResult[] {
   const needle = normalize(query);
@@ -68,10 +73,19 @@ export function expandKnowledgeNeighborhood(
 export function validateKnowledgeCatalog(catalog: KnowledgeCatalog): string[] {
   const errors: string[] = [];
   const nodes = new Map<string, KnowledgeNode>();
+  const expectedCoverageKeys = [...KNOWLEDGE_CATEGORIES].sort();
   for (const node of catalog.nodes) {
     if (nodes.has(node.id)) errors.push(`duplicate node id: ${node.id}`);
     nodes.set(node.id, node);
+    if (!(KNOWLEDGE_NODE_KINDS as readonly string[]).includes(node.kind)) errors.push(`invalid node kind: ${node.id}`);
     if (node.kind !== 'evidence' && !node.coverage) errors.push(`missing coverage: ${node.id}`);
+    if (node.kind !== 'evidence' && node.coverage) {
+      const actualKeys = Object.keys(node.coverage).sort();
+      if (actualKeys.length !== expectedCoverageKeys.length || actualKeys.some((key, index) => key !== expectedCoverageKeys[index])) errors.push(`invalid coverage keys: ${node.id}`);
+      for (const [category, status] of Object.entries(node.coverage)) {
+        if (!(COVERAGE_STATUSES as readonly string[]).includes(status)) errors.push(`invalid coverage status: ${node.id}/${category}`);
+      }
+    }
     if (node.kind === 'screen' && (!node.path || !node.path.startsWith('/'))) errors.push(`invalid screen path: ${node.id}`);
     if (node.kind === 'evidence') {
       if (!node.source || !/^(docs|apps|packages)\/[A-Za-z0-9_./-]+(?:\.md|\.ts|\.tsx)(?:#[A-Za-z0-9_.:/-]+)?$/.test(node.source)) errors.push(`invalid evidence source: ${node.id}`);
@@ -79,13 +93,20 @@ export function validateKnowledgeCatalog(catalog: KnowledgeCatalog): string[] {
     }
   }
 
+  for (const legacy of workflowNodes) {
+    if (!catalog.nodes.some((node) => node.id === `activity:${legacy.id}` && node.kind === 'activity')) errors.push(`missing legacy activity: ${legacy.id}`);
+  }
+
   const relationIds = new Set<string>();
   for (const relation of catalog.relations) {
     if (relationIds.has(relation.id)) errors.push(`duplicate relation id: ${relation.id}`);
     relationIds.add(relation.id);
+    const validKind = (KNOWLEDGE_RELATION_KINDS as readonly string[]).includes(relation.kind);
+    if (!validKind) errors.push(`invalid relation kind: ${relation.id}`);
+    if (!(EVIDENCE_STATUSES as readonly string[]).includes(relation.evidenceStatus)) errors.push(`invalid evidence status: ${relation.id}`);
     if (!nodes.has(relation.source)) errors.push(`unknown source: ${relation.id} -> ${relation.source}`);
     if (!nodes.has(relation.target)) errors.push(`unknown target: ${relation.id} -> ${relation.target}`);
-    if (!RELATION_CATEGORY_BY_KIND[relation.kind]?.includes(relation.category)) errors.push(`invalid relation category: ${relation.id}`);
+    if (!validKind || !RELATION_CATEGORY_BY_KIND[relation.kind]?.includes(relation.category)) errors.push(`invalid relation category: ${relation.id}`);
   }
 
   for (const node of catalog.nodes) {

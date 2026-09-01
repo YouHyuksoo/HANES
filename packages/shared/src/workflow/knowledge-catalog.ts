@@ -85,6 +85,36 @@ const evidenceNodes: KnowledgeNode[] = evidenceDefinitions.map(([id, , source]) 
   label: `${id} workflow definition`,
   source,
 }));
+evidenceNodes.push({
+  id: 'evidence:legacy-workflow-map',
+  kind: 'evidence',
+  label: 'Legacy workflow map',
+  source: 'packages/shared/src/workflow/legacy-map.ts',
+});
+
+const representativeNodes: KnowledgeNode[] = [
+  { id: 'logic:arrival-lot-unit-quantity', kind: 'logic', label: 'LOT_UNIT_QTY 기준 MAT_LOT 발급', description: '입하 시 품목 LOT_UNIT_QTY 기준으로 MAT_LOT을 발급한다.', coverage: undocumentedCoverage() },
+  { id: 'master:iqc-part-spec', kind: 'master', label: 'IQC 품목 검사 기준', description: '품목별 검사항목과 AQL 정책이다.', coverage: undocumentedCoverage() },
+  { id: 'constraint:iqc-pass-before-label', kind: 'constraint', label: 'IQC PASS 후 라벨 발행', description: 'IQC PASS 입하건만 라벨 발행 대상이 된다.', coverage: undocumentedCoverage() },
+  { id: 'exception:iqc-fail-defect-move', kind: 'exception', label: 'IQC FAIL 불용창고 이동', description: 'IQC FAIL 시 해당 시리얼 전량을 불용창고로 이동한다.', coverage: undocumentedCoverage() },
+  { id: 'requiredTask:kitting-label-scan-confirmation', kind: 'requiredTask', label: '키팅 실물 라벨 스캔 확정', description: 'SG 라벨 발행 후 실물 라벨을 스캔해 확정한다.', coverage: undocumentedCoverage() },
+  { id: 'constraint:shipping-pallet-scan', kind: 'constraint', label: '출하 전 팔레트 바코드 검증', description: 'LOADED에서 SHIPPED 전환 전 팔레트 바코드 검증이 필요하다.', coverage: undocumentedCoverage() },
+];
+
+const representativeRelations: KnowledgeRelation[] = [
+  { id: 'curated:arrival-lot-logic', source: 'activity:arrival-register', target: 'logic:arrival-lot-unit-quantity', kind: 'references', category: 'logic', evidenceStatus: 'verified' },
+  { id: 'curated:arrival-lot-evidence', source: 'logic:arrival-lot-unit-quantity', target: 'evidence:material', kind: 'evidencedBy', category: 'logic', evidenceStatus: 'verified' },
+  { id: 'curated:iqc-master', source: 'activity:iqc-inspection', target: 'master:iqc-part-spec', kind: 'requires', category: 'masters', evidenceStatus: 'verified' },
+  { id: 'curated:iqc-master-evidence', source: 'master:iqc-part-spec', target: 'evidence:legacy-workflow-map', kind: 'evidencedBy', category: 'logic', evidenceStatus: 'verified' },
+  { id: 'curated:iqc-pass-label', source: 'constraint:iqc-pass-before-label', target: 'activity:material-label', kind: 'validates', category: 'constraints', evidenceStatus: 'verified' },
+  { id: 'curated:iqc-pass-label-evidence', source: 'constraint:iqc-pass-before-label', target: 'evidence:iqc', kind: 'evidencedBy', category: 'logic', evidenceStatus: 'verified' },
+  { id: 'curated:iqc-fail', source: 'activity:iqc-inspection', target: 'exception:iqc-fail-defect-move', kind: 'raises', category: 'exceptions', evidenceStatus: 'verified' },
+  { id: 'curated:iqc-fail-evidence', source: 'exception:iqc-fail-defect-move', target: 'evidence:iqc', kind: 'evidencedBy', category: 'logic', evidenceStatus: 'verified' },
+  { id: 'curated:kitting-scan', source: 'activity:subprocess-kitting', target: 'requiredTask:kitting-label-scan-confirmation', kind: 'requires', category: 'requiredTasks', evidenceStatus: 'verified' },
+  { id: 'curated:kitting-scan-evidence', source: 'requiredTask:kitting-label-scan-confirmation', target: 'evidence:production', kind: 'evidencedBy', category: 'logic', evidenceStatus: 'verified' },
+  { id: 'curated:shipping-scan', source: 'constraint:shipping-pallet-scan', target: 'activity:shipping-confirm', kind: 'validates', category: 'constraints', evidenceStatus: 'verified' },
+  { id: 'curated:shipping-scan-evidence', source: 'constraint:shipping-pallet-scan', target: 'evidence:shipping', kind: 'evidencedBy', category: 'logic', evidenceStatus: 'verified' },
+];
 
 for (const [id, activity] of evidenceDefinitions) {
   convertedRelations.push({
@@ -97,7 +127,9 @@ for (const [id, activity] of evidenceDefinitions) {
   });
 }
 
-const nodes = [...activityNodes, ...routes.values(), ...dataObjects.values(), ...evidenceNodes];
+convertedRelations.push(...representativeRelations);
+
+const nodes = [...activityNodes, ...routes.values(), ...dataObjects.values(), ...evidenceNodes, ...representativeNodes];
 const nodeById = new Map(nodes.map((node) => [node.id, node]));
 for (const relation of convertedRelations) {
   for (const id of [relation.source, relation.target]) {
@@ -120,7 +152,7 @@ export const workflowKnowledgeCatalog: KnowledgeCatalog = {
 };
 
 export const RELATION_CATEGORY_BY_KIND: Record<KnowledgeRelationKind, readonly KnowledgeCategory[]> = {
-  precedes: ['flow'], follows: ['flow'], requires: ['masters', 'requiredTasks'], references: ['flow', 'masters', 'requiredTasks', 'tables'],
+  precedes: ['flow'], follows: ['flow'], requires: ['masters', 'requiredTasks'], references: ['flow', 'masters', 'requiredTasks', 'logic', 'tables'],
   validates: ['constraints'], branchesTo: ['flow', 'exceptions'], raises: ['exceptions'], recoversWith: ['exceptions'],
   reads: ['tables'], writes: ['tables'], evidencedBy: ['logic'],
 };
