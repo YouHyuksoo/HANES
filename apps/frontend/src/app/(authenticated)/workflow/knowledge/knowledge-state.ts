@@ -57,8 +57,21 @@ const readPreference = <T extends string>(
   validate: (value: string | null) => value is T,
   fallback: T,
 ): T => {
-  const value = storage?.getItem(key) ?? null;
+  let value: string | null = null;
+  try {
+    value = storage?.getItem(key) ?? null;
+  } catch {
+    return fallback;
+  }
   return validate(value) ? value : fallback;
+};
+
+const writePreference = (storage: StorageLike | undefined, key: string, value: string): void => {
+  try {
+    storage?.setItem(key, value);
+  } catch {
+    // Browser privacy settings may disable storage; URL state remains authoritative.
+  }
 };
 
 const parseRelations = (value: string | null): KnowledgeRelationCategory[] => {
@@ -112,6 +125,7 @@ export class KnowledgeNavigationModel {
   get snapshot(): KnowledgeNavigationSnapshot {
     return {
       ...this.state,
+      relations: [...this.state.relations],
       canGoBack: this.centerHistoryIndex > 0,
       canGoForward: this.centerHistoryIndex >= 0 && this.centerHistoryIndex < this.centerHistory.length - 1,
     };
@@ -130,13 +144,13 @@ export class KnowledgeNavigationModel {
 
   setLayout(layout: LayoutMode): void {
     this.state = { ...this.state, layout };
-    this.environment.localStorage?.setItem(LAYOUT_PREFERENCE_KEY, layout);
+    writePreference(this.environment.localStorage, LAYOUT_PREFERENCE_KEY, layout);
     this.syncUrl();
   }
 
   setView(view: ViewMode): void {
     this.state = { ...this.state, view };
-    this.environment.localStorage?.setItem(VIEW_PREFERENCE_KEY, view);
+    writePreference(this.environment.localStorage, VIEW_PREFERENCE_KEY, view);
     this.syncUrl();
   }
 

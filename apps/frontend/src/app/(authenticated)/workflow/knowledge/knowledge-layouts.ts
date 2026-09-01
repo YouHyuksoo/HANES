@@ -89,6 +89,31 @@ export const KNOWLEDGE_LAYOUTS: Record<LayoutMode, KnowledgeLayout> = {
   relation: relationLayout,
 };
 
+const MIN_NODE_SPACING = 1;
+
+function isValidLayout(
+  positioned: readonly PositionedKnowledgeNode[],
+  nodes: readonly KnowledgeNode[],
+  centerId: string,
+): boolean {
+  if (positioned.length !== nodes.length) return false;
+  const expectedIds = new Set(nodes.map(({ id }) => id));
+  const actualIds = new Set(positioned.map(({ id }) => id));
+  if (expectedIds.size !== nodes.length || actualIds.size !== positioned.length) return false;
+  if (!actualIds.has(centerId) || expectedIds.size !== actualIds.size) return false;
+  if ([...expectedIds].some((id) => !actualIds.has(id))) return false;
+  if (positioned.some(({ position }) => !Number.isFinite(position.x) || !Number.isFinite(position.y))) return false;
+  const minimumDistanceSquared = MIN_NODE_SPACING * MIN_NODE_SPACING;
+  for (let left = 0; left < positioned.length; left += 1) {
+    for (let right = left + 1; right < positioned.length; right += 1) {
+      const x = positioned[left].position.x - positioned[right].position.x;
+      const y = positioned[left].position.y - positioned[right].position.y;
+      if (x * x + y * y < minimumDistanceSquared) return false;
+    }
+  }
+  return true;
+}
+
 export function radialFallback(nodes: readonly KnowledgeNode[], centerId: string): PositionedKnowledgeNode[] {
   const others = nodes.filter((node) => node.id !== centerId);
   const count = Math.max(others.length, 1);
@@ -106,8 +131,7 @@ export function safeLayout(
 ): PositionedKnowledgeNode[] {
   try {
     const positioned = layout(graph.nodes, graph.relations, graph.center.id);
-    if (positioned.length !== graph.nodes.length || positioned.some(({ position }) =>
-      !Number.isFinite(position.x) || !Number.isFinite(position.y))) {
+    if (!isValidLayout(positioned, graph.nodes, graph.center.id)) {
       return radialFallback(graph.nodes, graph.center.id);
     }
     return positioned;

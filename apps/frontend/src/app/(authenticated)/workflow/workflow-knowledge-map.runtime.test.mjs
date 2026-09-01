@@ -1,17 +1,45 @@
-import test from "node:test";
+import test, { after } from "node:test";
 import assert from "node:assert/strict";
-import {
-  workflowKnowledgeCatalog,
-} from "@harness/shared";
-import {
-  KnowledgeNavigationModel,
-  parseKnowledgeNavigation,
-} from "./knowledge/knowledge-state.ts";
-import {
-  KNOWLEDGE_LAYOUTS,
-  safeLayout,
-} from "./knowledge/knowledge-layouts.ts";
-import { createKnowledgeViewModel } from "./knowledge/knowledge-view-model.ts";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const ts = require("typescript");
+const { workflowKnowledgeCatalog } = require("@harness/shared");
+const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "hanes-knowledge-model-"));
+const moduleDirectory = "apps/frontend/src/app/(authenticated)/workflow/knowledge";
+const sharedEntry = require.resolve("@harness/shared").replaceAll("\\", "/");
+
+const loadTypeScriptModule = (name) => {
+  const sourcePath = path.resolve(moduleDirectory, `${name}.ts`);
+  const source = fs.readFileSync(sourcePath, "utf8").replaceAll('"@harness/shared"', JSON.stringify(sharedEntry));
+  const result = ts.transpileModule(source, {
+    fileName: sourcePath,
+    reportDiagnostics: true,
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.CommonJS,
+      esModuleInterop: true,
+    },
+  });
+  const errors = (result.diagnostics ?? []).filter(({ category }) => category === ts.DiagnosticCategory.Error);
+  if (errors.length > 0) throw new Error(ts.formatDiagnostics(errors, {
+    getCanonicalFileName: (fileName) => fileName,
+    getCurrentDirectory: () => process.cwd(),
+    getNewLine: () => os.EOL,
+  }));
+  const outputPath = path.join(temporaryDirectory, `${name}.cjs`);
+  fs.writeFileSync(outputPath, result.outputText, "utf8");
+  return require(outputPath);
+};
+
+after(() => fs.rmSync(temporaryDirectory, { recursive: true, force: true }));
+
+const { KnowledgeNavigationModel, parseKnowledgeNavigation } = loadTypeScriptModule("knowledge-state");
+const { KNOWLEDGE_LAYOUTS, safeLayout } = loadTypeScriptModule("knowledge-layouts");
+const { createKnowledgeViewModel } = loadTypeScriptModule("knowledge-view-model");
 
 const [center, second, third] = workflowKnowledgeCatalog.nodes;
 assert.ok(center && second && third);
@@ -41,6 +69,25 @@ test("URL presence wins over local preferences and preserves an invalid center",
   assert.equal(absent.view, "technical");
 });
 
+test("storage failures fall back safely and writes are best effort", () => {
+  const brokenStorage = {
+    getItem: () => { throw new Error("blocked read"); },
+    setItem: () => { throw new Error("blocked write"); },
+  };
+  const parsed = parseKnowledgeNavigation("http://localhost/workflow/knowledge", brokenStorage);
+  assert.equal(parsed.layout, "mindmap");
+  assert.equal(parsed.view, "business");
+
+  const environment = {
+    location: { href: `http://localhost/workflow/knowledge?center=${encodeURIComponent(center.id)}` },
+    localStorage: brokenStorage,
+    history: { replaceState: () => {} },
+  };
+  const model = new KnowledgeNavigationModel(environment);
+  assert.doesNotThrow(() => model.setLayout("process"));
+  assert.doesNotThrow(() => model.setView("technical"));
+});
+
 test("navigation uses center-only internal history and serializes only exact durable params", () => {
   const replaced = [];
   let pushed = 0;
@@ -57,6 +104,9 @@ test("navigation uses center-only internal history and serializes only exact dur
   model.setLayout("relation");
   model.setView("technical");
   model.setRelations(["flow", "evidence"]);
+  const leakedRelations = model.snapshot.relations;
+  leakedRelations.push?.("logic");
+  assert.deepEqual(model.snapshot.relations, ["flow", "evidence"]);
   assert.equal(model.snapshot.canGoBack, true);
   assert.equal(model.snapshot.canGoForward, false);
   assert.equal(model.goBack(), true);
@@ -101,12 +151,21 @@ test("all layouts are deterministic and safeLayout handles throws and non-finite
     const first = KNOWLEDGE_LAYOUTS[id](graph.nodes, graph.relations, graph.center.id);
     const secondRun = KNOWLEDGE_LAYOUTS[id](graph.nodes, graph.relations, graph.center.id);
     assert.deepEqual(first, secondRun, `${id} must be deterministic`);
+    assert.deepEqual(safeLayout(KNOWLEDGE_LAYOUTS[id], graph), first, `${id} must survive validation`);
   }
 
-  const thrown = safeLayout(() => { throw new Error("layout failed"); }, graph);
-  const nonFinite = safeLayout((nodes) => nodes.map((node) => ({ ...node, position: { x: Number.NaN, y: Infinity } })), graph);
-  assert.deepEqual(thrown, nonFinite);
-  assert.ok(thrown.every(({ position }) => Number.isFinite(position.x) && Number.isFinite(position.y)));
+  const fallback = safeLayout(() => { throw new Error("layout failed"); }, graph);
+  const invalidLayouts = [
+    (nodes) => nodes.map((node) => ({ ...node, position: { x: Number.NaN, y: Infinity } })),
+    (nodes) => nodes.map((node, index) => ({ ...node, id: index === 1 ? nodes[0].id : node.id, position: { x: index * 100, y: 0 } })),
+    (nodes) => nodes.slice(1).map((node, index) => ({ ...node, position: { x: index * 100, y: 0 } })),
+    (nodes) => [...nodes, { ...nodes[0], id: "activity:extra" }].map((node, index) => ({ ...node, position: { x: index * 100, y: 0 } })),
+    (nodes) => nodes.map((node, index) => ({ ...node, id: index === 0 ? "activity:wrong-center" : node.id, position: { x: index * 100, y: 0 } })),
+    (nodes) => nodes.map((node) => ({ ...node, position: { x: 10, y: 10 } })),
+    (nodes) => nodes.map((node, index) => ({ ...node, position: { x: index * 0.5, y: 0 } })),
+  ];
+  for (const invalidLayout of invalidLayouts) assert.deepEqual(safeLayout(invalidLayout, graph), fallback);
+  assert.ok(fallback.every(({ position }) => Number.isFinite(position.x) && Number.isFinite(position.y)));
 });
 
 test("view modes keep exact topology while changing emphasis and filters alone include nodes", () => {
