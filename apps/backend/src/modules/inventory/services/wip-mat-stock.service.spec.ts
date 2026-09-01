@@ -241,6 +241,26 @@ describe('WipMatStockService', () => {
         expect.objectContaining({ transType: 'PROD_CONSUME_CANCEL', qty: 6, cancelRefId: 'WTX-CON' }),
       );
     });
+
+    it('ADD_BACK 후 원본 PROD_CONSUME을 CANCELED로 바꿔 이중복원을 막는다', async () => {
+      mockManager.find.mockResolvedValueOnce([
+        { transNo: 'WTX-CON', transType: 'PROD_CONSUME', equipCode, itemCode: 'ITEM-A', matUid: 'RM-001', qty: -6, company, plant },
+      ] as WipMatTransaction[]);
+      mockManager.findOne.mockResolvedValueOnce({
+        company, plant, equipCode, itemCode: 'ITEM-A', matUid: 'RM-001', qty: 2, availableQty: 2, reservedQty: 0,
+      } as WipMatStock);
+
+      await target.restoreInTx(mockQr, {
+        mode: 'ADD_BACK', refType: 'PROD_RESULT', refId: 'PR-001',
+        cancelTransType: 'PROD_CONSUME_CANCEL', company, plant,
+      });
+
+      expect(mockManager.update).toHaveBeenCalledWith(
+        WipMatTransaction,
+        { transNo: 'WTX-CON', company, plant },
+        { status: 'CANCELED' },
+      );
+    });
   });
 
   describe('findByEquip', () => {

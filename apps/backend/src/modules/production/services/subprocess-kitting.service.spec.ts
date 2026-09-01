@@ -112,4 +112,19 @@ describe('SubprocessKittingService BOM effective date', () => {
       },
     });
   });
+
+  it('ROUTING_MATERIALS가 비면 원자재 차감 맵을 비운다', async () => {
+    qr.manager.find.mockResolvedValueOnce([]);
+    const map = new Map<string, number>([['RM-001', 2]]);
+
+    await (service as any).filterRawByRoutingMaterials(
+      qr,
+      'RT-1',
+      'PROC-1',
+      { company: 'C1', plant: 'P1' },
+      map,
+    );
+
+    expect(map.size).toBe(0);
+  });
 });

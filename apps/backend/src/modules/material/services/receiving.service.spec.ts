@@ -690,4 +690,58 @@ describe('ReceivingService', () => {
       expect.objectContaining({ manufactureDate: parseDateStart('2026-05-01') }),
     );
   });
+
+  it('createBulkReceive 특채는 MAT_STOCKS가 없으면 입하재고를 차감한다', async () => {
+    const lot = {
+      matUid: 'MAT-001',
+      itemCode: 'ITEM-001',
+      initQty: 10,
+      iqcStatus: 'FAIL',
+      specialAcceptYn: 'Y',
+      arrivalNo: 'ARR-001',
+      arrivalSeq: 1,
+      company: 'CO',
+      plant: 'P01',
+    } as MatLot;
+    mockMatLotRepo.findOne.mockResolvedValue(lot);
+    mockStockTxRepo.createQueryBuilder.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ sumQty: '0' }),
+    } as any);
+    mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', iqcYn: 'N' } as ItemMaster);
+    mockNumbering.nextInTx
+      .mockResolvedValueOnce('RCV-001')
+      .mockResolvedValueOnce('TX-001');
+
+    const manager = {
+      findOne: jest
+        .fn()
+        .mockResolvedValueOnce(lot)
+        .mockResolvedValueOnce({ arrivalNo: 'ARR-001', seq: 1, warehouseCode: 'ARR-WH', company: 'CO', plant: 'P01' } as MatArrival)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', qty: 10, availableQty: 10, company: 'CO', plant: 'P01' } as MatArrivalStock)
+        .mockResolvedValueOnce(null),
+      create: jest.fn((_entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    await target.createBulkReceive({
+      workerId: 'user',
+      items: [{ matUid: 'MAT-001', qty: 5, warehouseId: 'MAIN-WH' }],
+    } as any, 'CO', 'P01');
+
+    expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({
+      transNo: 'TX-001',
+      refType: 'RECEIVE_CONCESSION',
+    }));
+    expect(manager.update).toHaveBeenCalledWith(
+      MatArrivalStock,
+      expect.objectContaining({ matUid: 'MAT-001' }),
+      expect.objectContaining({ qty: 5, availableQty: 5 }),
+    );
+  });
 });

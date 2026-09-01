@@ -345,6 +345,33 @@ describe('ProductInventoryService', () => {
       );
     });
 
+    it('blocks cancel when the related box is already shipped', async () => {
+      mockTransRepo.findOne.mockResolvedValue({
+        transNo: 'PTX-BOX-IN',
+        transType: 'WIP_OUT',
+        status: 'DONE',
+        toWarehouseId: 'FG_MAIN',
+        itemCode: 'FG-001',
+        itemType: 'FINISHED',
+        qty: 5,
+        refType: 'BOX',
+        refId: 'BOX-001',
+        company: 'C1',
+        plant: 'P1',
+      } as any);
+      mockBoxRepo.findOne.mockResolvedValue({
+        boxNo: 'BOX-001',
+        status: 'SHIPPED',
+        company: 'C1',
+        plant: 'P1',
+      } as BoxMaster);
+
+      await expect(
+        target.cancelTransaction({ transactionId: 'PTX-BOX-IN' } as any, 'C1', 'P1'),
+      ).rejects.toThrow(/출하/);
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
     it('rejects cancellation when restored product stock belongs to a different tenant', async () => {
       const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
       mockTransRepo.createQueryBuilder.mockReturnValue(qb);

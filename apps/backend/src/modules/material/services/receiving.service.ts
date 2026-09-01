@@ -441,8 +441,9 @@ export class ReceivingService {
         //   실제 재고가 남아있는 창고(불용창고)에서 차감해야 음수재고가 발생하지 않는다.
         const isConcession = lot.iqcStatus === 'FAIL' && lot.specialAcceptYn === 'Y';
         let sourceWarehouseCode = arrivalWarehouseCode;
+        let concessionStock: MatStock | null = null;
         if (isConcession) {
-          const stockRow = await queryRunner.manager.findOne(MatStock, {
+          concessionStock = await queryRunner.manager.findOne(MatStock, {
             where: {
               matUid: item.matUid,
               itemCode: lot.itemCode,
@@ -452,7 +453,7 @@ export class ReceivingService {
             },
             order: { qty: 'DESC' },
           });
-          sourceWarehouseCode = stockRow?.warehouseCode ?? arrivalWarehouseCode;
+          sourceWarehouseCode = concessionStock?.warehouseCode ?? arrivalWarehouseCode;
         }
 
         // 1-1. 제조일자 수정 시 LOT 업데이트 + 유효기한 재계산
@@ -512,8 +513,8 @@ export class ReceivingService {
         const savedTx = await queryRunner.manager.save(stockTx);
 
         // 3. 출고원천 차감
-        //    일반: 입하재고 / 특채: 불용창고 등 실제 창고재고
-        if (isConcession && sourceWarehouseCode) {
+        //    일반: 입하재고 / 특채: 불용창고 MAT_STOCKS가 있으면 그곳, 없으면 입하대기
+        if (isConcession && concessionStock && sourceWarehouseCode) {
           await this.upsertStock(queryRunner.manager, sourceWarehouseCode, lot.itemCode, item.matUid, -item.qty, lot.company, lot.plant);
         } else {
           await this.decreaseArrivalStock(queryRunner.manager, item.matUid, lot.itemCode, item.qty, lot.company, lot.plant);

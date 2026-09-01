@@ -18,7 +18,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, Between, In, IsNull, FindOptionsWhere } from 'typeorm';
+import { Repository, ILike, MoreThanOrEqual, LessThanOrEqual, Between, In, IsNull, FindOptionsWhere, EntityManager } from 'typeorm';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
 import { ShipmentLog } from '../../../entities/shipment-log.entity';
@@ -77,6 +77,26 @@ export class ShipOrderService {
       ...(company && { company }),
       ...(plant && { plant }),
     };
+  }
+
+  private async assertBoxProductReceived(
+    manager: EntityManager,
+    boxNo: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const inbound = await manager.findOne(ProductTransaction, {
+      where: {
+        refType: 'BOX',
+        refId: boxNo,
+        status: 'DONE',
+        transType: In(['WIP_OUT', 'FG_IN']),
+        ...this.tenantWhere(company, plant),
+      },
+    });
+    if (!inbound) {
+      throw new BadRequestException(`제품입고가 완료되지 않은 박스는 출하할 수 없습니다: ${boxNo}`);
+    }
   }
 
   /**
@@ -796,6 +816,9 @@ export class ShipOrderService {
 
     let shipNo!: string;
     await this.tx.run(async (qr) => {
+      for (const box of boxes) {
+        await this.assertBoxProductReceived(qr.manager, box.boxNo, company, plant);
+      }
       shipNo = await this.numbering.nextShipmentNo(qr);
       const existing = await this.shipmentRepository.findOne({
         where: { shipNo, ...this.tenantWhere(company, plant) },
@@ -923,6 +946,8 @@ export class ShipOrderService {
       if (serials.length > 0 && serials.length !== box.qty) {
         throw new BadRequestException(`박스 수량(${box.qty})과 시리얼 수량(${serials.length})이 일치하지 않습니다: ${dto.boxNo}`);
       }
+
+      await this.assertBoxProductReceived(qr.manager, dto.boxNo, company, plant);
 
       // 재고 차감 — FG_MAIN 재고를 수량 기준 FIFO로 차감한다(재고 키 체계와 무관).
       // 입고는 배치 시리얼({orderNo}-NNN)로, 박스는 FG바코드로 키잉돼 시리얼이 어긋나도

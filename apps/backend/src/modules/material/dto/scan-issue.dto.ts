@@ -28,6 +28,12 @@ export class ScanIssueDto {
   @MaxLength(20)
   issueType: string;
 
+  @ApiPropertyOptional({ description: '출고 대상 공정 코드 (양산 출고 시 공정재고 이동)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  processCode?: string;
+
   @ApiPropertyOptional({ description: '작업자 ID' })
   @IsOptional()
   @IsString()

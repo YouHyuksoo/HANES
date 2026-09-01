@@ -171,16 +171,34 @@ describe('ReceiveLabelService', () => {
 
       mockArrivalRepo.findOne.mockResolvedValue(arrival);
       mockPartRepo.findOne.mockResolvedValue(part);
-      mockNumbering.nextMatUid.mockResolvedValue('MAT-20260318-001');
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-EXIST-1', itemCode: 'ITEM-001' } as MatLot,
+        { matUid: 'MAT-EXIST-2', itemCode: 'ITEM-001' } as MatLot,
+      ]);
       mockQueryRunner.manager.create.mockReturnValue({} as any);
       mockQueryRunner.manager.save.mockResolvedValue({} as any);
 
       const result = await target.createMatLabels({ arrivalId: 'ARR-001', arrivalSeq: 1, qty: 2 } as any);
 
       expect(result).toHaveLength(2);
-      expect(mockNumbering.nextMatUid).toHaveBeenCalledTimes(2);
+      expect(result.map((row) => row.matUid)).toEqual(['MAT-EXIST-1', 'MAT-EXIST-2']);
+      expect(mockNumbering.nextMatUid).not.toHaveBeenCalled();
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it('입하 LOT이 없으면 새 LOT을 만들지 않고 거부한다', async () => {
+      mockArrivalRepo.findOne.mockResolvedValue({
+        arrivalNo: 'ARR-001', seq: 1, iqcStatus: 'PASS',
+        itemCode: 'ITEM-001', company: 'HANES', plant: 'P01',
+      } as MatArrival);
+      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A' } as ItemMaster);
+      mockMatLotRepo.find.mockResolvedValue([]);
+
+      await expect(
+        target.createMatLabels({ arrivalId: 'ARR-001', arrivalSeq: 1, qty: 2 } as any),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockNumbering.nextMatUid).not.toHaveBeenCalled();
     });
 
     it('라벨 생성도 입하건/품목 보강 조회를 요청 테넌트 범위로 제한한다', async () => {
@@ -191,7 +209,9 @@ describe('ReceiveLabelService', () => {
       } as MatArrival;
       mockArrivalRepo.findOne.mockResolvedValue(arrival);
       mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: '커넥터A', company: 'C1', plant: 'P1' } as ItemMaster);
-      mockNumbering.nextMatUid.mockResolvedValue('MAT-20260318-001');
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-EXIST-1', itemCode: 'ITEM-001' } as MatLot,
+      ]);
       mockQueryRunner.manager.create.mockReturnValue({} as any);
       mockQueryRunner.manager.save.mockResolvedValue({} as any);
 

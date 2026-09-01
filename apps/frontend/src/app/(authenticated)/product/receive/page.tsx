@@ -34,6 +34,16 @@ function mergeTransactions(...groups: ProductTransaction[][]): ProductTransactio
   return [...merged.values()].sort((a, b) => String(b.transDate).localeCompare(String(a.transDate)));
 }
 
+function displayReceiveQty(row: ProductTransaction): ProductTransaction {
+  if (row.transType === "WIP_OUT") {
+    return { ...row, qty: Math.abs(Number(row.qty) || 0) };
+  }
+  if (row.transType === "WIP_OUT_CANCEL") {
+    return { ...row, qty: -Math.abs(Number(row.qty) || 0) };
+  }
+  return row;
+}
+
 export default function ProductReceivePage() {
   const { t } = useTranslation();
 
@@ -47,11 +57,19 @@ export default function ProductReceivePage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { transType: "FG_IN,FG_IN_CANCEL", limit: "1000" };
+      const params: Record<string, string> = { limit: "1000" };
       if (fromDate) params.fromDate = fromDate;
       if (toDate) params.toDate = toDate;
-      const res = await api.get("/inventory/product/transactions", { params });
-      setData(mergeTransactions(extractTransactions(res)));
+      const res = await api.get("/inventory/product/transactions", {
+        params: { ...params, transType: "FG_IN,FG_IN_CANCEL" },
+      });
+      const boxRes = await api.get("/inventory/product/transactions", {
+        params: { ...params, transType: "WIP_OUT,WIP_OUT_CANCEL", refType: "BOX" },
+      });
+      setData(mergeTransactions(
+        extractTransactions(res),
+        extractTransactions(boxRes).map(displayReceiveQty),
+      ));
     } catch {
       setData([]);
     } finally {

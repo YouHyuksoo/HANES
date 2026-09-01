@@ -337,6 +337,12 @@ export class WipMatStockService {
         }),
       );
 
+      await manager.update(
+        WipMatTransaction,
+        { transNo: origin.transNo, company: p.company, plant: p.plant },
+        { status: 'CANCELED' },
+      );
+
       restored.push({ matUid: origin.matUid, qty: absQty, cancelRefId: origin.transNo });
     }
 

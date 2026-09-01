@@ -725,6 +725,21 @@ export class ProductInventoryService {
     }
     this.assertSameTenant('원본 제품거래', { company, plant }, originalTrans);
 
+    if (originalTrans.refType === 'BOX' && originalTrans.refId) {
+      const box = await this.boxRepository.findOne({
+        where: {
+          boxNo: originalTrans.refId,
+          ...(originalTrans.company ? { company: originalTrans.company } : {}),
+          ...(originalTrans.plant ? { plant: originalTrans.plant } : {}),
+        },
+      });
+      if (box && (box.status === 'SHIPPED' || box.status === 'LOADED')) {
+        throw new BadRequestException(
+          `박스 ${box.boxNo} 가 이미 ${box.status} 상태라 입고취소할 수 없습니다. 출하취소 후 다시 시도하세요.`,
+        );
+      }
+    }
+
     return this.tx.run(async (queryRunner) => {
       return this.cancelTransactionInTx(queryRunner, originalTrans, dto);
     });

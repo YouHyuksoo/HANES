@@ -567,4 +567,38 @@ describe('AutoIssueService', () => {
       expect(mockWipMatStockService.deductStockInTx).not.toHaveBeenCalled();
     });
   });
+
+  describe('execute - ROUTING_MATERIALS', () => {
+    it('skips full BOM consumption when routing exists but ROUTING_MATERIALS is empty', async () => {
+      mockSysConfigService.getValue
+        .mockResolvedValueOnce('ON_CREATE')
+        .mockResolvedValueOnce('WARN');
+
+      mockQueryRunner.manager.findOne.mockResolvedValue({
+        orderNo: 'JO-001',
+        itemCode: 'FG-001',
+        company: 'C1',
+        plant: 'P1',
+        routingCode: 'RT-001',
+        planDate: bomEffectiveDate,
+      });
+      mockQueryRunner.manager.query.mockResolvedValue([
+        { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 2, useYn: 'Y' },
+      ]);
+      mockQueryRunner.manager.find.mockResolvedValue([]);
+      mockQueryRunner.manager.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      } as any);
+
+      const result = await target.execute('ON_CREATE', '1', 'JO-001', 50, mockQueryRunner, 'PROC-1');
+
+      expect(result.skipped).toBe(true);
+      expect(result.issued).toHaveLength(0);
+      expect(mockQueryRunner.manager.createQueryBuilder).not.toHaveBeenCalled();
+      expect(mockWipMatStockService.deductStockInTx).not.toHaveBeenCalled();
+    });
+  });
 });

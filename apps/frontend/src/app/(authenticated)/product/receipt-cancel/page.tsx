@@ -34,6 +34,16 @@ function mergeReceiptTransactions(...groups: ProductReceiptTx[][]): ProductRecei
   return [...merged.values()].sort((a, b) => String(b.transDate).localeCompare(String(a.transDate)));
 }
 
+function displayReceiptQty(row: ProductReceiptTx): ProductReceiptTx {
+  if (row.transType === "WIP_OUT") {
+    return { ...row, qty: Math.abs(Number(row.qty) || 0) };
+  }
+  if (row.transType === "WIP_OUT_CANCEL") {
+    return { ...row, qty: -Math.abs(Number(row.qty) || 0) };
+  }
+  return row;
+}
+
 export default function ProductReceiptCancelPage() {
   const { t } = useTranslation();
 
@@ -54,11 +64,16 @@ export default function ProductReceiptCancelPage() {
       const params: Record<string, string> = { limit: "5000" };
       if (fromDate) params.fromDate = fromDate;
       if (toDate) params.toDate = toDate;
-      // 입고만 표시(공정출고 WIP_OUT 제외). 박스 제품입고는 FG_IN 행에서 취소한다.
       const receiptRes = await api.get("/inventory/product/transactions", {
         params: { ...params, transType: "WIP_IN,FG_IN,WIP_IN_CANCEL,FG_IN_CANCEL" },
       });
-      setData(mergeReceiptTransactions(extractReceiptTransactions(receiptRes)));
+      const boxRes = await api.get("/inventory/product/transactions", {
+        params: { ...params, transType: "WIP_OUT,WIP_OUT_CANCEL", refType: "BOX" },
+      });
+      setData(mergeReceiptTransactions(
+        extractReceiptTransactions(receiptRes),
+        extractReceiptTransactions(boxRes).map(displayReceiptQty),
+      ));
     } catch {
       setData([]);
     } finally {

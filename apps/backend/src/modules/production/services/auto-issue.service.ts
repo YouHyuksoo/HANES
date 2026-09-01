@@ -171,29 +171,33 @@ export class AutoIssueService {
 
     /* ── 4-1. 공정별 자재 차감 필터 (ROUTING_MATERIALS 배정 기반) ───────────
      * 라우팅에 ROUTING_MATERIALS 배정이 있으면: 현재 공정(processCode→seq)에 배정된 자재만 차감.
-     * 배정이 없으면(미전환 라우팅): 기존대로 BOM 전체 일괄 차감. (점진 전환)
+     * 배정이 없으면 BOM 전체 일괄 차감하지 않는다(첫 실적에서 전량 소비 방지).
      * 차감량은 BOM.qtyPer 유지 — ROUTING_MATERIALS는 "어느 공정에서 차감할지" 필터 역할만. */
     let bomList = fullBomList;
     if (processCode && jobOrder.routingCode) {
       const routingMaterials = await qr.manager.find(RoutingMaterial, {
         where: { routingCode: jobOrder.routingCode, useYn: 'Y', ...this.tenantWhere(tenant) },
       });
-      if (routingMaterials.length > 0) {
-        const step = await qr.manager.findOne(RoutingProcess, {
-          where: { routingCode: jobOrder.routingCode, processCode, ...this.tenantWhere(tenant) },
-        });
-        const assignedItems = new Set(
-          routingMaterials.filter((rm) => rm.seq === step?.seq).map((rm) => rm.childItemCode),
+      if (routingMaterials.length === 0) {
+        this.logger.warn(
+          `ROUTING_MATERIALS 미배정 — BOM 전체 차감 생략. orderNo=${orderNo}, routing=${jobOrder.routingCode}`,
         );
-        bomList = fullBomList.filter((b) => assignedItems.has(b.childItemCode));
-        this.logger.log(
-          `공정별 자재 차감 — orderNo=${orderNo}, 공정=${processCode}(seq=${step?.seq}): ${bomList.length}/${fullBomList.length}건 대상`,
-        );
-        if (bomList.length === 0) {
-          // 이 공정에 배정된 자재가 없음 — 정상(다른 공정에서 소비). 차감 없이 종료.
-          result.skipped = true;
-          return;
-        }
+        result.skipped = true;
+        return;
+      }
+      const step = await qr.manager.findOne(RoutingProcess, {
+        where: { routingCode: jobOrder.routingCode, processCode, ...this.tenantWhere(tenant) },
+      });
+      const assignedItems = new Set(
+        routingMaterials.filter((rm) => rm.seq === step?.seq).map((rm) => rm.childItemCode),
+      );
+      bomList = fullBomList.filter((b) => assignedItems.has(b.childItemCode));
+      this.logger.log(
+        `공정별 자재 차감 — orderNo=${orderNo}, 공정=${processCode}(seq=${step?.seq}): ${bomList.length}/${fullBomList.length}건 대상`,
+      );
+      if (bomList.length === 0) {
+        result.skipped = true;
+        return;
       }
     }
 

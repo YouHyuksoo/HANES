@@ -50,16 +50,16 @@ type SelfInspectRow = {
   createdAt?: string;
 };
 
-function latestFirstInspectBatchPassed(rows: SelfInspectRow[]): boolean {
-  const firstRows = rows
-    .filter(row => row.timing === 'FIRST' && row.status && row.createdAt)
+function latestInspectBatchPassed(rows: SelfInspectRow[], timing: string): boolean {
+  const timedRows = rows
+    .filter(row => row.timing === timing && row.status && row.createdAt)
     .sort((a, b) => new Date(b.createdAt ?? '').getTime() - new Date(a.createdAt ?? '').getTime());
-  if (firstRows.length === 0) return false;
+  if (timedRows.length === 0) return false;
 
-  const latestAt = new Date(firstRows[0].createdAt ?? '').getTime();
+  const latestAt = new Date(timedRows[0].createdAt ?? '').getTime();
   if (!Number.isFinite(latestAt)) return false;
 
-  const latestBatch = firstRows.filter((row) => {
+  const latestBatch = timedRows.filter((row) => {
     const rowAt = new Date(row.createdAt ?? '').getTime();
     return Number.isFinite(rowAt) && Math.abs(latestAt - rowAt) <= SELF_INSPECT_BATCH_WINDOW_MS;
   });
@@ -71,7 +71,7 @@ export default function InputKioskPage() {
   const { t } = useTranslation();
   const {
     selectedEquip, selectedJobOrder, interlock, savedResultCount, hasPendingDelegate,
-    selectedWorkers, midInspectDone,
+    selectedWorkers, midInspectDone, lotSize,
     addWorker, removeWorker, setSelectedEquip, setSelectedJobOrder, setSelectedWorkers,
     setInterlock, setSavedResultCount, setHasPendingDelegate, setMidInspectDone,
   } = useKioskStore();
@@ -80,6 +80,7 @@ export default function InputKioskPage() {
   const [historyKey, setHistoryKey] = useState(0);
   const [firstInspectDone, setFirstInspectDone] = useState(false);
   const [lastInspectDone, setLastInspectDone] = useState(false);
+  const [hasLastItems, setHasLastItems] = useState(false);
 
   // 모달 상태
   const [isJobOrderOpen, setIsJobOrderOpen] = useState(false);
@@ -239,16 +240,9 @@ export default function InputKioskPage() {
         `/production/self-inspect/results/${encodeURIComponent(selectedJobOrder.orderNo)}`,
       );
       const rows: SelfInspectRow[] = Array.isArray(res.data?.data) ? res.data.data : [];
-      const firstInspectPassed = latestFirstInspectBatchPassed(rows);
-      const doneTimings = new Set(
-        rows
-          .filter((row: { status?: string }) => row.status && row.status !== 'PENDING')
-          .map((row: { timing?: string }) => row.timing)
-          .filter(Boolean),
-      );
-      setFirstInspectDone(firstInspectPassed);
-      setMidInspectDone(doneTimings.has('MID'));
-      setLastInspectDone(doneTimings.has('LAST'));
+      setFirstInspectDone(latestInspectBatchPassed(rows, 'FIRST'));
+      setMidInspectDone(latestInspectBatchPassed(rows, 'MID'));
+      setLastInspectDone(latestInspectBatchPassed(rows, 'LAST'));
       setHasPendingDelegate(rows.some((row: SelfInspectRow) => row.status === 'PENDING' && row.timing !== 'FIRST'));
     } catch {
       setFirstInspectDone(false);
@@ -258,6 +252,20 @@ export default function InputKioskPage() {
   }, [selectedJobOrder?.orderNo, setHasPendingDelegate, setMidInspectDone]);
 
   useEffect(() => { void refreshSelfInspectStatus(); }, [refreshSelfInspectStatus]);
+
+  useEffect(() => {
+    if (!selectedJobOrder) {
+      setHasLastItems(false);
+      return;
+    }
+    const processCode = selectedEquip?.processCode ?? selectedJobOrder.processCode ?? '';
+    api.get('/production/self-inspect/items', {
+      params: { processCode, timing: 'LAST' },
+    }).then((res) => {
+      const items = Array.isArray(res.data?.data) ? res.data.data : [];
+      setHasLastItems(items.length > 0);
+    }).catch(() => setHasLastItems(false));
+  }, [selectedJobOrder, selectedEquip]);
 
   useEffect(() => {
     if (!selectedJobOrder?.orderNo || firstInspectDone) return;
@@ -378,6 +386,12 @@ export default function InputKioskPage() {
     ? (savedResultCount / selectedJobOrder.planQty) * 100
     : 0;
   const isMidBlock = progressPct >= midBlockPct && !midInspectDone;
+  const isLastBlock = Boolean(
+    hasLastItems
+    && selectedJobOrder?.planQty
+    && (savedResultCount + lotSize) >= selectedJobOrder.planQty
+    && !lastInspectDone,
+  );
   const productionType = firstInspectDone ? 'MASS' : 'TRIAL';
 
   const submitDisabledReasons = useMemo(() => {
@@ -391,6 +405,7 @@ export default function InputKioskPage() {
     if (!interlock.consumableScanDone) reasons.push(t('kiosk.input.disabledReasons.consumableScan'));
     if (hasPendingDelegate) reasons.push(t('kiosk.selfInspect.delegateBlocking'));
     if (isMidBlock) reasons.push(t('kiosk.selfInspect.midBlock'));
+    if (isLastBlock) reasons.push(t('kiosk.selfInspect.lastBlock'));
     return reasons;
   }, [
     selectedEquip,
@@ -402,6 +417,7 @@ export default function InputKioskPage() {
     interlock.consumableScanDone,
     hasPendingDelegate,
     isMidBlock,
+    isLastBlock,
     t,
   ]);
 

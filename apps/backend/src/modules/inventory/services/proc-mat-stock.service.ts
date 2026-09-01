@@ -282,6 +282,12 @@ export class ProcMatStockService {
         }),
       );
 
+      await manager.update(
+        ProcMatTransaction,
+        { transNo: origin.transNo, company: p.company, plant: p.plant },
+        { status: 'CANCELED' },
+      );
+
       restored.push({ matUid: origin.matUid, qty: absQty, cancelRefId: origin.transNo });
     }
 

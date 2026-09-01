@@ -15,7 +15,7 @@ import {
   QrCode, AlertTriangle, CheckCircle, XCircle, Package, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui';
-import { BarcodeScanInput } from '@/components/shared';
+import { BarcodeScanInput, ProcessSelect } from '@/components/shared';
 import { useBarcodeScan } from '@/hooks/material/useBarcodeScan';
 
 /** 양산계정 고정 */
@@ -27,6 +27,7 @@ export default function IssueScanPanel() {
 
   const {
     scanInput, setScanInput,
+    processCode, setProcessCode,
     scannedLot, scanHistory, isScanning, error,
     handleScan, handleIssue, handleCancel,
     setIssueType,
@@ -67,6 +68,15 @@ export default function IssueScanPanel() {
           </span>
         </h2>
 
+        <ProcessSelect
+          label={t('material.issue.processLabel', { defaultValue: '출고 공정' })}
+          value={processCode}
+          onChange={setProcessCode}
+          fullWidth
+          required
+          disabled={isScanning}
+        />
+
         {/* LOT 스캔 입력 */}
         <div className="flex gap-1.5">
           <div className="flex-1 min-w-0">
@@ -78,6 +88,7 @@ export default function IssueScanPanel() {
               placeholder={t('material.issue.scanPlaceholder', { defaultValue: 'LOT 번호 스캔...' })}
               className="h-9 text-sm"
               fullWidth
+              disabled={isScanning || !processCode}
             />
           </div>
           <Button
@@ -138,7 +149,7 @@ export default function IssueScanPanel() {
                 <XCircle className="w-3.5 h-3.5 mr-1" />
                 {t('common.cancel')}
               </Button>
-              <Button size="sm" onClick={handleIssueAndFocus} className="flex-1 h-8 text-xs">
+              <Button size="sm" onClick={handleIssueAndFocus} disabled={!processCode} className="flex-1 h-8 text-xs">
                 <Package className="w-3.5 h-3.5 mr-1" />
                 {t('material.issue.fullIssue', { defaultValue: '전량출고' })}
               </Button>

@@ -20,6 +20,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
+import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -227,7 +228,16 @@ describe('ReceiptCancelService', () => {
       mockDataSource.getRepository.mockReturnValue(matIssueRepo as any);
       mockQueryRunner.manager.findOne
         .mockResolvedValueOnce(originalTx)
-        .mockResolvedValueOnce(stock);
+        .mockResolvedValueOnce(stock)
+        .mockResolvedValueOnce({
+          company: 'HANES',
+          plant: 'P01',
+          matUid: 'MAT-001',
+          itemCode: 'ITEM-001',
+          qty: 0,
+          availableQty: 0,
+          status: 'DEPLETED',
+        } as MatArrivalStock);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
       mockNumbering.nextInTx.mockResolvedValue('CANCEL-001');
       (mockQueryRunner.manager.create as jest.Mock).mockReturnValue(cancelTx);
@@ -271,6 +281,62 @@ describe('ReceiptCancelService', () => {
         MatReceiving,
         { receiveNo: 'RCV-001', seq: 2, company: 'HANES', plant: 'P01' },
         { status: 'CANCELED' },
+      );
+    });
+
+    it('일반 입고취소는 입하대기 재고를 복원한다', async () => {
+      const originalTx = {
+        transNo: 'TX-001',
+        cancelRefId: null,
+        transType: 'RECEIVE',
+        toWarehouseId: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 10,
+        refType: 'RECEIVE',
+        refId: 'RCV-001-1',
+        company: 'HANES',
+        plant: 'P01',
+      } as StockTransaction;
+      const stock = {
+        warehouseCode: 'WH-01',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        qty: 10,
+        availableQty: 10,
+        company: 'HANES',
+        plant: 'P01',
+      } as MatStock;
+      const arrivalStock = {
+        company: 'HANES',
+        plant: 'P01',
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        qty: 0,
+        availableQty: 0,
+        status: 'DEPLETED',
+      } as MatArrivalStock;
+      const cancelTx = { transNo: 'CANCEL-001' } as StockTransaction;
+
+      mockDataSource.getRepository.mockReturnValue({ findOne: jest.fn().mockResolvedValue(null) } as any);
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce(originalTx)
+        .mockResolvedValueOnce(stock)
+        .mockResolvedValueOnce(arrivalStock);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+      mockNumbering.nextInTx.mockResolvedValue('CANCEL-001');
+      (mockQueryRunner.manager.create as jest.Mock).mockReturnValue(cancelTx);
+      (mockQueryRunner.manager.save as jest.Mock).mockResolvedValue(cancelTx);
+
+      await target.cancel({ transactionId: 'TX-001', reason: '취소' } as any, 'HANES', 'P01');
+
+      expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(MatArrivalStock, {
+        where: { matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' },
+      });
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        MatArrivalStock,
+        { company: 'HANES', plant: 'P01', matUid: 'MAT-001' },
+        { qty: 10, availableQty: 10, status: 'AVAILABLE' },
       );
     });
 

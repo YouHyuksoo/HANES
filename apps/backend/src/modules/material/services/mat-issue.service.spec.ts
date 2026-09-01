@@ -193,6 +193,7 @@ describe('MatIssueService', () => {
       const result = await target.scanIssue({
         matUid: 'MAT-001',
         issueType: 'PROD',
+        processCode: 'PRC1',
         workerId: 'worker',
       });
 
@@ -236,6 +237,7 @@ describe('MatIssueService', () => {
         matUid: 'MAT-001',
         warehouseCode: 'WH-01',
         issueType: 'PROD',
+        processCode: 'PRC1',
         workerId: 'worker',
       }, 'C1', 'P1');
 
@@ -267,8 +269,93 @@ describe('MatIssueService', () => {
         matUid: 'MAT-001',
         warehouseCode: 'WH-01',
         issueType: 'PROD',
+        processCode: 'PRC1',
         workerId: 'worker',
       }, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('스캔 출고는 공정코드를 create로 넘겨 공정재고 이동을 탄다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        iqcStatus: 'PASS',
+        status: 'NORMAL',
+        company: 'C1',
+        plant: 'P1',
+      } as MatLot);
+      mockMatStockRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'C1', plant: 'P1' } as MatStock,
+      ]);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
+      const createSpy = jest.spyOn(target, 'create').mockResolvedValue([
+        { issueNo: 'ISS-001', seq: 1, matUid: 'MAT-001', issueQty: 5 } as any,
+      ]);
+
+      await target.scanIssue({
+        matUid: 'MAT-001',
+        warehouseCode: 'WH-01',
+        issueType: 'PROD',
+        processCode: 'PRC1',
+        workerId: 'worker',
+      }, 'C1', 'P1');
+
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          processCode: 'PRC1',
+          issueType: 'PROD',
+          items: [{ matUid: 'MAT-001', issueQty: 5 }],
+        }),
+        'C1',
+        'P1',
+      );
+    });
+
+    it('스캔 출고에 공정코드가 없으면 거부한다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        iqcStatus: 'PASS',
+        status: 'NORMAL',
+      } as MatLot);
+      mockMatStockRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5 } as MatStock,
+      ]);
+
+      await expect(target.scanIssue({
+        matUid: 'MAT-001',
+        issueType: 'PROD',
+        workerId: 'worker',
+      })).rejects.toThrow(/공정/);
+    });
+
+    it('특채 승인된 FAIL LOT은 스캔 출고가 가능하다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        iqcStatus: 'FAIL',
+        specialAcceptYn: 'Y',
+        status: 'NORMAL',
+        company: 'C1',
+        plant: 'P1',
+      } as MatLot);
+      mockMatStockRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'C1', plant: 'P1' } as MatStock,
+      ]);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
+      jest.spyOn(target, 'create').mockResolvedValue([
+        { issueNo: 'ISS-001', seq: 1, matUid: 'MAT-001', issueQty: 5 } as any,
+      ]);
+
+      const result = await target.scanIssue({
+        matUid: 'MAT-001',
+        warehouseCode: 'WH-01',
+        issueType: 'PROD',
+        processCode: 'PRC1',
+        workerId: 'worker',
+      }, 'C1', 'P1');
+
+      expect(result.matUid).toBe('MAT-001');
+      expect(result.issuedQty).toBe(5);
     });
   });
 

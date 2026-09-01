@@ -508,6 +508,27 @@ describe('ShipOrderService', () => {
       }));
     });
 
+    it('팔레트 출하는 제품입고 전표가 없는 박스를 거부한다', async () => {
+      mockNumbering.nextShipmentNo.mockResolvedValue('SHP-001');
+      mockPalletRepo.find.mockResolvedValue([
+        { palletNo: 'PLT-001', shipOrderNo: 'SO-001', status: 'CLOSED', shipmentId: null, boxCount: 1, totalQty: 10 },
+      ] as any);
+      mockBoxRepo.find.mockResolvedValue([
+        { boxNo: 'BX-001', itemCode: 'ITEM-A', qty: 10, status: 'CLOSED', oqcStatus: 'PASS', palletNo: 'PLT-001', serialList: null },
+      ] as any);
+      mockShipmentRepo.findOne.mockResolvedValue(null);
+      mockShipmentRepo.create.mockImplementation((payload) => payload as any);
+      mockQr.manager.save.mockImplementation(async (entity: any) => entity);
+      mockQr.manager.findOne.mockImplementation(async (entity: any) => {
+        if (entity === ProductTransaction) return null;
+        return { warehouseCode: 'FG_MAIN' };
+      });
+
+      await expect(
+        target.shipOrderPallets('SO-001', { palletNos: ['PLT-001'] }, 'C1', 'P1'),
+      ).rejects.toThrow('제품입고가 완료되지 않은 박스는 출하할 수 없습니다');
+    });
+
     it('OQC 미사용 시 PENDING 박스가 포함된 팔레트도 출하한다', async () => {
       mockSysConfig.isEnabled.mockResolvedValue(false);
       mockNumbering.nextShipmentNo.mockResolvedValue('SHP-001');
@@ -547,7 +568,7 @@ describe('ShipOrderService.shipBox', () => {
       if (entity === BoxMaster) return overrides.box ?? null;
       if (entity === ShipmentOrderItem) return overrides.line ?? null;
       if (entity === Warehouse) return overrides.warehouse ?? null;
-      if (entity === ProductTransaction) return overrides.originalFgOut ?? null;
+      if (entity === ProductTransaction) return overrides.inbound ?? overrides.originalFgOut ?? null;
       return null;
     }),
     find: jest.fn((entity: any) => {
@@ -589,6 +610,7 @@ describe('ShipOrderService.shipBox', () => {
       box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 2, status: 'CLOSED', oqcStatus: 'PASS', serialList: JSON.stringify(['FG1', 'FG2']) },
       line: { shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 },
       warehouse: { warehouseCode: 'FG_MAIN' },
+      inbound: { transNo: 'PTX-IN', refType: 'BOX', refId: 'BX1', transType: 'FG_IN', status: 'DONE' },
       allLines: [{ shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 }],
     });
     const res = await service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000');
@@ -668,11 +690,28 @@ describe('ShipOrderService.shipBox', () => {
       box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 10, status: 'CLOSED', oqcStatus: 'PASS' },
       line: { shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 },
       warehouse: { warehouseCode: 'FG_MAIN' },
+      inbound: { transNo: 'PTX-IN', refType: 'BOX', refId: 'BX1', transType: 'FG_IN', status: 'DONE' },
       allLines: [{ shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 }],
     });
     const res = await service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000');
     expect(res.fullyShipped).toBe(true);
     expect(managed.update).toHaveBeenCalledWith(ShipmentOrder, expect.objectContaining({ shipOrderNo: 'SO1' }), { status: 'CLOSED' });
+  });
+
+  it('제품입고 전표가 없으면 박스 출하를 거부한다', async () => {
+    await buildService({
+      order: { shipOrderNo: 'SO1', status: 'CONFIRMED' },
+      box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 2, status: 'CLOSED', oqcStatus: 'PASS', serialList: JSON.stringify(['FG1', 'FG2']) },
+      line: { shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 },
+      warehouse: { warehouseCode: 'FG_MAIN' },
+      inbound: null,
+      allLines: [{ shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 10, shippedQty: 0 }],
+    });
+
+    await expect(service.shipBox('SO1', { boxNo: 'BX1' }, '40', '1000')).rejects.toThrow(
+      '제품입고가 완료되지 않은 박스는 출하할 수 없습니다',
+    );
+    expect(issueStockInTx).not.toHaveBeenCalled();
   });
 
   it('출하 취소: 제품재고 복원 + 박스/라벨/출하지시 상태를 출하 전으로 되돌린다', async () => {

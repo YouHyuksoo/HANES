@@ -57,6 +57,9 @@ import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { DefectLog } from '../../../entities/defect-log.entity';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { SelfInspectResult } from '../../../entities/self-inspect-result.entity';
+import { SelfInspectItem } from '../../../entities/self-inspect-item.entity';
+import { ComCode } from '../../../entities/com-code.entity';
+import { ProductGenealogy } from '../../../entities/product-genealogy.entity';
 import { ShiftResolver } from '../../../utils/shift-resolver';
 
 const SELF_INSPECT_BATCH_WINDOW_MS = 10_000;
@@ -560,6 +563,111 @@ export class ProdResultService {
     return this.latestFirstInspectionBatchPassed(rows) ? 'MASS' : 'TRIAL';
   }
 
+  private timingMatches(itemTiming: string | null | undefined, timing: string): boolean {
+    return String(itemTiming ?? '')
+      .split(',')
+      .map((part) => part.trim().toUpperCase())
+      .includes(timing);
+  }
+
+  private async latestInspectBatchPassed(
+    orderNo: string,
+    timing: 'FIRST' | 'MID' | 'LAST',
+    company?: string,
+    plant?: string,
+  ): Promise<boolean> {
+    const rows = await this.dataSource.getRepository(SelfInspectResult).find({
+      where: {
+        orderNo,
+        timing,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+      order: { createdAt: 'DESC' },
+      take: 100,
+      select: ['id', 'status', 'createdAt'],
+    });
+    return this.latestFirstInspectionBatchPassed(rows);
+  }
+
+  private async resolveMidBlockPct(company?: string, plant?: string): Promise<number> {
+    const rows = await this.dataSource.getRepository(ComCode).find({
+      where: {
+        groupCode: 'QC_SELF',
+        detailCode: 'QC_MID_BLOCK_PCT',
+        useYn: 'Y',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+    const raw = Number(rows[0]?.codeDesc ?? 60);
+    return Number.isFinite(raw) && raw > 0 ? raw : 60;
+  }
+
+  private async assertSelfInspectGates(
+    dto: CreateProdResultDto,
+    jobOrder: JobOrder,
+    existingTotal: number,
+    newQty: number,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    const itemRepo = this.dataSource.getRepository(SelfInspectItem);
+    const items = ((await itemRepo.find({
+      where: {
+        useYn: 'Y',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    })) ?? []).filter((item) =>
+      !dto.processCode || !item.processCode || item.processCode === dto.processCode,
+    );
+    if (items.length === 0) {
+      return;
+    }
+
+    const resultRepo = this.dataSource.getRepository(SelfInspectResult);
+    const pending = ((await resultRepo.find({
+      where: {
+        orderNo: dto.orderNo,
+        status: 'PENDING',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    })) ?? []).filter((row) => row.status === 'PENDING' && row.timing !== 'FIRST');
+    if (pending.length > 0) {
+      throw new BadRequestException('의뢰 중인 자주검사가 있어 실적을 등록할 수 없습니다.');
+    }
+
+    const hasFirst = items.some((item) => this.timingMatches(item.timing, 'FIRST'));
+    const hasMid = items.some((item) => this.timingMatches(item.timing, 'MID'));
+    const hasLast = items.some((item) => this.timingMatches(item.timing, 'LAST'));
+    const willBeTotal = existingTotal + newQty;
+    const planQty = Number(jobOrder.planQty) || 0;
+
+    if (hasFirst && existingTotal > 0) {
+      const firstPassed = await this.latestInspectBatchPassed(dto.orderNo, 'FIRST', company, plant);
+      if (!firstPassed) {
+        throw new BadRequestException('초물 자주검사를 완료해야 다음 실적을 등록할 수 있습니다.');
+      }
+    }
+
+    const midBlockPct = await this.resolveMidBlockPct(company, plant);
+    if (hasMid && planQty > 0 && (willBeTotal / planQty) * 100 >= midBlockPct) {
+      const midPassed = await this.latestInspectBatchPassed(dto.orderNo, 'MID', company, plant);
+      if (!midPassed) {
+        throw new BadRequestException('중물 자주검사를 완료해야 실적을 등록할 수 있습니다.');
+      }
+    }
+
+    if (hasLast && planQty > 0 && willBeTotal >= planQty) {
+      const lastPassed = await this.latestInspectBatchPassed(dto.orderNo, 'LAST', company, plant);
+      if (!lastPassed) {
+        throw new BadRequestException('종물 자주검사를 완료해야 실적을 마감할 수 있습니다.');
+      }
+    }
+  }
+
   /**
    * 작업지시 수량 초과 체크
    * - 기등록 실적 + 새 실적의 합이 planQty를 초과하는지 확인
@@ -639,6 +747,26 @@ export class ProdResultService {
 
     // 작업지시 수량 초과 체크
     await this.checkJobOrderQtyLimit(dto.orderNo, dto.goodQty ?? 0, effectiveDefectQty, company, plant);
+
+    const existingSummary = await this.prodResultRepository
+      .createQueryBuilder('pr')
+      .select('SUM(pr.goodQty)', 'totalGood')
+      .addSelect('SUM(pr.defectQty)', 'totalDefect')
+      .where('pr.orderNo = :orderNo', { orderNo: dto.orderNo })
+      .andWhere(company ? 'pr.company = :company' : '1=1', company ? { company } : {})
+      .andWhere(plant ? 'pr.plant = :plant' : '1=1', plant ? { plant } : {})
+      .andWhere('pr.status != :canceled', { canceled: 'CANCELED' })
+      .getRawOne();
+    const existingTotal = (parseInt(existingSummary?.totalGood, 10) || 0)
+      + (parseInt(existingSummary?.totalDefect, 10) || 0);
+    await this.assertSelfInspectGates(
+      dto,
+      jobOrder,
+      existingTotal,
+      (dto.goodQty ?? 0) + effectiveDefectQty,
+      company,
+      plant,
+    );
 
     // 설비부품 인터락 체크
     await this.checkEquipBomInterlock(dto.equipCode, dto.orderNo, company, plant);
@@ -1005,6 +1133,7 @@ export class ProdResultService {
         ...(plant ? { plant } : {}),
       },
     });
+    await this.restoreConsumedInputSg(queryRunner, prodResult, sgLabels, company, plant);
     const progressedSgLabel = sgLabels.find((label) => label.status !== 'IN_STOCK');
     if (progressedSgLabel) {
       throw new BadRequestException(
@@ -1534,15 +1663,17 @@ export class ProdResultService {
      * WIP_MAT_STOCKS 가산 + PROD_CONSUME_CANCEL 기록. 원본이 없으면 no-op.
      * WIP 재고는 (company,plant) 스코프가 필수이므로 둘 다 있을 때만 복원한다. */
     if (company && plant) {
-      await this.wipMatStockService.restoreInTx(qr, {
-        mode: 'ADD_BACK',
-        refType: 'PROD_RESULT',
-        refId: resultNo,
-        cancelTransType: 'PROD_CONSUME_CANCEL',
-        originTransType: 'PROD_CONSUME',
-        company,
-        plant,
-      });
+      for (const refType of ['PROD_RESULT', 'ASSEMBLY', 'SUBKIT']) {
+        await this.wipMatStockService.restoreInTx(qr, {
+          mode: 'ADD_BACK',
+          refType,
+          refId: resultNo,
+          cancelTransType: 'PROD_CONSUME_CANCEL',
+          originTransType: 'PROD_CONSUME',
+          company,
+          plant,
+        });
+      }
     } else {
       this.logger.warn(
         `공정소비 역분개 생략 — company/plant 미지정: resultNo=${resultNo}`,
@@ -2055,6 +2186,54 @@ export class ProdResultService {
     return `${orderNo}-${String(maxSeq + 1).padStart(3, '0')}`;
   }
 
+  private async restoreConsumedInputSg(
+    qr: import('typeorm').QueryRunner,
+    prodResult: ProdResult,
+    outputSgLabels: SgLabel[],
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    const parentKeys = [
+      ...outputSgLabels.map((label) => label.sgBarcode),
+      prodResult.prdUid,
+    ].filter((key): key is string => !!key);
+    if (parentKeys.length === 0) {
+      return;
+    }
+
+    const genes = await qr.manager.find(ProductGenealogy, {
+      where: {
+        parentKey: In(parentKeys),
+        childType: 'SG',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+    for (const gene of genes) {
+      const child = await qr.manager.findOne(SgLabel, {
+        where: {
+          sgBarcode: gene.childKey,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+      });
+      if (!child) {
+        continue;
+      }
+      const remainQty = (Number(child.remainQty) || 0) + (Number(gene.qty) || 1);
+      const status = remainQty > 0 && child.status === 'CONSUMED' ? 'IN_STOCK' : child.status;
+      await qr.manager.update(
+        SgLabel,
+        {
+          sgBarcode: child.sgBarcode,
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+        { remainQty, status },
+      );
+    }
+  }
+
   private async reverseProductStock(
     qr: import('typeorm').QueryRunner,
     resultNo: string,
@@ -2066,7 +2245,7 @@ export class ProdResultService {
 
     const transactions = await qr.manager.find(ProductTransaction, {
       where: {
-        refType: 'PROD_RESULT',
+        refType: In(['PROD_RESULT', 'ASSEMBLY', 'SUBKIT']),
         refId: resultNo,
         status: 'DONE',
         ...(company ? { company } : {}),

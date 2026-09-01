@@ -18,6 +18,8 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { DefectLog } from '../../../entities/defect-log.entity';
 import { SgLabel } from '../../../entities/sg-label.entity';
 import { SelfInspectResult } from '../../../entities/self-inspect-result.entity';
+import { SelfInspectItem } from '../../../entities/self-inspect-item.entity';
+import { ComCode } from '../../../entities/com-code.entity';
 import { User } from '../../../entities/user.entity';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { AutoIssueService } from './auto-issue.service';
@@ -346,6 +348,113 @@ describe('ProdResultService', () => {
       ProdResult,
       expect.objectContaining({ productionType: 'MASS' }),
     );
+  });
+
+  it('blocks later results until FIRST inspect batch is all PASS when FIRST items exist', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, routingCode: 'RT-1', company: 'C1', plant: 'P1' } as any);
+    (jobOrderRepo as any).manager = { findOne: jest.fn().mockResolvedValue({ processCode: 'PRC1' }) };
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '1', totalDefect: '0' }),
+    } as any;
+    prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+    dataSource.getRepository.mockImplementation((entity: any) => {
+      if (entity === SelfInspectItem) {
+        return { find: jest.fn().mockResolvedValue([{ timing: 'FIRST', processCode: 'PRC1', useYn: 'Y' }]) } as any;
+      }
+      if (entity === SelfInspectResult) {
+        return { find: jest.fn().mockResolvedValue([{ status: 'FAIL', createdAt: new Date(), timing: 'FIRST' }]) } as any;
+      }
+      return { find: jest.fn().mockResolvedValue([]) } as any;
+    });
+
+    await expect(
+      service.create({ orderNo: 'JO-1', processCode: 'PRC1', goodQty: 1, defectQty: 0 } as any, 'C1', 'P1'),
+    ).rejects.toThrow(/초물/);
+  });
+
+  it('blocks results after mid-progress without MID inspect PASS', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, routingCode: 'RT-1', company: 'C1', plant: 'P1' } as any);
+    (jobOrderRepo as any).manager = { findOne: jest.fn().mockResolvedValue({ processCode: 'PRC1' }) };
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '59', totalDefect: '0' }),
+    } as any;
+    prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+    dataSource.getRepository.mockImplementation((entity: any) => {
+      if (entity === SelfInspectItem) {
+        return { find: jest.fn().mockResolvedValue([{ timing: 'MID', processCode: 'PRC1', useYn: 'Y' }]) } as any;
+      }
+      if (entity === SelfInspectResult) {
+        return { find: jest.fn().mockResolvedValue([]) } as any;
+      }
+      return { find: jest.fn().mockResolvedValue([]) } as any;
+    });
+
+    await expect(
+      service.create({ orderNo: 'JO-1', processCode: 'PRC1', goodQty: 2, defectQty: 0 } as any, 'C1', 'P1'),
+    ).rejects.toThrow(/중물/);
+  });
+
+  it('blocks mid-progress using QC_MID_BLOCK_PCT instead of a hardcoded 60', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, routingCode: 'RT-1', company: 'C1', plant: 'P1' } as any);
+    (jobOrderRepo as any).manager = { findOne: jest.fn().mockResolvedValue({ processCode: 'PRC1' }) };
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '39', totalDefect: '0' }),
+    } as any;
+    prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+    dataSource.getRepository.mockImplementation((entity: any) => {
+      if (entity === SelfInspectItem) {
+        return { find: jest.fn().mockResolvedValue([{ timing: 'MID', processCode: 'PRC1', useYn: 'Y' }]) } as any;
+      }
+      if (entity === SelfInspectResult) {
+        return { find: jest.fn().mockResolvedValue([]) } as any;
+      }
+      if (entity === ComCode) {
+        return { find: jest.fn().mockResolvedValue([{ detailCode: 'QC_MID_BLOCK_PCT', codeDesc: '40' }]) } as any;
+      }
+      return { find: jest.fn().mockResolvedValue([]) } as any;
+    });
+
+    await expect(
+      service.create({ orderNo: 'JO-1', processCode: 'PRC1', goodQty: 1, defectQty: 0 } as any, 'C1', 'P1'),
+    ).rejects.toThrow(/중물/);
+  });
+
+  it('blocks the completing result without LAST inspect PASS when LAST items exist', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, routingCode: 'RT-1', company: 'C1', plant: 'P1' } as any);
+    (jobOrderRepo as any).manager = { findOne: jest.fn().mockResolvedValue({ processCode: 'PRC1' }) };
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '99', totalDefect: '0' }),
+    } as any;
+    prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+    dataSource.getRepository.mockImplementation((entity: any) => {
+      if (entity === SelfInspectItem) {
+        return { find: jest.fn().mockResolvedValue([{ timing: 'LAST', processCode: 'PRC1', useYn: 'Y' }]) } as any;
+      }
+      if (entity === SelfInspectResult) {
+        return { find: jest.fn().mockResolvedValue([{ status: 'FAIL', createdAt: new Date(), timing: 'LAST' }]) } as any;
+      }
+      return { find: jest.fn().mockResolvedValue([]) } as any;
+    });
+
+    await expect(
+      service.create({ orderNo: 'JO-1', processCode: 'PRC1', goodQty: 1, defectQty: 0 } as any, 'C1', 'P1'),
+    ).rejects.toThrow(/종물/);
   });
 
   it('persists defect detail logs in the same transaction without double counting defectQty', async () => {
@@ -816,6 +925,14 @@ describe('ProdResultService', () => {
         plant: 'P1',
       }),
     );
+    expect(wipMatStockService.restoreInTx).toHaveBeenCalledWith(
+      queryRunner,
+      expect.objectContaining({ refType: 'ASSEMBLY', refId: 'PR-1' }),
+    );
+    expect(wipMatStockService.restoreInTx).toHaveBeenCalledWith(
+      queryRunner,
+      expect.objectContaining({ refType: 'SUBKIT', refId: 'PR-1' }),
+    );
     // MatIssue 없으므로 원자재 StockTransaction 생성 없음
     expect(queryRunner.manager.create).not.toHaveBeenCalledWith(
       StockTransaction,
@@ -891,6 +1008,39 @@ describe('ProdResultService', () => {
     expect(wipMatStockService.restoreInTx).toHaveBeenCalledWith(
       queryRunner,
       expect.objectContaining({ refType: 'PROD_RESULT', refId: 'PR-1' }),
+    );
+  });
+
+  it('restores consumed input SFG remainQty from genealogy when canceling a kitting result', async () => {
+    const prodResult = {
+      resultNo: 'PR-KIT-1',
+      prdUid: 'FG-001',
+      orderNo: 'JO-1',
+      company: 'C1',
+      plant: 'P1',
+    } as any;
+    queryRunner.manager.find
+      .mockResolvedValueOnce([]) // MatIssue
+      .mockResolvedValueOnce([]) // ProductTransaction
+      .mockResolvedValueOnce([]) // output SG labels
+      .mockResolvedValueOnce([
+        { parentKey: 'FG-001', childType: 'SG', childKey: 'SG-IN-1', qty: 1, company: 'C1', plant: 'P1' },
+      ] as any);
+    queryRunner.manager.findOne.mockResolvedValue({
+      sgBarcode: 'SG-IN-1',
+      remainQty: 0,
+      status: 'CONSUMED',
+      company: 'C1',
+      plant: 'P1',
+    } as any);
+    wipMatStockService.restoreInTx.mockResolvedValue([] as any);
+
+    await (service as any).reverseResultInTx(queryRunner, prodResult, 'C1', 'P1');
+
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      SgLabel,
+      expect.objectContaining({ sgBarcode: 'SG-IN-1' }),
+      expect.objectContaining({ remainQty: 1, status: 'IN_STOCK' }),
     );
   });
 });

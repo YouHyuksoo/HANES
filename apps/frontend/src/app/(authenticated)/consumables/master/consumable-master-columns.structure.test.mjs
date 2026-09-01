@@ -12,7 +12,14 @@ test('/consumables/master extracts DataGrid columns into consumableMasterColumns
 
 test('/consumables/master page consumes the extracted column factory', () => {
   assert.match(page, /import \{ createConsumableMasterGridColumns \} from "\.\/consumableMasterColumns"/);
-  assert.match(page, /createConsumableMasterGridColumns\(\{[\s\S]*onEdit:[\s\S]*onDelete: handleDelete[\s\S]*\}\)/);
+  assert.match(page, /createConsumableMasterGridColumns\(\{[\s\S]*onEdit:[\s\S]*onUsageMap:[\s\S]*onDelete: handleDelete[\s\S]*\}\)/);
   // 인라인 컬럼 배열이 페이지에 남아있지 않아야 한다
   assert.doesNotMatch(page, /accessorKey: "consumableCode"/);
+});
+
+test('/consumables/master opens usage map from an action icon, not row click', () => {
+  assert.match(columns, /onUsageMap: \(item: ConsumableItem\) => void/);
+  assert.match(columns, /Link2/);
+  assert.match(columns, /onUsageMap\(row\.original\)/);
+  assert.doesNotMatch(page, /onRowClick/);
 });

@@ -430,7 +430,7 @@ export default function JobOrderCreateModal({ isOpen, draftOrder, onClose, onSav
   }, [generatedJobOrderRows, selectedBomItemCode]);
 
   const handleSubmit = useCallback(async () => {
-    if (!form.itemCode || !form.planQty || !form.planDate || !routingInfo) return;
+    if (!form.itemCode || !form.planQty || !form.planDate || !routingInfo?.processes?.length) return;
     setSaving(true);
     try {
       const payload = {
@@ -460,7 +460,7 @@ export default function JobOrderCreateModal({ isOpen, draftOrder, onClose, onSav
     }
   }, [form, routingInfo, generatedOperationRows, operationAssignments, onClose, onSave, t]);
 
-  const canSave = !!form.itemCode && !!form.planQty && !!form.planDate && !!routingInfo && !generatedRoutingLoading;
+  const canSave = !!form.itemCode && !!form.planQty && !!form.planDate && (routingInfo?.processes?.length ?? 0) > 0 && !generatedRoutingLoading;
   const assignedCount = generatedOperationRows.filter((row) => operationAssignments[row.key]).length;
   const selectedGeneratedCount = selectedBomItemCode
     ? generatedJobOrderRows.filter((row) => row.itemCode === selectedBomItemCode).length

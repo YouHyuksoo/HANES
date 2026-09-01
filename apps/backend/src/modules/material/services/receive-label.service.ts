@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. findLabelableArrivals(): IQC PASS 상태인 입하건 목록 조회
- * 2. createMatLabels(): 입하건 선택 → qty만큼 matUid 채번 → MatLot N건 생성 → 인쇄 로그 저장
+ * 2. createMatLabels(): 입하 시 생성된 기존 LOT으로 라벨만 발행 (새 LOT 생성 없음)
  * 3. matUid 채번은 Oracle DB Function(F_GET_MAT_UID) 호출
  */
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
@@ -127,7 +127,7 @@ export class ReceiveLabelService {
     });
   }
 
-  /** matUid 채번 + MatLot 생성 + 라벨 인쇄 로그 */
+  /** 입하 시 이미 만든 LOT으로 라벨만 발행한다. 새 MAT_LOTS를 만들지 않는다. */
   async createMatLabels(dto: CreateMatLabelsDto, company?: string, plant?: string): Promise<MatLabelResultDto[]> {
     const tenantWhere = this.tenantWhere(company, plant);
     const arrival = await this.arrivalRepo.findOne({ where: { arrivalNo: dto.arrivalId, seq: dto.arrivalSeq ?? 1, ...tenantWhere } });
@@ -138,40 +138,25 @@ export class ReceiveLabelService {
     }
 
     const part = await this.partRepo.findOne({ where: { itemCode: arrival.itemCode, ...tenantWhere } });
+    const existingLots = await this.matLotRepo.find({
+      where: {
+        arrivalNo: arrival.arrivalNo,
+        arrivalSeq: arrival.seq,
+        ...tenantWhere,
+      },
+      order: { matUid: 'ASC' },
+    });
+    if (existingLots.length === 0) {
+      throw new BadRequestException('이 입하에 연결된 LOT이 없습니다. 입하 등록 LOT으로 라벨을 발행하세요.');
+    }
 
     return this.tx.run(async (queryRunner) => {
-      const results: MatLabelResultDto[] = [];
-
-      for (let i = 0; i < dto.qty; i++) {
-        const matUid = await this.numbering.nextMatUid(queryRunner);
-        const lot = queryRunner.manager.create(MatLot, {
-          matUid,
-          itemCode: arrival.itemCode,
-          initQty: 1,
-          currentQty: 1,
-          recvDate: new Date(),
-          manufactureDate: null,
-          expireDate: null,
-          poNo: arrival.poNo,
-          vendor: arrival.vendorName,
-          invoiceNo: arrival.invoiceNo,
-          company: arrival.company,
-          plant: arrival.plant,
-          arrivalNo: arrival.arrivalNo,
-          arrivalSeq: arrival.seq,
-          origin: matUid,
-          iqcStatus: 'PASS',
-          status: 'NORMAL',
-        });
-        await queryRunner.manager.save(lot);
-
-        results.push({
-          matUid,
-          itemCode: arrival.itemCode,
-          itemName: part?.itemName ?? '',
-          supUid: dto.supUid ?? arrival.supUid ?? null,
-        });
-      }
+      const results: MatLabelResultDto[] = existingLots.map((lot) => ({
+        matUid: lot.matUid,
+        itemCode: arrival.itemCode,
+        itemName: part?.itemName ?? '',
+        supUid: dto.supUid ?? arrival.supUid ?? null,
+      }));
 
       const log = queryRunner.manager.create(LabelPrintLog, {
         printedAt: new Date(),

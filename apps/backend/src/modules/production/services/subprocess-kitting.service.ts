@@ -77,7 +77,7 @@ export class SubprocessKittingService {
   /**
    * 공정별 자재 차감 필터: 라우팅에 ROUTING_MATERIALS 배정이 있으면 현재 공정(seq)에
    * 배정된 자재만 남기고 나머지를 rawQtyPerByItem에서 제거한다(BACKFLUSH 공정별 차감).
-   * 배정이 없으면(미전환 라우팅) 전체를 그대로 둔다. (auto-issue와 동일 규칙)
+   * 배정이 없으면 BOM 전체 차감을 하지 않는다. (auto-issue와 동일 규칙)
    */
   private async filterRawByRoutingMaterials(
     qr: QueryRunner,
@@ -90,7 +90,10 @@ export class SubprocessKittingService {
     const routingMaterials = await qr.manager.find(RoutingMaterial, {
       where: { routingCode, useYn: 'Y', ...tenant },
     });
-    if (routingMaterials.length === 0) return; // 미배정 → 전체 유지
+    if (routingMaterials.length === 0) {
+      rawQtyPerByItem.clear();
+      return;
+    }
     const step = await qr.manager.findOne(RoutingProcess, {
       where: { routingCode, processCode, ...tenant },
     });
@@ -347,6 +350,7 @@ export class SubprocessKittingService {
         resultNo: resultNoForRef,
         orderNo,
         processCode,
+        prdUid: fgBarcode,
         goodQty: 1,
         defectQty: 0,
         status: 'DONE',

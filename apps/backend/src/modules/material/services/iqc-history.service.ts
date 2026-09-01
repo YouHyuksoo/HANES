@@ -15,6 +15,7 @@ import { SysConfigService } from '../../system/services/sys-config.service';
 import { AqlService } from '../../quality/aql/services/aql.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
 
 export interface DebugSql {
   sql: string;
@@ -253,8 +254,21 @@ export class IqcHistoryService {
 
     const lotTenantWhere = this.tenantWhere(lot.company, lot.plant);
 
+    const destructive = this.parseDestructive(dto.details);
+    const aqlPolicy = await this.aqlService.resolveIqcPolicyByItem({
+      itemCode: lot.itemCode,
+      vendorCode: lot.vendor ?? null,
+      lotQty: Math.max(1, Number(lot.initQty) || 1),
+      itemDefectCounts: this.countFailByInspItem(dto.details),
+      itemInspectedCounts: destructive.inspected,
+      fallbackDefectCounts: { critical: 0, major: 0, minor: 0 },
+      company: lot.company,
+      plant: lot.plant,
+    });
+    const finalResult = aqlPolicy.result;
+
     await this.matLotRepository.update({ matUid: dto.matUid, ...lotTenantWhere }, {
-      iqcStatus: dto.result,
+      iqcStatus: finalResult,
     });
 
     const log = this.iqcLogRepository.create({
@@ -262,7 +276,7 @@ export class IqcHistoryService {
       matUid: dto.matUid,
       itemCode: lot.itemCode,
       inspectType: dto.inspectType || 'INITIAL',
-      result: dto.result,
+      result: finalResult,
       details: dto.details || null,
       inspectorName: dto.inspectorName || null,
       inspectClass: this.normalizeIqcInspectClass(dto.inspectClass) || null,
@@ -279,18 +293,18 @@ export class IqcHistoryService {
     });
 
     // IQC PASS + 품목에 유효기간이 설정된 경우 → expireDate 자동 계산
-    if (dto.result === 'PASS' && part && (part.expiryDate ?? 0) > 0) {
+    if (finalResult === 'PASS' && part && (part.expiryDate ?? 0) > 0) {
       const baseDate = lot.recvDate ? new Date(lot.recvDate) : new Date();
       baseDate.setHours(0, 0, 0, 0);
       const expireDate = new Date(baseDate.getTime() + part.expiryDate * 24 * 60 * 60 * 1000);
       await this.matLotRepository.update({ matUid: dto.matUid, ...lotTenantWhere }, { expireDate });
     }
 
-    if (dto.result === 'FAIL') {
+    if (finalResult === 'FAIL') {
       await this.handleIqcFail(lot.matUid, lot.itemCode, lot.company, lot.plant);
     }
 
-    if (dto.result === 'PASS' && dto.destructSampleQty && dto.destructSampleQty > 0) {
+    if (finalResult === 'PASS' && dto.destructSampleQty && dto.destructSampleQty > 0) {
       const issueMode = await this.sysConfigService.getValue('IQC_SAMPLE_ISSUE_MODE');
       if (issueMode === 'AUTO_ISSUE') {
         await this.autoIssueDestructSample(
@@ -761,51 +775,111 @@ export class IqcHistoryService {
     const stock = await this.matStockRepository.findOne({
       where: { matUid, itemCode, ...this.tenantWhere(company, plant) },
     });
-    if (!stock || stock.qty <= 0) return;
-    this.assertSameTenant('IQC 대상 재고', { company, plant }, stock);
+    if (stock && stock.qty > 0) {
+      this.assertSameTenant('IQC 대상 재고', { company, plant }, stock);
+      return this.moveQtyToDefectWarehouse({
+        qty: stock.qty,
+        fromWarehouseId: stock.warehouseCode,
+        defectWarehouseCode: defectWarehouse.warehouseCode,
+        itemCode,
+        matUid,
+        company,
+        plant,
+        clearSource: async (queryRunner) => {
+          await queryRunner.manager.update(
+            MatStock,
+            { warehouseCode: stock.warehouseCode, itemCode, matUid, ...this.tenantWhere(company, plant) },
+            { qty: 0 },
+          );
+        },
+      });
+    }
 
+    const arrivalStock = await this.dataSource.getRepository(MatArrivalStock).findOne({
+      where: { matUid, itemCode, ...this.tenantWhere(company, plant) },
+    });
+    if (!arrivalStock || arrivalStock.qty <= 0) return;
+    this.assertSameTenant('IQC 대상 입하재고', { company, plant }, arrivalStock);
+
+    return this.moveQtyToDefectWarehouse({
+      qty: arrivalStock.qty,
+      fromWarehouseId: arrivalStock.warehouseCode,
+      defectWarehouseCode: defectWarehouse.warehouseCode,
+      itemCode,
+      matUid,
+      company,
+      plant,
+      clearSource: async (queryRunner) => {
+        await queryRunner.manager.update(
+          MatArrivalStock,
+          {
+            company: arrivalStock.company,
+            plant: arrivalStock.plant,
+            matUid: arrivalStock.matUid,
+          },
+          { qty: 0, availableQty: 0, status: 'DEPLETED' },
+        );
+      },
+    });
+  }
+
+  private async moveQtyToDefectWarehouse(p: {
+    qty: number;
+    fromWarehouseId: string;
+    defectWarehouseCode: string;
+    itemCode: string;
+    matUid: string;
+    company?: string | null;
+    plant?: string | null;
+    clearSource: (queryRunner: QueryRunner) => Promise<void>;
+  }) {
     return this.tx.run(async (queryRunner) => {
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
-
-      await queryRunner.manager.update(
-        MatStock,
-        { warehouseCode: stock.warehouseCode, itemCode, matUid, ...this.tenantWhere(company, plant) },
-        { qty: 0 },
-      );
+      await p.clearSource(queryRunner);
 
       const existing = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode: defectWarehouse.warehouseCode, itemCode, matUid, ...this.tenantWhere(company, plant) },
+        where: {
+          warehouseCode: p.defectWarehouseCode,
+          itemCode: p.itemCode,
+          matUid: p.matUid,
+          ...this.tenantWhere(p.company, p.plant),
+        },
       });
       if (existing) {
         await queryRunner.manager.update(
           MatStock,
-          { warehouseCode: defectWarehouse.warehouseCode, itemCode, matUid, ...this.tenantWhere(company, plant) },
-          { qty: existing.qty + stock.qty },
+          {
+            warehouseCode: p.defectWarehouseCode,
+            itemCode: p.itemCode,
+            matUid: p.matUid,
+            ...this.tenantWhere(p.company, p.plant),
+          },
+          { qty: existing.qty + p.qty },
         );
       } else {
         await queryRunner.manager.save(MatStock, {
-          warehouseCode: defectWarehouse.warehouseCode,
-          itemCode,
-          matUid,
-          qty: stock.qty,
+          warehouseCode: p.defectWarehouseCode,
+          itemCode: p.itemCode,
+          matUid: p.matUid,
+          qty: p.qty,
           reservedQty: 0,
-          company,
-          plant,
+          company: p.company,
+          plant: p.plant,
         });
       }
 
       await queryRunner.manager.save(StockTransaction, {
         transNo,
         transType: 'MAT_MOVE',
-        fromWarehouseId: stock.warehouseCode,
-        toWarehouseId: defectWarehouse.warehouseCode,
-        itemCode,
-        matUid,
-        qty: stock.qty,
+        fromWarehouseId: p.fromWarehouseId,
+        toWarehouseId: p.defectWarehouseCode,
+        itemCode: p.itemCode,
+        matUid: p.matUid,
+        qty: p.qty,
         remark: 'IQC 불합격 자동이동 (불용창고)',
         refType: 'IQC_FAIL',
-        company,
-        plant,
+        company: p.company,
+        plant: p.plant,
       });
     });
   }

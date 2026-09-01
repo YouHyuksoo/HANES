@@ -15,7 +15,8 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { Repository, DataSource, QueryRunner } from 'typeorm';
+import { Repository, DataSource, QueryRunner, LessThanOrEqual, MoreThanOrEqual, Or, IsNull } from 'typeorm';
+import { parseDateStart } from '../../../shared/date.util';
 import { JobOrderService } from './job-order.service';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
@@ -68,6 +69,10 @@ describe('JobOrderService', () => {
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
     mockQueryRunner.rollbackTransaction.mockResolvedValue(undefined);
     mockQueryRunner.release.mockResolvedValue(undefined);
+    mockRoutingProcessRepo.find.mockResolvedValue([
+      { routingCode: 'RT-001', seq: 10, processCode: 'CUT', processName: '절단', useYn: 'Y', jobOrderYn: 'Y' } as RoutingProcess,
+    ]);
+    mockBomMasterRepo.find.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -428,6 +433,55 @@ describe('JobOrderService', () => {
         JobOrder,
         expect.objectContaining({ orderNo: 'JO-SEMI-OP10', orderKind: 'OPERATION', itemCode: 'SEMI-001', parentOrderNo: 'JO-SEMI', routingSeq: 10, processCode: 'CUT' }),
       );
+    });
+
+    it('filters BOM children by planDate validity when creating semi-product job orders', async () => {
+      mockNumbering.nextJobOrderNo
+        .mockResolvedValueOnce('JO-FG')
+        .mockResolvedValueOnce('JO-FG-OP10');
+      mockJobOrderRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ orderNo: 'JO-FG', company: 'C1', plant: 'P1' } as JobOrder);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'FG-001', company: 'C1', plant: 'P1' } as ItemMaster);
+      mockRoutingGroupRepo.findOne.mockResolvedValue({ routingCode: 'RT-FG', itemCode: 'FG-001', company: 'C1', plant: 'P1' } as RoutingGroup);
+      mockRoutingProcessRepo.find.mockResolvedValue([
+        { routingCode: 'RT-FG', seq: 10, processCode: 'ASSY', processName: '조립', useYn: 'Y', jobOrderYn: 'Y' } as RoutingProcess,
+      ]);
+      mockBomMasterRepo.find.mockResolvedValue([]);
+      mockQueryRunner.manager.create.mockImplementation((_entity, payload) => payload as any);
+      mockQueryRunner.manager.save.mockImplementation(async (entity: any) => entity);
+
+      await target.create({ ...createDto, orderNo: undefined, itemCode: 'FG-001', planQty: 10, planDate: '2026-03-18' }, 'C1', 'P1');
+
+      const planDate = parseDateStart('2026-03-18');
+      expect(mockBomMasterRepo.find).toHaveBeenCalledWith({
+        where: {
+          parentItemCode: 'FG-001',
+          useYn: 'Y',
+          company: 'C1',
+          plant: 'P1',
+          validFrom: LessThanOrEqual(planDate!),
+          validTo: Or(MoreThanOrEqual(planDate!), IsNull()),
+        },
+        order: { seq: 'ASC' },
+      });
+      expect(mockQueryRunner.manager.create).not.toHaveBeenCalledWith(
+        JobOrder,
+        expect.objectContaining({ orderKind: 'ITEM', itemCode: 'SEMI-001' }),
+      );
+    });
+
+    it('rejects create when the item routing has no processes', async () => {
+      mockNumbering.nextJobOrderNo.mockResolvedValue('JO-001');
+      mockJobOrderRepo.findOne.mockResolvedValue(null);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'PART-001', company: 'C1', plant: 'P1' } as ItemMaster);
+      mockRoutingGroupRepo.findOne.mockResolvedValue({ routingCode: 'RT-001', itemCode: 'PART-001', company: 'C1', plant: 'P1' } as RoutingGroup);
+      mockRoutingProcessRepo.find.mockResolvedValue([]);
+
+      await expect(target.create(createDto, 'C1', 'P1')).rejects.toThrow(
+        '라우팅에 공정이 없습니다',
+      );
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
     });
 
     it('should throw ConflictException when orderNo already exists', async () => {

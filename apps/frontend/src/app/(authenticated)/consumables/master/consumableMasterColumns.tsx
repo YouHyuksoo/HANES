@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { TFunction } from "i18next";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2, Link2, Trash2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
 import { type ConsumableItem } from "./components/ConsumableFormPanel";
@@ -24,29 +24,46 @@ function ConsumableImageThumb({ src }: { src: string }) {
 interface CreateConsumableMasterGridColumnsOptions {
   t: TFunction;
   onEdit: (item: ConsumableItem) => void;
+  onUsageMap: (item: ConsumableItem) => void;
   onDelete: (consumableCode: string) => void;
 }
 
 export function createConsumableMasterGridColumns({
   t,
   onEdit,
+  onUsageMap,
   onDelete,
 }: CreateConsumableMasterGridColumnsOptions): ColumnDef<ConsumableItem>[] {
   return [
     {
       id: "actions",
       header: t("common.manage"),
-      size: 90,
+      size: 110,
       meta: { filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button
+            type="button"
             onClick={() => { onEdit(row.original); }}
             className="p-1 hover:bg-surface rounded"
+            title={t("consumables.master.editConsumable")}
           >
             <Edit2 className="w-4 h-4 text-primary" />
           </button>
-          <button onClick={(e) => { e.stopPropagation(); onDelete(row.original.consumableCode); }} className="p-1 hover:bg-surface rounded">
+          <button
+            type="button"
+            onClick={() => { onUsageMap(row.original); }}
+            className="p-1 hover:bg-surface rounded"
+            title={t("consumables.master.usageMapTitle")}
+          >
+            <Link2 className="w-4 h-4 text-text-muted" />
+          </button>
+          <button
+            type="button"
+            onClick={() => { onDelete(row.original.consumableCode); }}
+            className="p-1 hover:bg-surface rounded"
+            title={t("common.delete")}
+          >
             <Trash2 className="w-4 h-4 text-red-500" />
           </button>
         </div>

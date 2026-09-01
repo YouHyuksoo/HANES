@@ -50,7 +50,7 @@ function ConsumableMasterPage() {
       if (res.data.success) {
         const rows = res.data.data || [];
         setData(rows);
-        // 사용매핑 패널은 기본 감춤 — 사용자가 행을 선택했을 때만 표시한다(자동 첫 행 선택 안 함).
+        // 사용매핑 패널은 기본 감춤 — 매핑 아이콘으로 연 행만 유지한다.
         setSelected((current) => {
           if (!current) return null;
           return rows.find((row: ConsumableItem) => row.consumableCode === current.consumableCode) ?? null;
@@ -114,10 +114,19 @@ function ConsumableMasterPage() {
   const columns = useMemo(
     () => createConsumableMasterGridColumns({
       t,
-      onEdit: (item) => { panelAnimateRef.current = !isPanelOpen; setSelected(item); setEditing(item); setIsPanelOpen(true); },
+      onEdit: (item) => {
+        panelAnimateRef.current = !isPanelOpen;
+        setSelected(null);
+        setEditing(item);
+        setIsPanelOpen(true);
+      },
+      onUsageMap: (item) => {
+        handlePanelClose();
+        setSelected(item);
+      },
       onDelete: handleDelete,
     }),
-    [t, isPanelOpen],
+    [t, isPanelOpen, handlePanelClose],
   );
 
   return (
@@ -136,7 +145,7 @@ function ConsumableMasterPage() {
             <Button variant="secondary" size="sm" onClick={fetchData}>
               <RefreshCw className="w-4 h-4 mr-1" /> {t("common.refresh")}
             </Button>
-            <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditing(null); setIsPanelOpen(true); }}>
+            <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setSelected(null); setEditing(null); setIsPanelOpen(true); }}>
               <Plus className="w-4 h-4 mr-1" /> {t("consumables.master.register")}
             </Button>
           </div>
@@ -151,13 +160,6 @@ function ConsumableMasterPage() {
               enableColumnFilter
               enableExport
               exportFileName={t("consumables.master.title")}
-              onRowClick={(row) => {
-                setSelected(row);
-                if (isPanelOpen) {
-                  panelAnimateRef.current = false;
-                  setEditing(row);
-                }
-              }}
               toolbarLeft={
                 <div className="flex gap-2 items-center">
                   <Input placeholder={t("consumables.master.searchPlaceholder")}

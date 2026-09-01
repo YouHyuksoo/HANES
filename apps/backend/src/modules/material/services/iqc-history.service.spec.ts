@@ -258,6 +258,46 @@ describe('IqcHistoryService cancel policy', () => {
         }),
       );
     });
+
+    it('LOT 단건 IQC는 프론트 result가 아니라 AQL 판정을 저장한다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        arrivalNo: 'ARR-001',
+        initQty: 10,
+        vendor: 'SUP-001',
+        company: 'HANES',
+        plant: 'P01',
+      } as MatLot);
+      mockIqcLogRepo.create.mockReturnValue({ matUid: 'MAT-001', itemCode: 'ITEM-001', result: 'FAIL' } as IqcLog);
+      mockIqcLogRepo.save.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001', result: 'FAIL' } as IqcLog);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as ItemMaster);
+      mockWarehouseRepo.findOne.mockResolvedValue(null);
+      mockAqlService.resolveIqcPolicyByItem.mockResolvedValue({
+        itemCode: 'ITEM-001',
+        vendorCode: 'SUP-001',
+        lotQty: 10,
+        policyCode: 'AQLP-II-1.0-2.5',
+        inspectionLevel: 'II',
+        inspectionMode: 'NORMAL',
+        result: 'FAIL',
+        sampleQty: 5,
+        defectCritical: 0,
+        defectMajor: 1,
+        defectMinor: 0,
+        majorRule: null,
+        minorRule: null,
+        judgeReason: 'Major 불량',
+      } as any);
+
+      await target.createResult({ matUid: 'MAT-001', result: 'PASS' } as any, 'HANES', 'P01');
+
+      expect(mockAqlService.resolveIqcPolicyByItem).toHaveBeenCalled();
+      expect(mockMatLotRepo.update).toHaveBeenCalledWith(
+        { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+        { iqcStatus: 'FAIL' },
+      );
+    });
   });
 
   describe('findPendingArrivals', () => {
@@ -790,6 +830,22 @@ describe('IqcHistoryService cancel policy', () => {
     } as MatStock);
     mockNumbering.nextInTx.mockResolvedValue('TX-IQC-FAIL');
     mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as ItemMaster);
+    mockAqlService.resolveIqcPolicyByItem.mockResolvedValue({
+      itemCode: 'ITEM-001',
+      vendorCode: null,
+      lotQty: 1,
+      policyCode: 'AQLP-II-1.0-2.5',
+      inspectionLevel: 'II',
+      inspectionMode: 'NORMAL',
+      result: 'FAIL',
+      sampleQty: 5,
+      defectCritical: 0,
+      defectMajor: 1,
+      defectMinor: 0,
+      majorRule: null,
+      minorRule: null,
+      judgeReason: 'FAIL',
+    } as any);
 
     const manager = {
       update: jest.fn().mockResolvedValue(undefined),
@@ -816,6 +872,78 @@ describe('IqcHistoryService cancel policy', () => {
     expect(manager.save).toHaveBeenCalledWith(StockTransaction, expect.objectContaining({
       transNo: 'TX-IQC-FAIL',
       refType: 'IQC_FAIL',
+    }));
+  });
+
+  it('moves failed IQC arrival stock to defect warehouse when MAT_STOCKS is empty', async () => {
+    const lot = {
+      matUid: 'MAT-001',
+      itemCode: 'ITEM-001',
+      arrivalNo: 'ARR-001',
+      company: 'HANES',
+      plant: 'P01',
+    } as MatLot;
+    mockMatLotRepo.findOne.mockResolvedValue(lot);
+    mockIqcLogRepo.create.mockReturnValue({ seq: 1 } as IqcLog);
+    mockIqcLogRepo.save.mockResolvedValue({ seq: 1 } as IqcLog);
+    mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-DEFECT', company: 'HANES', plant: 'P01' } as Warehouse);
+    mockMatStockRepo.findOne.mockResolvedValue(null);
+    mockDataSource.getRepository.mockReturnValue({
+      findOne: jest.fn().mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        qty: 10,
+        availableQty: 10,
+        warehouseCode: 'ARR-WH',
+        company: 'HANES',
+        plant: 'P01',
+      }),
+    } as any);
+    mockNumbering.nextInTx.mockResolvedValue('TX-IQC-FAIL-ARR');
+    mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as ItemMaster);
+    mockAqlService.resolveIqcPolicyByItem.mockResolvedValue({
+      itemCode: 'ITEM-001',
+      vendorCode: null,
+      lotQty: 1,
+      policyCode: 'AQLP-II-1.0-2.5',
+      inspectionLevel: 'II',
+      inspectionMode: 'NORMAL',
+      result: 'FAIL',
+      sampleQty: 5,
+      defectCritical: 0,
+      defectMajor: 1,
+      defectMinor: 0,
+      majorRule: null,
+      minorRule: null,
+      judgeReason: 'FAIL',
+    } as any);
+
+    const manager = {
+      update: jest.fn().mockResolvedValue(undefined),
+      findOne: jest.fn().mockResolvedValue(null),
+      save: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    await target.createResult({ matUid: 'MAT-001', result: 'FAIL' } as any);
+
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(manager.update).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ matUid: 'MAT-001' }),
+      expect.objectContaining({ qty: 0, status: 'DEPLETED' }),
+    );
+    expect(manager.save).toHaveBeenCalledWith(MatStock, expect.objectContaining({
+      warehouseCode: 'WH-DEFECT',
+      matUid: 'MAT-001',
+      qty: 10,
+    }));
+    expect(manager.save).toHaveBeenCalledWith(StockTransaction, expect.objectContaining({
+      transNo: 'TX-IQC-FAIL-ARR',
+      refType: 'IQC_FAIL',
+      fromWarehouseId: 'ARR-WH',
+      toWarehouseId: 'WH-DEFECT',
+      qty: 10,
     }));
   });
 

@@ -14,6 +14,8 @@ import { OqcRequestBox } from '../../../entities/oqc-request-box.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
+import { ProductTransaction } from '../../../entities/product-transaction.entity';
 
 describe('BoxService', () => {
   let target: BoxService;
@@ -27,6 +29,7 @@ describe('BoxService', () => {
   let mockDataSource: DeepMocked<DataSource>;
   let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
+  let mockSysConfig: DeepMocked<SysConfigService>;
 
   beforeEach(async () => {
     mockBoxRepo = createMock<Repository<BoxMaster>>();
@@ -39,6 +42,9 @@ describe('BoxService', () => {
     mockDataSource = createMock<DataSource>();
     mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
+    mockSysConfig = createMock<SysConfigService>();
+    mockSysConfig.isEnabled.mockResolvedValue(false);
+    (mockBoxRepo.manager.findOne as jest.Mock).mockResolvedValue(null);
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockTx.run.mockImplementation(async (callback) => callback(mockQueryRunner));
@@ -61,6 +67,7 @@ describe('BoxService', () => {
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
         { provide: NumberingService, useValue: { nextBoxNo: jest.fn().mockResolvedValue('BX-TEST') } },
+        { provide: SysConfigService, useValue: mockSysConfig },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -484,6 +491,30 @@ describe('BoxService', () => {
     expect(mockTx.run).not.toHaveBeenCalled();
   });
 
+  it('reopenBox blocks boxes that already have product inbound', async () => {
+    mockBoxRepo.findOne.mockResolvedValue({
+      boxNo: 'BOX-003',
+      itemCode: 'ITEM-001',
+      status: 'CLOSED',
+      qty: 1,
+      serialList: JSON.stringify(['FG-020']),
+      palletNo: null,
+      oqcStatus: 'PENDING',
+    } as BoxMaster);
+    (mockBoxRepo.manager.findOne as jest.Mock).mockResolvedValue({
+      transNo: 'PTX-BOX',
+      refType: 'BOX',
+      refId: 'BOX-003',
+      transType: 'FG_IN',
+      status: 'DONE',
+    } as ProductTransaction);
+
+    await expect(target.reopenBox('BOX-003')).rejects.toThrow(
+      '제품입고가 완료된 박스는 다시 열 수 없습니다',
+    );
+    expect(mockTx.run).not.toHaveBeenCalled();
+  });
+
   it('assignToPallet uses TransactionService', async () => {
     mockBoxRepo.findOne
       .mockResolvedValueOnce({ boxNo: 'BOX-001', status: 'CLOSED', palletNo: null } as BoxMaster)
@@ -504,6 +535,22 @@ describe('BoxService', () => {
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
     expect(mockQueryRunner.release).not.toHaveBeenCalled();
+  });
+
+  it('assignToPallet blocks non-PASS boxes when OQC is enabled', async () => {
+    mockSysConfig.isEnabled.mockResolvedValue(true);
+    mockBoxRepo.findOne.mockResolvedValue({
+      boxNo: 'BOX-001',
+      status: 'CLOSED',
+      palletNo: null,
+      oqcStatus: 'PENDING',
+    } as BoxMaster);
+    mockPalletRepo.findOne.mockResolvedValue({ palletNo: 'P-001', status: 'OPEN' } as PalletMaster);
+
+    await expect(
+      target.assignToPallet('BOX-001', { palletId: 'P-001' } as any),
+    ).rejects.toThrow('OQC 합격(PASS) 박스만 팔레트에 할당할 수 있습니다');
+    expect(mockTx.run).not.toHaveBeenCalled();
   });
 
   it('removeFromPallet uses TransactionService', async () => {

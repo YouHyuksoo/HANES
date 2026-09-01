@@ -59,6 +59,13 @@ export class MatIssueService {
     };
   }
 
+  private canIssueByIqc(lot: { iqcStatus?: string | null; specialAcceptYn?: string | null }) {
+    if (lot.iqcStatus === 'PASS') {
+      return true;
+    }
+    return lot.iqcStatus === 'FAIL' && lot.specialAcceptYn === 'Y';
+  }
+
   private assertSameTenant(
     label: string,
     actual: { company?: string | null; plant?: string | null },
@@ -201,7 +208,7 @@ export class MatIssueService {
       }
       this.assertSameTenant('출고 LOT', lot, company, plant);
 
-      if (lot.iqcStatus !== 'PASS') {
+      if (!this.canIssueByIqc(lot)) {
         throw new BadRequestException(`IQC 합격 상태가 아닌 LOT입니다: ${lot.matUid}`);
       }
 
@@ -328,7 +335,7 @@ export class MatIssueService {
     if (!lot) {
       throw new BadRequestException(`LOT를 찾을 수 없습니다: ${dto.matUid}`);
     }
-    if (lot.iqcStatus !== 'PASS') {
+    if (!this.canIssueByIqc(lot)) {
       throw new BadRequestException(
         `IQC 미합격 LOT입니다: ${dto.matUid} (상태: ${lot.iqcStatus})`,
       );
@@ -350,9 +357,16 @@ export class MatIssueService {
       throw new BadRequestException(`이미 소진된 LOT입니다: ${dto.matUid}`);
     }
 
+    const processCode = dto.processCode?.trim();
+    const isProductionIssue = ['PROD', 'PRODUCTION'].includes((dto.issueType || '').toUpperCase());
+    if (isProductionIssue && !processCode) {
+      throw new BadRequestException('스캔 출고는 공정코드가 필요합니다. 공정재고로 이동할 공정을 지정하세요.');
+    }
+
     const result = await this.create({
       warehouseCode: dto.warehouseCode,
       issueType: dto.issueType,
+      processCode: processCode || undefined,
       items: [{ matUid: lot.matUid, issueQty: stockQty }],
       workerId: dto.workerId,
       remark: dto.remark ?? `바코드 스캔 출고: ${dto.matUid}`,

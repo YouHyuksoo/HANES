@@ -17,7 +17,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, QueryRunner, FindOptionsSelect, IsNull, In, Brackets } from 'typeorm';
+import { Repository, QueryRunner, FindOptionsSelect, IsNull, In, Brackets, LessThanOrEqual, MoreThanOrEqual, Or } from 'typeorm';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
@@ -128,6 +128,24 @@ export class JobOrderService {
       },
       order: { seq: 'ASC' },
     })) ?? [];
+  }
+
+  private assertRoutingHasProcesses(itemCode: string, routingCode: string, processes: RoutingProcess[]) {
+    if (processes.length === 0) {
+      throw new BadRequestException(
+        `라우팅에 공정이 없습니다: ${itemCode} (routing=${routingCode}). 공정 없는 라우팅으로는 작업지시를 생성할 수 없습니다.`,
+      );
+    }
+  }
+
+  private bomEffectiveWhere(planDate: Date | null) {
+    if (!planDate) {
+      throw new BadRequestException('작업지시 계획일은 필수입니다.');
+    }
+    return {
+      validFrom: LessThanOrEqual(planDate),
+      validTo: Or(MoreThanOrEqual(planDate), IsNull()),
+    };
   }
 
   private resolveProcessCodeForCreate(
@@ -458,6 +476,7 @@ export class JobOrderService {
 
     return this.tx.run(async (queryRunner) => {
       const routingProcesses = await this.findRoutingProcessesByCode(routingCode, company, plant);
+      this.assertRoutingHasProcesses(dto.itemCode, routingCode, routingProcesses);
       const operationAssignmentMap = this.getAssignmentsForItemRouting(
         dto.operationAssignments,
         dto.itemCode,
@@ -538,6 +557,7 @@ export class JobOrderService {
         useYn: 'Y',
         ...(parent.company ? { company: parent.company } : {}),
         ...(parent.plant ? { plant: parent.plant } : {}),
+        ...this.bomEffectiveWhere(parseDateStart(dto.planDate)),
       },
       order: { seq: 'ASC' },
     });
@@ -565,6 +585,7 @@ export class JobOrderService {
         );
       }
       const childRoutingProcesses = await this.findRoutingProcessesByCode(childRoutingCode, parent.company, parent.plant);
+      this.assertRoutingHasProcesses(bom.childItemCode, childRoutingCode, childRoutingProcesses);
       const childProcessCode = this.resolveProcessCodeForCreate(
         null,
         childRoutingCode,

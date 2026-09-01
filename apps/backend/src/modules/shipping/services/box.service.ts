@@ -26,6 +26,7 @@ import {
 } from '../dto/box.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
 
 @Injectable()
 export class BoxService {
@@ -48,6 +49,7 @@ export class BoxService {
     private readonly oqcRequestBoxRepository: Repository<OqcRequestBox>,
     private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
+    private readonly sysConfig: SysConfigService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -711,6 +713,20 @@ export class BoxService {
           `OQC 단계부터 먼저 정리해 주세요.`,
       );
     }
+    const inbound = await this.boxRepository.manager.findOne(ProductTransaction, {
+      where: {
+        refType: 'BOX',
+        refId: box.boxNo,
+        status: 'DONE',
+        transType: In(['WIP_OUT', 'FG_IN']),
+        ...this.tenantWhere(company, plant),
+      },
+    });
+    if (inbound) {
+      throw new BadRequestException(
+        '제품입고가 완료된 박스는 다시 열 수 없습니다. 입고취소 후 재개봉하세요.',
+      );
+    }
 
     await this.tx.run(async (queryRunner) => {
       await queryRunner.manager.update(
@@ -767,6 +783,10 @@ export class BoxService {
     }
     if (box.palletNo && box.palletNo !== dto.palletId) {
       throw new BadRequestException('이미 다른 팔레트에 할당된 박스입니다.');
+    }
+    const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED');
+    if (oqcEnabled && box.oqcStatus !== 'PASS') {
+      throw new BadRequestException(`OQC 합격(PASS) 박스만 팔레트에 할당할 수 있습니다: ${id}`);
     }
 
     const pallet = await this.palletRepository.findOne({

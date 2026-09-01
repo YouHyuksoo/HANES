@@ -14,6 +14,7 @@ import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
+import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { CreateReceiptCancelDto, ReceiptCancelQueryDto } from '../dto/receipt-cancel.dto';
@@ -184,6 +185,8 @@ export class ReceiptCancelService {
         { qty: stock.qty - qty, availableQty: stock.availableQty - qty },
       );
 
+      await this.restoreArrivalStock(queryRunner, originalTransaction, qty);
+
       // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
       // NOTE: PO 입고수량(PURCHASE_ORDER_ITEMS.receivedQty)은 입하(arrival) 단계에서만 가감한다.
       //       입고(RECEIVE)는 PO receivedQty를 변경하지 않으므로 입고취소도 건드리지 않는다(이중 차감 방지).
@@ -224,6 +227,44 @@ export class ReceiptCancelService {
         cancelTransNo: savedCancelTrans.transNo,
       };
     });
+  }
+
+  private async restoreArrivalStock(
+    queryRunner: import('typeorm').QueryRunner,
+    originalTransaction: StockTransaction,
+    qty: number,
+  ) {
+    if (!originalTransaction.matUid) {
+      return;
+    }
+    if ((originalTransaction.refType ?? '') === 'RECEIVE_CONCESSION') {
+      return;
+    }
+
+    const arrivalStock = await queryRunner.manager.findOne(MatArrivalStock, {
+      where: {
+        matUid: originalTransaction.matUid,
+        itemCode: originalTransaction.itemCode,
+        ...this.tenantWhere(originalTransaction.company, originalTransaction.plant),
+      },
+    });
+    if (!arrivalStock) {
+      throw new BadRequestException(`입하재고를 찾을 수 없습니다. LOT: ${originalTransaction.matUid}`);
+    }
+
+    await queryRunner.manager.update(
+      MatArrivalStock,
+      {
+        company: arrivalStock.company,
+        plant: arrivalStock.plant,
+        matUid: arrivalStock.matUid,
+      },
+      {
+        qty: arrivalStock.qty + qty,
+        availableQty: arrivalStock.availableQty + qty,
+        status: 'AVAILABLE',
+      },
+    );
   }
 
   private async markReceivingCanceled(
