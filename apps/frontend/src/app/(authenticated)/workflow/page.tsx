@@ -7,13 +7,14 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GitBranch, LayoutList, Search, Workflow } from "lucide-react";
+import { GitBranch, LayoutList, Network, Search, Workflow } from "lucide-react";
 import { workflowNodes, type WorkflowActivityNode } from "@/config/workflowMap";
 import WorkflowSidebar from "./components/WorkflowSidebar";
 import WorkflowGuide from "./components/WorkflowGuide";
 import WorkflowFlow from "./components/WorkflowFlow";
+import WorkflowOverview from "./components/WorkflowOverview";
 
-type WorkflowTab = "guide" | "flow";
+type WorkflowTab = "guide" | "flow" | "overview";
 
 const nodeById = new Map(workflowNodes.map((n) => [n.id, n]));
 
@@ -25,7 +26,8 @@ export default function WorkflowPage() {
 
   const selectedNode: WorkflowActivityNode | undefined = nodeById.get(selectedNodeId) ?? workflowNodes[0];
 
-  const selectFromFlow = (id: string) => {
+  /** 흐름도에서 단계를 고르면 가이드로 이동한다 (전체구성도는 탭을 옮기지 않는다) */
+  const selectFromDiagram = (id: string) => {
     setSelectedNodeId(id);
     setTab("guide");
   };
@@ -54,6 +56,9 @@ export default function WorkflowPage() {
             <TabButton active={tab === "flow"} onClick={() => setTab("flow")} icon={<Workflow className="h-3.5 w-3.5" />}>
               {t("workflowGuide.tabFlow", "흐름도")}
             </TabButton>
+            <TabButton active={tab === "overview"} onClick={() => setTab("overview")} icon={<Network className="h-3.5 w-3.5" />}>
+              {t("workflowGuide.tabOverview", "전체구성도")}
+            </TabButton>
           </div>
         </div>
         <div className="mt-3">
@@ -81,9 +86,13 @@ export default function WorkflowPage() {
             )}
           </main>
         </div>
+      ) : tab === "flow" ? (
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <WorkflowFlow selectedNodeId={selectedNodeId} onSelect={selectFromDiagram} query={query} />
+        </div>
       ) : (
         <div className="min-h-0 flex-1 overflow-hidden">
-          <WorkflowFlow selectedNodeId={selectedNodeId} onSelect={selectFromFlow} query={query} />
+          <WorkflowOverview onSelect={setSelectedNodeId} />
         </div>
       )}
     </div>
