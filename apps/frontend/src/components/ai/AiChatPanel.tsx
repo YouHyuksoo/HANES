@@ -212,7 +212,8 @@ export default function AiChatPanel() {
         audience: AI_PERSONAS.find((item) => item.value === persona)?.audience ?? "user",
         persona,
       };
-      const res = await api.post("/ai/chat", { messages: history, pageToolContext, knowledgeContext });
+      // RAG 검색 + LLM 생성이 30초를 넘기는 경우가 있다(실측 28~35초). 기본 타임아웃으로는 정상 응답이 실패로 보인다.
+      const res = await api.post("/ai/chat", { messages: history, pageToolContext, knowledgeContext }, { timeout: 120000 });
       const data = res.data?.data ?? {};
       addMessage({
         role: "assistant",

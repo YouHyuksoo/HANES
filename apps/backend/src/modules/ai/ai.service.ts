@@ -18,7 +18,8 @@ const SYSTEM_PROMPT =
   '당신은 HANES MES(제조실행시스템) 운영을 돕는 AI 비서입니다. 한국어로 간결하고 정확하게 답합니다.';
 
 const PROVIDER_DEFAULT_MODEL: Record<string, string> = {
-  mistral: 'mistral-large-latest',
+  // mistral-large는 일부 구독 티어에서 403(tier_not_allowed)이 난다. 기본값은 티어 제약이 없는 medium을 쓴다.
+  mistral: 'mistral-medium-latest',
   openai: 'gpt-4o-mini',
   openrouter: 'openai/gpt-oss-120b:free',
 };
@@ -40,7 +41,9 @@ export class AiService {
 
   private async getConfigValue(configKey: string, def: string): Promise<string> {
     const row = await this.sysConfigRepo.findOne({ where: { configKey } });
-    return row?.configValue ?? def;
+    // 빈 값·공백만 저장된 행은 미설정으로 본다. 공백 모델명으로 호출하면 원인을 알기 어려운 400이 난다.
+    const value = row?.configValue?.trim();
+    return value ? value : def;
   }
 
   /** 키: sys-config(UI 입력) 우선, 없으면 .env */
@@ -63,7 +66,7 @@ export class AiService {
       this.getConfigValue('AI_ENABLED', 'Y'),
       this.getConfigValue('AI_PROVIDER', 'mistral'),
     ]);
-    const model = await this.getConfigValue('AI_MODEL', PROVIDER_DEFAULT_MODEL[provider] ?? 'mistral-large-latest');
+    const model = await this.getConfigValue('AI_MODEL', PROVIDER_DEFAULT_MODEL[provider] ?? 'mistral-medium-latest');
     const apiKey = await this.getApiKey(provider);
     return {
       enabled: enabled === 'Y',
@@ -80,7 +83,7 @@ export class AiService {
       throw new BadRequestException('AI 채팅이 비활성화되어 있습니다. 시스템 환경설정에서 AI를 활성화해 주세요.');
     }
     const provider = await this.getConfigValue('AI_PROVIDER', 'mistral');
-    const model = await this.getConfigValue('AI_MODEL', PROVIDER_DEFAULT_MODEL[provider] ?? 'mistral-large-latest');
+    const model = await this.getConfigValue('AI_MODEL', PROVIDER_DEFAULT_MODEL[provider] ?? 'mistral-medium-latest');
     const apiKey = await this.getApiKey(provider);
     if (!apiKey) {
       throw new BadRequestException(`${provider} API 키가 설정되지 않았습니다. 시스템 환경설정 > AI에서 키를 등록해 주세요.`);
@@ -177,7 +180,7 @@ export class AiService {
     const source = apiKey?.trim() ? 'input' : 'config/.env';
     const key = apiKey?.trim() || (await this.getApiKey(provider));
     if (!key) return { ok: false, message: `API 키가 없습니다. (provider=${provider}, source=${source})` };
-    const m = model || PROVIDER_DEFAULT_MODEL[provider] || 'mistral-large-latest';
+    const m = model || PROVIDER_DEFAULT_MODEL[provider] || 'mistral-medium-latest';
     try {
       const content = await this.callProvider(provider, m, key, [{ role: 'user', content: 'Reply with: OK' }]);
       return { ok: true, message: `연결 성공 (${provider}/${m}): ${content.slice(0, 60)}` };

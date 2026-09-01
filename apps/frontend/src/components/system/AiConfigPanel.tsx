@@ -18,11 +18,13 @@ const PROVIDER_OPTIONS = [
 ];
 
 const MODEL_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  // mistral-large는 상위 구독 티어에서만 호출된다(무료/기본 티어는 403 tier_not_allowed). 기본 선택은 medium.
   mistral: [
-    { value: "mistral-large-latest", label: "mistral-large-latest" },
-    { value: "mistral-small-latest", label: "mistral-small-latest" },
     { value: "mistral-medium-latest", label: "mistral-medium-latest" },
-    { value: "open-mistral-7b", label: "open-mistral-7b" },
+    { value: "mistral-small-latest", label: "mistral-small-latest" },
+    { value: "ministral-8b-latest", label: "ministral-8b-latest" },
+    { value: "magistral-small-latest", label: "magistral-small-latest" },
+    { value: "mistral-large-latest", label: "mistral-large-latest" },
   ],
   openai: [
     { value: "gpt-4o", label: "gpt-4o" },
