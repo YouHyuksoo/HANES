@@ -96,11 +96,13 @@ export function parseKnowledgeNavigation(
 }
 
 export class KnowledgeNavigationModel {
+  private readonly environment: NavigationEnvironment;
   private state: Omit<KnowledgeNavigationSnapshot, "canGoBack" | "canGoForward">;
   private centerHistory: string[];
   private centerHistoryIndex: number;
 
-  constructor(private readonly environment: NavigationEnvironment) {
+  constructor(environment: NavigationEnvironment) {
+    this.environment = environment;
     this.state = parseKnowledgeNavigation(environment.location.href, environment.localStorage);
     this.centerHistory = this.state.centerId ? [this.state.centerId] : [];
     this.centerHistoryIndex = this.centerHistory.length - 1;

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import "./workflow-knowledge-map.runtime.test.mjs";
 
 const root = "apps/frontend/src/app/(authenticated)/workflow/knowledge";
 const read = (name) => fs.readFileSync(`${root}/${name}`, "utf8");
