@@ -15,9 +15,37 @@ const guideSource = fs.readFileSync(
 );
 
 test("workflowMap is a thin compatibility adapter over @harness/shared", () => {
-  assert.match(adapterSource, /export\s*\{[\s\S]*workflowLanes[\s\S]*workflowNodes[\s\S]*workflowEdges[\s\S]*\}\s*from\s*["']@harness\/shared["']/);
-  assert.doesNotMatch(adapterSource, /export const workflowLanes\s*=/);
-  assert.doesNotMatch(adapterSource, /id:\s*["']purchase-arrival["']/);
+  const readExports = (pattern) => {
+    const match = adapterSource.match(pattern);
+    assert.ok(match, `missing @harness/shared re-export matching ${pattern}`);
+    return match[1].split(",").map((name) => name.trim()).filter(Boolean).sort();
+  };
+
+  assert.deepEqual(
+    readExports(/export\s*\{([\s\S]*?)\}\s*from\s*["']@harness\/shared["']/),
+    [
+      "getNextNodes",
+      "getNodesByLane",
+      "getPreviousNodes",
+      "getVisibleNodeIds",
+      "workflowEdges",
+      "workflowLanes",
+      "workflowNodes",
+    ].sort(),
+  );
+  assert.deepEqual(
+    readExports(/export\s+type\s*\{([\s\S]*?)\}\s*from\s*["']@harness\/shared["']/),
+    [
+      "WorkflowActivityNode",
+      "WorkflowBusinessEdge",
+      "WorkflowLane",
+      "WorkflowLaneId",
+      "WorkflowRoute",
+    ].sort(),
+  );
+
+  assert.doesNotMatch(adapterSource, /\b(?:export\s+)?(?:const|let|var)\s+workflow(?:Lanes|Nodes|Edges)\b/);
+  assert.doesNotMatch(adapterSource, /\b(?:id|lane|activity|source|target|kind)\s*:/);
 });
 
 test("/workflow renders an interactive React Flow business map", () => {
