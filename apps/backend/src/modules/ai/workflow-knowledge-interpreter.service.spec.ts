@@ -93,6 +93,35 @@ describe('WorkflowKnowledgeInterpreterService', () => {
     });
   });
 
+  it.each([
+    ['missing nodeId', { reason: 'match', relationKinds: ['precedes'] }],
+    ['non-string nodeId', { nodeId: 123, reason: 'match', relationKinds: ['precedes'] }],
+    ['missing reason', { nodeId: 'activity:arrival-register', relationKinds: ['precedes'] }],
+    ['non-string reason', { nodeId: 'activity:arrival-register', reason: 123, relationKinds: ['precedes'] }],
+    ['non-array relationKinds', { nodeId: 'activity:arrival-register', reason: 'match', relationKinds: 'precedes' }],
+    ['non-string relation kind', { nodeId: 'activity:arrival-register', reason: 'match', relationKinds: ['precedes', 123] }],
+  ])('returns INVALID_RESPONSE for a contract-invalid candidate: %s', async (_label, invalidCandidate) => {
+    const validCandidate = {
+      nodeId: 'activity:arrival-register', reason: 'valid', relationKinds: ['precedes'],
+    };
+    const { service } = create(JSON.stringify({ candidates: [validCandidate, invalidCandidate] }));
+
+    await expect(service.interpret('입하 등록')).resolves.toEqual({
+      interpreted: false, candidates: [], errorCode: 'INVALID_RESPONSE',
+    });
+  });
+
+  it.each([
+    ['missing candidates', {}],
+    ['object candidates', { candidates: {} }],
+    ['null candidates', { candidates: null }],
+  ])('returns INVALID_RESPONSE for an invalid top-level response: %s', async (_label, response) => {
+    const { service } = create(JSON.stringify(response));
+    await expect(service.interpret('입하 등록')).resolves.toEqual({
+      interpreted: false, candidates: [], errorCode: 'INVALID_RESPONSE',
+    });
+  });
+
   it('returns AI_UNAVAILABLE when the provider rejects', async () => {
     const { service } = create(new Error('API key missing'));
     await expect(service.interpret('입하 등록')).resolves.toEqual({

@@ -15,6 +15,12 @@ export interface WorkflowKnowledgeCandidate {
   relationKinds: KnowledgeRelationKind[];
 }
 
+interface RawWorkflowKnowledgeCandidate {
+  nodeId: string;
+  reason: string;
+  relationKinds: string[];
+}
+
 export type WorkflowKnowledgeInterpretResult =
   | { candidates: WorkflowKnowledgeCandidate[]; interpreted: true }
   | { candidates: []; interpreted: false; errorCode: 'AI_UNAVAILABLE' | 'INVALID_RESPONSE' };
@@ -63,16 +69,19 @@ export class WorkflowKnowledgeInterpreterService {
       return null;
     }
     if (!this.isRecord(value) || !Array.isArray(value.candidates)) return null;
+    if (!value.candidates.every((candidate): candidate is RawWorkflowKnowledgeCandidate => (
+      this.isRecord(candidate)
+      && typeof candidate.nodeId === 'string'
+      && typeof candidate.reason === 'string'
+      && Array.isArray(candidate.relationKinds)
+      && candidate.relationKinds.every((kind) => typeof kind === 'string')
+    ))) return null;
 
     const allowedKinds = new Set<string>(KNOWLEDGE_RELATION_KINDS);
     return value.candidates.flatMap((candidate): WorkflowKnowledgeCandidate[] => {
-      if (!this.isRecord(candidate)
-        || typeof candidate.nodeId !== 'string'
-        || typeof candidate.reason !== 'string'
-        || !Array.isArray(candidate.relationKinds)
-        || !allowedNodeIds.has(candidate.nodeId)) return [];
+      if (!allowedNodeIds.has(candidate.nodeId)) return [];
       const relationKinds = candidate.relationKinds.filter(
-        (kind): kind is KnowledgeRelationKind => typeof kind === 'string' && allowedKinds.has(kind),
+        (kind): kind is KnowledgeRelationKind => allowedKinds.has(kind),
       );
       return [{
         nodeId: candidate.nodeId,
