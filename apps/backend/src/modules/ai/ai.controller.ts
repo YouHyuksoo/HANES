@@ -17,6 +17,8 @@ import { EmbeddingService } from '../ai-knowledge/embedding.service';
 import { AiChatDto, AiExecuteSqlDto, AiTestDto, AiEmbeddingTestDto, AiChatFeedbackDto } from './dto/ai-chat.dto';
 import { getRequestUser } from '../../common/utils/request-user.util';
 import { getHeaderString } from '../../common/utils/header-value.util';
+import { WorkflowKnowledgeInterpretDto } from './dto/workflow-knowledge.dto';
+import { WorkflowKnowledgeInterpreterService } from './workflow-knowledge-interpreter.service';
 
 @Controller('ai')
 export class AiController {
@@ -26,6 +28,7 @@ export class AiController {
     private readonly aiCatalogService: AiCatalogService,
     private readonly embeddingService: EmbeddingService,
     private readonly aiFeedbackService: AiFeedbackService,
+    private readonly workflowKnowledgeInterpreter: WorkflowKnowledgeInterpreterService,
   ) {}
 
   @Get('status')
@@ -36,6 +39,11 @@ export class AiController {
   @Post('chat')
   chat(@Body() dto: AiChatDto) {
     return this.aiSqlService.process(dto.messages, dto.pageToolContext, dto.knowledgeContext);
+  }
+
+  @Post('workflow-knowledge/interpret')
+  interpretWorkflowKnowledge(@Body() dto: WorkflowKnowledgeInterpretDto) {
+    return this.workflowKnowledgeInterpreter.interpret(dto.query);
   }
 
   @Post('chat/feedback')
