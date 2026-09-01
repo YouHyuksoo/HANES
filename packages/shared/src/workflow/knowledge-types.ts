@@ -61,6 +61,34 @@ export interface KnowledgeNeighborhood {
   relations: KnowledgeRelation[];
 }
 
+export interface WorkflowKnowledgeCandidate {
+  nodeId: string;
+  reason: string;
+  relationKinds: KnowledgeRelationKind[];
+}
+
+export interface WorkflowKnowledgeInterpretResponse {
+  candidates: WorkflowKnowledgeCandidate[];
+  interpreted: boolean;
+  errorCode?: 'AI_UNAVAILABLE' | 'INVALID_RESPONSE';
+}
+
+export function isWorkflowKnowledgeInterpretResponse(value: unknown, catalog: KnowledgeCatalog): value is WorkflowKnowledgeInterpretResponse {
+  if (typeof value !== 'object' || value === null || !Array.isArray((value as { candidates?: unknown }).candidates)) return false;
+  const response = value as Record<string, unknown>;
+  if (typeof response.interpreted !== 'boolean') return false;
+  if (response.errorCode !== undefined && response.errorCode !== 'AI_UNAVAILABLE' && response.errorCode !== 'INVALID_RESPONSE') return false;
+  const nodeIds = new Set(catalog.nodes.map(({ id }) => id));
+  const relationKinds = new Set<string>(KNOWLEDGE_RELATION_KINDS);
+  return (response.candidates as unknown[]).every((candidate: unknown) => {
+    if (typeof candidate !== 'object' || candidate === null) return false;
+    const item = candidate as Record<string, unknown>;
+    return typeof item.nodeId === 'string' && nodeIds.has(item.nodeId)
+      && typeof item.reason === 'string' && Array.isArray(item.relationKinds)
+      && item.relationKinds.every((kind) => typeof kind === 'string' && relationKinds.has(kind));
+  });
+}
+
 export function undocumentedCoverage(): KnowledgeCoverage {
   return Object.fromEntries(KNOWLEDGE_CATEGORIES.map((category) => [category, 'undocumented'])) as KnowledgeCoverage;
 }
