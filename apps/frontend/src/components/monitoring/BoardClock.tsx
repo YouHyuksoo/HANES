@@ -10,14 +10,29 @@ function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
-export default function BoardClock({ className = "" }: { className?: string }) {
+/** 1초 간격 현재시각 훅 — SSR 하이드레이션 불일치 방지를 위해 초기값 null */
+export function useNow(intervalMs = 1000) {
   const [now, setNow] = useState<Date | null>(null);
-
   useEffect(() => {
     setNow(new Date());
-    const id = window.setInterval(() => setNow(new Date()), 1000);
+    const id = window.setInterval(() => setNow(new Date()), intervalMs);
     return () => window.clearInterval(id);
-  }, []);
+  }, [intervalMs]);
+  return now;
+}
+
+/** "HH:MM" / "HH:MM:SS" / "YYYY-MM-DD" 포맷 헬퍼 */
+export function formatClock(now: Date) {
+  return {
+    date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+    hm: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+    hms: `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`,
+    sec: pad(now.getSeconds()),
+  };
+}
+
+export default function BoardClock({ className = "" }: { className?: string }) {
+  const now = useNow();
 
   if (!now) return null;
   const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;

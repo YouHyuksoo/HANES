@@ -185,6 +185,7 @@
       "good": "良品",
       "defect": "不良",
       "hourlyTitle": "每小时实绩（今日）",
+      "todayOrders": "今日工单",
       "production": { "title": "生产状况看板" },
       "kpi": {
         "planQty": "总计划",

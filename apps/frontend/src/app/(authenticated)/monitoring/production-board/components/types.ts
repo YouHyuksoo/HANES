@@ -37,3 +37,21 @@ export interface ProductionBoardData {
   orders: ProductionBoardOrder[];
   hourly: HourlyPoint[];
 }
+
+/** 전광판 스킨 공통 props — page.tsx가 데이터/순환 상태를 내려준다 */
+export interface BoardSkinProps {
+  kpi?: ProductionBoardKpi;
+  /** 전체 작업지시 (정렬: RUNNING 우선) */
+  orders: ProductionBoardOrder[];
+  /** 자동 순환된 현재 페이지 슬라이스 (목록형 스킨용) */
+  pageItems: ProductionBoardOrder[];
+  page: number;
+  pageCount: number;
+  /** 목록형 스킨의 페이지당 행 수 (순위 계산용) */
+  pageSize: number;
+  hourly: HourlyPoint[];
+  /** 페이지/히어로 자동 전환 주기(초) */
+  rollingSec: number;
+  /** 마지막 데이터 갱신 시각 문자열 */
+  updatedAt: string;
+}

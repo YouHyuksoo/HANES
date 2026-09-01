@@ -185,6 +185,7 @@
       "good": "Hàng đạt",
       "defect": "Hàng lỗi",
       "hourlyTitle": "Sản lượng theo giờ (Hôm nay)",
+      "todayOrders": "Lệnh sản xuất hôm nay",
       "production": { "title": "Bảng tình hình sản xuất" },
       "kpi": {
         "planQty": "Tổng kế hoạch",

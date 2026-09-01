@@ -185,6 +185,7 @@
       "good": "Good",
       "defect": "Defect",
       "hourlyTitle": "Hourly Output (Today)",
+      "todayOrders": "Today's Job Orders",
       "production": { "title": "Production Status Board" },
       "kpi": {
         "planQty": "Total Plan",

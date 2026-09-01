@@ -38,6 +38,11 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        {/* 모니터링 보드(전광판 스킨) 전용 디스플레이 폰트 */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Anton&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className="font-sans antialiased">
         <Providers>{children}</Providers>

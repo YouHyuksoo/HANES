@@ -2,36 +2,75 @@
 
 /**
  * @file src/app/(authenticated)/monitoring/production-board/page.tsx
- * @description 생산현황 보드(현장 TV) — 전광판 스타일: KPI 스트립(괘선 구획) + 자동 순환 테이블 + 시간대별 실적
+ * @description 생산현황 보드(현장 TV) — 전광판 스킨 3종 전환:
+ *              A 관제탑(다크 네온) / B 출발 전광판(앰버 모노) / C 데이터 월(라이트 편집).
  *
  * 초보자 가이드:
  * 1. 데이터는 GET /monitoring/boards/production 하나로 조회, refetchSec 간격 자동 갱신
- * 2. 테이블은 useRotation 으로 rollingSec 마다 자동 페이지 전환 (TV는 마우스 조작 없음)
- * 3. 카드박스 그리드 금지 — divide-x 괘선 스트립 + 대형 tabular 타이포로 표현
+ * 2. 스킨은 우상단 플로팅 컨트롤(A/B/C)로 전환, TV별 localStorage 저장
+ * 3. 스킨이 화면 전체(헤더/시계 포함)를 그린다 — 컨트롤은 반투명 오버레이(호버 시 선명)
+ * 4. TV 모드: fixed 오버레이 + requestFullscreen
  */
 
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Activity, RefreshCw, Settings, Pause, Play } from "lucide-react";
-import { Button } from "@/components/ui";
+import { useState, useEffect, useCallback } from "react";
+import { Maximize2, Minimize2, Pause, Play, RefreshCw, Settings } from "lucide-react";
 import { useApiQuery } from "@/hooks/useApi";
-import {
-  BoardChrome, BoardClock, BoardStat, BoardSectionTitle, MonitoringSettingsModal,
-  useMonitoringConfig, useRotation, RotationIndicator,
-} from "@/components/monitoring";
-import OrderTable from "./components/OrderTable";
-import HourlyTrendChart from "./components/HourlyTrendChart";
+import { MonitoringSettingsModal, useMonitoringConfig, useRotation } from "@/components/monitoring";
+import ControlTowerSkin from "./components/skins/ControlTowerSkin";
+import DepartureBoardSkin from "./components/skins/DepartureBoardSkin";
+import DataWallSkin from "./components/skins/DataWallSkin";
 import type { ProductionBoardData } from "./components/types";
 
-const ROWS_PER_PAGE = 8;
+type SkinId = "control" | "departure" | "datawall";
+
+const SKIN_KEY = "monitoring:prod-board:skin";
+/** 목록형 스킨의 페이지당 행 수 (control 은 목록 순환 없음 → 전체 1페이지) */
+const SKIN_ROWS: Record<SkinId, number | null> = { control: null, departure: 6, datawall: 5 };
+const SKINS: { id: SkinId; label: string; title: string }[] = [
+  { id: "control", label: "A", title: "관제탑" },
+  { id: "departure", label: "B", title: "출발 전광판" },
+  { id: "datawall", label: "C", title: "데이터 월" },
+];
 
 export default function ProductionBoardPage() {
-  const { t } = useTranslation();
   const { config, setConfig, loaded } = useMonitoringConfig("monitoring:prod-board");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [tvMode, setTvMode] = useState(false);
+  const [skin, setSkinState] = useState<SkinId>("control");
 
-  const { data: response, isLoading, refetch, dataUpdatedAt } = useApiQuery<ProductionBoardData>(
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem(SKIN_KEY);
+      if (s === "control" || s === "departure" || s === "datawall") setSkinState(s);
+    } catch {
+      // localStorage 접근 불가 환경은 기본 스킨 유지
+    }
+  }, []);
+
+  const setSkin = (s: SkinId) => {
+    setSkinState(s);
+    try {
+      localStorage.setItem(SKIN_KEY, s);
+    } catch {
+      // 저장 실패 무시
+    }
+  };
+
+  const toggleTvMode = useCallback(() => {
+    setTvMode((prev) => {
+      const next = !prev;
+      try {
+        if (next) void document.documentElement.requestFullscreen?.();
+        else if (document.fullscreenElement) void document.exitFullscreen();
+      } catch {
+        // 전체화면 미지원 환경에서는 오버레이만 적용
+      }
+      return next;
+    });
+  }, []);
+
+  const { data: response, refetch, dataUpdatedAt } = useApiQuery<ProductionBoardData>(
     ["monitoring", "board", "production"],
     "/monitoring/boards/production",
     { refetchInterval: Math.max(5, config.refetchSec) * 1000, enabled: loaded },
@@ -39,72 +78,63 @@ export default function ProductionBoardPage() {
   const board = response?.data;
   const orders = board?.orders ?? [];
 
-  const { pageItems, page, pageCount } = useRotation(orders, ROWS_PER_PAGE, config.rollingSec, paused);
-
+  const pageSize = SKIN_ROWS[skin] ?? Math.max(1, orders.length);
+  const { pageItems, page, pageCount } = useRotation(orders, pageSize, config.rollingSec, paused);
   const updatedAt = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : "—";
-  const kpi = board?.kpi;
+
+  const skinProps = {
+    kpi: board?.kpi,
+    orders,
+    pageItems,
+    page,
+    pageCount,
+    pageSize,
+    hourly: board?.hourly ?? [],
+    rollingSec: config.rollingSec,
+    updatedAt,
+  };
+
+  const ctlBtn = "w-8 h-8 flex items-center justify-center rounded hover:bg-white/20 transition-colors";
 
   return (
     <>
-      <BoardChrome
-        title={t("monitoring.board.production.title")}
-        icon={<Activity className="w-5 h-5 text-primary" />}
-        optionBar={
-          <>
-            <BoardClock className="mr-3" />
-            <Button variant="secondary" size="sm" onClick={() => setPaused((p) => !p)}>
+      <div className={tvMode ? "fixed inset-0 z-50" : "h-full"}>
+        <div className="relative w-full h-full overflow-hidden">
+          {skin === "control" && <ControlTowerSkin {...skinProps} />}
+          {skin === "departure" && <DepartureBoardSkin {...skinProps} />}
+          {skin === "datawall" && <DataWallSkin {...skinProps} />}
+
+          {/* 플로팅 컨트롤 — 평소 반투명, 호버 시 선명 */}
+          <div className="absolute top-3 right-3 z-20 flex items-center gap-0.5 rounded-lg bg-black/50 backdrop-blur px-1.5 py-1 text-white/90 opacity-30 hover:opacity-100 transition-opacity">
+            {SKINS.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                title={s.title}
+                onClick={() => setSkin(s.id)}
+                className={`w-8 h-8 rounded text-sm font-bold transition-colors ${
+                  skin === s.id ? "bg-white text-black" : "hover:bg-white/20"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+            <span className="w-px h-5 bg-white/25 mx-1" />
+            <button type="button" className={ctlBtn} onClick={() => setPaused((p) => !p)}>
               {paused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => refetch()}>
+            </button>
+            <button type="button" className={ctlBtn} onClick={() => refetch()}>
               <RefreshCw className="w-4 h-4" />
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setSettingsOpen(true)}>
+            </button>
+            <button type="button" className={ctlBtn} onClick={() => setSettingsOpen(true)}>
               <Settings className="w-4 h-4" />
-            </Button>
-          </>
-        }
-        statusLeft={
-          <span>
-            {t("monitoring.board.updatedAt")} {updatedAt}
-          </span>
-        }
-        statusRight={<RotationIndicator page={page} pageCount={pageCount} />}
-      >
-        {/* KPI 스트립 — 괘선(divide-x)으로만 구획 */}
-        <div className="flex divide-x divide-border py-4 border-b border-border flex-shrink-0">
-          <BoardStat label={t("monitoring.board.kpi.planQty")} value={(kpi?.planQty ?? 0).toLocaleString()} />
-          <BoardStat label={t("monitoring.board.kpi.goodQty")} value={(kpi?.goodQty ?? 0).toLocaleString()} valueClassName="text-primary" />
-          <BoardStat
-            label={t("monitoring.board.kpi.achieveRate")}
-            value={`${kpi?.achieveRate ?? 0}%`}
-            valueClassName={(kpi?.achieveRate ?? 0) >= 100 ? "text-emerald-600 dark:text-emerald-400" : "text-text"}
-          />
-          <BoardStat
-            label={t("monitoring.board.kpi.defectQty")}
-            value={(kpi?.defectQty ?? 0).toLocaleString()}
-            valueClassName={(kpi?.defectQty ?? 0) > 0 ? "text-red-600 dark:text-red-400" : "text-text"}
-          />
-          <BoardStat
-            label={t("monitoring.board.kpi.running")}
-            value={kpi?.runningCount ?? 0}
-            sub={`${t("monitoring.board.kpi.total")} ${kpi?.totalCount ?? 0}`}
-            valueClassName="text-primary"
-          />
-        </div>
-
-        {/* 작업지시 테이블 (자동 순환) — full-bleed, 보드의 주인공 */}
-        <div className="flex-1 min-h-0 overflow-hidden pt-2">
-          <OrderTable orders={pageItems} loading={isLoading && orders.length === 0} />
-        </div>
-
-        {/* 시간대별 실적 */}
-        <div className="h-44 flex-shrink-0 flex flex-col pt-2 pb-1">
-          <BoardSectionTitle className="mb-1">{t("monitoring.board.hourlyTitle")}</BoardSectionTitle>
-          <div className="flex-1 min-h-0">
-            <HourlyTrendChart hourly={board?.hourly ?? []} />
+            </button>
+            <button type="button" className={ctlBtn} onClick={toggleTvMode}>
+              {tvMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
           </div>
         </div>
-      </BoardChrome>
+      </div>
 
       <MonitoringSettingsModal
         isOpen={settingsOpen}

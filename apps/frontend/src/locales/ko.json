@@ -185,6 +185,7 @@
       "good": "양품",
       "defect": "불량",
       "hourlyTitle": "시간대별 실적 (금일)",
+      "todayOrders": "금일 작업지시",
       "production": { "title": "생산현황 보드" },
       "kpi": {
         "planQty": "총 계획",
