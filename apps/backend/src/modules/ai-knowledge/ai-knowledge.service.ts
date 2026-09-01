@@ -585,16 +585,24 @@ export class AiKnowledgeService implements OnModuleInit {
       if (grounded) groundedScores.set(chunkId, (groundedScores.get(chunkId) ?? 0) + score);
     };
 
+    // 벡터 검색은 임베딩 API에 의존한다. 키 만료·크레딧 소진 등으로 실패해도
+    // FTS/lexical 축은 살아 있으므로 검색 전체를 중단하지 않는다.
+    // (예전에는 여기서 던진 예외가 아래 두 축까지 삼켜 검색 결과가 통째로 0이 됐다)
     if (this.vectorEnabled && this.hasTable('ai_knowledge_vec')) {
-      const queryEmbedding = await this.embedding.embed(query);
-      const vecRows = db.prepare(`
-        SELECT chunk_id AS chunkId, distance
-        FROM ai_knowledge_vec
-        WHERE embedding MATCH ?
-        ORDER BY distance
-        LIMIT 30
-      `).all(queryEmbedding.vector) as Array<{ chunkId: string; distance: number }>;
-      for (const row of vecRows) addScore(row.chunkId, 0.6 * (1 / (1 + row.distance)));
+      try {
+        const queryEmbedding = await this.embedding.embed(query);
+        const vecRows = db.prepare(`
+          SELECT chunk_id AS chunkId, distance
+          FROM ai_knowledge_vec
+          WHERE embedding MATCH ?
+          ORDER BY distance
+          LIMIT 30
+        `).all(queryEmbedding.vector) as Array<{ chunkId: string; distance: number }>;
+        for (const row of vecRows) addScore(row.chunkId, 0.6 * (1 / (1 + row.distance)));
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`벡터 검색 건너뜀(FTS/키워드로 계속 진행): ${message}`);
+      }
     }
 
     const ftsQuery = this.toFtsQuery(query);
