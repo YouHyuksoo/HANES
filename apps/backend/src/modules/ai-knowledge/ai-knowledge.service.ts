@@ -432,6 +432,25 @@ export class AiKnowledgeService implements OnModuleInit {
     return edges;
   }
 
+  /**
+   * 인덱스에 실제로 존재하는 메뉴코드만 남긴다.
+   * 질의이해 LLM이 그럴듯한 코드를 지어내는 경우가 있어(예: MAT_RECEIPT_CANCEL을 MAT_RECEIVE_CANCEL로),
+   * 검증 없이 그래프 확장에 쓰면 엉뚱한 이웃 메뉴가 컨텍스트를 차지한다.
+   */
+  filterKnownMenuCodes(menuCodes: string[]): string[] {
+    if (menuCodes.length === 0) return [];
+    const db = this.db;
+    if (!db) return menuCodes;
+    const placeholders = menuCodes.map(() => '?').join(',');
+    const rows = db.prepare(`
+      SELECT DISTINCT menu_code AS menuCode
+      FROM ai_knowledge_chunks
+      WHERE menu_code IN (${placeholders})
+    `).all(...menuCodes) as Array<{ menuCode: string }>;
+    const known = new Set(rows.map((row) => row.menuCode));
+    return menuCodes.filter((code) => known.has(code));
+  }
+
   /** 메뉴가 속한 워크플로우와 선행/후행 메뉴를 반환한다 (그래프 1홉). */
   getWorkflowContext(menuCode: string): WorkflowMenuContext {
     const db = this.db!;

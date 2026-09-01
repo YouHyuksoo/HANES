@@ -222,7 +222,15 @@ export class KnowledgePipelineService {
   ): string[] {
     const menus = new Set<string>();
     if (context?.menuCode) menus.add(context.menuCode);
-    for (const menu of understanding.menus) menus.add(menu);
+    // 질의이해 LLM이 준 메뉴코드는 지어낸 것일 수 있다(예: MAT_RECEIPT_CANCEL → MAT_RECEIVE_CANCEL).
+    // 인덱스에 실재하는 것만 통과시킨다. 없는 코드로 그래프를 확장하면
+    // 무관한 이웃 메뉴가 컨텍스트를 차지해 정작 맞는 문서를 밀어낸다.
+    const llmMenus = this.knowledge.filterKnownMenuCodes(understanding.menus);
+    const dropped = understanding.menus.filter((menu) => !llmMenus.includes(menu));
+    if (dropped.length > 0) {
+      this.logger.warn(`질의이해가 만든 메뉴코드 중 인덱스에 없는 것 제외: ${dropped.join(', ')}`);
+    }
+    for (const menu of llmMenus) menus.add(menu);
     for (const chunk of fused.slice(0, 5)) if (chunk.menuCode) menus.add(chunk.menuCode);
     return Array.from(menus);
   }
