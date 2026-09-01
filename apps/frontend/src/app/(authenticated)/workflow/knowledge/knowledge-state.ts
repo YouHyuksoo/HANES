@@ -85,12 +85,12 @@ export function parseKnowledgeNavigation(
   return {
     centerId,
     invalidCenter: requestedCenter && !knownCenter ? requestedCenter : null,
-    layout: isLayoutMode(urlLayout)
-      ? urlLayout
-      : readPreference(storage, LAYOUT_PREFERENCE_KEY, isLayoutMode, DEFAULT_LAYOUT_MODE),
-    view: isViewMode(urlView)
-      ? urlView
-      : readPreference(storage, VIEW_PREFERENCE_KEY, isViewMode, DEFAULT_VIEW_MODE),
+    layout: urlLayout === null
+      ? readPreference(storage, LAYOUT_PREFERENCE_KEY, isLayoutMode, DEFAULT_LAYOUT_MODE)
+      : isLayoutMode(urlLayout) ? urlLayout : DEFAULT_LAYOUT_MODE,
+    view: urlView === null
+      ? readPreference(storage, VIEW_PREFERENCE_KEY, isViewMode, DEFAULT_VIEW_MODE)
+      : isViewMode(urlView) ? urlView : DEFAULT_VIEW_MODE,
     relations: parseRelations(parsed.searchParams.get("relations")),
   };
 }
