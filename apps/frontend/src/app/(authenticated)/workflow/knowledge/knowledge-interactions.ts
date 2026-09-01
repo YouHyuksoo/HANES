@@ -3,6 +3,7 @@ import {
   workflowKnowledgeCatalog,
   type EvidenceStatus,
   type KnowledgeRelation,
+  type KnowledgeNode,
 } from "@harness/shared";
 
 export interface KnowledgeInteractionState {
@@ -59,9 +60,29 @@ export function deriveNodeEvidenceStatus(nodeId: string, relations: readonly Kno
   const incident = relations.filter((relation) => relation.source === nodeId || relation.target === nodeId);
   const evidenceLinks = incident.filter((relation) => relation.kind === "evidencedBy");
   const relevant = evidenceLinks.length > 0 ? evidenceLinks : incident;
-  if (relevant.some((relation) => relation.evidenceStatus === "partial")) return "partial";
   if (relevant.some((relation) => relation.evidenceStatus === "verified")) return "verified";
+  if (relevant.some((relation) => relation.evidenceStatus === "partial")) return "partial";
   return "undocumented";
+}
+
+export function deriveKnowledgeNodeEvidenceStatuses(nodes: readonly KnowledgeNode[], relations: readonly KnowledgeRelation[]): Record<string, EvidenceStatus> {
+  return Object.fromEntries(nodes.map((node) => [node.id, deriveNodeEvidenceStatus(node.id, relations)]));
+}
+
+export interface KnowledgeRequestGate {
+  begin(query: string): number;
+  invalidate(): void;
+  isCurrent(requestId: number, query: string): boolean;
+}
+
+export function createKnowledgeRequestGate(): KnowledgeRequestGate {
+  let sequence = 0;
+  let currentQuery = "";
+  return {
+    begin(query) { currentQuery = query; return ++sequence; },
+    invalidate() { currentQuery = ""; sequence += 1; },
+    isCurrent(requestId, query) { return requestId === sequence && query === currentQuery; },
+  };
 }
 
 export function fitViewDuration(reducedMotion: boolean): number {

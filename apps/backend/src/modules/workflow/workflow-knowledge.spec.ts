@@ -3,6 +3,7 @@ import {
   expandKnowledgeNeighborhood,
   getCoverage,
   getKnowledgeNeighborhood,
+  getKnowledgeGraphIndex,
   searchKnowledge,
   validateKnowledgeCatalog,
   workflowKnowledgeCatalog,
@@ -165,6 +166,18 @@ describe('workflow knowledge graph', () => {
     expect(new Set(expanded.nodes.map((node) => node.id)).size).toBe(expanded.nodes.length);
     expect(new Set(expanded.relations.map((relation) => relation.id)).size).toBe(expanded.relations.length);
     expect(expanded.nodes.filter((node) => node.id === 'data:MAT_LOTS')).toHaveLength(1);
+  });
+
+  it('reuses a catalog adjacency index for bounded overlapping expansion lookups', () => {
+    const nodes = Array.from({ length: 500 }, (_, index) => node(`activity:synthetic-${index}`));
+    const relations = nodes.slice(1).map((item, index) => relation(`link-${index}`, nodes[index].id, item.id, 'precedes', 'flow'));
+    const catalog: KnowledgeCatalog = { nodes, relations };
+    const first = getKnowledgeGraphIndex(catalog);
+    const second = getKnowledgeGraphIndex(catalog);
+    expect(second).toBe(first);
+    expect(first.relationsByNode.get(nodes[250].id)).toHaveLength(2);
+    const expanded = expandKnowledgeNeighborhood([nodes[249].id, nodes[250].id], ['flow'], catalog);
+    expect(expanded.relations.map(({ id }) => id)).toEqual(['link-248', 'link-249', 'link-250']);
   });
 
   it('applies category filtering while expanding neighborhoods', () => {

@@ -251,3 +251,34 @@ test("fit view animation is disabled for reduced motion", () => {
   assert.equal(interactions.fitViewDuration(true), 0);
   assert.equal(interactions.fitViewDuration(false), 280);
 });
+
+test("latest AI request gate rejects a deferred old response after a new result", async () => {
+  const gate = interactions.createKnowledgeRequestGate();
+  const deferred = () => { let resolve; const promise = new Promise((done) => { resolve = done; }); return { promise, resolve }; };
+  const oldResponse = deferred();
+  const newResponse = deferred();
+  const applied = [];
+  const oldRequest = gate.begin("old query");
+  const oldApply = oldResponse.promise.then((value) => { if (gate.isCurrent(oldRequest, "old query")) applied.push(value); });
+  const newRequest = gate.begin("new query");
+  const newApply = newResponse.promise.then((value) => { if (gate.isCurrent(newRequest, "new query")) applied.push(value); });
+  newResponse.resolve("new result");
+  oldResponse.resolve("old result");
+  await Promise.all([oldApply, newApply]);
+  assert.deepEqual(applied, ["new result"]);
+  assert.equal(gate.isCurrent(oldRequest, "old query"), false);
+  assert.equal(gate.isCurrent(newRequest, "new query"), true);
+  assert.equal(gate.isCurrent(newRequest, "changed input"), false);
+  gate.invalidate();
+  assert.equal(gate.isCurrent(newRequest, "new query"), false);
+});
+
+test("canvas badge and dossier use identical evidence status semantics", () => {
+  const relations = [
+    { id: "partial-flow", source: center.id, target: second.id, kind: "precedes", category: "flow", evidenceStatus: "partial" },
+    { id: "verified-proof", source: center.id, target: "evidence:center", kind: "evidencedBy", category: "evidence", evidenceStatus: "verified" },
+  ];
+  const badgeStatuses = interactions.deriveKnowledgeNodeEvidenceStatuses([center, second], relations);
+  assert.equal(badgeStatuses[center.id], interactions.deriveNodeEvidenceStatus(center.id, relations));
+  assert.equal(badgeStatuses[center.id], "verified");
+});

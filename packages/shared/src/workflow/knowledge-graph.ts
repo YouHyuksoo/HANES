@@ -17,6 +17,30 @@ import { workflowNodes } from './legacy-map';
 const normalize = (value: string) => value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase();
 const compareText = (left: string, right: string): number => left < right ? -1 : left > right ? 1 : 0;
 
+export interface KnowledgeGraphIndex {
+  nodeById: ReadonlyMap<string, KnowledgeNode>;
+  relationsByNode: ReadonlyMap<string, readonly KnowledgeCatalog['relations'][number][]>;
+}
+
+const graphIndexes = new WeakMap<KnowledgeCatalog, KnowledgeGraphIndex>();
+
+export function getKnowledgeGraphIndex(catalog: KnowledgeCatalog = workflowKnowledgeCatalog): KnowledgeGraphIndex {
+  const cached = graphIndexes.get(catalog);
+  if (cached) return cached;
+  const nodeById = new Map(catalog.nodes.map((node) => [node.id, node]));
+  const relationsByNode = new Map<string, KnowledgeCatalog['relations']>();
+  for (const relation of catalog.relations) {
+    for (const nodeId of new Set([relation.source, relation.target])) {
+      const incident = relationsByNode.get(nodeId) ?? [];
+      incident.push(relation);
+      relationsByNode.set(nodeId, incident);
+    }
+  }
+  const index = { nodeById, relationsByNode };
+  graphIndexes.set(catalog, index);
+  return index;
+}
+
 export function searchKnowledge(query: string, catalog: KnowledgeCatalog = workflowKnowledgeCatalog): KnowledgeSearchResult[] {
   const needle = normalize(query);
   if (!needle) return catalog.nodes.map((node) => ({ node, score: 0 }));
@@ -54,10 +78,11 @@ export function getKnowledgeNeighborhood(
   categories: readonly KnowledgeCategory[] = KNOWLEDGE_CATEGORIES,
   catalog: KnowledgeCatalog = workflowKnowledgeCatalog,
 ): KnowledgeNeighborhood {
-  const center = catalog.nodes.find((node) => node.id === centerId);
+  const index = getKnowledgeGraphIndex(catalog);
+  const center = index.nodeById.get(centerId);
   if (!center) throw new Error(`Unknown knowledge node: ${centerId}`);
   const allowed = new Set(categories);
-  const relations = catalog.relations.filter((relation) => allowed.has(relation.category as KnowledgeCategory) && (relation.source === centerId || relation.target === centerId));
+  const relations = (index.relationsByNode.get(centerId) ?? []).filter((relation) => allowed.has(relation.category as KnowledgeCategory));
   const ids = new Set([centerId, ...relations.flatMap((relation) => [relation.source, relation.target])]);
   return { center, nodes: catalog.nodes.filter((node) => ids.has(node.id)), relations };
 }
@@ -67,12 +92,17 @@ export function expandKnowledgeNeighborhood(
   categories: readonly KnowledgeCategory[] = KNOWLEDGE_CATEGORIES,
   catalog: KnowledgeCatalog = workflowKnowledgeCatalog,
 ): { nodes: KnowledgeNode[]; relations: KnowledgeCatalog['relations'] } {
+  const index = getKnowledgeGraphIndex(catalog);
   const relations = new Map<string, KnowledgeCatalog['relations'][number]>();
   const ids = new Set(nodeIds);
   for (const nodeId of nodeIds) {
-    const neighborhood = getKnowledgeNeighborhood(nodeId, categories, catalog);
-    for (const node of neighborhood.nodes) ids.add(node.id);
-    for (const relation of neighborhood.relations) relations.set(relation.id, relation);
+    if (!index.nodeById.has(nodeId)) throw new Error(`Unknown knowledge node: ${nodeId}`);
+    for (const relation of index.relationsByNode.get(nodeId) ?? []) {
+      if (!categories.includes(relation.category as KnowledgeCategory)) continue;
+      ids.add(relation.source);
+      ids.add(relation.target);
+      relations.set(relation.id, relation);
+    }
   }
   return { nodes: catalog.nodes.filter((node) => ids.has(node.id)), relations: [...relations.values()] };
 }

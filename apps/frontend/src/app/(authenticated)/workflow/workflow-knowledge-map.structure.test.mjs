@@ -114,6 +114,13 @@ test("relation rail has seven semantic filters with count and coverage", () => {
   assert.doesNotMatch(source, /KNOWLEDGE_CATEGORIES[^\n]+evidence/);
 });
 
+test("mobile keeps all seven relation filters accessible instead of hiding the rail", () => {
+  const source = `${readComponent("WorkflowKnowledgeMap.tsx")}\n${readComponent("RelationFilters.tsx")}`;
+  assert.match(source, /모바일 관계 필터/);
+  assert.match(source, /<RelationFilters[^>]*compact/);
+  assert.doesNotMatch(source, /<RelationFilters[^>]*className=["'][^"']*hidden/);
+});
+
 test("canvas registers custom renderers and complete ReactFlow instruments", () => {
   const source = readComponent("KnowledgeCanvas.tsx");
   assert.match(source, /nodeTypes/);
