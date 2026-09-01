@@ -30,6 +30,8 @@ interface MonitoringSettingsModalProps {
   onSave: (cfg: MonitoringConfig) => void;
   /** 그리드(열·행) 설정 노출 여부 */
   showGrid?: boolean;
+  /** 대상 선택 영역 노출 여부 — 보드형(대상 없음) 화면은 false */
+  showTargets?: boolean;
 }
 
 const REFETCH_OPTIONS = [10, 15, 30, 60, 120, 300];
@@ -40,7 +42,7 @@ const ROW_OPTIONS = [2, 3, 4, 5, 6];
 const secLabel = (s: number) => (s >= 60 ? `${s / 60}분` : `${s}초`);
 
 export default function MonitoringSettingsModal({
-  isOpen, onClose, targetLabel, options, value, onSave, showGrid = true,
+  isOpen, onClose, targetLabel, options, value, onSave, showGrid = true, showTargets = true,
 }: MonitoringSettingsModalProps) {
   const [draft, setDraft] = useState<MonitoringConfig>(value);
   const [query, setQuery] = useState("");
@@ -128,6 +130,7 @@ export default function MonitoringSettingsModal({
         </div>
 
         {/* 대상 선택 */}
+        {showTargets && (
         <div className="border border-border rounded-lg overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-surface">
             <span className="text-sm font-semibold text-text shrink-0">{targetLabel} 선택</span>
@@ -179,11 +182,14 @@ export default function MonitoringSettingsModal({
             )}
           </div>
         </div>
+        )}
 
+        {showTargets && (
         <p className="text-[11px] text-text-muted flex items-center gap-1">
           <Settings2 className="w-3 h-3" />
           선택하지 않으면 전체 {targetLabel}가 표시됩니다.
         </p>
+        )}
 
         <div className="flex justify-end gap-2 pt-2 border-t border-border">
           <Button variant="secondary" onClick={onClose}>취소</Button>
