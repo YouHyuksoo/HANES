@@ -65,10 +65,6 @@ export class AiCatalogService {
     }
   }
 
-  /** 구조화 데이터 저장 (md로 직렬화) */
-  async saveTables(tables: CatalogTable[]): Promise<void> {
-    await this.saveRaw(this.serialize(tables));
-  }
 
   /** md 저장 + 캐시 무효화 */
   async saveRaw(raw: string): Promise<void> {

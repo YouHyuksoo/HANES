@@ -12,10 +12,9 @@ import { Request } from 'express';
 import { AiService } from './ai.service';
 import { AiSqlService } from './ai-sql.service';
 import { AiCatalogService } from './ai-catalog.service';
-import { SchemaInfoService } from './schema-info.service';
 import { AiFeedbackService } from './ai-feedback.service';
 import { EmbeddingService } from '../ai-knowledge/embedding.service';
-import { AiChatDto, AiExecuteSqlDto, AiTestDto, AiEmbeddingTestDto, AiCatalogSaveDto, AiCatalogTablesDto, AiChatFeedbackDto } from './dto/ai-chat.dto';
+import { AiChatDto, AiExecuteSqlDto, AiTestDto, AiEmbeddingTestDto, AiChatFeedbackDto } from './dto/ai-chat.dto';
 import { getRequestUser } from '../../common/utils/request-user.util';
 import { getHeaderString } from '../../common/utils/header-value.util';
 
@@ -25,7 +24,6 @@ export class AiController {
     private readonly aiService: AiService,
     private readonly aiSqlService: AiSqlService,
     private readonly aiCatalogService: AiCatalogService,
-    private readonly schemaInfoService: SchemaInfoService,
     private readonly embeddingService: EmbeddingService,
     private readonly aiFeedbackService: AiFeedbackService,
   ) {}
@@ -82,41 +80,10 @@ export class AiController {
     return this.embeddingService.test(dto.provider, dto.model, Number(dto.dims), dto.apiKey);
   }
 
-  /** AI 테이블 카탈로그 md 원문 조회 */
-  @Get('catalog')
-  async getCatalog() {
-    return { content: await this.aiCatalogService.readRaw() };
-  }
-
-  /** AI 테이블 카탈로그 md 저장 */
-  @Put('catalog')
-  async saveCatalog(@Body() dto: AiCatalogSaveDto) {
-    await this.aiCatalogService.saveRaw(dto.content);
-    return { ok: true };
-  }
-
-  /** 실제 DB 테이블과 동기화(누락 테이블 추가, 큐레이션 보존) */
+  /** 테이블 카탈로그(docs/database/table-catalog.md)를 실제 DB와 동기화 — 누락 테이블 추가, 사람이 쓴 설명/관계 보존.
+   *  카탈로그는 docs 문서라 편집은 git/에디터로 하고, 스키마 변경 시 이 엔드포인트로 새 테이블만 채운다. */
   @Post('catalog/sync')
   syncCatalog() {
     return this.aiCatalogService.syncFromDb();
-  }
-
-  /** 카탈로그 구조화 조회 (편집 UI용) */
-  @Get('catalog/tables')
-  async getCatalogTables() {
-    return { tables: await this.aiCatalogService.getTables() };
-  }
-
-  /** 카탈로그 구조화 저장 */
-  @Put('catalog/tables')
-  async saveCatalogTables(@Body() dto: AiCatalogTablesDto) {
-    await this.aiCatalogService.saveTables(dto.tables);
-    return { ok: true };
-  }
-
-  /** 전체 테이블 컬럼맵 (관계 편집 드롭다운용) */
-  @Get('catalog/columns')
-  async getCatalogColumns() {
-    return { columns: await this.schemaInfoService.getAllColumnsByTable() };
   }
 }

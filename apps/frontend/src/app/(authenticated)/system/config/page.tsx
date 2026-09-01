@@ -14,7 +14,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Settings, Package, Factory, ClipboardCheck, Cog,
-  Save, Plus, Trash2, RefreshCw, Sparkles, BookText, Database,
+  Save, Plus, Trash2, RefreshCw, Sparkles, Database,
 } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, Modal, ConfirmModal } from '@/components/ui';
 import { useApiQuery, useInvalidateQueries } from '@/hooks/useApi';
@@ -25,7 +25,6 @@ import ConfigItemRow from '@/components/system/ConfigItemRow';
 import AddConfigModal from '@/components/system/AddConfigModal';
 import AiConfigPanel from '@/components/system/AiConfigPanel';
 import AiEmbeddingPanel from '@/components/system/AiEmbeddingPanel';
-import AiCatalogPanel from '@/components/system/AiCatalogPanel';
 
 /** 그룹 탭 정의 */
 const CONFIG_GROUPS = [
@@ -36,7 +35,6 @@ const CONFIG_GROUPS = [
   { key: 'SYSTEM', label: 'system.config.group.SYSTEM', icon: Cog },
   { key: 'AI', label: 'system.config.group.AI', icon: Sparkles },
   { key: 'AI_EMBEDDING', label: 'Embedding', icon: Database },
-  { key: 'AI_CATALOG', label: 'system.config.group.AI_CATALOG', icon: BookText },
 ];
 
 const getConfigId = (config: SysConfigItem) => config.id ?? config.configKey;
@@ -114,7 +112,7 @@ function ConfigPage() {
           </h1>
           <p className="text-text-muted mt-1">{t('system.config.description')}</p>
         </div>
-        {activeGroup !== 'AI' && activeGroup !== 'AI_EMBEDDING' && activeGroup !== 'AI_CATALOG' && (
+        {activeGroup !== 'AI' && activeGroup !== 'AI_EMBEDDING' && (
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setShowAddModal(true)}>
               <Plus className="w-4 h-4 mr-1" />{t('system.config.addNew')}
@@ -161,8 +159,6 @@ function ConfigPage() {
           <div className="h-full overflow-y-auto"><AiConfigPanel /></div>
         ) : activeGroup === 'AI_EMBEDDING' ? (
           <div className="h-full overflow-y-auto"><AiEmbeddingPanel /></div>
-        ) : activeGroup === 'AI_CATALOG' ? (
-          <AiCatalogPanel />
         ) : (
           <Card className="h-full overflow-hidden" padding="none">
             <CardContent className="h-full overflow-y-auto p-4">

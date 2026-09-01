@@ -99,25 +99,6 @@ export class SchemaInfoService {
     return rows.filter((r) => !this.isExcluded(r.table));
   }
 
-  private allColsCache: { map: Record<string, string[]>; at: number } | null = null;
-
-  /** 전체 테이블의 컬럼명 맵 (관계 편집 드롭다운용, 10분 캐시) */
-  async getAllColumnsByTable(): Promise<Record<string, string[]>> {
-    const now = Date.now();
-    if (this.allColsCache && now - this.allColsCache.at < 10 * 60 * 1000) return this.allColsCache.map;
-    const rows = await this.dataSource.query<{ table: string; column: string }[]>(
-      `SELECT TABLE_NAME AS "table", COLUMN_NAME AS "column"
-       FROM USER_TAB_COLUMNS
-       ORDER BY TABLE_NAME, COLUMN_ID`,
-    );
-    const map: Record<string, string[]> = {};
-    for (const r of rows) {
-      if (this.isExcluded(r.table)) continue;
-      (map[r.table] ??= []).push(r.column);
-    }
-    this.allColsCache = { map, at: now };
-    return map;
-  }
 
   /** 2단계: 선택 테이블의 컬럼 스키마 */
   async getTableSchemas(tables: string[]): Promise<ColumnSchema[]> {
