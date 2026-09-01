@@ -13,7 +13,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
-import ErrorDetailModal from "@/components/shared/ErrorDetailModal";
+import ApiFeedbackModal from "@/components/shared/ApiFeedbackModal";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/authStore";
 import { I18N_LANGUAGE_STORAGE_KEY, normalizeLanguageCode } from "@/lib/i18n";
@@ -176,7 +176,7 @@ export function Providers({ children }: ProvidersProps) {
           error: { duration: 6000, iconTheme: { primary: "#ef4444", secondary: "#fff" } },
         }}
       />
-      <ErrorDetailModal />
+      <ApiFeedbackModal />
       {children}
     </QueryClientProvider>
   );

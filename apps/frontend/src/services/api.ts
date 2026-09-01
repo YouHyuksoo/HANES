@@ -20,6 +20,8 @@ declare module "axios" {
 interface ApiErrorResponse {
   message?: string;
   error?: string;
+  /** 백엔드 HttpExceptionFilter가 채우는 에러 코드 (HTTP_400, DB_CONNECTION_ERROR 등) */
+  errorCode?: string;
   [key: string]: unknown;
 }
 
@@ -46,6 +48,7 @@ interface CachedSqlDebug {
 
 import toast from "react-hot-toast";
 import { useErrorStore } from "@/stores/errorStore";
+import { classifyApiError } from "./api-error-severity";
 import { useAuthStore } from "@/stores/authStore";
 
 // 응답 인터셉터의 자동 성공 토스트를 끄는 opt-out 플래그.
@@ -240,15 +243,23 @@ api.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
-    // 네트워크 에러 (백엔드 미실행, ECONNREFUSED 등)
+    // 응답이 없는 경우 — 시간 초과와 연결 실패는 원인이 다르므로 구분해서 알린다.
+    // (둘을 뭉치면 정상 동작하는 서버를 "죽었다"고 잘못 안내하게 된다)
     if (!error.response) {
+      const isTimeout = error.code === "ECONNABORTED" || /timeout/i.test(error.message ?? "");
+      const timeoutMs = (error.config as AxiosRequestConfig)?.timeout;
       useErrorStore.getState().showError({
+        severity: "system",
         timestamp: new Date().toLocaleString(),
         method: error.config?.method?.toUpperCase() || "UNKNOWN",
         url: error.config?.url || "unknown",
         status: 0,
-        message: "서버에 연결할 수 없습니다. 백엔드가 실행 중인지 확인하세요.",
-        responseBody: "네트워크 연결 실패 (ECONNREFUSED)",
+        message: isTimeout
+          ? `응답이 ${timeoutMs ? Math.round(timeoutMs / 1000) : 30}초 안에 오지 않았습니다. 잠시 후 다시 시도해 주세요.`
+          : "서버에 연결할 수 없습니다. 백엔드가 실행 중인지 확인하세요.",
+        responseBody: isTimeout
+          ? `요청 시간 초과 (${error.code ?? "ECONNABORTED"})`
+          : "네트워크 연결 실패 (ECONNREFUSED)",
       });
       return Promise.reject(error);
     }
@@ -284,13 +295,16 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // 에러 상세 모달 표시
+    // 심각도에 따라 업무 안내 창 / 시스템 오류 창으로 분리 표시
+    const errorCode = typeof data?.errorCode === "string" ? data.errorCode : undefined;
     useErrorStore.getState().showError({
+      severity: classifyApiError(status, errorCode),
       timestamp: new Date().toLocaleString(),
       method: error.config?.method?.toUpperCase() || "UNKNOWN",
       url: error.config?.url || "unknown",
       status,
       message: serverMessage,
+      errorCode,
       responseBody: JSON.stringify(data, null, 2),
       requestBody,
     });

@@ -2,19 +2,25 @@
 
 /**
  * @file src/components/shared/ErrorDetailModal.tsx
- * @description API 에러 상세 모달 - 에러 정보를 사용자에게 보여주고 복사 가능
+ * @description 시스템 오류 상세 모달 - 장애 정보를 보여주고 복사 가능
  *
  * 초보자 가이드:
- * 1. errorStore의 에러가 있으면 자동으로 모달 표시
+ * 1. severity가 system인 에러(500/503/네트워크 등)만 이 창으로 표시한다.
+ *    입력 확인/권한/중복 같은 업무 안내는 ApiNoticeModal이 담당한다.
  * 2. 에러 상세 내용(시간, URL, 상태코드, 메시지)을 보기 쉽게 표시
  * 3. "복사" 버튼으로 에러 정보를 클립보드에 복사 → 개발자에게 전달
+ * 4. 표시 여부는 ApiFeedbackModal이 결정하고, 이 컴포넌트는 props로 받은 에러만 그린다.
  */
 import { useCallback, useState } from "react";
-import { useErrorStore } from "@/stores/errorStore";
+import type { ApiErrorDetail } from "@/stores/errorStore";
 import { Copy, Check, AlertTriangle, X } from "lucide-react";
 
-export default function ErrorDetailModal() {
-  const { error, clearError } = useErrorStore();
+interface ErrorDetailModalProps {
+  error: ApiErrorDetail;
+  onClose: () => void;
+}
+
+export default function ErrorDetailModal({ error, onClose }: ErrorDetailModalProps) {
   const [copied, setCopied] = useState(false);
 
   const buildCopyText = useCallback(() => {
@@ -51,14 +57,12 @@ export default function ErrorDetailModal() {
     }
   }, [buildCopyText]);
 
-  if (!error) return null;
-
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       {/* 배경 오버레이 */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={clearError}
+        onClick={onClose}
       />
 
       {/* 모달 */}
@@ -75,7 +79,7 @@ export default function ErrorDetailModal() {
             </p>
           </div>
           <button
-            onClick={clearError}
+            onClick={onClose}
             className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
           >
             <X className="w-4 h-4 text-red-400" />
@@ -108,7 +112,7 @@ export default function ErrorDetailModal() {
         {/* 푸터 - 복사 + 닫기 */}
         <div className="flex justify-end gap-2 px-5 py-3 border-t border-border bg-surface/50">
           <button
-            onClick={clearError}
+            onClick={onClose}
             className="px-4 py-2 text-sm rounded-lg border border-border text-text-muted hover:bg-surface transition-colors"
           >
             닫기
