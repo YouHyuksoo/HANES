@@ -16,6 +16,9 @@ test("workflow page preserves three existing tabs and exposes knowledge as the f
   for (const component of ["WorkflowGuide", "WorkflowFlow", "WorkflowOverview", "WorkflowKnowledgeMap"]) assert.match(source, new RegExp(component));
   assert.match(source, /selectFromDiagram[\s\S]*setTab\("guide"\)/);
   assert.match(source, /<WorkflowOverview onSelect=\{setSelectedNodeId\}/);
+  assert.match(source, /role="tablist"/);
+  assert.match(source, /role="tab"/);
+  assert.match(source, /aria-selected=\{active\}/);
 });
 
 test("workflow knowledge translations have matching locale shape and components use them", () => {
@@ -26,6 +29,20 @@ test("workflow knowledge translations have matching locale shape and components 
   const source = ["WorkflowKnowledgeMap.tsx", "KnowledgeSearch.tsx", "KnowledgeToolbar.tsx", "RelationFilters.tsx", "KnowledgeCanvas.tsx", "KnowledgeNode.tsx", "KnowledgeEdge.tsx", "KnowledgeDetailPanel.tsx"].map(readComponent).join("\n");
   assert.match(source, /workflowGuide\.knowledge/);
   assert.doesNotMatch(source, /["'`][^"'`\n]*[가-힣][^"'`\n]*["'`]/);
+});
+
+test("all runtime coverage and evidence statuses have distinct translations in every locale", () => {
+  const types = fs.readFileSync("packages/shared/src/workflow/knowledge-types.ts", "utf8");
+  const values = (name) => [...types.match(new RegExp(`export const ${name} = \\[([^\\]]+)\\]`))[1].matchAll(/["']([^"']+)["']/g)].map((match) => match[1]);
+  const coverageStatuses = values("COVERAGE_STATUSES");
+  const evidenceStatuses = values("EVIDENCE_STATUSES");
+  for (const locale of ["ko", "en", "vi", "zh"]) {
+    const knowledge = JSON.parse(fs.readFileSync(`apps/frontend/src/locales/${locale}.json`, "utf8")).workflowGuide.knowledge;
+    assert.deepEqual(Object.keys(knowledge.coverageStatus).sort(), coverageStatuses.sort(), `${locale} coverageStatus`);
+    assert.deepEqual(Object.keys(knowledge.evidenceStatus).sort(), evidenceStatuses.sort(), `${locale} evidenceStatus`);
+  }
+  assert.match(readComponent("RelationFilters.tsx"), /workflowGuide\.knowledge\.coverageStatus/);
+  assert.match(`${readComponent("KnowledgeNode.tsx")}\n${readComponent("KnowledgeDetailPanel.tsx")}`, /workflowGuide\.knowledge\.evidenceStatus/);
 });
 
 test("knowledge navigation owns validated URL state and an internal center history", () => {
@@ -168,7 +185,7 @@ test("node edge and dossier communicate semantics without color-only meaning", (
   assert.match(edge, /condition/);
   assert.match(detail, /workflowGuide\.knowledge\.detail\.centerAction/);
   assert.match(detail, /incoming|outgoing/);
-  assert.match(detail, /workflowGuide\.knowledge\.coverage/);
+  assert.match(detail, /workflowGuide\.knowledge\.evidenceStatus/);
   assert.match(detail, /href=\{node\.path\}/);
 });
 

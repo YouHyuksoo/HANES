@@ -14,7 +14,7 @@ export function KnowledgeNode({ data, selected }: NodeProps) {
     <div className="flex items-center gap-2"><Icon size={15} aria-hidden /><span className="font-mono text-[10px] uppercase tracking-wider text-text-muted">{t(`workflowGuide.knowledge.kinds.${node.kind}`)}{node.center ? ` · ${t("workflowGuide.knowledge.center")}` : ""}</span></div>
     <strong className="mt-1 block max-w-56 text-sm leading-5">{node.label}</strong>
     {node.labelDensity === "full" && node.description && <p className="mt-1 max-w-56 text-xs leading-4 text-text-muted">{node.description}</p>}
-    <span className="mt-2 block text-[10px] text-text-muted">● {t("workflowGuide.knowledge.evidenceStatus", { status: t(`workflowGuide.knowledge.coverage.${evidenceStatus}`) })}</span>
+    <span className="mt-2 block text-[10px] text-text-muted">● {t("workflowGuide.knowledge.evidenceLabel", { status: t(`workflowGuide.knowledge.evidenceStatus.${evidenceStatus}`) })}</span>
     <Handle type="source" position={Position.Right} className="opacity-0" />
   </div>;
 }

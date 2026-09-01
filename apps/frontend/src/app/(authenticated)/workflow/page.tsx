@@ -50,7 +50,7 @@ export default function WorkflowPage() {
             </div>
           </div>
           {/* 탭 */}
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+          <div role="tablist" className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
             <TabButton active={tab === "guide"} onClick={() => setTab("guide")} icon={<LayoutList className="h-3.5 w-3.5" />}>
               {t("workflowGuide.tabGuide", "가이드")}
             </TabButton>
@@ -121,6 +121,9 @@ function TabButton({
   return (
     <button
       type="button"
+      role="tab"
+      aria-selected={active}
+      aria-pressed={active}
       onClick={onClick}
       className={`inline-flex h-8 items-center gap-1.5 rounded px-3 text-xs font-semibold transition-colors ${
         active ? "bg-primary text-white" : "text-text-muted hover:bg-muted"
