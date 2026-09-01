@@ -8,6 +8,26 @@ const read = (name) => fs.readFileSync(`${root}/${name}`, "utf8");
 const componentRoot = "apps/frontend/src/app/(authenticated)/workflow/components";
 const readComponent = (name) => fs.readFileSync(`${componentRoot}/${name}`, "utf8");
 
+test("workflow page preserves three existing tabs and exposes knowledge as the fourth", () => {
+  const source = fs.readFileSync("apps/frontend/src/app/(authenticated)/workflow/page.tsx", "utf8");
+  assert.match(source, /type WorkflowTab = "guide" \| "flow" \| "overview" \| "knowledge"/);
+  assert.match(source, /useState<WorkflowTab>\("guide"\)/);
+  for (const tab of ["guide", "flow", "overview", "knowledge"]) assert.match(source, new RegExp(`tab === ["']${tab}["']`));
+  for (const component of ["WorkflowGuide", "WorkflowFlow", "WorkflowOverview", "WorkflowKnowledgeMap"]) assert.match(source, new RegExp(component));
+  assert.match(source, /selectFromDiagram[\s\S]*setTab\("guide"\)/);
+  assert.match(source, /<WorkflowOverview onSelect=\{setSelectedNodeId\}/);
+});
+
+test("workflow knowledge translations have matching locale shape and components use them", () => {
+  const locales = ["ko", "en", "vi", "zh"].map((locale) => JSON.parse(fs.readFileSync(`apps/frontend/src/locales/${locale}.json`, "utf8")).workflowGuide);
+  const shape = (value, prefix = "") => Object.entries(value).flatMap(([key, child]) => child && typeof child === "object" && !Array.isArray(child) ? shape(child, `${prefix}${key}.`) : `${prefix}${key}`).sort();
+  for (const locale of locales.slice(1)) assert.deepEqual(shape(locale), shape(locales[0]));
+  assert.ok(locales[0].knowledge);
+  const source = ["WorkflowKnowledgeMap.tsx", "KnowledgeSearch.tsx", "KnowledgeToolbar.tsx", "RelationFilters.tsx", "KnowledgeCanvas.tsx", "KnowledgeNode.tsx", "KnowledgeEdge.tsx", "KnowledgeDetailPanel.tsx"].map(readComponent).join("\n");
+  assert.match(source, /workflowGuide\.knowledge/);
+  assert.doesNotMatch(source, /["'`][^"'`\n]*[가-힣][^"'`\n]*["'`]/);
+});
+
 test("knowledge navigation owns validated URL state and an internal center history", () => {
   const source = read("knowledge-state.ts");
 
@@ -93,7 +113,7 @@ test("search keeps local and AI candidates separate and validates AI response", 
   assert.match(source, /suppressErrorModal:\s*true/);
   assert.match(source, /localResults/);
   assert.match(source, /aiCandidates/);
-  assert.match(source, /AI로 질문 해석/);
+  assert.match(source, /workflowGuide\.knowledge\.search\.aiAction/);
   assert.match(source, /shouldInterpretKnowledgeQuery\(query,\s*localResults\.length,\s*false\)/);
   assert.match(source, /isWorkflowKnowledgeInterpretResponse/);
   assert.doesNotMatch(source, /onSelect[^\n]+await[^\n]+post/);
@@ -102,7 +122,7 @@ test("search keeps local and AI candidates separate and validates AI response", 
 test("toolbar exposes exact layouts and views plus internal navigation actions", () => {
   const source = readComponent("KnowledgeToolbar.tsx");
   for (const value of ["mindmap", "process", "relation", "business", "technical"]) assert.match(source, new RegExp(value));
-  for (const label of ["뒤로", "앞으로", "초기화", "전체 보기", "링크 복사"]) assert.match(source, new RegExp(label));
+  for (const key of ["back", "forward", "reset", "fit", "copy"]) assert.match(source, new RegExp(key));
   assert.match(source, /aria-label/);
 });
 
@@ -111,12 +131,12 @@ test("relation rail has seven semantic filters with count and coverage", () => {
   assert.match(source, /KNOWLEDGE_CATEGORIES/);
   assert.match(source, /coverage/);
   assert.match(source, /count/);
-  assert.doesNotMatch(source, /KNOWLEDGE_CATEGORIES[^\n]+evidence/);
+  assert.match(source, /workflowGuide\.knowledge\.categories/);
 });
 
 test("mobile keeps all seven relation filters accessible instead of hiding the rail", () => {
   const source = `${readComponent("WorkflowKnowledgeMap.tsx")}\n${readComponent("RelationFilters.tsx")}`;
-  assert.match(source, /모바일 관계 필터/);
+  assert.match(source, /workflowGuide\.knowledge\.filters\.mobileLabel/);
   assert.match(source, /<RelationFilters[^>]*compact/);
   assert.doesNotMatch(source, /<RelationFilters[^>]*className=["'][^"']*hidden/);
 });
@@ -146,9 +166,9 @@ test("node edge and dossier communicate semantics without color-only meaning", (
   assert.match(edge, /strokeDasharray|double/i);
   assert.match(edge, /markerEnd/);
   assert.match(edge, /condition/);
-  assert.match(detail, /중심으로 보기/);
+  assert.match(detail, /workflowGuide\.knowledge\.detail\.centerAction/);
   assert.match(detail, /incoming|outgoing/);
-  assert.match(detail, /verified|partial|undocumented/);
+  assert.match(detail, /workflowGuide\.knowledge\.coverage/);
   assert.match(detail, /href=\{node\.path\}/);
 });
 

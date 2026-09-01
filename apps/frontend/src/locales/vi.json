@@ -8926,6 +8926,19 @@
     "legendNormal": "Tiến trình",
     "legendBranch": "Rẽ nhánh",
     "legendReversal": "Xử lý ngược",
-    "legendReference": "Tham chiếu"
+    "legendReference": "Tham chiếu",
+    "knowledge": {
+      "tab": "Bản đồ tri thức", "title": "Bản đồ tri thức nghiệp vụ", "description": "Chọn một nút để mở rộng một cấp quan hệ. Chỉ đổi nút trung tâm rõ ràng trong bảng chi tiết.", "selectExpand": "Chọn {{label}} và mở rộng quan hệ", "center": "Trung tâm", "currentCenter": "Trung tâm hiện tại", "relation": "Quan hệ", "condition": "Điều kiện: {{condition}}", "relationList": "Danh sách quan hệ", "emptyRelations": "Không có quan hệ để hiển thị.", "evidenceStatus": "Bằng chứng {{status}}",
+      "search": { "label": "Tìm nghiệp vụ, màn hình và bảng", "placeholder": "Nghiệp vụ · màn hình · bảng · ngoại lệ", "action": "Tìm kiếm", "aiAction": "Diễn giải bằng AI", "aiLoading": "Đang diễn giải", "localResults": "Danh mục cục bộ", "aiResults": "Ứng viên AI", "noLocalResults": "Không có kết quả cục bộ phù hợp.", "noAiResults": "Không có ứng viên AI.", "invalidCenter": "Nút trung tâm không xác định: {{center}}", "staleAi": "Đã bỏ phản hồi AI cũ hoặc không hợp lệ.", "aiUnavailable": "Không thể sử dụng diễn giải AI.", "aiFailed": "Yêu cầu diễn giải AI thất bại." },
+      "layouts": { "mindmap": "Sơ đồ tư duy", "process": "Quy trình", "relation": "Quan hệ" }, "views": { "business": "Nghiệp vụ", "technical": "Kỹ thuật" },
+      "toolbar": { "label": "Công cụ bản đồ tri thức", "back": "Quay lại", "forward": "Tiến", "reset": "Đặt lại", "fit": "Xem toàn bộ", "copy": "Sao chép liên kết", "copySuccess": "Đã sao chép liên kết.", "copyFailed": "Không thể sao chép liên kết." },
+      "categories": { "flow": "Luồng", "masters": "Dữ liệu chuẩn", "constraints": "Điều kiện", "requiredTasks": "Công việc bắt buộc", "exceptions": "Ngoại lệ", "logic": "Logic", "tables": "Dữ liệu" },
+      "coverage": { "verified": "Đã xác minh", "partial": "Một phần", "undocumented": "Chưa lập tài liệu" },
+      "filters": { "label": "Bộ lọc quan hệ", "mobileLabel": "Bộ lọc quan hệ di động", "mobileSummary": "Bộ lọc quan hệ · {{count}} nhóm", "channels": "Kênh quan hệ · {{count}}", "evidenceHint": "Bằng chứng được hiển thị theo trạng thái xác minh của từng quan hệ, không phải bộ lọc ngữ nghĩa." },
+      "canvas": { "label": "Đồ thị tri thức nghiệp vụ", "minimap": "Bản đồ thu nhỏ tri thức" },
+      "kinds": { "activity": "Nghiệp vụ", "screen": "Màn hình", "master": "Chuẩn", "constraint": "Điều kiện", "requiredTask": "Bắt buộc", "exception": "Ngoại lệ", "logic": "Logic", "data": "Dữ liệu", "evidence": "Bằng chứng" },
+      "detail": { "label": "Chi tiết tri thức đã chọn", "dossier": "Chi tiết nút", "centerAction": "Đặt làm trung tâm", "noDescription": "Chưa liên kết tài liệu mô tả.", "evidence": "Trạng thái bằng chứng", "openScreen": "Mở màn hình ứng dụng", "businessHeading": "Mục đích · thời điểm · điều kiện · ngoại lệ", "technicalHeading": "Đường dẫn · dữ liệu · bằng chứng", "incoming": "Quan hệ vào", "outgoing": "Quan hệ ra", "noRelations": "Không có kết nối" },
+      "recovery": { "code": "Không tìm thấy trung tâm", "title": "Không tìm thấy nút trung tâm trong liên kết được chia sẻ.", "description": "Dùng ô tìm kiếm phía trên để chọn nghiệp vụ, màn hình hoặc bảng trong danh mục hiện tại. Hệ thống không tự đổi nút trung tâm." }
+    }
   }
 }
