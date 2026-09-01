@@ -14,6 +14,7 @@ export const KNOWLEDGE_RELATION_KINDS = [
 ] as const;
 
 export type KnowledgeCategory = (typeof KNOWLEDGE_CATEGORIES)[number];
+export type KnowledgeRelationCategory = KnowledgeCategory | 'evidence';
 export type CoverageStatus = (typeof COVERAGE_STATUSES)[number];
 export type EvidenceStatus = (typeof EVIDENCE_STATUSES)[number];
 export type KnowledgeNodeKind = (typeof KNOWLEDGE_NODE_KINDS)[number];
@@ -38,7 +39,7 @@ export interface KnowledgeRelation {
   source: string;
   target: string;
   kind: KnowledgeRelationKind;
-  category: KnowledgeCategory;
+  category: KnowledgeRelationCategory;
   label?: string;
   evidenceStatus: EvidenceStatus;
   cycle?: 'recovery' | 'rework';

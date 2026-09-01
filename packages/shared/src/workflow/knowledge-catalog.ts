@@ -6,6 +6,7 @@ import {
   type KnowledgeCategory,
   type KnowledgeNode,
   type KnowledgeRelation,
+  type KnowledgeRelationCategory,
   type KnowledgeRelationKind,
 } from './knowledge-types';
 
@@ -103,17 +104,17 @@ const representativeNodes: KnowledgeNode[] = [
 
 const representativeRelations: KnowledgeRelation[] = [
   { id: 'curated:arrival-lot-logic', source: 'activity:arrival-register', target: 'logic:arrival-lot-unit-quantity', kind: 'references', category: 'logic', evidenceStatus: 'verified' },
-  { id: 'curated:arrival-lot-evidence', source: 'logic:arrival-lot-unit-quantity', target: 'evidence:material', kind: 'evidencedBy', category: 'logic', evidenceStatus: 'verified' },
+  { id: 'curated:arrival-lot-evidence', source: 'logic:arrival-lot-unit-quantity', target: 'evidence:material', kind: 'evidencedBy', category: 'evidence', evidenceStatus: 'verified' },
   { id: 'curated:iqc-master', source: 'activity:iqc-inspection', target: 'master:iqc-part-spec', kind: 'requires', category: 'masters', evidenceStatus: 'verified' },
-  { id: 'curated:iqc-master-evidence', source: 'master:iqc-part-spec', target: 'evidence:legacy-workflow-map', kind: 'evidencedBy', category: 'logic', evidenceStatus: 'verified' },
+  { id: 'curated:iqc-master-evidence', source: 'master:iqc-part-spec', target: 'evidence:legacy-workflow-map', kind: 'evidencedBy', category: 'evidence', evidenceStatus: 'verified' },
   { id: 'curated:iqc-pass-label', source: 'constraint:iqc-pass-before-label', target: 'activity:material-label', kind: 'validates', category: 'constraints', evidenceStatus: 'verified' },
-  { id: 'curated:iqc-pass-label-evidence', source: 'constraint:iqc-pass-before-label', target: 'evidence:iqc', kind: 'evidencedBy', category: 'logic', evidenceStatus: 'verified' },
+  { id: 'curated:iqc-pass-label-evidence', source: 'constraint:iqc-pass-before-label', target: 'evidence:iqc', kind: 'evidencedBy', category: 'evidence', evidenceStatus: 'verified' },
   { id: 'curated:iqc-fail', source: 'activity:iqc-inspection', target: 'exception:iqc-fail-defect-move', kind: 'raises', category: 'exceptions', evidenceStatus: 'verified' },
-  { id: 'curated:iqc-fail-evidence', source: 'exception:iqc-fail-defect-move', target: 'evidence:iqc', kind: 'evidencedBy', category: 'logic', evidenceStatus: 'verified' },
+  { id: 'curated:iqc-fail-evidence', source: 'exception:iqc-fail-defect-move', target: 'evidence:iqc', kind: 'evidencedBy', category: 'evidence', evidenceStatus: 'verified' },
   { id: 'curated:kitting-scan', source: 'activity:subprocess-kitting', target: 'requiredTask:kitting-label-scan-confirmation', kind: 'requires', category: 'requiredTasks', evidenceStatus: 'verified' },
-  { id: 'curated:kitting-scan-evidence', source: 'requiredTask:kitting-label-scan-confirmation', target: 'evidence:production', kind: 'evidencedBy', category: 'logic', evidenceStatus: 'verified' },
+  { id: 'curated:kitting-scan-evidence', source: 'requiredTask:kitting-label-scan-confirmation', target: 'evidence:production', kind: 'evidencedBy', category: 'evidence', evidenceStatus: 'verified' },
   { id: 'curated:shipping-scan', source: 'constraint:shipping-pallet-scan', target: 'activity:shipping-confirm', kind: 'validates', category: 'constraints', evidenceStatus: 'verified' },
-  { id: 'curated:shipping-scan-evidence', source: 'constraint:shipping-pallet-scan', target: 'evidence:shipping', kind: 'evidencedBy', category: 'logic', evidenceStatus: 'verified' },
+  { id: 'curated:shipping-scan-evidence', source: 'constraint:shipping-pallet-scan', target: 'evidence:shipping', kind: 'evidencedBy', category: 'evidence', evidenceStatus: 'verified' },
 ];
 
 for (const [id, activity] of evidenceDefinitions) {
@@ -122,7 +123,7 @@ for (const [id, activity] of evidenceDefinitions) {
     source: activity,
     target: `evidence:${id}`,
     kind: 'evidencedBy',
-    category: 'logic',
+    category: 'evidence',
     evidenceStatus: 'verified',
   });
 }
@@ -134,7 +135,9 @@ const nodeById = new Map(nodes.map((node) => [node.id, node]));
 for (const relation of convertedRelations) {
   for (const id of [relation.source, relation.target]) {
     const coverage = nodeById.get(id)?.coverage;
-    if (coverage) coverage[relation.category] = 'present';
+    if (coverage && (KNOWLEDGE_CATEGORIES as readonly string[]).includes(relation.category)) {
+      coverage[relation.category as KnowledgeCategory] = 'present';
+    }
   }
 }
 
@@ -151,8 +154,8 @@ export const workflowKnowledgeCatalog: KnowledgeCatalog = {
   relations: convertedRelations,
 };
 
-export const RELATION_CATEGORY_BY_KIND: Record<KnowledgeRelationKind, readonly KnowledgeCategory[]> = {
+export const RELATION_CATEGORY_BY_KIND: Record<KnowledgeRelationKind, readonly KnowledgeRelationCategory[]> = {
   precedes: ['flow'], follows: ['flow'], requires: ['masters', 'requiredTasks'], references: ['flow', 'masters', 'requiredTasks', 'logic', 'tables'],
   validates: ['constraints'], branchesTo: ['flow', 'exceptions'], raises: ['exceptions'], recoversWith: ['exceptions'],
-  reads: ['tables'], writes: ['tables'], evidencedBy: ['logic'],
+  reads: ['tables'], writes: ['tables'], evidencedBy: ['evidence'],
 };

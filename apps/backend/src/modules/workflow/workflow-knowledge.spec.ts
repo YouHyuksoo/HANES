@@ -1,5 +1,6 @@
 import {
   KNOWLEDGE_CATEGORIES,
+  expandKnowledgeNeighborhood,
   getCoverage,
   getKnowledgeNeighborhood,
   searchKnowledge,
@@ -94,7 +95,7 @@ describe('workflow knowledge graph', () => {
     const catalog: KnowledgeCatalog = {
       nodes: [
         node('activity:a'),
-        { id: 'evidence:bad', kind: 'evidence', label: 'bad', source: 'guess', api: 'arrival' },
+        { id: 'evidence:bad', kind: 'evidence', label: 'bad', source: 'docs/../secret.md', api: 'arrival' },
       ],
       relations: [relation('evidence', 'activity:a', 'evidence:bad', 'evidencedBy', 'logic')],
     };
@@ -137,6 +138,40 @@ describe('workflow knowledge graph', () => {
 
   it('collapses repeated internal whitespace during search normalization', () => {
     expect(searchKnowledge('입하   등록')[0]?.node.id).toBe('activity:arrival-register');
+  });
+
+  it('orders tied search results deterministically with data nodes first', () => {
+    const catalog: KnowledgeCatalog = {
+      nodes: [
+        { id: 'activity:z', kind: 'activity', label: 'Same', coverage: coverage() },
+        { id: 'data:a', kind: 'data', label: 'Same', coverage: coverage() },
+        { id: 'data:z', kind: 'data', label: 'Same', coverage: coverage() },
+      ],
+      relations: [],
+    };
+    expect(searchKnowledge('same', catalog).map(({ node }) => node.id)).toEqual(['data:a', 'data:z', 'activity:z']);
+  });
+
+  it('does not treat citation links as semantic logic coverage', () => {
+    expect(getCoverage('master:iqc-part-spec', 'logic')).toBe('undocumented');
+    expect(workflowKnowledgeCatalog.relations.find((relation) => relation.id === 'curated:iqc-master-evidence')?.category).toBe('evidence');
+  });
+
+  it('deduplicates nodes and relations across overlapping expansions', () => {
+    const expanded = expandKnowledgeNeighborhood(
+      ['activity:arrival-register', 'data:MAT_LOTS', 'activity:arrival-register'],
+      ['tables'],
+    );
+    expect(new Set(expanded.nodes.map((node) => node.id)).size).toBe(expanded.nodes.length);
+    expect(new Set(expanded.relations.map((relation) => relation.id)).size).toBe(expanded.relations.length);
+    expect(expanded.nodes.filter((node) => node.id === 'data:MAT_LOTS')).toHaveLength(1);
+  });
+
+  it('applies category filtering while expanding neighborhoods', () => {
+    const expanded = expandKnowledgeNeighborhood(['activity:arrival-register'], ['tables']);
+    expect(expanded.relations.length).toBeGreaterThan(0);
+    expect(expanded.relations.every((relation) => relation.category === 'tables')).toBe(true);
+    expect(expanded.nodes.some((node) => node.kind === 'screen')).toBe(false);
   });
 
   it('rejects unallowed cycles and orphan nodes', () => {

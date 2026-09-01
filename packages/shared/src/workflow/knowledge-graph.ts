@@ -14,7 +14,8 @@ import {
 } from './knowledge-types';
 import { workflowNodes } from './legacy-map';
 
-const normalize = (value: string) => value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+const normalize = (value: string) => value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase();
+const compareText = (left: string, right: string): number => left < right ? -1 : left > right ? 1 : 0;
 
 export function searchKnowledge(query: string, catalog: KnowledgeCatalog = workflowKnowledgeCatalog): KnowledgeSearchResult[] {
   const needle = normalize(query);
@@ -35,7 +36,13 @@ export function searchKnowledge(query: string, catalog: KnowledgeCatalog = workf
       return { node, score };
     })
     .filter((result) => result.score > 0)
-    .sort((a, b) => b.score - a.score || (a.node.kind === 'data' ? -1 : b.node.kind === 'data' ? 1 : a.node.id.localeCompare(b.node.id)));
+    .sort((a, b) => {
+      const scoreOrder = b.score - a.score;
+      if (scoreOrder) return scoreOrder;
+      const dataOrder = Number(b.node.kind === 'data') - Number(a.node.kind === 'data');
+      if (dataOrder) return dataOrder;
+      return compareText(a.node.id, b.node.id) || compareText(a.node.label, b.node.label);
+    });
 }
 
 export function getCoverage(nodeId: string, category: KnowledgeCategory, catalog: KnowledgeCatalog = workflowKnowledgeCatalog): CoverageStatus | undefined {
@@ -50,7 +57,7 @@ export function getKnowledgeNeighborhood(
   const center = catalog.nodes.find((node) => node.id === centerId);
   if (!center) throw new Error(`Unknown knowledge node: ${centerId}`);
   const allowed = new Set(categories);
-  const relations = catalog.relations.filter((relation) => allowed.has(relation.category) && (relation.source === centerId || relation.target === centerId));
+  const relations = catalog.relations.filter((relation) => allowed.has(relation.category as KnowledgeCategory) && (relation.source === centerId || relation.target === centerId));
   const ids = new Set([centerId, ...relations.flatMap((relation) => [relation.source, relation.target])]);
   return { center, nodes: catalog.nodes.filter((node) => ids.has(node.id)), relations };
 }
@@ -88,7 +95,9 @@ export function validateKnowledgeCatalog(catalog: KnowledgeCatalog): string[] {
     }
     if (node.kind === 'screen' && (!node.path || !node.path.startsWith('/'))) errors.push(`invalid screen path: ${node.id}`);
     if (node.kind === 'evidence') {
-      if (!node.source || !/^(docs|apps|packages)\/[A-Za-z0-9_./-]+(?:\.md|\.ts|\.tsx)(?:#[A-Za-z0-9_.:/-]+)?$/.test(node.source)) errors.push(`invalid evidence source: ${node.id}`);
+      const sourcePath = node.source?.split('#', 1)[0];
+      const hasTraversal = sourcePath?.split('/').some((segment) => segment === '..') ?? false;
+      if (!node.source || hasTraversal || !/^(docs|apps|packages)\/[A-Za-z0-9_./-]+(?:\.md|\.ts|\.tsx)(?:#[A-Za-z0-9_.:/-]+)?$/.test(node.source)) errors.push(`invalid evidence source: ${node.id}`);
       if (node.api && !/^(GET|POST|PUT|PATCH|DELETE) \/[A-Za-z0-9_{}?&=./:-]+$/.test(node.api)) errors.push(`invalid API identifier: ${node.id}`);
     }
   }
