@@ -94,7 +94,7 @@ test("search keeps local and AI candidates separate and validates AI response", 
   assert.match(source, /localResults/);
   assert.match(source, /aiCandidates/);
   assert.match(source, /AI로 질문 해석/);
-  assert.match(source, /localResults\.length\s*===\s*0/);
+  assert.match(source, /shouldInterpretKnowledgeQuery\(query,\s*localResults\.length,\s*false\)/);
   assert.match(source, /isWorkflowKnowledgeInterpretResponse/);
   assert.doesNotMatch(source, /onSelect[^\n]+await[^\n]+post/);
 });

@@ -4,9 +4,10 @@ import { Background, Controls, MarkerType, MiniMap, ReactFlow, useReactFlow, typ
 import "@xyflow/react/dist/style.css";
 import { KnowledgeNode } from "./KnowledgeNode";
 import { KnowledgeEdge } from "./KnowledgeEdge";
+import { fitViewDuration } from "../knowledge/knowledge-interactions";
 const nodeTypes = { knowledge: KnowledgeNode };
 const edgeTypes = { knowledge: KnowledgeEdge };
-function FitSignal({ signal }: { signal: number }) { const { fitView } = useReactFlow(); useEffect(() => { if (signal) void fitView({ padding: .18, duration: 280 }); }, [signal, fitView]); return null; }
+function FitSignal({ signal }: { signal: number }) { const { fitView } = useReactFlow(); useEffect(() => { if (!signal) return; const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false; void fitView({ padding: .18, duration: fitViewDuration(reducedMotion) }); }, [signal, fitView]); return null; }
 export function KnowledgeCanvas({ nodes, edges, onSelect, fitSignal }: { nodes: Node[]; edges: Edge[]; onSelect: (id:string) => void; fitSignal: number }) {
   const select: NodeMouseHandler = (_, node) => onSelect(node.id);
   return <div className="min-h-0 h-full bg-background bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:24px_24px]" aria-label="업무 지식 관계 캔버스" onKeyDown={(event) => { if (event.key === "Enter" && (event.target as HTMLElement).dataset.id) onSelect((event.target as HTMLElement).dataset.id!); }}>

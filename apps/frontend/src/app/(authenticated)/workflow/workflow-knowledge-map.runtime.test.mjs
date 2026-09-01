@@ -40,6 +40,7 @@ after(() => fs.rmSync(temporaryDirectory, { recursive: true, force: true }));
 const { KnowledgeNavigationModel, parseKnowledgeNavigation } = loadTypeScriptModule("knowledge-state");
 const { KNOWLEDGE_LAYOUTS, safeLayout } = loadTypeScriptModule("knowledge-layouts");
 const { createKnowledgeViewModel } = loadTypeScriptModule("knowledge-view-model");
+const interactions = loadTypeScriptModule("knowledge-interactions");
 
 const [center, second, third] = workflowKnowledgeCatalog.nodes;
 assert.ok(center && second && third);
@@ -198,4 +199,55 @@ test("view modes keep exact topology while changing emphasis and filters alone i
   });
   assert.deepEqual(flowOnly.edges.map(({ id }) => id), ["flow"]);
   assert.deepEqual(flowOnly.nodes.map(({ id }) => id), ["activity:center", "activity:next"]);
+});
+
+test("search recovery establishes a valid center while graph clicks only select and expand", () => {
+  const invalid = { centerId: null, invalidCenter: "old:missing", selectedNodeId: null, expandedNodeIds: [], fitRevision: 0 };
+  const recovered = interactions.selectSearchResult(invalid, center.id);
+  assert.deepEqual(recovered, { centerId: center.id, invalidCenter: null, selectedNodeId: null, expandedNodeIds: [], fitRevision: 1 });
+
+  const clicked = interactions.selectGraphNode(recovered, second.id);
+  assert.equal(clicked.centerId, center.id);
+  assert.equal(clicked.selectedNodeId, second.id);
+  assert.deepEqual(clicked.expandedNodeIds, [second.id]);
+  assert.equal(clicked.fitRevision, 1);
+});
+
+test("recenter and history restoration clear temporary graph state and request fit", () => {
+  const dirty = { centerId: center.id, invalidCenter: null, selectedNodeId: second.id, expandedNodeIds: [second.id, third.id], fitRevision: 4 };
+  for (const clean of [interactions.recenterKnowledge(dirty, third.id), interactions.restoreKnowledgeCenter(dirty, second.id)]) {
+    assert.equal(clean.selectedNodeId, null);
+    assert.deepEqual(clean.expandedNodeIds, []);
+    assert.equal(clean.fitRevision, 5);
+  }
+});
+
+test("AI interpretation is gated and stale candidates fail shared runtime validation", () => {
+  assert.equal(interactions.shouldInterpretKnowledgeQuery("arrival", 2, false), false);
+  assert.equal(interactions.shouldInterpretKnowledgeQuery("arrival", 0, false), true);
+  assert.equal(interactions.shouldInterpretKnowledgeQuery("arrival", 2, true), true);
+  assert.equal(interactions.shouldInterpretKnowledgeQuery("  ", 0, true), false);
+
+  const valid = { interpreted: true, candidates: [{ nodeId: center.id, reason: "match", relationKinds: ["precedes"] }] };
+  const staleNode = { interpreted: true, candidates: [{ nodeId: "missing", reason: "old", relationKinds: ["precedes"] }] };
+  const staleKind = { interpreted: true, candidates: [{ nodeId: center.id, reason: "old", relationKinds: ["invented"] }] };
+  assert.equal(interactions.validateKnowledgeCandidates(valid), true);
+  assert.equal(interactions.validateKnowledgeCandidates(staleNode), false);
+  assert.equal(interactions.validateKnowledgeCandidates(staleKind), false);
+});
+
+test("evidence status only uses incident relations and prefers evidencedBy links", () => {
+  const relations = [
+    { id: "selected-flow", source: center.id, target: second.id, kind: "precedes", category: "flow", evidenceStatus: "partial" },
+    { id: "unrelated", source: third.id, target: "evidence:other", kind: "evidencedBy", category: "evidence", evidenceStatus: "verified" },
+  ];
+  assert.equal(interactions.deriveNodeEvidenceStatus(center.id, relations), "partial");
+  assert.equal(interactions.deriveNodeEvidenceStatus("isolated", relations), "undocumented");
+  const withEvidence = [...relations, { id: "selected-evidence", source: center.id, target: "evidence:center", kind: "evidencedBy", category: "evidence", evidenceStatus: "verified" }];
+  assert.equal(interactions.deriveNodeEvidenceStatus(center.id, withEvidence), "verified");
+});
+
+test("fit view animation is disabled for reduced motion", () => {
+  assert.equal(interactions.fitViewDuration(true), 0);
+  assert.equal(interactions.fitViewDuration(false), 280);
 });

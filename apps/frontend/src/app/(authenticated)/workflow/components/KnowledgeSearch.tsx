@@ -3,6 +3,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { isWorkflowKnowledgeInterpretResponse, searchKnowledge as searchKnowledgeCatalog, workflowKnowledgeCatalog, type KnowledgeNode, type WorkflowKnowledgeCandidate } from "@harness/shared";
 import api from "@/services/api";
+import { shouldInterpretKnowledgeQuery, validateKnowledgeCandidates } from "../knowledge/knowledge-interactions";
 
 interface Props { onSelect: (nodeId: string) => void; invalidCenter?: string | null }
 
@@ -18,7 +19,7 @@ export function KnowledgeSearch({ onSelect, invalidCenter }: Props) {
     setLoading(true); setStatus("");
     try {
       const response = await api.post("/ai/workflow-knowledge/interpret", { query }, { suppressErrorModal: true });
-      if (!isWorkflowKnowledgeInterpretResponse(response.data, workflowKnowledgeCatalog)) {
+      if (!isWorkflowKnowledgeInterpretResponse(response.data, workflowKnowledgeCatalog) || !validateKnowledgeCandidates(response.data)) {
         setAiCandidates([]); setStatus("오래되었거나 유효하지 않은 AI 응답을 버렸습니다."); return;
       }
       setAiCandidates(response.data.candidates);
@@ -26,7 +27,7 @@ export function KnowledgeSearch({ onSelect, invalidCenter }: Props) {
     } catch { setAiCandidates([]); setStatus("AI 해석 요청에 실패했습니다."); }
     finally { setLoading(false); }
   };
-  const submit = (event: FormEvent) => { event.preventDefault(); if (localResults.length === 0) void interpret(); };
+  const submit = (event: FormEvent) => { event.preventDefault(); if (shouldInterpretKnowledgeQuery(query, localResults.length, false)) void interpret(); };
   const nodeFor = (id: string): KnowledgeNode | undefined => workflowKnowledgeCatalog.nodes.find((node) => node.id === id);
 
   return <section className="border-b border-border bg-card p-3" aria-label="지식 검색">
