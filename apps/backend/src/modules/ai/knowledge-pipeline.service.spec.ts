@@ -30,6 +30,8 @@ function makeService(overrides: { complete?: jest.Mock; knowledge?: Record<strin
     search: jest.fn().mockResolvedValue([]),
     getWorkflowContext: jest.fn().mockReturnValue({ workflows: [], prevMenus: [], nextMenus: [], requires: [] }),
     getMenuOverviewChunks: jest.fn().mockReturnValue([]),
+    // 기본 스텁은 입력을 그대로 통과시킨다(인덱스 존재 검증은 실제 서비스에서 수행).
+    filterKnownMenuCodes: jest.fn((codes: string[]) => codes),
     getWorkflowDocChunks: jest.fn().mockReturnValue([]),
     getBusinessLogicChunks: jest.fn().mockReturnValue([]),
     getMenuCatalog: jest.fn().mockReturnValue([]),
