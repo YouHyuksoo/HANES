@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const pageSource = fs.readFileSync("apps/frontend/src/app/(authenticated)/workflow/page.tsx", "utf8");
-const mapSource = fs.readFileSync("apps/frontend/src/config/workflowMap.ts", "utf8");
+const adapterSource = fs.readFileSync("apps/frontend/src/config/workflowMap.ts", "utf8");
+const mapSource = fs.readFileSync("packages/shared/src/workflow/legacy-map.ts", "utf8");
 const flowSource = fs.readFileSync(
   "apps/frontend/src/app/(authenticated)/workflow/components/WorkflowFlow.tsx",
   "utf8",
@@ -12,6 +13,12 @@ const guideSource = fs.readFileSync(
   "apps/frontend/src/app/(authenticated)/workflow/components/WorkflowGuide.tsx",
   "utf8",
 );
+
+test("workflowMap is a thin compatibility adapter over @harness/shared", () => {
+  assert.match(adapterSource, /export\s*\{[\s\S]*workflowLanes[\s\S]*workflowNodes[\s\S]*workflowEdges[\s\S]*\}\s*from\s*["']@harness\/shared["']/);
+  assert.doesNotMatch(adapterSource, /export const workflowLanes\s*=/);
+  assert.doesNotMatch(adapterSource, /id:\s*["']purchase-arrival["']/);
+});
 
 test("/workflow renders an interactive React Flow business map", () => {
   assert.match(flowSource, /@xyflow\/react/);
