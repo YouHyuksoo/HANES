@@ -12,11 +12,18 @@ import { api } from "@/services/api";
 import toast from "react-hot-toast";
 
 const EMBEDDING_PROVIDER_OPTIONS = [
+  { value: "ollama", label: "사내 서버 (Ollama)" },
   { value: "mistral", label: "Mistral" },
   { value: "openai", label: "OpenAI" },
 ];
 
 const EMBEDDING_MODEL_OPTIONS: Record<string, { value: string; label: string; dims: string }[]> = {
+  // 사내 서버에서 직접 도는 임베딩. API 키·사용량 제한이 없고 데이터가 밖으로 나가지 않는다.
+  ollama: [
+    { value: "bge-m3", label: "bge-m3 (1024)", dims: "1024" },
+    { value: "bge-large", label: "bge-large (1024)", dims: "1024" },
+    { value: "nomic-embed-text", label: "nomic-embed-text (768)", dims: "768" },
+  ],
   mistral: [{ value: "mistral-embed", label: "mistral-embed (1024)", dims: "1024" }],
   openai: [
     { value: "text-embedding-3-small", label: "text-embedding-3-small (1536)", dims: "1536" },
