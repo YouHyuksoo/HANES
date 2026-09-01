@@ -24,9 +24,9 @@ export default function BoardClock({ className = "" }: { className?: string }) {
   const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
   return (
-    <div className={`flex items-baseline gap-2 tabular-nums ${className}`}>
-      <span className="text-xs text-text-muted">{date}</span>
-      <span className="text-xl font-bold text-text">{time}</span>
+    <div className={`flex items-baseline gap-3 tabular-nums ${className}`}>
+      <span className="text-[11px] uppercase tracking-[0.18em] text-text-muted">{date}</span>
+      <span className="text-2xl font-extrabold leading-none tracking-tight text-text">{time}</span>
     </div>
   );
 }

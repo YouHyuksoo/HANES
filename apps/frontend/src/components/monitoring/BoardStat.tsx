@@ -2,7 +2,9 @@
 
 /**
  * @file src/components/monitoring/BoardStat.tsx
- * @description 보드 KPI 스탯 카드 — TV 가독성 기준 큰 숫자, 파스텔 배경 금지(텍스트/테두리 구분)
+ * @description 전광판형 스탯 — 박스 없이 소형 대문자 라벨 + 초대형 tabular 숫자.
+ *              부모가 `flex divide-x divide-border` 스트립으로 감싸 괘선으로만 구획한다.
+ *              (카드박스 그리드 금지 — 전광판 타이포 위계로 정보 전달)
  */
 import type { ReactNode } from "react";
 
@@ -13,20 +15,30 @@ interface BoardStatProps {
   sub?: ReactNode;
   /** 값 색상 클래스 (기본 text-text) */
   valueClassName?: string;
-  icon?: ReactNode;
 }
 
-export default function BoardStat({ label, value, sub, valueClassName = "text-text", icon }: BoardStatProps) {
+export default function BoardStat({ label, value, sub, valueClassName = "text-text" }: BoardStatProps) {
   return (
-    <div className="flex-1 min-w-0 rounded-xl border border-border bg-surface px-4 py-3 flex flex-col justify-center">
-      <div className="flex items-center gap-1.5 text-xs font-medium text-text-muted truncate">
-        {icon}
-        <span className="truncate">{label}</span>
+    <div className="flex-1 min-w-0 px-5 first:pl-1 last:pr-1">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted truncate">
+        {label}
       </div>
-      <div className={`mt-1 text-3xl font-bold tabular-nums leading-tight truncate ${valueClassName}`}>
+      <div className={`mt-1.5 text-4xl 2xl:text-5xl font-extrabold tabular-nums leading-none tracking-tight truncate ${valueClassName}`}>
         {value}
       </div>
-      {sub !== undefined && <div className="mt-0.5 text-xs text-text-muted truncate">{sub}</div>}
+      {sub !== undefined && <div className="mt-1.5 text-xs text-text-muted truncate">{sub}</div>}
+    </div>
+  );
+}
+
+/** 전광판 섹션 제목 — 소형 대문자 + 우측으로 뻗는 괘선 */
+export function BoardSectionTitle({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={`flex items-center gap-3 ${className}`}>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-muted whitespace-nowrap">
+        {children}
+      </span>
+      <span className="h-px flex-1 bg-border" />
     </div>
   );
 }

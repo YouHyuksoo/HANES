@@ -4,7 +4,7 @@
  */
 export { default as MonitoringFrame } from "./MonitoringFrame";
 export { default as BoardChrome } from "./BoardChrome";
-export { default as BoardStat } from "./BoardStat";
+export { default as BoardStat, BoardSectionTitle } from "./BoardStat";
 export { default as BoardClock } from "./BoardClock";
 export { useRotation, RotationIndicator } from "./useRotation";
 export { default as MonitoringSettingsModal } from "./MonitoringSettingsModal";

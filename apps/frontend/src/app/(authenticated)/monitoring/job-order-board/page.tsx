@@ -66,7 +66,7 @@ export default function JobOrderBoardPage() {
         statusLeft={<span>{t("monitoring.board.updatedAt")}: {updatedAt}</span>}
         statusRight={<span>{t("monitoring.board.kpi.total")} {orders.length}</span>}
       >
-        <div className="flex-1 min-h-0 flex gap-3">
+        <div className="flex-1 min-h-0 flex divide-x divide-border pt-3">
           {STATUS_COLUMNS.map((status) => (
             <KanbanColumn
               key={status}

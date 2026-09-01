@@ -2,7 +2,8 @@
 
 /**
  * @file src/app/(authenticated)/monitoring/production-board/components/OrderTable.tsx
- * @description 생산현황 보드 작업지시 테이블 — TV 가독성 기준 큰 폰트 + 달성률 진행바
+ * @description 생산현황 보드 작업지시 테이블 — 전광판 스타일: 큰 행높이/타이포,
+ *              박스 대신 hairline 행 구분 + RUNNING 행 좌측 컬러 룰로 강조
  */
 import { useTranslation } from "react-i18next";
 import StatusBadge from "@/components/shared/StatusBadge";
@@ -12,6 +13,8 @@ interface OrderTableProps {
   orders: ProductionBoardOrder[];
   loading?: boolean;
 }
+
+const thCls = "px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted";
 
 export default function OrderTable({ orders, loading = false }: OrderTableProps) {
   const { t } = useTranslation();
@@ -34,49 +37,56 @@ export default function OrderTable({ orders, loading = false }: OrderTableProps)
 
   return (
     <div className="h-full overflow-hidden">
-      <table className="w-full text-sm">
+      <table className="w-full border-collapse">
         <thead>
-          <tr className="border-b border-border text-xs text-text-muted">
-            <th className="px-3 py-2 text-left font-medium">{t("monitoring.board.col.orderNo")}</th>
-            <th className="px-3 py-2 text-left font-medium">{t("monitoring.board.col.item")}</th>
-            <th className="px-3 py-2 text-left font-medium">{t("monitoring.board.col.process")}</th>
-            <th className="px-3 py-2 text-right font-medium">{t("monitoring.board.col.plan")}</th>
-            <th className="px-3 py-2 text-right font-medium">{t("monitoring.board.col.good")}</th>
-            <th className="px-3 py-2 text-right font-medium">{t("monitoring.board.col.defect")}</th>
-            <th className="px-3 py-2 text-left font-medium w-48">{t("monitoring.board.col.achieve")}</th>
-            <th className="px-3 py-2 text-center font-medium">{t("monitoring.board.col.status")}</th>
+          <tr className="border-b border-border text-left">
+            <th className={thCls}>{t("monitoring.board.col.orderNo")}</th>
+            <th className={thCls}>{t("monitoring.board.col.item")}</th>
+            <th className={thCls}>{t("monitoring.board.col.process")}</th>
+            <th className={`${thCls} text-right`}>{t("monitoring.board.col.plan")}</th>
+            <th className={`${thCls} text-right`}>{t("monitoring.board.col.good")}</th>
+            <th className={`${thCls} text-right`}>{t("monitoring.board.col.defect")}</th>
+            <th className={`${thCls} w-52`}>{t("monitoring.board.col.achieve")}</th>
+            <th className={`${thCls} text-center`}>{t("monitoring.board.col.status")}</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-border">
-          {orders.map((o) => (
-            <tr key={o.orderNo} className={o.status === "RUNNING" ? "bg-primary/5" : ""}>
-              <td className="px-3 py-2 font-mono text-xs text-text-muted">{o.orderNo}</td>
-              <td className="px-3 py-2">
-                <div className="font-semibold text-text truncate max-w-[26rem]">{o.itemName ?? o.itemCode}</div>
-                <div className="font-mono text-[11px] text-text-muted">{o.itemCode}</div>
-              </td>
-              <td className="px-3 py-2 text-text">{o.processCode ?? "-"}</td>
-              <td className="px-3 py-2 text-right tabular-nums text-text">{o.planQty.toLocaleString()}</td>
-              <td className="px-3 py-2 text-right tabular-nums font-semibold text-primary">{o.goodQty.toLocaleString()}</td>
-              <td className={`px-3 py-2 text-right tabular-nums ${o.defectQty > 0 ? "text-red-600 dark:text-red-400 font-semibold" : "text-text-muted"}`}>
-                {o.defectQty.toLocaleString()}
-              </td>
-              <td className="px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 rounded-full bg-border overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${o.achieveRate >= 100 ? "bg-emerald-500" : "bg-primary"}`}
-                      style={{ width: `${Math.min(100, o.achieveRate)}%` }}
-                    />
+        <tbody>
+          {orders.map((o) => {
+            const running = o.status === "RUNNING";
+            return (
+              <tr key={o.orderNo} className="border-b border-border/60">
+                <td className={`py-2.5 pl-3 pr-3 font-mono text-xs text-text-muted border-l-4 ${running ? "border-l-primary" : "border-l-transparent"}`}>
+                  {o.orderNo}
+                </td>
+                <td className="py-2.5 px-3">
+                  <span className={`text-base leading-tight ${running ? "font-bold text-text" : "font-medium text-text"}`}>
+                    {o.itemName ?? o.itemCode}
+                  </span>
+                  <span className="ml-2 font-mono text-[11px] text-text-muted">{o.itemCode}</span>
+                </td>
+                <td className="py-2.5 px-3 text-sm text-text-muted">{o.processCode ?? "—"}</td>
+                <td className="py-2.5 px-3 text-right text-lg tabular-nums text-text">{o.planQty.toLocaleString()}</td>
+                <td className="py-2.5 px-3 text-right text-lg tabular-nums font-bold text-primary">{o.goodQty.toLocaleString()}</td>
+                <td className={`py-2.5 px-3 text-right text-lg tabular-nums ${o.defectQty > 0 ? "font-bold text-red-600 dark:text-red-400" : "text-text-muted"}`}>
+                  {o.defectQty > 0 ? o.defectQty.toLocaleString() : "—"}
+                </td>
+                <td className="py-2.5 px-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex-1 h-1 bg-border overflow-hidden">
+                      <div
+                        className={`h-full ${o.achieveRate >= 100 ? "bg-emerald-500" : "bg-primary"}`}
+                        style={{ width: `${Math.min(100, o.achieveRate)}%` }}
+                      />
+                    </div>
+                    <span className="tabular-nums text-sm font-bold text-text w-14 text-right">{o.achieveRate}%</span>
                   </div>
-                  <span className="tabular-nums text-xs font-semibold text-text w-12 text-right">{o.achieveRate}%</span>
-                </div>
-              </td>
-              <td className="px-3 py-2 text-center">
-                <StatusBadge codeType="JOB_ORDER_STATUS" value={o.status} />
-              </td>
-            </tr>
-          ))}
+                </td>
+                <td className="py-2.5 px-3 text-center">
+                  <StatusBadge codeType="JOB_ORDER_STATUS" value={o.status} />
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

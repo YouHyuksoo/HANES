@@ -184,6 +184,7 @@
       "noData": "Không có dữ liệu.",
       "good": "Hàng đạt",
       "defect": "Hàng lỗi",
+      "hourlyTitle": "Sản lượng theo giờ (Hôm nay)",
       "production": { "title": "Bảng tình hình sản xuất" },
       "kpi": {
         "planQty": "Tổng kế hoạch",
@@ -5874,7 +5875,7 @@
       "usageMapRemarkPlaceholder": "Ghi chú ánh xạ",
       "usageMapSave": "Lưu ánh xạ",
       "usageMapSelectFirst": "Vui lòng chọn vật tư tiêu hao.",
-      "usageMapSelectGuide": "Chọn vật tư tiêu hao từ danh sách bên trái để quản lý ánh xạ sử dụng sản phẩm/thiết bị bất cứ lúc nào.",
+      "usageMapSelectGuide": "Dùng biểu tượng liên kết trên danh sách để quản lý ánh xạ sản phẩm/thiết bị.",
       "usageMapTitle": "Ánh xạ sử dụng vật tư tiêu hao",
       "usagePerUnit": "Lượng dùng trên đơn vị",
       "usagePerUnitShort": "Lượng dùng",

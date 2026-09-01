@@ -184,6 +184,7 @@
       "noData": "暂无数据。",
       "good": "良品",
       "defect": "不良",
+      "hourlyTitle": "每小时实绩（今日）",
       "production": { "title": "生产状况看板" },
       "kpi": {
         "planQty": "总计划",
@@ -5874,7 +5875,7 @@
       "usageMapRemarkPlaceholder": "映射备注",
       "usageMapSave": "保存映射",
       "usageMapSelectFirst": "请选择耗材。",
-      "usageMapSelectGuide": "从左侧列表中选择耗材，即可随时管理产品/设备使用映射。",
+      "usageMapSelectGuide": "点击列表中的连接图标即可管理产品/设备使用映射。",
       "usageMapTitle": "耗材使用映射",
       "usagePerUnit": "单位用量",
       "usagePerUnitShort": "用量",

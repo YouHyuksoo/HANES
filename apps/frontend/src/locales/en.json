@@ -184,6 +184,7 @@
       "noData": "No data.",
       "good": "Good",
       "defect": "Defect",
+      "hourlyTitle": "Hourly Output (Today)",
       "production": { "title": "Production Status Board" },
       "kpi": {
         "planQty": "Total Plan",
@@ -5874,7 +5875,7 @@
       "usageMapRemarkPlaceholder": "Mapping remarks",
       "usageMapSave": "Save Mapping",
       "usageMapSelectFirst": "Please select a consumable.",
-      "usageMapSelectGuide": "Select a consumable from the left list to manage product/equipment usage mappings at any time.",
+      "usageMapSelectGuide": "Use the link icon in the list to manage product/equipment usage mappings.",
       "usageMapTitle": "Consumable Usage Mapping",
       "usagePerUnit": "Usage per Unit",
       "usagePerUnitShort": "Usage",

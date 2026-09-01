@@ -184,6 +184,7 @@
       "noData": "데이터가 없습니다.",
       "good": "양품",
       "defect": "불량",
+      "hourlyTitle": "시간대별 실적 (금일)",
       "production": { "title": "생산현황 보드" },
       "kpi": {
         "planQty": "총 계획",
@@ -5878,7 +5879,7 @@
       "usageMapRemarkPlaceholder": "매핑 비고",
       "usageMapSave": "매핑 저장",
       "usageMapSelectFirst": "소모품을 선택하세요.",
-      "usageMapSelectGuide": "왼쪽 목록에서 소모품을 선택하면 제품/설비 사용매핑을 상시 관리할 수 있습니다.",
+      "usageMapSelectGuide": "목록의 연결 아이콘으로 소모품을 고르면 제품/설비 사용매핑을 관리할 수 있습니다.",
       "usageMapTitle": "소모품 사용매핑",
       "usagePerUnit": "단위사용량",
       "usagePerUnitShort": "사용량",
