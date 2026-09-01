@@ -23,7 +23,7 @@ import OrderTable from "./components/OrderTable";
 import HourlyTrendChart from "./components/HourlyTrendChart";
 import type { ProductionBoardData } from "./components/types";
 
-const ROWS_PER_PAGE = 10;
+const ROWS_PER_PAGE = 8;
 
 export default function ProductionBoardPage() {
   const { t } = useTranslation();

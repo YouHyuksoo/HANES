@@ -25,8 +25,8 @@ export default function BoardClock({ className = "" }: { className?: string }) {
 
   return (
     <div className={`flex items-baseline gap-3 tabular-nums ${className}`}>
-      <span className="text-[11px] uppercase tracking-[0.18em] text-text-muted">{date}</span>
-      <span className="text-2xl font-extrabold leading-none tracking-tight text-text">{time}</span>
+      <span className="text-sm uppercase tracking-[0.14em] text-text-muted">{date}</span>
+      <span className="text-3xl font-extrabold leading-none tracking-tight text-text">{time}</span>
     </div>
   );
 }

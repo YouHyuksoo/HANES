@@ -21,10 +21,10 @@ export function ProcessDefectChart({ byProcess }: { byProcess: ProcessDefect[] }
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={byProcess} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} vertical={false} />
-        <XAxis dataKey="processCode" tick={{ fontSize: 10 }} />
-        <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+        <XAxis dataKey="processCode" tick={{ fontSize: 13 }} />
+        <YAxis tick={{ fontSize: 13 }} allowDecimals={false} />
         <Tooltip formatter={(value, name) => [Number(value ?? 0).toLocaleString(), String(name)]} />
-        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Legend wrapperStyle={{ fontSize: 14 }} />
         <Bar dataKey="totalQty" name={t("monitoring.board.quality.totalQty")} fill={TOTAL_COLOR} />
         <Bar dataKey="defectQty" name={t("monitoring.board.defect")} fill={DEFECT_COLOR} />
       </BarChart>
@@ -39,8 +39,8 @@ export function DailyTrendChart({ dailyTrend }: { dailyTrend: DailyDefectPoint[]
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} vertical={false} />
-        <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-        <YAxis tick={{ fontSize: 10 }} unit="%" />
+        <XAxis dataKey="label" tick={{ fontSize: 13 }} />
+        <YAxis tick={{ fontSize: 13 }} unit="%" />
         <Tooltip formatter={(value) => [`${Number(value ?? 0)}%`, t("monitoring.board.quality.defectRate")]} />
         <Line type="monotone" dataKey="defectRate" stroke={RATE_COLOR} strokeWidth={2} dot={{ r: 3 }} />
       </LineChart>

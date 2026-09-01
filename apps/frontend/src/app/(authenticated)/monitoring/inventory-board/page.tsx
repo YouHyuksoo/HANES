@@ -2,8 +2,9 @@
 
 /**
  * @file src/app/(authenticated)/monitoring/inventory-board/page.tsx
- * @description 재고 모니터링 보드 — 전광판 스타일: 유형별 KPI 스트립 + 안전재고 미달(주인공 테이블,
- *              자동 순환) + 창고별 분포. 카드박스 대신 괘선 구획.
+ * @description 재고 모니터링 보드 — "조치가 필요한 재고" 전광판:
+ *              안전재고 미달(발주) / 유효기한 초과·임박 LOT(우선소진·폐기) / 보류·불량 재고(처리).
+ *              무의미한 총수량 합계 없음. KPI는 전부 "문제 건수"(0이면 정상 초록).
  */
 
 import { useState } from "react";
@@ -17,9 +18,13 @@ import {
 } from "@/components/monitoring";
 import type { InventoryBoardData } from "./components/types";
 
-const SHORTAGE_ROWS = 9;
+const SHORTAGE_ROWS = 7;
 
-const thCls = "px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-muted";
+const thCls = "px-3 pb-2 text-sm font-semibold uppercase tracking-[0.12em] text-text-muted";
+
+/** 문제 건수 KPI 색: 0이면 정상(초록), 있으면 경고색 */
+const alertColor = (n: number, color: string) =>
+  n > 0 ? color : "text-emerald-600 dark:text-emerald-400";
 
 export default function InventoryBoardPage() {
   const { t } = useTranslation();
@@ -32,9 +37,22 @@ export default function InventoryBoardPage() {
     { refetchInterval: Math.max(5, config.refetchSec) * 1000, enabled: loaded },
   );
   const board = response?.data;
+  const kpi = board?.kpi;
   const shortages = board?.shortages ?? [];
+  const expiry = board?.expiry ?? [];
+  const holds = board?.holds ?? [];
   const { pageItems, page, pageCount } = useRotation(shortages, SHORTAGE_ROWS, config.rollingSec);
   const updatedAt = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : "—";
+
+  const reasonLabel = (reason: string) => {
+    switch (reason) {
+      case "HOLD": return t("monitoring.board.inventory.reasonHold");
+      case "IQC_FAIL": return t("monitoring.board.inventory.reasonIqcFail");
+      case "IQC_HOLD": return t("monitoring.board.inventory.reasonIqcHold");
+      case "DEFECT": return t("monitoring.board.inventory.reasonDefect");
+      default: return reason;
+    }
+  };
 
   return (
     <>
@@ -55,50 +73,54 @@ export default function InventoryBoardPage() {
         statusLeft={<span>{t("monitoring.board.updatedAt")} {updatedAt}</span>}
         statusRight={<RotationIndicator page={page} pageCount={pageCount} />}
       >
-        {/* KPI 스트립 — 재고 유형 + 금일 입출고 */}
+        {/* KPI 스트립 — 전부 "조치 필요 건수" */}
         <div className="flex divide-x divide-border py-4 border-b border-border flex-shrink-0">
           <BoardStat
-            label={t("monitoring.board.inventory.material")}
-            value={(board?.kpi.materialQty ?? 0).toLocaleString()}
-            sub={`${board?.kpi.materialItems ?? 0} ${t("monitoring.board.inventory.itemsUnit")}`}
+            label={t("monitoring.board.inventory.shortageTitle")}
+            value={kpi?.shortageCount ?? 0}
+            valueClassName={alertColor(kpi?.shortageCount ?? 0, "text-red-600 dark:text-red-400")}
           />
           <BoardStat
-            label={t("monitoring.board.inventory.semi")}
-            value={(board?.kpi.semiQty ?? 0).toLocaleString()}
-            sub={`${board?.kpi.semiItems ?? 0} ${t("monitoring.board.inventory.itemsUnit")}`}
+            label={t("monitoring.board.inventory.expired")}
+            value={kpi?.expiredCount ?? 0}
+            valueClassName={alertColor(kpi?.expiredCount ?? 0, "text-red-600 dark:text-red-400")}
           />
           <BoardStat
-            label={t("monitoring.board.inventory.finished")}
-            value={(board?.kpi.finishedQty ?? 0).toLocaleString()}
-            sub={`${board?.kpi.finishedItems ?? 0} ${t("monitoring.board.inventory.itemsUnit")}`}
+            label={t("monitoring.board.inventory.nearExpiry")}
+            value={kpi?.nearExpiryCount ?? 0}
+            valueClassName={alertColor(kpi?.nearExpiryCount ?? 0, "text-amber-600 dark:text-amber-400")}
           />
           <BoardStat
-            label={t("monitoring.board.inventory.todayIn")}
-            value={(board?.todayInOut.inQty ?? 0).toLocaleString()}
-            sub={`${board?.todayInOut.inCount ?? 0} ${t("monitoring.board.inventory.countUnit")}`}
-            valueClassName="text-primary"
+            label={t("monitoring.board.inventory.hold")}
+            value={kpi?.holdCount ?? 0}
+            valueClassName={alertColor(kpi?.holdCount ?? 0, "text-amber-600 dark:text-amber-400")}
           />
           <BoardStat
-            label={t("monitoring.board.inventory.todayOut")}
-            value={(board?.todayInOut.outQty ?? 0).toLocaleString()}
-            sub={`${board?.todayInOut.outCount ?? 0} ${t("monitoring.board.inventory.countUnit")}`}
-            valueClassName="text-amber-600 dark:text-amber-400"
+            label={t("monitoring.board.inventory.todayInOut")}
+            value={
+              <span>
+                {kpi?.inCount ?? 0}
+                <span className="text-text-muted text-3xl"> / </span>
+                {kpi?.outCount ?? 0}
+              </span>
+            }
+            sub={t("monitoring.board.inventory.todayInOutSub")}
           />
         </div>
 
-        {/* 중단: 안전재고 미달(주인공) + 창고별 분포 — 세로 괘선 2분할 */}
+        {/* 본문: 좌측 안전재고 미달(주인공) / 우측 기한 문제 + 보류·불량 */}
         <div className="flex-1 min-h-0 flex divide-x divide-border pt-3">
+          {/* 안전재고 미달 */}
           <div className="flex-[3] min-w-0 pr-5 flex flex-col overflow-hidden">
             <BoardSectionTitle className="mb-2">
-              <span className="inline-flex items-center gap-1.5 text-red-600 dark:text-red-400">
-                <AlertTriangle className="w-3.5 h-3.5" />
+              <span className="inline-flex items-center gap-2 text-red-600 dark:text-red-400">
+                <AlertTriangle className="w-4 h-4" />
                 {t("monitoring.board.inventory.shortageTitle")}
               </span>
-              <span className="ml-2 normal-case tracking-normal">({shortages.length})</span>
             </BoardSectionTitle>
             <div className="flex-1 min-h-0 overflow-hidden">
               {shortages.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-sm text-text-muted">
+                <div className="h-full flex items-center justify-center text-xl text-text-muted">
                   {t("monitoring.board.inventory.noShortage")}
                 </div>
               ) : (
@@ -114,13 +136,13 @@ export default function InventoryBoardPage() {
                   <tbody>
                     {pageItems.map((s) => (
                       <tr key={s.itemCode} className="border-b border-border/60">
-                        <td className="py-2 pl-3 pr-3 border-l-4 border-l-red-500">
-                          <span className="text-base font-medium text-text">{s.itemName ?? s.itemCode}</span>
-                          <span className="ml-2 font-mono text-[11px] text-text-muted">{s.itemCode}</span>
+                        <td className="py-3 pl-3 pr-3 border-l-4 border-l-red-500">
+                          <span className="text-xl font-medium text-text">{s.itemName ?? s.itemCode}</span>
+                          <span className="ml-2.5 font-mono text-sm text-text-muted">{s.itemCode}</span>
                         </td>
-                        <td className="py-2 px-3 text-right text-lg tabular-nums text-text">{s.qty.toLocaleString()}</td>
-                        <td className="py-2 px-3 text-right text-lg tabular-nums text-text-muted">{s.safetyStock.toLocaleString()}</td>
-                        <td className="py-2 px-3 text-right text-lg tabular-nums font-bold text-red-600 dark:text-red-400">
+                        <td className="py-3 px-3 text-right text-2xl tabular-nums text-text">{s.qty.toLocaleString()}</td>
+                        <td className="py-3 px-3 text-right text-2xl tabular-nums text-text-muted">{s.safetyStock.toLocaleString()}</td>
+                        <td className="py-3 px-3 text-right text-2xl tabular-nums font-bold text-red-600 dark:text-red-400">
                           -{s.shortage.toLocaleString()}
                         </td>
                       </tr>
@@ -131,33 +153,71 @@ export default function InventoryBoardPage() {
             </div>
           </div>
 
+          {/* 우측: 유효기한 + 보류/불량 */}
           <div className="flex-[2] min-w-0 pl-5 flex flex-col overflow-hidden">
-            <BoardSectionTitle className="mb-2">{t("monitoring.board.inventory.byWarehouseTitle")}</BoardSectionTitle>
-            <div className="flex-1 min-h-0 overflow-y-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b border-border text-left">
-                    <th className={thCls}>{t("monitoring.board.inventory.warehouse")}</th>
-                    <th className={thCls}>{t("monitoring.board.inventory.kind")}</th>
-                    <th className={`${thCls} text-right`}>{t("monitoring.board.inventory.itemCount")}</th>
-                    <th className={`${thCls} text-right`}>{t("monitoring.board.inventory.qty")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(board?.byWarehouse ?? []).map((w) => (
-                    <tr key={`${w.stockKind}:${w.warehouseCode}`} className="border-b border-border/60">
-                      <td className="py-2 px-3 text-base font-medium text-text">{w.warehouseCode}</td>
-                      <td className="py-2 px-3 text-xs uppercase tracking-wider text-text-muted">
-                        {w.stockKind === "MATERIAL"
+            <BoardSectionTitle className="mb-2">{t("monitoring.board.inventory.expiryTitle")}</BoardSectionTitle>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {expiry.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-lg text-text-muted">
+                  {t("monitoring.board.inventory.noExpiry")}
+                </div>
+              ) : (
+                <div>
+                  {expiry.slice(0, 6).map((e) => {
+                    const expired = e.daysLeft < 0;
+                    return (
+                      <div
+                        key={e.matUid}
+                        className={`flex items-baseline gap-3 py-2 border-b border-border/60 border-l-4 pl-3 ${expired ? "border-l-red-500" : "border-l-amber-500"}`}
+                      >
+                        <span className="flex-1 min-w-0 truncate text-lg font-medium text-text">
+                          {e.itemName ?? e.itemCode}
+                        </span>
+                        <span className="font-mono text-sm text-text-muted">{e.matUid}</span>
+                        <span className="text-lg tabular-nums text-text">{e.qty.toLocaleString()}</span>
+                        <span className={`w-24 text-right text-lg font-bold tabular-nums ${expired ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
+                          {expired
+                            ? t("monitoring.board.inventory.expiredDays", { days: Math.abs(e.daysLeft) })
+                            : t("monitoring.board.inventory.daysLeft", { days: e.daysLeft })}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <BoardSectionTitle className="mb-2 mt-3 pt-3 border-t border-border">
+              {t("monitoring.board.inventory.holdTitle")}
+            </BoardSectionTitle>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {holds.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-lg text-text-muted">
+                  {t("monitoring.board.inventory.noHold")}
+                </div>
+              ) : (
+                <div>
+                  {holds.slice(0, 6).map((h) => (
+                    <div
+                      key={`${h.kind}:${h.ref}:${h.reason}`}
+                      className="flex items-baseline gap-3 py-2 border-b border-border/60 border-l-4 border-l-amber-500 pl-3"
+                    >
+                      <span className="text-sm uppercase tracking-wider text-text-muted w-14 shrink-0">
+                        {h.kind === "MATERIAL"
                           ? t("monitoring.board.inventory.kindMaterial")
                           : t("monitoring.board.inventory.kindProduct")}
-                      </td>
-                      <td className="py-2 px-3 text-right tabular-nums text-text-muted">{w.itemCount.toLocaleString()}</td>
-                      <td className="py-2 px-3 text-right text-lg tabular-nums font-bold text-text">{w.qty.toLocaleString()}</td>
-                    </tr>
+                      </span>
+                      <span className="flex-1 min-w-0 truncate text-lg font-medium text-text">
+                        {h.itemName ?? h.itemCode}
+                      </span>
+                      <span className="text-lg tabular-nums text-text">{h.qty.toLocaleString()}</span>
+                      <span className="w-24 text-right text-base font-bold text-amber-600 dark:text-amber-400">
+                        {reasonLabel(h.reason)}
+                      </span>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              )}
             </div>
           </div>
         </div>

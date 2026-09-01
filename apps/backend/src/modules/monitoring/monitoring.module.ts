@@ -13,6 +13,7 @@ import { ProdResult } from '../../entities/prod-result.entity';
 import { DefectLog } from '../../entities/defect-log.entity';
 import { RepairOrder } from '../../entities/repair-order.entity';
 import { MatStock } from '../../entities/mat-stock.entity';
+import { MatLot } from '../../entities/mat-lot.entity';
 import { ProductStock } from '../../entities/product-stock.entity';
 import { StockTransaction } from '../../entities/stock-transaction.entity';
 import { MonitoringBoardController } from './controllers/monitoring-board.controller';
@@ -28,6 +29,7 @@ import { InventoryBoardService } from './services/inventory-board.service';
       DefectLog,
       RepairOrder,
       MatStock,
+      MatLot,
       ProductStock,
       StockTransaction,
     ]),

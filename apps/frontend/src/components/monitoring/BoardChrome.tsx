@@ -57,7 +57,7 @@ export default function BoardChrome({
       <div className="flex items-end justify-between flex-shrink-0 pb-3 border-b-2 border-text/70">
         <h1 className="flex items-center gap-2.5 min-w-0">
           {icon}
-          <span className="truncate text-base font-bold uppercase tracking-[0.14em] text-text">{title}</span>
+          <span className="truncate text-xl font-bold uppercase tracking-[0.12em] text-text">{title}</span>
         </h1>
         <div className="flex items-center gap-2 shrink-0">
           {optionBar}
@@ -71,7 +71,7 @@ export default function BoardChrome({
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col">{children}</div>
 
       {/* 하단 상태줄 — 얇은 괘선 위 작은 텍스트 */}
-      <div className="flex items-center justify-between flex-shrink-0 pt-2 border-t border-border text-[11px] uppercase tracking-wider text-text-muted">
+      <div className="flex items-center justify-between flex-shrink-0 pt-2 border-t border-border text-sm uppercase tracking-wider text-text-muted">
         <div className="flex items-center gap-3 min-w-0 truncate">{statusLeft}</div>
         <div className="flex items-center gap-3 shrink-0 normal-case tracking-normal">{statusRight}</div>
       </div>

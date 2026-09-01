@@ -1,31 +1,25 @@
 /**
  * @file src/modules/monitoring/services/inventory-board.service.ts
- * @description 재고 모니터링 보드 집계 서비스 — 유형별 KPI/안전재고 미달/창고별 분포/금일 입출고
+ * @description 재고 모니터링 보드 집계 서비스 — "조치가 필요한 재고"만 보여준다.
+ *              품목 단위가 제각각인 총수량 합계는 무의미하므로 집계하지 않는다.
  *
- * 초보자 가이드:
- * 1. 자재 = MAT_STOCKS, 반제품·완제품 = PRODUCT_STOCKS(GOOD 만) — 테이블이 분리되어 있다
- * 2. 안전재고 미달 = ITEM_MASTERS.SAFETY_STOCK > 0 인 품목의 SUM(QTY) < SAFETY_STOCK
- * 3. 금일 입출고 = STOCK_TRANSACTIONS 의 TRANS_TYPE 접미사(_IN/_OUT) + PROD_CONSUME(출고성)
- *    LIKE 의 '_' 는 와일드카드이므로 ESCAPE 처리 필수
+ * 구성:
+ * 1. 안전재고 미달 (ITEM_MASTERS.SAFETY_STOCK 대비 부족 → 발주/보충 필요)
+ * 2. 유효기한 초과/임박 LOT (MAT_LOTS.EXPIRE_DATE, 30일 이내 → 우선 소진/폐기)
+ * 3. 보류/불량 재고 (MAT_LOTS HOLD·IQC FAIL + PRODUCT_STOCKS DEFECT/HOLD → 처리 필요)
+ * 4. 금일 입출고 건수 (STOCK_TRANSACTIONS, 수량 합계가 아닌 건수만)
  */
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { MatLot } from '../../../entities/mat-lot.entity';
 import { ProductStock } from '../../../entities/product-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 
-interface SumRaw {
-  qty: string | number;
-  items: string | number;
-}
-
-interface ProductKpiRaw {
-  itemType: string;
-  qty: string | number;
-  items: string | number;
-}
+/** 유효기한 임박 기준일 */
+const NEAR_EXPIRY_DAYS = 30;
 
 interface ShortageRaw {
   itemCode: string;
@@ -34,17 +28,35 @@ interface ShortageRaw {
   safetyStock: string | number;
 }
 
-interface WarehouseRaw {
-  warehouseCode: string;
-  itemCount: string | number;
+interface ExpiryRaw {
+  matUid: string;
+  itemCode: string;
+  itemName: string | null;
   qty: string | number;
+  expireDate: string;
+  daysLeft: string | number;
+}
+
+interface HoldLotRaw {
+  matUid: string;
+  itemCode: string;
+  itemName: string | null;
+  qty: string | number;
+  lotStatus: string;
+  iqcStatus: string;
+}
+
+interface HoldProductRaw {
+  itemCode: string;
+  itemName: string | null;
+  qty: string | number;
+  qualityStatus: string;
+  stockStatus: string;
 }
 
 interface InOutRaw {
   inCount: string | number;
-  inQty: string | number;
   outCount: string | number;
-  outQty: string | number;
 }
 
 @Injectable()
@@ -52,6 +64,8 @@ export class InventoryBoardService {
   constructor(
     @InjectRepository(MatStock)
     private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(MatLot)
+    private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(ProductStock)
     private readonly productStockRepository: Repository<ProductStock>,
     @InjectRepository(StockTransaction)
@@ -59,70 +73,29 @@ export class InventoryBoardService {
   ) {}
 
   async getBoard(company?: string, plant?: string) {
-    const [material, product, shortages, matWarehouse, prodWarehouse, todayInOut] =
-      await Promise.all([
-        this.getMaterialKpi(company, plant),
-        this.getProductKpi(company, plant),
-        this.getShortages(company, plant),
-        this.getMatByWarehouse(company, plant),
-        this.getProductByWarehouse(company, plant),
-        this.getTodayInOut(company, plant),
-      ]);
-
-    const semi = product.find((p) => p.itemType === 'SEMI_PRODUCT');
-    const finished = product.find((p) => p.itemType === 'FINISHED');
+    const [shortages, expiry, holds, todayInOut] = await Promise.all([
+      this.getShortages(company, plant),
+      this.getExpiryLots(company, plant),
+      this.getHoldStocks(company, plant),
+      this.getTodayInOut(company, plant),
+    ]);
 
     return {
       kpi: {
-        materialQty: material.qty,
-        materialItems: material.items,
-        semiQty: semi?.qty ?? 0,
-        semiItems: semi?.items ?? 0,
-        finishedQty: finished?.qty ?? 0,
-        finishedItems: finished?.items ?? 0,
+        shortageCount: shortages.length,
+        expiredCount: expiry.filter((e) => e.daysLeft < 0).length,
+        nearExpiryCount: expiry.filter((e) => e.daysLeft >= 0).length,
+        holdCount: holds.length,
+        inCount: todayInOut.inCount,
+        outCount: todayInOut.outCount,
       },
       shortages,
-      byWarehouse: [
-        ...matWarehouse.map((w) => ({ ...w, stockKind: 'MATERIAL' as const })),
-        ...prodWarehouse.map((w) => ({ ...w, stockKind: 'PRODUCT' as const })),
-      ],
-      todayInOut,
+      expiry,
+      holds,
     };
   }
 
-  private async getMaterialKpi(company?: string, plant?: string) {
-    const qb = this.matStockRepository
-      .createQueryBuilder('ms')
-      .select(['SUM(ms.qty) AS "qty"', 'COUNT(DISTINCT ms.itemCode) AS "items"']);
-    if (company) qb.andWhere('ms.company = :company', { company });
-    if (plant) qb.andWhere('ms.plant = :plant', { plant });
-
-    const row = await qb.getRawOne<SumRaw>();
-    return { qty: Number(row?.qty ?? 0), items: Number(row?.items ?? 0) };
-  }
-
-  private async getProductKpi(company?: string, plant?: string) {
-    const qb = this.productStockRepository
-      .createQueryBuilder('ps')
-      .select([
-        'ps.itemType AS "itemType"',
-        'SUM(ps.qty) AS "qty"',
-        'COUNT(DISTINCT ps.itemCode) AS "items"',
-      ])
-      .where("ps.qualityStatus = 'GOOD'")
-      .groupBy('ps.itemType');
-    if (company) qb.andWhere('ps.company = :company', { company });
-    if (plant) qb.andWhere('ps.plant = :plant', { plant });
-
-    const rows = await qb.getRawMany<ProductKpiRaw>();
-    return rows.map((r) => ({
-      itemType: r.itemType,
-      qty: Number(r.qty ?? 0),
-      items: Number(r.items ?? 0),
-    }));
-  }
-
-  /** 안전재고 미달 자재 (SAFETY_STOCK > 0 품목만) */
+  /** 안전재고 미달 자재 (SAFETY_STOCK > 0 품목만) — 부족량 큰 순 */
   private async getShortages(company?: string, plant?: string) {
     const joinConds = [
       'im.ITEM_CODE = ms.ITEM_CODE',
@@ -160,50 +133,122 @@ export class InventoryBoardService {
     });
   }
 
-  private async getMatByWarehouse(company?: string, plant?: string) {
-    const qb = this.matStockRepository
-      .createQueryBuilder('ms')
+  /** 유효기한 초과 + 임박(NEAR_EXPIRY_DAYS 이내) LOT — 잔량 있는 것만, 기한 빠른 순 */
+  private async getExpiryLots(company?: string, plant?: string) {
+    const joinConds = [
+      'im.ITEM_CODE = ml.ITEM_CODE',
+      'im.COMPANY = ml.COMPANY',
+      'im.PLANT_CD = ml.PLANT_CD',
+    ];
+    const qb = this.matLotRepository
+      .createQueryBuilder('ml')
+      .leftJoin(ItemMaster, 'im', joinConds.join(' AND '))
       .select([
-        'ms.warehouseCode AS "warehouseCode"',
-        'COUNT(DISTINCT ms.itemCode) AS "itemCount"',
-        'SUM(ms.qty) AS "qty"',
+        'ml.matUid AS "matUid"',
+        'ml.itemCode AS "itemCode"',
+        'im.ITEM_NAME AS "itemName"',
+        'ml.currentQty AS "qty"',
+        "TO_CHAR(ml.expireDate, 'YYYY-MM-DD') AS \"expireDate\"",
+        'TRUNC(ml.expireDate) - TRUNC(SYSDATE) AS "daysLeft"',
       ])
-      .groupBy('ms.warehouseCode')
-      .orderBy('"qty"', 'DESC');
-    if (company) qb.andWhere('ms.company = :company', { company });
-    if (plant) qb.andWhere('ms.plant = :plant', { plant });
+      .where('ml.currentQty > 0')
+      .andWhere('ml.expireDate IS NOT NULL')
+      .andWhere(`ml.expireDate < TRUNC(SYSDATE) + ${NEAR_EXPIRY_DAYS + 1}`)
+      .andWhere("ml.status NOT IN ('DEPLETED', 'SPLIT', 'MERGED')")
+      .orderBy('ml.expireDate', 'ASC')
+      .limit(30);
 
-    const rows = await qb.getRawMany<WarehouseRaw>();
+    if (company) qb.andWhere('ml.company = :company', { company });
+    if (plant) qb.andWhere('ml.plant = :plant', { plant });
+
+    const rows = await qb.getRawMany<ExpiryRaw>();
     return rows.map((r) => ({
-      warehouseCode: r.warehouseCode,
-      itemCount: Number(r.itemCount ?? 0),
+      matUid: r.matUid,
+      itemCode: r.itemCode,
+      itemName: r.itemName ?? null,
       qty: Number(r.qty ?? 0),
+      expireDate: r.expireDate,
+      daysLeft: Number(r.daysLeft ?? 0),
     }));
   }
 
-  private async getProductByWarehouse(company?: string, plant?: string) {
-    const qb = this.productStockRepository
+  /** 보류/불량 재고 — 자재 LOT(HOLD·IQC FAIL/HOLD) + 제품(DEFECT/HOLD) 통합 목록 */
+  private async getHoldStocks(company?: string, plant?: string) {
+    const lotJoin = [
+      'im.ITEM_CODE = ml.ITEM_CODE',
+      'im.COMPANY = ml.COMPANY',
+      'im.PLANT_CD = ml.PLANT_CD',
+    ];
+    const lotQb = this.matLotRepository
+      .createQueryBuilder('ml')
+      .leftJoin(ItemMaster, 'im', lotJoin.join(' AND '))
+      .select([
+        'ml.matUid AS "matUid"',
+        'ml.itemCode AS "itemCode"',
+        'im.ITEM_NAME AS "itemName"',
+        'ml.currentQty AS "qty"',
+        'ml.status AS "lotStatus"',
+        'ml.iqcStatus AS "iqcStatus"',
+      ])
+      .where('ml.currentQty > 0')
+      .andWhere("(ml.status = 'HOLD' OR ml.iqcStatus IN ('FAIL', 'HOLD'))")
+      .orderBy('ml.currentQty', 'DESC')
+      .limit(20);
+
+    if (company) lotQb.andWhere('ml.company = :company', { company });
+    if (plant) lotQb.andWhere('ml.plant = :plant', { plant });
+
+    const prodJoin = [
+      'im.ITEM_CODE = ps.ITEM_CODE',
+      'im.COMPANY = ps.COMPANY',
+      'im.PLANT_CD = ps.PLANT_CD',
+    ];
+    const prodQb = this.productStockRepository
       .createQueryBuilder('ps')
+      .leftJoin(ItemMaster, 'im', prodJoin.join(' AND '))
       .select([
-        'ps.warehouseCode AS "warehouseCode"',
-        'COUNT(DISTINCT ps.itemCode) AS "itemCount"',
+        'ps.itemCode AS "itemCode"',
+        'MAX(im.ITEM_NAME) AS "itemName"',
         'SUM(ps.qty) AS "qty"',
+        'ps.qualityStatus AS "qualityStatus"',
+        'ps.status AS "stockStatus"',
       ])
-      .where("ps.qualityStatus = 'GOOD'")
-      .groupBy('ps.warehouseCode')
-      .orderBy('"qty"', 'DESC');
-    if (company) qb.andWhere('ps.company = :company', { company });
-    if (plant) qb.andWhere('ps.plant = :plant', { plant });
+      .where('ps.qty > 0')
+      .andWhere("(ps.qualityStatus = 'DEFECT' OR ps.status = 'HOLD')")
+      .groupBy('ps.itemCode')
+      .addGroupBy('ps.qualityStatus')
+      .addGroupBy('ps.status')
+      .orderBy('SUM(ps.qty)', 'DESC');
 
-    const rows = await qb.getRawMany<WarehouseRaw>();
-    return rows.map((r) => ({
-      warehouseCode: r.warehouseCode,
-      itemCount: Number(r.itemCount ?? 0),
+    if (company) prodQb.andWhere('ps.company = :company', { company });
+    if (plant) prodQb.andWhere('ps.plant = :plant', { plant });
+
+    const [lots, products] = await Promise.all([
+      lotQb.getRawMany<HoldLotRaw>(),
+      prodQb.getRawMany<HoldProductRaw>(),
+    ]);
+
+    const lotItems = lots.map((r) => ({
+      kind: 'MATERIAL' as const,
+      ref: r.matUid,
+      itemCode: r.itemCode,
+      itemName: r.itemName ?? null,
       qty: Number(r.qty ?? 0),
+      reason: r.lotStatus === 'HOLD' ? 'HOLD' : `IQC_${r.iqcStatus}`,
     }));
+    const productItems = products.map((r) => ({
+      kind: 'PRODUCT' as const,
+      ref: r.itemCode,
+      itemCode: r.itemCode,
+      itemName: r.itemName ?? null,
+      qty: Number(r.qty ?? 0),
+      reason: r.qualityStatus === 'DEFECT' ? 'DEFECT' : 'HOLD',
+    }));
+
+    return [...lotItems, ...productItems].sort((a, b) => b.qty - a.qty);
   }
 
-  /** 금일 입출고 — TRANS_TYPE 접미사 기반 조건부 집계 1쿼리 */
+  /** 금일 입출고 건수 — TRANS_TYPE 접미사 기반 조건부 집계 1쿼리 (수량 합계는 무의미하므로 건수만) */
   private async getTodayInOut(company?: string, plant?: string) {
     const inCond = "tx.transType LIKE '%\\_IN' ESCAPE '\\'";
     const outCond = "(tx.transType LIKE '%\\_OUT' ESCAPE '\\' OR tx.transType = 'PROD_CONSUME')";
@@ -211,9 +256,7 @@ export class InventoryBoardService {
       .createQueryBuilder('tx')
       .select([
         `SUM(CASE WHEN ${inCond} THEN 1 ELSE 0 END) AS "inCount"`,
-        `SUM(CASE WHEN ${inCond} THEN tx.qty ELSE 0 END) AS "inQty"`,
         `SUM(CASE WHEN ${outCond} THEN 1 ELSE 0 END) AS "outCount"`,
-        `SUM(CASE WHEN ${outCond} THEN tx.qty ELSE 0 END) AS "outQty"`,
       ])
       .where('tx.transDate >= TRUNC(SYSDATE)')
       .andWhere('tx.transDate < TRUNC(SYSDATE) + 1');
@@ -224,9 +267,7 @@ export class InventoryBoardService {
     const row = await qb.getRawOne<InOutRaw>();
     return {
       inCount: Number(row?.inCount ?? 0),
-      inQty: Number(row?.inQty ?? 0),
       outCount: Number(row?.outCount ?? 0),
-      outQty: Number(row?.outQty ?? 0),
     };
   }
 }

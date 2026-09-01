@@ -10,7 +10,7 @@ import StatusBadge from "@/components/shared/StatusBadge";
 import { useRotation, RotationIndicator } from "@/components/monitoring";
 import type { ProductionBoardOrder } from "../../production-board/components/types";
 
-const CARDS_PER_PAGE = 7;
+const CARDS_PER_PAGE = 6;
 
 /** 상태별 강조색 — 좌측 룰/카운트에만 절제 사용 */
 const ACCENT: Record<string, { rule: string; count: string; bar: string }> = {
@@ -35,38 +35,38 @@ export default function KanbanColumn({ status, orders, rollingSec }: KanbanColum
     <div className="flex-1 min-w-0 flex flex-col overflow-hidden px-4 first:pl-1 last:pr-1">
       {/* 컬럼 헤더 — 상태명 + 초대형 건수, 굵은 괘선 마감 */}
       <div className="flex items-end justify-between pb-2 border-b-2 border-text/70 flex-shrink-0">
-        <StatusBadge codeType="JOB_ORDER_STATUS" value={status} />
-        <span className={`text-4xl font-extrabold tabular-nums leading-none ${accent.count}`}>{orders.length}</span>
+        <StatusBadge codeType="JOB_ORDER_STATUS" value={status} className="text-base px-3 py-1" />
+        <span className={`text-5xl font-extrabold tabular-nums leading-none ${accent.count}`}>{orders.length}</span>
       </div>
 
       {/* 항목 리스트 — 좌측 컬러 룰 + hairline 행 구분 */}
       <div className="flex-1 min-h-0 overflow-hidden pt-1">
         {orders.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-xs text-text-muted">
+          <div className="h-full flex items-center justify-center text-lg text-text-muted">
             {t("monitoring.board.noOrders")}
           </div>
         ) : (
           pageItems.map((o) => (
-            <div key={o.orderNo} className={`border-l-4 ${accent.rule} border-b border-border/60 pl-3 pr-1 py-2`}>
+            <div key={o.orderNo} className={`border-l-4 ${accent.rule} border-b border-border/60 pl-3 pr-1 py-2.5`}>
               <div className="flex items-baseline justify-between gap-2">
-                <span className="font-mono text-[11px] text-text-muted truncate">{o.orderNo}</span>
-                <span className="tabular-nums text-sm shrink-0">
+                <span className="font-mono text-sm text-text-muted truncate">{o.orderNo}</span>
+                <span className="tabular-nums text-lg shrink-0">
                   <span className="font-bold text-text">{o.goodQty.toLocaleString()}</span>
                   <span className="text-text-muted"> / {o.planQty.toLocaleString()}</span>
                 </span>
               </div>
-              <div className="mt-0.5 text-base font-medium leading-tight text-text truncate">
+              <div className="mt-0.5 text-xl font-medium leading-tight text-text truncate">
                 {o.itemName ?? o.itemCode}
               </div>
-              <div className="mt-1 flex items-center gap-2">
-                <span className="text-xs text-text-muted truncate">{o.processCode ?? "—"}</span>
-                <div className="flex-1 h-1 bg-border overflow-hidden">
+              <div className="mt-1.5 flex items-center gap-2.5">
+                <span className="text-base text-text-muted truncate">{o.processCode ?? "—"}</span>
+                <div className="flex-1 h-1.5 bg-border overflow-hidden">
                   <div
                     className={`h-full ${o.achieveRate >= 100 ? "bg-emerald-500" : accent.bar}`}
                     style={{ width: `${Math.min(100, o.achieveRate)}%` }}
                   />
                 </div>
-                <span className="tabular-nums text-xs font-bold text-text w-11 text-right">{o.achieveRate}%</span>
+                <span className="tabular-nums text-base font-bold text-text w-14 text-right">{o.achieveRate}%</span>
               </div>
             </div>
           ))

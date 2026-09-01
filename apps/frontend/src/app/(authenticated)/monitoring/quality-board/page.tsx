@@ -81,22 +81,22 @@ export default function QualityBoardPage() {
             <BoardSectionTitle className="mb-2">{t("monitoring.board.quality.topDefectsTitle")}</BoardSectionTitle>
             <div className="flex-1 min-h-0 overflow-hidden">
               {topDefects.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-sm text-text-muted">
+                <div className="h-full flex items-center justify-center text-xl text-text-muted">
                   {t("monitoring.board.noData")}
                 </div>
               ) : (
                 <ol>
                   {topDefects.map((d, i) => (
-                    <li key={d.defectCode} className="py-1.5 border-b border-border/60">
+                    <li key={d.defectCode} className="py-2 border-b border-border/60">
                       <div className="flex items-baseline gap-3">
-                        <span className="w-7 text-right text-lg font-extrabold tabular-nums text-text-muted/70">{i + 1}</span>
-                        <span className="flex-1 min-w-0 truncate text-base font-medium text-text">{d.defectName}</span>
-                        <span className="font-mono text-[11px] text-text-muted">{d.defectCode}</span>
-                        <span className="w-16 text-right text-lg font-bold tabular-nums text-red-600 dark:text-red-400">
+                        <span className="w-8 text-right text-xl font-extrabold tabular-nums text-text-muted/70">{i + 1}</span>
+                        <span className="flex-1 min-w-0 truncate text-xl font-medium text-text">{d.defectName}</span>
+                        <span className="font-mono text-sm text-text-muted">{d.defectCode}</span>
+                        <span className="w-20 text-right text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">
                           {d.qty.toLocaleString()}
                         </span>
                       </div>
-                      <div className="ml-10 mt-1 h-1 bg-border overflow-hidden">
+                      <div className="ml-11 mt-1 h-1 bg-border overflow-hidden">
                         <div
                           className="h-full bg-red-500/80"
                           style={{ width: `${maxDefectQty > 0 ? Math.max(2, (d.qty / maxDefectQty) * 100) : 0}%` }}

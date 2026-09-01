@@ -32,10 +32,10 @@ export default function HourlyTrendChart({ hourly }: { hourly: HourlyPoint[] }) 
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} vertical={false} />
-          <XAxis dataKey="hour" tick={{ fontSize: 10 }} interval={1} />
-          <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+          <XAxis dataKey="hour" tick={{ fontSize: 13 }} interval={1} />
+          <YAxis tick={{ fontSize: 13 }} allowDecimals={false} />
           <Tooltip formatter={(value, name) => [Number(value ?? 0).toLocaleString(), String(name)]} />
-          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Legend wrapperStyle={{ fontSize: 14 }} />
           <Bar dataKey="good" name={t("monitoring.board.good")} stackId="qty" fill={GOOD_COLOR} />
           <Bar dataKey="defect" name={t("monitoring.board.defect")} stackId="qty" fill={DEFECT_COLOR} />
         </BarChart>
