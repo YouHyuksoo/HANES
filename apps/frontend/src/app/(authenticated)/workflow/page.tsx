@@ -7,14 +7,15 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GitBranch, LayoutList, Network, Search, Workflow } from "lucide-react";
+import { BookOpenText, GitBranch, LayoutList, Network, Search, Workflow } from "lucide-react";
 import { workflowNodes, type WorkflowActivityNode } from "@/config/workflowMap";
 import WorkflowSidebar from "./components/WorkflowSidebar";
 import WorkflowGuide from "./components/WorkflowGuide";
 import WorkflowFlow from "./components/WorkflowFlow";
 import WorkflowOverview from "./components/WorkflowOverview";
+import { WorkflowKnowledgeMap } from "./components/WorkflowKnowledgeMap";
 
-type WorkflowTab = "guide" | "flow" | "overview";
+type WorkflowTab = "guide" | "flow" | "overview" | "knowledge";
 
 const nodeById = new Map(workflowNodes.map((n) => [n.id, n]));
 
@@ -49,7 +50,7 @@ export default function WorkflowPage() {
             </div>
           </div>
           {/* 탭 */}
-          <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+          <div role="tablist" className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
             <TabButton active={tab === "guide"} onClick={() => setTab("guide")} icon={<LayoutList className="h-3.5 w-3.5" />}>
               {t("workflowGuide.tabGuide", "가이드")}
             </TabButton>
@@ -58,6 +59,9 @@ export default function WorkflowPage() {
             </TabButton>
             <TabButton active={tab === "overview"} onClick={() => setTab("overview")} icon={<Network className="h-3.5 w-3.5" />}>
               {t("workflowGuide.tabOverview", "전체구성도")}
+            </TabButton>
+            <TabButton active={tab === "knowledge"} onClick={() => setTab("knowledge")} icon={<BookOpenText className="h-3.5 w-3.5" />}>
+              {t("workflowGuide.knowledge.tab")}
             </TabButton>
           </div>
         </div>
@@ -90,9 +94,13 @@ export default function WorkflowPage() {
         <div className="min-h-0 flex-1 overflow-hidden">
           <WorkflowFlow selectedNodeId={selectedNodeId} onSelect={selectFromDiagram} query={query} />
         </div>
-      ) : (
+      ) : tab === "overview" ? (
         <div className="min-h-0 flex-1 overflow-hidden">
           <WorkflowOverview onSelect={setSelectedNodeId} />
+        </div>
+      ) : (
+        <div className="min-h-0 flex-1 overflow-hidden p-3">
+          <WorkflowKnowledgeMap />
         </div>
       )}
     </div>
@@ -113,6 +121,9 @@ function TabButton({
   return (
     <button
       type="button"
+      role="tab"
+      aria-selected={active}
+      aria-pressed={active}
       onClick={onClick}
       className={`inline-flex h-8 items-center gap-1.5 rounded px-3 text-xs font-semibold transition-colors ${
         active ? "bg-primary text-white" : "text-text-muted hover:bg-muted"

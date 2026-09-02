@@ -8927,6 +8927,19 @@
     "legendNormal": "Flow",
     "legendBranch": "Branch",
     "legendReversal": "Reversal",
-    "legendReference": "Reference"
+    "legendReference": "Reference",
+    "knowledge": {
+      "tab": "Knowledge Map", "title": "Workflow Knowledge Map", "description": "Select a node to expand one level of relations. Recenter explicitly from the detail panel.", "selectExpand": "Select {{label}} and expand relations", "center": "Center", "currentCenter": "Current center", "relation": "Relation", "condition": "Condition: {{condition}}", "relationList": "Relations", "emptyRelations": "No relations to display.", "evidenceLabel": "Evidence {{status}}",
+      "search": { "label": "Search workflows, screens, and tables", "placeholder": "Workflow · screen · table · exception", "action": "Search", "aiAction": "Interpret with AI", "aiLoading": "Interpreting", "localResults": "Local catalog", "aiResults": "AI candidates", "noLocalResults": "No matching local results.", "noAiResults": "No AI candidates.", "invalidCenter": "Unknown center: {{center}}", "staleAi": "Discarded an outdated or invalid AI response.", "aiUnavailable": "AI interpretation is unavailable.", "aiFailed": "AI interpretation request failed." },
+      "layouts": { "mindmap": "Mind map", "process": "Process", "relation": "Relations" }, "views": { "business": "Business", "technical": "Technical" },
+      "toolbar": { "label": "Knowledge map tools", "back": "Back", "forward": "Forward", "reset": "Reset", "fit": "Fit view", "copy": "Copy link", "copySuccess": "Link copied.", "copyFailed": "Could not copy the link." },
+      "categories": { "flow": "Flow", "masters": "Master data", "constraints": "Constraints", "requiredTasks": "Required tasks", "exceptions": "Exceptions", "logic": "Logic", "tables": "Data" },
+      "coverageStatus": { "present": "Present", "none": "None", "undocumented": "Undocumented" }, "evidenceStatus": { "verified": "Verified", "partial": "Partial", "undocumented": "Undocumented" },
+      "filters": { "label": "Relation filters", "mobileLabel": "Mobile relation filters", "mobileSummary": "Relation filters · {{count}} categories", "channels": "Relation channels · {{count}}", "evidenceHint": "Evidence is shown as each relation's verification status, not as a semantic filter." },
+      "canvas": { "label": "Workflow knowledge graph", "minimap": "Knowledge map minimap" },
+      "kinds": { "activity": "Activity", "screen": "Screen", "master": "Master", "constraint": "Constraint", "requiredTask": "Required", "exception": "Exception", "logic": "Logic", "data": "Data", "evidence": "Evidence" },
+      "detail": { "label": "Selected knowledge details", "dossier": "Node details", "centerAction": "Set as center", "noDescription": "No description document is linked yet.", "evidence": "Evidence status", "openScreen": "Open app screen", "businessHeading": "Purpose · timing · conditions · exceptions", "technicalHeading": "Route · data · evidence", "incoming": "Incoming", "outgoing": "Outgoing", "noRelations": "No connections" },
+      "recovery": { "code": "Center not found", "title": "The shared link's center could not be found.", "description": "Use the search above to select a workflow, screen, or table from the current catalog. The center was not changed automatically." }
+    }
   }
 }

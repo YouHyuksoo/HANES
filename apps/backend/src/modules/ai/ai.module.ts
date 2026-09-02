@@ -16,10 +16,11 @@ import { SchemaInfoService } from './schema-info.service';
 import { SqlValidatorService } from './sql-validator.service';
 import { AiFeedbackService } from './ai-feedback.service';
 import { KnowledgePipelineService } from './knowledge-pipeline.service';
+import { WorkflowKnowledgeInterpreterService } from './workflow-knowledge-interpreter.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([SysConfig, AiChatFeedback]), AiPageToolsModule, AiKnowledgeModule],
   controllers: [AiController],
-  providers: [AiService, AiSqlService, AiCatalogService, SchemaInfoService, SqlValidatorService, AiFeedbackService, KnowledgePipelineService],
+  providers: [AiService, AiSqlService, AiCatalogService, SchemaInfoService, SqlValidatorService, AiFeedbackService, KnowledgePipelineService, WorkflowKnowledgeInterpreterService],
 })
 export class AiModule {}

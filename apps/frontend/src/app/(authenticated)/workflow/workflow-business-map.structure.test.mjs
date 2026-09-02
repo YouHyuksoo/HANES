@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const pageSource = fs.readFileSync("apps/frontend/src/app/(authenticated)/workflow/page.tsx", "utf8");
-const mapSource = fs.readFileSync("apps/frontend/src/config/workflowMap.ts", "utf8");
+const adapterSource = fs.readFileSync("apps/frontend/src/config/workflowMap.ts", "utf8");
+const mapSource = fs.readFileSync("packages/shared/src/workflow/legacy-map.ts", "utf8");
 const flowSource = fs.readFileSync(
   "apps/frontend/src/app/(authenticated)/workflow/components/WorkflowFlow.tsx",
   "utf8",
@@ -12,6 +13,40 @@ const guideSource = fs.readFileSync(
   "apps/frontend/src/app/(authenticated)/workflow/components/WorkflowGuide.tsx",
   "utf8",
 );
+
+test("workflowMap is a thin compatibility adapter over @harness/shared", () => {
+  const readExports = (pattern) => {
+    const match = adapterSource.match(pattern);
+    assert.ok(match, `missing @harness/shared re-export matching ${pattern}`);
+    return match[1].split(",").map((name) => name.trim()).filter(Boolean).sort();
+  };
+
+  assert.deepEqual(
+    readExports(/export\s*\{([\s\S]*?)\}\s*from\s*["']@harness\/shared["']/),
+    [
+      "getNextNodes",
+      "getNodesByLane",
+      "getPreviousNodes",
+      "getVisibleNodeIds",
+      "workflowEdges",
+      "workflowLanes",
+      "workflowNodes",
+    ].sort(),
+  );
+  assert.deepEqual(
+    readExports(/export\s+type\s*\{([\s\S]*?)\}\s*from\s*["']@harness\/shared["']/),
+    [
+      "WorkflowActivityNode",
+      "WorkflowBusinessEdge",
+      "WorkflowLane",
+      "WorkflowLaneId",
+      "WorkflowRoute",
+    ].sort(),
+  );
+
+  assert.doesNotMatch(adapterSource, /\b(?:export\s+)?(?:const|let|var)\s+workflow(?:Lanes|Nodes|Edges)\b/);
+  assert.doesNotMatch(adapterSource, /\b(?:id|lane|activity|source|target|kind)\s*:/);
+});
 
 test("/workflow renders an interactive React Flow business map", () => {
   assert.match(flowSource, /@xyflow\/react/);
