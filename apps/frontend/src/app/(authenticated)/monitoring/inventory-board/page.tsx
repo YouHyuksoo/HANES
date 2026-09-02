@@ -2,34 +2,71 @@
 
 /**
  * @file src/app/(authenticated)/monitoring/inventory-board/page.tsx
- * @description 재고 모니터링 보드 — "조치가 필요한 재고" 전광판:
- *              안전재고 미달(발주) / 유효기한 초과·임박 LOT(우선소진·폐기) / 보류·불량 재고(처리).
+ * @description 재고 모니터링 보드(현장 TV) — "조치가 필요한 재고" 전광판, 스킨 3종 전환:
+ *              A 관제탑(다크 네온) / B 출발 전광판(앰버 모노) / C 데이터 월(라이트 편집).
  *              무의미한 총수량 합계 없음. KPI는 전부 "문제 건수"(0이면 정상 초록).
+ *
+ * 초보자 가이드:
+ * 1. 데이터는 GET /monitoring/boards/inventory 하나로 조회, refetchSec 간격 자동 갱신
+ * 2. 스킨은 우상단 플로팅 컨트롤(A/B/C)로 전환, TV별 localStorage 저장
+ * 3. B(안전재고 미달 행 목록)만 자동 순환을 쓴다 — 나머지는 고정 슬라이스
  */
 
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Boxes, RefreshCw, Settings, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui";
+import { useState, useEffect, useCallback } from "react";
+import { Maximize2, Minimize2, RefreshCw, Settings } from "lucide-react";
 import { useApiQuery } from "@/hooks/useApi";
-import {
-  BoardChrome, BoardClock, BoardStat, BoardSectionTitle, MonitoringSettingsModal,
-  useMonitoringConfig, useRotation, RotationIndicator,
-} from "@/components/monitoring";
+import { MonitoringSettingsModal, useMonitoringConfig, useRotation } from "@/components/monitoring";
+import ControlTowerSkin from "./components/skins/ControlTowerSkin";
+import DepartureBoardSkin from "./components/skins/DepartureBoardSkin";
+import DataWallSkin from "./components/skins/DataWallSkin";
 import type { InventoryBoardData } from "./components/types";
 
-const SHORTAGE_ROWS = 7;
+type SkinId = "control" | "departure" | "datawall";
 
-const thCls = "px-3 pb-2 text-sm font-semibold uppercase tracking-[0.12em] text-text-muted";
-
-/** 문제 건수 KPI 색: 0이면 정상(초록), 있으면 경고색 */
-const alertColor = (n: number, color: string) =>
-  n > 0 ? color : "text-emerald-600 dark:text-emerald-400";
+const SKIN_KEY = "monitoring:inventory-board:skin";
+const SKIN_ROWS: Record<SkinId, number | null> = { control: null, departure: 7, datawall: null };
+const SKINS: { id: SkinId; label: string; title: string }[] = [
+  { id: "control", label: "A", title: "관제탑" },
+  { id: "departure", label: "B", title: "출발 전광판" },
+  { id: "datawall", label: "C", title: "데이터 월" },
+];
 
 export default function InventoryBoardPage() {
-  const { t } = useTranslation();
   const { config, setConfig, loaded } = useMonitoringConfig("monitoring:inventory-board");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tvMode, setTvMode] = useState(false);
+  const [skin, setSkinState] = useState<SkinId>("control");
+
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem(SKIN_KEY);
+      if (s === "control" || s === "departure" || s === "datawall") setSkinState(s);
+    } catch {
+      // localStorage 접근 불가 환경은 기본 스킨 유지
+    }
+  }, []);
+
+  const setSkin = (s: SkinId) => {
+    setSkinState(s);
+    try {
+      localStorage.setItem(SKIN_KEY, s);
+    } catch {
+      // 저장 실패 무시
+    }
+  };
+
+  const toggleTvMode = useCallback(() => {
+    setTvMode((prev) => {
+      const next = !prev;
+      try {
+        if (next) void document.documentElement.requestFullscreen?.();
+        else if (document.fullscreenElement) void document.exitFullscreen();
+      } catch {
+        // 전체화면 미지원 환경에서는 오버레이만 적용
+      }
+      return next;
+    });
+  }, []);
 
   const { data: response, refetch, dataUpdatedAt } = useApiQuery<InventoryBoardData>(
     ["monitoring", "board", "inventory"],
@@ -37,191 +74,62 @@ export default function InventoryBoardPage() {
     { refetchInterval: Math.max(5, config.refetchSec) * 1000, enabled: loaded },
   );
   const board = response?.data;
-  const kpi = board?.kpi;
   const shortages = board?.shortages ?? [];
-  const expiry = board?.expiry ?? [];
-  const holds = board?.holds ?? [];
-  const { pageItems, page, pageCount } = useRotation(shortages, SHORTAGE_ROWS, config.rollingSec);
+
+  const pageSize = SKIN_ROWS[skin] ?? Math.max(1, shortages.length);
+  const { pageItems, page, pageCount } = useRotation(shortages, pageSize, config.rollingSec);
   const updatedAt = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : "—";
 
-  const reasonLabel = (reason: string) => {
-    switch (reason) {
-      case "HOLD": return t("monitoring.board.inventory.reasonHold");
-      case "IQC_FAIL": return t("monitoring.board.inventory.reasonIqcFail");
-      case "IQC_HOLD": return t("monitoring.board.inventory.reasonIqcHold");
-      case "DEFECT": return t("monitoring.board.inventory.reasonDefect");
-      default: return reason;
-    }
+  const skinProps = {
+    kpi: board?.kpi,
+    shortages,
+    shortagePageItems: pageItems,
+    page,
+    pageCount,
+    expiry: board?.expiry ?? [],
+    holds: board?.holds ?? [],
+    rollingSec: config.rollingSec,
+    updatedAt,
   };
+
+  const ctlBtn = "w-8 h-8 flex items-center justify-center rounded hover:bg-white/20 transition-colors";
 
   return (
     <>
-      <BoardChrome
-        title={t("monitoring.board.inventory.title")}
-        icon={<Boxes className="w-5 h-5 text-primary" />}
-        optionBar={
-          <>
-            <BoardClock className="mr-3" />
-            <Button variant="secondary" size="sm" onClick={() => refetch()}>
+      <div className={tvMode ? "fixed inset-0 z-50" : "h-full"}>
+        <div className="relative w-full h-full overflow-hidden">
+          {skin === "control" && <ControlTowerSkin {...skinProps} />}
+          {skin === "departure" && <DepartureBoardSkin {...skinProps} />}
+          {skin === "datawall" && <DataWallSkin {...skinProps} />}
+
+          {/* 플로팅 컨트롤 — 평소 반투명, 호버 시 선명 */}
+          <div className="absolute top-3 right-3 z-20 flex items-center gap-0.5 rounded-lg bg-black/50 backdrop-blur px-1.5 py-1 text-white/90 opacity-30 hover:opacity-100 transition-opacity">
+            {SKINS.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                title={s.title}
+                onClick={() => setSkin(s.id)}
+                className={`w-8 h-8 rounded text-sm font-bold transition-colors ${
+                  skin === s.id ? "bg-white text-black" : "hover:bg-white/20"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+            <span className="w-px h-5 bg-white/25 mx-1" />
+            <button type="button" className={ctlBtn} onClick={() => refetch()}>
               <RefreshCw className="w-4 h-4" />
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setSettingsOpen(true)}>
+            </button>
+            <button type="button" className={ctlBtn} onClick={() => setSettingsOpen(true)}>
               <Settings className="w-4 h-4" />
-            </Button>
-          </>
-        }
-        statusLeft={<span>{t("monitoring.board.updatedAt")} {updatedAt}</span>}
-        statusRight={<RotationIndicator page={page} pageCount={pageCount} />}
-      >
-        {/* KPI 스트립 — 전부 "조치 필요 건수" */}
-        <div className="flex divide-x divide-border py-4 border-b border-border flex-shrink-0">
-          <BoardStat
-            label={t("monitoring.board.inventory.shortageTitle")}
-            value={kpi?.shortageCount ?? 0}
-            valueClassName={alertColor(kpi?.shortageCount ?? 0, "text-red-600 dark:text-red-400")}
-          />
-          <BoardStat
-            label={t("monitoring.board.inventory.expired")}
-            value={kpi?.expiredCount ?? 0}
-            valueClassName={alertColor(kpi?.expiredCount ?? 0, "text-red-600 dark:text-red-400")}
-          />
-          <BoardStat
-            label={t("monitoring.board.inventory.nearExpiry")}
-            value={kpi?.nearExpiryCount ?? 0}
-            valueClassName={alertColor(kpi?.nearExpiryCount ?? 0, "text-amber-600 dark:text-amber-400")}
-          />
-          <BoardStat
-            label={t("monitoring.board.inventory.hold")}
-            value={kpi?.holdCount ?? 0}
-            valueClassName={alertColor(kpi?.holdCount ?? 0, "text-amber-600 dark:text-amber-400")}
-          />
-          <BoardStat
-            label={t("monitoring.board.inventory.todayInOut")}
-            value={
-              <span>
-                {kpi?.inCount ?? 0}
-                <span className="text-text-muted text-3xl"> / </span>
-                {kpi?.outCount ?? 0}
-              </span>
-            }
-            sub={t("monitoring.board.inventory.todayInOutSub")}
-          />
-        </div>
-
-        {/* 본문: 좌측 안전재고 미달(주인공) / 우측 기한 문제 + 보류·불량 */}
-        <div className="flex-1 min-h-0 flex divide-x divide-border pt-3">
-          {/* 안전재고 미달 */}
-          <div className="flex-[3] min-w-0 pr-5 flex flex-col overflow-hidden">
-            <BoardSectionTitle className="mb-2">
-              <span className="inline-flex items-center gap-2 text-red-600 dark:text-red-400">
-                <AlertTriangle className="w-4 h-4" />
-                {t("monitoring.board.inventory.shortageTitle")}
-              </span>
-            </BoardSectionTitle>
-            <div className="flex-1 min-h-0 overflow-hidden">
-              {shortages.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-xl text-text-muted">
-                  {t("monitoring.board.inventory.noShortage")}
-                </div>
-              ) : (
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b border-border text-left">
-                      <th className={thCls}>{t("monitoring.board.col.item")}</th>
-                      <th className={`${thCls} text-right`}>{t("monitoring.board.inventory.currentQty")}</th>
-                      <th className={`${thCls} text-right`}>{t("monitoring.board.inventory.safetyStock")}</th>
-                      <th className={`${thCls} text-right`}>{t("monitoring.board.inventory.shortageQty")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pageItems.map((s) => (
-                      <tr key={s.itemCode} className="border-b border-border/60">
-                        <td className="py-3 pl-3 pr-3 border-l-4 border-l-red-500">
-                          <span className="text-xl font-medium text-text">{s.itemName ?? s.itemCode}</span>
-                          <span className="ml-2.5 font-mono text-sm text-text-muted">{s.itemCode}</span>
-                        </td>
-                        <td className="py-3 px-3 text-right text-2xl tabular-nums text-text">{s.qty.toLocaleString()}</td>
-                        <td className="py-3 px-3 text-right text-2xl tabular-nums text-text-muted">{s.safetyStock.toLocaleString()}</td>
-                        <td className="py-3 px-3 text-right text-2xl tabular-nums font-bold text-red-600 dark:text-red-400">
-                          -{s.shortage.toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
-
-          {/* 우측: 유효기한 + 보류/불량 */}
-          <div className="flex-[2] min-w-0 pl-5 flex flex-col overflow-hidden">
-            <BoardSectionTitle className="mb-2">{t("monitoring.board.inventory.expiryTitle")}</BoardSectionTitle>
-            <div className="flex-1 min-h-0 overflow-hidden">
-              {expiry.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-lg text-text-muted">
-                  {t("monitoring.board.inventory.noExpiry")}
-                </div>
-              ) : (
-                <div>
-                  {expiry.slice(0, 6).map((e) => {
-                    const expired = e.daysLeft < 0;
-                    return (
-                      <div
-                        key={e.matUid}
-                        className={`flex items-baseline gap-3 py-2 border-b border-border/60 border-l-4 pl-3 ${expired ? "border-l-red-500" : "border-l-amber-500"}`}
-                      >
-                        <span className="flex-1 min-w-0 truncate text-lg font-medium text-text">
-                          {e.itemName ?? e.itemCode}
-                        </span>
-                        <span className="font-mono text-sm text-text-muted">{e.matUid}</span>
-                        <span className="text-lg tabular-nums text-text">{e.qty.toLocaleString()}</span>
-                        <span className={`w-24 text-right text-lg font-bold tabular-nums ${expired ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}>
-                          {expired
-                            ? t("monitoring.board.inventory.expiredDays", { days: Math.abs(e.daysLeft) })
-                            : t("monitoring.board.inventory.daysLeft", { days: e.daysLeft })}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <BoardSectionTitle className="mb-2 mt-3 pt-3 border-t border-border">
-              {t("monitoring.board.inventory.holdTitle")}
-            </BoardSectionTitle>
-            <div className="flex-1 min-h-0 overflow-hidden">
-              {holds.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-lg text-text-muted">
-                  {t("monitoring.board.inventory.noHold")}
-                </div>
-              ) : (
-                <div>
-                  {holds.slice(0, 6).map((h) => (
-                    <div
-                      key={`${h.kind}:${h.ref}:${h.reason}`}
-                      className="flex items-baseline gap-3 py-2 border-b border-border/60 border-l-4 border-l-amber-500 pl-3"
-                    >
-                      <span className="text-sm uppercase tracking-wider text-text-muted w-14 shrink-0">
-                        {h.kind === "MATERIAL"
-                          ? t("monitoring.board.inventory.kindMaterial")
-                          : t("monitoring.board.inventory.kindProduct")}
-                      </span>
-                      <span className="flex-1 min-w-0 truncate text-lg font-medium text-text">
-                        {h.itemName ?? h.itemCode}
-                      </span>
-                      <span className="text-lg tabular-nums text-text">{h.qty.toLocaleString()}</span>
-                      <span className="w-24 text-right text-base font-bold text-amber-600 dark:text-amber-400">
-                        {reasonLabel(h.reason)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            </button>
+            <button type="button" className={ctlBtn} onClick={toggleTvMode}>
+              {tvMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
           </div>
         </div>
-      </BoardChrome>
+      </div>
 
       <MonitoringSettingsModal
         isOpen={settingsOpen}

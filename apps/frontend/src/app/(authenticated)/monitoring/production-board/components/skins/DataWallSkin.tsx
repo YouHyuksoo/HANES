@@ -2,7 +2,7 @@
 
 /**
  * @file .../production-board/components/skins/DataWallSkin.tsx
- * @description 스킨 C "데이터 월" — 라이트 초대형 편집 타이포(신문 1면). 검정 초대형 숫자 +
+ * @description 스킨 C "데이터 월" — 다크 초대형 편집 타이포(신문 1면). 본색 초대형 숫자 +
  *              레드 포인트 하나, 비대칭 2단. 밝은 공장/반사 환경용. (시안 DataWall.dc.html 구현)
  */
 import { useMemo } from "react";
@@ -10,7 +10,7 @@ import { useTranslation } from "react-i18next";
 import { useNow, formatClock } from "@/components/monitoring/BoardClock";
 import type { BoardSkinProps } from "../types";
 
-const RED = "#d92514";
+const RED = "#f0402c";
 
 export default function DataWallSkin({ kpi, orders, pageItems, page, pageCount, pageSize, updatedAt }: BoardSkinProps) {
   const { t } = useTranslation();
@@ -27,7 +27,7 @@ export default function DataWallSkin({ kpi, orders, pageItems, page, pageCount, 
   const statusLabel = (s: string) => t(`comCode.JOB_ORDER_STATUS.${s}`);
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden bg-[#f5f3ee] text-[#14120e]">
+    <div className="w-full h-full flex flex-col overflow-hidden bg-[#14120e] text-[#ece7da]">
       <style>{`
         @keyframes dw-sweep { from { width: 0; } to { width: ${Math.min(100, kpi?.achieveRate ?? 0)}%; } }
         @keyframes dw-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
@@ -35,7 +35,7 @@ export default function DataWallSkin({ kpi, orders, pageItems, page, pageCount, 
       `}</style>
 
       {/* 마스트헤드 */}
-      <div className="flex items-baseline justify-between px-12 pt-6 pb-3.5 border-b-[6px] border-[#14120e] flex-shrink-0">
+      <div className="flex items-baseline justify-between px-12 pt-6 pb-3.5 border-b-[6px] border-[#ece7da] flex-shrink-0">
         <div className="flex items-baseline gap-6">
           <span className="text-4xl font-black">{t("monitoring.board.production.title")}</span>
           <span className="inline-flex items-center gap-2.5">
@@ -52,21 +52,21 @@ export default function DataWallSkin({ kpi, orders, pageItems, page, pageCount, 
       {/* 본문: 비대칭 2단 */}
       <div className="flex-1 flex min-h-0">
         {/* 좌: 압도적 달성률 */}
-        <div className="w-[40%] border-r-2 border-[#14120e] flex flex-col px-12 pt-6 pb-8">
+        <div className="w-[40%] border-r-2 border-[#ece7da] flex flex-col px-12 pt-6 pb-8">
           <div className="text-lg font-bold tracking-[0.3em] text-[#8d887c]">TODAY {t("monitoring.board.kpi.achieveRate")}</div>
           <div className="flex items-baseline -mt-2">
             <span className="dw-disp leading-none tracking-tight text-[19rem] 2xl:text-[23rem]">{rate}</span>
             <span className="dw-disp text-8xl" style={{ color: RED }}>%</span>
           </div>
-          <div className="h-5 bg-[#e4e0d5] mt-2">
-            <div className="h-full bg-[#14120e]" style={{ animation: "dw-sweep 1.2s cubic-bezier(0.2,0.8,0.2,1) both" }} />
+          <div className="h-5 bg-[#2a2721] mt-2">
+            <div className="h-full bg-[#ece7da]" style={{ animation: "dw-sweep 1.2s cubic-bezier(0.2,0.8,0.2,1) both" }} />
           </div>
-          <div className="flex mt-8 border-t-2 border-[#14120e]">
-            <div className="flex-1 py-4 border-r border-[#cfcabd]">
+          <div className="flex mt-8 border-t-2 border-[#ece7da]">
+            <div className="flex-1 py-4 border-r border-[#3a352c]">
               <div className="text-sm tracking-[0.2em] text-[#8d887c]">{t("monitoring.board.kpi.planQty")}</div>
               <div className="dw-disp text-6xl">{(kpi?.planQty ?? 0).toLocaleString()}</div>
             </div>
-            <div className="flex-1 py-4 pl-7 border-r border-[#cfcabd]">
+            <div className="flex-1 py-4 pl-7 border-r border-[#3a352c]">
               <div className="text-sm tracking-[0.2em] text-[#8d887c]">{t("monitoring.board.kpi.goodQty")}</div>
               <div className="dw-disp text-6xl">{(kpi?.goodQty ?? 0).toLocaleString()}</div>
             </div>
@@ -76,8 +76,8 @@ export default function DataWallSkin({ kpi, orders, pageItems, page, pageCount, 
             </div>
           </div>
           <div className="mt-auto flex items-center gap-3.5 flex-wrap">
-            <span className="bg-[#14120e] text-[#f5f3ee] text-lg font-bold px-4 py-1.5 tracking-[0.15em]">{statusLabel("RUNNING")} {counts.RUNNING}</span>
-            <span className="border-2 border-[#14120e] text-lg font-bold px-3.5 py-1 tracking-[0.15em]">{statusLabel("WAITING")} {counts.WAITING}</span>
+            <span className="bg-[#ece7da] text-[#14120e] text-lg font-bold px-4 py-1.5 tracking-[0.15em]">{statusLabel("RUNNING")} {counts.RUNNING}</span>
+            <span className="border-2 border-[#ece7da] text-lg font-bold px-3.5 py-1 tracking-[0.15em]">{statusLabel("WAITING")} {counts.WAITING}</span>
             <span className="border-2 text-lg font-bold px-3.5 py-1 tracking-[0.15em]" style={{ borderColor: RED, color: RED }}>{statusLabel("HOLD")} {counts.HOLD}</span>
             <span className="border-2 border-[#8d887c] text-[#8d887c] text-lg font-bold px-3.5 py-1 tracking-[0.15em]">{statusLabel("DONE")} {counts.DONE}</span>
           </div>
@@ -101,13 +101,13 @@ export default function DataWallSkin({ kpi, orders, pageItems, page, pageCount, 
                 const dimmed = o.status === "DONE" || o.status === "WAITING";
                 return (
                   <div key={o.orderNo}
-                    className={`flex items-baseline gap-6 border-b border-[#cfcabd] last:border-b-0 py-3.5 ${dimmed ? "text-[#8d887c]" : ""}`}>
+                    className={`flex items-baseline gap-6 border-b border-[#3a352c] last:border-b-0 py-3.5 ${dimmed ? "text-[#8d887c]" : ""}`}>
                     <span className="dw-disp text-4xl w-14" style={{ color: dimmed ? undefined : RED }}>{String(rank).padStart(2, "0")}</span>
                     <div className="flex-1 min-w-0">
                       <div className={`text-4xl font-black leading-tight truncate ${o.status === "DONE" ? "line-through decoration-4" : ""}`}>
                         {o.itemName ?? o.itemCode}
                         {o.status === "HOLD" && (
-                          <span className="align-middle text-xl font-bold text-[#f5f3ee] px-3.5 py-1 ml-4 tracking-[0.1em]" style={{ background: RED }}>
+                          <span className="align-middle text-xl font-bold text-[#14120e] px-3.5 py-1 ml-4 tracking-[0.1em]" style={{ background: RED }}>
                             {statusLabel("HOLD")}
                           </span>
                         )}
