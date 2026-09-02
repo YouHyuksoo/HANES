@@ -47,11 +47,11 @@ export const menuConfig: MenuConfigItem[] = [
     labelKey: "menu.monitoring",
     icon: Monitor,
     children: [
-      { code: "MON_EQUIP_STATUS", labelKey: "menu.equipment.status", path: "/equipment/status" },
       { code: "MON_PROD_BOARD", labelKey: "menu.monitoring.prodBoard", path: "/monitoring/production-board" },
       { code: "MON_QUALITY_BOARD", labelKey: "menu.monitoring.qualityBoard", path: "/monitoring/quality-board" },
       { code: "MON_INV_BOARD", labelKey: "menu.monitoring.invBoard", path: "/monitoring/inventory-board" },
       { code: "MON_JOB_BOARD", labelKey: "menu.monitoring.jobBoard", path: "/monitoring/job-order-board" },
+      { code: "MON_EQUIP_STATUS", labelKey: "menu.equipment.status", path: "/monitoring/equipment-board" },
     ],
   },
   {

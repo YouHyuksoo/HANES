@@ -30,7 +30,7 @@ export default function DataWallSkin({ kpi, shortages, expiry, holds, updatedAt 
       {/* 마스트헤드 */}
       <div className="flex items-baseline justify-between px-12 pt-6 pb-3.5 border-b-[6px] border-[#ece7da] flex-shrink-0">
         <div className="flex items-baseline gap-6">
-          <span className="text-4xl font-black">{t("monitoring.board.inventory.title")}</span>
+          <span className="text-4xl font-black">{t("menu.monitoring.invBoard")}</span>
           <span className="inline-flex items-center gap-2.5">
             <span className="w-3 h-3 rounded-full" style={{ background: RED, animation: "idw-blink 1.6s infinite" }} />
             <span className="font-mono text-base tracking-[0.3em]" style={{ color: RED }}>LIVE</span>

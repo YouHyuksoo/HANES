@@ -450,7 +450,7 @@
     "equipment": "设备管理",
     "equipment.master": "设备主数据管理",
     "equipment.inspectItemMaster": "检查项目主数据",
-    "equipment.status": "设备运行状态",
+    "equipment.status": "设备运行看板",
     "equipment.pmPlan": "PM 计划",
     "equipment.pmResult": "PM 保全结果",
     "gauge": "量具管理",

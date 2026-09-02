@@ -16,7 +16,7 @@ const LANES_PER_PAGE = 5;
 
 interface Lane { process: string; orders: ProductionBoardOrder[]; plan: number; good: number }
 
-export default function SwimlaneSkin({ kpi, orders, byStatus, rollingSec, updatedAt }: JobOrderSkinProps) {
+export default function SwimlaneSkin({ kpi, orders, byStatus, rollingSec, paused, updatedAt }: JobOrderSkinProps) {
   const { t } = useTranslation();
   const now = useNow();
   const clock = now ? formatClock(now) : null;
@@ -38,7 +38,7 @@ export default function SwimlaneSkin({ kpi, orders, byStatus, rollingSec, update
       .sort((a, b) => b.orders.filter((o) => o.status === "RUNNING").length - a.orders.filter((o) => o.status === "RUNNING").length || a.process.localeCompare(b.process));
   }, [orders]);
 
-  const { pageItems, page, pageCount } = useRotation(lanes, LANES_PER_PAGE, rollingSec);
+  const { pageItems, page, pageCount } = useRotation(lanes, LANES_PER_PAGE, rollingSec, paused);
   const maxPlan = Math.max(1, ...lanes.map((l) => l.plan));
   const statusLabel = (s: string) => t(`comCode.JOB_ORDER_STATUS.${s}`, { defaultValue: s });
 
@@ -55,7 +55,7 @@ export default function SwimlaneSkin({ kpi, orders, byStatus, rollingSec, update
       <div className="flex items-center justify-between px-10 pt-5 pb-4 border-b border-[#16233a] flex-shrink-0">
         <div className="flex items-center gap-4">
           <span className="w-3.5 h-3.5 rounded-full" style={{ background: STATUS_COLOR.RUNNING, boxShadow: `0 0 14px ${STATUS_COLOR.RUNNING}`, animation: "jsl-pulse 1.6s infinite" }} />
-          <span className="text-3xl font-black tracking-[0.22em] text-[#f1f6ff] whitespace-nowrap">{t("monitoring.board.jobOrder.title")}</span>
+          <span className="text-3xl font-black tracking-[0.22em] text-[#f1f6ff] whitespace-nowrap">{t("menu.monitoring.jobBoard")}</span>
           <span className="jsl-num text-xl font-semibold tracking-[0.3em] text-[#22d3ee] whitespace-nowrap">SWIMLANE</span>
         </div>
         <div className="flex items-center gap-8 mr-72">

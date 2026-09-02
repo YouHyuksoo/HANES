@@ -36,7 +36,7 @@ export default function ControlTowerSkin({ kpi, byProcess, topDefects, repair, d
       <div className="flex items-center justify-between px-10 pt-5 pb-4 border-b border-[#16233a] flex-shrink-0">
         <div className="flex items-center gap-4">
           <span className="w-3.5 h-3.5 rounded-full bg-[#ef4444]" style={{ boxShadow: "0 0 14px #ef4444", animation: "qct-pulse 1.6s ease-in-out infinite" }} />
-          <span className="text-3xl font-black tracking-[0.22em] text-[#f1f6ff]">{t("monitoring.board.quality.title")}</span>
+          <span className="text-3xl font-black tracking-[0.22em] text-[#f1f6ff]">{t("menu.monitoring.qualityBoard")}</span>
           <span className="qct-num text-xl font-semibold tracking-[0.3em] text-[#22d3ee]">LIVE</span>
         </div>
         <div className="flex items-baseline gap-5">

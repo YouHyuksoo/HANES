@@ -451,7 +451,7 @@
     "equipment": "설비관리",
     "equipment.master": "설비마스터",
     "equipment.inspectItemMaster": "점검항목마스터",
-    "equipment.status": "설비 가동현황",
+    "equipment.status": "설비가동 보드",
     "equipment.pmPlan": "PM 계획",
     "equipment.pmResult": "PM 보전결과",
     "gauge": "계측기관리",

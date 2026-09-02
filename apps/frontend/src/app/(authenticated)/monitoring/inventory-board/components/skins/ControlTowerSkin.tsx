@@ -62,7 +62,7 @@ export default function ControlTowerSkin({ kpi, shortages, expiry, holds, update
       <div className="flex items-center justify-between px-10 pt-5 pb-4 border-b border-[#16233a] flex-shrink-0">
         <div className="flex items-center gap-4">
           <span className="w-3.5 h-3.5 rounded-full" style={{ background: totalColor, boxShadow: `0 0 14px ${totalColor}`, animation: "ict-pulse 1.6s ease-in-out infinite" }} />
-          <span className="text-3xl font-black tracking-[0.22em] text-[#f1f6ff]">{t("monitoring.board.inventory.title")}</span>
+          <span className="text-3xl font-black tracking-[0.22em] text-[#f1f6ff]">{t("menu.monitoring.invBoard")}</span>
           <span className="ict-num text-xl font-semibold tracking-[0.3em]" style={{ color: CYAN }}>LIVE</span>
         </div>
         <div className="flex items-baseline gap-5">

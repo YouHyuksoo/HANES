@@ -1,11 +1,32 @@
 /**
- * @file src/app/(authenticated)/equipment/status/components/types.ts
- * @description 설비 가동현황 전광판 스킨 공통 타입/헬퍼.
- *              EquipCard/RunningJob 원본 타입은 EquipStatusCard가 소유하고 여기서 재노출한다.
+ * @file src/app/(authenticated)/monitoring/equipment-board/components/types.ts
+ * @description 설비가동 보드 타입/헬퍼 — GET /equipment/equips + GET /production/progress?status=RUNNING 조인.
  */
-import type { EquipCard, RunningJob } from "./EquipStatusCard";
 
-export type { EquipCard, RunningJob };
+/** /equipment/equips 응답 항목 (보드에서 쓰는 필드만) */
+export interface EquipCard {
+  id: string;
+  equipCode: string;
+  equipName: string;
+  equipType: string | null;
+  lineCode: string | null;
+  processCode: string | null;
+  processName: string | null;
+  status: string;
+  ipAddress: string | null;
+  modelName: string | null;
+  maker: string | null;
+  currentJobOrderId: string | null;
+}
+
+/** 해당 설비에서 현재 작업(RUNNING) 중인 작업지시 요약 */
+export interface RunningJob {
+  orderNo: string;
+  itemName: string | null;
+  planQty: number;
+  goodQty: number;
+  defectQty: number;
+}
 
 export interface EquipStatusCounts {
   NORMAL: number;

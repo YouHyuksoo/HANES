@@ -29,7 +29,7 @@ export default function DepartureBoardSkin({ kpi, byProcessPageItems, page, page
       {/* 헤더 */}
       <div className="flex items-baseline justify-between px-12 pt-6 pb-4 bg-[#131108] border-b-4 border-[#fbbf24] flex-shrink-0">
         <div className="flex items-baseline gap-6">
-          <span className="font-sans text-4xl font-black tracking-[0.35em]">{t("monitoring.board.quality.title")}</span>
+          <span className="font-sans text-4xl font-black tracking-[0.35em]">{t("menu.monitoring.qualityBoard")}</span>
           <span className="text-lg tracking-[0.3em] text-[#8a6d1c]">QUALITY DEPARTURES</span>
         </div>
         <div className="flex items-baseline gap-5">

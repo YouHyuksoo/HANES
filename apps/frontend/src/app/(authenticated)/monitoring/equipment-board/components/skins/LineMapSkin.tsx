@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * @file .../equipment/status/components/skins/LineMapSkin.tsx
+ * @file .../equipment-board/components/skins/LineMapSkin.tsx
  * @description 설비 스킨 A "노선도" — 지하철 노선도처럼 라인(lineCode)마다 레일을 긋고
  *              설비를 역(노드)으로 배치. 노드 색=상태, 작업중이면 진행률 링이 채워진다.
  *              레일이 많으면 rollingSec 간격으로 페이지 순환(한 페이지 최대 4레일).
@@ -52,7 +52,7 @@ export default function LineMapSkin({ equips, jobMap, counts, workingCount, roll
       <div className="flex items-center justify-between px-10 pt-5 pb-4 border-b border-[#16233a] flex-shrink-0">
         <div className="flex items-center gap-4">
           <span className="w-3.5 h-3.5 rounded-full" style={{ background: STATE_COLOR.RUN, boxShadow: `0 0 14px ${STATE_COLOR.RUN}`, animation: "elm-pulse 1.6s ease-in-out infinite" }} />
-          <span className="text-3xl font-black tracking-[0.22em] text-[#f1f6ff]">{t("equipment.status.title")}</span>
+          <span className="text-3xl font-black tracking-[0.22em] text-[#f1f6ff]">{t("menu.equipment.status")}</span>
           <span className="elm-num text-xl font-semibold tracking-[0.3em] text-[#22d3ee]">LINE MAP</span>
         </div>
         <div className="flex items-baseline gap-5">

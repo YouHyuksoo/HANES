@@ -28,5 +28,7 @@ export interface JobOrderSkinProps {
   orders: ProductionBoardOrder[];
   byStatus: Record<JobStatus, ProductionBoardOrder[]>;
   rollingSec: number;
+  /** 플로팅 컨트롤의 일시정지 — 순환 목록이 있는 스킨(A/B)이 useRotation 에 넘긴다 */
+  paused: boolean;
   updatedAt: string;
 }

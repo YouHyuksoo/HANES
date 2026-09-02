@@ -11,3 +11,6 @@ export { default as MonitoringSettingsModal } from "./MonitoringSettingsModal";
 export type { MonitoringTargetOption } from "./MonitoringSettingsModal";
 export { useMonitoringConfig, DEFAULT_MONITORING_CONFIG } from "./useMonitoringConfig";
 export type { MonitoringConfig } from "./useMonitoringConfig";
+export { default as BoardSkinFrame } from "./BoardSkinFrame";
+export type { BoardSkinOption } from "./BoardSkinFrame";
+export { useBoardSkin, useTvMode } from "./useBoardSkin";

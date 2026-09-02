@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * @file .../equipment/status/components/skins/DepartureBoardSkin.tsx
+ * @file .../equipment-board/components/skins/DepartureBoardSkin.tsx
  * @description 설비 스킨 C "출발 전광판" — 앰버 모노. 공항 출발 안내판처럼 설비를 행으로 나열하고
  *              상태 램프(정지 빨강 빠른 깜빡 / 인터록 회색 깜빡 / 점검 앰버 / 작업중 초록 / 대기 흐림).
  *              정렬: 문제 설비(정지→인터록→점검) 상단, 그다음 작업중(달성률↓), 마지막 대기.
@@ -55,7 +55,7 @@ export default function DepartureBoardSkin({ equips, jobMap, counts, workingCoun
       {/* 헤더 */}
       <div className="flex items-baseline justify-between px-12 pt-6 pb-4 bg-[#131108] border-b-4 border-[#fbbf24] flex-shrink-0">
         <div className="flex items-baseline gap-6">
-          <span className="font-sans text-4xl font-black tracking-[0.35em]">{t("equipment.status.title")}</span>
+          <span className="font-sans text-4xl font-black tracking-[0.35em]">{t("menu.equipment.status")}</span>
           <span className="text-lg tracking-[0.3em] text-[#8a6d1c]">EQUIPMENT DEPARTURES</span>
         </div>
         <div className="flex items-baseline gap-5 mr-72">
