@@ -52,6 +52,7 @@ const storage = (values) => ({
 
 test("URL presence wins over local preferences and preserves an invalid center", () => {
   const preferences = storage({
+    // 레이아웃은 mindmap 하나뿐이다. 예전에 저장된 다른 값은 무시돼야 한다.
     "workflow-knowledge-layout": "process",
     "workflow-knowledge-view": "technical",
   });
@@ -66,7 +67,7 @@ test("URL presence wins over local preferences and preserves an invalid center",
   assert.equal(invalid.view, "business");
 
   const absent = parseKnowledgeNavigation("http://localhost/workflow/knowledge", preferences);
-  assert.equal(absent.layout, "process");
+  assert.equal(absent.layout, "mindmap");
   assert.equal(absent.view, "technical");
 });
 
@@ -85,7 +86,7 @@ test("storage failures fall back safely and writes are best effort", () => {
     history: { replaceState: () => {} },
   };
   const model = new KnowledgeNavigationModel(environment);
-  assert.doesNotThrow(() => model.setLayout("process"));
+  assert.doesNotThrow(() => model.setLayout("mindmap"));
   assert.doesNotThrow(() => model.setView("technical"));
 });
 
@@ -102,7 +103,7 @@ test("navigation uses center-only internal history and serializes only exact dur
   };
   const model = new KnowledgeNavigationModel(environment);
   model.setCenter(second.id);
-  model.setLayout("relation");
+  model.setLayout("mindmap");
   model.setView("technical");
   model.setRelations(["flow", "evidence"]);
   const leakedRelations = model.snapshot.relations;
@@ -120,7 +121,7 @@ test("navigation uses center-only internal history and serializes only exact dur
   const last = new URL(replaced.at(-1), "http://localhost");
   assert.deepEqual([...last.searchParams.keys()].sort(), ["center", "layout", "relations", "view"]);
   assert.equal(last.searchParams.get("center"), second.id);
-  assert.equal(last.searchParams.get("layout"), "relation");
+  assert.equal(last.searchParams.get("layout"), "mindmap");
   assert.equal(last.searchParams.get("view"), "technical");
   assert.equal(last.searchParams.get("relations"), "flow,evidence");
   assert.equal(last.searchParams.has("expanded"), false);
@@ -148,7 +149,7 @@ const graph = {
 };
 
 test("all layouts are deterministic and safeLayout handles throws and non-finite positions", () => {
-  for (const id of ["mindmap", "process", "relation"]) {
+  for (const id of ["mindmap"]) {
     const first = KNOWLEDGE_LAYOUTS[id](graph.nodes, graph.relations, graph.center.id);
     const secondRun = KNOWLEDGE_LAYOUTS[id](graph.nodes, graph.relations, graph.center.id);
     assert.deepEqual(first, secondRun, `${id} must be deterministic`);

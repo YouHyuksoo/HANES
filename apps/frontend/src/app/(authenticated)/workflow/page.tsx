@@ -36,19 +36,32 @@ export default function WorkflowPage() {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background text-text">
       {/* 헤더 */}
-      <header className="shrink-0 border-b border-border bg-surface px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card">
-              <GitBranch className="h-5 w-5 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-lg font-semibold">{t("workflowGuide.pageTitle", "업무 가이드")}</h1>
-              <p className="truncate text-xs text-text-muted">
-                {t("workflowGuide.pageSubtitle", "처음 사용자를 위한 단계별 업무 지침과 화면 바로가기를 제공합니다.")}
-              </p>
-            </div>
+      <header className="shrink-0 border-b border-border bg-surface px-4 py-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="flex min-w-0 shrink-0 items-center gap-2">
+            <GitBranch className="h-5 w-5 shrink-0 text-primary" />
+            <h1
+              className="text-[15px] font-semibold"
+              title={t("workflowGuide.pageSubtitle", "처음 사용자를 위한 단계별 업무 지침과 화면 바로가기를 제공합니다.")}
+            >
+              {t("workflowGuide.pageTitle", "업무 가이드")}
+            </h1>
           </div>
+
+          {/* 검색 — 지식 관계도 탭은 자체 검색을 쓰므로 숨긴다(중복 방지) */}
+          {tab !== "knowledge" && (
+            <label className="relative block w-[300px] max-w-[40vw]">
+              <Search className="absolute left-2.5 top-2 h-4 w-4 text-text-muted" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("workflowGuide.searchPlaceholder", "업무, 화면, 데이터 객체 검색")}
+                className="h-8 w-full rounded border border-border bg-background pl-8 pr-3 text-sm outline-none focus:border-primary"
+              />
+            </label>
+          )}
+
+          <div className="ml-auto shrink-0">
           {/* 탭 */}
           <div role="tablist" className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
             <TabButton active={tab === "guide"} onClick={() => setTab("guide")} icon={<LayoutList className="h-3.5 w-3.5" />}>
@@ -64,17 +77,7 @@ export default function WorkflowPage() {
               {t("workflowGuide.knowledge.tab")}
             </TabButton>
           </div>
-        </div>
-        <div className="mt-3">
-          <label className="relative block w-[360px] max-w-[44vw]">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-text-muted" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("workflowGuide.searchPlaceholder", "업무, 화면, 데이터 객체 검색")}
-              className="h-9 w-full rounded border border-border bg-background pl-8 pr-3 text-sm outline-none focus:border-primary"
-            />
-          </label>
+          </div>
         </div>
       </header>
 

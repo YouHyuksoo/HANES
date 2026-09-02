@@ -48,7 +48,7 @@ test("all runtime coverage and evidence statuses have distinct translations in e
 test("knowledge navigation owns validated URL state and an internal center history", () => {
   const source = read("knowledge-state.ts");
 
-  assert.match(source, /type LayoutMode = ["']mindmap["'] \| ["']process["'] \| ["']relation["']/);
+  assert.match(source, /type LayoutMode = ["']mindmap["']/);
   assert.match(source, /type ViewMode = ["']business["'] \| ["']technical["']/);
   assert.match(source, /DEFAULT_LAYOUT_MODE\s*:\s*LayoutMode\s*=\s*["']mindmap["']/);
   assert.match(source, /DEFAULT_VIEW_MODE\s*:\s*ViewMode\s*=\s*["']business["']/);
@@ -81,10 +81,10 @@ test("knowledge navigation keeps layout, view and filters out of center history"
 test("all layouts are deterministic coordinate-only transforms with a safe fallback", () => {
   const source = read("knowledge-layouts.ts");
   assert.match(source, /mindmap/);
-  assert.match(source, /process/);
-  assert.match(source, /relation/);
-  assert.match(source, /CATEGORY_(?:SECTOR|ANGLE)S/);
-  assert.match(source, /precedes|follows/);
+  // 마인드맵 하나만 남겼다 — 좌우 가지 분류가 있어야 한다.
+  assert.match(source, /MINDMAP_LEFT/);
+  assert.match(source, /MINDMAP_RIGHT/);
+  assert.match(source, /"flow"/);
   assert.match(source, /requires|requiredTasks/);
   assert.match(source, /exceptions|recoversWith/);
   assert.match(source, /Number\.isFinite/);
@@ -138,8 +138,8 @@ test("search keeps local and AI candidates separate and validates AI response", 
 
 test("toolbar exposes exact layouts and views plus internal navigation actions", () => {
   const source = readComponent("KnowledgeToolbar.tsx");
-  for (const value of ["mindmap", "process", "relation", "business", "technical"]) assert.match(source, new RegExp(value));
-  for (const key of ["back", "forward", "reset", "fit", "copy"]) assert.match(source, new RegExp(key));
+  for (const value of ["business", "technical"]) assert.match(source, new RegExp(value));
+  for (const key of ["back", "forward", "recenter", "reset", "fit", "copy"]) assert.match(source, new RegExp(key));
   assert.match(source, /aria-label/);
 });
 
@@ -164,7 +164,9 @@ test("canvas registers custom renderers and complete ReactFlow instruments", () 
   assert.match(source, /edgeTypes/);
   assert.match(source, /KnowledgeNode/);
   assert.match(source, /KnowledgeEdge/);
-  assert.match(source, /nodesDraggable=\{false\}/);
+  // 노드를 잡아 옮길 수 있어야 하고, 옮긴 위치는 onNodesChange로 반영된다.
+  assert.match(source, /nodesDraggable(?!=\{false\})/);
+  assert.match(source, /onNodesChange/);
   assert.match(source, /nodesConnectable=\{false\}/);
   assert.match(source, /<Background/);
   assert.match(source, /<Controls/);

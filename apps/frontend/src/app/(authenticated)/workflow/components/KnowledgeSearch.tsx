@@ -41,15 +41,15 @@ export function KnowledgeSearch({ onSelect, invalidCenter }: Props) {
   const submit = (event: FormEvent) => { event.preventDefault(); if (shouldInterpretKnowledgeQuery(query, localResults.length, false)) void interpret(); };
   const nodeFor = (id: string): KnowledgeNode | undefined => workflowKnowledgeCatalog.nodes.find((node) => node.id === id);
 
-  return <section className="border-b border-border bg-card p-3" aria-label={t("workflowGuide.knowledge.search.label")}>
-    <form onSubmit={submit} className="flex gap-2">
+  return <section className="min-w-0 flex-1" aria-label={t("workflowGuide.knowledge.search.label")}>
+    <form onSubmit={submit} className="flex gap-1.5">
       <label className="sr-only" htmlFor="knowledge-query">{t("workflowGuide.knowledge.search.label")}</label>
-      <input id="knowledge-query" value={query} onChange={(e) => { requestGate.current.invalidate(); abortRequest.current?.abort(); setLoading(false); setStatus(""); setQuery(e.target.value); setAiCandidates([]); }} placeholder={t("workflowGuide.knowledge.search.placeholder")} className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-primary" />
-      <button type="submit" className="rounded-md border border-border px-3 text-sm font-semibold text-text focus-visible:ring-2 focus-visible:ring-primary">{t("workflowGuide.knowledge.search.action")}</button>
-      <button type="button" onClick={() => void interpret()} disabled={loading || !query.trim()} className="rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-50">{loading ? t("workflowGuide.knowledge.search.aiLoading") : t("workflowGuide.knowledge.search.aiAction")}</button>
+      <input id="knowledge-query" value={query} onChange={(e) => { requestGate.current.invalidate(); abortRequest.current?.abort(); setLoading(false); setStatus(""); setQuery(e.target.value); setAiCandidates([]); }} placeholder={t("workflowGuide.knowledge.search.placeholder")} className="h-7 min-w-0 flex-1 rounded-md border border-border bg-background px-2.5 text-xs text-text outline-none focus-visible:ring-2 focus-visible:ring-primary" />
+      <button type="submit" className="h-7 shrink-0 rounded-md border border-border px-2.5 text-xs font-semibold text-text focus-visible:ring-2 focus-visible:ring-primary">{t("workflowGuide.knowledge.search.action")}</button>
+      <button type="button" onClick={() => void interpret()} disabled={loading || !query.trim()} className="h-7 shrink-0 rounded-md bg-primary px-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">{loading ? t("workflowGuide.knowledge.search.aiLoading") : t("workflowGuide.knowledge.search.aiAction")}</button>
     </form>
-    {status && <p role="status" className="mt-2 text-xs text-error">{status}</p>}
-    {query.trim() && <div className="mt-3 grid gap-3 md:grid-cols-2">
+    {status && <p role="status" className="mt-1 text-[11px] text-error">{status}</p>}
+    {query.trim() && <div className="absolute left-0 right-0 top-full z-20 mt-1 grid gap-3 border-b border-border bg-card p-3 shadow-lg md:grid-cols-2">
       <ResultGroup title={t("workflowGuide.knowledge.search.localResults")} empty={t("workflowGuide.knowledge.search.noLocalResults")} items={localResults.map(({ node }) => ({ node, reason: node.description }))} onSelect={onSelect} />
       <ResultGroup title={t("workflowGuide.knowledge.search.aiResults")} empty={t("workflowGuide.knowledge.search.noAiResults")} items={aiCandidates.flatMap((candidate) => { const node = nodeFor(candidate.nodeId); return node ? [{ node, reason: candidate.reason }] : []; })} onSelect={onSelect} />
     </div>}

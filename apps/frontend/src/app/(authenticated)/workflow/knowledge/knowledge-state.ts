@@ -4,7 +4,8 @@ import {
   type KnowledgeRelationCategory,
 } from "@harness/shared";
 
-export type LayoutMode = "mindmap" | "process" | "relation";
+/** 배치는 마인드맵 하나만 쓴다. 프로세스·관계는 구분이 흐려 제거했다(2026-09-02). */
+export type LayoutMode = "mindmap";
 export type ViewMode = "business" | "technical";
 
 export const DEFAULT_LAYOUT_MODE: LayoutMode = "mindmap";
@@ -12,7 +13,7 @@ export const DEFAULT_VIEW_MODE: ViewMode = "business";
 export const LAYOUT_PREFERENCE_KEY = "workflow-knowledge-layout";
 export const VIEW_PREFERENCE_KEY = "workflow-knowledge-view";
 
-const LAYOUT_MODES: readonly LayoutMode[] = ["mindmap", "process", "relation"];
+const LAYOUT_MODES: readonly LayoutMode[] = ["mindmap"];
 const VIEW_MODES: readonly ViewMode[] = ["business", "technical"];
 export const RELATION_CATEGORIES: readonly KnowledgeRelationCategory[] = [
   ...KNOWLEDGE_CATEGORIES,
@@ -74,8 +75,15 @@ const writePreference = (storage: StorageLike | undefined, key: string, value: s
   }
 };
 
+/**
+ * 처음 열었을 때 켜둘 관계 — 흐름만 보여준다.
+ * 전부 켜면 한 노드에 관계가 수십 개 붙어 무엇이 본 흐름인지 읽히지 않는다.
+ * 나머지는 좌측 필터에서 필요할 때 켠다.
+ */
+const DEFAULT_RELATIONS: readonly KnowledgeRelationCategory[] = ["flow"];
+
 const parseRelations = (value: string | null): KnowledgeRelationCategory[] => {
-  if (value === null) return [...RELATION_CATEGORIES];
+  if (value === null) return [...DEFAULT_RELATIONS];
   const requested = new Set(value.split(",").filter(isRelationCategory));
   return RELATION_CATEGORIES.filter((category) => requested.has(category));
 };
