@@ -212,8 +212,8 @@ export default function EquipHeader({
           </button>
         </div>
 
-        {/* ── Row 2: 생산실적 (중앙, 크게) ── */}
-        <div className="flex items-center justify-center gap-5 py-3">
+        {/* ── Row 2: 생산실적 (중앙, 크게) — 헤더 1행과 톤을 달리해 숫자 영역이 도드라지게 ── */}
+        <div className="flex items-center justify-center gap-5 py-3 bg-surface border-t border-border/60">
           {selectedJobOrder ? (
             <>
               <span className="text-base font-medium text-black/60 dark:text-white/60">{t('kiosk.header.prodResult', '생산실적')}</span>

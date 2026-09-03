@@ -517,7 +517,7 @@ export default function InputKioskPage() {
         </div>
 
         {/* 우측: 양품조건 + 작업이력 */}
-        <div className="min-w-0 overflow-hidden flex flex-col bg-card border-l-2 border-border">
+        <div className="min-w-0 overflow-hidden flex flex-col bg-surface border-l-2 border-border">
           <WorkHistoryPanel key={historyKey} />
         </div>
       </div>

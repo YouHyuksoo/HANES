@@ -183,7 +183,8 @@ export default function MaterialListPanel({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* BOM 자재리스트 (설비 장착 현황) */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      {/* 자재리스트 — 주변(bg-card)과 톤을 달리해 영역 경계가 보이게 */}
+      <div className="flex-1 overflow-y-auto min-h-0 bg-surface">
         <div className="sticky top-0 bg-slate-100 dark:bg-slate-800 px-3 py-2 border-b border-border flex items-center gap-1.5">
           <Package className="w-3.5 h-3.5 text-primary" />
           <span className="text-xs font-semibold text-text">{t('kiosk.material.bomList')}</span>
@@ -289,7 +290,8 @@ export default function MaterialListPanel({
       </div>
 
       {/* 소모성 설비 부품 (매핑 기반) */}
-      <div className="border-t border-border flex-1 min-h-0 overflow-y-auto">
+      {/* 소모성 설비 부품 — 자재리스트(bg-surface)와도 구분되는 중립 톤 */}
+      <div className="border-t-2 border-border flex-1 min-h-0 overflow-y-auto bg-card">
         <div className="sticky top-0 bg-slate-100 dark:bg-slate-800 px-3 py-2 border-b border-border flex items-center gap-1.5">
           <AlertTriangle className="w-3.5 h-3.5 text-orange-500" />
           <span className="text-xs font-semibold text-text">{t('kiosk.material.consumables')}</span>
