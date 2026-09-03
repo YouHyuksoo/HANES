@@ -317,6 +317,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/master/validation": {
+      const mod = await import("./page-registries/master__validation.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/master/vendor-barcode": {
       const mod = await import("./page-registries/master__vendor-barcode.generated");
       component = mod.getPageComponent();
