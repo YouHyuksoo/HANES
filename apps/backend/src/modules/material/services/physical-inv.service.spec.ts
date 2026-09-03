@@ -14,6 +14,7 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { parseDateStart } from '../../../shared/date.util';
 
 describe('PhysicalInvService', () => {
@@ -64,6 +65,7 @@ describe('PhysicalInvService', () => {
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
         { provide: DataSource, useValue: dataSource },
         { provide: TransactionService, useValue: tx },
+        { provide: NumberingService, useValue: createMock<NumberingService>() },
       ],
     })
       .setLogger(new MockLoggerService())

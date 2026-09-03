@@ -40,7 +40,7 @@ export default function EquipAssignTab() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await api.get("/equipment/equips", { params: { limit: "500" } });
+        const res = await api.get("/equipment/equips", { params: { limit: "500", useYn: "Y" } });
         const list: EquipSummary[] = (res.data?.data ?? []).map((e: Record<string, unknown>) => ({
           equipCode: e.equipCode, equipName: e.equipName,
           equipType: e.equipType || "", lineCode: e.lineCode || null,

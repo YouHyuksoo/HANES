@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { SensorMonitorService } from './sensor-monitor.service';
 import { SensorDataLog } from '../../../entities/sensor-data-log.entity';
 import { EquipConditionRule } from '../../../entities/equip-condition-rule.entity';
@@ -10,6 +10,8 @@ import { EquipMaster } from '../../../entities/equip-master.entity';
 import { PmPlan } from '../../../entities/pm-plan.entity';
 import { PmWorkOrder } from '../../../entities/pm-work-order.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 
 describe('SensorMonitorService', () => {
   let target: SensorMonitorService;
@@ -18,6 +20,9 @@ describe('SensorMonitorService', () => {
   let equipRepo: DeepMocked<Repository<EquipMaster>>;
   let pmPlanRepo: DeepMocked<Repository<PmPlan>>;
   let pmWorkOrderRepo: DeepMocked<Repository<PmWorkOrder>>;
+  let mockNumbering: DeepMocked<NumberingService>;
+  let mockTx: DeepMocked<TransactionService>;
+  let mockQueryRunner: DeepMocked<QueryRunner>;
 
   const queryBuilder = (rows: unknown[] = []) => {
     const qb: any = {
@@ -37,6 +42,11 @@ describe('SensorMonitorService', () => {
     pmPlanRepo = createMock<Repository<PmPlan>>();
     pmWorkOrderRepo = createMock<Repository<PmWorkOrder>>();
 
+    mockNumbering = createMock<NumberingService>();
+    mockTx = createMock<TransactionService>();
+    mockQueryRunner = createMock<QueryRunner>();
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SensorMonitorService,
@@ -45,6 +55,8 @@ describe('SensorMonitorService', () => {
         { provide: getRepositoryToken(EquipMaster), useValue: equipRepo },
         { provide: getRepositoryToken(PmPlan), useValue: pmPlanRepo },
         { provide: getRepositoryToken(PmWorkOrder), useValue: pmWorkOrderRepo },
+        { provide: NumberingService, useValue: mockNumbering },
+        { provide: TransactionService, useValue: mockTx },
       ],
     }).setLogger(new MockLoggerService()).compile();
 

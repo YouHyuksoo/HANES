@@ -26,6 +26,7 @@ import { Repository, LessThanOrEqual } from 'typeorm';
 import { GaugeMaster } from '../../../../entities/gauge-master.entity';
 import { CalibrationLog } from '../../../../entities/calibration-log.entity';
 import { parseDateStart } from '../../../../shared/date.util';
+import { NumberingService } from '../../../../shared/numbering.service';
 import {
   CreateGaugeDto,
   UpdateGaugeDto,
@@ -43,6 +44,7 @@ export class MsaService {
     private readonly gaugeRepo: Repository<GaugeMaster>,
     @InjectRepository(CalibrationLog)
     private readonly calRepo: Repository<CalibrationLog>,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -58,25 +60,10 @@ export class MsaService {
 
   /**
    * 교정번호 자동채번: CAL-YYYYMMDD-NNN
+   * NUM_RULE_MASTERS(CALIBRATION) 행을 SELECT FOR UPDATE로 잠가 동시 채번을 직렬화한다.
    */
-  private async generateCalibrationNo(
-    company: string,
-    plant: string,
-  ): Promise<string> {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `CAL-${dateStr}-`;
-
-    const last = await this.calRepo
-      .createQueryBuilder('c')
-      .where('c.company = :company', { company })
-      .andWhere('c.plant = :plant', { plant })
-      .andWhere('c.calibrationNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('c.calibrationNo', 'DESC')
-      .getOne();
-
-    const seq = last ? parseInt(last.calibrationNo.slice(-3), 10) + 1 : 1;
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+  private async generateCalibrationNo(): Promise<string> {
+    return this.numbering.next('CALIBRATION');
   }
 
   // =============================================
@@ -287,7 +274,7 @@ export class MsaService {
       throw new NotFoundException('계측기를 찾을 수 없습니다.');
     }
 
-    const calibrationNo = await this.generateCalibrationNo(company, plant);
+    const calibrationNo = await this.generateCalibrationNo();
     const entity = this.calRepo.create({
       gaugeCode: dto.gaugeId,
       calibrationNo,

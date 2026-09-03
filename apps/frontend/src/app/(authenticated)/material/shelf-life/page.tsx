@@ -104,7 +104,7 @@ export default function ShelfLifePage() {
                     leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
                 <div className="w-48 flex-shrink-0">
-                  <PartSelect labelPrefix={t("common.partName", "품목")} value={itemFilter} onChange={setItemFilter} fullWidth />
+                  <PartSelect labelPrefix={t("common.partName", "품목")} value={itemFilter} onChange={setItemFilter} includeInactive fullWidth />
                 </div>
                 <div className="w-40 flex-shrink-0">
                   <Select options={expiryOptions} value={expiryFilter} onChange={setExpiryFilter} fullWidth />

@@ -11,20 +11,24 @@ import { MsaService } from './msa.service';
 import { GaugeMaster } from '../../../../entities/gauge-master.entity';
 import { CalibrationLog } from '../../../../entities/calibration-log.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { NumberingService } from '../../../../shared/numbering.service';
 
 describe('MsaService', () => {
   let target: MsaService;
   let mockGaugeRepo: DeepMocked<Repository<GaugeMaster>>;
   let mockCalRepo: DeepMocked<Repository<CalibrationLog>>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockGaugeRepo = createMock<Repository<GaugeMaster>>();
     mockCalRepo = createMock<Repository<CalibrationLog>>();
+    mockNumbering = createMock<NumberingService>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MsaService,
         { provide: getRepositoryToken(GaugeMaster), useValue: mockGaugeRepo },
         { provide: getRepositoryToken(CalibrationLog), useValue: mockCalRepo },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<MsaService>(MsaService);

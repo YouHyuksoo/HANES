@@ -1,0 +1,10 @@
+-- 2026-09-03 재고보정 로그 PK 충돌(ORA-00001) 수정
+-- 원인: INV_ADJ_LOGS PK=(ADJ_DATE, SEQ)에서 SEQ DEFAULT 1(상수) + ADJ_DATE DEFAULT SYSDATE(초 단위)
+--       → 같은 초에 2건 등록 시 (동일시각, 1) 중복으로 ORA-00001.
+-- 조치: 전용 시퀀스 SEQ_INV_ADJ_LOGS를 만들고 SEQ 기본값을 NEXTVAL로 교체.
+--       (numbering-rules.md 전역 규칙: 시퀀스 채번은 DB SEQUENCE.NEXTVAL 사용)
+
+CREATE SEQUENCE SEQ_INV_ADJ_LOGS START WITH 1 INCREMENT BY 1 CACHE 20
+/
+ALTER TABLE INV_ADJ_LOGS MODIFY (SEQ DEFAULT SEQ_INV_ADJ_LOGS.NEXTVAL)
+/

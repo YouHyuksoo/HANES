@@ -28,6 +28,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ControlPlan } from '../../../../entities/control-plan.entity';
 import { ControlPlanItem } from '../../../../entities/control-plan-item.entity';
+import { NumberingService } from '../../../../shared/numbering.service';
 import {
   CreateControlPlanDto,
   UpdateControlPlanDto,
@@ -44,6 +45,7 @@ export class ControlPlanService {
     private readonly planRepo: Repository<ControlPlan>,
     @InjectRepository(ControlPlanItem)
     private readonly itemRepo: Repository<ControlPlanItem>,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -73,25 +75,10 @@ export class ControlPlanService {
 
   /**
    * 관리계획번호 자동채번: CP-YYYYMMDD-NNN
+   * NUM_RULE_MASTERS(CONTROL_PLAN) 행을 SELECT FOR UPDATE로 잠가 동시 채번을 직렬화한다.
    */
-  private async generatePlanNo(
-    company: string,
-    plant: string,
-  ): Promise<string> {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `CP-${dateStr}-`;
-
-    const last = await this.planRepo
-      .createQueryBuilder('cp')
-      .where('cp.company = :company', { company })
-      .andWhere('cp.plant = :plant', { plant })
-      .andWhere('cp.planNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('cp.planNo', 'DESC')
-      .getOne();
-
-    const seq = last ? parseInt(last.planNo.slice(-3), 10) + 1 : 1;
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+  private async generatePlanNo(): Promise<string> {
+    return this.numbering.next('CONTROL_PLAN');
   }
 
   // =============================================
@@ -176,7 +163,7 @@ export class ControlPlanService {
     plant: string,
     userId: string,
   ) {
-    const planNo = await this.generatePlanNo(company, plant);
+    const planNo = await this.generatePlanNo();
     const { items, ...planData } = dto;
 
     const entity = this.planRepo.create({
@@ -310,7 +297,7 @@ export class ControlPlanService {
     await this.planRepo.save(plan);
 
     // 새 버전 생성
-    const newPlanNo = await this.generatePlanNo(plan.company, plan.plant);
+    const newPlanNo = await this.generatePlanNo();
     const newPlan = this.planRepo.create({
       planNo: newPlanNo,
       itemCode: plan.itemCode,

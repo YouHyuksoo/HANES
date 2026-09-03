@@ -109,7 +109,7 @@ export default function ShelfLifeHistoryPage() {
                   />
                 </div>
                 <div className="w-48 flex-shrink-0">
-                  <PartSelect labelPrefix={t("common.partName", "품목")} value={itemFilter} onChange={setItemFilter} fullWidth />
+                  <PartSelect labelPrefix={t("common.partName", "품목")} value={itemFilter} onChange={setItemFilter} includeInactive fullWidth />
                 </div>
                 <div className="w-40 flex-shrink-0">
                   <Select options={resultOptions} value={resultFilter} onChange={setResultFilter} fullWidth />

@@ -58,7 +58,7 @@ export default function ShipOrderPage() {
   const [unconfirming, setUnconfirming] = useState(false);
 
   const comCodeStatusOptions = useComCodeOptions("SHIP_ORDER_STATUS");
-  const { options: customerOptions } = usePartnerOptions("CUSTOMER");
+  const { options: customerOptions } = usePartnerOptions("CUSTOMER", { includeInactive: true });
   const statusOptions = useMemo(() => [
     { value: "", label: t("common.allStatus") }, ...comCodeStatusOptions
   ], [t, comCodeStatusOptions]);

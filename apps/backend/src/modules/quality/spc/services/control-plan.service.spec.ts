@@ -11,20 +11,24 @@ import { ControlPlanService } from './control-plan.service';
 import { ControlPlan } from '../../../../entities/control-plan.entity';
 import { ControlPlanItem } from '../../../../entities/control-plan-item.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { NumberingService } from '../../../../shared/numbering.service';
 
 describe('ControlPlanService', () => {
   let target: ControlPlanService;
   let mockPlanRepo: DeepMocked<Repository<ControlPlan>>;
   let mockItemRepo: DeepMocked<Repository<ControlPlanItem>>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockPlanRepo = createMock<Repository<ControlPlan>>();
     mockItemRepo = createMock<Repository<ControlPlanItem>>();
+    mockNumbering = createMock<NumberingService>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ControlPlanService,
         { provide: getRepositoryToken(ControlPlan), useValue: mockPlanRepo },
         { provide: getRepositoryToken(ControlPlanItem), useValue: mockItemRepo },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ControlPlanService>(ControlPlanService);

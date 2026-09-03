@@ -50,6 +50,12 @@ export class CreateConsumableDto {
   @Min(0)
   warningCount?: number;
 
+  @ApiPropertyOptional({ description: '안전재고' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  safetyStock?: number;
+
   @ApiPropertyOptional({ description: '보관 위치', maxLength: 100 })
   @IsOptional()
   @IsString()

@@ -103,6 +103,48 @@ verifiedCommit: 2e8d7f56
 
 ---
 
+## 4. 재고보정 로그 채번 (INV_ADJ_LOGS)
+
+- PK = `(ADJ_DATE, SEQ)`.
+- `SEQ`는 전용 시퀀스 **`SEQ_INV_ADJ_LOGS.NEXTVAL`** 을 DB 컬럼 기본값으로 사용한다 (전역 단조 증가, 일별 리셋 없음).
+- `ADJ_DATE`는 `SYSDATE` 기본값 유지 (기록 시각).
+- 이력: 초기 스키마는 `SEQ DEFAULT 1`(상수)이라 같은 초에 2건 등록 시 ORA-00001이 발생했다.
+  2026-09-03 `apps/backend/src/migrations/2026-09-03_inv_adj_logs_seq_sequence.sql`로 시퀀스 기본값 전환.
+
+---
+
+## 5. 거래원장 수불번호 (NUM_RULE_MASTERS 기반)
+
+재고/제품 수불번호는 `NumberingService.next(RULE_TYPE, qr)` 로 채번한다.
+규칙은 `NUM_RULE_MASTERS` 행이 단일 출처이며, `SELECT ... FOR UPDATE` 로 동시 채번을 직렬화한다.
+
+| RULE_TYPE | 포맷 | 대상 | 리셋 |
+|---|---|---|---|
+| `STOCK_TX` | `TX` + YYYYMMDD + `-` + 5자리 | 자재출고 등 공통 수불 | 당일 |
+| `ADJ_TX` | `ADJ` + YYYYMMDD + 5자리 | 재고보정 | 당일 |
+| `MISC_TX` | `MISC` + YYYYMMDD + 5자리 | 기타입고 | 당일 |
+| `PHYS_CNT_TX` | `PHC` + YYYYMMDD + 4자리 | 재고실사 | 당일 |
+| `INV_TX` | `TRX` + YYYYMMDD + 5자리 | 자재 입출고 | 당일 |
+| `PRODUCT_TX` | `PTX` + YYYYMMDD + 5자리 | 제품 입출고 | 당일 |
+
+- 규칙 행 등록: `apps/backend/src/migrations/2026-09-03_numbering_max_plus_one_fix.sql`
+- 중간 도입 시 `CURRENT_SEQ` 는 **당일 이미 발급된 최대 시퀀스**로 초기화해야 기존 번호와 충돌하지 않는다.
+
+## 6. 스코프 채번 (월·예정일 단위 재시작)
+
+`PP-YYYYMM-NNN`(생산계획), `PM|CBM-YYYYMMDD-NNN`(설비보전 WO)는 **사용자가 지정한 계획월·예정일**마다
+001부터 다시 시작한다. 오늘 기준이 아니므로 단일 카운터(SEQUENCE/NUM_RULE)로 표현할 수 없고,
+전역 시퀀스를 쓰면 3자리 자릿수를 넘긴다.
+
+→ `NUM_RULE_MASTERS` 의 **락 전용 행**(`PROD_PLAN`, `PM_WO`, PATTERN=`LOCK-ONLY`)을 `FOR UPDATE` 로 잠가
+동시 채번을 직렬화한 뒤, 같은 트랜잭션 안에서 스코프 내 MAX+1을 수행한다
+(`NumberingService.nextProdPlanNo` / `nextPmWoNo`). 락은 COMMIT/ROLLBACK 시 해제된다.
+
+**주의**: 이 방식은 채번과 INSERT가 반드시 같은 트랜잭션이어야 한다. 채번 후 트랜잭션 밖에서 저장하면
+락이 먼저 풀려 중복이 발생한다.
+
+---
+
 ## 구현 시 주의사항
 
 1. **시퀀스 채번은 DB SEQUENCE.NEXTVAL** 사용. `MAX(SEQ)+1` 금지 ([STATE](../../.ai-coordination/STATE.md) 글로벌 규칙).

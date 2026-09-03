@@ -17,10 +17,12 @@ interface EquipSelectProps extends Omit<SelectProps, "options"> {
   labelPrefix?: string;
   /** 공정 코드 — 지정 시 해당 공정 소속 설비만 표시 */
   processCode?: string;
+  /** 이력 조회 필터용: 미사용(useYn='N') 설비도 포함 */
+  includeInactive?: boolean;
 }
 
-export default function EquipSelect({ labelPrefix, processCode, ...props }: EquipSelectProps) {
-  const { options, isLoading } = useEquipOptions(processCode);
+export default function EquipSelect({ labelPrefix, processCode, includeInactive, ...props }: EquipSelectProps) {
+  const { options, isLoading } = useEquipOptions(processCode, { includeInactive });
   const finalOptions = useMemo(() => {
     if (!labelPrefix) return options;
     return [

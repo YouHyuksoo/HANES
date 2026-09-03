@@ -11,24 +11,28 @@ import { SpcService } from './spc.service';
 import { SpcChart } from '../../../../entities/spc-chart.entity';
 import { SpcData } from '../../../../entities/spc-data.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { NumberingService } from '../../../../shared/numbering.service';
 
 describe('SpcService', () => {
   let target: SpcService;
   let mockChartRepo: DeepMocked<Repository<SpcChart>>;
   let mockDataRepo: DeepMocked<Repository<SpcData>>;
   let mockDataSource: DeepMocked<DataSource>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockChartRepo = createMock<Repository<SpcChart>>();
     mockDataRepo = createMock<Repository<SpcData>>();
     mockDataSource = createMock<DataSource>();
     mockDataSource.query = jest.fn().mockResolvedValue([{ nextSeq: 1 }]);
+    mockNumbering = createMock<NumberingService>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SpcService,
         { provide: getRepositoryToken(SpcChart), useValue: mockChartRepo },
         { provide: getRepositoryToken(SpcData), useValue: mockDataRepo },
         { provide: DataSource, useValue: mockDataSource },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<SpcService>(SpcService);

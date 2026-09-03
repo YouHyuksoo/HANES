@@ -379,7 +379,7 @@ export class IssueRequestService {
               ON part.ITEM_CODE = item.ITEM_CODE
              AND part.COMPANY = item.COMPANY
              AND part.PLANT_CD = item.PLANT_CD
-            WHERE item.REQUEST_ID = req.requestNo
+            WHERE item.REQUEST_ID = "req"."REQUEST_NO"
               ${company ? 'AND item.COMPANY = :company' : ''}
               ${plant ? 'AND item.PLANT_CD = :plant' : ''}
               AND (

@@ -29,7 +29,7 @@ export class WarehouseService {
   /**
    * 창고 목록 조회
    */
-  async findAll(warehouseType?: string, company?: string, plant?: string) {
+  async findAll(warehouseType?: string, company?: string, plant?: string, useYn?: string) {
     const where: FindOptionsWhere<Warehouse> = {
       ...(company && { company }),
       ...(plant && { plant }),
@@ -37,6 +37,11 @@ export class WarehouseService {
 
     if (warehouseType) {
       where.warehouseType = warehouseType;
+    }
+
+    // 미지정 시 전체 반환 유지 — 창고 관리 그리드가 미사용 창고 재활성화에 의존
+    if (useYn) {
+      where.useYn = useYn;
     }
 
     const [data, total] = await Promise.all([

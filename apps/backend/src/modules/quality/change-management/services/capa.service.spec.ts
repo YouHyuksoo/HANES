@@ -11,20 +11,24 @@ import { CapaService } from './capa.service';
 import { CAPARequest } from '../../../../entities/capa-request.entity';
 import { CAPAAction } from '../../../../entities/capa-action.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { NumberingService } from '../../../../shared/numbering.service';
 
 describe('CapaService', () => {
   let target: CapaService;
   let mockCapaRepo: DeepMocked<Repository<CAPARequest>>;
   let mockActionRepo: DeepMocked<Repository<CAPAAction>>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockCapaRepo = createMock<Repository<CAPARequest>>();
     mockActionRepo = createMock<Repository<CAPAAction>>();
+    mockNumbering = createMock<NumberingService>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CapaService,
         { provide: getRepositoryToken(CAPARequest), useValue: mockCapaRepo },
         { provide: getRepositoryToken(CAPAAction), useValue: mockActionRepo },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<CapaService>(CapaService);

@@ -17,10 +17,12 @@ interface PartSelectProps extends Omit<SelectProps, "options"> {
   partType?: string;
   /** 필터용: 모든 옵션 라벨 앞에 접두어 추가 + "전체" 옵션 자동 추가 */
   labelPrefix?: string;
+  /** 이력 조회 필터용: 미사용(useYn='N') 품목도 포함 */
+  includeInactive?: boolean;
 }
 
-export default function PartSelect({ partType, labelPrefix, ...rest }: PartSelectProps) {
-  const { options, isLoading } = usePartOptions(partType);
+export default function PartSelect({ partType, labelPrefix, includeInactive, ...rest }: PartSelectProps) {
+  const { options, isLoading } = usePartOptions(partType, { includeInactive });
   const finalOptions = useMemo(() => {
     if (!labelPrefix) return options;
     return [

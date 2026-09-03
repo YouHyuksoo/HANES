@@ -33,6 +33,7 @@ import { ReworkProcess } from '../../../../entities/rework-process.entity';
 import { DefectLog } from '../../../../entities/defect-log.entity';
 import { ItemMaster } from '../../../../entities/item-master.entity';
 import { ProductInventoryService } from '../../../inventory/services/product-inventory.service';
+import { NumberingService } from '../../../../shared/numbering.service';
 import {
   CreateReworkOrderDto,
   UpdateReworkOrderDto,
@@ -58,6 +59,7 @@ export class ReworkService {
     @InjectRepository(ItemMaster)
     private readonly itemMasterRepo: Repository<ItemMaster>,
     private readonly productInventoryService: ProductInventoryService,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -83,22 +85,10 @@ export class ReworkService {
 
   /**
    * 재작업번호 자동채번: RW-YYYYMMDD-NNN
+   * NUM_RULE_MASTERS(REWORK_NO) 행을 SELECT FOR UPDATE로 잠가 동시 채번을 직렬화한다.
    */
-  private async generateReworkNo(company: string, plant: string): Promise<string> {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `RW-${dateStr}-`;
-
-    const last = await this.reworkRepo
-      .createQueryBuilder('r')
-      .where('r.company = :company', { company })
-      .andWhere('r.plant = :plant', { plant })
-      .andWhere('r.reworkNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('r.reworkNo', 'DESC')
-      .getOne();
-
-    const seq = last ? parseInt(last.reworkNo.slice(-3), 10) + 1 : 1;
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+  private async generateReworkNo(): Promise<string> {
+    return this.numbering.next('REWORK_NO');
   }
 
   // =============================================
@@ -177,7 +167,7 @@ export class ReworkService {
     plant: string,
     userId: string,
   ) {
-    const reworkNo = await this.generateReworkNo(company, plant);
+    const reworkNo = await this.generateReworkNo();
     const entity = this.reworkRepo.create({
       reworkNo,
       defectLogId: dto.defectLogId ?? null,

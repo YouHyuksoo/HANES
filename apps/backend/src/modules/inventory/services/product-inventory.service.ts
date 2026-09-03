@@ -17,6 +17,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import {
   ProductReceiveStockDto,
   ProductIssueStockDto,
@@ -44,6 +45,7 @@ export class ProductInventoryService {
     @InjectRepository(BoxMaster)
     private readonly boxRepository: Repository<BoxMaster>,
     private readonly tx: TransactionService,
+    private readonly numbering: NumberingService,
   ) {}
 
   /**
@@ -101,25 +103,9 @@ export class ProductInventoryService {
     return value === 'DEFECT' ? 'DEFECT' : 'GOOD';
   }
 
-  /** 제품 트랜잭션 번호 생성 (PTX20260224XXXXX 형식) */
+  /** 제품 트랜잭션 번호 생성 (PTX+YYYYMMDD+5자리) — NUM_RULE 'PRODUCT_TX' 채번 (MAX+1 금지, 병렬 입고 PK충돌 이력) */
   private async generateTransNo(qr?: QueryRunner): Promise<string> {
-    const today = new Date();
-    const prefix = `PTX${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-
-    const repo = qr ? qr.manager.getRepository(ProductTransaction) : this.transactionRepository;
-    const lastTrans = await repo
-      .createQueryBuilder('t')
-      .where('t.transNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('t.transNo', 'DESC')
-      .getOne();
-
-    let seq = 1;
-    if (lastTrans) {
-      const lastSeq = parseInt(lastTrans.transNo.slice(-5), 10);
-      seq = lastSeq + 1;
-    }
-
-    return `${prefix}${String(seq).padStart(5, '0')}`;
+    return this.numbering.next('PRODUCT_TX', qr);
   }
 
   /** 제품 입고 처리 */
@@ -144,9 +130,9 @@ export class ProductInventoryService {
       }
     }
 
-    const transNo = await this.generateTransNo();
-
     return this.tx.run(async (queryRunner) => {
+      const transNo = await this.generateTransNo(queryRunner);
+
       // 1. 트랜잭션 생성
       const transaction = this.transactionRepository.create({
         transNo,
@@ -355,11 +341,11 @@ export class ProductInventoryService {
 
   /** 제품 출고 처리 */
   async issueStock(dto: ProductIssueStockDto) {
-    const transNo = await this.generateTransNo();
     const tenantWhere = this.tenantWhere(dto.company, dto.plant);
     const qualityStatus = this.normalizeQualityStatus(dto.qualityStatus);
 
     return this.tx.run(async (queryRunner) => {
+      const transNo = await this.generateTransNo(queryRunner);
       // 1. 재고 확인 (품목+창고+품질상태)
       const stock = await queryRunner.manager.findOne(ProductStock, {
         where: { warehouseCode: dto.warehouseId, itemCode: dto.itemCode, qualityStatus, ...tenantWhere },

@@ -21,6 +21,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { InventoryQueryService } from './inventory-query.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 describe('InventoryService', () => {
   let target: InventoryService;
@@ -33,6 +34,7 @@ describe('InventoryService', () => {
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockInventoryQueryService: DeepMocked<InventoryQueryService>;
   let mockTransactionService: DeepMocked<TransactionService>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockStockTransRepo = createMock<Repository<StockTransaction>>();
@@ -44,6 +46,7 @@ describe('InventoryService', () => {
     mockQueryRunner = createMock<QueryRunner>();
     mockInventoryQueryService = createMock<InventoryQueryService>();
     mockTransactionService = createMock<TransactionService>();
+    mockNumbering = createMock<NumberingService>();
 
     // QueryRunner 체인 모킹
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
@@ -66,6 +69,7 @@ describe('InventoryService', () => {
         { provide: DataSource, useValue: mockDataSource },
         { provide: InventoryQueryService, useValue: mockInventoryQueryService },
         { provide: TransactionService, useValue: mockTransactionService },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -92,48 +96,21 @@ describe('InventoryService', () => {
   // ─────────────────────────────────────────────
   // generateMatUid
   // ─────────────────────────────────────────────
+  // 구 방식(MAX+1로 {itemType}YYYYMMDD+4자리 조립)은 폐기됨.
+  // 표준 자재 시리얼 채번(SEQ_MAT_SERIAL_DAILY 기반, numbering-rules.md 1장)에 위임한다.
   describe('generateMatUid', () => {
-    it('should generate UID with seq 0001 when no existing lot', async () => {
+    it('delegates to the standard material serial numbering', async () => {
       // Arrange
-      mockLotRepo.findOne.mockResolvedValue(null);
+      mockNumbering.nextMatSerial.mockResolvedValue('VH1-RM260903-00001');
 
       // Act
       const result = await target.generateMatUid('RM');
 
       // Assert
-      expect(result).toMatch(/^RM\d{8}0001$/);
-    });
-
-    it('should increment seq from last lot', async () => {
-      // Arrange
-      const today = new Date();
-      const prefix = `RM${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-      mockLotRepo.findOne.mockResolvedValue({ matUid: `${prefix}0042` } as MatLot);
-
-      // Act
-      const result = await target.generateMatUid('RM');
-
-      // Assert
-      expect(result).toBe(`${prefix}0043`);
-    });
-
-    it('searches the last UID within tenant context when tenant is provided', async () => {
-      // Arrange
-      const today = new Date();
-      const prefix = `RM${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-      mockLotRepo.findOne.mockResolvedValue({ matUid: `${prefix}0007` } as MatLot);
-
-      // Act
-      const result = await target.generateMatUid('RM', 'TESTV', 'WAREHOUSES');
-
-      // Assert
-      expect(result).toBe(`${prefix}0008`);
-      expect(mockLotRepo.findOne).toHaveBeenCalledWith(expect.objectContaining({
-        where: expect.objectContaining({
-          company: 'TESTV',
-          plant: 'WAREHOUSES',
-        }),
-      }));
+      expect(result).toBe('VH1-RM260903-00001');
+      expect(mockNumbering.nextMatSerial).toHaveBeenCalled();
+      // MAX+1 조회를 더 이상 수행하지 않는다 (동시 채번 시 중복 방지)
+      expect(mockLotRepo.findOne).not.toHaveBeenCalled();
     });
   });
 
@@ -255,11 +232,10 @@ describe('InventoryService', () => {
       expect(mockQueryRunner.manager.save).toHaveBeenCalledTimes(2); // transaction + stock
     });
 
-    it('uses existing transaction number prefix to generate the next sequence', async () => {
+    // 수불번호는 NUM_RULE 'INV_TX' 채번에 위임한다 (구 MAX+1 조회 폐기 — 동시 요청 시 중복 발급).
+    it('delegates transaction numbering to NumberingService within the transaction', async () => {
       // Arrange
-      const today = new Date();
-      const prefix = `TRX${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-      mockStockTransRepo.findOne.mockResolvedValue({ transNo: `${prefix}00007` } as StockTransaction);
+      mockNumbering.next.mockResolvedValue('TRX2026090300008');
       mockStockTransRepo.create.mockImplementation((value: any) => value);
       mockQueryRunner.manager.save.mockImplementation(async (_entity: any, value: any) => value);
       mockQueryRunner.manager.findOne.mockResolvedValue(null);
@@ -268,12 +244,10 @@ describe('InventoryService', () => {
       await target.receiveStock(receiveDto as any);
 
       // Assert
-      expect(mockStockTransRepo.findOne).toHaveBeenCalledWith({
-        where: { transNo: Like(`${prefix}%`) },
-        order: { transNo: 'DESC' },
-      });
+      expect(mockNumbering.next).toHaveBeenCalledWith('INV_TX', mockQueryRunner);
+      expect(mockStockTransRepo.findOne).not.toHaveBeenCalled();
       expect(mockStockTransRepo.create).toHaveBeenCalledWith(expect.objectContaining({
-        transNo: `${prefix}00008`,
+        transNo: 'TRX2026090300008',
       }));
     });
 

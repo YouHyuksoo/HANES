@@ -107,7 +107,7 @@ export default function PeriodicInspectPage() {
         api.get("/equipment/periodic-inspect", {
           params: { inspectDateFrom: inspectDate, inspectDateTo: inspectDate, limit: 500 },
         }),
-        api.get("/equipment/equips", { params: { limit: 500 } }),
+        api.get("/equipment/equips", { params: { limit: 500, useYn: "Y" } }),
       ]);
 
       const items: EquipInspectItemAssignment[] = itemsRes.data?.data ?? [];

@@ -247,6 +247,9 @@
   "menu": {
     "dashboard": "대시보드",
     "workflow": "워크플로우",
+    "favorites": "즐겨찾기",
+    "favorites.add": "즐겨찾기에 추가",
+    "favorites.remove": "즐겨찾기에서 제거",
     "monitoring": "모니터링",
     "monitoring.prodBoard": "생산현황 보드",
     "monitoring.qualityBoard": "품질 보드",

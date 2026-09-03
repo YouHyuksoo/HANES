@@ -11,7 +11,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, QueryRunner } from 'typeorm';
 import { PmPlan } from '../../../entities/pm-plan.entity';
 import { PmPlanItem } from '../../../entities/pm-plan-item.entity';
 import { PmWorkOrder } from '../../../entities/pm-work-order.entity';
@@ -26,6 +26,8 @@ import {
   PmWorkOrderQueryDto,
 } from '../dto/pm-plan.dto';
 import { parseDateStart } from '../../../shared/date.util';
+import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 @Injectable()
 export class PmPlanService {
@@ -40,6 +42,8 @@ export class PmPlanService {
     private readonly pmWoResultRepo: Repository<PmWoResult>,
     @InjectRepository(EquipMaster)
     private readonly equipMasterRepo: Repository<EquipMaster>,
+    private readonly tx: TransactionService,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -336,62 +340,46 @@ export class PmPlanService {
       existingWos.map((wo) => `${wo.company ?? ''}::${wo.plant ?? ''}::${wo.pmPlanCode}::${this.formatDate(wo.scheduledDate)}`),
     );
 
-    // 날짜별 최대 WO번호를 미리 조회하여 루프 안 개별 쿼리 제거
-    const woSeqByDate = new Map<string, number>();
+    // 채번 직렬화 락(PM_WO)을 커밋까지 유지하기 위해 생성 루프 전체를 한 트랜잭션으로 처리
+    await this.tx.run(async (queryRunner) => {
+      for (const plan of allPlans) {
+        const scheduledDate = plan.nextDueAt || startDate;
+        const dateStr = this.formatDate(scheduledDate);
 
-    for (const plan of allPlans) {
-      const scheduledDate = plan.nextDueAt || startDate;
-      const dateStr = this.formatDate(scheduledDate);
-
-      if (existingWoSet.has(`${plan.company ?? ''}::${plan.plant ?? ''}::${plan.planCode}::${dateStr}`)) {
-        skipped++;
-        continue;
-      }
-
-      // 날짜별 seq 관리 (첫 조회만 DB, 이후는 메모리에서 증가)
-      if (!woSeqByDate.has(dateStr)) {
-        const prefix = `PM-${dateStr}-`;
-        const lastWo = await this.pmWorkOrderRepo
-          .createQueryBuilder('wo')
-          .where('wo.workOrderNo LIKE :prefix', { prefix: `${prefix}%` })
-          .orderBy('wo.workOrderNo', 'DESC')
-          .getOne();
-        let seq = 1;
-        if (lastWo) {
-          const lastSeq = parseInt(lastWo.workOrderNo.substring(prefix.length), 10);
-          if (!isNaN(lastSeq)) seq = lastSeq + 1;
+        if (existingWoSet.has(`${plan.company ?? ''}::${plan.plant ?? ''}::${plan.planCode}::${dateStr}`)) {
+          skipped++;
+          continue;
         }
-        woSeqByDate.set(dateStr, seq);
+
+        const workOrderNo = await this.numbering.nextPmWoNo(queryRunner, dateStr, 'PM');
+
+        const wo = queryRunner.manager.create(PmWorkOrder, {
+          workOrderNo,
+          pmPlanCode: plan.planCode,
+          equipCode: plan.equipCode,
+          woType: 'PLANNED',
+          scheduledDate,
+          dueDate: scheduledDate,
+          status: 'PLANNED',
+          priority: 'MEDIUM',
+          company: plan.company,
+          plant: plan.plant,
+        });
+
+        await queryRunner.manager.save(wo);
+
+        // USAGE_BASED: WO 생성 후 사용량 리셋
+        if (plan.pmType === 'USAGE_BASED') {
+          await queryRunner.manager.update(
+            PmPlan,
+            { planCode: plan.planCode, ...this.tenantWhere(plan.company ?? undefined, plan.plant ?? undefined) },
+            { currentUsage: 0 },
+          );
+        }
+
+        created++;
       }
-      const seq = woSeqByDate.get(dateStr)!;
-      woSeqByDate.set(dateStr, seq + 1);
-      const workOrderNo = `PM-${dateStr}-${String(seq).padStart(3, '0')}`;
-
-      const wo = this.pmWorkOrderRepo.create({
-        workOrderNo,
-        pmPlanCode: plan.planCode,
-        equipCode: plan.equipCode,
-        woType: 'PLANNED',
-        scheduledDate,
-        dueDate: scheduledDate,
-        status: 'PLANNED',
-        priority: 'MEDIUM',
-        company: plan.company,
-        plant: plan.plant,
-      });
-
-      await this.pmWorkOrderRepo.save(wo);
-
-      // USAGE_BASED: WO 생성 후 사용량 리셋
-      if (plan.pmType === 'USAGE_BASED') {
-        await this.pmPlanRepo.update(
-          { planCode: plan.planCode, ...this.tenantWhere(plan.company ?? undefined, plan.plant ?? undefined) },
-          { currentUsage: 0 },
-        );
-      }
-
-      created++;
-    }
+    });
 
     return { created, skipped, total: allPlans.length };
   }
@@ -405,23 +393,26 @@ export class PmPlanService {
     this.assertSameTenant('PM 작업지시 설비', equip, company, plant);
 
     const dateStr = dto.scheduledDate.substring(0, 10).replace(/-/g, '');
-    const workOrderNo = await this.generateWoNumber(dateStr);
 
-    const wo = this.pmWorkOrderRepo.create({
-      workOrderNo,
-      pmPlanCode: dto.pmPlanId || null,
-      equipCode: dto.equipCode,
-      woType: dto.woType || 'PLANNED',
-      scheduledDate: parseDateStart(dto.scheduledDate)!,
-      dueDate: parseDateStart(dto.scheduledDate),
-      status: 'PLANNED',
-      priority: dto.priority || 'MEDIUM',
-      assignedWorkerCode: dto.assignedWorkerId || null,
-      ...this.tenantWhere(company, plant),
+    // 채번 직렬화 락 유지를 위해 채번+저장을 한 트랜잭션으로 묶는다
+    return this.tx.run(async (queryRunner) => {
+      const workOrderNo = await this.generateWoNumber(dateStr, queryRunner);
+
+      const wo = queryRunner.manager.create(PmWorkOrder, {
+        workOrderNo,
+        pmPlanCode: dto.pmPlanId || null,
+        equipCode: dto.equipCode,
+        woType: dto.woType || 'PLANNED',
+        scheduledDate: parseDateStart(dto.scheduledDate)!,
+        dueDate: parseDateStart(dto.scheduledDate),
+        status: 'PLANNED',
+        priority: dto.priority || 'MEDIUM',
+        assignedWorkerCode: dto.assignedWorkerId || null,
+        ...this.tenantWhere(company, plant),
+      });
+
+      return queryRunner.manager.save(wo);
     });
-
-    const saved = await this.pmWorkOrderRepo.save(wo);
-    return saved;
   }
 
   /** WO 실행 */
@@ -762,24 +753,10 @@ export class PmPlanService {
     return d;
   }
 
-  /** WO 번호 채번: PM-YYYYMMDD-NNN */
-  private async generateWoNumber(dateStr: string): Promise<string> {
+  /** WO 번호 채번: PM-YYYYMMDD-NNN — NumberingService 스코프 채번(락 직렬화)에 위임 */
+  private async generateWoNumber(dateStr: string, queryRunner: QueryRunner): Promise<string> {
     const cleanDate = dateStr.replace(/-/g, '');
-    const prefix = `PM-${cleanDate}-`;
-
-    const lastWo = await this.pmWorkOrderRepo
-      .createQueryBuilder('wo')
-      .where('wo.workOrderNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('wo.workOrderNo', 'DESC')
-      .getOne();
-
-    let seq = 1;
-    if (lastWo) {
-      const lastSeq = parseInt(lastWo.workOrderNo.substring(prefix.length), 10);
-      if (!isNaN(lastSeq)) seq = lastSeq + 1;
-    }
-
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+    return this.numbering.nextPmWoNo(queryRunner, cleanDate, 'PM');
   }
 
   /** 날짜 포맷 (YYYYMMDD) */

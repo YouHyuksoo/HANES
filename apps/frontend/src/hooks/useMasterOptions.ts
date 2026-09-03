@@ -31,6 +31,15 @@ interface WarehouseItem {
   isDefault?: string;
 }
 
+/**
+ * 마스터 옵션 공통 옵션
+ * - includeInactive: true면 미사용(useYn='N') 마스터도 포함 (이력 조회 필터 용도).
+ *   선택/입력 폼에서는 기본값(false) 유지 — 미사용 마스터는 선택 목록에서 제외한다.
+ */
+interface MasterOptionOpts {
+  includeInactive?: boolean;
+}
+
 interface PartItem {
   itemCode: string;
   itemName: string;
@@ -64,6 +73,7 @@ interface EquipItem {
   equipName: string;
   equipType?: string;
   lineCode?: string;
+  useYn?: string;
 }
 
 interface PartnerItem {
@@ -107,11 +117,14 @@ export function useDepartmentOptions() {
  * 창고 목록을 SelectOption[]으로 반환
  * @param warehouseType - 'RAW' | 'PRODUCT' | 'WIP' 등 (미지정 시 전체)
  */
-export function useWarehouseOptions(warehouseType?: string) {
-  const params = warehouseType ? `?warehouseType=${warehouseType}` : "";
+export function useWarehouseOptions(warehouseType?: string, opts?: MasterOptionOpts) {
+  const query = new URLSearchParams();
+  if (warehouseType) query.set("warehouseType", warehouseType);
+  if (!opts?.includeInactive) query.set("useYn", "Y");
+  const qs = query.toString();
   const { data, isLoading } = useApiQuery<PaginatedResponse<WarehouseItem>>(
-    ["warehouses", warehouseType ?? "all"],
-    `/inventory/warehouses${params}`,
+    ["warehouses", warehouseType ?? "all", opts?.includeInactive ? "all-yn" : "Y"],
+    `/inventory/warehouses${qs ? `?${qs}` : ""}`,
     { staleTime: 5 * 60 * 1000 },
   );
 
@@ -165,12 +178,13 @@ export function useLocationOptions(warehouseCode?: string) {
  * 품목 목록을 SelectOption[]으로 반환
  * @param itemType - 'RAW' | 'PRODUCT' 등 (미지정 시 전체)
  */
-export function usePartOptions(itemType?: string) {
+export function usePartOptions(itemType?: string, opts?: MasterOptionOpts) {
   const params = new URLSearchParams({ limit: "100" });
   if (itemType) params.set("itemType", itemType);
+  if (!opts?.includeInactive) params.set("useYn", "Y");
 
   const { data, isLoading } = useApiQuery<PaginatedResponse<PartItem>>(
-    ["parts", "options", itemType ?? "all"],
+    ["parts", "options", itemType ?? "all", opts?.includeInactive ? "all-yn" : "Y"],
     `/master/parts?${params.toString()}`,
     { staleTime: 5 * 60 * 1000 },
   );
@@ -190,11 +204,12 @@ export function usePartOptions(itemType?: string) {
 /**
  * 작업자 목록을 SelectOption[]으로 반환
  */
-export function useWorkerOptions(dept?: string) {
+export function useWorkerOptions(dept?: string, opts?: MasterOptionOpts) {
   const query = new URLSearchParams({ limit: "100" });
   if (dept) query.set("dept", dept);
+  if (!opts?.includeInactive) query.set("useYn", "Y");
   const { data, isLoading } = useApiQuery<PaginatedResponse<WorkerItem>>(
-    ["workers", "options", dept ?? "all"],
+    ["workers", "options", dept ?? "all", opts?.includeInactive ? "all-yn" : "Y"],
     `/master/workers?${query.toString()}`,
     { staleTime: 5 * 60 * 1000 },
   );
@@ -266,12 +281,13 @@ export function useProcessOptions() {
 /**
  * 설비 목록을 SelectOption[]으로 반환
  */
-export function useEquipOptions(processCode?: string) {
-  const url = processCode
-    ? `/equipment/equips?limit=200&processCode=${encodeURIComponent(processCode)}`
-    : "/equipment/equips?limit=200";
+export function useEquipOptions(processCode?: string, opts?: MasterOptionOpts) {
+  const query = new URLSearchParams({ limit: "200" });
+  if (processCode) query.set("processCode", processCode);
+  if (!opts?.includeInactive) query.set("useYn", "Y");
+  const url = `/equipment/equips?${query.toString()}`;
   const { data, isLoading } = useApiQuery<PaginatedResponse<EquipItem>>(
-    ["equips", "options", processCode ?? "all"],
+    ["equips", "options", processCode ?? "all", opts?.includeInactive ? "all-yn" : "Y"],
     url,
     { staleTime: 5 * 60 * 1000 },
   );
@@ -304,6 +320,7 @@ export function useProcessEquipmentOptions(processCode?: string, equipType?: str
     const list = Array.isArray(response) ? response : response?.data ?? [];
     return list
       .filter((e) => !equipType || e.equipType === equipType)
+      .filter((e) => (e.useYn ?? "Y") === "Y")
       .map((e) => ({
         value: e.equipCode,
         label: `${e.equipCode} - ${e.equipName}`,
@@ -317,12 +334,16 @@ export function useProcessEquipmentOptions(processCode?: string, equipType?: str
  * 거래처 목록을 SelectOption[]으로 반환
  * @param partnerType - 'SUPPLIER' | 'CUSTOMER' (미지정 시 전체)
  */
-export function usePartnerOptions(partnerType?: "SUPPLIER" | "CUSTOMER" | "VENDOR" | "MFG") {
+export function usePartnerOptions(
+  partnerType?: "SUPPLIER" | "CUSTOMER" | "VENDOR" | "MFG",
+  opts?: MasterOptionOpts,
+) {
   const params = new URLSearchParams({ limit: "100" });
   if (partnerType) params.set("partnerType", partnerType);
+  if (!opts?.includeInactive) params.set("useYn", "Y");
 
   const { data, isLoading } = useApiQuery<PaginatedResponse<PartnerItem>>(
-    ["partners", "options", partnerType ?? "all"],
+    ["partners", "options", partnerType ?? "all", opts?.includeInactive ? "all-yn" : "Y"],
     `/master/partners?${params.toString()}`,
     { staleTime: 5 * 60 * 1000 },
   );

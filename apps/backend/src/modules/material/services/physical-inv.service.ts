@@ -21,6 +21,7 @@ import { PhysicalInvSession } from '../../../entities/physical-inv-session.entit
 import { PhysicalInvCountDetail } from '../../../entities/physical-inv-count-detail.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { parseDateStart } from '../../../shared/date.util';
 import {
   CreatePhysicalInvDto,
@@ -51,6 +52,7 @@ export class PhysicalInvService {
     private readonly warehouseRepository: Repository<Warehouse>,
     private readonly dataSource: DataSource,
     private readonly tx: TransactionService,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -742,22 +744,8 @@ export class PhysicalInvService {
     });
   }
 
-  /** 실사 트랜잭션 번호 채번 (PHCyyyyMMdd + 4자리 seq) */
+  /** 실사 트랜잭션 번호 채번 (PHC+YYYYMMDD+4자리) — NUM_RULE 'PHYS_CNT_TX' 채번 (MAX+1 금지) */
   private async generatePhysCountTransNo(queryRunner?: QueryRunner): Promise<string> {
-    const today = new Date();
-    const prefix = `PHC${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-
-    const repo = queryRunner?.manager?.getRepository(StockTransaction) ?? this.dataSource.getRepository(StockTransaction);
-    const lastTrans = await repo.findOne({
-      where: { transNo: Like(`${prefix}%`) },
-      order: { transNo: 'DESC' },
-    });
-
-    let seq = 1;
-    if (lastTrans) {
-      const lastSeq = parseInt(lastTrans.transNo.slice(prefix.length), 10);
-      if (!isNaN(lastSeq)) seq = lastSeq + 1;
-    }
-    return `${prefix}${String(seq).padStart(4, '0')}`;
+    return this.numbering.next('PHYS_CNT_TX', queryRunner);
   }
 }

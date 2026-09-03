@@ -12,7 +12,7 @@
  */
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, Like } from 'typeorm';
+import { Repository, IsNull, QueryRunner } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -29,6 +29,7 @@ import {
 } from '../dto/inventory.dto';
 import { InventoryQueryService } from './inventory-query.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 @Injectable()
 export class InventoryService {
@@ -45,6 +46,7 @@ export class InventoryService {
     private readonly itemMasterRepository: Repository<ItemMaster>,
     private readonly inventoryQueryService: InventoryQueryService,
     private readonly tx: TransactionService,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -104,45 +106,19 @@ export class InventoryService {
   }
 
   /**
-   * 트랜잭션 번호 생성
+   * 트랜잭션 번호 생성 (TRX+YYYYMMDD+5자리) — NUM_RULE 'INV_TX' 채번 (MAX+1 금지)
    */
-  private async generateTransNo(): Promise<string> {
-    const today = new Date();
-    const prefix = `TRX${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-
-    const lastTrans = await this.stockTransactionRepository.findOne({
-      where: { transNo: Like(`${prefix}%`) },
-      order: { transNo: 'DESC' },
-    });
-
-    let seq = 1;
-    if (lastTrans) {
-      const lastSeq = parseInt(lastTrans.transNo.slice(-5), 10);
-      seq = lastSeq + 1;
-    }
-
-    return `${prefix}${String(seq).padStart(5, '0')}`;
+  private async generateTransNo(queryRunner?: QueryRunner): Promise<string> {
+    return this.numbering.next('INV_TX', queryRunner);
   }
 
   /**
-   * 자재 UID 생성
+   * 자재 UID 생성 — 표준 자재 시리얼 채번(VH1-RM+YYMMDD+-+5자리, SEQ_MAT_SERIAL_DAILY)에 위임.
+   * (구 {itemType}+YYYYMMDD+4자리 MAX+1 방식 폐기 — numbering-rules.md 1장)
    */
   async generateMatUid(itemType: string, company?: string, plant?: string): Promise<string> {
-    const today = new Date();
-    const prefix = `${itemType}${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-
-    const lastLot = await this.lotRepository.findOne({
-      where: { matUid: Like(`${prefix}%`), ...this.tenantWhere(company, plant) },
-      order: { matUid: 'DESC' },
-    });
-
-    let seq = 1;
-    if (lastLot) {
-      const lastSeq = parseInt(lastLot.matUid.slice(-4), 10);
-      seq = lastSeq + 1;
-    }
-
-    return `${prefix}${String(seq).padStart(4, '0')}`;
+    void itemType; void company; void plant; // 하위호환 시그니처 유지 (채번 규칙상 미사용)
+    return this.numbering.nextMatSerial();
   }
 
   /**
@@ -179,9 +155,9 @@ export class InventoryService {
    * 입고 처리
    */
   async receiveStock(dto: ReceiveStockDto, company?: string, plant?: string) {
-    const transNo = await this.generateTransNo();
-
     return this.tx.run(async (queryRunner) => {
+      const transNo = await this.generateTransNo(queryRunner);
+
       // 1. 트랜잭션 생성
       const transaction = this.stockTransactionRepository.create({
         transNo,
@@ -249,9 +225,9 @@ export class InventoryService {
    * 출고 처리
    */
   async issueStock(dto: IssueStockDto, company?: string, plant?: string) {
-    const transNo = await this.generateTransNo();
-
     return this.tx.run(async (queryRunner) => {
+      const transNo = await this.generateTransNo(queryRunner);
+
       // 1. 재고 확인
       const stock = await queryRunner.manager.findOne(MatStock, {
         where: {
@@ -386,13 +362,14 @@ export class InventoryService {
 
     // 취소 트랜잭션 유형 결정
     const cancelTransType = this.getCancelTransType(originalTrans.transType);
-    const transNo = await this.generateTransNo();
     const txTenantWhere = {
       ...(originalTrans.company && { company: originalTrans.company }),
       ...(originalTrans.plant && { plant: originalTrans.plant }),
     };
 
     return this.tx.run(async (queryRunner) => {
+      const transNo = await this.generateTransNo(queryRunner);
+
       // 1. 원본 트랜잭션 상태 변경
       await queryRunner.manager.update(StockTransaction, { transNo: originalTrans.transNo, ...txTenantWhere }, { status: 'CANCELED' });
 

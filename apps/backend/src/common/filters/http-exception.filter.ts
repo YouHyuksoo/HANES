@@ -100,6 +100,26 @@ export class HttpExceptionFilter implements ExceptionFilter {
           `[DB 연결 오류] ${exception.message}`,
           exception.stack,
         );
+      } else if (this.isDuplicateKeyError(exception)) {
+        // ORA-00001 → 409: 사용자에게는 업무 안내로 표시하고 원문은 로그에만 남긴다
+        status = HttpStatus.CONFLICT;
+        message = '이미 등록된 건이 있습니다. 잠시 후 다시 시도해주세요.';
+        errorCode = 'DUPLICATE_KEY';
+
+        this.logger.error(
+          `[DB 중복키 오류] ${exception.message}`,
+          exception.stack,
+        );
+      } else if (this.isDbQueryError(exception)) {
+        // ORA-* SQL 오류 → 사용자에게 Oracle 원문을 노출하지 않는다
+        status = HttpStatus.INTERNAL_SERVER_ERROR;
+        message = '조회 처리 중 오류가 발생했습니다. 관리자에게 문의해주세요.';
+        errorCode = 'DB_QUERY_ERROR';
+
+        this.logger.error(
+          `[DB 쿼리 오류] ${exception.message}`,
+          exception.stack,
+        );
       } else {
         status = HttpStatus.INTERNAL_SERVER_ERROR;
         message = exception.message || '서버 내부 오류가 발생했습니다.';
@@ -142,5 +162,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const stack = error.stack || '';
     const combined = `${msg} ${stack}`;
     return DB_CONNECTION_PATTERNS.some((p) => combined.includes(p));
+  }
+
+  /** ORA-00001 unique constraint 위반 */
+  private isDuplicateKeyError(error: Error): boolean {
+    return (error.message || '').includes('ORA-00001');
+  }
+
+  /** 연결 오류 이외의 Oracle SQL 오류(ORA-xxxxx) — 원문 노출 방지 대상 */
+  private isDbQueryError(error: Error): boolean {
+    return /ORA-\d{5}/.test(error.message || '') || error.name === 'QueryFailedError';
   }
 }

@@ -247,6 +247,9 @@
   "menu": {
     "dashboard": "仪表盘",
     "workflow": "工作流程",
+    "favorites": "收藏夹",
+    "favorites.add": "添加到收藏夹",
+    "favorites.remove": "从收藏夹移除",
     "monitoring": "监控",
     "monitoring.prodBoard": "生产状况看板",
     "monitoring.qualityBoard": "质量看板",

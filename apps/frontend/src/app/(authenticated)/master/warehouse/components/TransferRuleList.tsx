@@ -52,7 +52,7 @@ export default function TransferRuleList({ onHeaderActions }: Props) {
 
   const fetchWarehouses = useCallback(async () => {
     try {
-      const res = await api.get("/inventory/warehouses");
+      const res = await api.get("/inventory/warehouses", { params: { useYn: "Y" } });
       const raw = res.data?.data;
       const list = Array.isArray(raw) ? raw : raw?.data ?? [];
       setWarehouseOptions(list.map((w: any) => ({ value: w.warehouseCode, label: `${w.warehouseCode} ${w.warehouseName}` })));

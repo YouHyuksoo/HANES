@@ -6,7 +6,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { PmPlanService } from './pm-plan.service';
 import { PmPlan } from '../../../entities/pm-plan.entity';
 import { PmPlanItem } from '../../../entities/pm-plan-item.entity';
@@ -14,6 +14,8 @@ import { PmWorkOrder } from '../../../entities/pm-work-order.entity';
 import { PmWoResult } from '../../../entities/pm-wo-result.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 describe('PmPlanService', () => {
   let target: PmPlanService;
@@ -22,6 +24,9 @@ describe('PmPlanService', () => {
   let mockWoRepo: DeepMocked<Repository<PmWorkOrder>>;
   let mockWoResultRepo: DeepMocked<Repository<PmWoResult>>;
   let mockEquipRepo: DeepMocked<Repository<EquipMaster>>;
+  let mockTx: DeepMocked<TransactionService>;
+  let mockNumbering: DeepMocked<NumberingService>;
+  let mockQueryRunner: DeepMocked<QueryRunner>;
 
   beforeEach(async () => {
     mockPlanRepo = createMock<Repository<PmPlan>>();
@@ -29,6 +34,10 @@ describe('PmPlanService', () => {
     mockWoRepo = createMock<Repository<PmWorkOrder>>();
     mockWoResultRepo = createMock<Repository<PmWoResult>>();
     mockEquipRepo = createMock<Repository<EquipMaster>>();
+    mockTx = createMock<TransactionService>();
+    mockNumbering = createMock<NumberingService>();
+    mockQueryRunner = createMock<QueryRunner>();
+    mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PmPlanService,
@@ -37,6 +46,8 @@ describe('PmPlanService', () => {
         { provide: getRepositoryToken(PmWorkOrder), useValue: mockWoRepo },
         { provide: getRepositoryToken(PmWoResult), useValue: mockWoResultRepo },
         { provide: getRepositoryToken(EquipMaster), useValue: mockEquipRepo },
+        { provide: TransactionService, useValue: mockTx },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<PmPlanService>(PmPlanService);
@@ -128,8 +139,10 @@ describe('PmPlanService', () => {
       const qb = mockQueryBuilder([]);
       qb.getOne = jest.fn().mockResolvedValue(null);
       mockWoRepo.createQueryBuilder.mockReturnValue(qb);
-      mockWoRepo.create.mockReturnValue({ workOrderNo: 'PM-20260318-001' } as any);
-      mockWoRepo.save.mockResolvedValue({ workOrderNo: 'PM-20260318-001' } as any);
+      // 채번 락 유지를 위해 WO 생성/저장이 queryRunner.manager로 이동함
+      mockNumbering.nextPmWoNo.mockResolvedValue('PM-20260318-001');
+      mockQueryRunner.manager.create.mockImplementation((_entity: any, value: any) => value);
+      mockQueryRunner.manager.save.mockResolvedValue({ workOrderNo: 'PM-20260318-001' } as any);
 
       await target.createWorkOrder(
         { equipCode: 'EQ-001', scheduledDate: '2026-03-18' } as any,
@@ -140,7 +153,8 @@ describe('PmPlanService', () => {
       expect(mockEquipRepo.findOne).toHaveBeenCalledWith({
         where: { equipCode: 'EQ-001', company: 'CO', plant: 'P01' },
       });
-      expect(mockWoRepo.create).toHaveBeenCalledWith(
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
+        PmWorkOrder,
         expect.objectContaining({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' }),
       );
     });
@@ -152,8 +166,8 @@ describe('PmPlanService', () => {
         target.createWorkOrder({ equipCode: 'EQ-001', scheduledDate: '2026-03-18' } as any, 'CO', 'P01'),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockWoRepo.create).not.toHaveBeenCalled();
-      expect(mockWoRepo.save).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.create).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
     });
   });
 
@@ -192,13 +206,15 @@ describe('PmPlanService', () => {
           },
         ]) as any,
       );
-      mockWoRepo.create.mockImplementation((value) => value as any);
-      mockWoRepo.save.mockResolvedValue({} as any);
+      mockNumbering.nextPmWoNo.mockResolvedValue('PM-20260318-001');
+      mockQueryRunner.manager.create.mockImplementation((_entity: any, value: any) => value);
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
 
       const result = await target.generateWorkOrders(2026, 3);
 
       expect(result.created).toBe(1);
-      expect(mockWoRepo.create).toHaveBeenCalledWith(
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
+        PmWorkOrder,
         expect.objectContaining({ pmPlanCode: 'PM-001', company: 'CO', plant: 'P01' }),
       );
     });
@@ -217,12 +233,14 @@ describe('PmPlanService', () => {
         .mockReturnValueOnce(mockQueryBuilder([]))
         .mockReturnValueOnce(mockQueryBuilder([plan]));
       mockWoRepo.createQueryBuilder.mockReturnValue(woGenQueryBuilder([]) as any);
-      mockWoRepo.create.mockImplementation((value) => value as any);
-      mockWoRepo.save.mockResolvedValue({} as any);
+      mockNumbering.nextPmWoNo.mockResolvedValue('PM-20260318-001');
+      mockQueryRunner.manager.create.mockImplementation((_entity: any, value: any) => value);
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
 
       await target.generateWorkOrders(2026, 3);
 
-      expect(mockPlanRepo.update).toHaveBeenCalledWith(
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        PmPlan,
         { planCode: 'PM-001', company: 'CO', plant: 'P01' },
         { currentUsage: 0 },
       );

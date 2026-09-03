@@ -95,6 +95,8 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
     orderQty: number;
     receivedQty: number;
     mfgFound: boolean;
+    iqcYn?: string;
+    inspectMethod?: string | null;
   }) => {
     mockManager.findOne.mockImplementation(((entity: any) => {
       if (entity === PurchaseOrderItem) {
@@ -122,7 +124,12 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
         return Promise.resolve(cfg.mfgFound ? { partnerCode: 'M001', partnerType: 'MFG' } : null);
       }
       if (entity === ItemMaster) {
-        return Promise.resolve({ itemCode: 'TMN-0001', lotUnitQty: cfg.lotUnitQty });
+        return Promise.resolve({
+          itemCode: 'TMN-0001',
+          lotUnitQty: cfg.lotUnitQty,
+          iqcYn: cfg.iqcYn ?? 'Y',
+          inspectMethod: cfg.inspectMethod ?? null,
+        });
       }
       if (entity === Warehouse) {
         return Promise.resolve({ warehouseCode: 'W01', warehouseType: 'RAW' });
@@ -206,5 +213,52 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
     await expect(
       target.receivePoLine({ ...baseDto, receivedQty: 100, mfgPartnerCode: 'X999' }, user),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('IQC 면제 품목(iqcYn=N)은 MAT_LOTS·MAT_ARRIVALS 모두 iqcStatus PASS로 스탬프하고 IQC_LOGS는 만들지 않는다', async () => {
+    setupFindOne({ lotUnitQty: 50, orderQty: 1000, receivedQty: 0, mfgFound: true, iqcYn: 'N' });
+    mockNumbering.nextArrivalNoV2.mockResolvedValue('R26090300001');
+    let counter = 0;
+    mockNumbering.nextMatSerial.mockImplementation(() =>
+      Promise.resolve(`VH1-RM260903-${String(++counter).padStart(5, '0')}`),
+    );
+    mockNumbering.next.mockResolvedValue('STX0000010');
+
+    const result = await target.receivePoLine({ ...baseDto, receivedQty: 100 }, user);
+
+    expect(result.serials).toHaveLength(2);
+    expect(result.serials.every((s) => s.iqcStatus === 'PASS')).toBe(true);
+    const arrivalRows = mockManager.create.mock.calls
+      .filter(([entity]) => entity === MatArrival)
+      .map(([, payload]) => payload);
+    expect(arrivalRows).toHaveLength(2);
+    expect(arrivalRows.every((row: any) => row.iqcStatus === 'PASS')).toBe(true);
+    expect(mockManager.create).not.toHaveBeenCalledWith(IqcLog, expect.anything());
+  });
+
+  it('무검사 방법(SKIP) 품목도 iqcStatus PASS로 스탬프한다', async () => {
+    setupFindOne({ lotUnitQty: null, orderQty: 1000, receivedQty: 0, mfgFound: true, iqcYn: 'Y', inspectMethod: 'SKIP' });
+    mockNumbering.nextArrivalNoV2.mockResolvedValue('R26090300002');
+    mockNumbering.nextMatSerial.mockResolvedValueOnce('VH1-RM260903-00100');
+    mockNumbering.next.mockResolvedValue('STX0000011');
+
+    const result = await target.receivePoLine({ ...baseDto, receivedQty: 100 }, user);
+
+    expect(result.serials[0].iqcStatus).toBe('PASS');
+  });
+
+  it('IQC 대상 품목(iqcYn=Y, FULL)은 iqcStatus PENDING을 유지한다', async () => {
+    setupFindOne({ lotUnitQty: null, orderQty: 1000, receivedQty: 0, mfgFound: true, iqcYn: 'Y', inspectMethod: 'FULL' });
+    mockNumbering.nextArrivalNoV2.mockResolvedValue('R26090300003');
+    mockNumbering.nextMatSerial.mockResolvedValueOnce('VH1-RM260903-00200');
+    mockNumbering.next.mockResolvedValue('STX0000012');
+
+    const result = await target.receivePoLine({ ...baseDto, receivedQty: 100 }, user);
+
+    expect(result.serials[0].iqcStatus).toBe('PENDING');
+    const arrivalRows = mockManager.create.mock.calls
+      .filter(([entity]) => entity === MatArrival)
+      .map(([, payload]) => payload);
+    expect(arrivalRows.every((row: any) => row.iqcStatus === 'PENDING')).toBe(true);
   });
 });

@@ -147,8 +147,13 @@ export class InventoryController {
    * 창고 목록 조회
    */
   @Get('warehouses')
-  async getWarehouses(@Query('warehouseType') warehouseType?: string, @Company() company?: string, @Plant() plant?: string) {
-    return this.warehouseService.findAll(warehouseType, company, plant);
+  async getWarehouses(
+    @Query('warehouseType') warehouseType?: string,
+    @Query('useYn') useYn?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
+  ) {
+    return this.warehouseService.findAll(warehouseType, company, plant, useYn);
   }
 
   /**

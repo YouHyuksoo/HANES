@@ -45,7 +45,7 @@ export default function DailyInspectPage() {
         api.get("/equipment/daily-inspect", {
           params: { inspectDateFrom: inspectDate, inspectDateTo: inspectDate, limit: 500 },
         }),
-        api.get("/equipment/equips", { params: { limit: 500 } }),
+        api.get("/equipment/equips", { params: { limit: 500, useYn: "Y" } }),
       ]);
 
       const items: { equipCode: string }[] = itemsRes.data?.data ?? [];

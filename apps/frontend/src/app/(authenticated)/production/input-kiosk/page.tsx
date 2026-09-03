@@ -95,7 +95,7 @@ export default function InputKioskPage() {
 
   // 설비 목록 로드
   useEffect(() => {
-    api.get('/equipment/equips', { params: { limit: '500' } })
+    api.get('/equipment/equips', { params: { limit: '500', useYn: 'Y' } })
       .then(res => setEquips(normalizeEquipOptions(res.data)))
       .catch(() => setEquips([]));
   }, []);

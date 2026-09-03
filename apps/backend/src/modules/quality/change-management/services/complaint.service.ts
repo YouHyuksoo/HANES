@@ -30,6 +30,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CustomerComplaint } from '../../../../entities/customer-complaint.entity';
 import { parseDateStart } from '../../../../shared/date.util';
+import { NumberingService } from '../../../../shared/numbering.service';
 import {
   CreateComplaintDto,
   UpdateComplaintDto,
@@ -46,6 +47,7 @@ export class ComplaintService {
   constructor(
     @InjectRepository(CustomerComplaint)
     private readonly complaintRepo: Repository<CustomerComplaint>,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -75,22 +77,10 @@ export class ComplaintService {
 
   /**
    * 클레임번호 자동채번: CC-YYYYMMDD-NNN
+   * NUM_RULE_MASTERS(COMPLAINT_NO) 행을 SELECT FOR UPDATE로 잠가 동시 채번을 직렬화한다.
    */
-  private async generateComplaintNo(company: string, plant: string): Promise<string> {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `CC-${dateStr}-`;
-
-    const last = await this.complaintRepo
-      .createQueryBuilder('c')
-      .where('c.company = :company', { company })
-      .andWhere('c.plant = :plant', { plant })
-      .andWhere('c.complaintNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('c.complaintNo', 'DESC')
-      .getOne();
-
-    const seq = last ? parseInt(last.complaintNo.slice(-3), 10) + 1 : 1;
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+  private async generateComplaintNo(): Promise<string> {
+    return this.numbering.next('COMPLAINT_NO');
   }
 
   // =============================================
@@ -162,7 +152,7 @@ export class ComplaintService {
     plant: string,
     userId: string,
   ) {
-    const complaintNo = await this.generateComplaintNo(company, plant);
+    const complaintNo = await this.generateComplaintNo();
     const entity = this.complaintRepo.create({
       complaintNo,
       customerCode: dto.customerCode,

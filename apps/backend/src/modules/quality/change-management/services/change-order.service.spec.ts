@@ -10,17 +10,21 @@ import { Repository } from 'typeorm';
 import { ChangeOrderService } from './change-order.service';
 import { ChangeOrder } from '../../../../entities/change-order.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { NumberingService } from '../../../../shared/numbering.service';
 
 describe('ChangeOrderService', () => {
   let target: ChangeOrderService;
   let mockRepo: DeepMocked<Repository<ChangeOrder>>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockRepo = createMock<Repository<ChangeOrder>>();
+    mockNumbering = createMock<NumberingService>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ChangeOrderService,
         { provide: getRepositoryToken(ChangeOrder), useValue: mockRepo },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ChangeOrderService>(ChangeOrderService);

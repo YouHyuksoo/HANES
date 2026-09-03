@@ -10,6 +10,7 @@ import { DefectLog } from '../../../../entities/defect-log.entity';
 import { ItemMaster } from '../../../../entities/item-master.entity';
 import { ProductInventoryService } from '../../../inventory/services/product-inventory.service';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { NumberingService } from '../../../../shared/numbering.service';
 
 describe('ReworkService policy', () => {
   let target: ReworkService;
@@ -31,6 +32,7 @@ describe('ReworkService policy', () => {
         { provide: getRepositoryToken(DefectLog), useValue: mockDefectLogRepo },
         { provide: getRepositoryToken(ItemMaster), useValue: createMock<Repository<ItemMaster>>() },
         { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
+        { provide: NumberingService, useValue: createMock<NumberingService>() },
       ],
     })
       .setLogger(new MockLoggerService())

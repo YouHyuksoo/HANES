@@ -344,7 +344,7 @@ export default function JobOrderPage() {
                 </div>
                 <div className="w-40 flex-shrink-0">
                   <EquipSelect value={equipFilter} onChange={setEquipFilter}
-                    labelPrefix={t("production.order.equip")} fullWidth />
+                    labelPrefix={t("production.order.equip")} includeInactive fullWidth />
                 </div>
                 <div className="w-36 flex-shrink-0">
                   <Select

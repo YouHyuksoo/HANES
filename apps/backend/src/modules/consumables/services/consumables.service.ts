@@ -163,6 +163,7 @@ export class ConsumablesService {
       category: dto.category || null,
       expectedLife: dto.expectedLife || null,
       warningCount: dto.warningCount || null,
+      safetyStock: dto.safetyStock ?? 0,
       location: dto.location || null,
       unitPrice: dto.unitPrice || null,
       vendor: dto.vendor || null,
@@ -189,6 +190,7 @@ export class ConsumablesService {
     if (dto.category !== undefined) updateData.category = dto.category || null;
     if (dto.expectedLife !== undefined) updateData.expectedLife = dto.expectedLife || null;
     if (dto.warningCount !== undefined) updateData.warningCount = dto.warningCount || null;
+    if (dto.safetyStock !== undefined) updateData.safetyStock = dto.safetyStock;
     if (dto.location !== undefined) updateData.location = dto.location || null;
     if (dto.unitPrice !== undefined) updateData.unitPrice = dto.unitPrice || null;
     if (dto.vendor !== undefined) updateData.vendor = dto.vendor || null;

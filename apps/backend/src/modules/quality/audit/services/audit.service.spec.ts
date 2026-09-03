@@ -11,20 +11,24 @@ import { AuditService } from './audit.service';
 import { AuditPlan } from '../../../../entities/audit-plan.entity';
 import { AuditFinding } from '../../../../entities/audit-finding.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { NumberingService } from '../../../../shared/numbering.service';
 
 describe('AuditService', () => {
   let target: AuditService;
   let mockAuditRepo: DeepMocked<Repository<AuditPlan>>;
   let mockFindingRepo: DeepMocked<Repository<AuditFinding>>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockAuditRepo = createMock<Repository<AuditPlan>>();
     mockFindingRepo = createMock<Repository<AuditFinding>>();
+    mockNumbering = createMock<NumberingService>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuditService,
         { provide: getRepositoryToken(AuditPlan), useValue: mockAuditRepo },
         { provide: getRepositoryToken(AuditFinding), useValue: mockFindingRepo },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<AuditService>(AuditService);

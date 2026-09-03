@@ -23,11 +23,13 @@ interface WarehouseSelectProps extends Omit<SelectProps, "options"> {
   labelPrefix?: string;
   /** true이면 값이 비어있을 때 기본창고(isDefault='Y')를 자동 선택 */
   autoSelectDefault?: boolean;
+  /** 이력 조회 필터용: 미사용(useYn='N') 창고도 포함 */
+  includeInactive?: boolean;
 }
 
-export default function WarehouseSelect({ warehouseType, includeAll = false, labelPrefix, autoSelectDefault = false, ...rest }: WarehouseSelectProps) {
+export default function WarehouseSelect({ warehouseType, includeAll = false, labelPrefix, autoSelectDefault = false, includeInactive, ...rest }: WarehouseSelectProps) {
   const { t } = useTranslation();
-  const { options, isLoading, defaultCode } = useWarehouseOptions(warehouseType);
+  const { options, isLoading, defaultCode } = useWarehouseOptions(warehouseType, { includeInactive });
 
   // 기본창고 자동 선택 (값이 비어있고 기본창고가 존재할 때 1회)
   useEffect(() => {

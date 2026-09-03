@@ -14,18 +14,23 @@ import { Repository } from 'typeorm';
 import { DocumentService } from './document.service';
 import { DocumentMaster } from '../../../entities/document-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 describe('DocumentService', () => {
   let target: DocumentService;
   let mockRepo: DeepMocked<Repository<DocumentMaster>>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockRepo = createMock<Repository<DocumentMaster>>();
+
+    mockNumbering = createMock<NumberingService>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DocumentService,
         { provide: getRepositoryToken(DocumentMaster), useValue: mockRepo },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     })
       .setLogger(new MockLoggerService())

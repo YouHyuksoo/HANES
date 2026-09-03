@@ -30,6 +30,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChangeOrder } from '../../../../entities/change-order.entity';
 import { parseDateStart } from '../../../../shared/date.util';
+import { NumberingService } from '../../../../shared/numbering.service';
 import {
   CreateChangeOrderDto,
   UpdateChangeOrderDto,
@@ -44,6 +45,7 @@ export class ChangeOrderService {
   constructor(
     @InjectRepository(ChangeOrder)
     private readonly changeRepo: Repository<ChangeOrder>,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -73,25 +75,10 @@ export class ChangeOrderService {
 
   /**
    * 변경번호 자동채번: ECN-YYYYMMDD-NNN
+   * NUM_RULE_MASTERS(ECN_NO) 행을 SELECT FOR UPDATE로 잠가 동시 채번을 직렬화한다.
    */
-  private async generateChangeNo(
-    company: string,
-    plant: string,
-  ): Promise<string> {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `ECN-${dateStr}-`;
-
-    const last = await this.changeRepo
-      .createQueryBuilder('c')
-      .where('c.company = :company', { company })
-      .andWhere('c.plant = :plant', { plant })
-      .andWhere('c.changeNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('c.changeNo', 'DESC')
-      .getOne();
-
-    const seq = last ? parseInt(last.changeNo.slice(-3), 10) + 1 : 1;
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+  private async generateChangeNo(): Promise<string> {
+    return this.numbering.next('ECN_NO');
   }
 
   // =============================================
@@ -169,7 +156,7 @@ export class ChangeOrderService {
     plant: string,
     userId: string,
   ) {
-    const changeNo = await this.generateChangeNo(company, plant);
+    const changeNo = await this.generateChangeNo();
     const entity = this.changeRepo.create({
       changeNo,
       changeType: dto.changeType,

@@ -15,6 +15,7 @@ import { DefectLog } from '../../../../entities/defect-log.entity';
 import { ItemMaster } from '../../../../entities/item-master.entity';
 import { ProductInventoryService } from '../../../inventory/services/product-inventory.service';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { NumberingService } from '../../../../shared/numbering.service';
 
 describe('ReworkService', () => {
   let target: ReworkService;
@@ -22,12 +23,14 @@ describe('ReworkService', () => {
   let mockInspectRepo: DeepMocked<Repository<ReworkInspect>>;
   let mockProcessRepo: DeepMocked<Repository<ReworkProcess>>;
   let mockDefectLogRepo: DeepMocked<Repository<DefectLog>>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockReworkRepo = createMock<Repository<ReworkOrder>>();
     mockInspectRepo = createMock<Repository<ReworkInspect>>();
     mockProcessRepo = createMock<Repository<ReworkProcess>>();
     mockDefectLogRepo = createMock<Repository<DefectLog>>();
+    mockNumbering = createMock<NumberingService>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReworkService,
@@ -37,6 +40,7 @@ describe('ReworkService', () => {
         { provide: getRepositoryToken(DefectLog), useValue: mockDefectLogRepo },
         { provide: getRepositoryToken(ItemMaster), useValue: createMock<Repository<ItemMaster>>() },
         { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ReworkService>(ReworkService);

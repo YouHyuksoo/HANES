@@ -16,6 +16,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 describe('ProductInventoryService', () => {
   let target: ProductInventoryService;
@@ -58,6 +59,7 @@ describe('ProductInventoryService', () => {
         { provide: getRepositoryToken(BoxMaster), useValue: mockBoxRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
+        { provide: NumberingService, useValue: createMock<NumberingService>() },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ProductInventoryService>(ProductInventoryService);

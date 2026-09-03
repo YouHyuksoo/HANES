@@ -9,6 +9,7 @@ import { CustomerOrderItem } from '../../../entities/customer-order-item.entity'
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { AutoPlanService } from './auto-plan.service';
 
 describe('AutoPlanService', () => {
@@ -38,6 +39,7 @@ describe('AutoPlanService', () => {
         { provide: getRepositoryToken(ItemMaster), useValue: partRepo },
         { provide: DataSource, useValue: dataSource },
         { provide: TransactionService, useValue: tx },
+        { provide: NumberingService, useValue: createMock<NumberingService>() },
       ],
     })
       .setLogger(new MockLoggerService())

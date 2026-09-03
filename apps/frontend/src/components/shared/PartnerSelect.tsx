@@ -16,10 +16,12 @@ interface PartnerSelectProps extends Omit<SelectProps, "options"> {
   partnerType?: "SUPPLIER" | "CUSTOMER" | "VENDOR" | "MFG";
   /** 필터용: 모든 옵션 라벨 앞에 접두어 추가 + "전체" 옵션 자동 추가 */
   labelPrefix?: string;
+  /** 이력 조회 필터용: 미사용(useYn='N') 거래처도 포함 */
+  includeInactive?: boolean;
 }
 
-export default function PartnerSelect({ partnerType, labelPrefix, ...props }: PartnerSelectProps) {
-  const { options, isLoading } = usePartnerOptions(partnerType);
+export default function PartnerSelect({ partnerType, labelPrefix, includeInactive, ...props }: PartnerSelectProps) {
+  const { options, isLoading } = usePartnerOptions(partnerType, { includeInactive });
   const finalOptions = useMemo(() => {
     if (!labelPrefix) return options;
     return [

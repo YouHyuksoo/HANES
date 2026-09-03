@@ -29,6 +29,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PpapSubmission } from '../../../../entities/ppap-submission.entity';
+import { NumberingService } from '../../../../shared/numbering.service';
 import {
   CreatePpapDto,
   UpdatePpapDto,
@@ -173,6 +174,7 @@ export class PpapService {
   constructor(
     @InjectRepository(PpapSubmission)
     private readonly ppapRepo: Repository<PpapSubmission>,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -206,25 +208,10 @@ export class PpapService {
 
   /**
    * PPAP 번호 자동채번: PPAP-YYYYMMDD-NNN
+   * NUM_RULE_MASTERS(PPAP_NO) 행을 SELECT FOR UPDATE로 잠가 동시 채번을 직렬화한다.
    */
-  private async generatePpapNo(
-    company: string,
-    plant: string,
-  ): Promise<string> {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `PPAP-${dateStr}-`;
-
-    const last = await this.ppapRepo
-      .createQueryBuilder('p')
-      .where('p.company = :company', { company })
-      .andWhere('p.plant = :plant', { plant })
-      .andWhere('p.ppapNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('p.ppapNo', 'DESC')
-      .getOne();
-
-    const seq = last ? parseInt(last.ppapNo.slice(-3), 10) + 1 : 1;
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+  private async generatePpapNo(): Promise<string> {
+    return this.numbering.next('PPAP_NO');
   }
 
   // =============================================
@@ -303,7 +290,7 @@ export class PpapService {
     plant: string,
     userId: string,
   ) {
-    const ppapNo = await this.generatePpapNo(company, plant);
+    const ppapNo = await this.generatePpapNo();
     const entity = this.ppapRepo.create({
       ppapNo,
       itemCode: dto.itemCode,

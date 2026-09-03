@@ -90,8 +90,8 @@ export class ProductionViewsService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(jo.orderNo ILIKE :search OR p.itemCode ILIKE :search OR p.itemName ILIKE :search)',
-        { search: `%${search}%` },
+        '(UPPER(jo.orderNo) LIKE :search OR UPPER(p.itemCode) LIKE :search OR UPPER(p.itemName) LIKE :search)',
+        { search: `%${search.toUpperCase()}%` },
       );
     }
 
@@ -138,7 +138,7 @@ export class ProductionViewsService {
     }
 
     if (search) {
-      queryBuilder.andWhere('pr.prdUid ILIKE :search', { search: `%${search}%` });
+      queryBuilder.andWhere('UPPER(pr.prdUid) LIKE :search', { search: `%${search.toUpperCase()}%` });
     }
 
     const [data, total] = await Promise.all([

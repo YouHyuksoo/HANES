@@ -1,6 +1,6 @@
 ﻿import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like, In, FindOptionsWhere } from 'typeorm';
+import { Repository, Between, Like, In, FindOptionsWhere, QueryRunner } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -215,7 +215,7 @@ export class MiscReceiptService {
         await queryRunner.manager.save(lot);
       }
 
-      const transNo = await this.generateTransNo();
+      const transNo = await this.generateTransNo(queryRunner);
 
       const existingStock = await queryRunner.manager.findOne(MatStock, {
         where: {
@@ -291,21 +291,8 @@ export class MiscReceiptService {
     });
   }
 
-  private async generateTransNo(): Promise<string> {
-    const today = new Date();
-    const prefix = `MISC${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-
-    const lastTrans = await this.stockTransactionRepository.findOne({
-      where: { transNo: Like(`${prefix}%`) },
-      order: { transNo: 'DESC' },
-    });
-
-    let seq = 1;
-    if (lastTrans) {
-      const lastSeq = parseInt(lastTrans.transNo.slice(-5), 10);
-      seq = lastSeq + 1;
-    }
-
-    return `${prefix}${String(seq).padStart(5, '0')}`;
+  /** 기타입고 거래번호 (MISC+YYYYMMDD+5자리) — NUM_RULE 'MISC_TX' 채번 (MAX+1 금지) */
+  private async generateTransNo(queryRunner: QueryRunner): Promise<string> {
+    return this.numbering.nextInTx(queryRunner, 'MISC_TX');
   }
 }

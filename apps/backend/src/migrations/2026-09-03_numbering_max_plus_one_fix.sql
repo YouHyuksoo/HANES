@@ -1,0 +1,76 @@
+-- 2026-09-03 채번 MAX+1 안티패턴 정비 — NUM_RULE_MASTERS 규칙 행 등록
+-- 배경: docs/standards/numbering-rules.md "구현 시 주의사항 1" — 시퀀스 채번은 DB 기반, MAX+1 금지.
+--       마지막 행 조회 후 +1 방식은 동시 요청 시 같은 번호를 발급해 PK 충돌(ORA-00001)을 낸다.
+--
+-- [A그룹] 재고/거래원장 — NumberingService.next(RULE_TYPE)로 전환. 포맷은 기존과 100% 동일 유지.
+--   ADJ_TX      ADJ  + YYYYMMDD + 5자리   (STOCK_TRANSACTIONS, 재고보정)
+--   MISC_TX     MISC + YYYYMMDD + 5자리   (STOCK_TRANSACTIONS, 기타입고)
+--   PHYS_CNT_TX PHC  + YYYYMMDD + 4자리   (STOCK_TRANSACTIONS, 재고실사)
+--   INV_TX      TRX  + YYYYMMDD + 5자리   (STOCK_TRANSACTIONS, 입출고)
+--   PRODUCT_TX  PTX  + YYYYMMDD + 5자리   (PRODUCT_TRANSACTIONS, 제품입출고 — 병렬 입고 PK충돌 이력)
+--
+-- [B그룹] 스코프 채번 락 행 — NumberingService.lockScope()가 FOR UPDATE로 잠그는 용도.
+--   PROD_PLAN / PM_WO 는 "사용자가 지정한 월·예정일" 스코프마다 001부터 재시작하므로
+--   단일 카운터로 표현할 수 없다. 락 행으로 동시 채번을 직렬화한 뒤 스코프 내 MAX+1을 수행한다.
+--   → PATTERN/PREFIX/SEQ_LENGTH 는 사용되지 않는 자리표시자(NOT NULL 제약 충족용).
+--
+-- CURRENT_SEQ 는 "오늘 이미 발급된 최대 시퀀스"로 초기화한다(중간 도입 시 기존 번호와의 충돌 방지).
+-- LAST_RESET = SYSDATE 이므로 다음 날 첫 채번에서 1로 리셋된다.
+-- 실행: python oracle_connector.py --site JSHANES --execute-file <this file>
+
+MERGE INTO NUM_RULE_MASTERS T
+USING (
+  SELECT 'ADJ_TX' RULE_TYPE, '재고보정 수불번호' RULE_NAME, 'ADJ' PREFIX, 5 SEQ_LENGTH,
+         (SELECT NVL(MAX(TO_NUMBER(SUBSTR(TRANS_NO, 12))), 0) FROM STOCK_TRANSACTIONS
+           WHERE TRANS_NO LIKE 'ADJ' || TO_CHAR(SYSDATE, 'YYYYMMDD') || '_____') CUR_SEQ FROM DUAL
+  UNION ALL
+  SELECT 'MISC_TX', '기타입고 수불번호', 'MISC', 5,
+         (SELECT NVL(MAX(TO_NUMBER(SUBSTR(TRANS_NO, 13))), 0) FROM STOCK_TRANSACTIONS
+           WHERE TRANS_NO LIKE 'MISC' || TO_CHAR(SYSDATE, 'YYYYMMDD') || '_____') FROM DUAL
+  UNION ALL
+  SELECT 'PHYS_CNT_TX', '재고실사 수불번호', 'PHC', 4,
+         (SELECT NVL(MAX(TO_NUMBER(SUBSTR(TRANS_NO, 12))), 0) FROM STOCK_TRANSACTIONS
+           WHERE TRANS_NO LIKE 'PHC' || TO_CHAR(SYSDATE, 'YYYYMMDD') || '____') FROM DUAL
+  UNION ALL
+  SELECT 'INV_TX', '자재입출고 수불번호', 'TRX', 5,
+         (SELECT NVL(MAX(TO_NUMBER(SUBSTR(TRANS_NO, 12))), 0) FROM STOCK_TRANSACTIONS
+           WHERE TRANS_NO LIKE 'TRX' || TO_CHAR(SYSDATE, 'YYYYMMDD') || '_____') FROM DUAL
+  UNION ALL
+  SELECT 'PRODUCT_TX', '제품입출고 수불번호', 'PTX', 5,
+         (SELECT NVL(MAX(TO_NUMBER(SUBSTR(TRANS_NO, 12))), 0) FROM PRODUCT_TRANSACTIONS
+           WHERE TRANS_NO LIKE 'PTX' || TO_CHAR(SYSDATE, 'YYYYMMDD') || '_____') FROM DUAL
+) S
+ON (T.RULE_TYPE = S.RULE_TYPE)
+WHEN NOT MATCHED THEN INSERT (
+  RULE_TYPE, RULE_NAME, PATTERN, PREFIX, SEQ_LENGTH, CURRENT_SEQ,
+  RESET_TYPE, LAST_RESET, USE_YN, COMPANY, PLANT_CD, CREATED_BY, UPDATED_BY
+) VALUES (
+  S.RULE_TYPE, S.RULE_NAME, '{YYYY}{MM}{DD}{SEQ}', S.PREFIX, S.SEQ_LENGTH, S.CUR_SEQ,
+  'DAILY', SYSDATE, 'Y', '40', '1000', 'SYSTEM', 'SYSTEM'
+)
+/
+
+MERGE INTO NUM_RULE_MASTERS T
+USING (
+  SELECT 'PROD_PLAN' RULE_TYPE, '생산계획번호 채번 락(PP-YYYYMM-NNN)' RULE_NAME FROM DUAL
+  UNION ALL
+  SELECT 'PM_WO', '설비보전 WO번호 채번 락(PM/CBM-YYYYMMDD-NNN)' FROM DUAL
+) S
+ON (T.RULE_TYPE = S.RULE_TYPE)
+WHEN NOT MATCHED THEN INSERT (
+  RULE_TYPE, RULE_NAME, PATTERN, PREFIX, SEQ_LENGTH, CURRENT_SEQ,
+  RESET_TYPE, LAST_RESET, USE_YN, COMPANY, PLANT_CD, CREATED_BY, UPDATED_BY
+) VALUES (
+  S.RULE_TYPE, S.RULE_NAME, 'LOCK-ONLY', NULL, 1, 0,
+  'NONE', NULL, 'Y', '40', '1000', 'SYSTEM', 'SYSTEM'
+)
+/
+
+-- [실행 후 검증]
+-- SELECT RULE_TYPE, PREFIX, PATTERN, SEQ_LENGTH, CURRENT_SEQ, RESET_TYPE, USE_YN
+--   FROM NUM_RULE_MASTERS
+--  WHERE RULE_TYPE IN ('ADJ_TX','MISC_TX','PHYS_CNT_TX','INV_TX','PRODUCT_TX','PROD_PLAN','PM_WO')
+--  ORDER BY RULE_TYPE;
+
+COMMIT
+/

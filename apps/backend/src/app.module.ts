@@ -40,6 +40,7 @@ import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
 import { RoleModule } from './modules/role/role.module';
 import { MenuCategoriesModule } from './modules/menu-categories/menu-categories.module';
+import { MenuFavoritesModule } from './modules/menu-favorites/menu-favorites.module';
 import { SharedModule } from './shared/shared.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { GuardModule } from './common/modules/guard.module';
@@ -129,6 +130,9 @@ import { PrintAgentModule } from './modules/print-agent/print-agent.module';
 
     // 메뉴 카테고리 관리 (사이드바 트리 + 카테고리 CRUD + 메뉴 배치)
     MenuCategoriesModule,
+
+    // 사용자별 사이드바 메뉴 즐겨찾기
+    MenuFavoritesModule,
 
     // 공유 모듈 (NumberingService 파사드 + SeqGenerator + NumRule)
     SharedModule,

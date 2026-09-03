@@ -10,6 +10,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('AdjustmentService', () => {
@@ -51,6 +52,7 @@ describe('AdjustmentService', () => {
         { provide: getRepositoryToken(StockTransaction), useValue: stockTxRepo },
         { provide: DataSource, useValue: dataSource },
         { provide: TransactionService, useValue: tx },
+        { provide: NumberingService, useValue: createMock<NumberingService>() },
       ],
     })
       .setLogger(new MockLoggerService())

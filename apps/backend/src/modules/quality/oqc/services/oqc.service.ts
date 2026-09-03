@@ -17,6 +17,7 @@ import {
   UpdateOqcResultDto,
 } from '../dto/oqc.dto';
 import { TransactionService } from '../../../../shared/transaction.service';
+import { NumberingService } from '../../../../shared/numbering.service';
 import { parseDateStart } from '../../../../shared/date.util';
 
 @Injectable()
@@ -33,6 +34,7 @@ export class OqcService {
     @InjectRepository(ItemMaster)
     private readonly partRepo: Repository<ItemMaster>,
     private readonly tx: TransactionService,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -121,26 +123,14 @@ export class OqcService {
     }
 
     const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `OQC-${dateStr}`;
-
-    const lastReq = await this.oqcRequestRepo
-      .createQueryBuilder('oqc')
-      .where('oqc.requestNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('oqc.requestNo', 'DESC')
-      .getOne();
-
-    let seq = 1;
-    if (lastReq) {
-      const lastSeq = parseInt(lastReq.requestNo.split('-').pop() || '0', 10);
-      seq = lastSeq + 1;
-    }
-
-    const requestNo = `${prefix}-${String(seq).padStart(3, '0')}`;
     const totalQty = boxes.reduce((sum, box) => sum + box.qty, 0);
 
     let savedRequestNo!: string;
     await this.tx.run(async (queryRunner) => {
+      // 요청번호 채번: OQC-YYYYMMDD-NNN
+      // NUM_RULE_MASTERS(OQC_REQUEST) 행을 같은 트랜잭션에서 SELECT FOR UPDATE로 잠가
+      // 동시 채번을 직렬화한다(롤백 시 시퀀스도 복원되어 결번 없음).
+      const requestNo = await this.numbering.nextInTx(queryRunner, 'OQC_REQUEST');
       const oqcRequest = queryRunner.manager.create(OqcRequest, {
         requestNo,
         itemCode,

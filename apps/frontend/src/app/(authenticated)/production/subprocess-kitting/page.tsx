@@ -142,7 +142,7 @@ export default function SubprocessKittingPage() {
   // 설비 목록 로드(공정 정보 포함) — input-kiosk와 동일 소스
   useEffect(() => {
     api
-      .get("/equipment/equips", { params: { limit: "500" } })
+      .get("/equipment/equips", { params: { limit: "500", useYn: "Y" } })
       .then((res) => setEquips(normalizeEquipOptions(res.data)))
       .catch(() => setEquips([]));
   }, []);

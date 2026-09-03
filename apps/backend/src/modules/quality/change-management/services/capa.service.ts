@@ -31,6 +31,7 @@ import { Repository } from 'typeorm';
 import { CAPARequest } from '../../../../entities/capa-request.entity';
 import { CAPAAction } from '../../../../entities/capa-action.entity';
 import { parseDateStart } from '../../../../shared/date.util';
+import { NumberingService } from '../../../../shared/numbering.service';
 import {
   CreateCapaDto,
   UpdateCapaDto,
@@ -50,6 +51,7 @@ export class CapaService {
     private readonly capaRepo: Repository<CAPARequest>,
     @InjectRepository(CAPAAction)
     private readonly actionRepo: Repository<CAPAAction>,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -86,27 +88,11 @@ export class CapaService {
 
   /**
    * CAPA 번호 자동채번: CA-YYYYMMDD-NNN (시정) / PA-YYYYMMDD-NNN (예방)
+   * 접두어가 2종이므로 NUM_RULE_MASTERS 채널도 CAPA_CA / CAPA_PA로 분리한다.
+   * 각 행을 SELECT FOR UPDATE로 잠가 동시 채번을 직렬화한다.
    */
-  private async generateCapaNo(
-    company: string,
-    plant: string,
-    capaType: string,
-  ): Promise<string> {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const typePrefix = capaType === 'CORRECTIVE' ? 'CA' : 'PA';
-    const prefix = `${typePrefix}-${dateStr}-`;
-
-    const last = await this.capaRepo
-      .createQueryBuilder('c')
-      .where('c.company = :company', { company })
-      .andWhere('c.plant = :plant', { plant })
-      .andWhere('c.capaNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('c.capaNo', 'DESC')
-      .getOne();
-
-    const seq = last ? parseInt(last.capaNo.slice(-3), 10) + 1 : 1;
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+  private async generateCapaNo(capaType: string): Promise<string> {
+    return this.numbering.next(capaType === 'CORRECTIVE' ? 'CAPA_CA' : 'CAPA_PA');
   }
 
   // =============================================
@@ -182,7 +168,7 @@ export class CapaService {
     plant: string,
     userId: string,
   ) {
-    const capaNo = await this.generateCapaNo(company, plant, dto.capaType);
+    const capaNo = await this.generateCapaNo(dto.capaType);
     const { actions, ...fields } = dto;
 
     const entity = this.capaRepo.create({

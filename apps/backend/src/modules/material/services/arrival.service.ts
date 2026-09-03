@@ -41,6 +41,7 @@ import {
   PoLineQueryDto,
   ArrivalResultQueryDto,
 } from '../dto/arrival.dto';
+import { isIqcExempt } from '@harness/shared';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart } from '../../../shared/date.util';
@@ -245,6 +246,8 @@ export class ArrivalService {
 
       for (const item of dto.items) {
         const part = partMap.get(item.itemCode);
+        // IQC 면제 품목은 입하 시 자동 PASS (IQC_LOGS는 만들지 않음 — 입하취소 가드가 IQC_LOGS를 보므로)
+        const iqcStatus = part && isIqcExempt(part.iqcYn, part.inspectMethod) ? 'PASS' : 'PENDING';
         const txDate = new Date();
         const matUid = await this.numbering.nextMatSerial(queryRunner, txDate);
 
@@ -265,7 +268,7 @@ export class ArrivalService {
           arrivalType: 'PO',
           workerId: dto.workerId,
           remark: item.remark || dto.remark,
-          iqcStatus: 'PENDING',
+          iqcStatus,
           status: 'DONE',
           company: po.company,
           plant: po.plant,
@@ -288,7 +291,7 @@ export class ArrivalService {
           invoiceNo: item.invoiceNo || dto.invoiceNo || null,
           poNo: po.poNo,
           mfgPartnerCode: null,
-          iqcStatus: 'PENDING',
+          iqcStatus,
           status: 'NORMAL',
           company: po.company,
           plant: po.plant,
@@ -351,6 +354,8 @@ export class ArrivalService {
 
       // 품목 정보 조회
       const part = await this.itemMasterRepository.findOne({ where: { itemCode: dto.itemCode, ...tenantWhere } });
+      // IQC 면제 품목은 입하 시 자동 PASS (IQC_LOGS는 만들지 않음 — 입하취소 가드가 IQC_LOGS를 보므로)
+      const iqcStatus = part && isIqcExempt(part.iqcYn, part.inspectMethod) ? 'PASS' : 'PENDING';
 
       // 1. MatArrival 생성 (입하 업무 테이블) — LOT은 라벨 발행 시 생성됨
       const arrival = queryRunner.manager.create(MatArrival, {
@@ -366,7 +371,7 @@ export class ArrivalService {
         arrivalType: 'MANUAL',
         workerId: dto.workerId,
         remark: dto.remark,
-        iqcStatus: 'PENDING',
+        iqcStatus,
         status: 'DONE',
         company,
         plant,
@@ -389,7 +394,7 @@ export class ArrivalService {
         invoiceNo: dto.invoiceNo ?? null,
         poNo: null,
         mfgPartnerCode: null,
-        iqcStatus: 'PENDING',
+        iqcStatus,
         status: 'NORMAL',
         company,
         plant,
@@ -1455,6 +1460,8 @@ export class ArrivalService {
       });
       const unit = item?.lotUnitQty && item.lotUnitQty > 0 ? item.lotUnitQty : dto.receivedQty;
       const serialCount = Math.ceil(dto.receivedQty / unit);
+      // IQC 면제 품목은 입하 시 자동 PASS (IQC_LOGS는 만들지 않음 — 입하취소 가드가 IQC_LOGS를 보므로)
+      const iqcStatus = item && isIqcExempt(item.iqcYn, item.inspectMethod) ? 'PASS' : 'PENDING';
 
       // 5. 채번 (IQC005 신규 채번 메서드, 트랜잭션 내)
       const txDate = parseDateStart(dto.receivedDate)!;
@@ -1485,7 +1492,7 @@ export class ArrivalService {
           invoiceNo: '',
           poNo: po.poNo,
           mfgPartnerCode: dto.mfgPartnerCode,
-          iqcStatus: 'PENDING',
+          iqcStatus,
           status: 'NORMAL',
           company: user?.company ?? null,
           plant: user?.plant ?? null,
@@ -1528,7 +1535,7 @@ export class ArrivalService {
           arrivalType: 'PO',
           workerId: username,
           remark: dto.remark ?? null,
-          iqcStatus: 'PENDING',
+          iqcStatus,
           supUid: lot.matUid,
           status: 'DONE',
           company: user?.company ?? null,

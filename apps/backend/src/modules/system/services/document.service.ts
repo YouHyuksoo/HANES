@@ -26,6 +26,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DocumentMaster } from '../../../entities/document-master.entity';
+import { NumberingService } from '../../../shared/numbering.service';
 import {
   CreateDocumentDto,
   UpdateDocumentDto,
@@ -39,6 +40,7 @@ export class DocumentService {
   constructor(
     @InjectRepository(DocumentMaster)
     private readonly docRepo: Repository<DocumentMaster>,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -72,25 +74,10 @@ export class DocumentService {
 
   /**
    * 문서번호 자동채번: DOC-YYYYMMDD-NNN
+   * NUM_RULE_MASTERS(DOC_NO) 행을 SELECT FOR UPDATE로 잠가 동시 채번을 직렬화한다.
    */
-  private async generateDocNo(
-    company: string,
-    plant: string,
-  ): Promise<string> {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `DOC-${dateStr}-`;
-
-    const last = await this.docRepo
-      .createQueryBuilder('d')
-      .where('d.company = :company', { company })
-      .andWhere('d.plant = :plant', { plant })
-      .andWhere('d.docNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('d.docNo', 'DESC')
-      .getOne();
-
-    const seq = last ? parseInt(last.docNo.slice(-3), 10) + 1 : 1;
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+  private async generateDocNo(): Promise<string> {
+    return this.numbering.next('DOC_NO');
   }
 
   // =============================================
@@ -164,7 +151,7 @@ export class DocumentService {
     plant: string,
     userId: string,
   ) {
-    const docNo = await this.generateDocNo(company, plant);
+    const docNo = await this.generateDocNo();
     const entity = this.docRepo.create({
       docNo,
       docTitle: dto.docTitle,

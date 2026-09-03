@@ -10,17 +10,21 @@ import { Repository } from 'typeorm';
 import { PpapService } from './ppap.service';
 import { PpapSubmission } from '../../../../entities/ppap-submission.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { NumberingService } from '../../../../shared/numbering.service';
 
 describe('PpapService', () => {
   let target: PpapService;
   let mockRepo: DeepMocked<Repository<PpapSubmission>>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockRepo = createMock<Repository<PpapSubmission>>();
+    mockNumbering = createMock<NumberingService>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PpapService,
         { provide: getRepositoryToken(PpapSubmission), useValue: mockRepo },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<PpapService>(PpapService);

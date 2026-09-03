@@ -11,20 +11,24 @@ import { FaiService } from './fai.service';
 import { FaiRequest } from '../../../../entities/fai-request.entity';
 import { FaiItem } from '../../../../entities/fai-item.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { NumberingService } from '../../../../shared/numbering.service';
 
 describe('FaiService', () => {
   let target: FaiService;
   let mockFaiRepo: DeepMocked<Repository<FaiRequest>>;
   let mockItemRepo: DeepMocked<Repository<FaiItem>>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockFaiRepo = createMock<Repository<FaiRequest>>();
     mockItemRepo = createMock<Repository<FaiItem>>();
+    mockNumbering = createMock<NumberingService>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FaiService,
         { provide: getRepositoryToken(FaiRequest), useValue: mockFaiRepo },
         { provide: getRepositoryToken(FaiItem), useValue: mockItemRepo },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<FaiService>(FaiService);

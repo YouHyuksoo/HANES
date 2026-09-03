@@ -11,12 +11,14 @@
 
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { SensorDataLog } from '../../../entities/sensor-data-log.entity';
 import { EquipConditionRule } from '../../../entities/equip-condition-rule.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { PmPlan } from '../../../entities/pm-plan.entity';
 import { PmWorkOrder } from '../../../entities/pm-work-order.entity';
+import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 import {
   PostSensorDataDto,
   SensorDataQueryDto,
@@ -40,6 +42,8 @@ export class SensorMonitorService {
     private readonly pmPlanRepo: Repository<PmPlan>,
     @InjectRepository(PmWorkOrder)
     private readonly pmWorkOrderRepo: Repository<PmWorkOrder>,
+    private readonly numbering: NumberingService,
+    private readonly tx: TransactionService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -150,21 +154,25 @@ export class SensorMonitorService {
           // 조치 실행
           if (rule.actionType === 'AUTO_WO' && rule.pmPlanCode) {
             try {
-              const workOrderNo = await this.generateWoNumber();
-              const wo = this.pmWorkOrderRepo.create({
-                workOrderNo,
-                pmPlanCode: rule.pmPlanCode,
-                equipCode: rule.equipCode,
-                woType: 'PREDICTIVE',
-                scheduledDate: new Date(),
-                dueDate: new Date(),
-                status: 'PLANNED',
-                priority: 'HIGH',
-                remark: `자동생성: ${rule.sensorType} ${value} ${rule.compareOp} ${rule.criticalValue}`,
-                company: rule.company,
-                plant: rule.plant,
+              // 채번 락(PM_WO 행 FOR UPDATE)이 INSERT까지 유지되어야 하므로 한 트랜잭션으로 묶는다.
+              await this.tx.run(async (qr) => {
+                const scheduledDate = new Date();
+                const workOrderNo = await this.generateWoNumber(qr, scheduledDate);
+                const wo = qr.manager.create(PmWorkOrder, {
+                  workOrderNo,
+                  pmPlanCode: rule.pmPlanCode,
+                  equipCode: rule.equipCode,
+                  woType: 'PREDICTIVE',
+                  scheduledDate,
+                  dueDate: scheduledDate,
+                  status: 'PLANNED',
+                  priority: 'HIGH',
+                  remark: `자동생성: ${rule.sensorType} ${value} ${rule.compareOp} ${rule.criticalValue}`,
+                  company: rule.company,
+                  plant: rule.plant,
+                });
+                await qr.manager.save(PmWorkOrder, wo);
               });
-              await this.pmWorkOrderRepo.save(wo);
               autoWoCreated++;
             } catch (error: unknown) {
               this.logger.error(`AUTO_WO 생성 실패: ${error instanceof Error ? error.message : error}`);
@@ -311,24 +319,14 @@ export class SensorMonitorService {
     }
   }
 
-  /** CBM WO 번호 채번: CBM-YYYYMMDD-NNN */
-  private async generateWoNumber(): Promise<string> {
-    const now = new Date();
-    const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-    const prefix = `CBM-${dateStr}-`;
-
-    const lastWo = await this.pmWorkOrderRepo
-      .createQueryBuilder('wo')
-      .where('wo.workOrderNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('wo.workOrderNo', 'DESC')
-      .getOne();
-
-    let seq = 1;
-    if (lastWo) {
-      const lastSeq = parseInt(lastWo.workOrderNo.substring(prefix.length), 10);
-      if (!isNaN(lastSeq)) seq = lastSeq + 1;
-    }
-
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+  /**
+   * CBM WO 번호 채번: CBM-YYYYMMDD-NNN
+   * 배치 PM WO(PM-YYYYMMDD-NNN)와 같은 스코프 락 채널(NUM_RULE_MASTERS.PM_WO)을 쓴다.
+   * 예정일 스코프마다 001부터 재시작하는 포맷이라 단일 카운터로 표현할 수 없으므로,
+   * 락 행을 FOR UPDATE로 잠가 동시 채번을 직렬화한 뒤 스코프 내 MAX+1을 수행한다.
+   */
+  private async generateWoNumber(qr: QueryRunner, scheduledDate: Date): Promise<string> {
+    const dateStr = `${scheduledDate.getFullYear()}${String(scheduledDate.getMonth() + 1).padStart(2, '0')}${String(scheduledDate.getDate()).padStart(2, '0')}`;
+    return this.numbering.nextPmWoNo(qr, dateStr, 'CBM');
   }
 }

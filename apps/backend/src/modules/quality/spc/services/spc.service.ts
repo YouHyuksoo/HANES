@@ -29,6 +29,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { SpcChart } from '../../../../entities/spc-chart.entity';
 import { SpcData } from '../../../../entities/spc-data.entity';
+import { NumberingService } from '../../../../shared/numbering.service';
 import {
   CreateSpcChartDto,
   UpdateSpcChartDto,
@@ -59,6 +60,7 @@ export class SpcService {
     @InjectRepository(SpcData)
     private readonly dataRepo: Repository<SpcData>,
     private readonly dataSource: DataSource,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -82,25 +84,10 @@ export class SpcService {
 
   /**
    * 관리도 번호 자동채번: SPC-YYYYMMDD-NNN
+   * NUM_RULE_MASTERS(SPC_CHART) 행을 SELECT FOR UPDATE로 잠가 동시 채번을 직렬화한다.
    */
-  private async generateChartNo(
-    company: string,
-    plant: string,
-  ): Promise<string> {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `SPC-${dateStr}-`;
-
-    const last = await this.chartRepo
-      .createQueryBuilder('c')
-      .where('c.company = :company', { company })
-      .andWhere('c.plant = :plant', { plant })
-      .andWhere('c.chartNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('c.chartNo', 'DESC')
-      .getOne();
-
-    const seq = last ? parseInt(last.chartNo.slice(-3), 10) + 1 : 1;
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+  private async generateChartNo(): Promise<string> {
+    return this.numbering.next('SPC_CHART');
   }
 
   // =============================================
@@ -158,7 +145,7 @@ export class SpcService {
     plant: string,
     userId: string,
   ) {
-    const chartNo = await this.generateChartNo(company, plant);
+    const chartNo = await this.generateChartNo();
     const entity = this.chartRepo.create({
       chartNo,
       itemCode: dto.itemCode,

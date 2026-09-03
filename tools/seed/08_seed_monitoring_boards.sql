@@ -1,5 +1,9 @@
 -- =============================================================
 -- 08: 모니터링 보드 시연용 시드 (생산현황/품질/재고/작업지시/설비가동)
+--   ⚠️ 운영(현장 사용 중) DB에 실행 금지 — 시연/데모 전용.
+--      실행하면 실제 품목(MAG_ 계열 포함)에 SEED 작업지시/실적/LOT/재고가 생성되어
+--      현장에서 "정체불명 데이터 자동 생성"으로 보고된 사례 있음 (2026-09-03 개선요청 10-a).
+--      시연 후에는 반드시 08_cleanup_monitoring_seed.sql 로 전량 되돌릴 것.
 --   - 모든 식별자에 SEED 접두어를 붙여 08_cleanup_monitoring_seed.sql 로 되돌릴 수 있다.
 --   - "오늘" 기준은 DB 의 TRUNC(SYSDATE). 실행일 기준으로 지시일/실적시각이 잡힌다.
 --   - 실행: python oracle_connector.py --site JSHANES --execute-file tools/seed/08_seed_monitoring_boards.sql

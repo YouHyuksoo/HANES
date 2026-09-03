@@ -25,6 +25,7 @@ import {
   AutoPlanResult,
 } from '../dto/prod-plan.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 
 /** 수주 조회 결과 행 */
 interface OrderRow {
@@ -48,6 +49,7 @@ export class AutoPlanService {
     @InjectRepository(ItemMaster)
     private readonly partRepo: Repository<ItemMaster>,
     private readonly tx: TransactionService,
+    private readonly numbering: NumberingService,
   ) {}
 
   /** 미출하 수주 조회 */
@@ -213,20 +215,8 @@ export class AutoPlanService {
     return created;
   }
 
-  /** planNo 자동생성: PP-YYYYMM-NNN */
+  /** planNo 자동생성: PP-YYYYMM-NNN — ProdPlanService와 동일한 NumberingService 스코프 채번 채널 사용 */
   private async generatePlanNo(month: string, queryRunner: QueryRunner): Promise<string> {
-    const prefix = `PP-${month.replace('-', '')}-`;
-    const repo = queryRunner.manager.getRepository(ProdPlan);
-    const last = await repo
-      .createQueryBuilder('pp')
-      .where('pp.planNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('pp.planNo', 'DESC')
-      .getOne();
-    let seq = 1;
-    if (last) {
-      const lastSeq = parseInt(last.planNo.replace(prefix, ''), 10);
-      if (!isNaN(lastSeq)) seq = lastSeq + 1;
-    }
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+    return this.numbering.nextProdPlanNo(queryRunner, month);
   }
 }

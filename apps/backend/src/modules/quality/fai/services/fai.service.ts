@@ -29,6 +29,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FaiRequest } from '../../../../entities/fai-request.entity';
 import { FaiItem } from '../../../../entities/fai-item.entity';
+import { NumberingService } from '../../../../shared/numbering.service';
 import {
   CreateFaiDto,
   UpdateFaiDto,
@@ -46,6 +47,7 @@ export class FaiService {
     private readonly faiRepo: Repository<FaiRequest>,
     @InjectRepository(FaiItem)
     private readonly itemRepo: Repository<FaiItem>,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -75,22 +77,10 @@ export class FaiService {
 
   /**
    * FAI 번호 자동채번: FAI-YYYYMMDD-NNN
+   * NUM_RULE_MASTERS(FAI_NO) 행을 SELECT FOR UPDATE로 잠가 동시 채번을 직렬화한다.
    */
-  private async generateFaiNo(company: string, plant: string): Promise<string> {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `FAI-${dateStr}-`;
-
-    const last = await this.faiRepo
-      .createQueryBuilder('f')
-      .where('f.company = :company', { company })
-      .andWhere('f.plant = :plant', { plant })
-      .andWhere('f.faiNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('f.faiNo', 'DESC')
-      .getOne();
-
-    const seq = last ? parseInt(last.faiNo.slice(-3), 10) + 1 : 1;
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+  private async generateFaiNo(): Promise<string> {
+    return this.numbering.next('FAI_NO');
   }
 
   // =============================================
@@ -166,7 +156,7 @@ export class FaiService {
     plant: string,
     userId: string,
   ) {
-    const faiNo = await this.generateFaiNo(company, plant);
+    const faiNo = await this.generateFaiNo();
     const { items, ...requestFields } = dto;
 
     const entity = this.faiRepo.create({

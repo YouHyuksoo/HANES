@@ -293,6 +293,93 @@ describe('ArrivalService', () => {
       );
     });
 
+    it('IQC 면제 품목(iqcYn=N)은 입하 시 iqcStatus를 PASS로 스탬프하고 IQC_LOGS는 만들지 않는다', async () => {
+      mockPurchaseOrderRepo.findOne.mockResolvedValue({
+        poNo: 'PO-001',
+        status: 'CONFIRMED',
+        partnerCode: 'V-001',
+        partnerName: 'Vendor',
+        company: 'CO',
+        plant: 'P01',
+      } as PurchaseOrder);
+      mockPurchaseOrderItemRepo.find.mockResolvedValue([
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0, company: 'CO', plant: 'P01' } as PurchaseOrderItem,
+      ]);
+      mockStockTxRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA', iqcYn: 'N', inspectMethod: 'FULL' } as ItemMaster,
+      ]);
+      mockWarehouseRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse,
+      ]);
+      mockNumbering.nextInTx.mockResolvedValueOnce('ARR-PO-001');
+      mockNumbering.nextMatSerial.mockResolvedValueOnce('MAT-PO-001');
+      mockNumbering.next.mockResolvedValueOnce('TX-PO-001');
+
+      const manager = {
+        findOne: jest.fn().mockResolvedValue(null),
+        find: jest.fn().mockResolvedValue([
+          { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 10 } as PurchaseOrderItem,
+        ]),
+        create: jest.fn((entity, payload) => ({ ...payload })),
+        save: jest.fn().mockImplementation(async (entity) => entity),
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+      (mockQueryRunner as any).manager = manager;
+
+      await target.createPoArrival({
+        poId: 'PO-001',
+        items: [{ poItemId: '1', itemCode: 'ITEM-001', receivedQty: 10, warehouseId: 'WH-001' }],
+      } as any, 'CO', 'P01');
+
+      expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ arrivalNo: 'ARR-PO-001', iqcStatus: 'PASS' }));
+      expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ matUid: 'MAT-PO-001', iqcStatus: 'PASS' }));
+      expect(manager.create).not.toHaveBeenCalledWith(IqcLog, expect.anything());
+    });
+
+    it('IQC 대상 품목(iqcYn=Y, FULL)은 입하 시 iqcStatus를 PENDING으로 유지한다', async () => {
+      mockPurchaseOrderRepo.findOne.mockResolvedValue({
+        poNo: 'PO-001',
+        status: 'CONFIRMED',
+        partnerCode: 'V-001',
+        partnerName: 'Vendor',
+        company: 'CO',
+        plant: 'P01',
+      } as PurchaseOrder);
+      mockPurchaseOrderItemRepo.find.mockResolvedValue([
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0, company: 'CO', plant: 'P01' } as PurchaseOrderItem,
+      ]);
+      mockStockTxRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA', iqcYn: 'Y', inspectMethod: 'FULL' } as ItemMaster,
+      ]);
+      mockWarehouseRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse,
+      ]);
+      mockNumbering.nextInTx.mockResolvedValueOnce('ARR-PO-001');
+      mockNumbering.nextMatSerial.mockResolvedValueOnce('MAT-PO-001');
+      mockNumbering.next.mockResolvedValueOnce('TX-PO-001');
+
+      const manager = {
+        findOne: jest.fn().mockResolvedValue(null),
+        find: jest.fn().mockResolvedValue([
+          { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 10 } as PurchaseOrderItem,
+        ]),
+        create: jest.fn((entity, payload) => ({ ...payload })),
+        save: jest.fn().mockImplementation(async (entity) => entity),
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+      (mockQueryRunner as any).manager = manager;
+
+      await target.createPoArrival({
+        poId: 'PO-001',
+        items: [{ poItemId: '1', itemCode: 'ITEM-001', receivedQty: 10, warehouseId: 'WH-001' }],
+      } as any, 'CO', 'P01');
+
+      expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ arrivalNo: 'ARR-PO-001', iqcStatus: 'PENDING' }));
+      expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ matUid: 'MAT-PO-001', iqcStatus: 'PENDING' }));
+    });
+
     it('PO 입하 응답 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
       mockPurchaseOrderRepo.findOne.mockResolvedValue({
         poNo: 'PO-001',
@@ -426,6 +513,61 @@ describe('ArrivalService', () => {
         MatArrivalTransaction,
         expect.objectContaining({ transNo: 'TX-001', transType: 'ARRIVAL_IN', matUid: 'MAT-001' }),
       );
+    });
+
+    it('무검사 방법(SKIP) 품목은 수동 입하 시 iqcStatus를 PASS로 스탬프하고 IQC_LOGS는 만들지 않는다', async () => {
+      mockNumbering.nextInTx.mockResolvedValueOnce('ARR-001');
+      mockNumbering.nextMatSerial.mockResolvedValueOnce('MAT-001');
+      mockNumbering.next.mockResolvedValueOnce('TX-001');
+      mockItemMasterRepo.findOne.mockResolvedValue({
+        itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA', iqcYn: 'Y', inspectMethod: 'SKIP',
+      } as ItemMaster);
+      mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse);
+
+      const manager = {
+        findOne: jest.fn().mockResolvedValue(null),
+        create: jest.fn((entity, payload) => ({ ...payload })),
+        save: jest.fn().mockImplementation(async (entity) => entity),
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+      (mockQueryRunner as any).manager = manager;
+
+      await target.createManualArrival({
+        itemCode: 'ITEM-001',
+        qty: 10,
+        warehouseId: 'WH-001',
+        workerId: 'user',
+      } as any, 'CO', 'P01');
+
+      expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ arrivalNo: 'ARR-001', iqcStatus: 'PASS' }));
+      expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ matUid: 'MAT-001', iqcStatus: 'PASS' }));
+      expect(manager.create).not.toHaveBeenCalledWith(IqcLog, expect.anything());
+    });
+
+    it('품목마스터가 없으면 수동 입하 iqcStatus는 PENDING을 유지한다', async () => {
+      mockNumbering.nextInTx.mockResolvedValueOnce('ARR-001');
+      mockNumbering.nextMatSerial.mockResolvedValueOnce('MAT-001');
+      mockNumbering.next.mockResolvedValueOnce('TX-001');
+      mockItemMasterRepo.findOne.mockResolvedValue(null);
+      mockWarehouseRepo.findOne.mockResolvedValue(null);
+
+      const manager = {
+        findOne: jest.fn().mockResolvedValue(null),
+        create: jest.fn((entity, payload) => ({ ...payload })),
+        save: jest.fn().mockImplementation(async (entity) => entity),
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+      (mockQueryRunner as any).manager = manager;
+
+      await target.createManualArrival({
+        itemCode: 'ITEM-MISSING',
+        qty: 10,
+        warehouseId: 'WH-001',
+        workerId: 'user',
+      } as any, 'CO', 'P01');
+
+      expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ arrivalNo: 'ARR-001', iqcStatus: 'PENDING' }));
+      expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ matUid: 'MAT-001', iqcStatus: 'PENDING' }));
     });
 
     it('품목/창고 마스터가 누락되어도 수동 입하 결과의 원본 itemCode와 warehouseCode는 유지한다', async () => {

@@ -78,6 +78,13 @@ export class ProductionSpecificationService {
     }
   }
 
+  /**
+   * 부모 revision 코드 +1 (A→B, Z→AA, R1→R2).
+   * 전역 채번이 아니라 "부모 도면 스코프의 리비전 카운터"라 SEQUENCE로 대체하지 않는다.
+   * 동시 revise가 같은 코드를 만들어도 HarnessDrawingRevision의
+   * UNIQUE(company, plant, drawingId, revisionCode)가 ORA-00001로 막으므로
+   * 조용한 중복이나 데이터 손상 없이 실패한다 — 별도 FOR UPDATE 잠금 불필요.
+   */
   private nextRevisionCode(source: string): string {
     const code = source.trim().toUpperCase();
     if (/^[A-Y]$/.test(code)) return String.fromCharCode(code.charCodeAt(0) + 1);

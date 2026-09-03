@@ -44,7 +44,7 @@ export default function ProdResultPage() {
   ], [t, comCodeProcessOptions]);
 
   /** 설비 필터 */
-  const { options: rawEquipOptions } = useEquipOptions();
+  const { options: rawEquipOptions } = useEquipOptions(undefined, { includeInactive: true });
   const equipOptions = useMemo(() => [
     { value: '', label: t('production.result.equipAll', '전체 설비') },
     ...rawEquipOptions,

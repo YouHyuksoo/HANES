@@ -29,6 +29,7 @@ import { Repository } from 'typeorm';
 import { AuditPlan } from '../../../../entities/audit-plan.entity';
 import { AuditFinding } from '../../../../entities/audit-finding.entity';
 import { parseDateStart } from '../../../../shared/date.util';
+import { NumberingService } from '../../../../shared/numbering.service';
 import {
   CreateAuditPlanDto,
   UpdateAuditPlanDto,
@@ -45,6 +46,7 @@ export class AuditService {
     private readonly auditRepo: Repository<AuditPlan>,
     @InjectRepository(AuditFinding)
     private readonly findingRepo: Repository<AuditFinding>,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -74,25 +76,10 @@ export class AuditService {
 
   /**
    * 심사번호 자동채번: AUD-YYYYMMDD-NNN
+   * NUM_RULE_MASTERS(AUDIT_NO) 행을 SELECT FOR UPDATE로 잠가 동시 채번을 직렬화한다.
    */
-  private async generateAuditNo(
-    company: string,
-    plant: string,
-  ): Promise<string> {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `AUD-${dateStr}-`;
-
-    const last = await this.auditRepo
-      .createQueryBuilder('a')
-      .where('a.company = :company', { company })
-      .andWhere('a.plant = :plant', { plant })
-      .andWhere('a.auditNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('a.auditNo', 'DESC')
-      .getOne();
-
-    const seq = last ? parseInt(last.auditNo.slice(-3), 10) + 1 : 1;
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+  private async generateAuditNo(): Promise<string> {
+    return this.numbering.next('AUDIT_NO');
   }
 
   // =============================================
@@ -164,7 +151,7 @@ export class AuditService {
     plant: string,
     userId: string,
   ) {
-    const auditNo = await this.generateAuditNo(company, plant);
+    const auditNo = await this.generateAuditNo();
     const entity = this.auditRepo.create({
       auditNo,
       auditType: dto.auditType,

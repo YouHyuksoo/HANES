@@ -11,7 +11,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Like, Between, In, FindOptionsWhere, IsNull } from 'typeorm';
+import { Repository, DataSource, Like, Between, In, FindOptionsWhere, IsNull, QueryRunner } from 'typeorm';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -19,6 +19,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { CreateAdjustmentDto, AdjustmentQueryDto } from '../dto/adjustment.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { NumberingService } from '../../../shared/numbering.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
@@ -36,6 +37,7 @@ export class AdjustmentService {
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     private readonly dataSource: DataSource,
     private readonly tx: TransactionService,
+    private readonly numbering: NumberingService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -255,7 +257,7 @@ export class AdjustmentService {
       }
 
       // 재고 거래 이력 생성
-      const transNo = await this.generateTransNo();
+      const transNo = await this.generateTransNo(queryRunner);
       const stockTransaction = queryRunner.manager.create(StockTransaction, {
         transNo,
         transType: diffQty >= 0 ? 'ADJUST_IN' : 'ADJUST_OUT',
@@ -408,7 +410,7 @@ export class AdjustmentService {
       await queryRunner.manager.save(invAdjLog);
 
       // 재고 거래 이력 생성 (트랜잭션 번호 생성)
-      const transNo = await this.generateTransNo();
+      const transNo = await this.generateTransNo(queryRunner);
       const stockTransaction = queryRunner.manager.create(StockTransaction, {
         transNo,
         transType: diffQty >= 0 ? 'ADJUST_IN' : 'ADJUST_OUT',
@@ -447,23 +449,9 @@ export class AdjustmentService {
   }
 
   /**
-   * 트랜잭션 번호 생성
+   * 트랜잭션 번호 생성 (ADJ+YYYYMMDD+5자리) — NUM_RULE 'ADJ_TX' 채번 (MAX+1 금지)
    */
-  private async generateTransNo(): Promise<string> {
-    const today = new Date();
-    const prefix = `ADJ${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-
-    const lastTrans = await this.stockTransactionRepository.findOne({
-      where: { transNo: Like(`${prefix}%`) },
-      order: { transNo: 'DESC' },
-    });
-
-    let seq = 1;
-    if (lastTrans) {
-      const lastSeq = parseInt(lastTrans.transNo.slice(-5), 10);
-      seq = lastSeq + 1;
-    }
-
-    return `${prefix}${String(seq).padStart(5, '0')}`;
+  private async generateTransNo(queryRunner: QueryRunner): Promise<string> {
+    return this.numbering.nextInTx(queryRunner, 'ADJ_TX');
   }
 }

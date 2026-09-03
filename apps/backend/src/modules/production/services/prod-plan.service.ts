@@ -106,24 +106,28 @@ export class ProdPlanService {
     });
     if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
 
-    const planNo = await this.generatePlanNo(dto.planMonth);
+    // 채번 직렬화 락 유지를 위해 채번+저장을 한 트랜잭션으로 묶는다
+    const saved = await this.tx.run(async (queryRunner) => {
+      const planNo = await this.generatePlanNo(dto.planMonth, queryRunner);
 
-    const plan = this.planRepo.create({
-      planNo,
-      planMonth: dto.planMonth,
-      itemCode: dto.itemCode,
-      itemType: dto.itemType,
-      planQty: dto.planQty,
-      customer: dto.customer || null,
-      lineCode: dto.lineCode || null,
-      priority: dto.priority ?? 5,
-      remark: dto.remark || null,
-      status: 'DRAFT',
-      company: company || null,
-      plant: plant || null,
+      const plan = queryRunner.manager.create(ProdPlan, {
+        planNo,
+        planMonth: dto.planMonth,
+        itemCode: dto.itemCode,
+        itemType: dto.itemType,
+        planQty: dto.planQty,
+        customer: dto.customer || null,
+        lineCode: dto.lineCode || null,
+        priority: dto.priority ?? 5,
+        remark: dto.remark || null,
+        status: 'DRAFT',
+        company: company || null,
+        plant: plant || null,
+      });
+
+      return queryRunner.manager.save(plan);
     });
 
-    const saved = await this.planRepo.save(plan);
     return this.planRepo.findOne({
       where: { planNo: saved.planNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       relations: ['part'],
@@ -501,23 +505,8 @@ export class ProdPlanService {
     return plan;
   }
 
-  /** planNo 자동생성: PP-YYYYMM-NNN */
-  private async generatePlanNo(planMonth: string, queryRunner?: QueryRunner): Promise<string> {
-    const prefix = `PP-${planMonth.replace('-', '')}-`;
-    const repo = queryRunner ? queryRunner.manager.getRepository(ProdPlan) : this.planRepo;
-
-    const last = await repo
-      .createQueryBuilder('pp')
-      .where('pp.planNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('pp.planNo', 'DESC')
-      .getOne();
-
-    let seq = 1;
-    if (last) {
-      const lastSeq = parseInt(last.planNo.replace(prefix, ''), 10);
-      if (!isNaN(lastSeq)) seq = lastSeq + 1;
-    }
-
-    return `${prefix}${String(seq).padStart(3, '0')}`;
+  /** planNo 자동생성: PP-YYYYMM-NNN — NumberingService 스코프 채번(락 직렬화)에 위임 */
+  private async generatePlanNo(planMonth: string, queryRunner: QueryRunner): Promise<string> {
+    return this.numbering.nextProdPlanNo(queryRunner, planMonth);
   }
 }

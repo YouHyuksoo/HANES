@@ -120,6 +120,7 @@ export default function WipMaterialStockPage() {
                       value={equipCode}
                       onChange={setEquipCode}
                       labelPrefix={t('production.wipMaterialStock.equipName')}
+                      includeInactive
                       fullWidth
                     />
                   </div>

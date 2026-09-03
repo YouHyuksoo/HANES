@@ -14,6 +14,7 @@ import { BoxMaster } from '../../../../entities/box-master.entity';
 import { ItemMaster } from '../../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../../shared/transaction.service';
+import { NumberingService } from '../../../../shared/numbering.service';
 
 describe('OqcService', () => {
   let target: OqcService;
@@ -24,6 +25,7 @@ describe('OqcService', () => {
   let mockDataSource: DeepMocked<DataSource>;
   let mockTx: DeepMocked<TransactionService>;
   let mockQr: DeepMocked<QueryRunner>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockOqcRepo = createMock<Repository<OqcRequest>>();
@@ -41,6 +43,8 @@ describe('OqcService', () => {
     mockQr.rollbackTransaction.mockResolvedValue(undefined);
     mockQr.release.mockResolvedValue(undefined);
 
+    mockNumbering = createMock<NumberingService>();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OqcService,
@@ -50,6 +54,7 @@ describe('OqcService', () => {
         { provide: getRepositoryToken(ItemMaster), useValue: mockPartRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<OqcService>(OqcService);

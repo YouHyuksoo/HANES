@@ -30,6 +30,13 @@ interface NumRule {
 export class NumRuleService {
   constructor(private readonly tx: TransactionService) {}
 
+  /** 로컬(서버 타임존) 기준 YYYY-MM-DD 문자열 */
+  private localDay(d: Date): string {
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${mm}-${dd}`;
+  }
+
   /**
    * 독립 트랜잭션으로 다음 번호 생성 (트랜잭션 없이 호출 가능)
    * — 내부에서 자체 QueryRunner 생성 → COMMIT → 해제
@@ -81,16 +88,17 @@ export class NumRuleService {
     const rule = rows[0];
     const now = new Date();
 
-    // 2) 리셋 판단
+    // 2) 리셋 판단 — 로컬 날짜 기준 (패턴 치환의 {YYYY}{MM}{DD}도 로컬 날짜이므로
+    //    UTC(toISOString) 비교 시 09:00 KST에 카운터만 리셋되어 같은 날짜로 중복 번호가 생긴다)
     let needReset = false;
     if (rule.LAST_RESET) {
       const last = new Date(rule.LAST_RESET);
       switch (rule.RESET_TYPE) {
         case 'DAILY':
-          needReset = last.toISOString().slice(0, 10) !== now.toISOString().slice(0, 10);
+          needReset = this.localDay(last) !== this.localDay(now);
           break;
         case 'MONTHLY':
-          needReset = last.toISOString().slice(0, 7) !== now.toISOString().slice(0, 7);
+          needReset = this.localDay(last).slice(0, 7) !== this.localDay(now).slice(0, 7);
           break;
         case 'YEARLY':
           needReset = last.getFullYear() !== now.getFullYear();

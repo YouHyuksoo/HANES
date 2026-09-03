@@ -58,7 +58,7 @@ const DEFAULT_TEMPLATE_KEY = "__default__";
 
 export default function ArrivalResultPage() {
   const { t } = useTranslation();
-  const { options: mfgPartnerOptions } = usePartnerOptions("MFG");
+  const { options: mfgPartnerOptions } = usePartnerOptions("MFG", { includeInactive: true });
 
   // 필터
   const [fromDate, setFromDate] = useState(() => getTodayLocal());

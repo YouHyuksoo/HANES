@@ -247,6 +247,9 @@
   "menu": {
     "dashboard": "Dashboard",
     "workflow": "Workflow",
+    "favorites": "Favorites",
+    "favorites.add": "Add to favorites",
+    "favorites.remove": "Remove from favorites",
     "monitoring": "Monitoring",
     "monitoring.prodBoard": "Production Board",
     "monitoring.qualityBoard": "Quality Board",

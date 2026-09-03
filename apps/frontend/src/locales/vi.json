@@ -247,6 +247,9 @@
   "menu": {
     "dashboard": "Bảng điều khiển",
     "workflow": "Quy trình",
+    "favorites": "Mục yêu thích",
+    "favorites.add": "Thêm vào mục yêu thích",
+    "favorites.remove": "Xóa khỏi mục yêu thích",
     "monitoring": "Giám sát",
     "monitoring.prodBoard": "Bảng tình hình sản xuất",
     "monitoring.qualityBoard": "Bảng chất lượng",

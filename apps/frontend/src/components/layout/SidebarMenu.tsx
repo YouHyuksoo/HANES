@@ -10,7 +10,7 @@
  * 3. **비활성 메뉴**: opacity-40 + cursor-not-allowed, 클릭 무시
  * 4. **부모 메뉴**: 하위 중 하나라도 허용이면 펼침 가능
  */
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Star } from "lucide-react";
 import type { MenuConfigItem } from "@/config/menuConfig";
 import { useTabStore } from "@/stores/tabStore";
 import { navigateClientOnly } from "./clientNavigation";
@@ -26,12 +26,38 @@ interface SidebarMenuProps {
   isMenuDisabled: (item: MenuConfigItem) => boolean;
   onClose?: () => void;
   t: (key: string) => string;
+  /** 즐겨찾기 여부 판별 (미전달 시 별 토글 미표시) */
+  isFavorite?: (menuCode: string) => boolean;
+  /** 즐겨찾기 토글 핸들러 (미전달 시 별 토글 미표시) */
+  onToggleFavorite?: (menuCode: string) => void;
 }
 
 export default function SidebarMenu({
   items, collapsed, pathname, expandedMenus, onToggleMenu, isMenuActive, isMenuDisabled, onClose, t,
+  isFavorite, onToggleFavorite,
 }: SidebarMenuProps) {
   const addTab = useTabStore((s) => s.addTab);
+
+  /** leaf 우측 별(★) 토글 — 버튼 안 중첩 버튼 금지라 span으로 렌더 */
+  const renderFavoriteToggle = (menuCode: string) => {
+    if (collapsed || !onToggleFavorite) return null;
+    const favorited = isFavorite?.(menuCode) ?? false;
+    return (
+      <span
+        role="button"
+        tabIndex={-1}
+        title={t(favorited ? "menu.favorites.remove" : "menu.favorites.add")}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleFavorite(menuCode);
+        }}
+        className={`flex-shrink-0 transition-opacity ${favorited ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+      >
+        <Star className={`w-3.5 h-3.5 ${favorited ? "fill-amber-400 text-amber-400" : ""}`} />
+      </span>
+    );
+  };
 
   const handleMenuClick = (
     e: React.MouseEvent,
@@ -79,14 +105,15 @@ export default function SidebarMenu({
                   onClick={(e) => handleMenuClick(e, item as { code: string; path: string; labelKey: string }, item.code)}
                   title={collapsed ? t(item.labelKey) : undefined}
                   className={`
-                    flex w-full items-center gap-3 py-1.5 rounded-[var(--radius)]
+                    group flex w-full items-center gap-3 py-1.5 rounded-[var(--radius)]
                     text-sm font-medium transition-colors duration-200
                     ${collapsed ? "justify-center px-0" : "px-3"}
                     ${pathname === item.path ? "bg-primary text-white" : "text-text hover:bg-background"}
                   `}
                 >
                   {item.icon && <item.icon className="w-5 h-5 flex-shrink-0" />}
-                  {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
+                  {!collapsed && <span className="flex-1 truncate text-left">{t(item.labelKey)}</span>}
+                  {renderFavoriteToggle(item.code)}
                 </button>
               )
             ) : (
@@ -132,14 +159,15 @@ export default function SidebarMenu({
                               type="button"
                               onClick={(e) => handleMenuClick(e, child as { code: string; path: string; labelKey: string }, item.code)}
                               className={`
-                                block w-full px-3 py-2 rounded-[var(--radius)] text-left text-sm transition-colors duration-200
+                                group flex w-full items-center gap-2 px-3 py-2 rounded-[var(--radius)] text-left text-sm transition-colors duration-200
                                 ${pathname === child.path
                                   ? "bg-primary text-white"
                                   : "text-text-muted hover:text-text hover:bg-background"
                                 }
                               `}
                             >
-                              {t(child.labelKey)}
+                              <span className="flex-1 truncate">{t(child.labelKey)}</span>
+                              {renderFavoriteToggle(child.code)}
                             </button>
                           )}
                         </li>

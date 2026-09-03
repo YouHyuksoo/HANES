@@ -10,17 +10,21 @@ import { Repository } from 'typeorm';
 import { ComplaintService } from './complaint.service';
 import { CustomerComplaint } from '../../../../entities/customer-complaint.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { NumberingService } from '../../../../shared/numbering.service';
 
 describe('ComplaintService', () => {
   let target: ComplaintService;
   let mockRepo: DeepMocked<Repository<CustomerComplaint>>;
+  let mockNumbering: DeepMocked<NumberingService>;
 
   beforeEach(async () => {
     mockRepo = createMock<Repository<CustomerComplaint>>();
+    mockNumbering = createMock<NumberingService>();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ComplaintService,
         { provide: getRepositoryToken(CustomerComplaint), useValue: mockRepo },
+        { provide: NumberingService, useValue: mockNumbering },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ComplaintService>(ComplaintService);

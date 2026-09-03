@@ -104,7 +104,7 @@ export default function ProgressPage() {
                 <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
               <div className="w-48 flex-shrink-0">
-                <EquipSelect labelPrefix={t('production.order.equip', '설비')} value={equipFilter} onChange={setEquipFilter} fullWidth />
+                <EquipSelect labelPrefix={t('production.order.equip', '설비')} value={equipFilter} onChange={setEquipFilter} includeInactive fullWidth />
               </div>
               <div className="w-44 flex-shrink-0">
                 <Select options={[{ value: '', label: t('common.all') }, ...shiftOptions]} value={shiftFilter} onChange={setShiftFilter} fullWidth />

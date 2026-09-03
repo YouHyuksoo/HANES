@@ -121,8 +121,10 @@ describe('ProdPlanService', () => {
       getOne: jest.fn().mockResolvedValue(null),
     } as any;
     planRepo.createQueryBuilder.mockReturnValue(qb);
-    planRepo.create.mockReturnValue({ planNo: 'PP-202603-001', company: 'C1', plant: 'P1' } as any);
-    planRepo.save.mockResolvedValue({ planNo: 'PP-202603-001', company: 'C1', plant: 'P1' } as any);
+    numbering.nextProdPlanNo.mockResolvedValue('PP-202603-001');
+    // 채번 락 유지를 위해 create/save가 queryRunner.manager로 이동함
+    queryRunner.manager.create.mockReturnValue({ planNo: 'PP-202603-001', company: 'C1', plant: 'P1' } as any);
+    queryRunner.manager.save.mockResolvedValue({ planNo: 'PP-202603-001', company: 'C1', plant: 'P1' } as any);
     planRepo.findOne.mockResolvedValue({ planNo: 'PP-202603-001', company: 'C1', plant: 'P1' } as any);
 
     await service.create({

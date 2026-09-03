@@ -15,3 +15,8 @@ export function requiresIqcAqlPolicy(iqcYn?: string | null, inspectMethod?: stri
   const isIqcTarget = (iqcYn ?? 'Y').trim().toUpperCase() === 'Y';
   return isIqcTarget && !isIqcNoInspectionMethod(inspectMethod);
 }
+
+/** IQC 면제 여부 — iqcYn='N' 이거나 무검사 방법(SKIP/NONE)이면 면제 */
+export function isIqcExempt(iqcYn?: string | null, inspectMethod?: string | null): boolean {
+  return (iqcYn ?? 'Y').trim().toUpperCase() !== 'Y' || isIqcNoInspectionMethod(inspectMethod);
+}

@@ -15,10 +15,12 @@ import { useWorkerOptions } from "@/hooks/useMasterOptions";
 interface WorkerSelectProps extends Omit<SelectProps, "options"> {
   /** 필터용: 모든 옵션 라벨 앞에 접두어 추가 + "전체" 옵션 자동 추가 */
   labelPrefix?: string;
+  /** 이력 조회 필터용: 미사용(useYn='N') 작업자도 포함 */
+  includeInactive?: boolean;
 }
 
-export default function WorkerSelect({ labelPrefix, ...props }: WorkerSelectProps) {
-  const { options, isLoading } = useWorkerOptions();
+export default function WorkerSelect({ labelPrefix, includeInactive, ...props }: WorkerSelectProps) {
+  const { options, isLoading } = useWorkerOptions(undefined, { includeInactive });
   const finalOptions = useMemo(() => {
     if (!labelPrefix) return options;
     return [
