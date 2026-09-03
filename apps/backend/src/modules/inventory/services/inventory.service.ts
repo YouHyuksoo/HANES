@@ -419,18 +419,12 @@ export class InventoryService {
 
         if (stock) {
           this.assertSameTenant('취소 대상 재고', { company: originalTrans.company ?? company, plant: originalTrans.plant ?? plant }, stock);
-          const newQty = stock.qty - Math.abs(originalTrans.qty);
-          if (newQty < 0) {
-            throw new BadRequestException('재고가 부족하여 취소할 수 없습니다.');
-          }
-          await queryRunner.manager.update(MatStock,
-            {
-              warehouseCode: stock.warehouseCode,
-              itemCode: stock.itemCode,
-              matUid: stock.matUid,
-              ...txTenantWhere,
-            },
-            { qty: newQty, availableQty: newQty - stock.reservedQty },
+          await this.decrementStockAtomically(
+            queryRunner,
+            stock,
+            Math.abs(originalTrans.qty),
+            originalTrans.company ?? company,
+            originalTrans.plant ?? plant,
           );
         }
       }
@@ -448,27 +442,12 @@ export class InventoryService {
 
         if (stock) {
           this.assertSameTenant('복구 대상 재고', { company: originalTrans.company ?? company, plant: originalTrans.plant ?? plant }, stock);
-          await queryRunner.manager.update(MatStock,
-            {
-              warehouseCode: stock.warehouseCode,
-              itemCode: stock.itemCode,
-              matUid: stock.matUid,
-              ...txTenantWhere,
-            },
-            { qty: stock.qty + Math.abs(originalTrans.qty), availableQty: stock.availableQty + Math.abs(originalTrans.qty) },
-          );
-        } else {
-          await queryRunner.manager.save(MatStock, {
-            warehouseCode: originalTrans.fromWarehouseId,
-            itemCode: originalTrans.itemCode,
-            matUid: originalTrans.matUid || null,
-            qty: Math.abs(originalTrans.qty),
-            reservedQty: 0,
-            availableQty: Math.abs(originalTrans.qty),
-            company: originalTrans.company || company || null,
-            plant: originalTrans.plant || plant || null,
-          });
         }
+        await this.incrementOrCreateStockAtomically(queryRunner, {
+          warehouseCode: originalTrans.fromWarehouseId,
+          itemCode: originalTrans.itemCode,
+          matUid: originalTrans.matUid,
+        }, Math.abs(originalTrans.qty), originalTrans.company ?? company, originalTrans.plant ?? plant);
       }
 
       // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리

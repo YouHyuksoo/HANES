@@ -20,6 +20,7 @@ describe('MatOutRequestService', () => {
   let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
   let numbering: DeepMocked<NumberingService>;
+  let stockQb: any;
 
   beforeEach(async () => {
     stockTxRepo = createMock<Repository<StockTransaction>>();
@@ -29,6 +30,10 @@ describe('MatOutRequestService', () => {
     tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
     numbering = createMock<NumberingService>();
+    stockQb = {
+      update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
     tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
@@ -38,6 +43,7 @@ describe('MatOutRequestService', () => {
     queryRunner.rollbackTransaction.mockResolvedValue(undefined);
     queryRunner.release.mockResolvedValue(undefined);
     numbering.nextInTx.mockResolvedValue('TX-001');
+    queryRunner.manager.createQueryBuilder.mockReturnValue(stockQb);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -94,10 +100,11 @@ describe('MatOutRequestService', () => {
         outType: 'SCRAP',
       });
 
-      expect(queryRunner.manager.update).toHaveBeenCalledWith(
-        MatStock,
+      expect(stockQb.andWhere).toHaveBeenCalledWith('"AVAILABLE_QTY" >= :stockDelta');
+      expect(stockQb.setParameters).toHaveBeenCalledWith({ stockDelta: 3 });
+
+      expect(stockQb.where).toHaveBeenCalledWith(
         { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001' },
-        expect.objectContaining({ reservedQty: 5, availableQty: 5 }),
       );
       expect(tx.run).toHaveBeenCalledTimes(1);
       expect(dataSource.createQueryRunner).not.toHaveBeenCalled();

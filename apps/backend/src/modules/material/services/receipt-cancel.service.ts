@@ -180,10 +180,16 @@ export class ReceiptCancelService {
       this.assertSameTenant(stock, originalTransaction.company, originalTransaction.plant, '입고취소 대상 재고');
 
       // 재고 차감
-      await queryRunner.manager.update(MatStock,
-        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...txTenantWhere },
-        { qty: stock.qty - qty, availableQty: stock.availableQty - qty },
-      );
+      const decreased = await queryRunner.manager.createQueryBuilder()
+        .update(MatStock)
+        .set({ qty: () => '"QTY" - :stockDelta', availableQty: () => '"AVAILABLE_QTY" - :stockDelta' })
+        .where({ warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...txTenantWhere })
+        .andWhere('"QTY" >= :stockDelta AND "AVAILABLE_QTY" >= :stockDelta')
+        .setParameters({ stockDelta: qty })
+        .execute();
+      if ((decreased.affected ?? 0) !== 1) {
+        throw new BadRequestException('동시 처리로 재고가 변경되었거나 취소할 가용재고가 부족합니다. 다시 조회해 주세요.');
+      }
 
       await this.restoreArrivalStock(queryRunner, originalTransaction, qty);
 
@@ -252,19 +258,16 @@ export class ReceiptCancelService {
       throw new BadRequestException(`입하재고를 찾을 수 없습니다. LOT: ${originalTransaction.matUid}`);
     }
 
-    await queryRunner.manager.update(
-      MatArrivalStock,
-      {
-        company: arrivalStock.company,
-        plant: arrivalStock.plant,
-        matUid: arrivalStock.matUid,
-      },
-      {
-        qty: arrivalStock.qty + qty,
-        availableQty: arrivalStock.availableQty + qty,
+    await queryRunner.manager.createQueryBuilder()
+      .update(MatArrivalStock)
+      .set({
+        qty: () => '"QTY" + :stockDelta',
+        availableQty: () => '"AVAILABLE_QTY" + :stockDelta',
         status: 'AVAILABLE',
-      },
-    );
+      })
+      .where({ company: arrivalStock.company, plant: arrivalStock.plant, matUid: arrivalStock.matUid })
+      .setParameters({ stockDelta: qty })
+      .execute();
   }
 
   private async markReceivingCanceled(

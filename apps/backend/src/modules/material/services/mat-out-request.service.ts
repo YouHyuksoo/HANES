@@ -106,20 +106,25 @@ export class MatOutRequestService {
       });
       await queryRunner.manager.save(tx);
 
-      await queryRunner.manager.update(
-        MatStock,
-        {
+      const reserved = await queryRunner.manager.createQueryBuilder()
+        .update(MatStock)
+        .set({
+          reservedQty: () => '"RESERVED_QTY" + :stockDelta',
+          availableQty: () => '"AVAILABLE_QTY" - :stockDelta',
+        })
+        .where({
           warehouseCode: stock.warehouseCode,
           itemCode: dto.itemCode,
           matUid: dto.matUid,
           ...(dto.company ? { company: dto.company } : {}),
           ...(dto.plant ? { plant: dto.plant } : {}),
-        },
-        {
-          reservedQty: (stock.reservedQty ?? 0) + dto.qty,
-          availableQty: Math.max(0, (stock.availableQty ?? stock.qty - (stock.reservedQty ?? 0)) - dto.qty),
-        },
-      );
+        })
+        .andWhere('"AVAILABLE_QTY" >= :stockDelta')
+        .setParameters({ stockDelta: dto.qty })
+        .execute();
+      if ((reserved.affected ?? 0) !== 1) {
+        throw new BadRequestException('동시 요청으로 가용재고가 변경되었습니다. 다시 조회해 주세요.');
+      }
 
       return tx;
     });

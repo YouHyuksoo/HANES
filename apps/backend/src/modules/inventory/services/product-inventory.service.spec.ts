@@ -302,14 +302,13 @@ describe('ProductInventoryService', () => {
         { transNo: 'PTX001', company: 'C1', plant: 'P1' },
         { status: 'CANCELED' },
       );
+      expect(mockStockQb.where).toHaveBeenCalledWith({
+        warehouseCode: 'WH', itemCode: 'FG', qualityStatus: 'GOOD', company: 'C1', plant: 'P1',
+      });
+      expect(mockStockQb.setParameters).toHaveBeenCalledWith({ stockDelta: 10 });
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
         where: { warehouseCode: 'WH', itemCode: 'FG', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
       });
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        ProductStock,
-        { warehouseCode: 'WH', itemCode: 'FG', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
-        expect.objectContaining({ qty: 30, availableQty: 30 }),
-      );
     });
 
     it('keeps FG label boxNo when canceling a box warehouse receipt', async () => {

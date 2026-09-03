@@ -570,6 +570,10 @@ describe('InventoryService', () => {
       // Assert
       expect(result.transType).toBe('MAT_IN_CANCEL');
       expect(mockTransactionService.run).toHaveBeenCalledTimes(1);
+      expect(mockStockUpdateQueryBuilder.andWhere).toHaveBeenCalledWith(
+        '"QTY" >= :stockDelta AND "AVAILABLE_QTY" >= :stockDelta',
+      );
+      expect(mockStockUpdateQueryBuilder.setParameters).toHaveBeenCalledWith({ stockDelta: 100 });
     });
 
     it('should throw NotFoundException when original transaction not found', async () => {

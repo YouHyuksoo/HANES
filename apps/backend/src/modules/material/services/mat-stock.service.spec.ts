@@ -33,6 +33,7 @@ describe('MatStockService', () => {
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockTx: DeepMocked<TransactionService>;
+  let stockQb: any;
 
   const createStock = (overrides: Partial<MatStock> = {}): MatStock =>
     ({
@@ -59,6 +60,10 @@ describe('MatStockService', () => {
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockTx = createMock<TransactionService>();
+    stockQb = {
+      update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
@@ -67,6 +72,7 @@ describe('MatStockService', () => {
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
     mockQueryRunner.rollbackTransaction.mockResolvedValue(undefined);
     mockQueryRunner.release.mockResolvedValue(undefined);
+    mockQueryRunner.manager.createQueryBuilder.mockReturnValue(stockQb);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -481,6 +487,8 @@ describe('MatStockService', () => {
 
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(stockQb.andWhere).toHaveBeenCalledWith('"QTY" >= :stockDelta AND "AVAILABLE_QTY" >= :stockDelta');
+      expect(stockQb.setParameters).toHaveBeenCalledWith({ stockDelta: 20 });
     });
 
     it('재고 이동은 요청 테넌트 범위에서 출고/입고 재고를 조회하고 갱신한다', async () => {
@@ -519,15 +527,11 @@ describe('MatStockService', () => {
       expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(2, MatStock, {
         where: { itemCode: 'ITEM-001', warehouseCode: 'WH-TO', matUid: 'MAT-001', company: 'C1', plant: 'P1' },
       });
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        MatStock,
+      expect(stockQb.where).toHaveBeenCalledWith(
         { warehouseCode: 'WH-FROM', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'C1', plant: 'P1' },
-        expect.objectContaining({ qty: 80, availableQty: 80 }),
       );
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        MatStock,
+      expect(stockQb.where).toHaveBeenCalledWith(
         { warehouseCode: 'WH-TO', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'C1', plant: 'P1' },
-        expect.objectContaining({ qty: 70, availableQty: 70 }),
       );
     });
 

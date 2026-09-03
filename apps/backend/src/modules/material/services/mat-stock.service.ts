@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In, FindOptionsWhere, IsNull } from 'typeorm';
+import { Repository, DataSource, In, FindOptionsWhere, IsNull, QueryRunner } from 'typeorm';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
@@ -38,6 +38,22 @@ export class MatStockService {
     private readonly dataSource: DataSource,
     private readonly tx: TransactionService,
   ) {}
+
+  private async changeStockAtomically(
+    qr: QueryRunner,
+    key: FindOptionsWhere<MatStock>,
+    delta: number,
+    requireAvailable: boolean,
+  ) {
+    const qb = qr.manager.createQueryBuilder().update(MatStock).set({
+      qty: () => `"QTY" ${delta < 0 ? '-' : '+'} :stockDelta`,
+      availableQty: () => `"AVAILABLE_QTY" ${delta < 0 ? '-' : '+'} :stockDelta`,
+    }).where(key);
+    if (requireAvailable) {
+      qb.andWhere('"QTY" >= :stockDelta AND "AVAILABLE_QTY" >= :stockDelta');
+    }
+    return qb.setParameters({ stockDelta: Math.abs(delta) }).execute();
+  }
 
   private tenantWhere(company?: string | null, plant?: string | null) {
     return {
@@ -402,16 +418,15 @@ export class MatStockService {
         this.assertSameTenant('입고 재고', { company, plant }, toStock);
       }
 
-      await queryRunner.manager.update(MatStock,
-        { warehouseCode: fromStock.warehouseCode, itemCode: fromStock.itemCode, matUid: fromStock.matUid, ...tenantWhere },
-        { qty: fromStock.qty - qty, availableQty: fromStock.availableQty - qty },
-      );
+      const fromKey = { warehouseCode: fromStock.warehouseCode, itemCode: fromStock.itemCode, matUid: fromStock.matUid, ...tenantWhere };
+      const decreased = await this.changeStockAtomically(queryRunner, fromKey, -qty, true);
+      if ((decreased.affected ?? 0) !== 1) {
+        throw new BadRequestException('동시 처리로 출고 재고가 변경되었거나 가용재고가 부족합니다. 다시 조회해 주세요.');
+      }
 
       if (toStock) {
-        await queryRunner.manager.update(MatStock,
-          { warehouseCode: toStock.warehouseCode, itemCode: toStock.itemCode, matUid: toStock.matUid, ...tenantWhere },
-          { qty: toStock.qty + qty, availableQty: toStock.availableQty + qty },
-        );
+        await this.changeStockAtomically(queryRunner,
+          { warehouseCode: toStock.warehouseCode, itemCode: toStock.itemCode, matUid: toStock.matUid, ...tenantWhere }, qty, false);
         toStock = await queryRunner.manager.findOne(MatStock, {
           where: { warehouseCode: toStock.warehouseCode, itemCode: toStock.itemCode, matUid: toStock.matUid, ...tenantWhere },
         });

@@ -37,6 +37,7 @@ describe('ReceiptCancelService', () => {
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
   let mockTx: DeepMocked<TransactionService>;
+  let stockQb: any;
 
   beforeEach(async () => {
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
@@ -55,6 +56,10 @@ describe('ReceiptCancelService', () => {
     mockQueryRunner = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
     mockTx = createMock<TransactionService>();
+    stockQb = {
+      update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
@@ -63,6 +68,7 @@ describe('ReceiptCancelService', () => {
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
     mockQueryRunner.rollbackTransaction.mockResolvedValue(undefined);
     mockQueryRunner.release.mockResolvedValue(undefined);
+    mockQueryRunner.manager.createQueryBuilder.mockReturnValue(stockQb);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -197,6 +203,8 @@ describe('ReceiptCancelService', () => {
       expect(result.cancelled).toBe(true);
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
+      expect(stockQb.andWhere).toHaveBeenCalledWith('"QTY" >= :stockDelta AND "AVAILABLE_QTY" >= :stockDelta');
+      expect(stockQb.setParameters).toHaveBeenCalledWith({ stockDelta: 10 });
     });
 
     it('입고취소는 원거래 회사/공장 범위에서 재고와 원거래를 갱신한다', async () => {
@@ -257,17 +265,10 @@ describe('ReceiptCancelService', () => {
           plant: 'P01',
         },
       });
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        MatStock,
-        {
-          warehouseCode: 'WH-01',
-          itemCode: 'ITEM-001',
-          matUid: 'MAT-001',
-          company: 'HANES',
-          plant: 'P01',
-        },
-        { qty: 40, availableQty: 40 },
-      );
+      expect(stockQb.update).toHaveBeenCalledWith(MatStock);
+      expect(stockQb.where).toHaveBeenCalledWith({
+        warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01',
+      });
       expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
         StockTransaction,
         expect.objectContaining({ company: 'HANES', plant: 'P01' }),
@@ -333,11 +334,8 @@ describe('ReceiptCancelService', () => {
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(MatArrivalStock, {
         where: { matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' },
       });
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        MatArrivalStock,
-        { company: 'HANES', plant: 'P01', matUid: 'MAT-001' },
-        { qty: 10, availableQty: 10, status: 'AVAILABLE' },
-      );
+      expect(stockQb.update).toHaveBeenCalledWith(MatArrivalStock);
+      expect(stockQb.where).toHaveBeenCalledWith({ company: 'HANES', plant: 'P01', matUid: 'MAT-001' });
     });
 
     it('뒤 공정이 진행된 LOT는 입고취소를 차단한다', async () => {

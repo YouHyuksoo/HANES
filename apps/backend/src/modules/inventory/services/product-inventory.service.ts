@@ -747,16 +747,18 @@ export class ProductInventoryService {
 
       if (stock) {
         this.assertSameTenant('취소 대상 제품재고', originalTrans, stock);
-        const newQty = stock.qty - Math.abs(originalTrans.qty);
-        if (newQty < 0) {
-          throw new BadRequestException('재고가 부족하여 취소할 수 없습니다.');
-        }
         const stockKey = { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, qualityStatus, ...tenantWhere };
+        await this.decrementStockAtomically(qr, {
+          warehouseId: stock.warehouseCode,
+          itemCode: stock.itemCode,
+          qualityStatus,
+          qty: Math.abs(originalTrans.qty),
+          company: originalTrans.company,
+          plant: originalTrans.plant,
+        } as ProductIssueStockDto);
         // 입고 취소로 수량이 0이 되고 예약도 없으면 빈 행을 남기지 않는다(qty0 잔재 방지).
-        if (newQty === 0 && stock.reservedQty === 0) {
-          await qr.manager.delete(ProductStock, stockKey);
-        } else {
-          await qr.manager.update(ProductStock, stockKey, { qty: newQty, availableQty: newQty - stock.reservedQty });
+        if (stock.qty - Math.abs(originalTrans.qty) === 0 && stock.reservedQty === 0) {
+          await qr.manager.delete(ProductStock, { ...stockKey, qty: 0, reservedQty: 0 });
         }
       }
     }
@@ -775,24 +777,18 @@ export class ProductInventoryService {
 
       if (stock) {
         this.assertSameTenant('복구 대상 제품재고', originalTrans, stock);
-        await qr.manager.update(ProductStock,
-          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, qualityStatus, ...tenantWhere },
-          { qty: stock.qty + Math.abs(originalTrans.qty), availableQty: stock.availableQty + Math.abs(originalTrans.qty) },
-        );
-      } else {
-        await qr.manager.save(ProductStock, {
-          warehouseCode: originalTrans.fromWarehouseId,
-          itemCode: originalTrans.itemCode,
-          qualityStatus,
-          itemType: originalTrans.itemType || 'SEMI_PRODUCT',
-          prdUid: originalTrans.prdUid ?? null,
-          qty: Math.abs(originalTrans.qty),
-          reservedQty: 0,
-          availableQty: Math.abs(originalTrans.qty),
-          company: originalTrans.company,
-          plant: originalTrans.plant,
-        });
       }
+      await this.incrementOrCreateStockAtomically(qr, {
+        warehouseId: originalTrans.fromWarehouseId,
+        itemCode: originalTrans.itemCode,
+        qualityStatus,
+        itemType: originalTrans.itemType || 'SEMI_PRODUCT',
+        prdUid: originalTrans.prdUid ?? undefined,
+        qty: Math.abs(originalTrans.qty),
+        transType: cancelTransType,
+        company: originalTrans.company,
+        plant: originalTrans.plant,
+      } as ProductReceiveStockDto);
     }
 
     return savedCancelTrans;
