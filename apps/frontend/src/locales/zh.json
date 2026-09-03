@@ -241,7 +241,13 @@
         "reasonIqcHold": "IQC保留",
         "reasonDefect": "不良"
       },
-      "jobOrder": { "title": "工单进度看板" }
+      "jobOrder": {
+        "title": "工单进度看板",
+        "defectRate": "不良率",
+        "remaining": "剩余",
+        "continued": "续",
+        "more": "另 {{n}} 件"
+      }
     }
   },
   "menu": {

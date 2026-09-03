@@ -15,6 +15,15 @@ export interface ProductionBoardOrder {
   goodQty: number;
   defectQty: number;
   achieveRate: number;
+  priority: number;
+  /** ISO 문자열 (JSON 직렬화) — 작업 시작 시각 */
+  startAt: string | null;
+  /** 작업 완료 시각 */
+  endAt: string | null;
+  /** 마지막 상태 변경 시각 (HOLD 경과 계산용) */
+  updatedAt: string | null;
+  /** 이 지시의 마지막 실적 등록 시각 (정체 판정용) */
+  lastResultAt: string | null;
 }
 
 export interface ProductionBoardKpi {

@@ -241,7 +241,13 @@
         "reasonIqcHold": "IQC 보류",
         "reasonDefect": "불량"
       },
-      "jobOrder": { "title": "작업지시 진행 보드" }
+      "jobOrder": {
+        "title": "작업지시 진행 보드",
+        "defectRate": "불량률",
+        "remaining": "잔량",
+        "continued": "계속",
+        "more": "외 {{n}}건"
+      }
     }
   },
   "menu": {

@@ -241,7 +241,13 @@
         "reasonIqcHold": "IQC Hold",
         "reasonDefect": "Defect"
       },
-      "jobOrder": { "title": "Job Order Progress Board" }
+      "jobOrder": {
+        "title": "Job Order Progress Board",
+        "defectRate": "Defect rate",
+        "remaining": "Remaining",
+        "continued": "cont.",
+        "more": "+{{n}} more"
+      }
     }
   },
   "menu": {

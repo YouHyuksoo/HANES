@@ -241,7 +241,13 @@
         "reasonIqcHold": "IQC giữ lại",
         "reasonDefect": "Lỗi"
       },
-      "jobOrder": { "title": "Bảng tiến độ lệnh sản xuất" }
+      "jobOrder": {
+        "title": "Bảng tiến độ lệnh sản xuất",
+        "defectRate": "Tỷ lệ lỗi",
+        "remaining": "Còn lại",
+        "continued": "tiếp",
+        "more": "+{{n}} lệnh"
+      }
     }
   },
   "menu": {

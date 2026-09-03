@@ -3,11 +3,12 @@
 /**
  * @file src/app/(authenticated)/monitoring/job-order-board/page.tsx
  * @description 작업지시 보드(읽기전용, 현장 TV) — 오늘 지시일 작업지시를 스킨 3종으로 전환:
- *              A 스윔레인(다크 네온, 공정 레인) / B 링 월(앰버 모노, 달성률 도넛) / C 퍼널(다크 편집, 상태 4단계).
+ *              A 레저(공정 밴드 + 지시 장부) / B 스코어보드(지시당 계획·실적·불량 거대 숫자) / C 게이지 월(공정별 적층 게이지).
+ *              주축은 공정 → 작업지시번호, 지표는 계획/실적/불량과 그 파생(달성률·불량률·잔량)만 쓴다(components/metrics.ts).
  *
  * 초보자 가이드:
  * 1. 데이터는 생산현황 보드 API(GET /monitoring/boards/production)의 orders 를 재사용
- * 2. 스킨/TV모드/플로팅 컨트롤은 공통 BoardSkinFrame + useBoardSkin 이 담당 (5개 보드 동일)
+ * 2. 스킨/TV모드/플로팅 컨트롤은 공통 BoardSkinFrame + useBoardSkin (5개 보드 동일)
  * 3. 드래그 상태변경 없음 — 조작은 기존 작업지시 화면에서 한다
  */
 
@@ -17,26 +18,26 @@ import {
   BoardSkinFrame, MonitoringSettingsModal, useBoardSkin, useMonitoringConfig, useTvMode,
   type BoardSkinOption,
 } from "@/components/monitoring";
-import SwimlaneSkin from "./components/skins/SwimlaneSkin";
-import RingWallSkin from "./components/skins/RingWallSkin";
-import FunnelSkin from "./components/skins/FunnelSkin";
+import LedgerSkin from "./components/skins/LedgerSkin";
+import ScoreboardSkin from "./components/skins/ScoreboardSkin";
+import GaugeWallSkin from "./components/skins/GaugeWallSkin";
 import { JOB_STATUSES, type JobStatus, type ProductionBoardOrder } from "./components/types";
 import type { ProductionBoardData } from "../production-board/components/types";
 
-type SkinId = "swimlane" | "ringwall" | "funnel";
+type SkinId = "ledger" | "scoreboard" | "gauge";
 
-const SKIN_IDS = ["swimlane", "ringwall", "funnel"] as const;
+const SKIN_IDS = ["ledger", "scoreboard", "gauge"] as const;
 const SKINS: BoardSkinOption<SkinId>[] = [
-  { id: "swimlane", label: "A", title: "스윔레인" },
-  { id: "ringwall", label: "B", title: "링 월" },
-  { id: "funnel", label: "C", title: "퍼널" },
+  { id: "ledger", label: "A", title: "레저" },
+  { id: "scoreboard", label: "B", title: "스코어보드" },
+  { id: "gauge", label: "C", title: "게이지 월" },
 ];
 
 export default function JobOrderBoardPage() {
   const { config, setConfig, loaded } = useMonitoringConfig("monitoring:job-order-board");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [paused, setPaused] = useState(false);
-  const { skin, setSkin } = useBoardSkin<SkinId>("monitoring:job-order-board:skin", SKIN_IDS, "swimlane");
+  const { skin, setSkin } = useBoardSkin<SkinId>("monitoring:job-order-board:skin", SKIN_IDS, "ledger");
   const { tvMode, toggleTvMode } = useTvMode();
 
   const { data: response, refetch, dataUpdatedAt } = useApiQuery<ProductionBoardData>(
@@ -78,9 +79,9 @@ export default function JobOrderBoardPage() {
         paused={paused}
         onTogglePause={() => setPaused((p) => !p)}
       >
-        {skin === "swimlane" && <SwimlaneSkin {...skinProps} />}
-        {skin === "ringwall" && <RingWallSkin {...skinProps} />}
-        {skin === "funnel" && <FunnelSkin {...skinProps} />}
+        {skin === "ledger" && <LedgerSkin {...skinProps} />}
+        {skin === "scoreboard" && <ScoreboardSkin {...skinProps} />}
+        {skin === "gauge" && <GaugeWallSkin {...skinProps} />}
       </BoardSkinFrame>
 
       <MonitoringSettingsModal

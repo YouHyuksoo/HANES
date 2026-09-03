@@ -5,7 +5,8 @@
  * 초보자 가이드:
  * 1. 모든 집계는 DB GROUP BY 로 수행한다 (N+1·메모리 집계 금지)
  * 2. "오늘" 기준은 Oracle TRUNC(SYSDATE) — 서버 로컬 날짜 (UTC 변환 금지)
- * 3. 작업지시 칸반 보드도 이 API 의 orders 를 status 별로 그룹핑해 재사용한다
+ * 3. 작업지시 보드도 이 API 의 orders 를 재사용한다. 정체/예상완료 계산에 쓰는
+ *    시각 필드(startAt/endAt/updatedAt/lastResultAt)는 여기서 한 번에 내려준다.
  */
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -24,6 +25,15 @@ export interface ProductionBoardOrder {
   goodQty: number;
   defectQty: number;
   achieveRate: number;
+  priority: number;
+  /** 작업 시작 시각 (RUNNING 전환 시각) */
+  startAt: Date | null;
+  /** 작업 완료 시각 */
+  endAt: Date | null;
+  /** 마지막 상태 변경 시각 — HOLD 경과시간 계산용 */
+  updatedAt: Date | null;
+  /** 이 지시의 마지막 실적 등록 시각 — 정체(실적 없음) 판정용 */
+  lastResultAt: Date | null;
 }
 
 interface OrderRaw {
@@ -36,6 +46,11 @@ interface OrderRaw {
   planQty: string | number;
   goodQty: string | number;
   defectQty: string | number;
+  priority: string | number | null;
+  startAt: Date | null;
+  endAt: Date | null;
+  updatedAt: Date | null;
+  lastResultAt: Date | null;
 }
 
 interface HourlyRaw {
@@ -87,7 +102,17 @@ export class ProductionBoardService {
         'jo.planQty AS "planQty"',
         'jo.goodQty AS "goodQty"',
         'jo.defectQty AS "defectQty"',
+        'jo.priority AS "priority"',
+        'jo.startAt AS "startAt"',
+        'jo.endAt AS "endAt"',
+        'jo.updatedAt AS "updatedAt"',
       ])
+      // 지시별 마지막 실적 시각. 엔티티 별칭 jo 는 인용 표기("jo"."ORDER_NO")로 써야
+      // TypeORM 치환기와 무관하게 Oracle 이 대소문자 별칭을 올바로 해석한다.
+      .addSelect(
+        '(SELECT MAX(pr.CREATED_AT) FROM PROD_RESULTS pr WHERE pr.ORDER_NO = "jo"."ORDER_NO")',
+        'lastResultAt',
+      )
       .where('jo.planDate >= TRUNC(SYSDATE)')
       .andWhere('jo.planDate < TRUNC(SYSDATE) + 1')
       .andWhere("jo.status != 'CANCELED'")
@@ -116,6 +141,11 @@ export class ProductionBoardService {
         goodQty,
         defectQty: Number(r.defectQty ?? 0),
         achieveRate: planQty > 0 ? Math.round((goodQty / planQty) * 1000) / 10 : 0,
+        priority: Number(r.priority ?? 5),
+        startAt: r.startAt ?? null,
+        endAt: r.endAt ?? null,
+        updatedAt: r.updatedAt ?? null,
+        lastResultAt: r.lastResultAt ?? null,
       };
     });
   }
