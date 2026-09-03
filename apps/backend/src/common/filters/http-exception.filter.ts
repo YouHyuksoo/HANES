@@ -110,6 +110,26 @@ export class HttpExceptionFilter implements ExceptionFilter {
           `[DB 중복키 오류] ${exception.message}`,
           exception.stack,
         );
+      } else if (this.isRefNotFoundError(exception)) {
+        // ORA-02291 (부모 키 없음) → 400: 존재하지 않는 기준정보 코드를 참조하려는 입력
+        status = HttpStatus.BAD_REQUEST;
+        message = '존재하지 않는 기준정보 코드를 참조하고 있습니다. 코드를 확인해주세요.';
+        errorCode = 'REF_NOT_FOUND';
+
+        this.logger.error(
+          `[DB 참조 무결성 오류] ${exception.message}`,
+          exception.stack,
+        );
+      } else if (this.isRefInUseError(exception)) {
+        // ORA-02292 (자식 레코드 존재) → 409: 다른 데이터가 참조 중인 기준정보 삭제 시도
+        status = HttpStatus.CONFLICT;
+        message = '다른 데이터가 참조하고 있어 삭제할 수 없습니다. 참조 데이터를 먼저 정리해주세요.';
+        errorCode = 'REF_IN_USE';
+
+        this.logger.error(
+          `[DB 참조 삭제 거부] ${exception.message}`,
+          exception.stack,
+        );
       } else if (this.isDbQueryError(exception)) {
         // ORA-* SQL 오류 → 사용자에게 Oracle 원문을 노출하지 않는다
         status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -167,6 +187,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
   /** ORA-00001 unique constraint 위반 */
   private isDuplicateKeyError(error: Error): boolean {
     return (error.message || '').includes('ORA-00001');
+  }
+
+  /** ORA-02291 integrity constraint violated - parent key not found */
+  private isRefNotFoundError(error: Error): boolean {
+    return (error.message || '').includes('ORA-02291');
+  }
+
+  /** ORA-02292 integrity constraint violated - child record found */
+  private isRefInUseError(error: Error): boolean {
+    return (error.message || '').includes('ORA-02292');
   }
 
   /** 연결 오류 이외의 Oracle SQL 오류(ORA-xxxxx) — 원문 노출 방지 대상 */
