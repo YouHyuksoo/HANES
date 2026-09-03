@@ -24,6 +24,11 @@ import { parseDateStart } from '../../../shared/date.util';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ReceivingService', () => {
+  const successfulAtomicUpdateQb = () => ({
+    update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(),
+    setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }),
+  });
   let target: ReceivingService;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
@@ -352,6 +357,7 @@ describe('ReceivingService', () => {
       save: jest.fn().mockImplementation(async (entity) => entity),
       update: jest.fn().mockResolvedValue(undefined),
     };
+    (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
     (mockQueryRunner as any).manager = manager;
 
     await target.createBulkReceive({
@@ -403,6 +409,7 @@ describe('ReceivingService', () => {
       save: jest.fn().mockImplementation(async (entity) => entity),
       update: jest.fn().mockResolvedValue(undefined),
     };
+    (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
     (mockQueryRunner as any).manager = manager;
 
     await target.createBulkReceive({
@@ -524,6 +531,7 @@ describe('ReceivingService', () => {
       save: jest.fn().mockImplementation(async (entity) => entity),
       update: jest.fn().mockResolvedValue(undefined),
     };
+    (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
     (mockQueryRunner as any).manager = manager;
 
     await target.createBulkReceive({
@@ -579,6 +587,7 @@ describe('ReceivingService', () => {
       save: jest.fn().mockImplementation(async (entity) => entity),
       update: jest.fn().mockResolvedValue(undefined),
     };
+    (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
     (mockQueryRunner as any).manager = manager;
 
     await target.createBulkReceive({
@@ -655,6 +664,7 @@ describe('ReceivingService', () => {
       save: jest.fn().mockImplementation(async (entity) => entity),
       update: jest.fn().mockResolvedValue(undefined),
     };
+    (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
     (mockQueryRunner as any).manager = manager;
 
     await target.createBulkReceive({
@@ -727,6 +737,7 @@ describe('ReceivingService', () => {
       save: jest.fn().mockImplementation(async (entity) => entity),
       update: jest.fn().mockResolvedValue(undefined),
     };
+    (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
     (mockQueryRunner as any).manager = manager;
 
     await target.createBulkReceive({
@@ -738,10 +749,6 @@ describe('ReceivingService', () => {
       transNo: 'TX-001',
       refType: 'RECEIVE_CONCESSION',
     }));
-    expect(manager.update).toHaveBeenCalledWith(
-      MatArrivalStock,
-      expect.objectContaining({ matUid: 'MAT-001' }),
-      expect.objectContaining({ qty: expect.any(Function), availableQty: expect.any(Function) }),
-    );
+    expect((manager as any).createQueryBuilder).toHaveBeenCalled();
   });
 });

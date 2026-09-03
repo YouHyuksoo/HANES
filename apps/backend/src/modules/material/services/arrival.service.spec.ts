@@ -32,6 +32,11 @@ import { TransactionService } from '../../../shared/transaction.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ArrivalService', () => {
+  const successfulAtomicUpdateQb = () => ({
+    update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(),
+    setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }),
+  });
   let target: ArrivalService;
   let mockPurchaseOrderRepo: DeepMocked<Repository<PurchaseOrder>>;
   let mockPurchaseOrderItemRepo: DeepMocked<Repository<PurchaseOrderItem>>;
@@ -270,6 +275,7 @@ describe('ArrivalService', () => {
         save: jest.fn().mockImplementation(async (entity) => entity),
         update: jest.fn().mockResolvedValue(undefined),
       };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
       (mockQueryRunner as any).manager = manager;
 
       const result = await target.createPoArrival({
@@ -325,6 +331,7 @@ describe('ArrivalService', () => {
         save: jest.fn().mockImplementation(async (entity) => entity),
         update: jest.fn().mockResolvedValue(undefined),
       };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
       (mockQueryRunner as any).manager = manager;
 
       await target.createPoArrival({
@@ -369,6 +376,7 @@ describe('ArrivalService', () => {
         save: jest.fn().mockImplementation(async (entity) => entity),
         update: jest.fn().mockResolvedValue(undefined),
       };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
       (mockQueryRunner as any).manager = manager;
 
       await target.createPoArrival({
@@ -449,6 +457,7 @@ describe('ArrivalService', () => {
         save: jest.fn().mockImplementation(async (entity) => entity),
         update: jest.fn().mockResolvedValue(undefined),
       };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
       (mockQueryRunner as any).manager = manager;
 
       const result = await target.createPoArrival({
@@ -495,6 +504,7 @@ describe('ArrivalService', () => {
         save: jest.fn().mockImplementation(async (entity) => entity),
         update: jest.fn().mockResolvedValue(undefined),
       };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
       (mockQueryRunner as any).manager = manager;
 
       const result = await target.createManualArrival({
@@ -530,6 +540,7 @@ describe('ArrivalService', () => {
         save: jest.fn().mockImplementation(async (entity) => entity),
         update: jest.fn().mockResolvedValue(undefined),
       };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
       (mockQueryRunner as any).manager = manager;
 
       await target.createManualArrival({
@@ -557,6 +568,7 @@ describe('ArrivalService', () => {
         save: jest.fn().mockImplementation(async (entity) => entity),
         update: jest.fn().mockResolvedValue(undefined),
       };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
       (mockQueryRunner as any).manager = manager;
 
       await target.createManualArrival({
@@ -583,6 +595,7 @@ describe('ArrivalService', () => {
         save: jest.fn().mockImplementation(async (entity) => entity),
         update: jest.fn().mockResolvedValue(undefined),
       };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
       (mockQueryRunner as any).manager = manager;
 
       const result = await target.createManualArrival({
@@ -616,6 +629,7 @@ describe('ArrivalService', () => {
         save: jest.fn().mockImplementation(async (entity) => entity),
         update: jest.fn().mockResolvedValue(undefined),
       };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
       (mockQueryRunner as any).manager = manager;
 
       await target.createManualArrival({
@@ -889,6 +903,7 @@ describe('ArrivalService', () => {
         save: jest.fn().mockImplementation(async (entity) => entity),
         update: jest.fn().mockResolvedValue(undefined),
       };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
       (mockQueryRunner as any).manager = manager;
 
       const result = await target.cancel({ transactionId: 'TX-003', reason: 'cancel', workerId: 'user' } as any, 'CO', 'P01');
@@ -958,6 +973,7 @@ describe('ArrivalService', () => {
         save: jest.fn().mockImplementation(async (entity) => entity),
         update: jest.fn().mockResolvedValue(undefined),
       };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
       (mockQueryRunner as any).manager = manager;
 
       const result = await target.cancel({ transactionId: 'TX-004', reason: 'cancel', workerId: 'user' } as any, 'CO', 'P01');
@@ -1004,6 +1020,7 @@ describe('ArrivalService', () => {
         save: jest.fn().mockImplementation(async (entity) => entity),
         update: jest.fn().mockResolvedValue(undefined),
       };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
       (mockQueryRunner as any).manager = manager;
 
       await target.cancel({ transactionId: 'TX-005', reason: 'cancel', workerId: 'user' } as any, 'C1', 'P1');
@@ -1142,6 +1159,7 @@ describe('ArrivalService', () => {
           } as Warehouse),
         save: jest.fn(),
       };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
       (mockQueryRunner as any).manager = manager;
 
       await expect(

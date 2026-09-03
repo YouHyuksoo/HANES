@@ -820,18 +820,20 @@ export class ReceivingService {
     });
 
     if (existing) {
-      const result = await manager.update(MatStock, {
+      const qb = manager.createQueryBuilder().update(MatStock).set({
+          qty: () => 'QTY + :qtyDelta',
+          availableQty: () => 'AVAILABLE_QTY + :qtyDelta',
+          ...(locationCode ? { locationCode } : {}),
+        }).where({
           warehouseCode: existing.warehouseCode,
           itemCode: existing.itemCode,
           matUid: existing.matUid,
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
-        }, {
-          qty: () => `QTY + ${Number(qtyDelta)}`,
-          availableQty: () => `AVAILABLE_QTY + ${Number(qtyDelta)}`,
-          ...(locationCode ? { locationCode } : {}),
         });
-      if (result?.affected !== undefined && result.affected !== 1) {
+      if (qtyDelta < 0) qb.andWhere('QTY + :qtyDelta >= 0 AND AVAILABLE_QTY + :qtyDelta >= 0');
+      const result = await qb.setParameters({ qtyDelta }).execute();
+      if (result.affected !== 1) {
         throw new BadRequestException(`동시 처리로 자재재고 수량이 변경되었습니다. LOT: ${matUid}`);
       }
     } else if (qtyDelta > 0) {
@@ -872,13 +874,14 @@ export class ReceivingService {
       throw new BadRequestException(`입하재고가 부족합니다. LOT: ${matUid}, 요청=${qty}, 입하재고=${stock.availableQty}`);
     }
 
-    const result = await manager.update(MatArrivalStock,
-      { company: stock.company, plant: stock.plant, matUid: stock.matUid }, {
-        qty: () => `QTY - ${Number(qty)}`,
-        availableQty: () => `AVAILABLE_QTY - ${Number(qty)}`,
-        status: () => `CASE WHEN QTY - ${Number(qty)} > 0 THEN 'AVAILABLE' ELSE 'DEPLETED' END`,
-      });
-    if (result?.affected !== undefined && result.affected !== 1) {
+    const result = await manager.createQueryBuilder().update(MatArrivalStock).set({
+        qty: () => 'QTY - :qty',
+        availableQty: () => 'AVAILABLE_QTY - :qty',
+        status: () => "CASE WHEN QTY - :qty > 0 THEN 'AVAILABLE' ELSE 'DEPLETED' END",
+      }).where({ company: stock.company, plant: stock.plant, matUid: stock.matUid })
+      .andWhere('QTY >= :qty AND AVAILABLE_QTY >= :qty')
+      .setParameters({ qty }).execute();
+    if (result.affected !== 1) {
       throw new BadRequestException(`동시 처리로 입하재고가 부족해졌습니다. LOT: ${matUid}`);
     }
   }
