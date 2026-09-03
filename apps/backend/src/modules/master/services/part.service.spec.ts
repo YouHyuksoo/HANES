@@ -13,19 +13,26 @@ import { NotFoundException, ConflictException, BadRequestException } from '@nest
 import { Repository } from 'typeorm';
 import { PartService } from './part.service';
 import { ItemMaster } from '../../../entities/item-master.entity';
+import { IqcAqlPolicy } from '../../../entities/iqc-aql-policy.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('PartService', () => {
   let target: PartService;
   let mockRepo: DeepMocked<Repository<ItemMaster>>;
+  let mockPolicyRepo: DeepMocked<Repository<IqcAqlPolicy>>;
 
   beforeEach(async () => {
     mockRepo = createMock<Repository<ItemMaster>>();
+    mockPolicyRepo = createMock<Repository<IqcAqlPolicy>>();
+    mockPolicyRepo.findOne.mockResolvedValue({
+      company: 'C1', plant: 'P1', policyCode: 'AQLP-II-1.0-2.5', useYn: 'Y',
+    } as IqcAqlPolicy);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PartService,
         { provide: getRepositoryToken(ItemMaster), useValue: mockRepo },
+        { provide: getRepositoryToken(IqcAqlPolicy), useValue: mockPolicyRepo },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -181,6 +188,48 @@ describe('PartService', () => {
 
       expect(result).toEqual(created);
     });
+
+    it('rejects a policy code that does not exist in the same tenant', async () => {
+      mockRepo.findOne.mockResolvedValue(null);
+      mockPolicyRepo.findOne.mockResolvedValue(null);
+
+      await expect(target.create({
+        itemCode: 'ITEM01', itemName: 'Part1', itemType: 'RM', iqcYn: 'Y',
+        iqcAqlPolicyCode: 'AQLP-OTHER',
+      } as any, 'C1', 'P1')).rejects.toThrow('선택한 AQL 정책을 찾을 수 없습니다.');
+      expect(mockPolicyRepo.findOne).toHaveBeenCalledWith({
+        where: { company: 'C1', plant: 'P1', policyCode: 'AQLP-OTHER' },
+      });
+    });
+
+    it('rejects an inactive policy', async () => {
+      mockRepo.findOne.mockResolvedValue(null);
+      mockPolicyRepo.findOne.mockResolvedValue({ policyCode: 'AQLP-INACTIVE', useYn: 'N' } as IqcAqlPolicy);
+
+      await expect(target.create({
+        itemCode: 'ITEM01', itemName: 'Part1', itemType: 'RM', iqcYn: 'Y',
+        iqcAqlPolicyCode: 'AQLP-INACTIVE',
+      } as any, 'C1', 'P1')).rejects.toThrow('사용 중지된 AQL 정책은 선택할 수 없습니다.');
+    });
+
+    it('normalizes the selected policy code before lookup and save', async () => {
+      const created = { itemCode: 'ITEM01' } as ItemMaster;
+      mockRepo.findOne.mockResolvedValue(null);
+      mockRepo.create.mockReturnValue(created);
+      mockRepo.save.mockResolvedValue(created);
+
+      await target.create({
+        itemCode: 'ITEM01', itemName: 'Part1', itemType: 'RM', iqcYn: 'Y',
+        iqcAqlPolicyCode: '  aqlp-ii-1.0-2.5  ',
+      } as any, 'C1', 'P1');
+
+      expect(mockPolicyRepo.findOne).toHaveBeenCalledWith({
+        where: { company: 'C1', plant: 'P1', policyCode: 'AQLP-II-1.0-2.5' },
+      });
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
+      }));
+    });
   });
 
   // ─── update ───
@@ -289,6 +338,23 @@ describe('PartService', () => {
         { itemCode: 'ITEM01', company: 'C1', plant: 'P1' },
         { inspectMethod: 'SKIP', iqcAqlPolicyCode: null },
       );
+    });
+
+    it('clears a stale policy when a part becomes IQC exempt', async () => {
+      const existing = {
+        itemCode: 'ITEM01', iqcYn: 'Y', inspectMethod: null,
+        iqcAqlPolicyCode: 'AQLP-II-1.0-2.5',
+      } as ItemMaster;
+      mockRepo.findOne.mockResolvedValue(existing);
+      mockRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.update('ITEM01', { iqcYn: 'N' } as any, 'C1', 'P1');
+
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        { itemCode: 'ITEM01', company: 'C1', plant: 'P1' },
+        { iqcYn: 'N', iqcAqlPolicyCode: null },
+      );
+      expect(mockPolicyRepo.findOne).not.toHaveBeenCalled();
     });
   });
 

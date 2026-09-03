@@ -210,12 +210,77 @@ describe('AqlService', () => {
     await expect(service.deletePolicy('AQLP-II-1.0-2.5', '40', '1000', 'tester')).rejects.toThrow(BadRequestException);
   });
 
+  it('blocks an assigned policy Y to N transition through update', async () => {
+    policyRepo.findOne.mockResolvedValue({ company: '40', plant: '1000', policyCode: 'AQLP-II-1.0-2.5', useYn: 'Y' });
+    standardRepo.find.mockResolvedValue([]);
+    partRepo.count.mockResolvedValue(1);
+
+    await expect(service.updatePolicy('AQLP-II-1.0-2.5', { useYn: 'N' }, '40', '1000', 'tester'))
+      .rejects.toThrow('품목에 배정된 AQL 정책은 사용중지할 수 없습니다.');
+    expect(policyRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('allows non-status policy edits without checking assigned items', async () => {
+    policyRepo.findOne.mockResolvedValue({ company: '40', plant: '1000', policyCode: 'AQLP-II-1.0-2.5', policyName: 'Old', useYn: 'Y' });
+    standardRepo.find.mockResolvedValue([]);
+
+    await service.updatePolicy('AQLP-II-1.0-2.5', { policyName: 'New' }, '40', '1000', 'tester');
+
+    expect(partRepo.count).not.toHaveBeenCalled();
+    expect(policyRepo.save).toHaveBeenCalled();
+  });
+
+  it('allows editing an inactive policy without revalidating inactive AQL standards', async () => {
+    policyRepo.findOne.mockResolvedValue({
+      company: '40', plant: '1000', policyCode: 'AQLP-OLD', policyName: 'Old',
+      majorAqlCode: 'AQL-INACTIVE', minorAqlCode: null, useYn: 'N',
+    });
+
+    await service.updatePolicy('AQLP-OLD', { policyName: 'Renamed' }, '40', '1000', 'tester');
+
+    expect(standardRepo.find).not.toHaveBeenCalled();
+    expect(policyRepo.save).toHaveBeenCalledWith(expect.objectContaining({ policyName: 'Renamed', useYn: 'N' }));
+  });
+
+  it('checks assigned items only in the policy tenant when disabling', async () => {
+    policyRepo.findOne.mockResolvedValue({ company: '40', plant: '1000', policyCode: 'AQLP-II-1.0-2.5', useYn: 'Y' });
+    standardRepo.find.mockResolvedValue([]);
+    partRepo.count.mockResolvedValue(0);
+
+    await service.updatePolicy('AQLP-II-1.0-2.5', { useYn: 'N' }, '40', '1000', 'tester');
+
+    expect(partRepo.count).toHaveBeenCalledWith({
+      where: { company: '40', plant: '1000', iqcAqlPolicyCode: 'AQLP-II-1.0-2.5' },
+    });
+  });
+
   it('blocks disabling an AQL standard referenced by active IQC AQL policies', async () => {
     standardRepo.findOne.mockResolvedValue({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' });
     policyRepo.count.mockResolvedValue(1);
 
     await expect(service.delete('AQL-II-1.0', '40', '1000', 'tester')).rejects.toThrow(BadRequestException);
     expect(standardRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('blocks a referenced AQL standard Y to N transition through update', async () => {
+    standardRepo.findOne.mockResolvedValue({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', aqlName: 'AQL', useYn: 'Y' });
+    policyRepo.count.mockResolvedValue(1);
+
+    await expect(service.update('AQL-II-1.0', { useYn: 'N' }, '40', '1000', 'tester'))
+      .rejects.toThrow('IQC AQL 정책에서 참조 중인 AQL 기준은 사용중지할 수 없습니다.');
+    expect(standardRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('allows non-status standard edits without checking policy references', async () => {
+    standardRepo.findOne
+      .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', aqlName: 'Old', useYn: 'Y' })
+      .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', aqlName: 'New', useYn: 'Y' });
+    ruleRepo.find.mockResolvedValue([]);
+
+    await service.update('AQL-II-1.0', { aqlName: 'New' }, '40', '1000', 'tester');
+
+    expect(policyRepo.count).not.toHaveBeenCalled();
+    expect(standardRepo.save).toHaveBeenCalled();
   });
 
   it('resolves item AQL policy and fails immediately on critical defects', async () => {
@@ -431,26 +496,11 @@ describe('AqlService', () => {
     expect(result.itemResults?.[0].acceptQty).toBe(0);
   });
 
-  it('falls back to part-level policy when no inspection item has a defect grade', async () => {
+  it('rejects an IQC target with no active inspection items', async () => {
     specItemRepo.find.mockResolvedValue([]);
-    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', iqcAqlPolicyCode: 'AQLP-II-1.0-2.5' });
-    policyRepo.findOne.mockResolvedValue({
-      policyCode: 'AQLP-II-1.0-2.5',
-      inspectionLevel: 'II',
-      majorAqlCode: 'AQL-II-1.0',
-      minorAqlCode: 'AQL-II-2.5',
-      criticalMode: 'IMMEDIATE_FAIL',
-      useYn: 'Y',
-    });
-    partnerRepo.findOne.mockResolvedValue(null);
-    standardRepo.findOne
-      .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' })
-      .mockResolvedValueOnce({ company: '40', plant: '1000', aqlCode: 'AQL-II-2.5', useYn: 'Y' });
-    ruleRepo.find
-      .mockResolvedValueOnce([{ lotQtyFrom: 1, lotQtyTo: 200, sampleSize: 13, acceptQty: 0, rejectQty: 1 }])
-      .mockResolvedValueOnce([{ lotQtyFrom: 1, lotQtyTo: 200, sampleSize: 13, acceptQty: 1, rejectQty: 2 }]);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', iqcYn: 'Y', inspectMethod: null, iqcAqlPolicyCode: 'AQLP-II-1.0-2.5' });
 
-    const result = await service.resolveIqcPolicyByItem({
+    await expect(service.resolveIqcPolicyByItem({
       itemCode: 'PCB',
       vendorCode: null,
       lotQty: 100,
@@ -458,11 +508,38 @@ describe('AqlService', () => {
       fallbackDefectCounts: { critical: 0, major: 0, minor: 0 },
       company: '40',
       plant: '1000',
-    });
+    })).rejects.toThrow('활성 IQC 검사항목이 설정되지 않은 품목입니다.');
+    expect(policyRepo.findOne).not.toHaveBeenCalled();
+  });
 
-    expect(result.result).toBe('PASS');
-    expect(result.policyCode).toBe('AQLP-II-1.0-2.5');
-    expect(result.itemResults).toBeUndefined();
+  it('rejects active inspection rows without grading metadata', async () => {
+    specItemRepo.find.mockResolvedValue([{ itemCode: 'PCB', seq: 1, useYn: 'Y', defectGrade: null, inspectionType: 'AQL' }]);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', iqcYn: 'Y', inspectMethod: null, iqcAqlPolicyCode: 'AQLP-II-1.0-2.5' });
+
+    await expect(service.resolveIqcPolicyByItem({
+      itemCode: 'PCB', lotQty: 100, itemDefectCounts: {}, company: '40', plant: '1000',
+    })).rejects.toThrow('활성 IQC 검사항목이 설정되지 않은 품목입니다.');
+  });
+
+  it('rejects IQC resolution for an exempt item before policy lookup', async () => {
+    specItemRepo.find.mockResolvedValue([]);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', iqcYn: 'N', inspectMethod: null, iqcAqlPolicyCode: null });
+
+    await expect(service.resolveIqcPolicyByItem({
+      itemCode: 'PCB', lotQty: 100, itemDefectCounts: {}, company: '40', plant: '1000',
+    })).rejects.toThrow('IQC 검사 대상이 아닌 품목입니다.');
+    expect(specItemRepo.find).not.toHaveBeenCalled();
+    expect(policyRepo.findOne).not.toHaveBeenCalled();
+    expect(standardRepo.findOne).not.toHaveBeenCalled();
+  });
+
+  it.each(['SKIP', 'NONE'])('rejects IQC resolution for %s inspection method before spec lookup', async (inspectMethod) => {
+    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', iqcYn: 'Y', inspectMethod, iqcAqlPolicyCode: null });
+
+    await expect(service.resolveIqcPolicyByItem({
+      itemCode: 'PCB', lotQty: 100, itemDefectCounts: {}, company: '40', plant: '1000',
+    })).rejects.toThrow('IQC 검사 대상이 아닌 품목입니다.');
+    expect(specItemRepo.find).not.toHaveBeenCalled();
   });
 
   it('rejects IQC AQL resolution when an item has no policy and no item-level AQL criteria', async () => {

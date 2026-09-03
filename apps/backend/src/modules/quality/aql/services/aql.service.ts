@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import { isIqcExempt } from '@harness/shared';
 import { AqlAcceptanceRule } from '../../../../entities/aql-acceptance-rule.entity';
 import { AqlCodeLetterRule } from '../../../../entities/aql-code-letter-rule.entity';
 import { AqlCodeLetterSample } from '../../../../entities/aql-code-letter-sample.entity';
@@ -185,12 +186,22 @@ export class AqlService {
 
   async updatePolicy(policyCodeParam: string, dto: UpdateIqcAqlPolicyDto, company: string, plant: string, userId: string) {
     const policy = await this.findPolicyOrThrow(policyCodeParam, company, plant, { allowInactive: true });
-    await this.assertPolicyAqlCodesActive(
-      dto.majorAqlCode ?? policy.majorAqlCode ?? undefined,
-      dto.minorAqlCode ?? policy.minorAqlCode ?? undefined,
-      company,
-      plant,
-    );
+    if (policy.useYn === 'Y' && dto.useYn === 'N') {
+      const assignedCount = await this.partRepo.count({
+        where: { company, plant, iqcAqlPolicyCode: policy.policyCode },
+      });
+      if (assignedCount > 0) throw new BadRequestException('품목에 배정된 AQL 정책은 사용중지할 수 없습니다.');
+    }
+    const activatesPolicy = policy.useYn !== 'Y' && dto.useYn === 'Y';
+    const changesAqlCodes = dto.majorAqlCode !== undefined || dto.minorAqlCode !== undefined;
+    if (activatesPolicy || changesAqlCodes) {
+      await this.assertPolicyAqlCodesActive(
+        dto.majorAqlCode ?? policy.majorAqlCode ?? undefined,
+        dto.minorAqlCode ?? policy.minorAqlCode ?? undefined,
+        company,
+        plant,
+      );
+    }
 
     Object.assign(policy, {
       policyName: dto.policyName ?? policy.policyName,
@@ -241,6 +252,17 @@ export class AqlService {
   async update(aqlCodeParam: string, dto: UpdateAqlDto, company: string, plant: string, userId: string) {
     const aqlCode = this.normalizeCode(aqlCodeParam);
     const standard = await this.findStandardOrThrow(aqlCode, company, plant);
+    if (standard.useYn === 'Y' && dto.useYn === 'N') {
+      const assignedPolicyCount = await this.policyRepo.count({
+        where: [
+          { company, plant, useYn: 'Y', majorAqlCode: aqlCode },
+          { company, plant, useYn: 'Y', minorAqlCode: aqlCode },
+        ],
+      });
+      if (assignedPolicyCount > 0) {
+        throw new BadRequestException('IQC AQL 정책에서 참조 중인 AQL 기준은 사용중지할 수 없습니다.');
+      }
+    }
     const rules = dto.rules ?? undefined;
     if (rules) this.assertValidRules(rules);
 
@@ -392,6 +414,18 @@ export class AqlService {
     company?: string;
     plant?: string;
   }): Promise<IqcAqlPolicyResolution> {
+    const part = await this.partRepo.findOne({
+      where: {
+        itemCode: input.itemCode,
+        ...(input.company ? { company: input.company } : {}),
+        ...(input.plant ? { plant: input.plant } : {}),
+      },
+    });
+    if (!part) throw new NotFoundException(`품목을 찾을 수 없습니다: ${input.itemCode}`);
+    if (isIqcExempt(part.iqcYn, part.inspectMethod)) {
+      throw new BadRequestException('IQC 검사 대상이 아닌 품목입니다.');
+    }
+
     const specItems = await this.specItemRepo.find({
       where: {
         itemCode: input.itemCode,
@@ -407,26 +441,10 @@ export class AqlService {
       return ['CRITICAL', 'MAJOR', 'MINOR'].includes(grade) || ['DESTRUCTIVE', 'FULL'].includes(type);
     });
 
-    // 등급 설정 검사항목이 없으면 기존 품목 단일 모델로 폴백
+    // 실제 검사 정의가 없는 품목을 정책 단위 PASS로 우회하지 않는다.
     if (activeItems.length === 0) {
-      return this.resolveIqcPolicy({
-        itemCode: input.itemCode,
-        vendorCode: input.vendorCode,
-        lotQty: input.lotQty,
-        defectCounts: input.fallbackDefectCounts,
-        defectCodes: input.fallbackDefectCodes,
-        company: input.company,
-        plant: input.plant,
-      });
+      throw new BadRequestException('활성 IQC 검사항목이 설정되지 않은 품목입니다.');
     }
-
-    const part = await this.partRepo.findOne({
-      where: {
-        itemCode: input.itemCode,
-        ...(input.company ? { company: input.company } : {}),
-        ...(input.plant ? { plant: input.plant } : {}),
-      },
-    });
     const vendorCode = input.vendorCode?.trim() || null;
     const partner = vendorCode
       ? await this.partnerRepo.findOne({
@@ -438,7 +456,7 @@ export class AqlService {
         })
       : null;
 
-    const policy = part ? await this.resolvePartPolicy(part, input.company, input.plant) : null;
+    const policy = await this.resolvePartPolicy(part, input.company, input.plant);
     const partLevel = (policy?.inspectionLevel || 'II').trim().toUpperCase();
     const inspectionMode = this.normalizeInspectionMode(partner?.inspectionMode);
     const lotQty = Math.max(1, Number(input.lotQty) || 1);
