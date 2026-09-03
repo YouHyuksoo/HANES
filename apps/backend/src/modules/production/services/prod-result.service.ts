@@ -21,7 +21,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike, Like, Not, In, DataSource, Brackets } from 'typeorm';
+import { Repository, ILike, Like, Not, In, DataSource, Brackets, QueryRunner } from 'typeorm';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
@@ -1743,22 +1743,12 @@ export class ProdResultService {
             },
           });
 
-          if (stock) {
-            await qr.manager.update(
-              MatStock,
-              {
-                warehouseCode: stock.warehouseCode,
-                itemCode: stock.itemCode,
-                matUid: stock.matUid,
-                ...(company ? { company } : {}),
-                ...(plant ? { plant } : {}),
-              },
-              {
-                qty: stock.qty + restoreQty,
-                availableQty: stock.availableQty + restoreQty,
-              },
+          if (!stock) {
+            throw new BadRequestException(
+              `복원할 자재재고를 찾을 수 없습니다. matUid=${issue.matUid}, warehouse=${originalTx.fromWarehouseId}`,
             );
           }
+          await this.restoreMatStockInTx(qr, stock, restoreQty, company, plant);
 
           await qr.manager.update(
             StockTransaction,
@@ -1807,22 +1797,12 @@ export class ProdResultService {
         where: { matUid: issue.matUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       });
 
-      if (fallbackStock) {
-        await qr.manager.update(
-          MatStock,
-          {
-            warehouseCode: fallbackStock.warehouseCode,
-            itemCode: fallbackStock.itemCode,
-            matUid: fallbackStock.matUid,
-            ...(company ? { company } : {}),
-            ...(plant ? { plant } : {}),
-          },
-          {
-            qty: fallbackStock.qty + issue.issueQty,
-            availableQty: fallbackStock.availableQty + issue.issueQty,
-          },
+      if (!fallbackStock) {
+        throw new BadRequestException(
+          `복원할 자재재고를 찾을 수 없습니다. matUid=${issue.matUid}`,
         );
       }
+      await this.restoreMatStockInTx(qr, fallbackStock, issue.issueQty, company, plant);
 
       const reverseTransNo = await this.numbering.nextInTx(qr, 'STOCK_TX');
       const reverseTx = qr.manager.create(StockTransaction, {
@@ -1843,6 +1823,37 @@ export class ProdResultService {
     }
 
     this.logger.log(`자동차감 역분개 완료 - resultNo: ${resultNo}, ${issues.length}건`);
+  }
+
+  private async restoreMatStockInTx(
+    qr: QueryRunner,
+    stock: MatStock,
+    restoreQty: number,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    const result = await qr.manager
+      .createQueryBuilder()
+      .update(MatStock)
+      .set({
+        qty: () => 'QTY + :restoreQty',
+        availableQty: () => 'AVAILABLE_QTY + :restoreQty',
+      })
+      .where({
+        warehouseCode: stock.warehouseCode,
+        itemCode: stock.itemCode,
+        matUid: stock.matUid,
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      })
+      .setParameters({ restoreQty })
+      .execute();
+
+    if (result.affected !== 1) {
+      throw new BadRequestException(
+        `자재재고 복원에 실패했습니다. matUid=${stock.matUid}, warehouse=${stock.warehouseCode}`,
+      );
+    }
   }
 
   private assertTenantConsistency(

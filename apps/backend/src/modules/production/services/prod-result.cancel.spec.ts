@@ -88,7 +88,15 @@ describe('ProdResultService cancel flow', () => {
       .mockResolvedValueOnce({ resultNo: 'PR-001', orderNo: 'JO-001', status: 'DONE', equipCode: null, inspectResults: [], defectLogs: [] } as any);
     mockMatIssueRepo.find.mockResolvedValue([]);
 
+    const stockUpdateQb = {
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      setParameters: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
     const manager = {
+      createQueryBuilder: jest.fn().mockReturnValue(stockUpdateQb),
       update: jest.fn().mockResolvedValue(undefined),
       delete: jest.fn().mockResolvedValue({ affected: 1 }),
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
@@ -118,16 +126,15 @@ describe('ProdResultService cancel flow', () => {
 
     await target.cancel('PR-001', 'rollback', 'HANES', 'P01');
 
-    expect(manager.update).toHaveBeenCalledWith(
-      MatStock,
-      { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
-      { qty: 2, availableQty: 2 },
-    );
-    expect(manager.update).toHaveBeenCalledWith(
-      MatStock,
-      { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
-      { qty: 2, availableQty: 2 },
-    );
+    expect(stockUpdateQb.update).toHaveBeenCalledTimes(2);
+    expect(stockUpdateQb.where).toHaveBeenNthCalledWith(1, {
+      warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01',
+    });
+    expect(stockUpdateQb.where).toHaveBeenNthCalledWith(2, {
+      warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01',
+    });
+    expect(stockUpdateQb.setParameters).toHaveBeenNthCalledWith(1, { restoreQty: 2 });
+    expect(stockUpdateQb.setParameters).toHaveBeenNthCalledWith(2, { restoreQty: 1 });
     expect(manager.update).toHaveBeenCalledWith(
       StockTransaction,
       { transNo: 'TX-001', company: 'HANES', plant: 'P01' },

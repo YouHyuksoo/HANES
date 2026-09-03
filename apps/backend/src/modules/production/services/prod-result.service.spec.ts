@@ -52,6 +52,7 @@ describe('ProdResultService', () => {
   let shiftPatternRepo: DeepMocked<Repository<ShiftPattern>>;
   let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
+  let stockUpdateQb: any;
 
   beforeEach(async () => {
     prodResultRepo = createMock<Repository<ProdResult>>();
@@ -73,6 +74,14 @@ describe('ProdResultService', () => {
     shiftPatternRepo = createMock<Repository<ShiftPattern>>();
     tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
+    stockUpdateQb = {
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      setParameters: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
+    queryRunner.manager.createQueryBuilder.mockReturnValue(stockUpdateQb);
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
     tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
@@ -987,11 +996,15 @@ describe('ProdResultService', () => {
 
     await (service as any).reverseAutoIssue(queryRunner, 'PR-1', 'C1', 'P1');
 
-    expect(queryRunner.manager.update).toHaveBeenCalledWith(
-      MatStock,
-      expect.objectContaining({ warehouseCode: 'RM_MAIN' }),
-      expect.objectContaining({ qty: 5, availableQty: 5 }),
+    expect(stockUpdateQb.update).toHaveBeenCalledWith(MatStock);
+    expect(stockUpdateQb.set).toHaveBeenCalledWith({
+      qty: expect.any(Function),
+      availableQty: expect.any(Function),
+    });
+    expect(stockUpdateQb.where).toHaveBeenCalledWith(
+      expect.objectContaining({ warehouseCode: 'RM_MAIN', company: 'C1', plant: 'P1' }),
     );
+    expect(stockUpdateQb.setParameters).toHaveBeenCalledWith({ restoreQty: 5 });
     expect(queryRunner.manager.create).toHaveBeenCalledWith(
       StockTransaction,
       expect.objectContaining({
@@ -1008,6 +1021,29 @@ describe('ProdResultService', () => {
     expect(wipMatStockService.restoreInTx).toHaveBeenCalledWith(
       queryRunner,
       expect.objectContaining({ refType: 'PROD_RESULT', refId: 'PR-1' }),
+    );
+  });
+
+  it('fails MAT_OUT reversal when the source stock row is missing', async () => {
+    queryRunner.manager.find
+      .mockResolvedValueOnce([{
+        issueNo: 'MI-1', seq: 1, matUid: 'MAT-1', issueQty: 5,
+        company: 'C1', plant: 'P1',
+      }] as any)
+      .mockResolvedValueOnce([{
+        transNo: 'TX-1', transType: 'MAT_OUT', fromWarehouseId: 'RM_MAIN',
+        itemCode: 'ITEM-1', qty: -5, company: 'C1', plant: 'P1',
+      }] as any);
+    queryRunner.manager.findOne
+      .mockResolvedValueOnce({ matUid: 'MAT-1', itemCode: 'ITEM-1', company: 'C1', plant: 'P1' } as any)
+      .mockResolvedValueOnce(null);
+
+    await expect(
+      (service as any).reverseAutoIssue(queryRunner, 'PR-1', 'C1', 'P1'),
+    ).rejects.toThrow('복원할 자재재고를 찾을 수 없습니다');
+    expect(queryRunner.manager.save).not.toHaveBeenCalledWith(
+      StockTransaction,
+      expect.anything(),
     );
   });
 
