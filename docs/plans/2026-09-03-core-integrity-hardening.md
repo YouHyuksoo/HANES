@@ -82,6 +82,6 @@ Legacy `NUM_RULE_MASTERS` runtime callers were fully retired. The five active le
 - Modify: `.ai-coordination/LOCKS.md`
 - Modify: `.ai-coordination/REVIEW_QUEUE.md`
 
-- [ ] Record changed files, verification evidence, DB state, operator evidence, reviewer result, and remaining audited modules.
-- [ ] Move review-ready work to `REVIEW_QUEUE.md` or archive completed work.
-- [ ] Release locks.
+- [x] Record changed files, verification evidence, DB state, operator evidence, and audited modules.
+- [x] Move review-ready work to `REVIEW_QUEUE.md` and archive the implementation task.
+- [x] Release locks.
