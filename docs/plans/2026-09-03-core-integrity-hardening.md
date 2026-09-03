@@ -15,10 +15,10 @@
 **Files:**
 - Create: `apps/backend/src/architecture/numbering-policy.spec.ts`
 
-- [ ] Write a failing architecture test for runtime `MAX+1`, last-row increment, newly added daily reset, and cycling sequences.
-- [ ] Run the focused test and confirm the current violations.
-- [ ] Freeze existing historical violations as an exact-file baseline allowlist: initial `START WITH` calculation and already-applied daily reset/CYCLE migrations may remain read-only, but any new file or any non-baselined occurrence fails. Runtime source is never allowlisted.
-- [ ] Re-run the focused test.
+- [x] Write a failing architecture test for runtime `MAX+1`, last-row increment, newly added daily reset, cycling sequences, and repository `count + 1`.
+- [x] Run the focused test and confirm the current violations.
+- [x] Freeze existing historical violations as an exact-file baseline allowlist: initial `START WITH` calculation and already-applied daily reset/CYCLE migrations may remain read-only, but any new file or any non-baselined occurrence fails. Runtime source is never allowlisted.
+- [x] Re-run the focused test.
 
 ### Task 2: Numbering implementation
 
@@ -26,12 +26,12 @@
 - Modify: `apps/backend/src/shared/numbering.service.ts`
 - Test: `apps/backend/src/shared/numbering.service.spec.ts`
 
-- [ ] Add failing routing and no-runtime-`MAX+1` tests.
-- [ ] Replace scoped `MAX+1` methods and newly converted `RULE_TYPES` with `SEQ_RULES`-mapped global sequence channels.
-- [ ] Preserve existing external number formats through explicit `PREFIX`, `DATE_FORMAT`, `SEPARATOR`, and padding mappings.
-- [ ] Run focused tests.
+- [x] Add failing routing and no-runtime-`MAX+1` tests.
+- [x] Replace scoped `MAX+1`, `count + 1`, and mutable `CURRENT_SEQ` channels with global Oracle sequences.
+- [x] Preserve existing external number formats through explicit prefix, date, and padding mappings.
+- [x] Run focused tests.
 
-Legacy `NUM_RULE_MASTERS` callers are inventoried but not contract-changed in this slice because their many callers do not currently provide tenant context. No new caller may be added; a follow-up migration can retire the legacy table after each format is mapped.
+Legacy `NUM_RULE_MASTERS` runtime callers were fully retired. The five active legacy-format channels use dedicated global sequences; unused mutable-counter service/module code was removed.
 
 ### Task 3: Atomic material stock mutation
 
@@ -39,11 +39,11 @@ Legacy `NUM_RULE_MASTERS` callers are inventoried but not contract-changed in th
 - Modify: `apps/backend/src/modules/inventory/services/inventory.service.ts`
 - Test: `apps/backend/src/modules/inventory/services/inventory.service.spec.ts`
 
-- [ ] Add a failing test asserting conditional arithmetic UPDATE and affected-row handling.
-- [ ] Implement conditional arithmetic subtraction inside the existing transaction.
-- [ ] Implement atomic UPDATE-first addition; if no row exists, INSERT and retry UPDATE on ORA-00001.
-- [ ] Preserve `AVAILABLE_QTY = QTY - RESERVED_QTY`.
-- [ ] Run focused tests.
+- [x] Add a failing test asserting conditional arithmetic UPDATE and affected-row handling.
+- [x] Implement conditional arithmetic subtraction inside the existing transaction.
+- [x] Implement atomic UPDATE-first addition; if no row exists, INSERT and retry UPDATE on ORA-00001.
+- [x] Preserve `AVAILABLE_QTY = QTY - RESERVED_QTY`.
+- [x] Run focused tests.
 
 ### Task 4: Atomic product stock mutation
 
@@ -51,11 +51,11 @@ Legacy `NUM_RULE_MASTERS` callers are inventoried but not contract-changed in th
 - Modify: `apps/backend/src/modules/inventory/services/product-inventory.service.ts`
 - Test: `apps/backend/src/modules/inventory/services/product-inventory.service.spec.ts`
 
-- [ ] Add a failing test asserting conditional arithmetic UPDATE and affected-row handling.
-- [ ] Implement conditional arithmetic subtraction inside the existing transaction.
-- [ ] Implement atomic UPDATE-first addition; if no row exists, INSERT and retry UPDATE on ORA-00001.
-- [ ] Preserve `AVAILABLE_QTY = QTY - RESERVED_QTY`.
-- [ ] Run focused tests.
+- [x] Add a failing test asserting conditional arithmetic UPDATE and affected-row handling.
+- [x] Implement conditional arithmetic subtraction inside the existing transaction.
+- [x] Implement atomic UPDATE-first addition; if no row exists, INSERT and retry UPDATE on ORA-00001.
+- [x] Preserve `AVAILABLE_QTY = QTY - RESERVED_QTY`.
+- [x] Run focused tests.
 
 ### Task 5: Oracle constraints and verification
 
@@ -63,15 +63,15 @@ Legacy `NUM_RULE_MASTERS` callers are inventoried but not contract-changed in th
 - Create: `apps/backend/src/migrations/2026-09-03_core_integrity_hardening.sql`
 - Regenerate: `docs/database/schema-erd.md`
 
-- [ ] Query JSHANES for negative quantities, invariant mismatches, missing rules, sequence state, and duplicate keys.
-- [ ] Treat existing `2026-09-03_numbering_max_plus_one_fix.sql` and `2026-09-03_numbering_c_group_rules.sql` as read-only audit input; do not rewrite potentially applied migrations.
-- [ ] Add all idempotent `NOCYCLE` sequences and `SEQ_RULES` rows for the converted types only in `2026-09-03_core_integrity_hardening.sql`, using `/`-separated blocks; do not seed `NUM_RULE_MASTERS` for these channels.
-- [ ] Add named CHECK constraints to `MAT_STOCKS` and `PRODUCT_STOCKS` only when every pre-check count is zero.
-- [ ] Apply each DDL stage separately through the JSHANES Oracle connector; after each stage verify the exact object and stop on failure because Oracle DDL implicitly commits.
-- [ ] Record rerun-safe object checks and manual recovery SQL for any partially applied stage.
-- [ ] Run a JSHANES live-data concurrency scenario using an isolated company/plant/warehouse/item key: concurrent requests, success/failure counts, final quantity, then cleanup.
-- [ ] Run post-check queries and regenerate the ERD.
-- [ ] Run focused tests, architecture tests, and backend typecheck.
+- [x] Query JSHANES for negative quantities, invariant mismatches, missing rules, sequence state, and duplicate keys.
+- [x] Treat existing `2026-09-03_numbering_max_plus_one_fix.sql` and `2026-09-03_numbering_c_group_rules.sql` as read-only audit input; do not rewrite potentially applied migrations.
+- [x] Add idempotent `NOCYCLE` sequences and `SEQ_RULES` rows without seeding new mutable counters.
+- [x] Add named CHECK constraints to `MAT_STOCKS` and `PRODUCT_STOCKS` only when every pre-check count is zero.
+- [x] Apply each DDL stage separately through the JSHANES Oracle connector and verify each object.
+- [x] Keep migrations rerun-safe through object-existence checks.
+- [x] Run a JSHANES live-data concurrency scenario using an isolated company/plant/warehouse/item key, verify one success/one rejection/final quantity 3, then clean up.
+- [x] Run post-check queries and regenerate the ERD.
+- [x] Run focused tests, architecture tests, full backend Jest, and backend typecheck.
 
 ### Task 6: Coordination handoff
 

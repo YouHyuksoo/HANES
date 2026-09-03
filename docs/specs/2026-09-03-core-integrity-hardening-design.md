@@ -9,15 +9,15 @@
 - 런타임 `MAX+1`, 마지막 번호 조회 후 증가, 날짜별 Sequence 재시작을 금지한다.
 - 업무번호 형식의 날짜는 표시용으로 유지하되 유일성 카운터는 유형별 전역 Oracle Sequence 하나만 사용한다.
 - 재고 증감은 DB 원자 연산과 조건부 UPDATE로 처리하며 영향 행 수가 0이면 충돌 또는 부족으로 실패한다.
-- 신규 전환 채널은 `SEQ_RULES -> PKG_SEQ_GENERATOR -> Oracle Sequence`만 사용한다. `NUM_RULE_MASTERS.CURRENT_SEQ`, `RESET_TYPE`, `LAST_RESET`은 신규 채번의 source of truth로 사용하지 않는다.
+- 신규 채널은 `SEQ_RULES -> PKG_SEQ_GENERATOR -> Oracle Sequence`를 사용한다. 기존 형식을 정확히 보존해야 하는 레거시 채널은 `NumberingService`가 전용 Oracle Sequence의 `NEXTVAL`을 읽어 포맷한다. `NUM_RULE_MASTERS.CURRENT_SEQ`, `RESET_TYPE`, `LAST_RESET`은 런타임 source of truth로 사용하지 않는다.
 - 기존 Sequence 생성 migration의 시작값 산출용 `MAX+1`만 명시적인 예외로 둔다.
 
 ## 구현 경계
 
 1. `numbering-policy.spec.ts`가 신규 금지 패턴을 검사한다.
-2. `NumberingService`의 2026-09-03 신규 전환 타입은 `SeqGeneratorService`로 라우팅한다. 기존 `NUM_RULE_MASTERS` 호출은 호출부 tenant 계약을 별도 단계에서 바꾸기 전까지 확대하지 않는다.
+2. `NumberingService`의 신규 타입은 `SeqGeneratorService`로 라우팅하고, 레거시 형식 5종과 외주 이동번호는 전용 전역 시퀀스로 라우팅한다. `NUM_RULE_MASTERS` 런타임 서비스는 제거한다.
 3. `SEQ_RULES`는 포맷과 유형별 Sequence 이름만 보유하고 카운터는 보유하지 않는다. 신규 Sequence는 `NOCYCLE`, 일별·월별 재시작 없음으로 생성한다.
-4. 우선 핵심 `InventoryService`, `ProductInventoryService`의 출고·이동·취소 경로를 원자 갱신한다. 증가 경로는 원자 UPDATE 후 없는 행 INSERT를 시도하고, PK 경쟁 시 UPDATE 재시도로 수렴한다.
+4. 핵심 재고 서비스뿐 아니라 입하·입고·기타입고·자재출고·폐기·재검·생산실적 취소 경로까지 원자 갱신한다. 증가 경로는 원자 UPDATE 후 없는 행 INSERT를 시도하고, PK 경쟁 시 UPDATE 재시도로 수렴한다.
 5. `QTY >= 0`, `RESERVED_QTY >= 0`, `AVAILABLE_QTY >= 0`, `AVAILABLE_QTY = QTY - RESERVED_QTY` 불변식은 기존 데이터 pre-check 후 적용하고 ERD를 재생성한다.
 
 ## 오류 처리
