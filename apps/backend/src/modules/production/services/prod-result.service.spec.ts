@@ -594,6 +594,51 @@ describe('ProdResultService', () => {
     });
   });
 
+  it('create accrues consumable usage count on the equipment (kiosk results never pass through complete())', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({
+      orderNo: 'JO-1', status: 'RUNNING', planQty: 100, itemCode: 'FG-001',
+      part: { itemCode: 'FG-001' }, company: 'C1', plant: 'P1',
+    } as any);
+    equipBomRelRepo.find.mockResolvedValue([]);
+    equipMasterRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'C1', plant: 'P1' } as any);
+    const qb = {
+      select: jest.fn().mockReturnThis(), addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '0', totalDefect: '0' }),
+    } as any;
+    prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+    numbering.next.mockResolvedValue('PR-1');
+    queryRunner.manager.create.mockReturnValue({ resultNo: 'PR-1' } as any);
+    queryRunner.manager.save.mockResolvedValue({ resultNo: 'PR-1' } as any);
+    sysConfigService.getValue.mockResolvedValue('OFF');
+    autoIssueService.execute.mockResolvedValue({ issued: [], warnings: [], skipped: false } as any);
+    prodResultRepo.findOne.mockResolvedValue({ resultNo: 'PR-1' } as any);
+
+    // 설비에 장착된 금형 마스터 1건(타수 2, 경고 80/교체 100) + 장착 롯트는 없음
+    queryRunner.manager.find.mockImplementation(async (entity: any) => {
+      if (entity === ConsumableMaster) {
+        return [{ consumableCode: 'MOLD-1', currentCount: 2, warningCount: 80, expectedLife: 100, status: 'NORMAL' }] as any;
+      }
+      return [] as any;
+    });
+    queryRunner.manager.findOne.mockImplementation(async (entity: any) =>
+      entity === JobOrder ? ({ orderNo: 'JO-1', itemCode: 'FG-001', company: 'C1', plant: 'P1' } as any) : null,
+    );
+
+    await service.create({ orderNo: 'JO-1', equipCode: 'EQ-001', goodQty: 7, defectQty: 3 } as any, 'C1', 'P1');
+
+    expect(queryRunner.manager.find).toHaveBeenCalledWith(
+      ConsumableMaster,
+      expect.objectContaining({ where: expect.objectContaining({ mountedEquipCode: 'EQ-001', category: 'MOLD', operStatus: 'MOUNTED' }) }),
+    );
+    // 양품 7 + 불량 3 = 10타 누적 → 2 + 10 = 12
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      ConsumableMaster,
+      expect.objectContaining({ consumableCode: 'MOLD-1' }),
+      expect.objectContaining({ currentCount: 12, status: 'NORMAL' }),
+    );
+  });
+
   it('validates worker by workerCode (WorkerMaster) within tenant when creating result', async () => {
     jobOrderRepo.findOne.mockResolvedValue({
       orderNo: 'JO-1',

@@ -907,6 +907,16 @@ export class ProdResultService {
         }
       }
 
+      // 소모품 타수 누적 — 키오스크 실적은 여기서 바로 DONE이 되어 complete()를 거치지 않으므로
+      // 생성 시점에 누적해야 한다(누락 시 장착 소모품 타수가 영원히 0 — 2026-09-03 현장 보고).
+      if (dto.equipCode) {
+        await this.accrueConsumableUsageInTx(queryRunner, {
+          equipCode: dto.equipCode,
+          orderNo: dto.orderNo,
+          totalQty,
+        }, jobOrder.company, jobOrder.plant);
+      }
+
       // 제품재고 즉시 적재 — 실적 저장 순간 양품을 WIP_MAIN 공정창고에 반영한다.
       // (별도 완료 처리 없이도 키오스크 실적입력만으로 반제품/완제품 재고가 생성됨)
       await this.adsorbProductStockInTx(queryRunner, {
@@ -1121,6 +1131,12 @@ export class ProdResultService {
         { equipCode: prodResult.equipCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
         { currentJobOrderId: null },
       );
+      // 누적했던 소모품 타수 되돌리기 (음수 누적, 0 미만으로는 내려가지 않음)
+      await this.accrueConsumableUsageInTx(queryRunner, {
+        equipCode: prodResult.equipCode,
+        orderNo: prodResult.orderNo,
+        totalQty: -((prodResult.goodQty ?? 0) + (prodResult.defectQty ?? 0)),
+      }, company, plant);
     }
 
     await this.reverseAutoIssue(queryRunner, prodResult.resultNo, company, plant);
@@ -1161,6 +1177,76 @@ export class ProdResultService {
   }
 
   /**
+   * 소모품 타수 누적 — 실적 수량(양품+불량)만큼 설비에 장착된 소모품의 사용횟수를 올린다(음수면 되돌림).
+   * 두 장착 모델을 모두 처리한다:
+   *  (1) 금형 마스터 장착(CONSUMABLE_MASTERS.OPER_STATUS=MOUNTED, MOUNTED_EQUIP_CODE) — MOLD 카테고리, 1회당 1타
+   *  (2) 롯트 장착(CONSUMABLE_STOCKS.STATUS=MOUNTED) — 모델×설비 매핑(CONSUMABLE_USAGE_MAP)의 USAGE_PER_UNIT × 수량
+   * 재고 차감/수불은 없다(수명 관리 카운터). create()·complete()·실적 취소(음수)에서 호출한다.
+   */
+  private async accrueConsumableUsageInTx(
+    queryRunner: import('typeorm').QueryRunner,
+    params: { equipCode: string; orderNo: string; totalQty: number },
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    const { equipCode, orderNo, totalQty } = params;
+    if (!equipCode || !totalQty) return;
+    const tenant = { ...(company ? { company } : {}), ...(plant ? { plant } : {}) };
+
+    // (1) 금형 마스터
+    const mountedMolds = await queryRunner.manager.find(ConsumableMaster, {
+      where: { mountedEquipCode: equipCode, category: 'MOLD', operStatus: 'MOUNTED', ...tenant },
+    });
+    for (const mold of mountedMolds) {
+      const newCount = Math.max(0, mold.currentCount + totalQty);
+      await queryRunner.manager.update(
+        ConsumableMaster,
+        { consumableCode: mold.consumableCode, ...tenant },
+        { currentCount: newCount, status: this.resolveConsumableLifeStatus(newCount, mold.warningCount, mold.expectedLife, mold.status) },
+      );
+      this.logger.log(`금형 타수 누적: ${mold.consumableCode} (${mold.currentCount} → ${newCount})`);
+    }
+
+    // (2) 장착 롯트 — 모델(작업지시 품목)+설비 매핑으로 대상 소모품을 찾는다
+    const consumJobOrder = await queryRunner.manager.findOne(JobOrder, { where: { orderNo, ...tenant } });
+    if (!consumJobOrder?.itemCode) return;
+    const consumMaps = await queryRunner.manager.find(ConsumableUsageMap, {
+      where: { ...tenant, productItemCode: consumJobOrder.itemCode, equipCode, useYn: 'Y' },
+    });
+    const consumableCodes = [...new Set(consumMaps.map((c) => c.consumableCode))];
+    if (consumableCodes.length === 0) return;
+    const allLots = await queryRunner.manager.find(ConsumableStock, {
+      where: {
+        consumableCode: In(consumableCodes),
+        mountedEquipCode: equipCode,
+        status: 'MOUNTED',
+        ...(company ? { company } : {}),
+        ...(plant ? { plantCd: plant } : {}),
+      },
+    });
+    const lotsByCode = new Map<string, ConsumableStock[]>();
+    for (const lot of allLots) {
+      const bucket = lotsByCode.get(lot.consumableCode);
+      if (bucket) bucket.push(lot);
+      else lotsByCode.set(lot.consumableCode, [lot]);
+    }
+    for (const cmap of consumMaps) {
+      for (const lot of lotsByCode.get(cmap.consumableCode) ?? []) {
+        const newCount = Math.max(0, lot.currentCount + cmap.usagePerUnit * totalQty);
+        await queryRunner.manager.update(ConsumableStock, { conUid: lot.conUid }, { currentCount: newCount });
+        this.logger.log(`소모품 롯트 사용횟수 누적: ${lot.conUid} (${lot.currentCount} → ${newCount})`);
+      }
+    }
+  }
+
+  /** 타수 대비 수명 상태: 교체 임계 ≥ REPLACE, 경고 임계 ≥ WARNING, 그 외 NORMAL(감소 시 복귀 포함) */
+  private resolveConsumableLifeStatus(count: number, warningCount: number | null, expectedLife: number | null, current: string): string {
+    if (expectedLife && count >= expectedLife) return 'REPLACE';
+    if (warningCount && count >= warningCount) return 'WARNING';
+    return current === 'WARNING' || current === 'REPLACE' ? 'NORMAL' : current;
+  }
+
+  /**
    * 생산실적 완료 (트랜잭션: 실적 완료 + 금형 타수 + 설비 해제 원자성 보장)
    */
   async complete(resultNo: string, dto: CompleteProdResultDto, company?: string, plant?: string) {
@@ -1192,48 +1278,15 @@ export class ProdResultService {
         updateData,
       );
 
-      // 2. 금형 타수 자동 증가 (트랜잭션 내 — 실패 시 전체 롤백)
+      // 2. 소모품 타수 누적 (금형 마스터 + 장착 롯트) — 트랜잭션 내, 실패 시 전체 롤백.
+      //    create()에서 이미 누적된 실적은 status=DONE이라 여기(RUNNING→DONE)로 오지 않으므로 이중 누적 없음.
       if (prodResult.equipCode) {
         const totalQty = (dto.goodQty ?? prodResult.goodQty) + (dto.defectQty ?? prodResult.defectQty);
-        if (totalQty > 0) {
-          const mountedMolds = await queryRunner.manager.find(ConsumableMaster, {
-            where: {
-              mountedEquipCode: prodResult.equipCode,
-              category: 'MOLD',
-              operStatus: 'MOUNTED',
-              ...(company ? { company } : {}),
-              ...(plant ? { plant } : {}),
-            },
-          });
-
-          for (const mold of mountedMolds) {
-            const newCount = mold.currentCount + totalQty;
-            let newStatus = mold.status;
-
-            if (mold.expectedLife && newCount >= mold.expectedLife) {
-              newStatus = 'REPLACE';
-            } else if (mold.warningCount && newCount >= mold.warningCount) {
-              newStatus = 'WARNING';
-            }
-
-            await queryRunner.manager.update(
-              ConsumableMaster,
-              {
-                consumableCode: mold.consumableCode,
-                ...(company ? { company } : {}),
-                ...(plant ? { plant } : {}),
-              },
-              {
-                currentCount: newCount,
-                status: newStatus,
-              },
-            );
-
-            this.logger.log(
-              `금형 타수 자동 증가: ${mold.consumableCode} (${mold.currentCount} → ${newCount})`,
-            );
-          }
-        }
+        await this.accrueConsumableUsageInTx(queryRunner, {
+          equipCode: prodResult.equipCode,
+          orderNo: prodResult.orderNo,
+          totalQty,
+        }, company, plant);
 
         // 3. 설비의 현재 작업지시번호 해제
         await queryRunner.manager.update(
@@ -1259,62 +1312,7 @@ export class ProdResultService {
         }
       }
 
-      // 4-2. 매핑 소모품 롯트 사용횟수 누적 (재고 차감/수불 없음 — 수명 관리용)
-      //      모델(작업지시 품목)+설비 매핑(CONSUMABLE_USAGE_MAP)으로 대상 소모품을 찾고,
-      //      그 설비에 장착(MOUNTED)된 롯트(conUid)의 CURRENT_COUNT를 USAGE_PER_UNIT × 생산수량만큼 누적.
-      if (prodResult.equipCode && autoTotalQty > 0) {
-        const consumJobOrder = await queryRunner.manager.findOne(JobOrder, {
-          where: {
-            orderNo: prodResult.orderNo,
-            ...(company ? { company } : {}),
-            ...(plant ? { plant } : {}),
-          },
-        });
-        if (consumJobOrder?.itemCode) {
-          const consumMaps = await queryRunner.manager.find(ConsumableUsageMap, {
-            where: {
-              ...(company ? { company } : {}),
-              ...(plant ? { plant } : {}),
-              productItemCode: consumJobOrder.itemCode,
-              equipCode: prodResult.equipCode,
-              useYn: 'Y',
-            },
-          });
-          // N+1 제거: cmap별 개별 조회 대신 consumableCode 목록을 모아 한 번에 조회 후 코드별로 분배
-          const consumableCodes = [...new Set(consumMaps.map((c) => c.consumableCode))];
-          const lotsByCode = new Map<string, ConsumableStock[]>();
-          if (consumableCodes.length > 0) {
-            const allLots = await queryRunner.manager.find(ConsumableStock, {
-              where: {
-                consumableCode: In(consumableCodes),
-                mountedEquipCode: prodResult.equipCode,
-                status: 'MOUNTED',
-                ...(company ? { company } : {}),
-                ...(plant ? { plantCd: plant } : {}),
-              },
-            });
-            for (const lot of allLots) {
-              const bucket = lotsByCode.get(lot.consumableCode);
-              if (bucket) bucket.push(lot);
-              else lotsByCode.set(lot.consumableCode, [lot]);
-            }
-          }
-          for (const cmap of consumMaps) {
-            const lots = lotsByCode.get(cmap.consumableCode) ?? [];
-            for (const lot of lots) {
-              const newCount = lot.currentCount + cmap.usagePerUnit * autoTotalQty;
-              await queryRunner.manager.update(
-                ConsumableStock,
-                { conUid: lot.conUid },
-                { currentCount: newCount },
-              );
-              this.logger.log(
-                `소모품 롯트 사용횟수 누적: ${lot.conUid} (${lot.currentCount} → ${newCount})`,
-              );
-            }
-          }
-        }
-      }
+      // 4-2. (소모품 롯트 타수 누적은 위 2번 accrueConsumableUsageInTx 에서 금형 마스터와 함께 처리)
 
       // 5. 공정창고(WIP_MAIN) 자동 적재 — 양품만 재고화
       //    create() 시점에 이미 적재됐으면 멱등 가드로 건너뛴다(이중적재 방지).
