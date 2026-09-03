@@ -3575,6 +3575,10 @@
     }
   },
   "production": {
+    "jobOrderRestore": {
+      "finishedReleased": "Lệnh sản xuất đã lưu đã hoàn thành nên được gỡ. Hãy chọn lệnh sản xuất mới.",
+      "missingReleased": "Không tìm thấy lệnh sản xuất đã lưu nên được gỡ. Hãy chọn lệnh sản xuất mới."
+    },
     "specificationSetup": "Quản lý bản vẽ sản phẩm",
     "specificationSetupDescription": "Quản lý revision bản vẽ harness và thông số chế tạo theo circuit cho từng sản phẩm.",
     "kitting": {

@@ -3575,6 +3575,10 @@
     }
   },
   "production": {
+    "jobOrderRestore": {
+      "finishedReleased": "已保存的工单已完成，已解除绑定。请重新选择工单。",
+      "missingReleased": "找不到已保存的工单，已解除绑定。请重新选择工单。"
+    },
     "specificationSetup": "产品图纸管理",
     "specificationSetupDescription": "按产品管理线束图纸版本和回路级制造规格。",
     "kitting": {

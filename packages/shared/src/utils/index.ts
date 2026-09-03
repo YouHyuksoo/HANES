@@ -7,6 +7,7 @@ export * from './date';
 export * from './numbering';
 export * from './part-rules';
 export * from './routing-material-rules';
+export * from './job-order-rules';
 export * from './process-capa-rules';
 export * from './work-instruction-rules';
 export * from './vendor-barcode-rules';

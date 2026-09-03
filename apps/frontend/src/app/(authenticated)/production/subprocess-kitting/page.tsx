@@ -15,6 +15,7 @@ import { Cpu, ChevronDown, Package, RefreshCw, Scan, Search } from "lucide-react
 import { BarcodeScanInput } from "@/components/shared";
 import { Button, Card, CardContent, Select } from "@/components/ui";
 import api from "@/services/api";
+import { judgeRestoredJobOrder } from "@/components/production/jobOrderRestore";
 import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
 import InputSgScanPanel from "./components/InputSgScanPanel";
 import SubKitActionBar from "./components/SubKitActionBar";
@@ -246,8 +247,19 @@ export default function SubprocessKittingPage() {
       if (currentJobOrderId) {
         const orderRes = await api.get(
           `/production/job-orders/order-no/${encodeURIComponent(currentJobOrderId)}`,
-        );
-        const restored = orderRes.data?.data as JobOrder | null | undefined;
+          { suppressErrorModal: true },
+        ).catch(() => null);
+        const restored = (orderRes?.data?.data ?? null) as JobOrder | null;
+        const verdict = judgeRestoredJobOrder(restored);
+        if (verdict.kind !== "ok") {
+          // 완료/취소/미존재 지시는 복원하지 않고 설비 바인딩을 풀어 새 지시를 고르게 한다
+          await persistCurrentJobOrder(null, equip.equipCode);
+          toast(verdict.kind === "finished"
+            ? t("production.jobOrderRestore.finishedReleased", "완료된 작업지시는 해제했습니다. 작업지시를 새로 선택하세요.")
+            : t("production.jobOrderRestore.missingReleased", "저장된 작업지시를 찾을 수 없어 해제했습니다. 작업지시를 새로 선택하세요."));
+          setTimeout(() => orderScanRef.current?.focus(), 80);
+          return;
+        }
         if (restored?.orderNo) {
           if (restored.itemType && restored.itemType !== "SEMI_PRODUCT") {
             await persistCurrentJobOrder(null, equip.equipCode);

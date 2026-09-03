@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { useKioskStore, isAllInterlockDone, type InspectTiming } from '@/stores/kioskStore';
 import { useComCodeMap } from '@/hooks/useComCode';
 import api from '@/services/api';
+import { judgeRestoredJobOrder, releaseEquipJobOrder } from '@/components/production/jobOrderRestore';
 import WorkerSelectModal from '@/components/worker/WorkerSelectModal';
 import JobOrderSelectModal, { JobOrder } from '@/components/production/JobOrderSelectModal';
 import type { Worker } from '@/components/worker/WorkerSelector';
@@ -145,8 +146,20 @@ export default function InputKioskPage() {
       if (currentJobOrderId) {
         const orderRes = await api.get(
           `/production/job-orders/order-no/${encodeURIComponent(currentJobOrderId)}`,
-        );
-        setSelectedJobOrder(orderRes.data?.data ?? null);
+          { suppressErrorModal: true },
+        ).catch(() => null);
+        const restored = orderRes?.data?.data ?? null;
+        const verdict = judgeRestoredJobOrder(restored);
+        if (verdict.kind === 'ok') {
+          setSelectedJobOrder(restored);
+        } else {
+          // 완료/취소/미존재 지시는 복원하지 않고 설비 바인딩을 풀어 새 지시를 고르게 한다
+          await releaseEquipJobOrder(equip.equipCode);
+          setSelectedJobOrder(null);
+          toast(verdict.kind === 'finished'
+            ? t('production.jobOrderRestore.finishedReleased', '완료된 작업지시는 해제했습니다. 작업지시를 새로 선택하세요.')
+            : t('production.jobOrderRestore.missingReleased', '저장된 작업지시를 찾을 수 없어 해제했습니다. 작업지시를 새로 선택하세요.'));
+        }
       } else {
         setSelectedJobOrder(null);
       }

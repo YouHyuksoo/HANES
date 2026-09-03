@@ -3985,6 +3985,10 @@
     }
   },
   "production": {
+    "jobOrderRestore": {
+      "finishedReleased": "완료된 작업지시는 해제했습니다. 작업지시를 새로 선택하세요.",
+      "missingReleased": "저장된 작업지시를 찾을 수 없어 해제했습니다. 작업지시를 새로 선택하세요."
+    },
     "specificationSetup": "제품 도면관리",
     "specificationSetupDescription": "제품별 하네스 도면 Revision과 회로별 제작 사양을 관리합니다.",
     "kitting": {

@@ -25,6 +25,7 @@ import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingGroup } from '../../../entities/routing-group.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { ProdPlan } from '../../../entities/prod-plan.entity';
+import { EquipMaster } from '../../../entities/equip-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
@@ -822,6 +823,13 @@ export class JobOrderService {
         goodQty: summary?.totalGoodQty ? parseInt(summary.totalGoodQty) : 0,
         defectQty: summary?.totalDefectQty ? parseInt(summary.totalDefectQty) : 0,
       });
+
+      // 완료된 지시를 설비가 계속 물고 있으면 키오스크가 다음 날 그 지시를 다시 복원한다 → 설비 바인딩 해제
+      await queryRunner.manager.update(
+        EquipMaster,
+        { currentJobOrderId: id, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        { currentJobOrderId: null },
+      );
     });
 
     const completed = await this.findOneWithSelect(id, company, plant);
@@ -852,6 +860,13 @@ export class JobOrderService {
     const updateData: Partial<JobOrder> = { status: 'CANCELED', endAt: new Date() };
     if (remark) updateData.remark = remark;
     await this.jobOrderRepository.update({ orderNo: id, ...(company ? { company } : {}), ...(plant ? { plant } : {}) }, updateData);
+
+    // 취소된 지시를 물고 있는 설비 바인딩 해제 (complete와 동일 규칙)
+    await this.jobOrderRepository.manager.update(
+      EquipMaster,
+      { currentJobOrderId: id, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      { currentJobOrderId: null },
+    );
 
     // 생산계획 연결된 경우: orderQty 차감
     if (jobOrder.planNo) {

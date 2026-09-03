@@ -3575,6 +3575,10 @@
     }
   },
   "production": {
+    "jobOrderRestore": {
+      "finishedReleased": "The saved job order is finished and has been released. Select a new job order.",
+      "missingReleased": "The saved job order was not found and has been released. Select a new job order."
+    },
     "specificationSetup": "Product Drawing Management",
     "specificationSetupDescription": "Manage harness drawing revisions and circuit-level manufacturing specifications by product.",
     "kitting": {

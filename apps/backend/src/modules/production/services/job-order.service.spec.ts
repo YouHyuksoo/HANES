@@ -19,6 +19,7 @@ import { Repository, DataSource, QueryRunner, LessThanOrEqual, MoreThanOrEqual, 
 import { parseDateStart } from '../../../shared/date.util';
 import { JobOrderService } from './job-order.service';
 import { JobOrder } from '../../../entities/job-order.entity';
+import { EquipMaster } from '../../../entities/equip-master.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
@@ -752,6 +753,12 @@ describe('JobOrderService', () => {
         { orderNo: 'JO-001' },
         expect.objectContaining({ status: 'DONE', goodQty: 80, defectQty: 5 }),
       );
+      // 완료된 지시를 물고 있는 설비 바인딩 해제 — 키오스크가 완료 지시를 재복원하지 않도록
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        EquipMaster,
+        { currentJobOrderId: 'JO-001' },
+        { currentJobOrderId: null },
+      );
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
@@ -825,6 +832,11 @@ describe('JobOrderService', () => {
       expect(mockJobOrderRepo.update).toHaveBeenCalledWith(
         { orderNo: 'JO-001' },
         expect.objectContaining({ status: 'CANCELED' }),
+      );
+      expect(mockJobOrderRepo.manager.update).toHaveBeenCalledWith(
+        EquipMaster,
+        { currentJobOrderId: 'JO-001' },
+        { currentJobOrderId: null },
       );
     });
 

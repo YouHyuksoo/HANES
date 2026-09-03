@@ -1,0 +1,23 @@
+-- 2026-09-03 설비에 남은 완료/취소/미존재 작업지시 바인딩 정리
+-- 배경: 작업지시관리에서 지시를 완료/취소해도 EQUIP_MASTERS.CURRENT_JOB_ORDER_ID 가 남아
+--       키오스크가 다음 날 그 지시를 다시 복원했다(코드 수정으로 이후 발생은 차단).
+--       실측(적용 전): 7대 중 3대가 존재하지 않는 지시(W2026-001, JO-20250217-003)를 가리킴.
+-- 실행: python oracle_connector.py --site JSHANES --execute-file <this file>
+
+-- [실행 전 검증]
+-- SELECT E.EQUIP_CODE, E.CURRENT_JOB_ORDER_ID, J.STATUS FROM EQUIP_MASTERS E
+--   LEFT JOIN JOB_ORDERS J ON J.ORDER_NO=E.CURRENT_JOB_ORDER_ID AND J.COMPANY=E.COMPANY AND J.PLANT_CD=E.PLANT_CD
+--  WHERE E.CURRENT_JOB_ORDER_ID IS NOT NULL AND (J.ORDER_NO IS NULL OR J.STATUS IN ('DONE','CANCELED'));
+
+UPDATE EQUIP_MASTERS E
+   SET E.CURRENT_JOB_ORDER_ID = NULL, E.UPDATED_AT = SYSTIMESTAMP
+ WHERE E.CURRENT_JOB_ORDER_ID IS NOT NULL
+   AND NOT EXISTS (
+         SELECT 1 FROM JOB_ORDERS J
+          WHERE J.ORDER_NO = E.CURRENT_JOB_ORDER_ID
+            AND J.COMPANY = E.COMPANY AND J.PLANT_CD = E.PLANT_CD
+            AND J.STATUS NOT IN ('DONE', 'CANCELED')
+       )
+/
+COMMIT
+/
