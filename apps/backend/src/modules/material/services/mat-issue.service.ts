@@ -462,14 +462,10 @@ export class MatIssueService {
 
         if (stock) {
           this.assertSameTenant('복구 대상 재고', stock, originalTx.company, originalTx.plant);
-          await queryRunner.manager.update(
-            MatStock,
-            { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere },
-            {
-              qty: stock.qty + restoreQty,
-              availableQty: stock.availableQty + restoreQty,
-            },
-          );
+          await queryRunner.manager.createQueryBuilder().update(MatStock)
+            .set({ qty: () => '"QTY" + :stockDelta', availableQty: () => '"AVAILABLE_QTY" + :stockDelta' })
+            .where({ warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere })
+            .setParameters({ stockDelta: restoreQty }).execute();
         } else if (originalTx.matUid && originalTx.fromWarehouseId) {
           await queryRunner.manager.save(
             MatStock,

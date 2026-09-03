@@ -664,6 +664,10 @@ describe('IqcHistoryService cancel policy', () => {
         .mockResolvedValueOnce({ warehouseCode: 'WH-NORMAL', qty: 0 }),
       update: jest.fn().mockResolvedValue(undefined),
       save: jest.fn().mockResolvedValue(undefined),
+      createQueryBuilder: jest.fn(() => ({
+        update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      })),
     };
     (mockQueryRunner as any).manager = manager;
 
@@ -973,6 +977,10 @@ describe('IqcHistoryService cancel policy', () => {
     const manager = {
       update: jest.fn().mockResolvedValue(undefined),
       save: jest.fn().mockResolvedValue(undefined),
+      createQueryBuilder: jest.fn(() => ({
+        update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      })),
     };
     (mockQueryRunner as any).manager = manager;
 

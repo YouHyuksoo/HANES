@@ -208,23 +208,25 @@ export class ShelfLifeReInspectService {
       const transNoOut = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
       const transNoIn = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
-      await queryRunner.manager.update(MatStock,
-        { warehouseCode: stock.warehouseCode, itemCode, matUid, ...tenantWhere },
-        { qty: 0 },
-      );
+      const moved = await queryRunner.manager.createQueryBuilder().update(MatStock)
+        .set({ qty: 0, availableQty: 0 })
+        .where({ warehouseCode: stock.warehouseCode, itemCode, matUid, ...tenantWhere })
+        .andWhere('"QTY" = :expectedQty AND "AVAILABLE_QTY" = :expectedQty')
+        .setParameters({ expectedQty: stock.qty }).execute();
+      if ((moved.affected ?? 0) !== 1) throw new BadRequestException('동시 처리로 재검 대상 재고가 변경되었습니다. 다시 조회해 주세요.');
 
       const existing = await queryRunner.manager.findOne(MatStock, {
         where: { warehouseCode: defectWh.warehouseCode, itemCode, matUid, ...tenantWhere },
       });
       if (existing) {
-        await queryRunner.manager.update(MatStock,
-          { warehouseCode: defectWh.warehouseCode, itemCode, matUid, ...tenantWhere },
-          { qty: existing.qty + stock.qty },
-        );
+        await queryRunner.manager.createQueryBuilder().update(MatStock)
+          .set({ qty: () => '"QTY" + :stockDelta', availableQty: () => '"AVAILABLE_QTY" + :stockDelta' })
+          .where({ warehouseCode: defectWh.warehouseCode, itemCode, matUid, ...tenantWhere })
+          .setParameters({ stockDelta: stock.qty }).execute();
       } else {
         await queryRunner.manager.save(MatStock, {
           warehouseCode: defectWh.warehouseCode, itemCode, matUid,
-          qty: stock.qty, reservedQty: 0, company, plant,
+          qty: stock.qty, reservedQty: 0, availableQty: stock.qty, company, plant,
         });
       }
 

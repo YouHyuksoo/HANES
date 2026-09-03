@@ -148,10 +148,12 @@ export class ScrapService {
       }
 
       const newStockQty = stock.qty - qty;
-      await queryRunner.manager.update(MatStock,
-        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere },
-        { qty: newStockQty, availableQty: stock.availableQty - qty },
-      );
+      const changed = await queryRunner.manager.createQueryBuilder().update(MatStock)
+        .set({ qty: () => '"QTY" - :stockDelta', availableQty: () => '"AVAILABLE_QTY" - :stockDelta' })
+        .where({ warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere })
+        .andWhere('"QTY" >= :stockDelta AND "AVAILABLE_QTY" >= :stockDelta')
+        .setParameters({ stockDelta: qty }).execute();
+      if ((changed.affected ?? 0) !== 1) throw new BadRequestException('동시 처리로 폐기 대상 재고가 변경되었습니다. 다시 조회해 주세요.');
 
       // 재고 0이면 LOT 상태만 DEPLETED로 변경
       if (newStockQty === 0) {
@@ -189,4 +191,3 @@ export class ScrapService {
     });
   }
 }
-

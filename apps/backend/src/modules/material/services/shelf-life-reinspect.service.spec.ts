@@ -37,6 +37,10 @@ describe('ShelfLifeReInspectService', () => {
     dataSource = createMock<DataSource>();
     tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
+    queryRunner.manager.createQueryBuilder.mockReturnValue({
+      update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    } as any);
     numbering = createMock<NumberingService>();
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
     tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
