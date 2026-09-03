@@ -94,6 +94,7 @@ import { IqcPartSpec } from '../../entities/iqc-part-spec.entity';
 import { IqcPartSpecItem } from '../../entities/iqc-part-spec-item.entity';
 import { AqlStandard } from '../../entities/aql-standard.entity';
 import { AqlSamplingRule } from '../../entities/aql-sampling-rule.entity';
+import { IqcAqlPolicy } from '../../entities/iqc-aql-policy.entity';
 import { IqcTemplate } from '../../entities/iqc-template.entity';
 import { IqcTemplateItem } from '../../entities/iqc-template-item.entity';
 import { ProcessQualityCondition } from '../../entities/process-quality-condition.entity';
@@ -137,6 +138,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
       IqcPartSpecItem,
       AqlStandard,
       AqlSamplingRule,
+      IqcAqlPolicy,
       IqcTemplate,
       IqcTemplateItem,
       ProcessQualityCondition,

@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { requiresIqcAqlPolicy } from '@harness/shared';
 import { ItemMaster } from '../../../entities/item-master.entity';
+import { IqcAqlPolicy } from '../../../entities/iqc-aql-policy.entity';
 import { CreatePartDto, UpdatePartDto, PartQueryDto } from '../dto/part.dto';
 
 @Injectable()
@@ -15,6 +16,8 @@ export class PartService {
   constructor(
     @InjectRepository(ItemMaster)
     private readonly partRepository: Repository<ItemMaster>,
+    @InjectRepository(IqcAqlPolicy)
+    private readonly iqcAqlPolicyRepository: Repository<IqcAqlPolicy>,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -24,16 +27,26 @@ export class PartService {
     };
   }
 
-  private assertIqcAqlPolicySelected(input: {
+  private async resolveIqcAqlPolicyCode(input: {
     iqcYn?: string | null;
     inspectMethod?: string | null;
     iqcAqlPolicyCode?: string | null;
-  }): void {
-    if (!requiresIqcAqlPolicy(input.iqcYn, input.inspectMethod)) return;
+    company?: string;
+    plant?: string;
+  }): Promise<string | null> {
+    if (!requiresIqcAqlPolicy(input.iqcYn, input.inspectMethod)) return null;
 
-    if (!input.iqcAqlPolicyCode?.trim()) {
+    const policyCode = input.iqcAqlPolicyCode?.trim().toUpperCase();
+    if (!policyCode) {
       throw new BadRequestException('유검사 IQC 대상 품목은 AQL 정책을 선택해야 합니다.');
     }
+
+    const policy = await this.iqcAqlPolicyRepository.findOne({
+      where: { policyCode, ...this.tenantWhere(input.company, input.plant) },
+    });
+    if (!policy) throw new BadRequestException('선택한 AQL 정책을 찾을 수 없습니다.');
+    if (policy.useYn !== 'Y') throw new BadRequestException('사용 중지된 AQL 정책은 선택할 수 없습니다.');
+    return policyCode;
   }
 
   async findAll(query: PartQueryDto, company?: string, plant?: string) {
@@ -118,10 +131,12 @@ export class PartService {
 
     if (existing) throw new ConflictException(`이미 존재하는 품목 코드입니다: ${dto.itemCode}`);
 
-    this.assertIqcAqlPolicySelected({
+    const iqcAqlPolicyCode = await this.resolveIqcAqlPolicyCode({
       iqcYn: dto.iqcYn ?? 'Y',
       inspectMethod: dto.inspectMethod ?? null,
       iqcAqlPolicyCode: dto.iqcAqlPolicyCode ?? null,
+      company,
+      plant,
     });
 
     const part = this.partRepository.create({
@@ -146,7 +161,7 @@ export class PartService {
       minPackQty: dto.minPackQty ?? 0,
       iqcYn: dto.iqcYn ?? 'Y',
       inspectMethod: dto.inspectMethod ?? null,
-      iqcAqlPolicyCode: dto.iqcAqlPolicyCode ?? null,
+      iqcAqlPolicyCode,
       tactTime: dto.tactTime ?? 0,
       expiryDate: dto.expiryDate ?? 0,
       expiryExtDays: dto.expiryExtDays ?? 0,
@@ -167,10 +182,14 @@ export class PartService {
 
   async update(itemCode: string, dto: UpdatePartDto, company?: string, plant?: string) {
     const existing = await this.findById(itemCode, company, plant);
-    this.assertIqcAqlPolicySelected({
-      iqcYn: dto.iqcYn !== undefined ? dto.iqcYn : existing.iqcYn,
-      inspectMethod: dto.inspectMethod !== undefined ? dto.inspectMethod : existing.inspectMethod,
+    const effectiveIqcYn = dto.iqcYn !== undefined ? dto.iqcYn : existing.iqcYn;
+    const effectiveInspectMethod = dto.inspectMethod !== undefined ? dto.inspectMethod : existing.inspectMethod;
+    const iqcAqlPolicyCode = await this.resolveIqcAqlPolicyCode({
+      iqcYn: effectiveIqcYn,
+      inspectMethod: effectiveInspectMethod,
       iqcAqlPolicyCode: dto.iqcAqlPolicyCode !== undefined ? dto.iqcAqlPolicyCode : existing.iqcAqlPolicyCode,
+      company,
+      plant,
     });
 
     const updateData: Partial<Pick<ItemMaster,
@@ -225,7 +244,11 @@ export class PartService {
       ...(dto.boxQty !== undefined ? { boxQty: dto.boxQty } : {}),
       ...(dto.iqcYn !== undefined ? { iqcYn: dto.iqcYn } : {}),
       ...(dto.inspectMethod !== undefined ? { inspectMethod: dto.inspectMethod } : {}),
-      ...(dto.iqcAqlPolicyCode !== undefined ? { iqcAqlPolicyCode: dto.iqcAqlPolicyCode || null } : {}),
+      ...((dto.iqcAqlPolicyCode !== undefined
+        || iqcAqlPolicyCode !== existing.iqcAqlPolicyCode
+        || !requiresIqcAqlPolicy(effectiveIqcYn, effectiveInspectMethod))
+        ? { iqcAqlPolicyCode }
+        : {}),
       ...(dto.tactTime !== undefined ? { tactTime: dto.tactTime } : {}),
       ...(dto.expiryDate !== undefined ? { expiryDate: dto.expiryDate } : {}),
       ...(dto.expiryExtDays !== undefined ? { expiryExtDays: dto.expiryExtDays } : {}),

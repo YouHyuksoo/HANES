@@ -1,12 +1,12 @@
 ---
 sources: []
-verifiedCommit: 923dcaa7
+verifiedCommit: f7334e0b
 generated: true
 ---
 
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-09-03 12:37:58
+- 작성일: 2026-09-03 16:14:23
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
@@ -16,7 +16,7 @@ generated: true
 - 테이블 수: 173
 - 컬럼 수: 2865
 - PK 보유 테이블: 169
-- DB FK 수: 29
+- DB FK 수: 30
 - COM_CODES 그룹 수: 161
 
 ## 2. 모듈별 테이블
@@ -2772,6 +2772,7 @@ erDiagram
   IQC_PART_SPEC_ITEMS }o--|| IQC_ITEM_POOL : "COMPANY,PLANT_CD,INSP_ITEM_CODE"
   IQC_PART_SPEC_ITEMS }o--|| IQC_PART_SPECS : "COMPANY,PLANT_CD,ITEM_CODE"
   IQC_TEMPLATE_ITEMS }o--|| IQC_TEMPLATES : "COMPANY,PLANT_CD,TEMPLATE_ID"
+  ITEM_MASTERS }o--|| IQC_AQL_POLICIES : "COMPANY,PLANT_CD,IQC_AQL_POLICY_CODE"
   MAT_LOTS }o--|| WORKER_MASTERS : "COMPANY,PLANT_CD,SPECIAL_ACCEPT_WORKER_CODE"
   MENU_CATEGORY_ITEMS }o--|| MENU_CATEGORIES : "COMPANY,PLANT_CD,CATEGORY_CODE"
   PRODUCT_STOCKS }o--|| ITEM_MASTERS : "COMPANY,PLANT_CD,ITEM_CODE"
@@ -2807,6 +2808,7 @@ erDiagram
 | `IQC_PART_SPEC_ITEMS` | `COMPANY, PLANT_CD, INSP_ITEM_CODE` | `IQC_ITEM_POOL` | `COMPANY, PLANT_CD, INSP_ITEM_CODE` | `NO ACTION` |
 | `IQC_PART_SPEC_ITEMS` | `COMPANY, PLANT_CD, ITEM_CODE` | `IQC_PART_SPECS` | `COMPANY, PLANT_CD, ITEM_CODE` | `CASCADE` |
 | `IQC_TEMPLATE_ITEMS` | `COMPANY, PLANT_CD, TEMPLATE_ID` | `IQC_TEMPLATES` | `COMPANY, PLANT_CD, TEMPLATE_ID` | `CASCADE` |
+| `ITEM_MASTERS` | `COMPANY, PLANT_CD, IQC_AQL_POLICY_CODE` | `IQC_AQL_POLICIES` | `COMPANY, PLANT_CD, POLICY_CODE` | `NO ACTION` |
 | `MAT_LOTS` | `COMPANY, PLANT_CD, SPECIAL_ACCEPT_WORKER_CODE` | `WORKER_MASTERS` | `COMPANY, PLANT_CD, WORKER_CODE` | `NO ACTION` |
 | `MENU_CATEGORY_ITEMS` | `COMPANY, PLANT_CD, CATEGORY_CODE` | `MENU_CATEGORIES` | `COMPANY, PLANT_CD, CATEGORY_CODE` | `NO ACTION` |
 | `PRODUCT_STOCKS` | `COMPANY, PLANT_CD, ITEM_CODE` | `ITEM_MASTERS` | `COMPANY, PLANT_CD, ITEM_CODE` | `NO ACTION` |
@@ -7268,8 +7270,8 @@ erDiagram
 | `EXPIRY_DATE` | `NUMBER` | `N` |  | 기본값 `0` | 유효기간 (일) |
 | `REMARK` | `VARCHAR2(1000)` | `Y` |  |  | 비고 |
 | `USE_YN` | `VARCHAR2(1)` | `N` |  | 기본값 `'Y'`<br>COM_CODES.USE_YN: Y=사용, N=미사용<br>관례값 Y/N | 사용여부 (Y/N) |
-| `COMPANY` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 회사코드 (멀티테넌시) |
-| `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
+| `COMPANY` | `VARCHAR2(50)` | `N` | PK<br>FK->IQC_AQL_POLICIES(COMPANY, PLANT_CD, POLICY_CODE) | 테넌트 범위 컬럼 | 회사코드 (멀티테넌시) |
+| `PLANT_CD` | `VARCHAR2(50)` | `N` | PK<br>FK->IQC_AQL_POLICIES(COMPANY, PLANT_CD, POLICY_CODE) | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 등록자 |
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `PACK_UNIT` | `NUMBER` | `Y` |  |  | 팔레트 구성 단위(팔레트당 박스 수) |
@@ -7287,7 +7289,7 @@ erDiagram
 | `MIN_PACK_QTY` | `NUMBER` | `N` |  | 기본값 `0` | 원자재 포장단위(최소 출고/불출 단위). 출고는 이 배수로 올림한다 |
 | `COLOR` | `VARCHAR2(50)` | `Y` |  |  | 품목 색상 |
 | `MODEL_NAME` | `VARCHAR2(100)` | `Y` |  |  | 차종 |
-| `IQC_AQL_POLICY_CODE` | `VARCHAR2(50)` | `Y` |  |  | IQC AQL 정책 코드 |
+| `IQC_AQL_POLICY_CODE` | `VARCHAR2(50)` | `Y` | FK->IQC_AQL_POLICIES(COMPANY, PLANT_CD, POLICY_CODE) |  | IQC AQL 정책 코드 |
 | `DEFECT_MODEL_GROUP` | `VARCHAR2(50)` | `Y` |  | COM_CODES.DEFECT_MODEL_GROUP: LV=저전압, HV=고전압 | 불량코드 모델구분: LV=저전압 HV=고전압 |
 
 ### `ITEM_MASTERS_CONSUMABLE_BAK_20260616`
