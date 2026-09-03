@@ -9,6 +9,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { InspectItemImage } from "@/components/shared";
 import { EquipSummary, InspectItemRow } from "../types";
 
+import { headerWithHelp } from "../equipInspectFieldHelp";
 interface Props {
   equip: EquipSummary | null;
   items: InspectItemRow[];
@@ -50,19 +51,19 @@ export default function InspectItemPanel({ equip, items, loading, onDelete, onOp
     },
     {
       accessorKey: "itemCode",
-      header: t("master.equipInspect.itemCode", "항목코드"),
+      header: headerWithHelp("itemCode", t("master.equipInspect.itemCode", "항목코드")),
       size: 120,
       cell: ({ getValue }) => <span className="font-mono text-xs">{(getValue() as string) || "-"}</span>,
     },
-    { accessorKey: "itemName", header: t("master.equipInspect.itemName"), size: 200 },
-    { accessorKey: "criteria", header: t("master.equipInspect.criteria"), size: 180 },
+    { accessorKey: "itemName", header: headerWithHelp("itemName", t("master.equipInspect.itemName")), size: 200 },
+    { accessorKey: "criteria", header: headerWithHelp("criteria", t("master.equipInspect.criteria")), size: 180 },
     {
-      accessorKey: "cycle", header: t("master.equipInspect.cycle"), size: 80,
+      accessorKey: "cycle", header: headerWithHelp("cycle", t("master.equipInspect.cycle")), size: 80,
       cell: ({ getValue }) => cycleLabels[getValue() as string] || (getValue() as string) || "-",
     },
-    { accessorKey: "sortSeq", header: t("master.equipInspect.sortSeq", "순서"), size: 60 },
+    { accessorKey: "sortSeq", header: headerWithHelp("sortSeq", t("master.equipInspect.sortSeq", "순서")), size: 60 },
     {
-      accessorKey: "useYn", header: t("common.useYn", "사용"), size: 60,
+      accessorKey: "useYn", header: headerWithHelp("useYn", t("common.useYn", "사용")), size: 60,
       cell: ({ getValue }) => getValue() === "Y"
         ? <span className="text-green-600 dark:text-green-400 font-medium">Y</span>
         : <span className="text-red-500 font-medium">N</span>,

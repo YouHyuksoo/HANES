@@ -186,7 +186,9 @@
       "defect": "不良",
       "hourlyTitle": "每小时实绩（今日）",
       "todayOrders": "今日工单",
-      "production": { "title": "生产状况看板" },
+      "production": {
+        "title": "生产状况看板"
+      },
       "kpi": {
         "planQty": "总计划",
         "goodQty": "总实绩",
@@ -589,12 +591,54 @@
     "goHome": "前往仪表盘"
   },
   "dashboard": {
-    "layout": { "group": "形态", "cockpit": "驾驶舱", "board": "出发看板", "map": "线路图", "charts": "图表" },
+    "layout": {
+      "group": "形态",
+      "cockpit": "驾驶舱",
+      "board": "出发看板",
+      "map": "线路图",
+      "charts": "图表"
+    },
     "skinGroup": "配色",
-    "board": { "orders": "工单出发看板", "orderNo": "工单号", "item": "品目", "where": "工序 · 设备", "qty": "实绩 / 计划", "progress": "进度", "status": "状态", "noOrders": "今日暂无工单。", "equipRun": "设备运行", "page": "{{page}} / {{count}}" },
-    "map": { "flowLine": "物流线", "equipLine": "设备线", "hint": "点击站点仅显示该阶段的处理项，再点一次显示全部", "station": "选中站点", "all": "全部", "pressure": "压力" },
-    "charts": { "hourly": "分时实绩（今日）", "byProcess": "工序不良率", "topDefects": "主要不良类型", "status": "状态分布", "orderStatus": "工单", "equipStatus": "设备", "equipNormal": "正常", "equipMaint": "保养中", "equipStop": "停止", "inventory": "库存处理项", "rate": "不良率", "qty": "数量", "noData": "暂无数据" },
-    "skin": { "control": "管制塔", "departure": "航班牌", "datawall": "数据墙" },
+    "board": {
+      "orders": "工单出发看板",
+      "orderNo": "工单号",
+      "item": "品目",
+      "where": "工序 · 设备",
+      "qty": "实绩 / 计划",
+      "progress": "进度",
+      "status": "状态",
+      "noOrders": "今日暂无工单。",
+      "equipRun": "设备运行",
+      "page": "{{page}} / {{count}}"
+    },
+    "map": {
+      "flowLine": "物流线",
+      "equipLine": "设备线",
+      "hint": "点击站点仅显示该阶段的处理项，再点一次显示全部",
+      "station": "选中站点",
+      "all": "全部",
+      "pressure": "压力"
+    },
+    "charts": {
+      "hourly": "分时实绩（今日）",
+      "byProcess": "工序不良率",
+      "topDefects": "主要不良类型",
+      "status": "状态分布",
+      "orderStatus": "工单",
+      "equipStatus": "设备",
+      "equipNormal": "正常",
+      "equipMaint": "保养中",
+      "equipStop": "停止",
+      "inventory": "库存处理项",
+      "rate": "不良率",
+      "qty": "数量",
+      "noData": "暂无数据"
+    },
+    "skin": {
+      "control": "管制塔",
+      "departure": "航班牌",
+      "datawall": "数据墙"
+    },
     "tvMode": "电视模式",
     "title": "仪表盘",
     "subtitle": "从入库到成品：今日工厂流程与当前待处理事项",
@@ -1287,7 +1331,8 @@
         "packUnit": "托盘或上级包装单位的构成基准。",
         "storageLocation": "按品目固定的默认存储库位。",
         "imageUrl": "品目照片文件路径。",
-        "remark": "品目管理参考事项。"
+        "remark": "品目管理参考事项。",
+        "defectModelGroup": "以低压/高压等模型组区分不良代码适用范围的基准。"
       },
       "defectModelGroup": "型号区分"
     },
@@ -1898,7 +1943,15 @@
       "spec": "规格",
       "selectPoolItem": "选择点检项目主数据",
       "noPoolForType": "该设备类型/点检类型下没有已登记的点检项目主数据。请先在点检项目主数据中登记。",
-      "equipTypeEtc": "其他"
+      "equipTypeEtc": "其他",
+      "fieldHelp": {
+        "itemCode": "分配给此设备的点检项目代码。与点检项目主数据的代码相同。",
+        "itemName": "点检项目名称。来自点检项目主数据，此处不可修改。",
+        "criteria": "点检时确认的基准文字。在点检项目主数据中管理。",
+        "cycle": "点检周期（日/周/月等）。在点检项目主数据中管理。",
+        "sortSeq": "点检画面中项目的排列顺序。数值越小越靠前。",
+        "useYn": "此设备是否将该项目作为点检对象。为N时不在点检画面显示。"
+      }
     },
     "equipInspectItem": {
       "title": "点检项目主数据",
@@ -1911,7 +1964,22 @@
       "sectionCriteria": "判定基准",
       "subtitle": "按设备类型登记和管理点检项目。设备点检映射的基准信息。",
       "statTotal": "全部项目",
-      "statEquipTypes": "设备类型数"
+      "statEquipTypes": "设备类型数",
+      "fieldHelp": {
+        "itemCode": "标识点检项目的唯一代码。登记后不可更改，QR标签上也打印此代码。",
+        "equipType": "此点检项目适用的设备类型（公共代码 EQUIP_TYPE）。向设备分配项目时按类型筛选的依据。",
+        "itemName": "点检者在画面上看到的点检项目名称。",
+        "inspectType": "点检区分（日常/定期/预防保养/作业者点检）。决定在哪个点检画面显示。",
+        "itemType": "判定方式。判定型（VISUAL）按OK/NG判定，测量型（MEASURE）输入数值按上下限判定。",
+        "criteria": "点检时确认的基准文字。测量型以上下限值为准，此文字为辅助说明。",
+        "cycle": "点检周期（日/周/月/季度/半年/年）。选取定期点检预定对象的依据。",
+        "unit": "测量型项目的测量单位（公共代码 UNIT_TYPE）。",
+        "lslValue": "测量型项目的下限值。测量值小于此值时判定为NG。",
+        "uslValue": "测量型项目的上限值。测量值大于此值时判定为NG。",
+        "imageUrl": "显示点检位置或基准的照片文件路径。在点检画面作为参考图像显示。",
+        "useYn": "是否使用。为N时不能新分配给设备，并从点检对象中排除。",
+        "remark": "关于点检项目的备注。"
+      }
     },
     "box": {
       "title": "包装箱管理",
@@ -5184,7 +5252,25 @@
       "sectionCycle": "周期设置",
       "equipName": "设备名称",
       "fieldInput": "请输入 {{field}}",
-      "fieldRequired": "{{field}} 为必填项"
+      "fieldRequired": "{{field}} 为必填项",
+      "fieldHelp": {
+        "planCode": "标识预防保全计划的唯一代码。登记后不可更改。",
+        "equipCode": "此计划执行预防保全的对象设备。从设备主数据中选择。",
+        "equipName": "对象设备的名称。通过设备代码查询设备主数据显示。",
+        "planName": "现场使用的计划名称。例：月度润滑点检。",
+        "description": "计划的补充说明。记录作业范围或注意事项。",
+        "pmType": "保全类型（公共代码 PM_TYPE）。时间基准按周期生成工单，使用量基准在运行实绩达到基准值时生成工单。",
+        "cycleType": "重复周期类型（公共代码 PM_CYCLE_TYPE）。作为周期值的单位：日/周/月/年。",
+        "cycleValue": "与周期类型相乘的重复间隔。例：周期类型为月、值为3时每3个月执行一次。",
+        "estimatedTime": "执行整个计划所需的预计时间（小时）。用于作业日程安排参考。",
+        "itemCount": "此计划登记的保全项目数。执行工单时按项目输入结果。",
+        "nextDueAt": "下次预防保全预定日。生成和完成工单时按周期自动更新。",
+        "useYn": "计划是否使用。为N时从工单自动生成对象中排除。",
+        "criteria": "项目的合格/不合格判定基准。作业者在执行画面参照此基准输入结果。",
+        "sparePartCode": "执行项目时更换的备件。从设备BOM登记的部件中选择。",
+        "sparePartQty": "备件更换数量。",
+        "estimatedMinutes": "执行此单个项目所需的预计时间（分钟）。"
+      }
     },
     "pmWorkOrder": {
       "woSchedule": "工单现况",
@@ -5222,7 +5308,21 @@
       "woInProgress": "进行中",
       "woCompleted": "完成",
       "woOverdue": "逾期",
-      "weekdays": "日,一,二,三,四,五,六"
+      "weekdays": "日,一,二,三,四,五,六",
+      "fieldHelp": {
+        "workOrderNo": "正在执行的预防保全工单（WO）编号。",
+        "equipCode": "预防保全对象设备。同时显示设备代码和设备名。",
+        "assignedWorker": "执行作业的作业者。从作业者主数据中选择，完成处理时必填。",
+        "seq": "保全项目顺序号。按PM计划登记的项目顺序。",
+        "itemName": "需点检或更换的保全项目名称。从PM计划的保全项目复制。",
+        "itemType": "项目类型（公共代码 PM_ITEM_TYPE）。区分点检/更换/清扫等作业性质。",
+        "criteria": "项目的合格/不合格判定基准。参照此基准输入结果。",
+        "result": "各项目判定结果（PASS/FAIL）。所有项目输入后才能完成处理。",
+        "itemRemark": "各项目备注。判定为FAIL的项目必须填写原因。",
+        "overallResult": "作业综合结果。任一项目为FAIL则自动判定为整体FAIL。",
+        "completedAt": "作业完成处理的日期时间。",
+        "remark": "整个作业的备注。记录特殊事项或后续措施。"
+      }
     },
     "inspectCalendar": {
       "title": "设备日常点检日历",
@@ -5268,7 +5368,20 @@
       "legendNotStarted": "未开始",
       "failCauseRequired": "需要输入 {{label}}",
       "itemResultRequired": "需输入 {{label}}",
-      "weekdays": "日,一,二,三,四,五,六"
+      "weekdays": "日,一,二,三,四,五,六",
+      "fieldHelp": {
+        "dayStatus": "每日点检状态。按点检项目周期(每日/每周/每月)计算对象设备，并与已保存记录比较，显示全部合格·进行中·不合格·未开始·逾期。单元格内数字为已完成设备数/对象设备数。",
+        "equip": "点检对象设备的代码和名称。以设备主数据为准。",
+        "inspectDate": "点检基准日期。按日历中选择的日期保存。",
+        "inspectorName": "执行点检的作业者。从作业者主数据中选择，保存时必填。",
+        "seq": "点检项目的显示顺序。按设备点检项目的排序顺序。",
+        "itemName": "要点检的项目名称。在设备点检项目主数据中管理。",
+        "criteria": "项目的判定基准文字。符合基准选择合格，不符合选择不合格。",
+        "itemResult": "各项目判定。选择合格(PASS)或不合格(FAIL)，所有项目都输入后才能保存。",
+        "failCause": "各项目备注。判定为不合格(FAIL)的项目必须输入不合格原因。",
+        "overallResult": "综合判定。自动计算：任一项目不合格则为FAIL，全部合格则为PASS。",
+        "remark": "本次点检的整体备注。记录特殊事项或处理内容。"
+      }
     },
     "periodicInspectCalendar": {
       "title": "设备定期点检日历",
@@ -5332,7 +5445,24 @@
       "statusDoneOk": "完成(OK)",
       "statusNone": "未点检",
       "typeMeasure": "测量型",
-      "typeVisual": "判定型"
+      "typeVisual": "判定型",
+      "fieldHelp": {
+        "equipCode": "已分配点检项目的设备代码。仅显示设备点检项目池中有使用中项目的设备。",
+        "equipName": "设备主数据中登记的设备名称。",
+        "equipType": "设备类型。列表按此值分组显示。",
+        "status": "所选日期的处理状态。无保存记录时为未点检，有记录时按综合判定显示完成(OK)/完成(NG)。",
+        "inspectDate": "点检基准日期。更改顶部日期后，将按该日期保存和查询点检记录。",
+        "inspectorName": "执行点检的作业者。从作业者主数据中选择，保存时必填。",
+        "startTime": "开始录入该设备点检的时刻（画面基准）。仅供参考，不会原样保存。",
+        "overallResult": "综合判定。任一项目为NG则为FAIL，全部OK则为PASS。保存FAIL时自动登记维修请求。",
+        "seq": "点检项目的显示顺序。按设备点检项目的排序顺序。",
+        "itemName": "要点检的项目名称。在设备点检项目主数据中管理。",
+        "itemType": "项目类型。测量型(MEASURE)输入数值与规格比较，判定型(VISUAL)直接选择OK/NG。",
+        "criteria": "判定基准。测量型显示为下限~上限(单位)，判定型显示为基准文字。",
+        "measureValue": "测量型输入测量值后自动与规格比较判定；判定型直接选择OK/NG。",
+        "judge": "各项目判定结果(OK/NG)。根据输入的测量值或选择结果显示。",
+        "itemRemark": "各项目备注。NG时记录不良内容，便于维修时参考。"
+      }
     },
     "periodicInspect": {
       "title": "设备定期点检",
@@ -5395,7 +5525,17 @@
       "statTotal": "总点检数",
       "excelDownload": "Excel下载",
       "searchPlaceholder": "搜索设备代码、名称...",
-      "equipType": "设备类型"
+      "equipType": "设备类型",
+      "fieldHelp": {
+        "inspectDate": "执行点检的日期。与设备、点检类型一起作为区分记录的键。",
+        "inspectType": "点检区分（公共代码 INSPECT_CHECK_TYPE）。表示是日常/定期/作业者点检中的哪种记录。",
+        "equipCode": "被点检的设备代码。",
+        "equipName": "被点检的设备名称。来自设备主数据。",
+        "equipType": "设备类型（公共代码 EQUIP_TYPE）。来自设备主数据。",
+        "inspectorName": "执行点检的人员姓名。",
+        "overallResult": "点检综合判定（公共代码 INSPECT_JUDGE）。只要有一项NG，综合结果即记录为不合格。",
+        "remark": "点检时记录的特殊事项。"
+      }
     },
     "mold": {
       "title": "模具管理",
@@ -5429,7 +5569,31 @@
       "warningLabel": "警告",
       "overdueLabel": "超出",
       "retiredLabel": "报废",
-      "fieldRequired": "{{field}} 为必填项"
+      "fieldRequired": "{{field}} 为必填项",
+      "fieldHelp": {
+        "moldCode": "标识模具的唯一代码。登记后不可更改。",
+        "moldName": "现场使用的模具名称。",
+        "moldType": "模具类型（公共代码 MOLD_TYPE）。压接/注塑等用途分类依据。",
+        "itemCode": "使用此模具生产的品目代码。通过品目搜索选择。",
+        "cavity": "每次打数（shot）生产的数量（型腔数）。用于打数与产量换算。",
+        "currentShots": "累计使用打数。登记使用记录时自动累加。",
+        "guaranteedShots": "制造商保证的寿命打数。累计打数达到此值时设备联锁并视为需更换。",
+        "shotRate": "累计打数除以保证打数的使用率（%）。超过90%需注意，超过100%为更换时点。",
+        "status": "模具状态（公共代码 MOLD_STATUS）。报废处理后变为 RETIRED，不能再使用。",
+        "maintenanceCycle": "保养（维修）周期打数。每达到此打数即判定需要保养并列入保养计划。",
+        "lastMaintenanceDate": "最近一次保养（维修）日期。",
+        "nextMaintenanceDate": "下次保养预定日。临近该日期时显示在保养计划列表中。",
+        "location": "模具保管位置（模具室、货架编号等）。",
+        "maker": "模具制造商。",
+        "purchaseDate": "模具购买（引进）日期。",
+        "remark": "关于模具的备注。",
+        "usageDate": "模具使用日期。",
+        "shotCount": "本次使用产生的打数。登记后累加到模具累计打数。",
+        "orderNo": "使用模具的作业指示编号。用于生产追溯。",
+        "equipCode": "装配并使用模具的设备。超过保证打数时该设备联锁。",
+        "workerCode": "使用模具的作业者。",
+        "usageRemark": "关于使用记录的备注。"
+      }
     },
     "calibrationHistory": {
       "calNo": "校准编号",
@@ -5472,7 +5636,17 @@
       "statTotal": "全部 WO",
       "subtitle": "查询预防保养工单的执行结果。",
       "title": "PM 保养结果",
-      "woNo": "WO 编号"
+      "woNo": "WO 编号",
+      "fieldHelp": {
+        "workOrderNo": "预防保全工单（WO）编号。在日历中按月生成时自动编号。",
+        "scheduledDate": "预定执行作业的日期。以PM计划的下次预定日为基准。",
+        "equipCode": "预防保全对象设备的代码。",
+        "equipName": "对象设备的名称。通过设备代码查询设备主数据显示。",
+        "overallResult": "作业综合结果。任一项目为FAIL则整体判定为FAIL。",
+        "priority": "作业优先级（公共代码 PM_PRIORITY）。HIGH应优先处理。",
+        "completedAt": "作业完成处理的日期时间。即在执行画面按下完成按钮的时刻。",
+        "remark": "整个作业的备注。显示在执行画面输入的特殊事项。"
+      }
     }
   },
   "shipping": {
@@ -5959,7 +6133,24 @@
       "codeRequired": "请输入耗材代码。",
       "nameRequired": "请输入耗材名称。",
       "namePlaceholder": "110端子压接模具",
-      "locationPlaceholder": "模具室-A1"
+      "locationPlaceholder": "模具室-A1",
+      "fieldHelp": {
+        "consumableCode": "标识耗材（模具、治具、工具等）的唯一代码。登记后不可更改。",
+        "consumableName": "现场使用的耗材名称。",
+        "category": "耗材分类（公共代码 CONSUMABLE_CATEGORY）。模具/治具/工具等管理方式的区分依据。",
+        "expectedLife": "更换基准打数（寿命）。累计打数达到此值时标记为需更换。",
+        "warningCount": "开始发出警告的打数。应设置为小于寿命打数。",
+        "currentCount": "主数据累计使用打数。保存实绩时自动累计。",
+        "stockQty": "当前库存数量。通过入库/出库处理更新。",
+        "safetyStock": "库存不足判定基准数量。库存低于此值时显示为不足。",
+        "location": "保管位置（模具室、货架编号等）。",
+        "vendor": "采购/制作供应商。",
+        "unitPrice": "单价。用于库存金额计算和采购参考。",
+        "status": "寿命状态（正常/警告/更换）。根据累计打数与警告·寿命打数自动判定。",
+        "operStatus": "运用状态（仓库保管/设备装配等）。",
+        "imageUrl": "耗材照片文件路径。",
+        "useYn": "是否使用。为N时从新选择列表中排除。"
+      }
     },
     "receiving": {
       "title": "耗材入库",
@@ -5998,7 +6189,28 @@
       "pendingTitle": "待入库列表",
       "labelPrintedAt": "标签打印日",
       "returnScanHint": "退回入库模式",
-      "returnBtn": "确认退回"
+      "returnBtn": "确认退回",
+      "fieldHelp": {
+        "createdAt": "入库或入库退回的处理日期时间。作为期间筛选和当日汇总的依据。",
+        "consumableCode": "入库对象耗材主数据代码。在登记面板中通过搜索按钮选择。",
+        "consumableName": "与耗材代码关联的名称。",
+        "conUid": "通过条码扫描入库时的标签个体UID。手动入库仅记录数量，无UID。",
+        "logType": "IN（入库）/IN_RETURN（入库退回）区分。退回时数量从库存中扣除。",
+        "qty": "入库数量。入库为+，入库退回为-，反映到主数据库存数量。",
+        "vendorCode": "供货供应商代码。用于按供应商查询入库实绩。",
+        "vendorName": "供货供应商名称。",
+        "unitPrice": "入库单价。用于入库金额（单价×数量）汇总。",
+        "incomingType": "NEW（新购）/REPLACEMENT（更换用）区分。更换用入库按寿命到期更换实绩单独查看。",
+        "remark": "入库相关备注（送货单号、特殊事项等）。"
+      },
+      "scanFieldHelp": {
+        "conUid": "标签上打印的个体UID。扫描此值即确认入库（PENDING → ACTIVE）。",
+        "consumableCode": "UID所属的耗材主数据代码。",
+        "consumableName": "与耗材代码关联的名称。",
+        "category": "耗材分类（公共代码 CONSUMABLE_CATEGORY）。",
+        "labelPrintedAt": "标签（UID）发行日期时间。长期未入库的件需确认实物是否到货。",
+        "vendorName": "发行UID时记录的供应商名称。无则为空。"
+      }
     },
     "issuing": {
       "title": "耗材出库",
@@ -6032,7 +6244,22 @@
       "scanPlaceholder": "扫描耗材UID条码...",
       "confirmBtn": "出库确认",
       "returnBtn": "取消确认",
-      "returnScanHint": "取消出库模式"
+      "returnScanHint": "取消出库模式",
+      "fieldHelp": {
+        "createdAt": "出库或出库取消的处理日期时间。作为期间筛选和当日汇总的依据。",
+        "consumableCode": "已出库的耗材主数据代码。",
+        "consumableName": "与耗材代码关联的名称。",
+        "conUid": "扫描出库的个体UID。用于追踪哪个实例流向工序的键。",
+        "logType": "OUT（出库）/OUT_RETURN（出库取消）区分。出库取消将实例恢复为仓库库存（ACTIVE）。",
+        "qty": "出库数量。出库显示为-，取消为+，扫描出库每UID为1。",
+        "lineCode": "出库对象产线代码。仅在手动出库指定时有值。",
+        "processCode": "出库对象工序代码。扫描出库时记录所选工序，实例移至该工序库存（PROC_WAIT）。",
+        "equipCode": "出库对象设备代码。仅在手动出库指定时有值。",
+        "remark": "出库相关备注。"
+      },
+      "scanFieldHelp": {
+        "processCode": "UID出库的目标工序。出库模式下须先选工序才能扫描，扫描的实例成为该工序库存（PROC_WAIT）。"
+      }
     },
     "stock": {
       "title": "耗材库存",
@@ -6063,7 +6290,22 @@
       "statusActive": "可用",
       "statusMounted": "安装中",
       "statusRepair": "维修中",
-      "statusScrapped": "报废"
+      "statusScrapped": "报废",
+      "fieldHelp": {
+        "conUid": "标签上打印的个体实例UID。入库、出库、装配扫描均以此值处理。",
+        "qty": "一个UID代表1个实物，故始终为1。按耗材合计时数行数即可。",
+        "consumableCode": "实例所属的耗材主数据代码。",
+        "consumableName": "与耗材代码关联的名称。",
+        "category": "耗材分类（公共代码 CONSUMABLE_CATEGORY）。",
+        "status": "实例状态（公共代码 CON_STOCK_STATUS）。按 PENDING（未入库）→ACTIVE（仓库）→PROC_WAIT（工序待用）→MOUNTED（装配）流转。",
+        "currentCount": "此实例累计使用打数与主数据寿命打数。80%以上橙色，100%以上红色提示更换时点。",
+        "location": "当前保管位置。记录入库扫描时选择的位置。",
+        "processCode": "已出库的工序代码。填入出库扫描时选择的工序，出库取消时清空。",
+        "mountedEquipCode": "当前装配的设备代码。在仓库或工序待用时为空。",
+        "recvDate": "入库确认（扫描）日期。未入库（PENDING）实例为空。",
+        "vendorName": "入库时记录的供应商名称。",
+        "unitPrice": "入库时记录的实例单价。用于库存金额计算。"
+      }
     },
     "life": {
       "title": "寿命状况",
@@ -6086,7 +6328,19 @@
       "impendingReplace": "即将更换",
       "immediateAction": "立即处理",
       "replaceAction": "更换",
-      "searchPlaceholder": "搜索代码、名称..."
+      "searchPlaceholder": "搜索代码、名称...",
+      "fieldHelp": {
+        "conUid": "标签上打印的个体实例UID。寿命按此UID而非主数据单位管理。",
+        "consumableCode": "实例所属的耗材主数据代码。",
+        "consumableName": "与耗材代码关联的名称。",
+        "category": "耗材分类（公共代码 CONSUMABLE_CATEGORY）。",
+        "location": "当前保管位置。寻找更换对象时参考。",
+        "mountedEquipCode": "当前装配的设备代码。若装配中的实例为更换状态，需确认该设备是否停机。",
+        "lifePercentage": "寿命消耗率（%）。80%以上黄色（警告），100%以上红色（更换）。",
+        "currentCount": "此实例累计使用打数与主数据设定的寿命打数。保存实绩时累计。",
+        "remainingLife": "距更换剩余打数。超过寿命时超出部分以+红色显示。",
+        "lastReplaceAt": "此实例入库确认日期。更换后以新UID入库，故视为最近更换时点。"
+      }
     },
     "label": {
       "title": "耗材标签发行",
@@ -6123,7 +6377,16 @@
       "preview": "预览",
       "reprint": "重新发行",
       "previewAria": "预览标签 {{conUid}}",
-      "reprintAria": "重新发行标签 {{conUid}}"
+      "reprintAria": "重新发行标签 {{conUid}}",
+      "fieldHelp": {
+        "consumableCode": "要发行标签的耗材主数据代码。发行的UID归属于此代码进行管理。",
+        "consumableName": "现场使用的耗材名称。",
+        "category": "耗材分类（公共代码 CONSUMABLE_CATEGORY）。作为上方分类筛选和标签模板选择的依据。",
+        "stockQty": "主数据当前库存数量。每次入库确认（扫描）时加1。",
+        "instanceCount": "此耗材已发行的UID（个体实例）数。括号内未入库为已发行标签但尚未扫描入库的件数。",
+        "pendingCount": "标签已发行但尚未确认入库的UID数。若有剩余，追加发行前先确认入库处理。",
+        "qty": "本次新发行的UID数量（1~99）。按输入数量生成PENDING状态实例并打印标签。"
+      }
     },
     "search": {
       "title": "耗材搜索",
@@ -6155,7 +6418,17 @@
       "remarkPlaceholder": "输入备注",
       "searchPlaceholder": "搜索代码、名称...",
       "completeRepairAction": "维修完成",
-      "completeRepairTitle": "维修完成处理"
+      "completeRepairTitle": "维修完成处理",
+      "fieldHelp": {
+        "consumableCode": "装配/拆卸对象耗材主数据代码。",
+        "consumableName": "现场使用的耗材名称。",
+        "category": "耗材分类（公共代码 CONSUMABLE_CATEGORY）。",
+        "mountedEquipCode": "当前装配的设备代码。装配时记录，拆卸时清空。已装配的耗材不能装到其他设备。",
+        "lifeProgress": "主数据寿命消耗率（%）。100%以上时装配设备可能被联锁。",
+        "location": "仓库保管时的位置。寻找待装配耗材时参考。",
+        "equipCode": "要装配耗材的设备。保存后主数据的装配设备变更并留下装配记录。",
+        "remark": "装配/拆卸/维修处理的原因或备注。在履历查询中一并显示。"
+      }
     }
   },
   "outsourcing": {
@@ -9053,17 +9326,115 @@
     "legendReversal": "逆处理",
     "legendReference": "参照",
     "knowledge": {
-      "tab": "知识关系图", "title": "业务知识关系图", "description": "选择节点可展开一层关系；请在详情面板中明确执行中心切换。", "selectExpand": "选择 {{label}} 并展开关系", "center": "中心", "currentCenter": "当前中心", "relation": "关系", "condition": "条件：{{condition}}", "relationList": "关系列表", "emptyRelations": "没有可显示的关系。", "evidenceLabel": "依据 {{status}}",
-      "search": { "label": "搜索业务、画面和表", "placeholder": "业务 · 画面 · 表 · 异常", "action": "搜索", "aiAction": "使用 AI 解析", "aiLoading": "AI 解析中", "localResults": "本地目录", "aiResults": "AI 候选", "noLocalResults": "没有匹配的本地结果。", "noAiResults": "没有 AI 候选。", "invalidCenter": "未知中心点：{{center}}", "staleAi": "已丢弃过期或无效的 AI 响应。", "aiUnavailable": "AI 解析不可用。", "aiFailed": "AI 解析请求失败。" },
-      "layouts": { "mindmap": "思维导图", "process": "流程", "relation": "关系" }, "views": { "business": "业务", "technical": "技术" },
-      "toolbar": { "label": "知识图工具", "back": "后退", "forward": "前进", "reset": "重置", "fit": "完整显示", "copy": "复制链接", "copySuccess": "链接已复制。", "copyFailed": "无法复制链接。" , "cursorSelect": "选择 · 移动节点", "cursorPan": "抓手 · 移动画布", "fullscreen": "全屏", "exitFullscreen": "退出全屏", "recenter": "以所选节点为中心"},
-      "categories": { "flow": "流程", "masters": "基础信息", "constraints": "条件", "requiredTasks": "必需作业", "exceptions": "异常", "logic": "逻辑", "tables": "数据" },
-      "coverageStatus": { "present": "有", "none": "无", "undocumented": "未记录" }, "evidenceStatus": { "verified": "已验证", "partial": "部分", "undocumented": "未记录" },
-      "filters": { "label": "关系筛选", "mobileLabel": "移动端关系筛选", "mobileSummary": "关系筛选 · {{count}} 类", "channels": "关系通道 · {{count}}", "evidenceHint": "依据按各关系的验证状态显示，而不是作为语义筛选项。" },
-      "canvas": { "label": "业务知识关系画布", "minimap": "知识图缩略图" },
-      "kinds": { "activity": "业务", "screen": "画面", "master": "基础", "constraint": "条件", "requiredTask": "必需", "exception": "异常", "logic": "逻辑", "data": "数据", "evidence": "依据" },
-      "detail": { "label": "所选知识详情", "dossier": "节点详情", "centerAction": "设为中心", "noDescription": "尚未关联说明文档。", "evidence": "依据状态", "openScreen": "打开应用画面", "businessHeading": "业务目的 · 时点 · 条件 · 异常", "technicalHeading": "路由 · 数据 · 依据", "incoming": "传入关系", "outgoing": "传出关系", "noRelations": "无连接" },
-      "recovery": { "code": "未找到中心点", "title": "找不到共享链接的中心点。", "description": "请通过上方搜索，从当前目录中选择业务、画面或表进行恢复。系统未自动切换到其他中心点。" }
+      "tab": "知识关系图",
+      "title": "业务知识关系图",
+      "description": "选择节点可展开一层关系；请在详情面板中明确执行中心切换。",
+      "selectExpand": "选择 {{label}} 并展开关系",
+      "center": "中心",
+      "currentCenter": "当前中心",
+      "relation": "关系",
+      "condition": "条件：{{condition}}",
+      "relationList": "关系列表",
+      "emptyRelations": "没有可显示的关系。",
+      "evidenceLabel": "依据 {{status}}",
+      "search": {
+        "label": "搜索业务、画面和表",
+        "placeholder": "业务 · 画面 · 表 · 异常",
+        "action": "搜索",
+        "aiAction": "使用 AI 解析",
+        "aiLoading": "AI 解析中",
+        "localResults": "本地目录",
+        "aiResults": "AI 候选",
+        "noLocalResults": "没有匹配的本地结果。",
+        "noAiResults": "没有 AI 候选。",
+        "invalidCenter": "未知中心点：{{center}}",
+        "staleAi": "已丢弃过期或无效的 AI 响应。",
+        "aiUnavailable": "AI 解析不可用。",
+        "aiFailed": "AI 解析请求失败。"
+      },
+      "layouts": {
+        "mindmap": "思维导图",
+        "process": "流程",
+        "relation": "关系"
+      },
+      "views": {
+        "business": "业务",
+        "technical": "技术"
+      },
+      "toolbar": {
+        "label": "知识图工具",
+        "back": "后退",
+        "forward": "前进",
+        "reset": "重置",
+        "fit": "完整显示",
+        "copy": "复制链接",
+        "copySuccess": "链接已复制。",
+        "copyFailed": "无法复制链接。",
+        "cursorSelect": "选择 · 移动节点",
+        "cursorPan": "抓手 · 移动画布",
+        "fullscreen": "全屏",
+        "exitFullscreen": "退出全屏",
+        "recenter": "以所选节点为中心"
+      },
+      "categories": {
+        "flow": "流程",
+        "masters": "基础信息",
+        "constraints": "条件",
+        "requiredTasks": "必需作业",
+        "exceptions": "异常",
+        "logic": "逻辑",
+        "tables": "数据"
+      },
+      "coverageStatus": {
+        "present": "有",
+        "none": "无",
+        "undocumented": "未记录"
+      },
+      "evidenceStatus": {
+        "verified": "已验证",
+        "partial": "部分",
+        "undocumented": "未记录"
+      },
+      "filters": {
+        "label": "关系筛选",
+        "mobileLabel": "移动端关系筛选",
+        "mobileSummary": "关系筛选 · {{count}} 类",
+        "channels": "关系通道 · {{count}}",
+        "evidenceHint": "依据按各关系的验证状态显示，而不是作为语义筛选项。"
+      },
+      "canvas": {
+        "label": "业务知识关系画布",
+        "minimap": "知识图缩略图"
+      },
+      "kinds": {
+        "activity": "业务",
+        "screen": "画面",
+        "master": "基础",
+        "constraint": "条件",
+        "requiredTask": "必需",
+        "exception": "异常",
+        "logic": "逻辑",
+        "data": "数据",
+        "evidence": "依据"
+      },
+      "detail": {
+        "label": "所选知识详情",
+        "dossier": "节点详情",
+        "centerAction": "设为中心",
+        "noDescription": "尚未关联说明文档。",
+        "evidence": "依据状态",
+        "openScreen": "打开应用画面",
+        "businessHeading": "业务目的 · 时点 · 条件 · 异常",
+        "technicalHeading": "路由 · 数据 · 依据",
+        "incoming": "传入关系",
+        "outgoing": "传出关系",
+        "noRelations": "无连接"
+      },
+      "recovery": {
+        "code": "未找到中心点",
+        "title": "找不到共享链接的中心点。",
+        "description": "请通过上方搜索，从当前目录中选择业务、画面或表进行恢复。系统未自动切换到其他中心点。"
+      }
     }
   }
 }

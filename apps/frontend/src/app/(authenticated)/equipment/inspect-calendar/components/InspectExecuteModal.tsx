@@ -13,10 +13,11 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Modal, Button, Input, Select } from "@/components/ui";
+import { Modal, Button } from "@/components/ui";
 import { InspectItemImage } from "@/components/shared";
 import { CheckCircle, XCircle } from "lucide-react";
 import type { DayScheduleEquip, DayScheduleItem } from "./DaySchedulePanel";
+import { FieldInput, FieldSelect, FieldHelpIcon, HeaderHelp } from "../inspectCalendarFieldHelp";
 import { useWorkerOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
@@ -165,14 +166,16 @@ export default function InspectExecuteModal({
       <div className="space-y-4">
         {/* Header info */}
         <div className="grid grid-cols-2 gap-4">
-          <Input
+          <FieldInput
+            field="inspectDate"
             label={t("equipment.inspectCalendar.inspectDate")}
             value={date}
             disabled
-            fullWidth
           />
-          <Select
+          <FieldSelect
+            field="inspectorName"
             label={t("equipment.inspectCalendar.inspectorName")}
+            required
             options={[
               { value: "", label: t("equipment.inspectCalendar.inspectorPlaceholder") },
               ...workerOptions,
@@ -180,7 +183,6 @@ export default function InspectExecuteModal({
             value={selectedWorkerId}
             onChange={setSelectedWorkerId}
             disabled={workersLoading}
-            fullWidth
           />
         </div>
 
@@ -190,22 +192,22 @@ export default function InspectExecuteModal({
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 <th className="px-3 py-2 text-left text-xs font-medium text-text-muted w-12">
-                  {t("equipment.inspectCalendar.seq")}
+                  <HeaderHelp field="seq" label={t("equipment.inspectCalendar.seq")} />
                 </th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-text-muted">
-                  {t("equipment.inspectCalendar.itemName")}
+                  <HeaderHelp field="itemName" label={t("equipment.inspectCalendar.itemName")} />
                 </th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-text-muted w-40">
-                  {t("equipment.inspectCalendar.criteria")}
+                  <HeaderHelp field="criteria" label={t("equipment.inspectCalendar.criteria")} />
                 </th>
                 <th className="px-3 py-2 text-center text-xs font-medium text-text-muted w-20">
                   {t("master.equipInspectItem.image", "사진")}
                 </th>
                 <th className="px-3 py-2 text-center text-xs font-medium text-text-muted w-32">
-                  {t("equipment.inspectCalendar.itemResult")}
+                  <HeaderHelp field="itemResult" label={t("equipment.inspectCalendar.itemResult")} align="center" />
                 </th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-text-muted w-48">
-                  {t("equipment.inspectCalendar.failCause")}
+                  <HeaderHelp field="failCause" label={t("equipment.inspectCalendar.failCause")} />
                 </th>
               </tr>
             </thead>
@@ -275,8 +277,9 @@ export default function InspectExecuteModal({
 
         {/* Overall result */}
         <div className="flex items-center gap-4 px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <span className="text-sm font-medium text-text">
-            {t("equipment.inspectCalendar.overallResult")}:
+          <span className="text-sm font-medium text-text inline-flex items-center gap-1">
+            <span>{t("equipment.inspectCalendar.overallResult")}:</span>
+            <FieldHelpIcon field="overallResult" />
           </span>
           {overallResult ? (
             <span className={`px-3 py-1 rounded text-sm font-bold ${
@@ -293,12 +296,12 @@ export default function InspectExecuteModal({
         </div>
 
         {/* Remark */}
-        <Input
+        <FieldInput
+          field="remark"
           label={t("equipment.inspectCalendar.remark")}
           placeholder={t("equipment.inspectCalendar.remarkPlaceholder")}
           value={remark}
           onChange={(e) => setRemark(e.target.value)}
-          fullWidth
         />
 
         {/* Actions */}

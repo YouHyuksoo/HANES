@@ -14,8 +14,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Upload, Trash2, ImageIcon, RefreshCw } from "lucide-react";
-import { Button, ConfirmModal, Input } from "@/components/ui";
-import { ComCodeSelect, QtyInput } from "@/components/shared";
+import { Button, ConfirmModal } from "@/components/ui";
+import { FieldInput, FieldComCodeSelect, FieldQtyInput } from "../consumableMasterFieldHelp";
 import api from "@/services/api";
 
 export interface ConsumableItem {
@@ -183,7 +183,8 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
             {t("consumables.master.sectionBasic", "기본정보")}
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input
+            <FieldInput
+              field="consumableCode"
               label={t("consumables.master.code")}
               placeholder="CM-AP-110"
               value={form.consumableCode}
@@ -191,7 +192,8 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
               disabled={isEdit}
               fullWidth
             />
-            <ComCodeSelect
+            <FieldComCodeSelect
+              field="category"
               groupCode="CONSUMABLE_CATEGORY"
               includeAll={false}
               label={t("consumables.master.category")}
@@ -200,7 +202,8 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
               fullWidth
             />
             <div className="col-span-2">
-              <Input
+              <FieldInput
+                field="consumableName"
                 label={t("consumables.master.name")}
                 placeholder={t("consumables.master.namePlaceholder", "110단자 압착금형")}
                 value={form.consumableName}
@@ -217,21 +220,24 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
             {t("consumables.master.sectionLifecycle", "수명 / 관리")}
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <QtyInput
+            <FieldQtyInput
+              field="expectedLife"
               label={t("consumables.master.expectedLifeCount")}
               placeholder="100000"
               value={form.expectedLife ?? 0}
               onChange={(n) => set("expectedLife", n || null)}
               fullWidth
             />
-            <QtyInput
+            <FieldQtyInput
+              field="warningCount"
               label={t("consumables.master.warningThreshold")}
               placeholder="80000"
               value={form.warningCount ?? 0}
               onChange={(n) => set("warningCount", n || null)}
               fullWidth
             />
-            <QtyInput
+            <FieldQtyInput
+              field="safetyStock"
               label={t("consumables.master.safetyStock", "안전재고")}
               placeholder="1"
               value={form.safetyStock}
@@ -247,14 +253,16 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
             {t("consumables.master.sectionVendor", "거래처 / 위치")}
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <Input
+            <FieldInput
+              field="location"
               label={t("consumables.master.location")}
               placeholder={t("consumables.master.locationPlaceholder", "금형실-A1")}
               value={form.location}
               onChange={(e) => set("location", e.target.value)}
               fullWidth
             />
-            <Input
+            <FieldInput
+              field="vendor"
               label={t("consumables.master.vendor")}
               placeholder="JST"
               value={form.vendor}
@@ -262,7 +270,8 @@ export default function ConsumableFormPanel({ item, onClose, onSubmit, loading, 
               fullWidth
             />
             <div className="col-span-2">
-              <Input
+              <FieldInput
+                field="unitPrice"
                 label={t("consumables.master.unitPrice", "단가")}
                 type="number"
                 placeholder="750000"

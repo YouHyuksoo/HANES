@@ -6,6 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Button, ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import StatusBadge from "@/components/shared/StatusBadge";
+import { headerWithHelp } from "./consumableLifeFieldHelp";
 
 export interface LifeInstance {
   conUid: string;
@@ -40,19 +41,19 @@ export function createConsumableLifeGridColumns({
         <Button size="sm" variant="secondary"><RotateCcw className="w-3 h-3 mr-1" /> {t("consumables.life.replaceAction")}</Button>
       ) : null,
     },
-    { accessorKey: "conUid", header: t("consumables.stock.conUid"), size: 150, meta: { filterType: "text" as const },
+    { accessorKey: "conUid", header: headerWithHelp("conUid", t("consumables.stock.conUid")), size: 150, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span>,
     },
     { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="CONSUMABLE_LIFE_STATUS" align="center" />, size: 60, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <StatusBadge codeType="CONSUMABLE_LIFE_STATUS" value={getValue() as string} /> },
-    { accessorKey: "consumableCode", header: t("consumables.master.code"), size: 110, meta: { filterType: "text" as const } },
-    { accessorKey: "consumableName", header: t("consumables.master.name"), size: 140, meta: { filterType: "text" as const } },
-    { accessorKey: "category", header: t("consumables.life.categoryLabel"), size: 70, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} /> },
-    { accessorKey: "location", header: t("consumables.life.location"), size: 110, meta: { filterType: "text" as const } },
-    { accessorKey: "mountedEquipCode", header: t("consumables.stock.mountedEquip"), size: 110, meta: { filterType: "text" as const },
+    { accessorKey: "consumableCode", header: headerWithHelp("consumableCode", t("consumables.master.code")), size: 110, meta: { filterType: "text" as const } },
+    { accessorKey: "consumableName", header: headerWithHelp("consumableName", t("consumables.master.name")), size: 140, meta: { filterType: "text" as const } },
+    { accessorKey: "category", header: headerWithHelp("category", t("consumables.life.categoryLabel")), size: 70, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} /> },
+    { accessorKey: "location", header: headerWithHelp("location", t("consumables.life.location")), size: 110, meta: { filterType: "text" as const } },
+    { accessorKey: "mountedEquipCode", header: headerWithHelp("mountedEquipCode", t("consumables.stock.mountedEquip")), size: 110, meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string | null) ?? "-",
     },
     {
-      id: "lifePercentage", header: t("consumables.life.lifeLabel"), size: 100, meta: { filterType: "none" as const },
+      id: "lifePercentage", header: headerWithHelp("lifePercentage", t("consumables.life.lifeLabel")), size: 100, meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const pct = row.original.expectedLife ? Math.round((row.original.currentCount / row.original.expectedLife) * 100) : 0;
         return (
@@ -66,18 +67,18 @@ export function createConsumableLifeGridColumns({
       },
     },
     {
-      accessorKey: "currentCount", header: t("consumables.life.currentExpected"), size: 110, meta: { filterType: "number" as const },
+      accessorKey: "currentCount", header: headerWithHelp("currentCount", t("consumables.life.currentExpected")), size: 110, meta: { filterType: "number" as const },
       cell: ({ row }) => <span className="text-xs">{(row.original.currentCount ?? 0).toLocaleString()} / {(row.original.expectedLife ?? 0).toLocaleString()}</span>,
     },
     {
-      id: "remainingLife", header: t("consumables.life.remaining"), size: 70, meta: { filterType: "none" as const },
+      id: "remainingLife", header: headerWithHelp("remainingLife", t("consumables.life.remaining")), size: 70, meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const remaining = (row.original.expectedLife ?? 0) - (row.original.currentCount ?? 0);
         return <span className={`text-xs ${remaining < 0 ? "text-red-600 font-medium" : "text-text-muted"}`}>{remaining < 0 ? `+${Math.abs(remaining).toLocaleString()}` : remaining.toLocaleString()}</span>;
       },
     },
     {
-      accessorKey: "lastReplaceAt", header: t("consumables.life.lastReplaced"), size: 90, meta: { filterType: "date" as const },
+      accessorKey: "lastReplaceAt", header: headerWithHelp("lastReplaceAt", t("consumables.life.lastReplaced")), size: 90, meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string | null;
         return v ? <span className="text-xs text-text-muted">{v.split("T")[0]}</span> : "-";

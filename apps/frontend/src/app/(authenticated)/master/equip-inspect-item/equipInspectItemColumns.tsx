@@ -7,6 +7,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
 import { resolveBackendFileUrl } from "@/utils/file-url";
 
+import { headerWithHelp } from "./equipInspectItemFieldHelp";
 export type ItemType = "VISUAL" | "MEASURE";
 export type InspectType = "DAILY" | "PERIODIC" | "PM" | "WORKER";
 
@@ -102,21 +103,21 @@ export function createEquipInspectItemGridColumns({
       },
     },
     {
-      accessorKey: "itemCode", header: t("master.equipInspect.itemCode", "항목코드"), size: 120,
+      accessorKey: "itemCode", header: headerWithHelp("itemCode", t("master.equipInspect.itemCode", "항목코드")), size: 120,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue() as string}</span>,
     },
     {
-      accessorKey: "equipType", header: t("master.equip.type", "설비유형"), size: 120,
+      accessorKey: "equipType", header: headerWithHelp("equipType", t("master.equip.type", "설비유형")), size: 120,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string | null;
         return v ? <ComCodeBadge groupCode="EQUIP_TYPE" code={v} /> : <span className="text-text-muted">-</span>;
       },
     },
-    { accessorKey: "itemName", header: t("master.equipInspect.itemName"), size: 220, meta: { filterType: "text" as const } },
+    { accessorKey: "itemName", header: headerWithHelp("itemName", t("master.equipInspect.itemName")), size: 220, meta: { filterType: "text" as const } },
     {
-      accessorKey: "inspectType", header: t("master.equipInspect.inspectType"), size: 100,
+      accessorKey: "inspectType", header: headerWithHelp("inspectType", t("master.equipInspect.inspectType")), size: 100,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const type = getValue() as string;
@@ -124,7 +125,7 @@ export function createEquipInspectItemGridColumns({
       },
     },
     {
-      accessorKey: "itemType", header: t("master.equipInspect.itemType", "판정구분"), size: 90,
+      accessorKey: "itemType", header: headerWithHelp("itemType", t("master.equipInspect.itemType", "판정구분")), size: 90,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => {
         const v = (getValue() as string) || "VISUAL";
@@ -132,7 +133,7 @@ export function createEquipInspectItemGridColumns({
       },
     },
     {
-      accessorKey: "criteria", header: t("master.equipInspect.criteria"), size: 200,
+      accessorKey: "criteria", header: headerWithHelp("criteria", t("master.equipInspect.criteria")), size: 200,
       cell: ({ row }) => {
         const r = row.original;
         if (r.itemType === "MEASURE") {
@@ -154,11 +155,11 @@ export function createEquipInspectItemGridColumns({
       },
     },
     {
-      accessorKey: "cycle", header: t("master.equipInspect.cycle"), size: 90,
+      accessorKey: "cycle", header: headerWithHelp("cycle", t("master.equipInspect.cycle")), size: 90,
       cell: ({ getValue }) => cycleLabels[getValue() as string] || getValue() || "-",
     },
     {
-      accessorKey: "useYn", header: t("common.useYn", "사용"), size: 60,
+      accessorKey: "useYn", header: headerWithHelp("useYn", t("common.useYn", "사용")), size: 60,
       cell: ({ getValue }) => getValue() === "Y"
         ? <span className="text-green-600 dark:text-green-400 font-medium">Y</span>
         : <span className="text-red-500 font-medium">N</span>,

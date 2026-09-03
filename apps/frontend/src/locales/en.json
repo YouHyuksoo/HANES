@@ -186,7 +186,9 @@
       "defect": "Defect",
       "hourlyTitle": "Hourly Output (Today)",
       "todayOrders": "Today's Job Orders",
-      "production": { "title": "Production Status Board" },
+      "production": {
+        "title": "Production Status Board"
+      },
       "kpi": {
         "planQty": "Total Plan",
         "goodQty": "Total Output",
@@ -589,12 +591,54 @@
     "goHome": "Go to Dashboard"
   },
   "dashboard": {
-    "layout": { "group": "Form", "cockpit": "Cockpit", "board": "Departure board", "map": "Line map", "charts": "Charts" },
+    "layout": {
+      "group": "Form",
+      "cockpit": "Cockpit",
+      "board": "Departure board",
+      "map": "Line map",
+      "charts": "Charts"
+    },
     "skinGroup": "Color",
-    "board": { "orders": "Job order departures", "orderNo": "Order No.", "item": "Item", "where": "Process · Equip", "qty": "Actual / Plan", "progress": "Progress", "status": "Status", "noOrders": "No job orders today.", "equipRun": "Equipment running", "page": "{{page}} / {{count}}" },
-    "map": { "flowLine": "Flow line", "equipLine": "Equipment line", "hint": "Tap a station to see only that stage. Tap again for all", "station": "Station", "all": "All", "pressure": "Pressure" },
-    "charts": { "hourly": "Hourly output (today)", "byProcess": "Defect rate by process", "topDefects": "Top defect types", "status": "Status mix", "orderStatus": "Job orders", "equipStatus": "Equipment", "equipNormal": "Normal", "equipMaint": "Maintenance", "equipStop": "Stopped", "inventory": "Inventory actions", "rate": "Defect rate", "qty": "Qty", "noData": "No data" },
-    "skin": { "control": "Control tower", "departure": "Departure board", "datawall": "Data wall" },
+    "board": {
+      "orders": "Job order departures",
+      "orderNo": "Order No.",
+      "item": "Item",
+      "where": "Process · Equip",
+      "qty": "Actual / Plan",
+      "progress": "Progress",
+      "status": "Status",
+      "noOrders": "No job orders today.",
+      "equipRun": "Equipment running",
+      "page": "{{page}} / {{count}}"
+    },
+    "map": {
+      "flowLine": "Flow line",
+      "equipLine": "Equipment line",
+      "hint": "Tap a station to see only that stage. Tap again for all",
+      "station": "Station",
+      "all": "All",
+      "pressure": "Pressure"
+    },
+    "charts": {
+      "hourly": "Hourly output (today)",
+      "byProcess": "Defect rate by process",
+      "topDefects": "Top defect types",
+      "status": "Status mix",
+      "orderStatus": "Job orders",
+      "equipStatus": "Equipment",
+      "equipNormal": "Normal",
+      "equipMaint": "Maintenance",
+      "equipStop": "Stopped",
+      "inventory": "Inventory actions",
+      "rate": "Defect rate",
+      "qty": "Qty",
+      "noData": "No data"
+    },
+    "skin": {
+      "control": "Control tower",
+      "departure": "Departure board",
+      "datawall": "Data wall"
+    },
     "tvMode": "TV mode",
     "title": "Dashboard",
     "subtitle": "From receiving to finished goods: today's flow and what needs action now",
@@ -1287,7 +1331,8 @@
         "packUnit": "Composition basis for the pallet or upper packaging unit.",
         "storageLocation": "Default storage location fixed per item.",
         "imageUrl": "File path of the item image.",
-        "remark": "Notes for item management."
+        "remark": "Notes for item management.",
+        "defectModelGroup": "Model group (e.g. low/high voltage) that determines which defect codes apply."
       },
       "defectModelGroup": "Model Group"
     },
@@ -1898,7 +1943,15 @@
       "spec": "Spec",
       "selectPoolItem": "Select inspection item master",
       "noPoolForType": "No inspection item master registered for this equipment type / inspection type. Register one in the inspection item master first.",
-      "equipTypeEtc": "Etc"
+      "equipTypeEtc": "Etc",
+      "fieldHelp": {
+        "itemCode": "Code of the inspection item assigned to this equipment. Same as the code in the inspection item master.",
+        "itemName": "Inspection item name. Taken from the inspection item master and not editable here.",
+        "criteria": "Criteria text checked during inspection. Managed in the inspection item master.",
+        "cycle": "Inspection cycle (daily / weekly / monthly, etc.). Managed in the inspection item master.",
+        "sortSeq": "Order in which items are listed on the inspection screen. Smaller values appear first.",
+        "useYn": "Whether this item is inspected on this equipment. N hides it from the inspection screen."
+      }
     },
     "equipInspectItem": {
       "title": "Inspection Item Master",
@@ -1911,7 +1964,22 @@
       "sectionBasic": "Basic Info",
       "sectionCriteria": "Criteria",
       "statTotal": "Total Items",
-      "statEquipTypes": "Equipment Types"
+      "statEquipTypes": "Equipment Types",
+      "fieldHelp": {
+        "itemCode": "Unique code identifying the inspection item. Cannot be changed after registration and is printed on the QR label.",
+        "equipType": "Equipment type this item applies to (common code EQUIP_TYPE). Used to pick items by type when assigning them to equipment.",
+        "itemName": "Inspection item name shown to the inspector.",
+        "inspectType": "Inspection category (daily / periodic / PM / worker). Determines which inspection screen shows the item.",
+        "itemType": "Judgement method. VISUAL is judged OK/NG; MEASURE takes a value and is judged against the lower/upper limits.",
+        "criteria": "Criteria text checked during inspection. For MEASURE items the limits take precedence and this text is supplementary.",
+        "cycle": "Inspection cycle (daily / weekly / monthly / quarterly / semi-annual / annual). Used to select items due for periodic inspection.",
+        "unit": "Measurement unit for MEASURE items (common code UNIT_TYPE).",
+        "lslValue": "Lower limit for MEASURE items. A measured value below this is judged NG.",
+        "uslValue": "Upper limit for MEASURE items. A measured value above this is judged NG.",
+        "imageUrl": "Path of the photo showing the inspection point or criteria. Shown as a reference image on the inspection screen.",
+        "useYn": "Whether in use. N prevents new assignment to equipment and excludes the item from inspection.",
+        "remark": "Notes about the inspection item."
+      }
     },
     "box": {
       "title": "Box Management",
@@ -5184,7 +5252,25 @@
       "sectionCycle": "Cycle Settings",
       "equipName": "Equipment Name",
       "fieldInput": "Enter {{field}}",
-      "fieldRequired": "{{field}} is required"
+      "fieldRequired": "{{field}} is required",
+      "fieldHelp": {
+        "planCode": "Unique code identifying the preventive maintenance plan. Cannot be changed after registration.",
+        "equipCode": "Target equipment for this preventive maintenance plan. Selected from the equipment master.",
+        "equipName": "Name of the target equipment. Looked up from the equipment master by equipment code.",
+        "planName": "Plan name as used on the shop floor, e.g. Monthly lubrication check.",
+        "description": "Supplementary description of the plan. Note the work scope or precautions.",
+        "pmType": "Maintenance type (common code PM_TYPE). Time-based creates work orders every cycle; usage-based creates them when usage reaches the threshold.",
+        "cycleType": "Cycle type (common code PM_CYCLE_TYPE). The unit for the cycle value: day, week, month, year.",
+        "cycleValue": "Interval multiplied by the cycle type. E.g. cycle type month and value 3 means every 3 months.",
+        "estimatedTime": "Estimated time in hours to complete the whole plan. Used as a reference for scheduling.",
+        "itemCount": "Number of maintenance items registered in this plan. Results are entered per item when the work order is executed.",
+        "nextDueAt": "Next preventive maintenance due date. Updated automatically by the cycle when work orders are created and completed.",
+        "useYn": "Whether the plan is in use. N excludes it from automatic work order generation.",
+        "criteria": "Pass/fail criteria for the item. Workers refer to it when entering results on the execution screen.",
+        "sparePartCode": "Spare part replaced when performing the item. Selected from parts registered in the equipment BOM.",
+        "sparePartQty": "Quantity of the spare part to replace.",
+        "estimatedMinutes": "Estimated time in minutes to perform this single item."
+      }
     },
     "pmWorkOrder": {
       "woSchedule": "Work Order Schedule",
@@ -5222,7 +5308,21 @@
       "woInProgress": "In Progress",
       "woCompleted": "Completed",
       "woOverdue": "Overdue",
-      "weekdays": "Sun,Mon,Tue,Wed,Thu,Fri,Sat"
+      "weekdays": "Sun,Mon,Tue,Wed,Thu,Fri,Sat",
+      "fieldHelp": {
+        "workOrderNo": "Number of the preventive maintenance work order (WO) being executed.",
+        "equipCode": "Equipment under preventive maintenance. Shows equipment code and name together.",
+        "assignedWorker": "Worker who performed the work. Selected from the worker master and required for completion.",
+        "seq": "Sequence of the maintenance item. Follows the item order registered in the PM plan.",
+        "itemName": "Name of the maintenance item to check or replace. Copied from the PM plan items.",
+        "itemType": "Item type (common code PM_ITEM_TYPE). Distinguishes the nature of work such as check, replace or clean.",
+        "criteria": "Pass/fail criteria for the item. Refer to it when entering the result.",
+        "result": "Result per item (PASS/FAIL). All items must be entered before completing.",
+        "itemRemark": "Remark per item. A cause is required for items judged FAIL.",
+        "overallResult": "Overall result of the work. Automatically FAIL if any item is FAIL.",
+        "completedAt": "Date and time the work was completed.",
+        "remark": "Remark for the whole work order. Note special issues or follow-up actions."
+      }
     },
     "inspectCalendar": {
       "title": "Equipment Daily Inspect Calendar",
@@ -5268,7 +5368,20 @@
       "legendNotStarted": "Not Started",
       "failCauseRequired": "{{label}} is required",
       "itemResultRequired": "{{label}} required",
-      "weekdays": "Sun,Mon,Tue,Wed,Thu,Fri,Sat"
+      "weekdays": "Sun,Mon,Tue,Wed,Thu,Fri,Sat",
+      "fieldHelp": {
+        "dayStatus": "Inspection status per day. Target equipment is computed from item cycles (daily/weekly/monthly) and compared with saved logs to show all pass, in progress, has fail, not started or overdue. The number in the cell is completed/target equipment count.",
+        "equip": "Code and name of the equipment to inspect, from the equipment master.",
+        "inspectDate": "Inspection date. Saved as the date selected on the calendar.",
+        "inspectorName": "Worker who performed the inspection. Selected from the worker master and required to save.",
+        "seq": "Display order of the inspection item. Follows the sort order of the per-equipment items.",
+        "itemName": "Name of the item to inspect. Managed in the equipment inspection item master.",
+        "criteria": "Criteria text for the item. Select PASS when it meets the criteria and FAIL when it does not.",
+        "itemResult": "Per-item result. Select PASS or FAIL; every item must be entered before saving.",
+        "failCause": "Per-item remark. A fail cause is required for every item judged FAIL.",
+        "overallResult": "Overall result. Calculated automatically: FAIL if any item fails, PASS if all items pass.",
+        "remark": "Remark for this inspection as a whole. Record notable findings or actions taken."
+      }
     },
     "periodicInspectCalendar": {
       "title": "Equipment Periodic Inspection Calendar",
@@ -5332,7 +5445,24 @@
       "statusDoneOk": "Done(OK)",
       "statusNone": "Not Inspected",
       "typeMeasure": "Measurement",
-      "typeVisual": "Judgment"
+      "typeVisual": "Judgment",
+      "fieldHelp": {
+        "equipCode": "Code of the equipment with assigned inspection items. Only equipment that has active items in the per-equipment item pool appears in the list.",
+        "equipName": "Equipment name registered in the equipment master.",
+        "equipType": "Equipment type. The list is grouped by this value.",
+        "status": "Processing status for the selected date. Not inspected when no log is saved; otherwise Done(OK)/Done(NG) according to the overall result.",
+        "inspectDate": "Inspection date. Changing the date at the top saves and loads the inspection log for that date.",
+        "inspectorName": "Worker who performed the inspection. Selected from the worker master and required to save.",
+        "startTime": "Time when entry for this equipment started (screen time). For reference only; it is not saved as-is.",
+        "overallResult": "Overall result. FAIL if any item is NG, PASS if all are OK. Saving a FAIL automatically registers a maintenance request.",
+        "seq": "Display order of the inspection item. Follows the sort order of the per-equipment items.",
+        "itemName": "Name of the item to inspect. Managed in the equipment inspection item master.",
+        "itemType": "Item type. MEASURE compares an entered number with the spec; VISUAL lets you pick OK/NG directly.",
+        "criteria": "Judgement criteria. Shown as lower~upper limit (unit) for MEASURE items and as a criteria text for VISUAL items.",
+        "measureValue": "For MEASURE items enter the measured number and it is judged against the spec automatically; for VISUAL items select OK/NG.",
+        "judge": "Per-item judgement (OK/NG). Shown according to the entered value or the selected result.",
+        "itemRemark": "Per-item remark. Recording the defect details for NG items helps during maintenance."
+      }
     },
     "periodicInspect": {
       "title": "Equipment Periodic Inspection",
@@ -5395,7 +5525,17 @@
       "statTotal": "Total Inspections",
       "excelDownload": "Excel Download",
       "searchPlaceholder": "Search equip code, name...",
-      "equipType": "Equipment Type"
+      "equipType": "Equipment Type",
+      "fieldHelp": {
+        "inspectDate": "Date the inspection was performed. Together with equipment and inspection type it identifies the record.",
+        "inspectType": "Inspection category (common code INSPECT_CHECK_TYPE). Shows whether the record is a daily, periodic or worker inspection.",
+        "equipCode": "Code of the inspected equipment.",
+        "equipName": "Name of the inspected equipment. Taken from the equipment master.",
+        "equipType": "Equipment type (common code EQUIP_TYPE). Taken from the equipment master.",
+        "inspectorName": "Name of the person who performed the inspection.",
+        "overallResult": "Overall inspection judgement (common code INSPECT_JUDGE). If any item is NG the overall result is recorded as fail.",
+        "remark": "Notes recorded during the inspection."
+      }
     },
     "mold": {
       "title": "Mold Management",
@@ -5429,7 +5569,31 @@
       "warningLabel": "Warning",
       "overdueLabel": "Overdue",
       "retiredLabel": "Retired",
-      "fieldRequired": "{{field}} is required"
+      "fieldRequired": "{{field}} is required",
+      "fieldHelp": {
+        "moldCode": "Unique code identifying the mold. Cannot be changed after registration.",
+        "moldName": "Name of the mold as used on the shop floor.",
+        "moldType": "Mold type (common code MOLD_TYPE). Classifies usage such as crimping or injection.",
+        "itemCode": "Item code produced with this mold. Selected via item search.",
+        "cavity": "Number of pieces produced per shot (cavity count). Used to convert shots into production quantity.",
+        "currentShots": "Accumulated shot count. Added automatically when a usage record is registered.",
+        "guaranteedShots": "Life shots guaranteed by the maker. When accumulated shots reach this value the equipment is interlocked and the mold is due for replacement.",
+        "shotRate": "Usage rate (%) = accumulated shots / guaranteed shots. Over 90% is a warning, over 100% means replacement is due.",
+        "status": "Mold status (common code MOLD_STATUS). Retiring sets it to RETIRED and the mold can no longer be used.",
+        "maintenanceCycle": "Maintenance cycle in shots. Every time this count is reached the mold is listed as due for maintenance.",
+        "lastMaintenanceDate": "Date of the last maintenance.",
+        "nextMaintenanceDate": "Next scheduled maintenance date. Shown in the maintenance-due list as the date approaches.",
+        "location": "Storage location of the mold (mold room, shelf number, etc.).",
+        "maker": "Maker of the mold.",
+        "purchaseDate": "Date the mold was purchased.",
+        "remark": "Notes about the mold.",
+        "usageDate": "Date the mold was used.",
+        "shotCount": "Shots produced in this usage. Added to the mold's accumulated shots when registered.",
+        "orderNo": "Work order number the mold was used for. Used for production traceability.",
+        "equipCode": "Equipment the mold was mounted on. This equipment is interlocked when guaranteed shots are exceeded.",
+        "workerCode": "Worker who used the mold.",
+        "usageRemark": "Notes about the usage record."
+      }
     },
     "calibrationHistory": {
       "calNo": "Calibration No.",
@@ -5472,7 +5636,17 @@
       "statTotal": "Total WO",
       "subtitle": "View preventive maintenance Work Order execution results.",
       "title": "PM Maintenance Results",
-      "woNo": "WO No."
+      "woNo": "WO No.",
+      "fieldHelp": {
+        "workOrderNo": "Preventive maintenance work order (WO) number. Numbered automatically when generated monthly from the calendar.",
+        "scheduledDate": "Date the work is scheduled for. Based on the next due date of the PM plan.",
+        "equipCode": "Code of the equipment under preventive maintenance.",
+        "equipName": "Name of the target equipment. Looked up from the equipment master by equipment code.",
+        "overallResult": "Overall result of the work. If any item is FAIL the whole work order is FAIL.",
+        "priority": "Work priority (common code PM_PRIORITY). HIGH should be handled first.",
+        "completedAt": "Date and time the work was completed. The moment the complete button was pressed on the execution screen.",
+        "remark": "Remark for the whole work order. Shows notes entered on the execution screen."
+      }
     }
   },
   "shipping": {
@@ -5959,7 +6133,24 @@
       "codeRequired": "Enter the consumable code.",
       "nameRequired": "Enter the consumable name.",
       "namePlaceholder": "110 terminal crimping mold",
-      "locationPlaceholder": "Mold Room-A1"
+      "locationPlaceholder": "Mold Room-A1",
+      "fieldHelp": {
+        "consumableCode": "Unique code identifying the consumable (mold, jig, tool). Cannot be changed after registration.",
+        "consumableName": "Name of the consumable as used on the shop floor.",
+        "category": "Consumable category (common code CONSUMABLE_CATEGORY). Determines how molds, jigs and tools are managed.",
+        "expectedLife": "Life count for replacement. When the accumulated count reaches this value the item is flagged for replacement.",
+        "warningCount": "Count at which warnings start. Set lower than the life count.",
+        "currentCount": "Accumulated usage count on the master. Updated automatically when production results are saved.",
+        "stockQty": "Current on-hand quantity. Updated by receiving and issuing.",
+        "safetyStock": "Threshold for low-stock judgement. Shown as short when on-hand quantity falls below this value.",
+        "location": "Storage location (mold room, shelf number, etc.).",
+        "vendor": "Purchasing or manufacturing vendor.",
+        "unitPrice": "Unit price. Used for stock valuation and purchasing reference.",
+        "status": "Life status (normal/warning/replace). Judged automatically by comparing accumulated count with warning and life counts.",
+        "operStatus": "Operational status (in warehouse, mounted on equipment, etc.).",
+        "imageUrl": "Path of the consumable photo file.",
+        "useYn": "Whether in use. N excludes it from new selection lists."
+      }
     },
     "receiving": {
       "title": "Consumable Receiving",
@@ -5998,7 +6189,28 @@
       "pendingTitle": "Pending List",
       "labelPrintedAt": "Label Printed",
       "returnScanHint": "Return-receipt mode",
-      "returnBtn": "Confirm Return"
+      "returnBtn": "Confirm Return",
+      "fieldHelp": {
+        "createdAt": "Date and time the receiving or receiving return was processed. Basis for the period filter and today's summary.",
+        "consumableCode": "Consumable master code being received. Selected with the search button in the registration panel.",
+        "consumableName": "Name linked to the consumable code.",
+        "conUid": "Individual label UID when received by barcode scan. Manual receiving records quantity only, without a UID.",
+        "logType": "IN (receiving) or IN_RETURN (receiving return). A return deducts the quantity from stock.",
+        "qty": "Received quantity. Receiving adds (+) and receiving return subtracts (-) from the master on-hand quantity.",
+        "vendorCode": "Code of the delivering vendor. Used for receiving history by vendor.",
+        "vendorName": "Name of the delivering vendor.",
+        "unitPrice": "Receiving unit price. Used for the receiving amount (unit price × quantity).",
+        "incomingType": "NEW (new purchase) or REPLACEMENT. Replacement receiving is tracked separately as end-of-life replacement.",
+        "remark": "Notes about the receiving (delivery note number, remarks, etc.)."
+      },
+      "scanFieldHelp": {
+        "conUid": "Individual UID printed on the label. Scanning it confirms receiving (PENDING → ACTIVE).",
+        "consumableCode": "Consumable master code the UID belongs to.",
+        "consumableName": "Name linked to the consumable code.",
+        "category": "Consumable category (common code CONSUMABLE_CATEGORY).",
+        "labelPrintedAt": "Date and time the label (UID) was issued. Check whether long-pending items have physically arrived.",
+        "vendorName": "Vendor name recorded when the UID was issued. Empty if none."
+      }
     },
     "issuing": {
       "title": "Consumable Issuing",
@@ -6032,7 +6244,22 @@
       "scanPlaceholder": "Scan consumable UID barcode...",
       "confirmBtn": "Confirm Issue",
       "returnBtn": "Confirm Cancel",
-      "returnScanHint": "Issue Cancel Mode"
+      "returnScanHint": "Issue Cancel Mode",
+      "fieldHelp": {
+        "createdAt": "Date and time the issue or issue cancellation was processed. Basis for the period filter and today's summary.",
+        "consumableCode": "Consumable master code that was issued.",
+        "consumableName": "Name linked to the consumable code.",
+        "conUid": "Individual UID issued by scan. Key for tracing which instance went to the process.",
+        "logType": "OUT (issue) or OUT_RETURN (issue cancel). Cancelling returns the instance to warehouse stock (ACTIVE).",
+        "qty": "Issued quantity. Issue shows as -, cancel as +. Scan issue is 1 per UID.",
+        "lineCode": "Target line code. Only set when specified in manual issue.",
+        "processCode": "Target process code. The process chosen at scan issue is recorded and the instance moves to that process stock (PROC_WAIT).",
+        "equipCode": "Target equipment code. Only set when specified in manual issue.",
+        "remark": "Notes about the issue."
+      },
+      "scanFieldHelp": {
+        "processCode": "Process to issue the UID to. In issue mode the process must be chosen before scanning; scanned instances become that process's stock (PROC_WAIT)."
+      }
     },
     "stock": {
       "title": "Consumable Stock",
@@ -6063,7 +6290,22 @@
       "statusActive": "Active",
       "statusMounted": "Mounted",
       "statusRepair": "Repairing",
-      "statusScrapped": "Scrapped"
+      "statusScrapped": "Scrapped",
+      "fieldHelp": {
+        "conUid": "Individual instance UID printed on the label. Receiving, issuing and mounting scans all use this value.",
+        "qty": "One UID is one physical item, so this is always 1. Count rows for the total per consumable.",
+        "consumableCode": "Consumable master code the instance belongs to.",
+        "consumableName": "Name linked to the consumable code.",
+        "category": "Consumable category (common code CONSUMABLE_CATEGORY).",
+        "status": "Instance status (common code CON_STOCK_STATUS). Flows PENDING (not received) → ACTIVE (warehouse) → PROC_WAIT (at process) → MOUNTED.",
+        "currentCount": "Accumulated shot count of this instance and the master life count. Orange at 80% or more, red at 100% or more to signal replacement.",
+        "location": "Current storage location. The location chosen at receiving scan is recorded.",
+        "processCode": "Process code the instance was issued to. Set from the process chosen at issue scan, cleared on issue cancel.",
+        "mountedEquipCode": "Equipment code currently mounted on. Empty while in warehouse or waiting at process.",
+        "recvDate": "Date receiving was confirmed (scanned). Empty for PENDING instances.",
+        "vendorName": "Vendor name recorded at receiving.",
+        "unitPrice": "Instance unit price recorded at receiving. Used for stock valuation."
+      }
     },
     "life": {
       "title": "Life Status",
@@ -6086,7 +6328,19 @@
       "impendingReplace": "Impending Replacement",
       "immediateAction": "Immediate Action",
       "replaceAction": "Replace",
-      "searchPlaceholder": "Search code, name..."
+      "searchPlaceholder": "Search code, name...",
+      "fieldHelp": {
+        "conUid": "Individual instance UID printed on the label. Life is managed per UID, not per master.",
+        "consumableCode": "Consumable master code the instance belongs to.",
+        "consumableName": "Name linked to the consumable code.",
+        "category": "Consumable category (common code CONSUMABLE_CATEGORY).",
+        "location": "Current storage location. Reference when going to fetch a replacement target.",
+        "mountedEquipCode": "Equipment code currently mounted on. If a mounted instance is in replace status, check whether that equipment is stopped.",
+        "lifePercentage": "Life consumption rate (%). Yellow (warning) at 80% or more, red (replace) at 100% or more.",
+        "currentCount": "Accumulated shot count of this instance and the life count set on the master. Accumulates when production results are saved.",
+        "remainingLife": "Shots remaining until replacement. Past life, the excess is shown in red with a + sign.",
+        "lastReplaceAt": "Date this instance was confirmed as received. A replacement comes in as a new UID, so this serves as the last replacement time."
+      }
     },
     "label": {
       "title": "Consumable Label Issuance",
@@ -6123,7 +6377,16 @@
       "preview": "Preview",
       "reprint": "Reprint",
       "previewAria": "Preview label {{conUid}}",
-      "reprintAria": "Reprint label {{conUid}}"
+      "reprintAria": "Reprint label {{conUid}}",
+      "fieldHelp": {
+        "consumableCode": "Consumable master code to issue labels for. Issued UIDs are managed under this code.",
+        "consumableName": "Name of the consumable as used on the shop floor.",
+        "category": "Consumable category (common code CONSUMABLE_CATEGORY). Used by the category filter and label template selection.",
+        "stockQty": "Current on-hand quantity on the master. Increases by 1 on each receiving confirmation (scan).",
+        "instanceCount": "Number of UIDs (instances) already issued for this consumable. The pending count in parentheses is labels issued but not yet received by scan.",
+        "pendingCount": "UIDs whose label was issued but not yet confirmed as received. If any remain, check receiving before issuing more.",
+        "qty": "Number of new UIDs to issue now (1-99). That many PENDING instances are created and labels printed."
+      }
     },
     "search": {
       "title": "Consumable Search",
@@ -6155,7 +6418,17 @@
       "remarkPlaceholder": "Enter remark",
       "searchPlaceholder": "Search by code, name...",
       "completeRepairAction": "Complete Repair",
-      "completeRepairTitle": "Complete Repair"
+      "completeRepairTitle": "Complete Repair",
+      "fieldHelp": {
+        "consumableCode": "Consumable master code to mount or unmount.",
+        "consumableName": "Name of the consumable as used on the shop floor.",
+        "category": "Consumable category (common code CONSUMABLE_CATEGORY).",
+        "mountedEquipCode": "Equipment code currently mounted on. Set on mount and cleared on unmount. An already-mounted consumable cannot be mounted on another equipment.",
+        "lifeProgress": "Life consumption rate (%) on the master. At 100% or more the mounted equipment may be interlocked.",
+        "location": "Location while stored in the warehouse. Reference when fetching a consumable to mount.",
+        "equipCode": "Equipment to mount the consumable on. Saving updates the master's mounted equipment and records a mount log.",
+        "remark": "Reason or note for the mount, unmount or repair action. Shown in the history view."
+      }
     }
   },
   "outsourcing": {
@@ -9053,17 +9326,115 @@
     "legendReversal": "Reversal",
     "legendReference": "Reference",
     "knowledge": {
-      "tab": "Knowledge Map", "title": "Workflow Knowledge Map", "description": "Select a node to expand one level of relations. Recenter explicitly from the detail panel.", "selectExpand": "Select {{label}} and expand relations", "center": "Center", "currentCenter": "Current center", "relation": "Relation", "condition": "Condition: {{condition}}", "relationList": "Relations", "emptyRelations": "No relations to display.", "evidenceLabel": "Evidence {{status}}",
-      "search": { "label": "Search workflows, screens, and tables", "placeholder": "Workflow · screen · table · exception", "action": "Search", "aiAction": "Interpret with AI", "aiLoading": "Interpreting", "localResults": "Local catalog", "aiResults": "AI candidates", "noLocalResults": "No matching local results.", "noAiResults": "No AI candidates.", "invalidCenter": "Unknown center: {{center}}", "staleAi": "Discarded an outdated or invalid AI response.", "aiUnavailable": "AI interpretation is unavailable.", "aiFailed": "AI interpretation request failed." },
-      "layouts": { "mindmap": "Mind map", "process": "Process", "relation": "Relations" }, "views": { "business": "Business", "technical": "Technical" },
-      "toolbar": { "label": "Knowledge map tools", "back": "Back", "forward": "Forward", "reset": "Reset", "fit": "Fit view", "copy": "Copy link", "copySuccess": "Link copied.", "copyFailed": "Could not copy the link." , "cursorSelect": "Select · move nodes", "cursorPan": "Pan · move canvas", "fullscreen": "Fullscreen", "exitFullscreen": "Exit fullscreen", "recenter": "Center on selected"},
-      "categories": { "flow": "Flow", "masters": "Master data", "constraints": "Constraints", "requiredTasks": "Required tasks", "exceptions": "Exceptions", "logic": "Logic", "tables": "Data" },
-      "coverageStatus": { "present": "Present", "none": "None", "undocumented": "Undocumented" }, "evidenceStatus": { "verified": "Verified", "partial": "Partial", "undocumented": "Undocumented" },
-      "filters": { "label": "Relation filters", "mobileLabel": "Mobile relation filters", "mobileSummary": "Relation filters · {{count}} categories", "channels": "Relation channels · {{count}}", "evidenceHint": "Evidence is shown as each relation's verification status, not as a semantic filter." },
-      "canvas": { "label": "Workflow knowledge graph", "minimap": "Knowledge map minimap" },
-      "kinds": { "activity": "Activity", "screen": "Screen", "master": "Master", "constraint": "Constraint", "requiredTask": "Required", "exception": "Exception", "logic": "Logic", "data": "Data", "evidence": "Evidence" },
-      "detail": { "label": "Selected knowledge details", "dossier": "Node details", "centerAction": "Set as center", "noDescription": "No description document is linked yet.", "evidence": "Evidence status", "openScreen": "Open app screen", "businessHeading": "Purpose · timing · conditions · exceptions", "technicalHeading": "Route · data · evidence", "incoming": "Incoming", "outgoing": "Outgoing", "noRelations": "No connections" },
-      "recovery": { "code": "Center not found", "title": "The shared link's center could not be found.", "description": "Use the search above to select a workflow, screen, or table from the current catalog. The center was not changed automatically." }
+      "tab": "Knowledge Map",
+      "title": "Workflow Knowledge Map",
+      "description": "Select a node to expand one level of relations. Recenter explicitly from the detail panel.",
+      "selectExpand": "Select {{label}} and expand relations",
+      "center": "Center",
+      "currentCenter": "Current center",
+      "relation": "Relation",
+      "condition": "Condition: {{condition}}",
+      "relationList": "Relations",
+      "emptyRelations": "No relations to display.",
+      "evidenceLabel": "Evidence {{status}}",
+      "search": {
+        "label": "Search workflows, screens, and tables",
+        "placeholder": "Workflow · screen · table · exception",
+        "action": "Search",
+        "aiAction": "Interpret with AI",
+        "aiLoading": "Interpreting",
+        "localResults": "Local catalog",
+        "aiResults": "AI candidates",
+        "noLocalResults": "No matching local results.",
+        "noAiResults": "No AI candidates.",
+        "invalidCenter": "Unknown center: {{center}}",
+        "staleAi": "Discarded an outdated or invalid AI response.",
+        "aiUnavailable": "AI interpretation is unavailable.",
+        "aiFailed": "AI interpretation request failed."
+      },
+      "layouts": {
+        "mindmap": "Mind map",
+        "process": "Process",
+        "relation": "Relations"
+      },
+      "views": {
+        "business": "Business",
+        "technical": "Technical"
+      },
+      "toolbar": {
+        "label": "Knowledge map tools",
+        "back": "Back",
+        "forward": "Forward",
+        "reset": "Reset",
+        "fit": "Fit view",
+        "copy": "Copy link",
+        "copySuccess": "Link copied.",
+        "copyFailed": "Could not copy the link.",
+        "cursorSelect": "Select · move nodes",
+        "cursorPan": "Pan · move canvas",
+        "fullscreen": "Fullscreen",
+        "exitFullscreen": "Exit fullscreen",
+        "recenter": "Center on selected"
+      },
+      "categories": {
+        "flow": "Flow",
+        "masters": "Master data",
+        "constraints": "Constraints",
+        "requiredTasks": "Required tasks",
+        "exceptions": "Exceptions",
+        "logic": "Logic",
+        "tables": "Data"
+      },
+      "coverageStatus": {
+        "present": "Present",
+        "none": "None",
+        "undocumented": "Undocumented"
+      },
+      "evidenceStatus": {
+        "verified": "Verified",
+        "partial": "Partial",
+        "undocumented": "Undocumented"
+      },
+      "filters": {
+        "label": "Relation filters",
+        "mobileLabel": "Mobile relation filters",
+        "mobileSummary": "Relation filters · {{count}} categories",
+        "channels": "Relation channels · {{count}}",
+        "evidenceHint": "Evidence is shown as each relation's verification status, not as a semantic filter."
+      },
+      "canvas": {
+        "label": "Workflow knowledge graph",
+        "minimap": "Knowledge map minimap"
+      },
+      "kinds": {
+        "activity": "Activity",
+        "screen": "Screen",
+        "master": "Master",
+        "constraint": "Constraint",
+        "requiredTask": "Required",
+        "exception": "Exception",
+        "logic": "Logic",
+        "data": "Data",
+        "evidence": "Evidence"
+      },
+      "detail": {
+        "label": "Selected knowledge details",
+        "dossier": "Node details",
+        "centerAction": "Set as center",
+        "noDescription": "No description document is linked yet.",
+        "evidence": "Evidence status",
+        "openScreen": "Open app screen",
+        "businessHeading": "Purpose · timing · conditions · exceptions",
+        "technicalHeading": "Route · data · evidence",
+        "incoming": "Incoming",
+        "outgoing": "Outgoing",
+        "noRelations": "No connections"
+      },
+      "recovery": {
+        "code": "Center not found",
+        "title": "The shared link's center could not be found.",
+        "description": "Use the search above to select a workflow, screen, or table from the current catalog. The center was not changed automatically."
+      }
     }
   }
 }

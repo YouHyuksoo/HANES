@@ -30,6 +30,16 @@ test("measure criteria falls back to criteria text when numeric limits are not f
 });
 
 test("measure unit is selected from UNIT_TYPE common code dropdown", () => {
-  assert.match(source, /<ComCodeSelect\s+groupCode="UNIT_TYPE"[\s\S]*showCode[\s\S]*value=\{form\.unit\}/);
-  assert.doesNotMatch(source, /<Input\s+label=\{t\("master\.equipInspect\.unit"/);
+  // 필드 도움말 적용 후에는 FieldComCodeSelect(field="unit") 래퍼를 통해 UNIT_TYPE 공통코드를 선택한다
+  assert.match(source, /<FieldComCodeSelect\s+field="unit"\s+groupCode="UNIT_TYPE"[\s\S]*showCode[\s\S]*value=\{form\.unit\}/);
+  assert.doesNotMatch(source, /<(?:Field)?Input\s+(?:field="unit"\s+)?label=\{t\("master\.equipInspect\.unit"/);
+});
+
+test("equip inspect item panel labels carry field help", () => {
+  assert.match(source, /from "\.\/equipInspectItemFieldHelp"/);
+  for (const field of ["itemCode", "equipType", "itemName", "inspectType", "itemType", "cycle", "useYn", "lslValue", "uslValue", "criteria", "remark"]) {
+    assert.match(source, new RegExp(`field="${field}"`), `${field} 필드 도움말 누락`);
+  }
+  assert.doesNotMatch(source, /<Input\s+label=/);
+  assert.doesNotMatch(source, /<Select\s+label=/);
 });

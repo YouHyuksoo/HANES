@@ -3,6 +3,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import StatusHeaderHelp from '@/components/shared/StatusHeaderHelp';
 import StatusBadge from '@/components/shared/StatusBadge';
 import type { WoRow } from './types';
+import { headerWithHelp } from './pmResultFieldHelp';
 
 const resultColors: Record<string, string> = {
   PASS: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
@@ -19,27 +20,27 @@ export function createPmResultGridColumns(t: TFunction): ColumnDef<WoRow>[] {
   return [
     {
       accessorKey: 'workOrderNo',
-      header: t('equipment.pmResult.woNo', 'WO번호'),
+      header: headerWithHelp('workOrderNo', t('equipment.pmResult.woNo', 'WO번호')),
       size: 150,
       meta: { filterType: 'text' as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{getValue<string>()}</span>,
     },
     {
       accessorKey: 'scheduledDate',
-      header: t('equipment.pmResult.scheduledDate', '예정일'),
+      header: headerWithHelp('scheduledDate', t('equipment.pmResult.scheduledDate', '예정일')),
       size: 100,
       meta: { filterType: 'date' as const },
     },
     {
       id: 'equipCode',
-      header: t('equipment.pmResult.equipCode', '설비코드'),
+      header: headerWithHelp('equipCode', t('equipment.pmResult.equipCode', '설비코드')),
       size: 120,
       meta: { filterType: 'text' as const },
       cell: ({ row }) => <span className="font-mono text-sm">{row.original.equip?.equipCode || row.original.equipCode}</span>,
     },
     {
       id: 'equipName',
-      header: t('equipment.pmResult.equipName', '설비명'),
+      header: headerWithHelp('equipName', t('equipment.pmResult.equipName', '설비명')),
       size: 140,
       cell: ({ row }) => row.original.equip?.equipName || '-',
     },
@@ -52,7 +53,7 @@ export function createPmResultGridColumns(t: TFunction): ColumnDef<WoRow>[] {
     },
     {
       accessorKey: 'overallResult',
-      header: t('equipment.pmResult.result', '결과'),
+      header: headerWithHelp('overallResult', t('equipment.pmResult.result', '결과')),
       size: 80,
       meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => {
@@ -63,7 +64,7 @@ export function createPmResultGridColumns(t: TFunction): ColumnDef<WoRow>[] {
     },
     {
       accessorKey: 'priority',
-      header: t('equipment.pmResult.priority', '우선순위'),
+      header: headerWithHelp('priority', t('equipment.pmResult.priority', '우선순위')),
       size: 80,
       meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => {
@@ -73,7 +74,7 @@ export function createPmResultGridColumns(t: TFunction): ColumnDef<WoRow>[] {
     },
     {
       accessorKey: 'completedAt',
-      header: t('equipment.pmResult.completedAt', '완료일'),
+      header: headerWithHelp('completedAt', t('equipment.pmResult.completedAt', '완료일')),
       size: 100,
       cell: ({ getValue }) => {
         const completedAt = getValue<string | null>();
@@ -82,7 +83,7 @@ export function createPmResultGridColumns(t: TFunction): ColumnDef<WoRow>[] {
     },
     {
       accessorKey: 'remark',
-      header: t('common.remark'),
+      header: headerWithHelp('remark', t('common.remark')),
       size: 160,
       meta: { filterType: 'text' as const },
       cell: ({ getValue }) => getValue<string | null>() || '-',

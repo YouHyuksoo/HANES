@@ -6,6 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Button, ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import StatusBadge from "@/components/shared/StatusBadge";
+import { headerWithHelp } from "./consumableMountFieldHelp";
 
 export interface ConsumableItem {
   consumableCode: string;
@@ -67,13 +68,13 @@ export function createConsumableMountGridColumns({
       },
     },
     { accessorKey: "operStatus", header: () => <StatusHeaderHelp label={t("consumables.mount.operStatus")} codeType="CONSUMABLE_OPER_STATUS" align="center" />, size: 80, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <StatusBadge codeType="CONSUMABLE_OPER_STATUS" value={getValue() as string} /> },
-    { accessorKey: "consumableCode", header: t("consumables.comp.consumableCode"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "consumableName", header: t("consumables.comp.consumableName"), size: 150, meta: { filterType: "text" as const } },
-    { accessorKey: "category", header: t("consumables.comp.category"), size: 80, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} /> },
-    { accessorKey: "mountedEquipCode", header: t("consumables.mount.mountedEquip"), size: 120, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
+    { accessorKey: "consumableCode", header: headerWithHelp("consumableCode", t("consumables.comp.consumableCode")), size: 120, meta: { filterType: "text" as const } },
+    { accessorKey: "consumableName", header: headerWithHelp("consumableName", t("consumables.comp.consumableName")), size: 150, meta: { filterType: "text" as const } },
+    { accessorKey: "category", header: headerWithHelp("category", t("consumables.comp.category")), size: 80, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} /> },
+    { accessorKey: "mountedEquipCode", header: headerWithHelp("mountedEquipCode", t("consumables.mount.mountedEquip")), size: 120, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
     { accessorKey: "status", header: () => <StatusHeaderHelp label={t("consumables.mount.lifeStatus")} codeType="CONSUMABLE_STATUS" align="center" />, size: 80, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_STATUS" code={getValue() as string} /> },
     {
-      id: "lifeProgress", header: t("consumables.life.lifeLabel"), size: 100, meta: { filterType: "none" as const },
+      id: "lifeProgress", header: headerWithHelp("lifeProgress", t("consumables.life.lifeLabel")), size: 100, meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const { currentCount, expectedLife } = row.original;
         const pct = expectedLife ? Math.round((currentCount / expectedLife) * 100) : 0;
@@ -87,6 +88,6 @@ export function createConsumableMountGridColumns({
         );
       },
     },
-    { accessorKey: "location", header: t("consumables.comp.location"), size: 100, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
+    { accessorKey: "location", header: headerWithHelp("location", t("consumables.comp.location")), size: 100, meta: { filterType: "text" as const }, cell: ({ getValue }) => (getValue() as string) || "-" },
   ];
 }

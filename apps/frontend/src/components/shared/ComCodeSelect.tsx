@@ -16,7 +16,7 @@ import Select from "@/components/ui/Select";
 import type { SelectProps } from "@/components/ui/Select";
 import { useComCodeOptions } from "@/hooks/useComCode";
 
-interface ComCodeSelectProps extends Omit<SelectProps, "options"> {
+export interface ComCodeSelectProps extends Omit<SelectProps, "options"> {
   groupCode: string;
   includeAll?: boolean;
   /** 필터용: 옵션 라벨 앞에 접두어 추가 (예: "품목유형: 전체") */

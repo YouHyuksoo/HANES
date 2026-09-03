@@ -12,8 +12,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
-import { Button, Input, Select } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 import { ConsumableSearchModal } from "@/components/shared";
+import { Field, FieldInput, FieldSelect } from "./receivingFieldHelp";
 
 interface Props {
   onClose: () => void;
@@ -77,10 +78,7 @@ export default function ReceivingFormPanel({ onClose, onSubmit, loading, animate
         {/* 본문 */}
         <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
           {/* 소모품 선택 */}
-          <div>
-            <h3 className="text-xs font-semibold text-text-muted mb-2">
-              {t("consumables.receiving.consumable")}
-            </h3>
+          <Field field="consumableCode" label={t("consumables.receiving.consumable")} required>
             <div className="flex gap-1.5">
               <Input
                 value={consumableLabel}
@@ -97,7 +95,7 @@ export default function ReceivingFormPanel({ onClose, onSubmit, loading, animate
                 <Search className="w-4 h-4" />
               </button>
             </div>
-          </div>
+          </Field>
 
           {/* 수량 + 입고구분 */}
           <div>
@@ -105,14 +103,16 @@ export default function ReceivingFormPanel({ onClose, onSubmit, loading, animate
               {t("consumables.receiving.incomingTypeLabel")}
             </h3>
             <div className="grid grid-cols-2 gap-3">
-              <Input
+              <FieldInput
+                field="qty"
                 label={t("common.quantity")}
                 type="number"
                 value={String(form.qty)}
                 onChange={(e) => set("qty", Number(e.target.value))}
                 fullWidth
               />
-              <Select
+              <FieldSelect
+                field="incomingType"
                 label={t("consumables.receiving.incomingTypeLabel")}
                 options={[
                   { value: "NEW", label: t("consumables.receiving.typeNew") },
@@ -131,13 +131,15 @@ export default function ReceivingFormPanel({ onClose, onSubmit, loading, animate
               {t("consumables.receiving.vendorCodeLabel")}
             </h3>
             <div className="grid grid-cols-2 gap-3">
-              <Input
+              <FieldInput
+                field="vendorCode"
                 label={t("consumables.receiving.vendorCodeLabel")}
                 value={form.vendorCode}
                 onChange={(e) => set("vendorCode", e.target.value)}
                 fullWidth
               />
-              <Input
+              <FieldInput
+                field="vendorName"
                 label={t("consumables.receiving.vendorNameLabel")}
                 value={form.vendorName}
                 onChange={(e) => set("vendorName", e.target.value)}
@@ -147,7 +149,8 @@ export default function ReceivingFormPanel({ onClose, onSubmit, loading, animate
           </div>
 
           {/* 단가 */}
-          <Input
+          <FieldInput
+            field="unitPrice"
             label={t("consumables.receiving.unitPriceLabel")}
             type="number"
             value={form.unitPrice != null ? String(form.unitPrice) : ""}
@@ -157,7 +160,8 @@ export default function ReceivingFormPanel({ onClose, onSubmit, loading, animate
           />
 
           {/* 비고 */}
-          <Input
+          <FieldInput
+            field="remark"
             label={t("common.remark")}
             value={form.remark}
             onChange={(e) => set("remark", e.target.value)}

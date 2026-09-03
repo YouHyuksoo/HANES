@@ -19,6 +19,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { InspectItemImage } from "@/components/shared";
+import { FieldHelpIcon, headerWithHelp } from "../dailyInspectFieldHelp";
 
 type InspectType = "DAILY" | "PERIODIC";
 
@@ -95,7 +96,7 @@ function InspectDataGrid({ items, results, updateResult, labels }: InspectDataGr
   const columns = useMemo<ColumnDef<InspectItem>[]>(() => [
     {
       id: "seq",
-      header: "No",
+      header: headerWithHelp("seq", "No", "center"),
       size: 44,
       meta: { align: "center" as const },
       cell: ({ row }) => <span className="text-text-muted">{row.index + 1}</span>,
@@ -112,13 +113,13 @@ function InspectDataGrid({ items, results, updateResult, labels }: InspectDataGr
     },
     {
       accessorKey: "itemName",
-      header: t("equipment.dailyInspect.colItem", "점검항목"),
+      header: headerWithHelp("itemName", t("equipment.dailyInspect.colItem", "점검항목")),
       size: 180,
       cell: ({ getValue }) => <span className="font-medium text-xs">{getValue() as string}</span>,
     },
     {
       accessorKey: "itemType",
-      header: t("equipment.dailyInspect.colType", "유형"),
+      header: headerWithHelp("itemType", t("equipment.dailyInspect.colType", "유형"), "center"),
       size: 72,
       meta: { align: "center" as const },
       cell: ({ getValue }) => {
@@ -136,7 +137,7 @@ function InspectDataGrid({ items, results, updateResult, labels }: InspectDataGr
     },
     {
       id: "criteria",
-      header: t("equipment.dailyInspect.colCriteria", "기준"),
+      header: headerWithHelp("criteria", t("equipment.dailyInspect.colCriteria", "기준"), "center"),
       size: 130,
       meta: { align: "center" as const },
       cell: ({ row }) => (
@@ -147,7 +148,7 @@ function InspectDataGrid({ items, results, updateResult, labels }: InspectDataGr
     },
     {
       id: "input",
-      header: t("equipment.dailyInspect.colMeasure", "측정값/입력"),
+      header: headerWithHelp("measureValue", t("equipment.dailyInspect.colMeasure", "측정값/입력"), "center"),
       size: 120,
       meta: { align: "center" as const },
       enableColumnFilter: false,
@@ -192,7 +193,7 @@ function InspectDataGrid({ items, results, updateResult, labels }: InspectDataGr
     },
     {
       id: "judge",
-      header: t("equipment.dailyInspect.colJudge", "판정"),
+      header: headerWithHelp("judge", t("equipment.dailyInspect.colJudge", "판정"), "center"),
       size: 60,
       meta: { align: "center" as const },
       enableColumnFilter: false,
@@ -213,7 +214,7 @@ function InspectDataGrid({ items, results, updateResult, labels }: InspectDataGr
     },
     {
       id: "remark",
-      header: t("common.remark", "비고"),
+      header: headerWithHelp("itemRemark", t("common.remark", "비고")),
       size: 160,
       enableColumnFilter: false,
       cell: ({ row }) => {
@@ -527,11 +528,17 @@ export default function InspectEntryPanel({
         {/* 점검일자 / 점검자 / 시작시각 */}
         <div className="mt-2.5 grid grid-cols-3 gap-3 text-xs">
           <div>
-            <div className="text-text-muted mb-1">{labels.inspectDate}</div>
+            <div className="text-text-muted mb-1 flex items-center gap-1">
+              <span>{labels.inspectDate}</span>
+              <FieldHelpIcon field="inspectDate" />
+            </div>
             <div className="font-mono font-medium">{inspectDate}</div>
           </div>
           <div>
-            <div className="font-bold mb-1 text-primary">{labels.inspectorRequired}</div>
+            <div className="font-bold mb-1 text-primary flex items-center gap-1">
+              <span>{labels.inspectorRequired}</span>
+              <FieldHelpIcon field="inspectorName" />
+            </div>
             <select
               value={inspectorName}
               onChange={(e) => setInspectorName(e.target.value)}
@@ -546,7 +553,10 @@ export default function InspectEntryPanel({
             </select>
           </div>
           <div>
-            <div className="text-text-muted mb-1">{labels.startTime}</div>
+            <div className="text-text-muted mb-1 flex items-center gap-1">
+              <span>{labels.startTime}</span>
+              <FieldHelpIcon field="startTime" />
+            </div>
             <div className="font-mono font-medium">{startTime}</div>
           </div>
         </div>
@@ -563,7 +573,10 @@ export default function InspectEntryPanel({
             }`}
           >
             <div>
-              <div className="text-xs font-bold opacity-80">{labels.overallTitle}</div>
+              <div className="text-xs font-bold opacity-80 flex items-center gap-1">
+                <span>{labels.overallTitle}</span>
+                <FieldHelpIcon field="overallResult" />
+              </div>
               <div className="text-xs mt-0.5">
                 {isNgOverall
                   ? labels.overallFailDescription(items.length, ngCount)
@@ -609,8 +622,9 @@ export default function InspectEntryPanel({
           <span className="px-2 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 font-medium">
             NG {ngCount}
           </span>
-          <span className="text-text-muted">
+          <span className="text-text-muted inline-flex items-center gap-1">
             {t("equipment.dailyInspect.overallJudgeArrow", "→ 종합판정")}{" "}
+            <FieldHelpIcon field="overallResult" />
             <strong
               className={
                 isNgOverall

@@ -10,6 +10,7 @@ import { LogOut, Undo2 } from "lucide-react";
 import { BarcodeScanInput, ProcessSelect } from "@/components/shared";
 import { Card, CardContent, Button } from "@/components/ui";
 import api from "@/services/api";
+import { Field } from "./issueScanFieldHelp";
 
 type ScanMode = "issue" | "issue-return";
 
@@ -100,14 +101,15 @@ export default function IssueScanPanel({ onScanSuccess }: IssueScanPanelProps) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-[220px_minmax(0,1fr)_auto] gap-3 items-end">
-            <ProcessSelect
-              label={t("consumables.issuing.processLabel", "출고 공정")}
-              value={processCode}
-              onChange={setProcessCode}
-              fullWidth
-              required={mode === "issue"}
-              disabled={isScanning}
-            />
+            <Field field="processCode" label={t("consumables.issuing.processLabel", "출고 공정")} required={mode === "issue"}>
+              <ProcessSelect
+                value={processCode}
+                onChange={setProcessCode}
+                fullWidth
+                required={mode === "issue"}
+                disabled={isScanning}
+              />
+            </Field>
             <div className="flex-1">
               <BarcodeScanInput
                 ref={inputRef}

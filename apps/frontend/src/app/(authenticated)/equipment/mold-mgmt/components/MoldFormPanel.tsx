@@ -14,8 +14,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Trash2 } from "lucide-react";
 import { Button, Input, ComCodeBadge, ConfirmModal } from "@/components/ui";
-import { ComCodeSelect, QtyInput } from "@/components/shared";
 import PartSearchModal from "@/components/shared/PartSearchModal";
+import { Field, FieldHelpIcon, FieldInput, FieldComCodeSelect, FieldQtyInput } from "../moldMgmtFieldHelp";
 import type { PartItem } from "@/components/shared/PartSearchModal";
 import api from "@/services/api";
 
@@ -124,42 +124,41 @@ export default function MoldFormPanel({ editData, onClose, onSave }: Props) {
       {/* 본문 */}
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <Input label={t("equipment.mold.moldCode")} value={form.moldCode}
+          <FieldInput field="moldCode" label={t("equipment.mold.moldCode")} value={form.moldCode}
             onChange={e => sf("moldCode", e.target.value)} fullWidth readOnly={isEdit} />
-          <Input label={t("equipment.mold.moldName")} value={form.moldName}
+          <FieldInput field="moldName" label={t("equipment.mold.moldName")} value={form.moldName}
             onChange={e => sf("moldName", e.target.value)} fullWidth />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <ComCodeSelect groupCode="MOLD_TYPE" includeAll={false}
+          <FieldComCodeSelect field="moldType" groupCode="MOLD_TYPE" includeAll={false}
             label={t("equipment.mold.moldType")} value={form.moldType}
             onChange={v => sf("moldType", v)} fullWidth />
-          <div>
-            <label className="block text-xs font-medium text-text mb-1">{t("equipment.mold.itemCode")}</label>
+          <Field field="itemCode" label={t("equipment.mold.itemCode")}>
             <div className="flex gap-1">
               <Input value={form.itemCode} readOnly fullWidth />
               <Button size="sm" variant="secondary" onClick={() => setIsPartModalOpen(true)} className="flex-shrink-0">
                 <Search className="w-3.5 h-3.5" />
               </Button>
             </div>
-          </div>
+          </Field>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <QtyInput label={t("equipment.mold.cavity")} value={Number(form.cavity) || 0}
+          <FieldQtyInput field="cavity" label={t("equipment.mold.cavity")} value={Number(form.cavity) || 0}
             onChange={(n) => sf("cavity", n ? String(n) : "")} fullWidth />
-          <QtyInput label={t("equipment.mold.guaranteedShots")} value={Number(form.guaranteedShots) || 0}
+          <FieldQtyInput field="guaranteedShots" label={t("equipment.mold.guaranteedShots")} value={Number(form.guaranteedShots) || 0}
             onChange={(n) => sf("guaranteedShots", n ? String(n) : "")} fullWidth />
-          <QtyInput label={t("equipment.mold.maintenanceCycle")} value={Number(form.maintenanceCycle) || 0}
+          <FieldQtyInput field="maintenanceCycle" label={t("equipment.mold.maintenanceCycle")} value={Number(form.maintenanceCycle) || 0}
             onChange={(n) => sf("maintenanceCycle", n ? String(n) : "")} fullWidth />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Input label={t("equipment.mold.location")} value={form.location}
+          <FieldInput field="location" label={t("equipment.mold.location")} value={form.location}
             onChange={e => sf("location", e.target.value)} fullWidth />
-          <Input label={t("equipment.mold.maker")} value={form.maker}
+          <FieldInput field="maker" label={t("equipment.mold.maker")} value={form.maker}
             onChange={e => sf("maker", e.target.value)} fullWidth />
         </div>
-        <Input label={t("equipment.mold.purchaseDate")} type="date" value={form.purchaseDate}
+        <FieldInput field="purchaseDate" label={t("equipment.mold.purchaseDate")} type="date" value={form.purchaseDate}
           onChange={e => sf("purchaseDate", e.target.value)} fullWidth />
-        <Input label={t("common.remark")} value={form.remark}
+        <FieldInput field="remark" label={t("common.remark")} value={form.remark}
           onChange={e => sf("remark", e.target.value)} fullWidth />
         {/* 읽기전용 현황 (수정모드) */}
         {isEdit && editData && (
@@ -167,21 +166,21 @@ export default function MoldFormPanel({ editData, onClose, onSave }: Props) {
             <h3 className="text-xs font-semibold text-text-muted">{t("equipment.mold.currentInfo")}</h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-text-muted mb-1">{t("equipment.mold.currentShots")}</label>
+                <label className="flex items-center gap-1 text-xs text-text-muted mb-1">{t("equipment.mold.currentShots")}<FieldHelpIcon field="currentShots" /></label>
                 <p className="font-mono text-sm font-bold text-text">{editData.currentShots?.toLocaleString() ?? 0}</p>
               </div>
               <div>
-                <label className="block text-xs text-text-muted mb-1">{t("equipment.mold.status")}</label>
+                <label className="flex items-center gap-1 text-xs text-text-muted mb-1">{t("equipment.mold.status")}<FieldHelpIcon field="status" /></label>
                 <ComCodeBadge groupCode="MOLD_STATUS" code={editData.status} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-text-muted mb-1">{t("equipment.mold.lastMaint")}</label>
+                <label className="flex items-center gap-1 text-xs text-text-muted mb-1">{t("equipment.mold.lastMaint")}<FieldHelpIcon field="lastMaintenanceDate" /></label>
                 <p className="text-sm text-text">{editData.lastMaintenanceDate?.slice(0, 10) ?? "-"}</p>
               </div>
               <div>
-                <label className="block text-xs text-text-muted mb-1">{t("equipment.mold.nextMaint")}</label>
+                <label className="flex items-center gap-1 text-xs text-text-muted mb-1">{t("equipment.mold.nextMaint")}<FieldHelpIcon field="nextMaintenanceDate" /></label>
                 <p className="text-sm text-text">{editData.nextMaintenanceDate?.slice(0, 10) ?? "-"}</p>
               </div>
             </div>

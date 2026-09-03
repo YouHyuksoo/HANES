@@ -22,3 +22,10 @@ test('mold management columns keep required accessors and actions', () => {
   assert.match(columns, /StatusHeaderHelp/);
   assert.match(columns, /ComCodeBadge/);
 });
+
+test('mold management data columns carry field help headers', () => {
+  assert.match(columns, /import \{ headerWithHelp \} from '\.\/moldMgmtFieldHelp'/);
+  for (const key of ['moldCode', 'moldName', 'moldType', 'itemCode', 'cavity', 'currentShots', 'guaranteedShots', 'shotRate', 'nextMaintenanceDate']) {
+    assert.match(columns, new RegExp(`header:\\s*headerWithHelp\\('${key}'`), `${key} 헤더 도움말 누락`);
+  }
+});

@@ -32,3 +32,5 @@ export { default as FilterBar } from "./FilterBar";
 export type { FilterBarProps } from "./FilterBar";
 export { default as BarcodeScanInput } from "./BarcodeScanInput";
 export type { BarcodeScanInputProps } from "./BarcodeScanInput";
+export { createFieldHelp } from "./field-help/createFieldHelp";
+export type { FieldHelpEntry, FieldHelpMap, HeaderHelpAlign } from "./field-help/createFieldHelp";

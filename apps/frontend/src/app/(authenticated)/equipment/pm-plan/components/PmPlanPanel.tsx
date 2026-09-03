@@ -13,8 +13,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, Input, Select } from "@/components/ui";
-import { QtyInput, ComCodeSelect } from "@/components/shared";
+import { Button } from "@/components/ui";
+import { QtyInput } from "@/components/shared";
+import { FieldHelpIcon, FieldInput, FieldSelect, FieldComCodeSelect, FieldQtyInput } from "../pmPlanFieldHelp";
 import { Plus, Trash2 } from "lucide-react";
 import { useEquipOptions, useEquipBomOptions } from "@/hooks/useMasterOptions";
 import { useComCodeOptions } from "@/hooks/useComCode";
@@ -229,34 +230,37 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
             <div>
               <h3 className="text-xs font-semibold text-text-muted mb-2">{t("equipment.pmPlan.sectionBasic", "기본정보")}</h3>
               <div className="grid grid-cols-2 gap-3">
-                <Select
+                <FieldSelect
+                  field="equipCode"
                   label={t("equipment.pmPlan.equipSelect")}
+                  required
                   options={[{ value: "", label: t("equipment.pmPlan.equipPlaceholder") }, ...equipOptions]}
                   value={equipId}
                   onChange={setEquipId}
-                  fullWidth
                 />
-                <Input
+                <FieldInput
+                  field="planCode"
                   label={t("equipment.pmPlan.planCode")}
+                  required
                   value={planCode}
                   onChange={(e) => setPlanCode(e.target.value)}
                   placeholder="PM-001"
                   disabled={isEdit}
-                  fullWidth
                 />
-                <Input
+                <FieldInput
+                  field="planName"
                   label={t("equipment.pmPlan.planName")}
+                  required
                   value={planName}
                   onChange={(e) => setPlanName(e.target.value)}
                   placeholder={t("equipment.pmPlan.planNamePlaceholder")}
-                  fullWidth
                 />
-                <Input
+                <FieldInput
+                  field="description"
                   label={t("common.description")}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder={t("equipment.pmPlan.descPlaceholder")}
-                  fullWidth
                 />
               </div>
             </div>
@@ -265,35 +269,35 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
             <div>
               <h3 className="text-xs font-semibold text-text-muted mb-2">{t("equipment.pmPlan.sectionCycle", "주기 설정")}</h3>
               <div className="grid grid-cols-2 gap-3">
-                <ComCodeSelect
+                <FieldComCodeSelect
+                  field="pmType"
                   groupCode="PM_TYPE"
                   includeAll={false}
                   label={t("equipment.pmPlan.pmType")}
                   value={pmType}
                   onChange={setPmType}
-                  fullWidth
                 />
-                <ComCodeSelect
+                <FieldComCodeSelect
+                  field="cycleType"
                   groupCode="PM_CYCLE_TYPE"
                   includeAll={false}
                   label={t("equipment.pmPlan.cycleType")}
                   value={cycleType}
                   onChange={setCycleType}
-                  fullWidth
                 />
-                <QtyInput
+                <FieldQtyInput
+                  field="cycleValue"
                   label={t("equipment.pmPlan.cycleValue")}
                   value={cycleValue}
                   onChange={(n) => setCycleValue(n || 1)}
-                  fullWidth
                 />
-                <Input
+                <FieldInput
+                  field="estimatedTime"
                   label={t("equipment.pmPlan.estimatedTime")}
                   type="number"
                   value={estimatedTime !== null ? String(estimatedTime) : ""}
                   onChange={(e) => setEstimatedTime(e.target.value ? Number(e.target.value) : null)}
                   placeholder={t("common.hours")}
-                  fullWidth
                 />
               </div>
             </div>
@@ -351,7 +355,7 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
                     {/* Row 2: 판정기준, 예비부품, 수량, 소요시간 */}
                     <div className="flex items-center gap-2 pl-8">
                       <div className="flex-1 min-w-0">
-                        <label className="text-[10px] text-text-muted mb-0.5 block">{t("equipment.pmPlan.criteria")}</label>
+                        <label className="text-[10px] text-text-muted mb-0.5 flex items-center gap-1">{t("equipment.pmPlan.criteria")}<FieldHelpIcon field="criteria" /></label>
                         <input
                           type="text"
                           value={item.criteria}
@@ -361,7 +365,7 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
                         />
                       </div>
                       <div className="w-40 shrink-0">
-                        <label className="text-[10px] text-text-muted mb-0.5 block">{t("equipment.pmPlan.sparePartCode")}</label>
+                        <label className="text-[10px] text-text-muted mb-0.5 flex items-center gap-1">{t("equipment.pmPlan.sparePartCode")}<FieldHelpIcon field="sparePartCode" /></label>
                         <select
                           value={item.sparePartCode}
                           onChange={(e) => updateItem(idx, "sparePartCode", e.target.value)}
@@ -374,7 +378,7 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
                         </select>
                       </div>
                       <div className="w-14 shrink-0">
-                        <label className="text-[10px] text-text-muted mb-0.5 block">{t("equipment.pmPlan.sparePartQty", "수량")}</label>
+                        <label className="text-[10px] text-text-muted mb-0.5 flex items-center gap-1">{t("equipment.pmPlan.sparePartQty", "수량")}<FieldHelpIcon field="sparePartQty" /></label>
                         <QtyInput
                           value={item.sparePartQty || 0}
                           onChange={(n) => updateItem(idx, "sparePartQty", n)}
@@ -382,7 +386,7 @@ export default function PmPlanPanel({ editingPlan, onClose, onSave, animate = tr
                         />
                       </div>
                       <div className="w-16 shrink-0">
-                        <label className="text-[10px] text-text-muted mb-0.5 block">{t("equipment.pmPlan.estimatedMin")}</label>
+                        <label className="text-[10px] text-text-muted mb-0.5 flex items-center gap-1">{t("equipment.pmPlan.estimatedMin")}<FieldHelpIcon field="estimatedMinutes" /></label>
                         <input
                           type="number"
                           value={item.estimatedMinutes !== null ? item.estimatedMinutes : ""}

@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
 import type { ReceivingLog } from '@/hooks/consumables/useReceivingData';
+import { headerWithHelp } from './receivingFieldHelp';
 
 const logTypeColors: Record<string, string> = {
   IN: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
@@ -38,7 +39,7 @@ function ReceivingTable({ data, toolbarLeft, isLoading }: ReceivingTableProps) {
     () => [
       {
         accessorKey: 'createdAt',
-        header: t('consumables.comp.dateTime'),
+        header: headerWithHelp('createdAt', t('consumables.comp.dateTime')),
         size: 160,
         meta: { filterType: 'date' },
         cell: ({ getValue }) => {
@@ -46,9 +47,9 @@ function ReceivingTable({ data, toolbarLeft, isLoading }: ReceivingTableProps) {
           return v ? new Date(v).toLocaleString() : "-";
         },
       },
-      { accessorKey: 'consumableCode', header: t('consumables.comp.consumableCode'), size: 110 },
-      { accessorKey: 'consumableName', header: t('consumables.comp.consumableName'), size: 140 },
-      { accessorKey: 'conUid', header: 'UID', size: 150,
+      { accessorKey: 'consumableCode', header: headerWithHelp('consumableCode', t('consumables.comp.consumableCode')), size: 110 },
+      { accessorKey: 'consumableName', header: headerWithHelp('consumableName', t('consumables.comp.consumableName')), size: 140 },
+      { accessorKey: 'conUid', header: headerWithHelp('conUid', 'UID'), size: 150,
         cell: ({ getValue }) => {
           const uid = getValue() as string | null;
           return uid ? <span className="font-mono text-xs">{uid}</span> : <span className="text-text-muted">-</span>;
@@ -56,7 +57,7 @@ function ReceivingTable({ data, toolbarLeft, isLoading }: ReceivingTableProps) {
       },
       {
         accessorKey: 'logType',
-        header: t('consumables.comp.logType'),
+        header: headerWithHelp('logType', t('consumables.comp.logType')),
         size: 90,
         cell: ({ getValue }) => {
           const type = getValue() as string;
@@ -69,7 +70,7 @@ function ReceivingTable({ data, toolbarLeft, isLoading }: ReceivingTableProps) {
       },
       {
         accessorKey: 'qty',
-        header: t('common.quantity'),
+        header: headerWithHelp('qty', t('common.quantity')),
         size: 70,
         cell: ({ row }) => {
           const isReturn = row.original.logType === 'IN_RETURN';
@@ -80,11 +81,11 @@ function ReceivingTable({ data, toolbarLeft, isLoading }: ReceivingTableProps) {
           );
         },
       },
-      { accessorKey: 'vendorCode', header: t('consumables.comp.vendorCode'), size: 110 },
-      { accessorKey: 'vendorName', header: t('consumables.comp.vendorName'), size: 110 },
+      { accessorKey: 'vendorCode', header: headerWithHelp('vendorCode', t('consumables.comp.vendorCode')), size: 110 },
+      { accessorKey: 'vendorName', header: headerWithHelp('vendorName', t('consumables.comp.vendorName')), size: 110 },
       {
         accessorKey: 'unitPrice',
-        header: t('consumables.comp.unitPrice'),
+        header: headerWithHelp('unitPrice', t('consumables.comp.unitPrice')),
         size: 100,
         cell: ({ getValue }) => {
           const val = getValue() as number | null;
@@ -93,7 +94,7 @@ function ReceivingTable({ data, toolbarLeft, isLoading }: ReceivingTableProps) {
       },
       {
         accessorKey: 'incomingType',
-        header: t('consumables.comp.incomingType'),
+        header: headerWithHelp('incomingType', t('consumables.comp.incomingType')),
         size: 80,
         cell: ({ getValue }) => {
           const val = getValue() as string | null;
@@ -102,7 +103,7 @@ function ReceivingTable({ data, toolbarLeft, isLoading }: ReceivingTableProps) {
       },
       {
         accessorKey: 'remark',
-        header: t('common.remark'),
+        header: headerWithHelp('remark', t('common.remark')),
         size: 180,
         cell: ({ getValue }) => getValue() as string ?? '-',
       },

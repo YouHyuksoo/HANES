@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { TFunction } from "i18next";
 import { Edit2, Link2, Trash2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
+import { headerWithHelp } from "./consumableMasterFieldHelp";
 import { ComCodeBadge } from "@/components/ui";
 import { type ConsumableItem } from "./components/ConsumableFormPanel";
 
@@ -80,18 +81,18 @@ export function createConsumableMasterGridColumns({
         <span className="text-text-muted text-xs">-</span>
       ),
     },
-    { accessorKey: "consumableCode", header: t("consumables.master.code"), size: 120, meta: { filterType: "text" as const } },
-    { accessorKey: "consumableName", header: t("consumables.master.name"), size: 170, meta: { filterType: "text" as const } },
+    { accessorKey: "consumableCode", header: headerWithHelp("consumableCode", t("consumables.master.code")), size: 120, meta: { filterType: "text" as const } },
+    { accessorKey: "consumableName", header: headerWithHelp("consumableName", t("consumables.master.name")), size: 170, meta: { filterType: "text" as const } },
     {
       accessorKey: "category",
-      header: t("consumables.master.category"),
+      header: headerWithHelp("category", t("consumables.master.category")),
       size: 80,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} />,
     },
     {
       accessorKey: "expectedLife",
-      header: t("consumables.master.expectedLife"),
+      header: headerWithHelp("expectedLife", t("consumables.master.expectedLife")),
       size: 100,
       meta: { filterType: "number" as const },
       cell: ({ getValue }) => {
@@ -101,16 +102,16 @@ export function createConsumableMasterGridColumns({
     },
     {
       accessorKey: "safetyStock",
-      header: t("consumables.master.safetyStock", "안전재고"),
+      header: headerWithHelp("safetyStock", t("consumables.master.safetyStock", "안전재고")),
       size: 80,
       meta: { filterType: "number" as const },
       cell: ({ getValue }) => ((getValue() as number) ?? 0).toLocaleString(),
     },
-    { accessorKey: "location", header: t("consumables.master.location"), size: 110, meta: { filterType: "text" as const } },
-    { accessorKey: "vendor", header: t("consumables.master.vendor"), size: 100, meta: { filterType: "text" as const } },
+    { accessorKey: "location", header: headerWithHelp("location", t("consumables.master.location")), size: 110, meta: { filterType: "text" as const } },
+    { accessorKey: "vendor", header: headerWithHelp("vendor", t("consumables.master.vendor")), size: 100, meta: { filterType: "text" as const } },
     {
       accessorKey: "unitPrice",
-      header: t("consumables.master.unitPrice", "단가"),
+      header: headerWithHelp("unitPrice", t("consumables.master.unitPrice", "단가"), "right"),
       size: 100,
       meta: { filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => {

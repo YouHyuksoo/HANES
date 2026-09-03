@@ -22,3 +22,10 @@ test('inspect history columns keep required accessors and code badges', () => {
   assert.match(columns, /INSPECT_JUDGE/);
   assert.match(columns, /EQUIP_TYPE/);
 });
+
+test('inspect history data columns carry field help headers', () => {
+  assert.match(columns, /import \{ headerWithHelp \} from '\.\/inspectHistoryFieldHelp'/);
+  for (const key of ['inspectDate', 'inspectType', 'equipCode', 'equipName', 'equipType', 'inspectorName', 'overallResult', 'remark']) {
+    assert.match(columns, new RegExp(`header:\\s*headerWithHelp\\('${key}'`), `${key} 헤더 도움말 누락`);
+  }
+});

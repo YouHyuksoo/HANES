@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
 import type { IssuingLog } from '@/hooks/consumables/useIssuingData';
+import { headerWithHelp } from './issuingFieldHelp';
 
 const logTypeColors: Record<string, string> = {
   OUT: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
@@ -33,7 +34,7 @@ function IssuingTable({ data, toolbarLeft, isLoading }: IssuingTableProps) {
     () => [
       {
         accessorKey: 'createdAt',
-        header: t('consumables.comp.dateTime'),
+        header: headerWithHelp('createdAt', t('consumables.comp.dateTime')),
         size: 160,
         meta: { filterType: 'date' },
         cell: ({ getValue }) => {
@@ -41,9 +42,9 @@ function IssuingTable({ data, toolbarLeft, isLoading }: IssuingTableProps) {
           return v ? new Date(v).toLocaleString() : "-";
         },
       },
-      { accessorKey: 'consumableCode', header: t('consumables.comp.consumableCode'), size: 110 },
-      { accessorKey: 'consumableName', header: t('consumables.comp.consumableName'), size: 140 },
-      { accessorKey: 'conUid', header: 'UID', size: 150,
+      { accessorKey: 'consumableCode', header: headerWithHelp('consumableCode', t('consumables.comp.consumableCode')), size: 110 },
+      { accessorKey: 'consumableName', header: headerWithHelp('consumableName', t('consumables.comp.consumableName')), size: 140 },
+      { accessorKey: 'conUid', header: headerWithHelp('conUid', 'UID'), size: 150,
         cell: ({ getValue }) => {
           const uid = getValue() as string | null;
           return uid ? <span className="font-mono text-xs">{uid}</span> : <span className="text-text-muted">-</span>;
@@ -51,7 +52,7 @@ function IssuingTable({ data, toolbarLeft, isLoading }: IssuingTableProps) {
       },
       {
         accessorKey: 'logType',
-        header: t('consumables.comp.logType'),
+        header: headerWithHelp('logType', t('consumables.comp.logType')),
         size: 90,
         cell: ({ getValue }) => {
           const type = getValue() as string;
@@ -64,7 +65,7 @@ function IssuingTable({ data, toolbarLeft, isLoading }: IssuingTableProps) {
       },
       {
         accessorKey: 'qty',
-        header: t('common.quantity'),
+        header: headerWithHelp('qty', t('common.quantity')),
         size: 70,
         cell: ({ row }) => {
           const isReturn = row.original.logType === 'OUT_RETURN';
@@ -77,25 +78,25 @@ function IssuingTable({ data, toolbarLeft, isLoading }: IssuingTableProps) {
       },
       {
         accessorKey: 'lineCode',
-        header: t('consumables.comp.line'),
+        header: headerWithHelp('lineCode', t('consumables.comp.line')),
         size: 90,
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
       {
         accessorKey: 'processCode',
-        header: t('consumables.issuing.processLabel', '출고 공정'),
+        header: headerWithHelp('processCode', t('consumables.issuing.processLabel', '출고 공정')),
         size: 100,
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
       {
         accessorKey: 'equipCode',
-        header: t('consumables.comp.equipment'),
+        header: headerWithHelp('equipCode', t('consumables.comp.equipment')),
         size: 90,
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
       {
         accessorKey: 'remark',
-        header: t('common.remark'),
+        header: headerWithHelp('remark', t('common.remark')),
         size: 160,
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },

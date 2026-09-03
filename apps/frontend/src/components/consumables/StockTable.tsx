@@ -15,6 +15,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ComCodeBadge } from '@/components/ui';
 import type { ConsumableStock } from '@/hooks/consumables/useStockData';
+import { headerWithHelp } from './stockFieldHelp';
 
 interface StockTableProps {
   data: ConsumableStock[];
@@ -29,7 +30,7 @@ function StockTable({ data, toolbarLeft, isLoading }: StockTableProps) {
     () => [
       {
         accessorKey: 'conUid',
-        header: t('consumables.stock.conUid'),
+        header: headerWithHelp('conUid', t('consumables.stock.conUid')),
         size: 150,
         meta: { filterType: 'text' as const },
         cell: ({ getValue }) => (
@@ -38,26 +39,26 @@ function StockTable({ data, toolbarLeft, isLoading }: StockTableProps) {
       },
       {
         id: 'qty',
-        header: t('common.quantity'),
+        header: headerWithHelp('qty', t('common.quantity'), 'center'),
         size: 50,
         meta: { align: 'center' as const, filterType: 'none' as const },
         cell: () => <span className="text-xs text-text-muted">1</span>,
       },
       {
         accessorKey: 'consumableCode',
-        header: t('consumables.comp.consumableCode'),
+        header: headerWithHelp('consumableCode', t('consumables.comp.consumableCode')),
         size: 120,
         meta: { filterType: 'text' as const },
       },
       {
         accessorKey: 'consumableName',
-        header: t('consumables.comp.consumableName'),
+        header: headerWithHelp('consumableName', t('consumables.comp.consumableName')),
         size: 150,
         meta: { filterType: 'text' as const },
       },
       {
         accessorKey: 'category',
-        header: t('consumables.comp.category'),
+        header: headerWithHelp('category', t('consumables.comp.category')),
         size: 80,
         meta: { filterType: 'text' as const },
         cell: ({ getValue }) => {
@@ -67,7 +68,7 @@ function StockTable({ data, toolbarLeft, isLoading }: StockTableProps) {
       },
       {
         accessorKey: 'status',
-        header: t('consumables.stock.instanceStatus'),
+        header: headerWithHelp('status', t('consumables.stock.instanceStatus')),
         size: 100,
         meta: { filterType: 'text' as const },
         cell: ({ getValue }) => {
@@ -77,7 +78,7 @@ function StockTable({ data, toolbarLeft, isLoading }: StockTableProps) {
       },
       {
         accessorKey: 'currentCount',
-        header: t('consumables.stock.shotCount'),
+        header: headerWithHelp('currentCount', t('consumables.stock.shotCount')),
         size: 100,
         meta: { filterType: 'number' as const },
         cell: ({ row }) => {
@@ -99,28 +100,28 @@ function StockTable({ data, toolbarLeft, isLoading }: StockTableProps) {
       },
       {
         accessorKey: 'location',
-        header: t('consumables.comp.location'),
+        header: headerWithHelp('location', t('consumables.comp.location')),
         size: 80,
         meta: { filterType: 'text' as const },
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
       {
         accessorKey: 'processCode',
-        header: t('consumables.issuing.processLabel', '출고 공정'),
+        header: headerWithHelp('processCode', t('consumables.issuing.processLabel', '출고 공정')),
         size: 100,
         meta: { filterType: 'text' as const },
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
       {
         accessorKey: 'mountedEquipCode',
-        header: t('consumables.stock.mountedEquip'),
+        header: headerWithHelp('mountedEquipCode', t('consumables.stock.mountedEquip')),
         size: 110,
         meta: { filterType: 'text' as const },
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
       {
         accessorKey: 'recvDate',
-        header: t('consumables.stock.recvDate'),
+        header: headerWithHelp('recvDate', t('consumables.stock.recvDate')),
         size: 110,
         meta: { filterType: 'date' as const },
         cell: ({ getValue }) => {
@@ -130,14 +131,14 @@ function StockTable({ data, toolbarLeft, isLoading }: StockTableProps) {
       },
       {
         accessorKey: 'vendorName',
-        header: t('consumables.comp.vendorName'),
+        header: headerWithHelp('vendorName', t('consumables.comp.vendorName')),
         size: 100,
         meta: { filterType: 'text' as const },
         cell: ({ getValue }) => (getValue() as string) ?? '-',
       },
       {
         accessorKey: 'unitPrice',
-        header: t('consumables.comp.unitPrice'),
+        header: headerWithHelp('unitPrice', t('consumables.comp.unitPrice')),
         size: 90,
         meta: { filterType: 'number' as const },
         cell: ({ getValue }) => {

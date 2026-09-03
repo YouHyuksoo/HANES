@@ -13,7 +13,8 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Modal, Button, Input, Select, ComCodeBadge } from "@/components/ui";
+import { Modal, Button, ComCodeBadge } from "@/components/ui";
+import { FieldHelpIcon, FieldInput, FieldSelect, HeaderHelp } from "../pmCalendarFieldHelp";
 import { CheckCircle, XCircle } from "lucide-react";
 import { useWorkerOptions } from "@/hooks/useMasterOptions";
 import type { WoScheduleItem } from "./PmWorkOrderPanel";
@@ -143,28 +144,30 @@ export default function PmExecuteModal({ isOpen, onClose, workOrder, onSaved, mo
       <div className="space-y-4">
         {/* WO Info */}
         <div className="grid grid-cols-3 gap-3">
-          <Input
+          <FieldInput
+            field="workOrderNo"
             label={t("equipment.pmWorkOrder.woNo")}
             value={workOrder.workOrderNo}
             disabled
-            fullWidth
           />
-          <Input
+          <FieldInput
+            field="equipCode"
             label={t("equipment.pmPlan.equipCode")}
             value={`${workOrder.equip.equipCode} - ${workOrder.equip.equipName}`}
             disabled
-            fullWidth
           />
           {isViewMode ? (
-            <Input
+            <FieldInput
+              field="assignedWorker"
               label={t("equipment.pmWorkOrder.worker")}
               value={workerOptions.find((w) => w.value === selectedWorkerId)?.label || selectedWorkerId || "-"}
               disabled
-              fullWidth
             />
           ) : (
-            <Select
+            <FieldSelect
+              field="assignedWorker"
               label={t("equipment.pmWorkOrder.worker")}
+              required
               options={[
                 { value: "", label: t("equipment.pmWorkOrder.workerPlaceholder") },
                 ...workerOptions,
@@ -172,7 +175,6 @@ export default function PmExecuteModal({ isOpen, onClose, workOrder, onSaved, mo
               value={selectedWorkerId}
               onChange={setSelectedWorkerId}
               disabled={workersLoading}
-              fullWidth
             />
           )}
         </div>
@@ -191,21 +193,21 @@ export default function PmExecuteModal({ isOpen, onClose, workOrder, onSaved, mo
               </colgroup>
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-text-muted">#</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-text-muted"><HeaderHelp field="seq" label="#" /></th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-muted">
-                    {t("equipment.pmPlan.itemName")}
+                    <HeaderHelp field="itemName" label={t("equipment.pmPlan.itemName")} />
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-muted">
-                    {t("equipment.pmPlan.itemType")}
+                    <HeaderHelp field="itemType" label={t("equipment.pmPlan.itemType")} />
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-muted">
-                    {t("equipment.pmPlan.criteria")}
+                    <HeaderHelp field="criteria" label={t("equipment.pmPlan.criteria")} />
                   </th>
                   <th className="px-3 py-2 text-center text-xs font-medium text-text-muted">
-                    {t("equipment.pmWorkOrder.result")}
+                    <HeaderHelp field="result" label={t("equipment.pmWorkOrder.result")} align="center" />
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-text-muted">
-                    {t("common.remark")}
+                    <HeaderHelp field="itemRemark" label={t("common.remark")} />
                   </th>
                 </tr>
               </thead>
@@ -298,8 +300,9 @@ export default function PmExecuteModal({ isOpen, onClose, workOrder, onSaved, mo
 
         {/* Overall Result */}
         <div className="flex items-center gap-4 px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <span className="text-sm font-medium text-text">
+          <span className="inline-flex items-center gap-1 text-sm font-medium text-text">
             {t("equipment.pmWorkOrder.overallResult")}:
+            <FieldHelpIcon field="overallResult" />
           </span>
           {(isViewMode && workOrder.overallResult) ? (
             <span className={`px-3 py-1 rounded text-sm font-bold ${
@@ -323,20 +326,21 @@ export default function PmExecuteModal({ isOpen, onClose, workOrder, onSaved, mo
             </span>
           )}
           {isViewMode && workOrder.completedAt && (
-            <span className="text-xs text-text-muted ml-auto">
+            <span className="inline-flex items-center gap-1 text-xs text-text-muted ml-auto">
               {t("equipment.pmWorkOrder.completedAt")}: {new Date(workOrder.completedAt).toLocaleString()}
+              <FieldHelpIcon field="completedAt" />
             </span>
           )}
         </div>
 
         {/* Remark */}
-        <Input
+        <FieldInput
+          field="remark"
           label={t("common.remark")}
           placeholder={isViewMode ? "" : t("equipment.pmWorkOrder.remarkPlaceholder")}
           value={remark}
           onChange={(e) => !isViewMode && setRemark(e.target.value)}
           disabled={isViewMode}
-          fullWidth
         />
 
         {/* Actions */}

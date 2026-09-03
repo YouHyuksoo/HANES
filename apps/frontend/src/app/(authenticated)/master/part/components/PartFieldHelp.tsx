@@ -1,10 +1,10 @@
 "use client";
 
-import type { ComponentProps, ReactNode } from "react";
-import { useTranslation } from "react-i18next";
-import { Input, Select } from "@/components/ui";
-import type { InputProps, SelectProps } from "@/components/ui";
-import { ComCodeSelect, HelpTooltip } from "@/components/shared";
+/**
+ * @file components/PartFieldHelp.tsx
+ * @description 품목마스터 필드 도움말 사전 — 공통 팩토리 createFieldHelp(components/shared/field-help)로 폼 라벨·그리드 헤더 ? 를 만든다.
+ */
+import { createFieldHelp } from "@/components/shared/field-help/createFieldHelp";
 
 export const PART_FIELD_HELP = {
   itemCode: { db: "ITEM_MASTERS.ITEM_CODE", description: "MES 내부에서 품목을 식별하는 고유 코드입니다." },
@@ -48,104 +48,15 @@ export const PART_FIELD_HELP = {
 
 export type PartFieldKey = keyof typeof PART_FIELD_HELP;
 
-type FieldBaseProps = {
-  field: PartFieldKey;
-  label: string;
-  required?: boolean;
-  className?: string;
-  children: ReactNode;
-};
+const partFieldHelp = createFieldHelp(PART_FIELD_HELP, "master.part.fieldHelp");
 
-export function FieldLabel({ field, label, required }: Omit<FieldBaseProps, "children" | "className">) {
-  const { t } = useTranslation();
-  const help = PART_FIELD_HELP[field];
-
-  return (
-    <label className="mb-1.5 flex items-center gap-1 text-sm font-medium text-text">
-      <span>{label}</span>
-      {required && <span className="text-red-500">*</span>}
-      <HelpTooltip description={t(`master.part.fieldHelp.${field}`, help.description)} db={help.db} dataField={field} />
-    </label>
-  );
-}
-
-export function Field({ field, label, required, className = "", children }: FieldBaseProps) {
-  return (
-    <div className={className}>
-      <FieldLabel field={field} label={label} required={required} />
-      {children}
-    </div>
-  );
-}
-
-type FieldInputProps = Omit<InputProps, "label"> & {
-  field: PartFieldKey;
-  label: string;
-  wrapperClassName?: string;
-};
-
-export function FieldInput({ field, label, required, wrapperClassName, ...props }: FieldInputProps) {
-  return (
-    <Field field={field} label={label} required={required} className={wrapperClassName}>
-      <Input {...props} required={required} fullWidth />
-    </Field>
-  );
-}
-
-type FieldSelectProps = Omit<SelectProps, "label"> & {
-  field: PartFieldKey;
-  label: string;
-  wrapperClassName?: string;
-};
-
-export function FieldSelect({ field, label, required, wrapperClassName, ...props }: FieldSelectProps) {
-  return (
-    <Field field={field} label={label} required={required} className={wrapperClassName}>
-      <Select {...props} required={required} fullWidth />
-    </Field>
-  );
-}
-
-type FieldComCodeSelectProps = Omit<ComponentProps<typeof ComCodeSelect>, "label"> & {
-  field: PartFieldKey;
-  label: string;
-  wrapperClassName?: string;
-};
-
-export function FieldComCodeSelect({ field, label, required, wrapperClassName, ...props }: FieldComCodeSelectProps) {
-  return (
-    <Field field={field} label={label} required={required} className={wrapperClassName}>
-      <ComCodeSelect {...props} required={required} fullWidth />
-    </Field>
-  );
-}
-
-type FieldYnRadioProps = {
-  field: PartFieldKey;
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-};
-
-export function FieldYnRadio({ field, label, value, onChange }: FieldYnRadioProps) {
-  return (
-    <Field field={field} label={label}>
-      <div className="flex h-10 items-center gap-3">
-        {[
-          { v: "Y", l: "Y", cls: "text-green-600 dark:text-green-400" },
-          { v: "N", l: "N", cls: "text-red-500 dark:text-red-400" },
-        ].map(opt => (
-          <label key={opt.v} className={`flex cursor-pointer items-center gap-1.5 text-xs ${value === opt.v ? `${opt.cls} font-semibold` : "text-text-muted"}`}>
-            <input
-              type="radio"
-              checked={value === opt.v}
-              onChange={() => onChange(opt.v)}
-              className="h-3.5 w-3.5 accent-primary"
-            />
-            {opt.l}
-          </label>
-        ))}
-      </div>
-    </Field>
-  );
-}
+export const {
+  FieldLabel,
+  Field,
+  FieldInput,
+  FieldSelect,
+  FieldComCodeSelect,
+  FieldYnRadio,
+  HeaderHelp,
+  headerWithHelp,
+} = partFieldHelp;

@@ -3,6 +3,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Edit2, Trash2 } from 'lucide-react';
 import { ComCodeBadge } from '@/components/ui';
 import type { PmPlanRow } from './types';
+import { headerWithHelp } from './pmPlanFieldHelp';
 
 interface CreatePmPlanGridColumnsOptions {
   t: TFunction;
@@ -48,7 +49,7 @@ export function createPmPlanGridColumns({
     },
     {
       accessorKey: 'planCode',
-      header: t('equipment.pmPlan.planCode'),
+      header: headerWithHelp('planCode', t('equipment.pmPlan.planCode')),
       size: 120,
       meta: { filterType: 'text' as const },
       cell: ({ getValue }) => (
@@ -57,7 +58,7 @@ export function createPmPlanGridColumns({
     },
     {
       accessorKey: 'equip',
-      header: t('equipment.pmPlan.equipCode'),
+      header: headerWithHelp('equipCode', t('equipment.pmPlan.equipCode')),
       size: 120,
       meta: { filterType: 'text' as const },
       cell: ({ getValue }) => {
@@ -69,20 +70,20 @@ export function createPmPlanGridColumns({
     },
     {
       id: 'equipName',
-      header: t('equipment.pmPlan.equipName'),
+      header: headerWithHelp('equipName', t('equipment.pmPlan.equipName')),
       size: 140,
       meta: { filterType: 'text' as const },
       accessorFn: (row) => row.equip?.equipName ?? '-',
     },
     {
       accessorKey: 'planName',
-      header: t('equipment.pmPlan.planName'),
+      header: headerWithHelp('planName', t('equipment.pmPlan.planName')),
       size: 180,
       meta: { filterType: 'text' as const },
     },
     {
       accessorKey: 'pmType',
-      header: t('equipment.pmPlan.pmType'),
+      header: headerWithHelp('pmType', t('equipment.pmPlan.pmType')),
       size: 100,
       meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => (
@@ -91,7 +92,7 @@ export function createPmPlanGridColumns({
     },
     {
       accessorKey: 'cycleType',
-      header: t('equipment.pmPlan.cycleType'),
+      header: headerWithHelp('cycleType', t('equipment.pmPlan.cycleType')),
       size: 100,
       meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => (
@@ -100,7 +101,7 @@ export function createPmPlanGridColumns({
     },
     {
       accessorKey: 'itemCount',
-      header: t('equipment.pmPlan.itemsTitle'),
+      header: headerWithHelp('itemCount', t('equipment.pmPlan.itemsTitle'), 'center'),
       size: 80,
       meta: { align: 'center' as const, filterType: 'number' as const },
       cell: ({ getValue }) => {
@@ -119,7 +120,7 @@ export function createPmPlanGridColumns({
     },
     {
       accessorKey: 'nextDueAt',
-      header: t('equipment.pmPlan.nextDueAt'),
+      header: headerWithHelp('nextDueAt', t('equipment.pmPlan.nextDueAt')),
       size: 120,
       meta: { filterType: 'date' as const },
       cell: ({ getValue }) => {
@@ -130,7 +131,7 @@ export function createPmPlanGridColumns({
     },
     {
       accessorKey: 'useYn',
-      header: t('common.status'),
+      header: headerWithHelp('useYn', t('common.status')),
       size: 80,
       meta: { filterType: 'multi' as const },
       cell: ({ getValue }) => {

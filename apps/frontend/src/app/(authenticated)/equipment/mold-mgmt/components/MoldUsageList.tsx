@@ -12,11 +12,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, History, X } from "lucide-react";
-import { Card, CardContent, Button, Input } from "@/components/ui";
-import { QtyInput } from "@/components/shared";
+import { Card, CardContent, Button } from "@/components/ui";
 import { EquipSelect, WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
+import { Field, FieldInput, FieldQtyInput, HeaderHelp } from "../moldMgmtFieldHelp";
 
 interface UsageRecord {
   usageDate: string;
@@ -117,22 +117,22 @@ export default function MoldUsageList({ mold }: Props) {
         {showForm && (
           <div className="flex gap-2 items-end mb-3 flex-wrap border border-border rounded-lg p-3
             bg-surface dark:bg-slate-800">
-            <Input label={t("equipment.mold.usageDate")} type="date" value={form.usageDate}
-              onChange={e => setField("usageDate", e.target.value)} className="w-32" />
-            <QtyInput label={t("equipment.mold.shotCount")} value={Number(form.shotCount) || 0}
-              onChange={(n) => setField("shotCount", n ? String(n) : "")} className="w-24" />
-            <Input label={t("equipment.mold.orderNo")} value={form.orderNo}
-              onChange={e => setField("orderNo", e.target.value)} className="w-32" />
-            <div className="w-32">
-              <EquipSelect label={t("equipment.mold.equipCode")} value={form.equipCode}
+            <FieldInput field="usageDate" label={t("equipment.mold.usageDate")} type="date" value={form.usageDate}
+              onChange={e => setField("usageDate", e.target.value)} wrapperClassName="w-32" />
+            <FieldQtyInput field="shotCount" label={t("equipment.mold.shotCount")} value={Number(form.shotCount) || 0}
+              onChange={(n) => setField("shotCount", n ? String(n) : "")} wrapperClassName="w-24" />
+            <FieldInput field="orderNo" label={t("equipment.mold.orderNo")} value={form.orderNo}
+              onChange={e => setField("orderNo", e.target.value)} wrapperClassName="w-32" />
+            <Field field="equipCode" label={t("equipment.mold.equipCode")} className="w-32">
+              <EquipSelect value={form.equipCode}
                 onChange={v => setField("equipCode", v)} fullWidth />
-            </div>
-            <div className="w-32">
-              <WorkerSelect label={t("equipment.mold.worker")} value={form.workerCode}
+            </Field>
+            <Field field="workerCode" label={t("equipment.mold.worker")} className="w-32">
+              <WorkerSelect value={form.workerCode}
                 onChange={v => setField("workerCode", v)} fullWidth />
-            </div>
-            <Input label={t("common.remark")} value={form.remark}
-              onChange={e => setField("remark", e.target.value)} className="w-32" />
+            </Field>
+            <FieldInput field="usageRemark" label={t("common.remark")} value={form.remark}
+              onChange={e => setField("remark", e.target.value)} wrapperClassName="w-32" />
             <Button
               size="sm"
               onClick={handleAdd}
@@ -152,12 +152,12 @@ export default function MoldUsageList({ mold }: Props) {
           <table className="w-full text-xs">
             <thead className="sticky top-0">
               <tr className="border-b border-border bg-surface dark:bg-slate-800">
-                <th className="px-3 py-2 text-left font-medium text-text-muted">{t("equipment.mold.usageDate")}</th>
-                <th className="px-3 py-2 text-right font-medium text-text-muted">{t("equipment.mold.shotCount")}</th>
-                <th className="px-3 py-2 text-left font-medium text-text-muted">{t("equipment.mold.orderNo")}</th>
-                <th className="px-3 py-2 text-left font-medium text-text-muted">{t("equipment.mold.equipCode")}</th>
-                <th className="px-3 py-2 text-left font-medium text-text-muted">{t("equipment.mold.worker")}</th>
-                <th className="px-3 py-2 text-left font-medium text-text-muted">{t("common.remark")}</th>
+                <th className="px-3 py-2 text-left font-medium text-text-muted"><HeaderHelp field="usageDate" label={t("equipment.mold.usageDate")} /></th>
+                <th className="px-3 py-2 text-right font-medium text-text-muted"><HeaderHelp field="shotCount" label={t("equipment.mold.shotCount")} align="right" /></th>
+                <th className="px-3 py-2 text-left font-medium text-text-muted"><HeaderHelp field="orderNo" label={t("equipment.mold.orderNo")} /></th>
+                <th className="px-3 py-2 text-left font-medium text-text-muted"><HeaderHelp field="equipCode" label={t("equipment.mold.equipCode")} /></th>
+                <th className="px-3 py-2 text-left font-medium text-text-muted"><HeaderHelp field="workerCode" label={t("equipment.mold.worker")} /></th>
+                <th className="px-3 py-2 text-left font-medium text-text-muted"><HeaderHelp field="usageRemark" label={t("common.remark")} /></th>
               </tr>
             </thead>
             <tbody>

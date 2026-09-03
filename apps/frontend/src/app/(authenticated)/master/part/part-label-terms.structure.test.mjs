@@ -72,9 +72,12 @@ test('/master/part input labels expose help icons with db column names', () => {
     assert.match(modal, new RegExp(`field="${field}"`));
   }
 
-  // 도움말 아이콘은 공통 HelpTooltip(포털 카드형)으로 렌더한다.
-  assert.match(fieldHelp, /HelpTooltip/);
-  assert.match(fieldHelp, /description=\{t\(`master\.part\.fieldHelp\.\$\{field\}`, help\.description\)\} db=\{help\.db\} dataField=\{field\}/);
+  // 도움말 아이콘은 공통 팩토리 createFieldHelp(내부에서 HelpTooltip 포털 카드형 렌더)로 만든다.
+  assert.match(fieldHelp, /createFieldHelp\(PART_FIELD_HELP, "master\.part\.fieldHelp"\)/);
+  // 실제 HelpTooltip 호출은 공통 팩토리 안에 있다 — i18n 키 우선 + 사전 description 폴백 + data-field 식별자
+  const factory = read('apps/frontend/src/components/shared/field-help/createFieldHelp.tsx');
+  assert.match(factory, /t\(`\$\{i18nPrefix\}\.\$\{field\}`, help\.description\)/);
+  assert.match(factory, /<HelpTooltip description=\{help\.description\} db=\{help\.db\} dataField=\{field\} \/>/);
 });
 
 test('/master/part removes unused tact time from the management screen', () => {

@@ -19,6 +19,7 @@ import {
   type InspectType,
   type ItemType,
 } from "./equipInspectItemColumns";
+import { Field, FieldHelpIcon, FieldInput, FieldSelect, FieldComCodeSelect } from "./equipInspectItemFieldHelp";
 
 interface InspectItemForm {
   itemCode: string;
@@ -359,22 +360,24 @@ export default function EquipInspectItemPage() {
             <div>
               <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equipInspectItem.sectionBasic", "기본정보")}</h3>
               <div className="grid grid-cols-2 gap-3">
-                <Input label={t("master.equipInspect.itemCode", "항목코드")} value={form.itemCode}
+                <FieldInput field="itemCode" label={t("master.equipInspect.itemCode", "항목코드")} value={form.itemCode}
                   onChange={e => setField("itemCode", e.target.value)} disabled={!!editing} fullWidth required />
-                <ComCodeSelect groupCode="EQUIP_TYPE" includeAll={false} label={t("master.equip.type", "설비유형")}
+                <FieldComCodeSelect field="equipType" groupCode="EQUIP_TYPE" includeAll={false} label={t("master.equip.type", "설비유형")}
                   value={form.equipType} onChange={v => setField("equipType", v)} fullWidth />
                 <div className="col-span-2">
-                  <Input label={t("master.equipInspect.itemName")} value={form.itemName}
+                  <FieldInput field="itemName" label={t("master.equipInspect.itemName")} value={form.itemName}
                     onChange={e => setField("itemName", e.target.value)} fullWidth required />
                 </div>
-                <Select label={t("master.equipInspect.inspectType")} options={typeOptions}
+                <FieldSelect field="inspectType" label={t("master.equipInspect.inspectType")} options={typeOptions}
                   value={form.inspectType} onChange={v => setField("inspectType", v as InspectType)} fullWidth required />
-                <Select label={t("master.equipInspect.itemType", "판정구분")} options={itemTypeOptions}
+                <FieldSelect field="itemType" label={t("master.equipInspect.itemType", "판정구분")} options={itemTypeOptions}
                   value={form.itemType} onChange={v => setField("itemType", v as ItemType)} fullWidth />
-                <Select label={t("master.equipInspect.cycle")} options={cycleOptions}
+                <FieldSelect field="cycle" label={t("master.equipInspect.cycle")} options={cycleOptions}
                   value={form.cycle} onChange={v => setField("cycle", v)} fullWidth required />
-                <UseYnSelect includeAll={false} label={t("common.useYn", "사용")}
-                  value={form.useYn} onChange={v => setField("useYn", v)} fullWidth />
+                <Field field="useYn" label={t("common.useYn", "사용")}>
+                  <UseYnSelect includeAll={false}
+                    value={form.useYn} onChange={v => setField("useYn", v)} fullWidth />
+                </Field>
               </div>
             </div>
 
@@ -382,21 +385,21 @@ export default function EquipInspectItemPage() {
               <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equipInspectItem.sectionCriteria", "판정기준")}</h3>
               {form.itemType === "MEASURE" ? (
                 <div className="grid grid-cols-3 gap-3">
-                  <ComCodeSelect groupCode="UNIT_TYPE" includeAll={false} showCode label={t("master.equipInspect.unit", "단위")}
+                  <FieldComCodeSelect field="unit" groupCode="UNIT_TYPE" includeAll={false} showCode label={t("master.equipInspect.unit", "단위")}
                     value={form.unit} onChange={v => setField("unit", v)} fullWidth />
-                  <Input label={t("master.equipInspect.lowerLimit", "하한")} type="number" value={form.lslValue}
+                  <FieldInput field="lslValue" label={t("master.equipInspect.lowerLimit", "하한")} type="number" value={form.lslValue}
                     onChange={e => setField("lslValue", e.target.value)} fullWidth />
-                  <Input label={t("master.equipInspect.upperLimit", "상한")} type="number" value={form.uslValue}
+                  <FieldInput field="uslValue" label={t("master.equipInspect.upperLimit", "상한")} type="number" value={form.uslValue}
                     onChange={e => setField("uslValue", e.target.value)} fullWidth />
                 </div>
               ) : (
-                <Input label={t("master.equipInspect.criteria")} value={form.criteria}
+                <FieldInput field="criteria" label={t("master.equipInspect.criteria")} value={form.criteria}
                   onChange={e => setField("criteria", e.target.value)} fullWidth />
               )}
             </div>
 
             <div>
-              <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.equipInspectItem.image", "사진")}</h3>
+              <h3 className="text-xs font-semibold text-text-muted mb-2 flex items-center gap-1">{t("master.equipInspectItem.image", "사진")}<FieldHelpIcon field="imageUrl" /></h3>
               {previewUrl ? (
                 <div className="relative group">
                   {imageError ? (
@@ -441,7 +444,7 @@ export default function EquipInspectItemPage() {
               />
             </div>
 
-            <Input label={t("common.remark", "비고")} value={form.remark}
+            <FieldInput field="remark" label={t("common.remark", "비고")} value={form.remark}
               onChange={e => setField("remark", e.target.value)} fullWidth />
           </div>
         </div>

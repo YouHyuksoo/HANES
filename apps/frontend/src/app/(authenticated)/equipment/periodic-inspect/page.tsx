@@ -17,6 +17,7 @@ import api from "@/services/api";
 import EquipListPanel, { type EquipTarget } from "../daily-inspect/components/EquipListPanel";
 import InspectEntryPanel, { type Worker } from "../daily-inspect/components/InspectEntryPanel";
 import { getTodayLocal } from "@/utils/date";
+import { FieldHelpIcon } from "../daily-inspect/dailyInspectFieldHelp";
 
 interface EquipInspectItemAssignment {
   equipCode: string;
@@ -182,6 +183,7 @@ export default function PeriodicInspectPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <FieldHelpIcon field="inspectDate" />
           <input
             type="date"
             value={inspectDate}

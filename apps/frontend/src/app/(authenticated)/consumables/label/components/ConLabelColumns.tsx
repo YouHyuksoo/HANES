@@ -15,6 +15,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
 import { resolveBackendFileUrl } from "@/utils/file-url";
 import QtyInput from "@/components/shared/QtyInput";
+import { headerWithHelp } from "./conLabelFieldHelp";
 
 /** 라벨 발행 가능 마스터 항목 (API 응답) */
 export interface LabelableMaster {
@@ -131,7 +132,7 @@ export function useConLabelColumns({
       },
       {
         id: "consumableCode", accessorKey: "consumableCode",
-        header: t("consumables.comp.consumableCode"), size: 130,
+        header: headerWithHelp("consumableCode", t("consumables.comp.consumableCode")), size: 130,
         meta: { filterType: "text" as const },
         cell: ({ row }) => (
           <span className="font-mono text-xs">{row.original.consumableCode}</span>
@@ -139,12 +140,12 @@ export function useConLabelColumns({
       },
       {
         id: "consumableName", accessorKey: "consumableName",
-        header: t("consumables.comp.consumableName"), size: 160,
+        header: headerWithHelp("consumableName", t("consumables.comp.consumableName")), size: 160,
         meta: { filterType: "text" as const },
       },
       {
         id: "category", accessorKey: "category",
-        header: t("consumables.comp.category"), size: 100,
+        header: headerWithHelp("category", t("consumables.comp.category")), size: 100,
         meta: { filterType: "text" as const },
         cell: ({ row }) => row.original.category
           ? <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={row.original.category} />
@@ -152,13 +153,13 @@ export function useConLabelColumns({
       },
       {
         id: "stockQty", accessorKey: "stockQty",
-        header: t("consumables.comp.currentStock"), size: 80,
+        header: headerWithHelp("stockQty", t("consumables.comp.currentStock")), size: 80,
         meta: { filterType: "number" as const },
         cell: ({ row }) => row.original.stockQty.toLocaleString(),
       },
       {
         id: "instanceCount", accessorKey: "instanceCount",
-        header: t("consumables.label.instanceCount"), size: 100,
+        header: headerWithHelp("instanceCount", t("consumables.label.instanceCount")), size: 100,
         meta: { filterType: "number" as const },
         cell: ({ row }) => {
           const { instanceCount, pendingCount } = row.original;
@@ -176,7 +177,7 @@ export function useConLabelColumns({
       },
       {
         id: "qty",
-        header: t("consumables.label.qtyInput"), size: 100,
+        header: headerWithHelp("qty", t("consumables.label.qtyInput")), size: 100,
         meta: { filterType: "none" as const },
         cell: ({ row }) => {
           const code = row.original.consumableCode;

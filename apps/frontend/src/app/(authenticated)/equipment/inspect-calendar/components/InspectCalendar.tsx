@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui";
 import { getTodayLocal } from "@/utils/date";
+import { FieldHelpIcon } from "../inspectCalendarFieldHelp";
 
 export interface CalendarDaySummary {
   date: string;
@@ -117,6 +118,7 @@ export default function InspectCalendar({
         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-yellow-500" />{t("equipment.inspectCalendar.legendInProgress")}</span>
         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-red-500" />{t("equipment.inspectCalendar.legendFail")}</span>
         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-gray-400" />{t("equipment.inspectCalendar.legendNotStarted")}</span>
+        <span className="flex items-center"><FieldHelpIcon field="dayStatus" /></span>
       </div>
 
       {/* Weekday headers */}

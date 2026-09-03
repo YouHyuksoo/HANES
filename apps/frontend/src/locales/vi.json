@@ -186,7 +186,9 @@
       "defect": "Hàng lỗi",
       "hourlyTitle": "Sản lượng theo giờ (Hôm nay)",
       "todayOrders": "Lệnh sản xuất hôm nay",
-      "production": { "title": "Bảng tình hình sản xuất" },
+      "production": {
+        "title": "Bảng tình hình sản xuất"
+      },
       "kpi": {
         "planQty": "Tổng kế hoạch",
         "goodQty": "Tổng sản lượng",
@@ -589,12 +591,54 @@
     "goHome": "Đi đến bảng điều khiển"
   },
   "dashboard": {
-    "layout": { "group": "Dạng", "cockpit": "Buồng lái", "board": "Bảng khởi hành", "map": "Sơ đồ tuyến", "charts": "Biểu đồ" },
+    "layout": {
+      "group": "Dạng",
+      "cockpit": "Buồng lái",
+      "board": "Bảng khởi hành",
+      "map": "Sơ đồ tuyến",
+      "charts": "Biểu đồ"
+    },
     "skinGroup": "Màu",
-    "board": { "orders": "Bảng khởi hành lệnh SX", "orderNo": "Số lệnh", "item": "Mặt hàng", "where": "Công đoạn · Thiết bị", "qty": "Thực tế / Kế hoạch", "progress": "Tiến độ", "status": "Trạng thái", "noOrders": "Hôm nay không có lệnh sản xuất.", "equipRun": "Thiết bị đang chạy", "page": "{{page}} / {{count}}" },
-    "map": { "flowLine": "Tuyến vật tư", "equipLine": "Tuyến thiết bị", "hint": "Chạm vào ga để chỉ xem giai đoạn đó. Chạm lại để xem tất cả", "station": "Ga đã chọn", "all": "Tất cả", "pressure": "Áp lực" },
-    "charts": { "hourly": "Sản lượng theo giờ (hôm nay)", "byProcess": "Tỷ lệ lỗi theo công đoạn", "topDefects": "Loại lỗi hàng đầu", "status": "Phân bố trạng thái", "orderStatus": "Lệnh sản xuất", "equipStatus": "Thiết bị", "equipNormal": "Bình thường", "equipMaint": "Bảo trì", "equipStop": "Dừng", "inventory": "Hạng mục xử lý tồn kho", "rate": "Tỷ lệ lỗi", "qty": "Số lượng", "noData": "Không có dữ liệu" },
-    "skin": { "control": "Tháp điều khiển", "departure": "Bảng khởi hành", "datawall": "Tường dữ liệu" },
+    "board": {
+      "orders": "Bảng khởi hành lệnh SX",
+      "orderNo": "Số lệnh",
+      "item": "Mặt hàng",
+      "where": "Công đoạn · Thiết bị",
+      "qty": "Thực tế / Kế hoạch",
+      "progress": "Tiến độ",
+      "status": "Trạng thái",
+      "noOrders": "Hôm nay không có lệnh sản xuất.",
+      "equipRun": "Thiết bị đang chạy",
+      "page": "{{page}} / {{count}}"
+    },
+    "map": {
+      "flowLine": "Tuyến vật tư",
+      "equipLine": "Tuyến thiết bị",
+      "hint": "Chạm vào ga để chỉ xem giai đoạn đó. Chạm lại để xem tất cả",
+      "station": "Ga đã chọn",
+      "all": "Tất cả",
+      "pressure": "Áp lực"
+    },
+    "charts": {
+      "hourly": "Sản lượng theo giờ (hôm nay)",
+      "byProcess": "Tỷ lệ lỗi theo công đoạn",
+      "topDefects": "Loại lỗi hàng đầu",
+      "status": "Phân bố trạng thái",
+      "orderStatus": "Lệnh sản xuất",
+      "equipStatus": "Thiết bị",
+      "equipNormal": "Bình thường",
+      "equipMaint": "Bảo trì",
+      "equipStop": "Dừng",
+      "inventory": "Hạng mục xử lý tồn kho",
+      "rate": "Tỷ lệ lỗi",
+      "qty": "Số lượng",
+      "noData": "Không có dữ liệu"
+    },
+    "skin": {
+      "control": "Tháp điều khiển",
+      "departure": "Bảng khởi hành",
+      "datawall": "Tường dữ liệu"
+    },
     "tvMode": "Chế độ TV",
     "title": "Bảng điều khiển",
     "subtitle": "Từ nhập kho đến thành phẩm: dòng chảy hôm nay và việc cần xử lý ngay",
@@ -1287,7 +1331,8 @@
         "packUnit": "Cơ sở cấu thành đơn vị pallet hoặc đóng gói cấp trên.",
         "storageLocation": "Vị trí lưu trữ mặc định cố định theo từng vật tư.",
         "imageUrl": "Đường dẫn tệp ảnh vật tư.",
-        "remark": "Ghi chú quản lý vật tư."
+        "remark": "Ghi chú quản lý vật tư.",
+        "defectModelGroup": "Tiêu chí phân nhóm model (vd: điện áp thấp/cao) để xác định phạm vi áp dụng mã lỗi."
       },
       "defectModelGroup": "Phân loại model"
     },
@@ -1898,7 +1943,15 @@
       "spec": "Quy cách",
       "selectPoolItem": "Chọn hạng mục kiểm tra chuẩn",
       "noPoolForType": "Chưa có hạng mục kiểm tra chuẩn nào được đăng ký cho loại thiết bị / loại kiểm tra này. Vui lòng đăng ký trước trong danh mục hạng mục kiểm tra.",
-      "equipTypeEtc": "Khác"
+      "equipTypeEtc": "Khác",
+      "fieldHelp": {
+        "itemCode": "Mã hạng mục kiểm tra được gán cho thiết bị này. Trùng với mã trong master hạng mục kiểm tra.",
+        "itemName": "Tên hạng mục kiểm tra. Lấy từ master hạng mục kiểm tra và không sửa được ở đây.",
+        "criteria": "Nội dung tiêu chí kiểm tra. Quản lý trong master hạng mục kiểm tra.",
+        "cycle": "Chu kỳ kiểm tra (ngày / tuần / tháng, v.v.). Quản lý trong master hạng mục kiểm tra.",
+        "sortSeq": "Thứ tự hiển thị hạng mục trên màn hình kiểm tra. Giá trị nhỏ hơn hiển thị trước.",
+        "useYn": "Có dùng hạng mục này làm đối tượng kiểm tra trên thiết bị hay không. Nếu N sẽ không hiển thị ở màn hình kiểm tra."
+      }
     },
     "equipInspectItem": {
       "title": "Danh mục hạng mục kiểm tra",
@@ -1911,7 +1964,22 @@
       "sectionCriteria": "Tiêu chí đánh giá",
       "subtitle": "Đăng ký và quản lý hạng mục kiểm tra theo loại thiết bị. Thông tin chuẩn cho việc ánh xạ kiểm tra thiết bị.",
       "statTotal": "Tổng hạng mục",
-      "statEquipTypes": "Số loại thiết bị"
+      "statEquipTypes": "Số loại thiết bị",
+      "fieldHelp": {
+        "itemCode": "Mã duy nhất nhận diện hạng mục kiểm tra. Không thể đổi sau khi đăng ký và được in trên nhãn QR.",
+        "equipType": "Loại thiết bị áp dụng hạng mục này (mã chung EQUIP_TYPE). Là tiêu chí chọn theo loại khi gán hạng mục cho thiết bị.",
+        "itemName": "Tên hạng mục kiểm tra hiển thị cho người kiểm tra.",
+        "inspectType": "Phân loại kiểm tra (hàng ngày / định kỳ / bảo trì phòng ngừa / công nhân). Quyết định hạng mục xuất hiện ở màn hình kiểm tra nào.",
+        "itemType": "Phương thức phán định. VISUAL phán định OK/NG; MEASURE nhập giá trị và phán định theo giới hạn trên/dưới.",
+        "criteria": "Nội dung tiêu chí kiểm tra. Với hạng mục MEASURE, giới hạn trên/dưới được ưu tiên và nội dung này chỉ là mô tả bổ sung.",
+        "cycle": "Chu kỳ kiểm tra (ngày / tuần / tháng / quý / nửa năm / năm). Là căn cứ chọn đối tượng kiểm tra định kỳ.",
+        "unit": "Đơn vị đo của hạng mục MEASURE (mã chung UNIT_TYPE).",
+        "lslValue": "Giới hạn dưới của hạng mục MEASURE. Giá trị đo nhỏ hơn giá trị này bị phán định NG.",
+        "uslValue": "Giới hạn trên của hạng mục MEASURE. Giá trị đo lớn hơn giá trị này bị phán định NG.",
+        "imageUrl": "Đường dẫn ảnh minh họa vị trí hoặc tiêu chí kiểm tra. Hiển thị làm ảnh tham khảo trên màn hình kiểm tra.",
+        "useYn": "Có sử dụng hay không. Nếu N thì không thể gán mới cho thiết bị và bị loại khỏi đối tượng kiểm tra.",
+        "remark": "Ghi chú về hạng mục kiểm tra."
+      }
     },
     "box": {
       "title": "Quản lý thùng đóng gói",
@@ -5184,7 +5252,25 @@
       "sectionCycle": "Cài đặt chu kỳ",
       "equipName": "Tên thiết bị",
       "fieldInput": "Nhập {{field}}",
-      "fieldRequired": "{{field}} là bắt buộc"
+      "fieldRequired": "{{field}} là bắt buộc",
+      "fieldHelp": {
+        "planCode": "Mã duy nhất nhận diện kế hoạch bảo trì phòng ngừa. Không thể đổi sau khi đăng ký.",
+        "equipCode": "Thiết bị mục tiêu thực hiện bảo trì phòng ngừa theo kế hoạch này. Chọn từ master thiết bị.",
+        "equipName": "Tên thiết bị mục tiêu. Tra cứu từ master thiết bị theo mã thiết bị.",
+        "planName": "Tên kế hoạch dùng tại hiện trường. Ví dụ: Kiểm tra bôi trơn hàng tháng.",
+        "description": "Mô tả bổ sung cho kế hoạch. Ghi phạm vi công việc hoặc lưu ý.",
+        "pmType": "Loại bảo trì (mã chung PM_TYPE). Theo thời gian tạo lệnh mỗi chu kỳ; theo mức sử dụng tạo lệnh khi vận hành đạt ngưỡng.",
+        "cycleType": "Loại chu kỳ lặp (mã chung PM_CYCLE_TYPE). Là đơn vị của giá trị chu kỳ: ngày/tuần/tháng/năm.",
+        "cycleValue": "Khoảng lặp nhân với loại chu kỳ. Ví dụ: loại chu kỳ là tháng và giá trị 3 thì thực hiện mỗi 3 tháng.",
+        "estimatedTime": "Thời gian dự kiến (giờ) để hoàn thành toàn bộ kế hoạch. Tham khảo khi xếp lịch.",
+        "itemCount": "Số hạng mục bảo trì đã đăng ký trong kế hoạch. Khi thực hiện lệnh sẽ nhập kết quả theo từng hạng mục.",
+        "nextDueAt": "Ngày đến hạn bảo trì kế tiếp. Tự động cập nhật theo chu kỳ khi tạo và hoàn thành lệnh.",
+        "useYn": "Kế hoạch có sử dụng hay không. Nếu N sẽ bị loại khỏi tự động tạo lệnh.",
+        "criteria": "Tiêu chí đạt/không đạt của hạng mục. Người thao tác xem tiêu chí này khi nhập kết quả.",
+        "sparePartCode": "Phụ tùng thay thế khi thực hiện hạng mục. Chọn trong các linh kiện đã đăng ký ở BOM thiết bị.",
+        "sparePartQty": "Số lượng phụ tùng thay thế.",
+        "estimatedMinutes": "Thời gian dự kiến (phút) để thực hiện hạng mục này."
+      }
     },
     "pmWorkOrder": {
       "woSchedule": "Tình hình Work Order",
@@ -5222,7 +5308,21 @@
       "woInProgress": "Đang thực hiện",
       "woCompleted": "Hoàn thành",
       "woOverdue": "Quá hạn",
-      "weekdays": "CN,T2,T3,T4,T5,T6,T7"
+      "weekdays": "CN,T2,T3,T4,T5,T6,T7",
+      "fieldHelp": {
+        "workOrderNo": "Số lệnh bảo trì phòng ngừa (WO) đang thực hiện.",
+        "equipCode": "Thiết bị được bảo trì phòng ngừa. Hiển thị cả mã và tên thiết bị.",
+        "assignedWorker": "Người thực hiện công việc. Chọn từ master nhân viên và bắt buộc khi hoàn thành.",
+        "seq": "Số thứ tự hạng mục bảo trì. Theo thứ tự đăng ký trong kế hoạch PM.",
+        "itemName": "Tên hạng mục bảo trì cần kiểm tra hoặc thay thế. Sao chép từ hạng mục của kế hoạch PM.",
+        "itemType": "Loại hạng mục (mã chung PM_ITEM_TYPE). Phân biệt tính chất công việc như kiểm tra/thay thế/vệ sinh.",
+        "criteria": "Tiêu chí đạt/không đạt của hạng mục. Xem tiêu chí này khi nhập kết quả.",
+        "result": "Kết quả theo hạng mục (PASS/FAIL). Phải nhập đủ mọi hạng mục mới hoàn thành được.",
+        "itemRemark": "Ghi chú theo hạng mục. Hạng mục FAIL bắt buộc ghi nguyên nhân.",
+        "overallResult": "Kết quả tổng hợp của công việc. Tự động là FAIL nếu có bất kỳ hạng mục FAIL.",
+        "completedAt": "Ngày giờ hoàn thành công việc.",
+        "remark": "Ghi chú cho toàn bộ lệnh. Ghi các vấn đề đặc biệt hoặc hành động tiếp theo."
+      }
     },
     "inspectCalendar": {
       "title": "Lịch kiểm tra thiết bị hàng ngày",
@@ -5268,7 +5368,20 @@
       "legendNotStarted": "Chưa bắt đầu",
       "failCauseRequired": "Cần nhập {{label}}",
       "itemResultRequired": "Cần nhập {{label}}",
-      "weekdays": "CN,T2,T3,T4,T5,T6,T7"
+      "weekdays": "CN,T2,T3,T4,T5,T6,T7",
+      "fieldHelp": {
+        "dayStatus": "Trạng thái kiểm tra theo ngày. Thiết bị mục tiêu được tính từ chu kỳ hạng mục (ngày/tuần/tháng) và so với bản ghi đã lưu để hiển thị đạt toàn bộ, đang tiến hành, có lỗi, chưa bắt đầu hoặc quá hạn. Số trong ô là số thiết bị hoàn thành/số thiết bị mục tiêu.",
+        "equip": "Mã và tên thiết bị cần kiểm tra, theo master thiết bị.",
+        "inspectDate": "Ngày kiểm tra. Được lưu theo ngày đã chọn trên lịch.",
+        "inspectorName": "Người thực hiện kiểm tra. Chọn từ master công nhân và bắt buộc khi lưu.",
+        "seq": "Thứ tự hiển thị hạng mục kiểm tra. Theo thứ tự sắp xếp hạng mục của từng thiết bị.",
+        "itemName": "Tên hạng mục cần kiểm tra. Quản lý trong master hạng mục kiểm tra thiết bị.",
+        "criteria": "Văn bản tiêu chí của hạng mục. Chọn Đạt nếu đáp ứng tiêu chí, chọn Không đạt nếu không.",
+        "itemResult": "Kết quả từng hạng mục. Chọn PASS hoặc FAIL; phải nhập đủ mọi hạng mục mới lưu được.",
+        "failCause": "Ghi chú từng hạng mục. Hạng mục đánh giá FAIL bắt buộc phải nhập nguyên nhân.",
+        "overallResult": "Kết quả tổng hợp. Tự động tính: FAIL nếu có hạng mục không đạt, PASS nếu tất cả đạt.",
+        "remark": "Ghi chú cho toàn bộ lần kiểm tra này. Ghi lại điểm bất thường hoặc biện pháp xử lý."
+      }
     },
     "periodicInspectCalendar": {
       "title": "Lịch kiểm tra định kỳ thiết bị",
@@ -5332,7 +5445,24 @@
       "statusDoneOk": "Xong(OK)",
       "statusNone": "Chưa kiểm tra",
       "typeMeasure": "Đo lường",
-      "typeVisual": "Đánh giá"
+      "typeVisual": "Đánh giá",
+      "fieldHelp": {
+        "equipCode": "Mã thiết bị đã được gán hạng mục kiểm tra. Chỉ hiển thị thiết bị có hạng mục đang sử dụng trong danh sách hạng mục theo thiết bị.",
+        "equipName": "Tên thiết bị đăng ký trong master thiết bị.",
+        "equipType": "Loại thiết bị. Danh sách được nhóm theo giá trị này.",
+        "status": "Trạng thái xử lý của ngày đã chọn. Chưa kiểm tra nếu không có bản ghi; nếu có thì hiển thị Hoàn thành(OK)/Hoàn thành(NG) theo kết quả tổng hợp.",
+        "inspectDate": "Ngày kiểm tra. Đổi ngày ở phía trên sẽ lưu và tra cứu bản ghi kiểm tra của ngày đó.",
+        "inspectorName": "Người thực hiện kiểm tra. Chọn từ master công nhân và bắt buộc khi lưu.",
+        "startTime": "Thời điểm bắt đầu nhập kiểm tra cho thiết bị này (theo màn hình). Chỉ để tham khảo, không được lưu nguyên trạng.",
+        "overallResult": "Kết quả tổng hợp. FAIL nếu có bất kỳ hạng mục NG, PASS nếu tất cả OK. Lưu FAIL sẽ tự động tạo yêu cầu bảo trì.",
+        "seq": "Thứ tự hiển thị hạng mục kiểm tra. Theo thứ tự sắp xếp hạng mục của từng thiết bị.",
+        "itemName": "Tên hạng mục cần kiểm tra. Quản lý trong master hạng mục kiểm tra thiết bị.",
+        "itemType": "Loại hạng mục. Đo lường (MEASURE) nhập số để so với tiêu chuẩn; Đánh giá (VISUAL) chọn trực tiếp OK/NG.",
+        "criteria": "Tiêu chí đánh giá. Hạng mục đo lường hiển thị giới hạn dưới~trên (đơn vị), hạng mục đánh giá hiển thị văn bản tiêu chí.",
+        "measureValue": "Hạng mục đo lường: nhập số đo sẽ tự động đánh giá theo tiêu chuẩn; hạng mục đánh giá: chọn trực tiếp OK/NG.",
+        "judge": "Kết quả đánh giá từng hạng mục (OK/NG). Hiển thị theo giá trị nhập hoặc kết quả đã chọn.",
+        "itemRemark": "Ghi chú từng hạng mục. Khi NG, ghi lại nội dung lỗi để tham khảo khi bảo trì."
+      }
     },
     "periodicInspect": {
       "title": "Kiểm tra định kỳ thiết bị",
@@ -5395,7 +5525,17 @@
       "statTotal": "Tổng kiểm tra",
       "excelDownload": "Tải Excel",
       "searchPlaceholder": "Tìm mã, tên thiết bị...",
-      "equipType": "Loại thiết bị"
+      "equipType": "Loại thiết bị",
+      "fieldHelp": {
+        "inspectDate": "Ngày thực hiện kiểm tra. Cùng với thiết bị và loại kiểm tra là khóa phân biệt bản ghi.",
+        "inspectType": "Phân loại kiểm tra (mã chung INSPECT_CHECK_TYPE). Cho biết bản ghi thuộc kiểm tra hàng ngày, định kỳ hay công nhân.",
+        "equipCode": "Mã thiết bị đã kiểm tra.",
+        "equipName": "Tên thiết bị đã kiểm tra. Lấy từ master thiết bị.",
+        "equipType": "Loại thiết bị (mã chung EQUIP_TYPE). Lấy từ master thiết bị.",
+        "inspectorName": "Tên người thực hiện kiểm tra.",
+        "overallResult": "Phán định tổng hợp kiểm tra (mã chung INSPECT_JUDGE). Chỉ cần một hạng mục NG thì kết quả tổng hợp ghi nhận là không đạt.",
+        "remark": "Ghi chú đặc biệt để lại khi kiểm tra."
+      }
     },
     "mold": {
       "title": "Quản lý khuôn",
@@ -5429,7 +5569,31 @@
       "warningLabel": "Cảnh báo",
       "overdueLabel": "Vượt quá",
       "retiredLabel": "Đã loại bỏ",
-      "fieldRequired": "{{field}} là bắt buộc"
+      "fieldRequired": "{{field}} là bắt buộc",
+      "fieldHelp": {
+        "moldCode": "Mã duy nhất nhận diện khuôn. Không thể đổi sau khi đăng ký.",
+        "moldName": "Tên khuôn dùng tại hiện trường.",
+        "moldType": "Loại khuôn (mã chung MOLD_TYPE). Tiêu chí phân loại công dụng như ép/đúc.",
+        "itemCode": "Mã hàng sản xuất bằng khuôn này. Chọn qua tìm kiếm hàng hóa.",
+        "cavity": "Số sản phẩm mỗi lần dập (số lòng khuôn). Dùng để quy đổi số lần dập sang sản lượng.",
+        "currentShots": "Số lần dập lũy kế. Tự động cộng dồn khi đăng ký lịch sử sử dụng.",
+        "guaranteedShots": "Số lần dập tuổi thọ do nhà sản xuất bảo đảm. Khi số lũy kế đạt giá trị này, thiết bị bị khóa liên động và khuôn cần thay.",
+        "shotRate": "Tỷ lệ sử dụng (%) = số dập lũy kế / số dập bảo đảm. Trên 90% là cảnh báo, trên 100% là đến lúc thay.",
+        "status": "Trạng thái khuôn (mã chung MOLD_STATUS). Khi thanh lý sẽ chuyển thành RETIRED và không dùng được nữa.",
+        "maintenanceCycle": "Chu kỳ bảo dưỡng theo số lần dập. Mỗi khi đạt số này, khuôn được đưa vào danh sách cần bảo dưỡng.",
+        "lastMaintenanceDate": "Ngày bảo dưỡng gần nhất.",
+        "nextMaintenanceDate": "Ngày bảo dưỡng dự kiến tiếp theo. Khi gần đến ngày sẽ hiển thị trong danh sách cần bảo dưỡng.",
+        "location": "Vị trí lưu trữ khuôn (phòng khuôn, số kệ, v.v.).",
+        "maker": "Nhà chế tạo khuôn.",
+        "purchaseDate": "Ngày mua (đưa vào sử dụng) khuôn.",
+        "remark": "Ghi chú về khuôn.",
+        "usageDate": "Ngày sử dụng khuôn.",
+        "shotCount": "Số lần dập trong lần sử dụng này. Khi đăng ký sẽ cộng vào số dập lũy kế của khuôn.",
+        "orderNo": "Số lệnh sản xuất đã dùng khuôn. Dùng để truy xuất sản xuất.",
+        "equipCode": "Thiết bị đã lắp khuôn để sử dụng. Khi vượt số dập bảo đảm, thiết bị này bị khóa liên động.",
+        "workerCode": "Công nhân đã sử dụng khuôn.",
+        "usageRemark": "Ghi chú về lịch sử sử dụng."
+      }
     },
     "calibrationHistory": {
       "calNo": "Số hiệu chuẩn",
@@ -5472,7 +5636,17 @@
       "statTotal": "Tổng WO",
       "subtitle": "Xem kết quả thực hiện Work Order bảo trì phòng ngừa.",
       "title": "Kết quả bảo trì PM",
-      "woNo": "Số WO"
+      "woNo": "Số WO",
+      "fieldHelp": {
+        "workOrderNo": "Số lệnh bảo trì phòng ngừa (WO). Tự động đánh số khi tạo theo tháng từ lịch.",
+        "scheduledDate": "Ngày dự kiến thực hiện công việc. Dựa trên ngày đến hạn kế tiếp của kế hoạch PM.",
+        "equipCode": "Mã thiết bị được bảo trì phòng ngừa.",
+        "equipName": "Tên thiết bị mục tiêu. Tra cứu từ master thiết bị theo mã thiết bị.",
+        "overallResult": "Kết quả tổng hợp của công việc. Chỉ cần một hạng mục FAIL thì toàn bộ là FAIL.",
+        "priority": "Mức ưu tiên công việc (mã chung PM_PRIORITY). HIGH cần xử lý trước.",
+        "completedAt": "Ngày giờ hoàn thành công việc. Thời điểm bấm nút hoàn thành trên màn hình thực hiện.",
+        "remark": "Ghi chú cho toàn bộ lệnh. Hiển thị các lưu ý đã nhập trên màn hình thực hiện."
+      }
     }
   },
   "shipping": {
@@ -5959,7 +6133,24 @@
       "codeRequired": "Hãy nhập mã vật tư tiêu hao.",
       "nameRequired": "Hãy nhập tên vật tư tiêu hao.",
       "namePlaceholder": "Khuôn ép đầu nối 110",
-      "locationPlaceholder": "Phòng khuôn-A1"
+      "locationPlaceholder": "Phòng khuôn-A1",
+      "fieldHelp": {
+        "consumableCode": "Mã duy nhất nhận diện vật tư tiêu hao (khuôn, đồ gá, dụng cụ). Không thể đổi sau khi đăng ký.",
+        "consumableName": "Tên vật tư tiêu hao dùng tại hiện trường.",
+        "category": "Phân loại vật tư (mã chung CONSUMABLE_CATEGORY). Là tiêu chí phân biệt cách quản lý khuôn/đồ gá/dụng cụ.",
+        "expectedLife": "Số lần sử dụng (tuổi thọ) để thay thế. Khi số lũy kế đạt giá trị này sẽ được đánh dấu cần thay.",
+        "warningCount": "Số lần bắt đầu cảnh báo. Đặt nhỏ hơn số tuổi thọ.",
+        "currentCount": "Số lần sử dụng lũy kế theo master. Tự động cộng dồn khi lưu kết quả sản xuất.",
+        "stockQty": "Số lượng tồn hiện tại. Cập nhật qua nhập/xuất kho.",
+        "safetyStock": "Số lượng chuẩn để xác định thiếu tồn. Khi tồn thấp hơn giá trị này sẽ hiển thị thiếu.",
+        "location": "Vị trí lưu trữ (phòng khuôn, số kệ, v.v.).",
+        "vendor": "Nhà cung cấp mua/chế tạo.",
+        "unitPrice": "Đơn giá. Dùng để tính giá trị tồn kho và tham khảo mua hàng.",
+        "status": "Trạng thái tuổi thọ (bình thường/cảnh báo/thay thế). Tự động xác định bằng cách so sánh số lũy kế với số cảnh báo và tuổi thọ.",
+        "operStatus": "Trạng thái vận hành (lưu kho/lắp trên thiết bị, v.v.).",
+        "imageUrl": "Đường dẫn file ảnh vật tư.",
+        "useYn": "Có sử dụng hay không. Nếu N sẽ bị loại khỏi danh sách chọn mới."
+      }
     },
     "receiving": {
       "title": "Nhập kho vật tư tiêu hao",
@@ -5998,7 +6189,28 @@
       "pendingTitle": "Danh sách chờ nhập",
       "labelPrintedAt": "Ngày in nhãn",
       "returnScanHint": "Chế độ nhập trả lại",
-      "returnBtn": "Xác nhận trả lại"
+      "returnBtn": "Xác nhận trả lại",
+      "fieldHelp": {
+        "createdAt": "Thời điểm xử lý nhập kho hoặc trả nhập. Là cơ sở cho bộ lọc kỳ và tổng hợp trong ngày.",
+        "consumableCode": "Mã master vật tư nhập kho. Chọn bằng nút tìm kiếm trong bảng đăng ký.",
+        "consumableName": "Tên gắn với mã vật tư.",
+        "conUid": "UID riêng trên nhãn khi nhập kho bằng quét mã vạch. Nhập thủ công chỉ ghi số lượng, không có UID.",
+        "logType": "Phân biệt IN (nhập kho)/IN_RETURN (trả nhập). Nếu trả thì số lượng bị trừ khỏi tồn.",
+        "qty": "Số lượng nhập. Nhập kho cộng (+), trả nhập trừ (-) vào tồn của master.",
+        "vendorCode": "Mã nhà cung cấp giao hàng. Dùng để tra cứu nhập kho theo nhà cung cấp.",
+        "vendorName": "Tên nhà cung cấp giao hàng.",
+        "unitPrice": "Đơn giá nhập. Dùng để tính tiền nhập (đơn giá × số lượng).",
+        "incomingType": "Phân biệt NEW (mua mới)/REPLACEMENT (thay thế). Nhập thay thế được xem riêng như kết quả thay do hết tuổi thọ.",
+        "remark": "Ghi chú nhập kho (số phiếu giao, lưu ý, v.v.)."
+      },
+      "scanFieldHelp": {
+        "conUid": "UID riêng in trên nhãn. Quét giá trị này để xác nhận nhập kho (PENDING → ACTIVE).",
+        "consumableCode": "Mã master vật tư mà UID thuộc về.",
+        "consumableName": "Tên gắn với mã vật tư.",
+        "category": "Phân loại vật tư (mã chung CONSUMABLE_CATEGORY).",
+        "labelPrintedAt": "Thời điểm phát hành nhãn (UID). Với hàng chờ nhập lâu, kiểm tra hàng thực đã về chưa.",
+        "vendorName": "Tên nhà cung cấp ghi khi phát hành UID. Trống nếu không có."
+      }
     },
     "issuing": {
       "title": "Xuất kho vật tư tiêu hao",
@@ -6032,7 +6244,22 @@
       "scanPlaceholder": "Quét mã vạch UID vật tư...",
       "confirmBtn": "Xác nhận xuất",
       "returnBtn": "Xác nhận hủy",
-      "returnScanHint": "Chế độ hủy xuất"
+      "returnScanHint": "Chế độ hủy xuất",
+      "fieldHelp": {
+        "createdAt": "Thời điểm xử lý xuất kho hoặc hủy xuất. Là cơ sở cho bộ lọc kỳ và tổng hợp trong ngày.",
+        "consumableCode": "Mã master vật tư đã xuất.",
+        "consumableName": "Tên gắn với mã vật tư.",
+        "conUid": "UID riêng xuất bằng quét. Là khóa để truy vết thực thể nào đã đi ra công đoạn.",
+        "logType": "Phân biệt OUT (xuất)/OUT_RETURN (hủy xuất). Hủy xuất đưa thực thể về lại tồn kho (ACTIVE).",
+        "qty": "Số lượng xuất. Xuất hiển thị -, hủy hiển thị +, xuất bằng quét là 1 mỗi UID.",
+        "lineCode": "Mã line xuất đến. Chỉ có giá trị khi chỉ định ở xuất thủ công.",
+        "processCode": "Mã công đoạn xuất đến. Công đoạn chọn khi quét xuất được ghi lại và thực thể chuyển sang tồn công đoạn (PROC_WAIT).",
+        "equipCode": "Mã thiết bị xuất đến. Chỉ có giá trị khi chỉ định ở xuất thủ công.",
+        "remark": "Ghi chú xuất kho."
+      },
+      "scanFieldHelp": {
+        "processCode": "Công đoạn nhận UID xuất. Ở chế độ xuất phải chọn công đoạn trước khi quét; thực thể quét trở thành tồn của công đoạn đó (PROC_WAIT)."
+      }
     },
     "stock": {
       "title": "Tồn kho vật tư tiêu hao",
@@ -6063,7 +6290,22 @@
       "statusActive": "Sẵn sàng",
       "statusMounted": "Đang gắn",
       "statusRepair": "Đang sửa",
-      "statusScrapped": "Hủy bỏ"
+      "statusScrapped": "Hủy bỏ",
+      "fieldHelp": {
+        "conUid": "UID thực thể riêng in trên nhãn. Quét nhập, xuất, lắp đều xử lý bằng giá trị này.",
+        "qty": "Một UID là một vật thực nên luôn là 1. Tổng theo vật tư bằng cách đếm số dòng.",
+        "consumableCode": "Mã master vật tư mà thực thể thuộc về.",
+        "consumableName": "Tên gắn với mã vật tư.",
+        "category": "Phân loại vật tư (mã chung CONSUMABLE_CATEGORY).",
+        "status": "Trạng thái thực thể (mã chung CON_STOCK_STATUS). Đi theo PENDING (chưa nhập) → ACTIVE (kho) → PROC_WAIT (chờ tại công đoạn) → MOUNTED (đã lắp).",
+        "currentCount": "Số lần dùng lũy kế của thực thể và tuổi thọ theo master. Từ 80% màu cam, từ 100% màu đỏ báo thời điểm thay.",
+        "location": "Vị trí lưu hiện tại. Ghi vị trí chọn khi quét nhập kho.",
+        "processCode": "Mã công đoạn đã xuất đến. Lấy từ công đoạn chọn khi quét xuất, xóa khi hủy xuất.",
+        "mountedEquipCode": "Mã thiết bị đang lắp. Trống khi ở kho hoặc chờ tại công đoạn.",
+        "recvDate": "Ngày xác nhận nhập kho (quét). Trống với thực thể chưa nhập (PENDING).",
+        "vendorName": "Tên nhà cung cấp ghi khi nhập kho.",
+        "unitPrice": "Đơn giá thực thể ghi khi nhập kho. Dùng để tính giá trị tồn."
+      }
     },
     "life": {
       "title": "Tình trạng tuổi thọ",
@@ -6086,7 +6328,19 @@
       "impendingReplace": "Sắp thay thế",
       "immediateAction": "Hành động ngay",
       "replaceAction": "Thay thế",
-      "searchPlaceholder": "Tìm mã, tên..."
+      "searchPlaceholder": "Tìm mã, tên...",
+      "fieldHelp": {
+        "conUid": "UID thực thể riêng in trên nhãn. Tuổi thọ được quản lý theo UID này, không theo master.",
+        "consumableCode": "Mã master vật tư mà thực thể thuộc về.",
+        "consumableName": "Tên gắn với mã vật tư.",
+        "category": "Phân loại vật tư (mã chung CONSUMABLE_CATEGORY).",
+        "location": "Vị trí lưu hiện tại. Tham khảo khi đi tìm đối tượng cần thay.",
+        "mountedEquipCode": "Mã thiết bị đang lắp. Nếu thực thể đang lắp ở trạng thái thay thế, kiểm tra thiết bị đó có dừng không.",
+        "lifePercentage": "Tỷ lệ tiêu hao tuổi thọ (%). Từ 80% màu vàng (cảnh báo), từ 100% màu đỏ (thay thế).",
+        "currentCount": "Số lần dùng lũy kế của thực thể và tuổi thọ đặt trên master. Cộng dồn khi lưu kết quả sản xuất.",
+        "remainingLife": "Số lần còn lại đến khi thay. Vượt tuổi thọ thì phần vượt hiển thị đỏ với dấu +.",
+        "lastReplaceAt": "Ngày thực thể này được xác nhận nhập kho. Thay thế sẽ nhập bằng UID mới nên xem đây là thời điểm thay gần nhất."
+      }
     },
     "label": {
       "title": "Phát hành nhãn vật tư tiêu hao",
@@ -6123,7 +6377,16 @@
       "preview": "Xem trước",
       "reprint": "Phát hành lại",
       "previewAria": "Xem trước nhãn {{conUid}}",
-      "reprintAria": "Phát hành lại nhãn {{conUid}}"
+      "reprintAria": "Phát hành lại nhãn {{conUid}}",
+      "fieldHelp": {
+        "consumableCode": "Mã master vật tư để phát hành nhãn. Các UID đã phát hành được quản lý theo mã này.",
+        "consumableName": "Tên vật tư tiêu hao dùng tại hiện trường.",
+        "category": "Phân loại vật tư (mã chung CONSUMABLE_CATEGORY). Là tiêu chí cho bộ lọc phân loại và chọn mẫu nhãn.",
+        "stockQty": "Số lượng tồn hiện tại theo master. Tăng 1 mỗi lần xác nhận nhập kho (quét).",
+        "instanceCount": "Số UID (thực thể) đã phát hành cho vật tư này. Số chưa nhập trong ngoặc là nhãn đã phát hành nhưng chưa quét nhập kho.",
+        "pendingCount": "Số UID đã phát hành nhãn nhưng chưa xác nhận nhập kho. Nếu còn, hãy kiểm tra nhập kho trước khi phát hành thêm.",
+        "qty": "Số UID mới phát hành lần này (1~99). Tạo số thực thể PENDING tương ứng và in nhãn."
+      }
     },
     "search": {
       "title": "Tìm vật tư tiêu hao",
@@ -6155,7 +6418,17 @@
       "remarkPlaceholder": "Nhập ghi chú",
       "searchPlaceholder": "Tìm theo mã, tên...",
       "completeRepairAction": "Hoàn thành sửa chữa",
-      "completeRepairTitle": "Xử lý hoàn thành sửa chữa"
+      "completeRepairTitle": "Xử lý hoàn thành sửa chữa",
+      "fieldHelp": {
+        "consumableCode": "Mã master vật tư cần lắp/tháo.",
+        "consumableName": "Tên vật tư tiêu hao dùng tại hiện trường.",
+        "category": "Phân loại vật tư (mã chung CONSUMABLE_CATEGORY).",
+        "mountedEquipCode": "Mã thiết bị đang lắp. Ghi khi lắp, xóa khi tháo. Vật tư đã lắp không thể lắp sang thiết bị khác.",
+        "lifeProgress": "Tỷ lệ tiêu hao tuổi thọ (%) theo master. Từ 100% thiết bị đang lắp có thể bị khóa liên động.",
+        "location": "Vị trí khi lưu trong kho. Tham khảo khi đi lấy vật tư để lắp.",
+        "equipCode": "Thiết bị để lắp vật tư. Khi lưu, thiết bị lắp trên master thay đổi và lưu lịch sử lắp.",
+        "remark": "Lý do hoặc ghi chú cho thao tác lắp/tháo/sửa. Hiển thị cùng trong tra cứu lịch sử."
+      }
     }
   },
   "outsourcing": {
@@ -9053,17 +9326,115 @@
     "legendReversal": "Xử lý ngược",
     "legendReference": "Tham chiếu",
     "knowledge": {
-      "tab": "Bản đồ tri thức", "title": "Bản đồ tri thức nghiệp vụ", "description": "Chọn một nút để mở rộng một cấp quan hệ. Chỉ đổi nút trung tâm rõ ràng trong bảng chi tiết.", "selectExpand": "Chọn {{label}} và mở rộng quan hệ", "center": "Trung tâm", "currentCenter": "Trung tâm hiện tại", "relation": "Quan hệ", "condition": "Điều kiện: {{condition}}", "relationList": "Danh sách quan hệ", "emptyRelations": "Không có quan hệ để hiển thị.", "evidenceLabel": "Bằng chứng {{status}}",
-      "search": { "label": "Tìm nghiệp vụ, màn hình và bảng", "placeholder": "Nghiệp vụ · màn hình · bảng · ngoại lệ", "action": "Tìm kiếm", "aiAction": "Diễn giải bằng AI", "aiLoading": "Đang diễn giải", "localResults": "Danh mục cục bộ", "aiResults": "Ứng viên AI", "noLocalResults": "Không có kết quả cục bộ phù hợp.", "noAiResults": "Không có ứng viên AI.", "invalidCenter": "Nút trung tâm không xác định: {{center}}", "staleAi": "Đã bỏ phản hồi AI cũ hoặc không hợp lệ.", "aiUnavailable": "Không thể sử dụng diễn giải AI.", "aiFailed": "Yêu cầu diễn giải AI thất bại." },
-      "layouts": { "mindmap": "Sơ đồ tư duy", "process": "Quy trình", "relation": "Quan hệ" }, "views": { "business": "Nghiệp vụ", "technical": "Kỹ thuật" },
-      "toolbar": { "label": "Công cụ bản đồ tri thức", "back": "Quay lại", "forward": "Tiến", "reset": "Đặt lại", "fit": "Xem toàn bộ", "copy": "Sao chép liên kết", "copySuccess": "Đã sao chép liên kết.", "copyFailed": "Không thể sao chép liên kết." , "cursorSelect": "Chọn · di chuyển nút", "cursorPan": "Bàn tay · di chuyển khung", "fullscreen": "Toàn màn hình", "exitFullscreen": "Thoát toàn màn hình", "recenter": "Lấy nút đã chọn làm trung tâm"},
-      "categories": { "flow": "Luồng", "masters": "Dữ liệu chuẩn", "constraints": "Điều kiện", "requiredTasks": "Công việc bắt buộc", "exceptions": "Ngoại lệ", "logic": "Logic", "tables": "Dữ liệu" },
-      "coverageStatus": { "present": "Có", "none": "Không có", "undocumented": "Chưa lập tài liệu" }, "evidenceStatus": { "verified": "Đã xác minh", "partial": "Một phần", "undocumented": "Chưa lập tài liệu" },
-      "filters": { "label": "Bộ lọc quan hệ", "mobileLabel": "Bộ lọc quan hệ di động", "mobileSummary": "Bộ lọc quan hệ · {{count}} nhóm", "channels": "Kênh quan hệ · {{count}}", "evidenceHint": "Bằng chứng được hiển thị theo trạng thái xác minh của từng quan hệ, không phải bộ lọc ngữ nghĩa." },
-      "canvas": { "label": "Đồ thị tri thức nghiệp vụ", "minimap": "Bản đồ thu nhỏ tri thức" },
-      "kinds": { "activity": "Nghiệp vụ", "screen": "Màn hình", "master": "Chuẩn", "constraint": "Điều kiện", "requiredTask": "Bắt buộc", "exception": "Ngoại lệ", "logic": "Logic", "data": "Dữ liệu", "evidence": "Bằng chứng" },
-      "detail": { "label": "Chi tiết tri thức đã chọn", "dossier": "Chi tiết nút", "centerAction": "Đặt làm trung tâm", "noDescription": "Chưa liên kết tài liệu mô tả.", "evidence": "Trạng thái bằng chứng", "openScreen": "Mở màn hình ứng dụng", "businessHeading": "Mục đích · thời điểm · điều kiện · ngoại lệ", "technicalHeading": "Đường dẫn · dữ liệu · bằng chứng", "incoming": "Quan hệ vào", "outgoing": "Quan hệ ra", "noRelations": "Không có kết nối" },
-      "recovery": { "code": "Không tìm thấy trung tâm", "title": "Không tìm thấy nút trung tâm trong liên kết được chia sẻ.", "description": "Dùng ô tìm kiếm phía trên để chọn nghiệp vụ, màn hình hoặc bảng trong danh mục hiện tại. Hệ thống không tự đổi nút trung tâm." }
+      "tab": "Bản đồ tri thức",
+      "title": "Bản đồ tri thức nghiệp vụ",
+      "description": "Chọn một nút để mở rộng một cấp quan hệ. Chỉ đổi nút trung tâm rõ ràng trong bảng chi tiết.",
+      "selectExpand": "Chọn {{label}} và mở rộng quan hệ",
+      "center": "Trung tâm",
+      "currentCenter": "Trung tâm hiện tại",
+      "relation": "Quan hệ",
+      "condition": "Điều kiện: {{condition}}",
+      "relationList": "Danh sách quan hệ",
+      "emptyRelations": "Không có quan hệ để hiển thị.",
+      "evidenceLabel": "Bằng chứng {{status}}",
+      "search": {
+        "label": "Tìm nghiệp vụ, màn hình và bảng",
+        "placeholder": "Nghiệp vụ · màn hình · bảng · ngoại lệ",
+        "action": "Tìm kiếm",
+        "aiAction": "Diễn giải bằng AI",
+        "aiLoading": "Đang diễn giải",
+        "localResults": "Danh mục cục bộ",
+        "aiResults": "Ứng viên AI",
+        "noLocalResults": "Không có kết quả cục bộ phù hợp.",
+        "noAiResults": "Không có ứng viên AI.",
+        "invalidCenter": "Nút trung tâm không xác định: {{center}}",
+        "staleAi": "Đã bỏ phản hồi AI cũ hoặc không hợp lệ.",
+        "aiUnavailable": "Không thể sử dụng diễn giải AI.",
+        "aiFailed": "Yêu cầu diễn giải AI thất bại."
+      },
+      "layouts": {
+        "mindmap": "Sơ đồ tư duy",
+        "process": "Quy trình",
+        "relation": "Quan hệ"
+      },
+      "views": {
+        "business": "Nghiệp vụ",
+        "technical": "Kỹ thuật"
+      },
+      "toolbar": {
+        "label": "Công cụ bản đồ tri thức",
+        "back": "Quay lại",
+        "forward": "Tiến",
+        "reset": "Đặt lại",
+        "fit": "Xem toàn bộ",
+        "copy": "Sao chép liên kết",
+        "copySuccess": "Đã sao chép liên kết.",
+        "copyFailed": "Không thể sao chép liên kết.",
+        "cursorSelect": "Chọn · di chuyển nút",
+        "cursorPan": "Bàn tay · di chuyển khung",
+        "fullscreen": "Toàn màn hình",
+        "exitFullscreen": "Thoát toàn màn hình",
+        "recenter": "Lấy nút đã chọn làm trung tâm"
+      },
+      "categories": {
+        "flow": "Luồng",
+        "masters": "Dữ liệu chuẩn",
+        "constraints": "Điều kiện",
+        "requiredTasks": "Công việc bắt buộc",
+        "exceptions": "Ngoại lệ",
+        "logic": "Logic",
+        "tables": "Dữ liệu"
+      },
+      "coverageStatus": {
+        "present": "Có",
+        "none": "Không có",
+        "undocumented": "Chưa lập tài liệu"
+      },
+      "evidenceStatus": {
+        "verified": "Đã xác minh",
+        "partial": "Một phần",
+        "undocumented": "Chưa lập tài liệu"
+      },
+      "filters": {
+        "label": "Bộ lọc quan hệ",
+        "mobileLabel": "Bộ lọc quan hệ di động",
+        "mobileSummary": "Bộ lọc quan hệ · {{count}} nhóm",
+        "channels": "Kênh quan hệ · {{count}}",
+        "evidenceHint": "Bằng chứng được hiển thị theo trạng thái xác minh của từng quan hệ, không phải bộ lọc ngữ nghĩa."
+      },
+      "canvas": {
+        "label": "Đồ thị tri thức nghiệp vụ",
+        "minimap": "Bản đồ thu nhỏ tri thức"
+      },
+      "kinds": {
+        "activity": "Nghiệp vụ",
+        "screen": "Màn hình",
+        "master": "Chuẩn",
+        "constraint": "Điều kiện",
+        "requiredTask": "Bắt buộc",
+        "exception": "Ngoại lệ",
+        "logic": "Logic",
+        "data": "Dữ liệu",
+        "evidence": "Bằng chứng"
+      },
+      "detail": {
+        "label": "Chi tiết tri thức đã chọn",
+        "dossier": "Chi tiết nút",
+        "centerAction": "Đặt làm trung tâm",
+        "noDescription": "Chưa liên kết tài liệu mô tả.",
+        "evidence": "Trạng thái bằng chứng",
+        "openScreen": "Mở màn hình ứng dụng",
+        "businessHeading": "Mục đích · thời điểm · điều kiện · ngoại lệ",
+        "technicalHeading": "Đường dẫn · dữ liệu · bằng chứng",
+        "incoming": "Quan hệ vào",
+        "outgoing": "Quan hệ ra",
+        "noRelations": "Không có kết nối"
+      },
+      "recovery": {
+        "code": "Không tìm thấy trung tâm",
+        "title": "Không tìm thấy nút trung tâm trong liên kết được chia sẻ.",
+        "description": "Dùng ô tìm kiếm phía trên để chọn nghiệp vụ, màn hình hoặc bảng trong danh mục hiện tại. Hệ thống không tự đổi nút trung tâm."
+      }
     }
   }
 }

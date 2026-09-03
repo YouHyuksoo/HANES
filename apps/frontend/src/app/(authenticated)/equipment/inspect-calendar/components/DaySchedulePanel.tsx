@@ -13,6 +13,7 @@
 import { useTranslation } from "react-i18next";
 import { CheckCircle, XCircle, Clock, PlayCircle, Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui";
+import { FieldHelpIcon } from "../inspectCalendarFieldHelp";
 
 export interface DayScheduleItem {
   itemId: string;
@@ -121,9 +122,10 @@ export default function DaySchedulePanel({
                   ) : (
                     <Clock className="w-5 h-5 text-gray-400" />
                   )}
-                  <div>
+                  <div className="inline-flex items-center gap-1">
                     <span className="font-mono text-sm font-medium text-text">{equip.equipCode}</span>
-                    <span className="text-sm text-text-muted ml-2">{equip.equipName}</span>
+                    <span className="text-sm text-text-muted ml-1">{equip.equipName}</span>
+                    <FieldHelpIcon field="equip" />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -138,6 +140,7 @@ export default function DaySchedulePanel({
                           ? t("equipment.inspectCalendar.pass")
                           : t("equipment.inspectCalendar.fail")}
                       </span>
+                      <FieldHelpIcon field="overallResult" />
                       <Button size="sm" variant="ghost" onClick={() => onExecuteInspect(equip)}>
                         <Pencil className="w-3.5 h-3.5 mr-1" />
                         {t("common.edit")}
@@ -173,8 +176,9 @@ export default function DaySchedulePanel({
               </div>
 
               {equip.inspectorName && (
-                <p className="text-xs text-text-muted mt-2">
-                  {t("equipment.inspectCalendar.inspectorName")}: {equip.inspectorName}
+                <p className="text-xs text-text-muted mt-2 inline-flex items-center gap-1">
+                  <span>{t("equipment.inspectCalendar.inspectorName")}: {equip.inspectorName}</span>
+                  <FieldHelpIcon field="inspectorName" />
                 </p>
               )}
             </div>

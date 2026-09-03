@@ -186,7 +186,9 @@
       "defect": "불량",
       "hourlyTitle": "시간대별 실적 (금일)",
       "todayOrders": "금일 작업지시",
-      "production": { "title": "생산현황 보드" },
+      "production": {
+        "title": "생산현황 보드"
+      },
       "kpi": {
         "planQty": "총 계획",
         "goodQty": "총 실적",
@@ -589,12 +591,54 @@
     "goHome": "대시보드로 이동"
   },
   "dashboard": {
-    "layout": { "group": "형태", "cockpit": "콕핏", "board": "전광판", "map": "노선도", "charts": "차트" },
+    "layout": {
+      "group": "형태",
+      "cockpit": "콕핏",
+      "board": "전광판",
+      "map": "노선도",
+      "charts": "차트"
+    },
     "skinGroup": "색상",
-    "board": { "orders": "작업지시 전광판", "orderNo": "지시번호", "item": "품목", "where": "공정 · 설비", "qty": "실적 / 계획", "progress": "진행", "status": "상태", "noOrders": "오늘 작업지시가 없습니다.", "equipRun": "설비 가동", "page": "{{page}} / {{count}}" },
-    "map": { "flowLine": "물류 라인", "equipLine": "설비 라인", "hint": "역을 누르면 그 단계의 조치만 보입니다. 다시 누르면 전체", "station": "선택 역", "all": "전체", "pressure": "압력" },
-    "charts": { "hourly": "시간대별 실적 (금일)", "byProcess": "공정별 불량률", "topDefects": "상위 불량 유형", "status": "상태 분포", "orderStatus": "작업지시", "equipStatus": "설비", "equipNormal": "정상", "equipMaint": "보전중", "equipStop": "정지", "inventory": "재고 조치 항목", "rate": "불량률", "qty": "수량", "noData": "데이터 없음" },
-    "skin": { "control": "관제탑", "departure": "출발 전광판", "datawall": "데이터 월" },
+    "board": {
+      "orders": "작업지시 전광판",
+      "orderNo": "지시번호",
+      "item": "품목",
+      "where": "공정 · 설비",
+      "qty": "실적 / 계획",
+      "progress": "진행",
+      "status": "상태",
+      "noOrders": "오늘 작업지시가 없습니다.",
+      "equipRun": "설비 가동",
+      "page": "{{page}} / {{count}}"
+    },
+    "map": {
+      "flowLine": "물류 라인",
+      "equipLine": "설비 라인",
+      "hint": "역을 누르면 그 단계의 조치만 보입니다. 다시 누르면 전체",
+      "station": "선택 역",
+      "all": "전체",
+      "pressure": "압력"
+    },
+    "charts": {
+      "hourly": "시간대별 실적 (금일)",
+      "byProcess": "공정별 불량률",
+      "topDefects": "상위 불량 유형",
+      "status": "상태 분포",
+      "orderStatus": "작업지시",
+      "equipStatus": "설비",
+      "equipNormal": "정상",
+      "equipMaint": "보전중",
+      "equipStop": "정지",
+      "inventory": "재고 조치 항목",
+      "rate": "불량률",
+      "qty": "수량",
+      "noData": "데이터 없음"
+    },
+    "skin": {
+      "control": "관제탑",
+      "departure": "출발 전광판",
+      "datawall": "데이터 월"
+    },
     "tvMode": "TV 모드",
     "title": "대시보드",
     "subtitle": "입고부터 제품까지, 오늘 공장의 흐름과 지금 처리할 일",
@@ -1286,7 +1330,25 @@
       "sectionCycle": "주기 설정",
       "equipName": "설비명",
       "fieldInput": "{{field}}을(를) 입력하세요",
-      "fieldRequired": "{{field}}은(는) 필수입니다"
+      "fieldRequired": "{{field}}은(는) 필수입니다",
+      "fieldHelp": {
+        "planCode": "예방보전 계획을 식별하는 고유 코드입니다. 등록 후에는 바꿀 수 없습니다.",
+        "equipCode": "이 계획으로 예방보전을 수행할 대상 설비입니다. 설비마스터에서 선택합니다.",
+        "equipName": "대상 설비의 이름입니다. 설비코드로 설비마스터를 조회해 표시합니다.",
+        "planName": "현장에서 부르는 계획 이름입니다. 예: 월간 윤활 점검.",
+        "description": "계획에 대한 보충 설명입니다. 작업 범위나 주의사항을 적습니다.",
+        "pmType": "보전 유형(공통코드 PM_TYPE)입니다. 시간 기준은 주기마다, 사용량 기준은 가동 실적이 기준값에 도달하면 작업지시가 생성됩니다.",
+        "cycleType": "반복 주기 종류(공통코드 PM_CYCLE_TYPE)입니다. 일/주/월/년 등 주기 값의 단위가 됩니다.",
+        "cycleValue": "주기 종류에 곱해지는 반복 간격입니다. 예: 주기 종류가 월이고 값이 3이면 3개월마다 수행합니다.",
+        "estimatedTime": "계획 전체를 수행하는 데 걸리는 예상 시간(시간 단위)입니다. 작업 일정 배정에 참고합니다.",
+        "itemCount": "이 계획에 등록된 보전항목 개수입니다. 작업지시 실행 시 항목별로 결과를 입력합니다.",
+        "nextDueAt": "다음 예방보전 예정일입니다. 작업지시 생성과 완료 시 주기에 따라 자동 갱신됩니다.",
+        "useYn": "계획 사용 여부입니다. N이면 작업지시 자동 생성 대상에서 제외됩니다.",
+        "criteria": "항목의 합격/불합격 판정 기준입니다. 작업자가 실행 화면에서 이 기준을 보고 결과를 입력합니다.",
+        "sparePartCode": "항목 수행 시 교체하는 예비부품입니다. 설비 BOM에 등록된 부품 중에서 선택합니다.",
+        "sparePartQty": "예비부품 교체 수량입니다.",
+        "estimatedMinutes": "이 항목 하나를 수행하는 데 걸리는 예상 시간(분)입니다."
+      }
     },
     "pmWorkOrder": {
       "woSchedule": "Work Order 현황",
@@ -1324,7 +1386,21 @@
       "woInProgress": "진행중",
       "woCompleted": "완료",
       "woOverdue": "연체",
-      "weekdays": "일,월,화,수,목,금,토"
+      "weekdays": "일,월,화,수,목,금,토",
+      "fieldHelp": {
+        "workOrderNo": "실행 중인 예방보전 작업지시(WO) 번호입니다.",
+        "equipCode": "예방보전 대상 설비입니다. 설비코드와 설비명을 함께 표시합니다.",
+        "assignedWorker": "작업을 수행한 작업자입니다. 작업자마스터에서 선택하며 완료 처리에 필수입니다.",
+        "seq": "보전항목 순번입니다. PM 계획에 등록된 항목 순서를 따릅니다.",
+        "itemName": "점검 또는 교체할 보전항목 이름입니다. PM 계획의 보전항목에서 복사됩니다.",
+        "itemType": "항목 유형(공통코드 PM_ITEM_TYPE)입니다. 점검/교체/청소 등 작업 성격을 구분합니다.",
+        "criteria": "항목의 합격/불합격 판정 기준입니다. 이 기준을 보고 결과를 입력합니다.",
+        "result": "항목별 판정 결과(PASS/FAIL)입니다. 모든 항목을 입력해야 완료 처리할 수 있습니다.",
+        "itemRemark": "항목별 비고입니다. FAIL로 판정한 항목은 원인을 반드시 적어야 합니다.",
+        "overallResult": "작업 종합 결과입니다. 항목 중 하나라도 FAIL이면 전체 FAIL로 자동 판정됩니다.",
+        "completedAt": "작업을 완료 처리한 일시입니다.",
+        "remark": "작업 전체에 대한 비고입니다. 특이사항이나 후속 조치를 적습니다."
+      }
     },
     "inspectCalendar": {
       "title": "설비일상점검 캘린더",
@@ -1370,7 +1446,20 @@
       "legendNotStarted": "미시작",
       "failCauseRequired": "{{label}} 입력이 필요합니다",
       "itemResultRequired": "{{label}} 입력 필요",
-      "weekdays": "일,월,화,수,목,금,토"
+      "weekdays": "일,월,화,수,목,금,토",
+      "fieldHelp": {
+        "dayStatus": "날짜별 점검 상태입니다. 점검항목 주기(매일/매주/매월)로 대상 설비를 계산하고 저장된 점검 이력과 비교해 전부합격·진행중·불합격·미시작·기한초과로 표시하며, 칸 안의 숫자는 완료 설비 수/대상 설비 수입니다.",
+        "equip": "점검 대상 설비의 코드와 이름입니다. 설비마스터 기준입니다.",
+        "inspectDate": "점검 기준일입니다. 캘린더에서 선택한 날짜로 저장됩니다.",
+        "inspectorName": "점검을 수행한 작업자입니다. 작업자마스터에서 선택하며 저장 시 필수입니다.",
+        "seq": "점검항목 표시 순번입니다. 설비별 점검항목의 정렬순서를 따릅니다.",
+        "itemName": "점검할 항목 이름입니다. 설비점검항목 마스터에서 관리합니다.",
+        "criteria": "항목의 판정 기준 문구입니다. 이 기준에 맞으면 합격, 벗어나면 불합격을 선택합니다.",
+        "itemResult": "항목별 판정입니다. 합격(PASS) 또는 불합격(FAIL)을 선택하며 모든 항목을 입력해야 저장할 수 있습니다.",
+        "failCause": "항목별 비고입니다. 불합격(FAIL)으로 판정한 항목은 불합격 사유를 반드시 입력해야 합니다.",
+        "overallResult": "종합판정입니다. 항목 중 하나라도 불합격이면 FAIL, 전부 합격이면 PASS로 자동 계산됩니다.",
+        "remark": "이번 점검 전체에 대한 비고입니다. 특이사항이나 조치 내용을 적습니다."
+      }
     },
     "periodicInspectCalendar": {
       "title": "설비정기점검 캘린더",
@@ -1434,7 +1523,24 @@
       "statusDoneOk": "완료(OK)",
       "statusNone": "미점검",
       "typeMeasure": "측정형",
-      "typeVisual": "판정형"
+      "typeVisual": "판정형",
+      "fieldHelp": {
+        "equipCode": "점검항목이 배정된 설비 코드입니다. 설비별 점검항목(POOL)에 사용 중인 항목이 있는 설비만 목록에 나옵니다.",
+        "equipName": "설비마스터에 등록된 설비 이름입니다.",
+        "equipType": "설비 유형입니다. 목록은 이 값으로 묶어서 보여줍니다.",
+        "status": "선택한 날짜의 처리 상태입니다. 저장 이력이 없으면 미점검, 있으면 종합판정에 따라 완료(OK)/완료(NG)로 표시됩니다.",
+        "inspectDate": "점검 기준일입니다. 상단 날짜를 바꾸면 그 날짜의 점검 이력으로 저장·조회됩니다.",
+        "inspectorName": "점검을 수행한 작업자입니다. 작업자마스터에서 선택하며 저장 시 필수입니다.",
+        "startTime": "이 설비의 점검 입력을 시작한 시각(화면 기준)입니다. 참고용이며 그대로 저장되지는 않습니다.",
+        "overallResult": "종합판정입니다. 항목 중 하나라도 NG면 FAIL, 전부 OK면 PASS로 자동 판정되며 FAIL 저장 시 정비요청이 자동 등록됩니다.",
+        "seq": "점검항목 표시 순번입니다. 설비별 점검항목의 정렬순서를 따릅니다.",
+        "itemName": "점검할 항목 이름입니다. 설비점검항목 마스터에서 관리합니다.",
+        "itemType": "항목 유형입니다. 측정형(MEASURE)은 숫자를 입력해 규격과 비교하고, 판정형(VISUAL)은 OK/NG를 직접 선택합니다.",
+        "criteria": "판정 기준입니다. 측정형은 하한~상한(단위)으로, 판정형은 기준 문구로 표시됩니다.",
+        "measureValue": "측정형은 측정한 숫자를 입력하면 규격과 비교해 자동 판정되고, 판정형은 OK/NG를 직접 선택합니다.",
+        "judge": "항목별 판정 결과(OK/NG)입니다. 측정값 입력 또는 선택 결과에 따라 표시됩니다.",
+        "itemRemark": "항목별 비고입니다. NG일 때 불량 내용을 적어 두면 정비 시 참고할 수 있습니다."
+      }
     },
     "periodicInspect": {
       "title": "설비정기점검",
@@ -1497,7 +1603,17 @@
       "statTotal": "전체 점검",
       "excelDownload": "엑셀 다운로드",
       "searchPlaceholder": "설비코드, 설비명 검색...",
-      "equipType": "설비유형"
+      "equipType": "설비유형",
+      "fieldHelp": {
+        "inspectDate": "점검을 수행한 날짜입니다. 설비·점검유형과 함께 이력을 구분하는 키입니다.",
+        "inspectType": "점검 구분(공통코드 INSPECT_CHECK_TYPE)입니다. 일상/정기/작업자점검 중 어떤 점검의 이력인지 나타냅니다.",
+        "equipCode": "점검한 설비 코드입니다.",
+        "equipName": "점검한 설비 이름입니다. 설비 마스터에서 가져옵니다.",
+        "equipType": "설비 유형(공통코드 EQUIP_TYPE)입니다. 설비 마스터에서 가져옵니다.",
+        "inspectorName": "점검을 수행한 사람 이름입니다.",
+        "overallResult": "점검 종합 판정(공통코드 INSPECT_JUDGE)입니다. 항목 중 하나라도 NG면 종합 결과가 불합격으로 남습니다.",
+        "remark": "점검 시 남긴 특이사항입니다."
+      }
     },
     "pm": {
       "title": "PM 보전현황",
@@ -1566,7 +1682,31 @@
       "warningLabel": "경고",
       "overdueLabel": "초과",
       "retiredLabel": "폐기",
-      "fieldRequired": "{{field}}은(는) 필수입니다"
+      "fieldRequired": "{{field}}은(는) 필수입니다",
+      "fieldHelp": {
+        "moldCode": "금형을 식별하는 고유 코드입니다. 등록 후에는 바꿀 수 없습니다.",
+        "moldName": "현장에서 부르는 금형 이름입니다.",
+        "moldType": "금형 유형(공통코드 MOLD_TYPE)입니다. 압착/사출 등 용도 분류 기준입니다.",
+        "itemCode": "이 금형으로 생산하는 품목 코드입니다. 품목 검색으로 선택합니다.",
+        "cavity": "1회 타수(shot)로 생산되는 개수(캐비티 수)입니다. 타수 대비 생산 수량 환산에 쓰입니다.",
+        "currentShots": "누적 사용 타수입니다. 사용이력을 등록하면 자동으로 더해집니다.",
+        "guaranteedShots": "제조사가 보증하는 수명 타수입니다. 누적 타수가 이 값에 도달하면 설비 인터록이 걸리고 교체 대상으로 봅니다.",
+        "shotRate": "누적 타수를 보증 타수로 나눈 사용률(%)입니다. 90% 초과는 주의, 100% 초과는 교체 시점입니다.",
+        "status": "금형 상태(공통코드 MOLD_STATUS)입니다. 폐기 처리하면 RETIRED로 바뀌고 더 이상 사용할 수 없습니다.",
+        "maintenanceCycle": "보전(정비) 주기 타수입니다. 이 타수마다 정비가 필요하다고 판단해 보전 예정 목록에 올라갑니다.",
+        "lastMaintenanceDate": "마지막으로 보전(정비)을 수행한 날짜입니다.",
+        "nextMaintenanceDate": "다음 보전 예정일입니다. 이 날짜가 가까워지면 보전 예정 목록에 표시됩니다.",
+        "location": "금형 보관 위치(금형실, 선반 번호 등)입니다.",
+        "maker": "금형 제작사입니다.",
+        "purchaseDate": "금형을 구매(도입)한 날짜입니다.",
+        "remark": "금형에 대한 참고 사항입니다.",
+        "usageDate": "금형을 사용한 날짜입니다.",
+        "shotCount": "해당 사용에서 발생한 타수입니다. 등록하면 금형의 누적 타수에 더해집니다.",
+        "orderNo": "금형을 사용한 작업지시 번호입니다. 생산 추적에 쓰입니다.",
+        "equipCode": "금형을 장착해 사용한 설비입니다. 보증 타수 초과 시 이 설비에 인터록이 걸립니다.",
+        "workerCode": "금형을 사용한 작업자입니다.",
+        "usageRemark": "사용이력에 대한 참고 사항입니다."
+      }
     },
     "calibrationHistory": {
       "calNo": "교정번호",
@@ -1609,7 +1749,17 @@
       "statTotal": "전체 WO",
       "subtitle": "예방보전 Work Order 실행 결과를 조회합니다.",
       "title": "PM 보전결과",
-      "woNo": "WO번호"
+      "woNo": "WO번호",
+      "fieldHelp": {
+        "workOrderNo": "예방보전 작업지시(WO) 번호입니다. 캘린더에서 월별 생성 시 자동 채번됩니다.",
+        "scheduledDate": "작업을 수행하기로 예정된 날짜입니다. PM 계획의 다음 예정일을 기준으로 정해집니다.",
+        "equipCode": "예방보전 대상 설비의 코드입니다.",
+        "equipName": "대상 설비의 이름입니다. 설비코드로 설비마스터를 조회해 표시합니다.",
+        "overallResult": "작업 종합 결과입니다. 항목 중 하나라도 FAIL이면 전체 FAIL로 판정됩니다.",
+        "priority": "작업 우선순위(공통코드 PM_PRIORITY)입니다. HIGH일수록 먼저 처리해야 합니다.",
+        "completedAt": "작업을 완료 처리한 일시입니다. 실행 화면에서 완료 버튼을 누른 시점입니다.",
+        "remark": "작업 전체에 대한 비고입니다. 실행 화면에서 입력한 특이사항이 표시됩니다."
+      }
     }
   },
   "master": {
@@ -1696,7 +1846,8 @@
         "packUnit": "팔레트 또는 상위 포장 단위 구성 기준입니다.",
         "storageLocation": "품목별로 고정해 둘 기본 적재 로케이션입니다.",
         "imageUrl": "품목 사진 파일 경로입니다.",
-        "remark": "품목 관리 참고사항입니다."
+        "remark": "품목 관리 참고사항입니다.",
+        "defectModelGroup": "불량코드 적용 범위를 저전압/고전압 같은 모델군으로 구분하는 기준입니다."
       },
       "tactTime": "택트타임(초)",
       "defectModelGroup": "모델구분"
@@ -2308,7 +2459,15 @@
       "spec": "규격",
       "selectPoolItem": "점검항목 마스터 선택",
       "noPoolForType": "이 설비유형/점검유형에 등록된 점검항목 마스터가 없습니다. 점검항목 마스터에서 먼저 등록하세요.",
-      "equipTypeEtc": "기타"
+      "equipTypeEtc": "기타",
+      "fieldHelp": {
+        "itemCode": "이 설비에 할당된 점검항목 코드입니다. 점검항목 마스터의 코드와 같습니다.",
+        "itemName": "점검항목 이름입니다. 점검항목 마스터에서 가져오며 여기서는 수정할 수 없습니다.",
+        "criteria": "점검 시 확인할 기준 문구입니다. 점검항목 마스터에서 관리합니다.",
+        "cycle": "점검 주기(일/주/월 등)입니다. 점검항목 마스터에서 관리합니다.",
+        "sortSeq": "점검 화면에서 항목이 나열되는 순서입니다. 작을수록 위에 표시됩니다.",
+        "useYn": "이 설비에서 해당 항목을 점검 대상으로 쓸지 여부입니다. N이면 점검 화면에 나타나지 않습니다."
+      }
     },
     "equipInspectItem": {
       "title": "점검항목 마스터",
@@ -2321,7 +2480,22 @@
       "sectionCriteria": "판정기준",
       "subtitle": "설비유형별 점검항목을 등록하고 관리합니다. 설비점검 매핑의 기준 정보입니다.",
       "statTotal": "전체 항목",
-      "statEquipTypes": "설비유형 수"
+      "statEquipTypes": "설비유형 수",
+      "fieldHelp": {
+        "itemCode": "점검항목을 식별하는 고유 코드입니다. 등록 후에는 바꿀 수 없으며 QR 라벨에도 이 코드가 인쇄됩니다.",
+        "equipType": "이 점검항목이 적용되는 설비 유형(공통코드 EQUIP_TYPE)입니다. 설비에 항목을 할당할 때 유형별로 골라 쓰는 기준입니다.",
+        "itemName": "점검자가 화면에서 보는 점검항목 이름입니다.",
+        "inspectType": "점검 구분(일상/정기/예방보전/작업자점검)입니다. 어느 점검 화면에 나타날지 결정합니다.",
+        "itemType": "판정 방식입니다. 판정형(VISUAL)은 OK/NG로, 측정형(MEASURE)은 값을 입력해 상·하한으로 판정합니다.",
+        "criteria": "점검 시 확인할 기준 문구입니다. 측정형은 상·하한값이 우선하고 이 문구는 보조 설명으로 쓰입니다.",
+        "cycle": "점검 주기(일/주/월/분기/반기/연)입니다. 정기점검 예정 대상을 뽑는 기준입니다.",
+        "unit": "측정형 항목의 측정 단위(공통코드 UNIT_TYPE)입니다.",
+        "lslValue": "측정형 항목의 하한값입니다. 측정값이 이 값보다 작으면 NG로 판정합니다.",
+        "uslValue": "측정형 항목의 상한값입니다. 측정값이 이 값보다 크면 NG로 판정합니다.",
+        "imageUrl": "점검 위치나 기준을 보여주는 사진 파일 경로입니다. 점검 화면에서 참고 이미지로 표시됩니다.",
+        "useYn": "사용 여부입니다. N이면 설비에 새로 할당할 수 없고 점검 대상에서 제외됩니다.",
+        "remark": "점검항목에 대한 참고 사항입니다."
+      }
     },
     "box": {
       "title": "포장박스관리",
@@ -5963,7 +6137,24 @@
       "codeRequired": "소모품 코드를 입력하세요.",
       "nameRequired": "소모품명을 입력하세요.",
       "namePlaceholder": "110단자 압착금형",
-      "locationPlaceholder": "금형실-A1"
+      "locationPlaceholder": "금형실-A1",
+      "fieldHelp": {
+        "consumableCode": "소모품(금형·지그·공구 등)을 식별하는 고유 코드입니다. 등록 후에는 바꿀 수 없습니다.",
+        "consumableName": "현장에서 부르는 소모품 이름입니다.",
+        "category": "소모품 분류(공통코드 CONSUMABLE_CATEGORY)입니다. 금형/지그/공구 등 관리 방식이 갈리는 기준입니다.",
+        "expectedLife": "교체 기준 타수(수명)입니다. 누적 타수가 이 값에 도달하면 교체 대상으로 표시됩니다.",
+        "warningCount": "경고를 띄우기 시작할 타수입니다. 수명 타수보다 작게 설정합니다.",
+        "currentCount": "마스터 기준 누적 사용 타수입니다. 실적 저장 시 자동 누적됩니다.",
+        "stockQty": "현재 보유 수량입니다. 입고/출고 처리로 갱신됩니다.",
+        "safetyStock": "재고 부족 판단 기준 수량입니다. 보유 수량이 이 값 아래로 내려가면 부족으로 표시됩니다.",
+        "location": "보관 위치(금형실, 선반 번호 등)입니다.",
+        "vendor": "구매/제작 거래처입니다.",
+        "unitPrice": "단가입니다. 재고 금액 산출과 구매 참고에 쓰입니다.",
+        "status": "수명 상태(정상/경고/교체)입니다. 누적 타수와 경고·수명 타수를 비교해 자동 판정됩니다.",
+        "operStatus": "운용 상태(창고 보관/설비 장착 등)입니다.",
+        "imageUrl": "소모품 사진 파일 경로입니다.",
+        "useYn": "사용 여부입니다. N이면 신규 선택 목록에서 제외됩니다."
+      }
     },
     "receiving": {
       "title": "소모품입고",
@@ -6002,7 +6193,28 @@
       "pendingTitle": "미입고 대기목록",
       "labelPrintedAt": "라벨인쇄일",
       "returnScanHint": "반납입고 모드",
-      "returnBtn": "반납확정"
+      "returnBtn": "반납확정",
+      "fieldHelp": {
+        "createdAt": "입고 또는 입고반납이 처리된 일시입니다. 기간 필터와 당일 집계 기준이 됩니다.",
+        "consumableCode": "입고 대상 소모품 마스터 코드입니다. 등록 패널에서는 검색 버튼으로 선택합니다.",
+        "consumableName": "소모품 코드에 연결된 이름입니다.",
+        "conUid": "바코드 스캔으로 입고한 경우 라벨의 개별 UID입니다. 수동 입고는 UID 없이 수량만 기록됩니다.",
+        "logType": "IN(입고)/IN_RETURN(입고반납) 구분입니다. 반납이면 수량이 재고에서 빠집니다.",
+        "qty": "입고 수량입니다. 입고는 +, 입고반납은 - 로 마스터 보유 수량에 반영됩니다.",
+        "vendorCode": "납품한 거래처 코드입니다. 거래처별 입고 실적 조회에 쓰입니다.",
+        "vendorName": "납품한 거래처 이름입니다.",
+        "unitPrice": "입고 단가입니다. 입고 금액(단가×수량) 집계에 쓰입니다.",
+        "incomingType": "NEW(신규 구매)/REPLACEMENT(교체용) 구분입니다. 교체용 입고는 수명 만료 교체 실적으로 구분해 봅니다.",
+        "remark": "입고 관련 메모(납품서 번호, 특이사항 등)입니다."
+      },
+      "scanFieldHelp": {
+        "conUid": "라벨에 인쇄된 개별 UID입니다. 이 값을 스캔하면 PENDING → ACTIVE 로 입고 확정됩니다.",
+        "consumableCode": "UID가 속한 소모품 마스터 코드입니다.",
+        "consumableName": "소모품 코드에 연결된 이름입니다.",
+        "category": "소모품 분류(공통코드 CONSUMABLE_CATEGORY)입니다.",
+        "labelPrintedAt": "라벨(UID)이 발행된 일시입니다. 오래 남아 있는 미입고 건은 실물 도착 여부를 확인합니다.",
+        "vendorName": "UID 발행 시 기록된 거래처 이름입니다. 없으면 비어 있습니다."
+      }
     },
     "issuing": {
       "title": "소모품 공정출고",
@@ -6037,7 +6249,22 @@
       "scanPlaceholder": "소모품 UID 바코드를 스캔하세요...",
       "confirmBtn": "공정출고",
       "returnBtn": "취소확정",
-      "returnScanHint": "출고취소 모드"
+      "returnScanHint": "출고취소 모드",
+      "fieldHelp": {
+        "createdAt": "출고 또는 출고취소가 처리된 일시입니다. 기간 필터와 당일 집계 기준이 됩니다.",
+        "consumableCode": "출고된 소모품 마스터 코드입니다.",
+        "consumableName": "소모품 코드에 연결된 이름입니다.",
+        "conUid": "스캔 출고한 개별 UID입니다. 어느 인스턴스가 공정으로 나갔는지 추적하는 키입니다.",
+        "logType": "OUT(출고)/OUT_RETURN(출고취소) 구분입니다. 출고취소는 인스턴스를 다시 창고 재고(ACTIVE)로 되돌립니다.",
+        "qty": "출고 수량입니다. 출고는 -, 출고취소는 + 로 표시되며 스캔 출고는 UID 1건당 1입니다.",
+        "lineCode": "출고 대상 라인 코드입니다. 수동 출고에서 지정한 경우에만 값이 있습니다.",
+        "processCode": "출고 대상 공정 코드입니다. 스캔 출고 시 선택한 공정이 기록되고, 해당 공정 재고(PROC_WAIT)로 이동합니다.",
+        "equipCode": "출고 대상 설비 코드입니다. 수동 출고에서 지정한 경우에만 값이 있습니다.",
+        "remark": "출고 관련 메모입니다."
+      },
+      "scanFieldHelp": {
+        "processCode": "UID를 출고할 대상 공정입니다. 출고 모드에서는 공정을 먼저 골라야 스캔이 열리고, 스캔된 인스턴스는 이 공정의 재고(PROC_WAIT)가 됩니다."
+      }
     },
     "stock": {
       "title": "소모품재고",
@@ -6068,7 +6295,22 @@
       "statusActive": "사용가능",
       "statusMounted": "장착중",
       "statusRepair": "수리중",
-      "statusScrapped": "폐기"
+      "statusScrapped": "폐기",
+      "fieldHelp": {
+        "conUid": "라벨에 인쇄된 개별 인스턴스 UID입니다. 입고·출고·장착 스캔은 모두 이 값으로 처리됩니다.",
+        "qty": "UID 하나는 실물 1개를 뜻하므로 항상 1입니다. 소모품별 합계는 행 수를 세면 됩니다.",
+        "consumableCode": "인스턴스가 속한 소모품 마스터 코드입니다.",
+        "consumableName": "소모품 코드에 연결된 이름입니다.",
+        "category": "소모품 분류(공통코드 CONSUMABLE_CATEGORY)입니다.",
+        "status": "인스턴스 상태(공통코드 CON_STOCK_STATUS)입니다. PENDING(미입고)→ACTIVE(창고)→PROC_WAIT(공정 대기)→MOUNTED(장착) 순으로 흐릅니다.",
+        "currentCount": "이 인스턴스의 누적 사용 타수와 마스터 수명 타수입니다. 80% 이상이면 주황, 100% 이상이면 빨강으로 교체 시점을 알립니다.",
+        "location": "현재 보관 위치입니다. 입고 스캔 시 선택한 위치가 기록됩니다.",
+        "processCode": "출고된 공정 코드입니다. 출고 스캔 시 선택한 공정이 들어가며, 출고취소하면 비워집니다.",
+        "mountedEquipCode": "현재 장착된 설비 코드입니다. 창고나 공정 대기 중이면 비어 있습니다.",
+        "recvDate": "입고 확정(스캔)된 일자입니다. 미입고(PENDING) 인스턴스는 비어 있습니다.",
+        "vendorName": "입고 시 기록된 거래처 이름입니다.",
+        "unitPrice": "입고 시 기록된 인스턴스 단가입니다. 재고 금액 산출에 쓰입니다."
+      }
     },
     "life": {
       "title": "수명현황",
@@ -6091,7 +6333,19 @@
       "impendingReplace": "교체 임박",
       "immediateAction": "즉시 조치",
       "replaceAction": "교체",
-      "searchPlaceholder": "코드, 소모품명 검색..."
+      "searchPlaceholder": "코드, 소모품명 검색...",
+      "fieldHelp": {
+        "conUid": "라벨에 인쇄된 개별 인스턴스 UID입니다. 수명은 마스터가 아니라 이 UID 단위로 관리됩니다.",
+        "consumableCode": "인스턴스가 속한 소모품 마스터 코드입니다.",
+        "consumableName": "소모품 코드에 연결된 이름입니다.",
+        "category": "소모품 분류(공통코드 CONSUMABLE_CATEGORY)입니다.",
+        "location": "현재 보관 위치입니다. 교체 대상을 찾으러 갈 때 참고합니다.",
+        "mountedEquipCode": "현재 장착된 설비 코드입니다. 장착 중인 인스턴스가 교체 상태면 해당 설비 정지 여부를 확인합니다.",
+        "lifePercentage": "수명 소진율(%)입니다. 80% 이상 노랑(경고), 100% 이상 빨강(교체)으로 표시됩니다.",
+        "currentCount": "이 인스턴스의 누적 사용 타수와 마스터에 설정된 수명 타수입니다. 실적 저장 시 누적됩니다.",
+        "remainingLife": "교체까지 남은 타수입니다. 수명을 넘기면 초과분이 + 로 빨갛게 표시됩니다.",
+        "lastReplaceAt": "이 인스턴스가 입고 확정된 일자입니다. 교체 후 새 UID로 입고되므로 마지막 교체 시점으로 봅니다."
+      }
     },
     "label": {
       "title": "소모품 라벨발행",
@@ -6128,7 +6382,16 @@
       "preview": "미리보기",
       "reprint": "재발행",
       "previewAria": "{{conUid}} 라벨 미리보기",
-      "reprintAria": "{{conUid}} 라벨 재발행"
+      "reprintAria": "{{conUid}} 라벨 재발행",
+      "fieldHelp": {
+        "consumableCode": "라벨을 발행할 소모품 마스터 코드입니다. 발행된 UID는 이 코드에 묶여 관리됩니다.",
+        "consumableName": "현장에서 부르는 소모품 이름입니다.",
+        "category": "소모품 분류(공통코드 CONSUMABLE_CATEGORY)입니다. 상단 카테고리 필터와 라벨 템플릿 선택 기준이 됩니다.",
+        "stockQty": "마스터 기준 현재 보유 수량입니다. 입고 확정(스캔) 시 1씩 늘어납니다.",
+        "instanceCount": "이 소모품으로 이미 발행된 UID(개별 인스턴스) 수입니다. 괄호 안 미입고는 라벨만 발행되고 아직 입고 스캔이 안 된 건수입니다.",
+        "pendingCount": "라벨은 발행됐지만 아직 입고 확정되지 않은 UID 수입니다. 이 값이 남아 있으면 추가 발행 전에 입고 처리를 먼저 확인합니다.",
+        "qty": "이번에 새로 발행할 UID 수량입니다(1~99). 입력한 수만큼 PENDING 상태 인스턴스가 만들어지고 라벨이 출력됩니다."
+      }
     },
     "search": {
       "title": "소모품 검색",
@@ -6160,7 +6423,17 @@
       "remarkPlaceholder": "비고 입력",
       "searchPlaceholder": "소모품코드, 소모품명 검색...",
       "completeRepairAction": "수리완료",
-      "completeRepairTitle": "수리 완료 처리"
+      "completeRepairTitle": "수리 완료 처리",
+      "fieldHelp": {
+        "consumableCode": "장착/해제 대상 소모품 마스터 코드입니다.",
+        "consumableName": "현장에서 부르는 소모품 이름입니다.",
+        "category": "소모품 분류(공통코드 CONSUMABLE_CATEGORY)입니다.",
+        "mountedEquipCode": "현재 장착된 설비 코드입니다. 장착 처리 시 기록되고 해제하면 비워집니다. 이미 장착된 소모품은 다른 설비에 장착할 수 없습니다.",
+        "lifeProgress": "마스터 기준 수명 소진율(%)입니다. 100% 이상이면 장착 설비에 인터락이 걸릴 수 있습니다.",
+        "location": "창고 보관 시 위치입니다. 장착할 소모품을 찾으러 갈 때 참고합니다.",
+        "equipCode": "소모품을 장착할 설비입니다. 저장하면 마스터의 장착 설비가 바뀌고 장착 이력이 남습니다.",
+        "remark": "장착/해제/수리 처리 사유나 메모입니다. 이력 조회에서 함께 보입니다."
+      }
     }
   },
   "outsourcing": {
@@ -9060,17 +9333,115 @@
     "legendReversal": "역처리",
     "legendReference": "참조",
     "knowledge": {
-      "tab": "지식 관계도", "title": "업무 지식 관계도", "description": "노드를 선택하면 한 단계 관계가 펼쳐집니다. 중심 이동은 상세 패널에서 명시적으로 실행합니다.", "selectExpand": "{{label}} 선택 및 관계 펼치기", "center": "중심", "currentCenter": "현재 중심", "relation": "관계", "condition": "조건: {{condition}}", "relationList": "관계 목록", "emptyRelations": "표시할 관계가 없습니다.", "evidenceLabel": "근거 {{status}}",
-      "search": { "label": "업무, 화면, 테이블 검색", "placeholder": "업무 · 화면 · 테이블 · 예외", "action": "검색", "aiAction": "AI로 질문 해석", "aiLoading": "AI 해석 중", "localResults": "로컬 카탈로그", "aiResults": "AI 후보", "noLocalResults": "일치하는 로컬 결과가 없습니다.", "noAiResults": "AI 후보가 없습니다.", "invalidCenter": "알 수 없는 중심점: {{center}}", "staleAi": "오래되었거나 유효하지 않은 AI 응답을 버렸습니다.", "aiUnavailable": "AI 해석을 사용할 수 없습니다.", "aiFailed": "AI 해석 요청에 실패했습니다." },
-      "layouts": { "mindmap": "마인드맵", "process": "프로세스", "relation": "관계" }, "views": { "business": "업무", "technical": "기술" },
-      "toolbar": { "label": "지식 지도 도구", "back": "뒤로", "forward": "앞으로", "reset": "초기화", "fit": "전체 보기", "copy": "링크 복사", "copySuccess": "링크를 복사했습니다.", "copyFailed": "링크를 복사하지 못했습니다." , "cursorSelect": "선택 · 노드 이동", "cursorPan": "손 · 화면 이동", "fullscreen": "전체화면", "exitFullscreen": "전체화면 종료", "recenter": "선택 노드를 중심으로"},
-      "categories": { "flow": "흐름", "masters": "기준정보", "constraints": "조건", "requiredTasks": "필수 작업", "exceptions": "예외", "logic": "로직", "tables": "데이터" },
-      "coverageStatus": { "present": "있음", "none": "없음", "undocumented": "미문서화" }, "evidenceStatus": { "verified": "검증됨", "partial": "일부", "undocumented": "미문서화" },
-      "filters": { "label": "관계 필터", "mobileLabel": "모바일 관계 필터", "mobileSummary": "모바일 관계 필터 · {{count}}개 범주", "channels": "관계 채널 · {{count}}", "evidenceHint": "근거는 의미 필터가 아니라 각 관계의 검증 상태로 표시됩니다." },
-      "canvas": { "label": "업무 지식 관계 캔버스", "minimap": "지식 지도 미니맵" },
-      "kinds": { "activity": "업무", "screen": "화면", "master": "기준", "constraint": "조건", "requiredTask": "필수", "exception": "예외", "logic": "로직", "data": "데이터", "evidence": "근거" },
-      "detail": { "label": "선택 지식 상세", "dossier": "노드 상세", "centerAction": "중심으로 보기", "noDescription": "설명 문서가 아직 연결되지 않았습니다.", "evidence": "근거 상태", "openScreen": "앱 화면 열기", "businessHeading": "업무 목적 · 시점 · 조건 · 예외", "technicalHeading": "라우트 · 데이터 · 근거", "incoming": "들어오는 관계", "outgoing": "나가는 관계", "noRelations": "연결 없음" },
-      "recovery": { "code": "중심점 없음", "title": "공유 링크의 중심점을 찾을 수 없습니다.", "description": "상단 검색에서 현재 카탈로그의 업무·화면·테이블을 선택해 복구하세요. 자동으로 다른 중심점으로 바꾸지 않았습니다." }
+      "tab": "지식 관계도",
+      "title": "업무 지식 관계도",
+      "description": "노드를 선택하면 한 단계 관계가 펼쳐집니다. 중심 이동은 상세 패널에서 명시적으로 실행합니다.",
+      "selectExpand": "{{label}} 선택 및 관계 펼치기",
+      "center": "중심",
+      "currentCenter": "현재 중심",
+      "relation": "관계",
+      "condition": "조건: {{condition}}",
+      "relationList": "관계 목록",
+      "emptyRelations": "표시할 관계가 없습니다.",
+      "evidenceLabel": "근거 {{status}}",
+      "search": {
+        "label": "업무, 화면, 테이블 검색",
+        "placeholder": "업무 · 화면 · 테이블 · 예외",
+        "action": "검색",
+        "aiAction": "AI로 질문 해석",
+        "aiLoading": "AI 해석 중",
+        "localResults": "로컬 카탈로그",
+        "aiResults": "AI 후보",
+        "noLocalResults": "일치하는 로컬 결과가 없습니다.",
+        "noAiResults": "AI 후보가 없습니다.",
+        "invalidCenter": "알 수 없는 중심점: {{center}}",
+        "staleAi": "오래되었거나 유효하지 않은 AI 응답을 버렸습니다.",
+        "aiUnavailable": "AI 해석을 사용할 수 없습니다.",
+        "aiFailed": "AI 해석 요청에 실패했습니다."
+      },
+      "layouts": {
+        "mindmap": "마인드맵",
+        "process": "프로세스",
+        "relation": "관계"
+      },
+      "views": {
+        "business": "업무",
+        "technical": "기술"
+      },
+      "toolbar": {
+        "label": "지식 지도 도구",
+        "back": "뒤로",
+        "forward": "앞으로",
+        "reset": "초기화",
+        "fit": "전체 보기",
+        "copy": "링크 복사",
+        "copySuccess": "링크를 복사했습니다.",
+        "copyFailed": "링크를 복사하지 못했습니다.",
+        "cursorSelect": "선택 · 노드 이동",
+        "cursorPan": "손 · 화면 이동",
+        "fullscreen": "전체화면",
+        "exitFullscreen": "전체화면 종료",
+        "recenter": "선택 노드를 중심으로"
+      },
+      "categories": {
+        "flow": "흐름",
+        "masters": "기준정보",
+        "constraints": "조건",
+        "requiredTasks": "필수 작업",
+        "exceptions": "예외",
+        "logic": "로직",
+        "tables": "데이터"
+      },
+      "coverageStatus": {
+        "present": "있음",
+        "none": "없음",
+        "undocumented": "미문서화"
+      },
+      "evidenceStatus": {
+        "verified": "검증됨",
+        "partial": "일부",
+        "undocumented": "미문서화"
+      },
+      "filters": {
+        "label": "관계 필터",
+        "mobileLabel": "모바일 관계 필터",
+        "mobileSummary": "모바일 관계 필터 · {{count}}개 범주",
+        "channels": "관계 채널 · {{count}}",
+        "evidenceHint": "근거는 의미 필터가 아니라 각 관계의 검증 상태로 표시됩니다."
+      },
+      "canvas": {
+        "label": "업무 지식 관계 캔버스",
+        "minimap": "지식 지도 미니맵"
+      },
+      "kinds": {
+        "activity": "업무",
+        "screen": "화면",
+        "master": "기준",
+        "constraint": "조건",
+        "requiredTask": "필수",
+        "exception": "예외",
+        "logic": "로직",
+        "data": "데이터",
+        "evidence": "근거"
+      },
+      "detail": {
+        "label": "선택 지식 상세",
+        "dossier": "노드 상세",
+        "centerAction": "중심으로 보기",
+        "noDescription": "설명 문서가 아직 연결되지 않았습니다.",
+        "evidence": "근거 상태",
+        "openScreen": "앱 화면 열기",
+        "businessHeading": "업무 목적 · 시점 · 조건 · 예외",
+        "technicalHeading": "라우트 · 데이터 · 근거",
+        "incoming": "들어오는 관계",
+        "outgoing": "나가는 관계",
+        "noRelations": "연결 없음"
+      },
+      "recovery": {
+        "code": "중심점 없음",
+        "title": "공유 링크의 중심점을 찾을 수 없습니다.",
+        "description": "상단 검색에서 현재 카탈로그의 업무·화면·테이블을 선택해 복구하세요. 자동으로 다른 중심점으로 바꾸지 않았습니다."
+      }
     }
   }
 }

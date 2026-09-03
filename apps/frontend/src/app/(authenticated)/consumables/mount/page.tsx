@@ -25,6 +25,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import Modal from "@/components/ui/Modal";
 import api from "@/services/api";
 import { createConsumableMountGridColumns, type ConsumableItem } from "./consumableMountColumns";
+import { Field, FieldInput } from "./consumableMountFieldHelp";
 
 interface MountLog {
   mountDate: string;
@@ -216,16 +217,18 @@ export default function ConsumableMountPage() {
             </div>
 
             {actionType === "mount" && (
-              <EquipSelect
-                label={t("consumables.mount.targetEquip")}
-                value={equipCode}
-                onChange={setEquipCode}
-                fullWidth
-                required
-              />
+              <Field field="equipCode" label={t("consumables.mount.targetEquip")} required>
+                <EquipSelect
+                  value={equipCode}
+                  onChange={setEquipCode}
+                  fullWidth
+                  required
+                />
+              </Field>
             )}
 
-            <Input
+            <FieldInput
+              field="remark"
               label={t("common.remark")}
               value={remark}
               onChange={(e) => setRemark(e.target.value)}

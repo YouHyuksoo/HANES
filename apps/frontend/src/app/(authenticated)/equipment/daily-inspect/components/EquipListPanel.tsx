@@ -12,6 +12,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Info, Search, ChevronRight } from "lucide-react";
+import { FieldHelpIcon } from "../dailyInspectFieldHelp";
 
 export interface EquipTarget {
   equipCode: string;
@@ -116,8 +117,9 @@ export default function EquipListPanel({
     <div className="bg-surface border border-border rounded-xl flex flex-col overflow-hidden shadow-sm">
       {/* 헤더 */}
       <div className="p-3 border-b border-border">
-        <div className="text-sm font-semibold">
-          {title ?? t("equipment.dailyInspect.todayTargets")}
+        <div className="text-sm font-semibold flex items-center gap-1">
+          <span>{title ?? t("equipment.dailyInspect.todayTargets")}</span>
+          <FieldHelpIcon field="equipCode" />
         </div>
         <div className="text-xs text-text-muted mt-0.5">
           {t("equipment.dailyInspect.doneCount", "완료 {{done}}/{{total}}", { done: stats.done, total: stats.total })}
@@ -148,6 +150,9 @@ export default function EquipListPanel({
           <option value="done-ok">{t("equipment.dailyInspect.statusDoneOk", "완료(OK)")}</option>
           <option value="done-ng">{t("equipment.dailyInspect.statusDoneNg", "완료(NG)")}</option>
         </select>
+        <span className="inline-flex items-center">
+          <FieldHelpIcon field="status" />
+        </span>
       </div>
 
       {/* 목록 */}

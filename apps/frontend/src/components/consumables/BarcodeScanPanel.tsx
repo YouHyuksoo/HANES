@@ -19,6 +19,7 @@ import { ComCodeBadge } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { useLocationOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
+import { headerWithHelp } from "./barcodeScanFieldHelp";
 
 type ScanMode = "receiving" | "return";
 
@@ -94,19 +95,19 @@ export default function BarcodeScanPanel({ onScanSuccess }: BarcodeScanPanelProp
 
   const pendingColumns = useMemo<ColumnDef<PendingStock>[]>(
     () => [
-      { accessorKey: "conUid", header: t("consumables.stock.conUid"), size: 150 },
-      { accessorKey: "consumableCode", header: t("consumables.comp.consumableCode"), size: 120 },
-      { accessorKey: "consumableName", header: t("consumables.comp.consumableName"), size: 150 },
+      { accessorKey: "conUid", header: headerWithHelp("conUid", t("consumables.stock.conUid")), size: 150 },
+      { accessorKey: "consumableCode", header: headerWithHelp("consumableCode", t("consumables.comp.consumableCode")), size: 120 },
+      { accessorKey: "consumableName", header: headerWithHelp("consumableName", t("consumables.comp.consumableName")), size: 150 },
       {
         accessorKey: "category",
-        header: t("consumables.comp.category"),
+        header: headerWithHelp("category", t("consumables.comp.category")),
         size: 90,
         cell: ({ getValue }) => (
           <ComCodeBadge groupCode="CONSUMABLE_CATEGORY" code={getValue() as string} />
         ),
       },
-      { accessorKey: "labelPrintedAt", header: t("consumables.receiving.labelPrintedAt"), size: 140 },
-      { accessorKey: "vendorName", header: t("consumables.comp.vendorName"), size: 120 },
+      { accessorKey: "labelPrintedAt", header: headerWithHelp("labelPrintedAt", t("consumables.receiving.labelPrintedAt")), size: 140 },
+      { accessorKey: "vendorName", header: headerWithHelp("vendorName", t("consumables.comp.vendorName")), size: 120 },
     ],
     [t],
   );
