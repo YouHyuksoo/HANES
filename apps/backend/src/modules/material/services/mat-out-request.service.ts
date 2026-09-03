@@ -160,30 +160,39 @@ export class MatOutRequestService {
       throw new BadRequestException(`Insufficient physical stock. Current qty: ${stock.qty}`);
     }
 
-    await this.matStockRepo.update(
-      {
+    return this.tx.run(async (queryRunner) => {
+      const claimed = await queryRunner.manager.createQueryBuilder()
+        .update(StockTransaction)
+        .set({ status: 'DONE', approverId, approvedAt: new Date() })
+        .where({ transNo, ...txTenantWhere })
+        .andWhere('"STATUS" = :pendingStatus')
+        .setParameters({ pendingStatus: 'PENDING_APPROVAL' })
+        .execute();
+      if ((claimed.affected ?? 0) !== 1) {
+        throw new BadRequestException('이미 처리되었거나 동시에 처리 중인 출고요청입니다.');
+      }
+
+      const changed = await queryRunner.manager.createQueryBuilder()
+        .update(MatStock)
+        .set({
+          qty: () => '"QTY" - :stockDelta',
+          reservedQty: () => '"RESERVED_QTY" - :stockDelta',
+        })
+        .where({
         warehouseCode: stock.warehouseCode,
         itemCode: tx.itemCode,
         ...(tx.matUid ? { matUid: tx.matUid } : {}),
         ...txTenantWhere,
-      },
-      {
-        qty: stock.qty - absQty,
-        reservedQty: Math.max(0, (stock.reservedQty ?? 0) - absQty),
-        availableQty: Math.max(0, stock.qty - absQty - Math.max(0, (stock.reservedQty ?? 0) - absQty)),
-      },
-    );
+        })
+        .andWhere('"QTY" >= :stockDelta AND "RESERVED_QTY" >= :stockDelta')
+        .setParameters({ stockDelta: absQty })
+        .execute();
+      if ((changed.affected ?? 0) !== 1) {
+        throw new BadRequestException('동시 처리로 재고 또는 예약수량이 변경되었습니다. 다시 조회해 주세요.');
+      }
 
-    await this.stockTxRepo.update(
-      { transNo, ...txTenantWhere },
-      {
-        status: 'DONE',
-        approverId,
-        approvedAt: new Date(),
-      },
-    );
-
-    return { transNo, status: 'DONE' };
+      return { transNo, status: 'DONE' };
+    });
   }
 
   async reject(transNo: string, approverId: string, company?: string, plant?: string) {
@@ -192,17 +201,7 @@ export class MatOutRequestService {
     this.assertSameTenant('자재출고요청 거래', tx, company, plant);
     if (tx.status !== 'PENDING_APPROVAL') throw new BadRequestException('Transaction is not pending approval.');
 
-    await this.unlockStock(tx);
-    await this.stockTxRepo.update(
-      { transNo, ...this.tenantWhere(tx.company, tx.plant) },
-      {
-        status: 'REJECTED',
-        approverId,
-        approvedAt: new Date(),
-      },
-    );
-
-    return { transNo, status: 'REJECTED' };
+    return this.releaseReservationAndSetStatus(tx, 'REJECTED', approverId);
   }
 
   async cancel(transNo: string, company?: string, plant?: string) {
@@ -213,37 +212,26 @@ export class MatOutRequestService {
       throw new BadRequestException('Only pending approval transaction can be canceled.');
     }
 
-    await this.unlockStock(tx);
-    await this.stockTxRepo.update({ transNo, ...this.tenantWhere(tx.company, tx.plant) }, { status: 'CANCELED' });
-    return { transNo, status: 'CANCELED' };
+    return this.releaseReservationAndSetStatus(tx, 'CANCELED');
   }
 
-  private async unlockStock(tx: StockTransaction) {
-    if (!tx.matUid) return;
-
-    const stock = await this.matStockRepo.findOne({
-      where: {
-        ...(tx.fromWarehouseId ? { warehouseCode: tx.fromWarehouseId } : {}),
-        matUid: tx.matUid,
-        itemCode: tx.itemCode,
-        ...this.tenantWhere(tx.company, tx.plant),
-      },
-    });
-
-    if (!stock) return;
-
+  private async releaseReservationAndSetStatus(tx: StockTransaction, status: 'REJECTED' | 'CANCELED', approverId?: string) {
     const absQty = Math.abs(tx.qty);
-    await this.matStockRepo.update(
-      {
-        warehouseCode: stock.warehouseCode,
-        itemCode: tx.itemCode,
-        matUid: tx.matUid,
-        ...this.tenantWhere(tx.company, tx.plant),
-      },
-      {
-        reservedQty: Math.max(0, (stock.reservedQty ?? 0) - absQty),
-        availableQty: stock.qty - Math.max(0, (stock.reservedQty ?? 0) - absQty),
-      },
-    );
+    return this.tx.run(async (qr) => {
+      const claimed = await qr.manager.createQueryBuilder().update(StockTransaction)
+        .set({ status, ...(approverId ? { approverId, approvedAt: new Date() } : {}) })
+        .where({ transNo: tx.transNo, ...this.tenantWhere(tx.company, tx.plant) })
+        .andWhere('"STATUS" = :pendingStatus').setParameters({ pendingStatus: 'PENDING_APPROVAL' }).execute();
+      if ((claimed.affected ?? 0) !== 1) throw new BadRequestException('이미 처리되었거나 동시에 처리 중인 출고요청입니다.');
+
+      if (tx.matUid) {
+        const released = await qr.manager.createQueryBuilder().update(MatStock)
+          .set({ reservedQty: () => '"RESERVED_QTY" - :stockDelta', availableQty: () => '"AVAILABLE_QTY" + :stockDelta' })
+          .where({ ...(tx.fromWarehouseId ? { warehouseCode: tx.fromWarehouseId } : {}), matUid: tx.matUid, itemCode: tx.itemCode, ...this.tenantWhere(tx.company, tx.plant) })
+          .andWhere('"RESERVED_QTY" >= :stockDelta').setParameters({ stockDelta: absQty }).execute();
+        if ((released.affected ?? 0) !== 1) throw new BadRequestException('동시 처리로 예약재고가 변경되었습니다. 다시 조회해 주세요.');
+      }
+      return { transNo: tx.transNo, status };
+    });
   }
 }

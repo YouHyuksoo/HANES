@@ -197,6 +197,8 @@ describe('MatOutRequestService', () => {
 
       await (service as any).approve('TX-001', 'approver', 'HANES', 'P01');
 
+      expect(tx.run).toHaveBeenCalledTimes(1);
+
       expect(stockTxRepo.findOne).toHaveBeenCalledWith({
         where: { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
       });
@@ -212,20 +214,10 @@ describe('MatOutRequestService', () => {
           plant: 'P01',
         },
       });
-      expect(matStockRepo.update).toHaveBeenCalledWith(
-        {
-          warehouseCode: 'WH-01',
-          itemCode: 'ITEM-001',
-          matUid: 'MAT-001',
-          company: 'HANES',
-          plant: 'P01',
-        },
-        expect.objectContaining({ qty: 7, reservedQty: 2, availableQty: 5 }),
-      );
-      expect(stockTxRepo.update).toHaveBeenCalledWith(
-        { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
-        expect.objectContaining({ status: 'DONE', approverId: 'approver' }),
-      );
+      expect(stockQb.update).toHaveBeenCalledWith(StockTransaction);
+      expect(stockQb.update).toHaveBeenCalledWith(MatStock);
+      expect(stockQb.andWhere).toHaveBeenCalledWith('"STATUS" = :pendingStatus');
+      expect(stockQb.andWhere).toHaveBeenCalledWith('"QTY" >= :stockDelta AND "RESERVED_QTY" >= :stockDelta');
     });
 
     it('rejects approve when the request transaction belongs to a different tenant', async () => {
@@ -277,10 +269,8 @@ describe('MatOutRequestService', () => {
 
       await service.reject('TX-001', 'approver');
 
-      expect(matStockRepo.update).toHaveBeenCalledWith(
-        { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001' },
-        expect.objectContaining({ reservedQty: 2, availableQty: 8 }),
-      );
+      expect(stockQb.andWhere).toHaveBeenCalledWith('"RESERVED_QTY" >= :stockDelta');
+      expect(stockQb.setParameters).toHaveBeenCalledWith({ stockDelta: 3 });
     });
 
     it('reject는 요청 트랜잭션의 회사/공장/출고창고 범위에서 예약재고를 해제한다', async () => {
@@ -310,29 +300,10 @@ describe('MatOutRequestService', () => {
       expect(stockTxRepo.findOne).toHaveBeenCalledWith({
         where: { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
       });
-      expect(matStockRepo.findOne).toHaveBeenCalledWith({
-        where: {
-          warehouseCode: 'WH-01',
-          matUid: 'MAT-001',
-          itemCode: 'ITEM-001',
-          company: 'HANES',
-          plant: 'P01',
-        },
+      expect(stockQb.where).toHaveBeenCalledWith({
+        warehouseCode: 'WH-01', matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'HANES', plant: 'P01',
       });
-      expect(matStockRepo.update).toHaveBeenCalledWith(
-        {
-          warehouseCode: 'WH-01',
-          itemCode: 'ITEM-001',
-          matUid: 'MAT-001',
-          company: 'HANES',
-          plant: 'P01',
-        },
-        expect.objectContaining({ reservedQty: 2, availableQty: 8 }),
-      );
-      expect(stockTxRepo.update).toHaveBeenCalledWith(
-        { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
-        expect.objectContaining({ status: 'REJECTED', approverId: 'approver' }),
-      );
+      expect(tx.run).toHaveBeenCalledTimes(1);
     });
 
     it('rejects reject when the request transaction belongs to a different tenant', async () => {
