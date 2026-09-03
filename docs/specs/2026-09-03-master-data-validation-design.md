@@ -47,8 +47,7 @@
 
 ```
 validation/
-  master-validation.module.ts
-  master-validation.controller.ts
+  master-validation.controller.ts   # master.module.ts에 직접 등록 (별도 module 파일 없음 — 구조 단순화)
   master-validation.service.ts
   rules/
     validation-rule.types.ts      # ValidationRule 인터페이스

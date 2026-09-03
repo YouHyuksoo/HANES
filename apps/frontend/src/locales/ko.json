@@ -344,6 +344,7 @@
     "master.label": "라벨다자인관리",
     "master.vendorBarcode": "제조사 바코드 매핑",
     "master.processCapa": "공정 CAPA",
+    "master.validation": "기준정보검증",
     "matInventory": "자재재고관리",
     "productInventory": "제품재고관리",
     "inventory": "재고관리",
@@ -2983,8 +2984,8 @@
       "status": {
         "requested": "요청",
         "approved": "승인",
-        "completed": "완료",
         "partial": "부분출고",
+        "completed": "완료",
         "rejected": "반려"
       },
       "modalTitle": "출고요청",
@@ -3088,13 +3089,13 @@
       "scanHistoryTitle": "금일 스캔 출고 이력",
       "noScanHistory": "스캔 출고 이력이 없습니다.",
       "scanTime": "시간",
-      "history": {
       "processLabel": "출고 공정",
       "processRequired": "출고 공정을 선택하세요.",
       "jobOrderLabel": "작업지시",
       "selectJobOrder": "작업지시 선택",
       "noJobOrder": "미지정 시 요청 자동 배분",
       "allocatedTo": "배분",
+      "history": {
         "tabTitle": "출고이력",
         "issueNo": "출고번호",
         "issueDate": "출고일",
@@ -8330,6 +8331,46 @@
       "PRC-TAPE": "테이핑",
       "PRC-TEST": "검사",
       "PRC-PACK": "포장"
+    }
+  },
+  "validation": {
+    "title": "기준정보검증",
+    "run": "검증 실행",
+    "running": "검증 중...",
+    "lastRun": "마지막 실행",
+    "showOkRules": "정상 규칙도 표시",
+    "copyKey": "키 복사",
+    "copied": "복사됨",
+    "goToScreen": "화면 이동",
+    "category": {
+      "REF_INTEGRITY": "참조 무결성",
+      "INACTIVE_REF": "비활성 참조",
+      "DATA_QUALITY": "데이터 품질",
+      "BIZ_REVERSE_REF": "운영 역참조"
+    },
+    "status": {
+      "OK": "정상",
+      "VIOLATION": "위반",
+      "ERROR": "오류"
+    },
+    "summary": {
+      "errors": "ERROR 건수",
+      "warns": "WARN 건수",
+      "violatedRules": "위반 규칙",
+      "failedRules": "실패 규칙"
+    },
+    "col": {
+      "category": "카테고리",
+      "severity": "심각도",
+      "ruleId": "규칙ID",
+      "ruleName": "규칙명",
+      "count": "위반건수",
+      "status": "상태"
+    },
+    "empty": {
+      "prompt": "카테고리를 선택하고 [검증 실행]을 누르세요.",
+      "noViolation": "위반 사항이 없습니다.",
+      "noRows": "표시할 행이 없습니다."
     }
   },
   "processCapa": {

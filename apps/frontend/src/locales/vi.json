@@ -344,6 +344,7 @@
     "master.label": "Quản lý nhãn",
     "master.vendorBarcode": "Ánh xạ mã vạch nhà cung cấp",
     "master.processCapa": "Năng lực công đoạn",
+    "master.validation": "Kiểm tra dữ liệu chuẩn",
     "matInventory": "Quản lý kho vật tư",
     "productInventory": "Quản lý kho sản phẩm",
     "inventory": "Quản lý kho",
@@ -2573,8 +2574,8 @@
       "status": {
         "requested": "Đã yêu cầu",
         "approved": "Đã phê duyệt",
-        "completed": "Hoàn thành",
         "partial": "Xuất một phần",
+        "completed": "Hoàn thành",
         "rejected": "Từ chối"
       },
       "modalTitle": "Yêu cầu xuất kho",
@@ -2678,13 +2679,13 @@
       "scanHistoryTitle": "Lịch sử xuất kho quét hôm nay",
       "noScanHistory": "Không có lịch sử xuất kho quét.",
       "scanTime": "Thời gian",
-      "history": {
       "processLabel": "Công đoạn xuất kho",
       "processRequired": "Vui lòng chọn công đoạn xuất kho.",
       "jobOrderLabel": "Lệnh sản xuất",
       "selectJobOrder": "Chọn lệnh sản xuất",
       "noJobOrder": "Không chọn thì tự động phân bổ cho yêu cầu",
       "allocatedTo": "Phân bổ",
+      "history": {
         "tabTitle": "Lịch sử xuất kho",
         "issueNo": "Mã xuất kho",
         "issueDate": "Ngày xuất",
@@ -8323,6 +8324,46 @@
       "PRC-TAPE": "Quấn băng",
       "PRC-TEST": "Kiểm tra",
       "PRC-PACK": "Đóng gói"
+    }
+  },
+  "validation": {
+    "title": "Kiểm tra dữ liệu chuẩn",
+    "run": "Chạy kiểm tra",
+    "running": "Đang chạy...",
+    "lastRun": "Chạy lần cuối",
+    "showOkRules": "Hiện cả rule OK",
+    "copyKey": "Sao chép khóa",
+    "copied": "Đã sao chép",
+    "goToScreen": "Mở màn hình",
+    "category": {
+      "REF_INTEGRITY": "Toàn vẹn tham chiếu",
+      "INACTIVE_REF": "Tham chiếu ngừng dùng",
+      "DATA_QUALITY": "Chất lượng dữ liệu",
+      "BIZ_REVERSE_REF": "Tham chiếu ngược vận hành"
+    },
+    "status": {
+      "OK": "OK",
+      "VIOLATION": "Vi phạm",
+      "ERROR": "Lỗi"
+    },
+    "summary": {
+      "errors": "Số ERROR",
+      "warns": "Số WARN",
+      "violatedRules": "Rule vi phạm",
+      "failedRules": "Rule lỗi"
+    },
+    "col": {
+      "category": "Nhóm",
+      "severity": "Mức độ",
+      "ruleId": "Mã rule",
+      "ruleName": "Tên rule",
+      "count": "Số vi phạm",
+      "status": "Trạng thái"
+    },
+    "empty": {
+      "prompt": "Chọn nhóm và nhấn [Chạy kiểm tra].",
+      "noViolation": "Không có vi phạm.",
+      "noRows": "Không có dữ liệu."
     }
   },
   "processCapa": {

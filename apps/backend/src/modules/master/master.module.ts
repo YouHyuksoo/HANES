@@ -64,6 +64,8 @@ import { ProcessCapaController } from './controllers/process-capa.controller';
 import { ProcessCapaService } from './services/process-capa.service';
 import { WorkCalendarController } from './controllers/work-calendar.controller';
 import { WorkCalendarService } from './services/work-calendar.service';
+import { MasterValidationController } from './validation/master-validation.controller';
+import { MasterValidationService } from './validation/master-validation.service';
 
 // TypeORM Entities
 import { ItemMaster } from '../../entities/item-master.entity';
@@ -180,6 +182,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     ShiftPatternController,
     WorkCalendarController,
     ProcessCapaController,
+    MasterValidationController,
   ],
   providers: [
     ComCodeService,
@@ -209,6 +212,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     ShiftPatternService,
     WorkCalendarService,
     ProcessCapaService,
+    MasterValidationService,
   ],
   exports: [
     ComCodeService,

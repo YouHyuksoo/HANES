@@ -73,6 +73,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "MST_LABEL", labelKey: "menu.master.label", path: "/master/label" },
       { code: "MST_VENDOR_BARCODE", labelKey: "menu.master.vendorBarcode", path: "/master/vendor-barcode" },
       { code: "MST_PROCESS_CAPA", labelKey: "menu.master.processCapa", path: "/master/process-capa" },
+      { code: "MST_VALIDATION", labelKey: "menu.master.validation", path: "/master/validation" },
       { code: "SYS_DOCUMENT", labelKey: "menu.system.document", path: "/system/document" },
     ],
   },

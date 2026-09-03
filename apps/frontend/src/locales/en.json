@@ -344,6 +344,7 @@
     "master.label": "Label Mgmt",
     "master.vendorBarcode": "Vendor Barcode Mapping",
     "master.processCapa": "Process CAPA",
+    "master.validation": "Master Data Validation",
     "matInventory": "Material Inventory",
     "productInventory": "Product Inventory",
     "inventory": "Inventory",
@@ -2573,8 +2574,8 @@
       "status": {
         "requested": "Requested",
         "approved": "Approved",
-        "completed": "Completed",
         "partial": "Partial",
+        "completed": "Completed",
         "rejected": "Rejected"
       },
       "modalTitle": "Issue Request",
@@ -2678,13 +2679,13 @@
       "scanHistoryTitle": "Today's Scan Issue History",
       "noScanHistory": "No scan issue history.",
       "scanTime": "Time",
-      "history": {
       "processLabel": "Issue Process",
       "processRequired": "Select the issue process.",
       "jobOrderLabel": "Job Order",
       "selectJobOrder": "Select Job Order",
       "noJobOrder": "Auto-allocate to requests if unset",
       "allocatedTo": "Allocated",
+      "history": {
         "tabTitle": "Issue History",
         "issueNo": "Issue No.",
         "issueDate": "Issue Date",
@@ -8323,6 +8324,46 @@
       "PRC-TAPE": "Taping",
       "PRC-TEST": "Inspection",
       "PRC-PACK": "Packing"
+    }
+  },
+  "validation": {
+    "title": "Master Data Validation",
+    "run": "Run Validation",
+    "running": "Running...",
+    "lastRun": "Last run",
+    "showOkRules": "Show OK rules",
+    "copyKey": "Copy key",
+    "copied": "Copied",
+    "goToScreen": "Open screen",
+    "category": {
+      "REF_INTEGRITY": "Referential Integrity",
+      "INACTIVE_REF": "Inactive Reference",
+      "DATA_QUALITY": "Data Quality",
+      "BIZ_REVERSE_REF": "Biz Reverse Ref"
+    },
+    "status": {
+      "OK": "OK",
+      "VIOLATION": "Violation",
+      "ERROR": "Error"
+    },
+    "summary": {
+      "errors": "Errors",
+      "warns": "Warnings",
+      "violatedRules": "Violated Rules",
+      "failedRules": "Failed Rules"
+    },
+    "col": {
+      "category": "Category",
+      "severity": "Severity",
+      "ruleId": "Rule ID",
+      "ruleName": "Rule",
+      "count": "Violations",
+      "status": "Status"
+    },
+    "empty": {
+      "prompt": "Select categories and click [Run Validation].",
+      "noViolation": "No violations found.",
+      "noRows": "No rows to display."
     }
   },
   "processCapa": {

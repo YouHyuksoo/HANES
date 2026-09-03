@@ -344,6 +344,7 @@
     "master.label": "标签管理",
     "master.vendorBarcode": "供应商条码映射",
     "master.processCapa": "工序产能",
+    "master.validation": "主数据校验",
     "matInventory": "材料库存管理",
     "productInventory": "产品库存管理",
     "inventory": "库存管理",
@@ -2573,8 +2574,8 @@
       "status": {
         "requested": "已申请",
         "approved": "已审批",
-        "completed": "已完成",
         "partial": "部分出库",
+        "completed": "已完成",
         "rejected": "已驳回"
       },
       "modalTitle": "出库请求",
@@ -2678,13 +2679,13 @@
       "scanHistoryTitle": "今日扫描出库记录",
       "noScanHistory": "没有扫描出库记录。",
       "scanTime": "时间",
-      "history": {
       "processLabel": "出库工序",
       "processRequired": "请选择出库工序。",
       "jobOrderLabel": "作业指示",
       "selectJobOrder": "选择作业指示",
       "noJobOrder": "未指定时自动分配至申请",
       "allocatedTo": "分配",
+      "history": {
         "tabTitle": "出库记录",
         "issueNo": "出库编号",
         "issueDate": "出库日期",
@@ -8323,6 +8324,46 @@
       "PRC-TAPE": "缠胶带",
       "PRC-TEST": "检查",
       "PRC-PACK": "包装"
+    }
+  },
+  "validation": {
+    "title": "主数据校验",
+    "run": "执行校验",
+    "running": "校验中...",
+    "lastRun": "上次执行",
+    "showOkRules": "显示正常规则",
+    "copyKey": "复制键值",
+    "copied": "已复制",
+    "goToScreen": "打开画面",
+    "category": {
+      "REF_INTEGRITY": "引用完整性",
+      "INACTIVE_REF": "停用引用",
+      "DATA_QUALITY": "数据质量",
+      "BIZ_REVERSE_REF": "业务反向引用"
+    },
+    "status": {
+      "OK": "正常",
+      "VIOLATION": "违规",
+      "ERROR": "错误"
+    },
+    "summary": {
+      "errors": "ERROR 数",
+      "warns": "WARN 数",
+      "violatedRules": "违规规则",
+      "failedRules": "失败规则"
+    },
+    "col": {
+      "category": "分类",
+      "severity": "严重度",
+      "ruleId": "规则ID",
+      "ruleName": "规则名",
+      "count": "违规数",
+      "status": "状态"
+    },
+    "empty": {
+      "prompt": "请选择分类后点击 [执行校验]。",
+      "noViolation": "没有违规项。",
+      "noRows": "没有可显示的行。"
     }
   },
   "processCapa": {
