@@ -2,232 +2,170 @@
 
 /**
  * @file src/app/(authenticated)/dashboard/page.tsx
- * @description 대시보드 페이지 — 설비/작업지시/자재/품질 현황 + 점검 요약
+ * @description 대시보드 — 형태(레이아웃) × 색상(스킨) 두 축으로 갈아입는다.
+ *
+ *   형태 4종 (components/layouts.ts)
+ *     콕핏   CockpitLayout : 오늘의 한 줄 → 가치흐름 리본 → 리듬/점검 → 조치 큐 (기본)
+ *     전광판 BoardLayout   : 초대형 숫자 + 작업지시 출발 전광판(자동 순환) + 조치 큐
+ *     노선도 FlowMapLayout : 물류/설비 라인의 역을 눌러 그 단계의 조치만 본다
+ *     시계판 RadialLayout  : 24시간 원형 시계판 + 단계 압력 링 + 지금 바늘
+ *   색상 3종 (components/skins.ts) — A 관제탑 / B 출발 전광판 / C 데이터 월. CSS 변수 오버라이드.
+ *
+ * 두 축은 독립이라 어떤 조합도 동작한다. 선택은 각각 localStorage(dashboard:layout / dashboard:skin)에 남고,
+ * TV 모드는 모니터링 보드와 같은 전체화면 오버레이다.
  *
  * 초보자 가이드:
- * 1. **현황 카드 4개**: 설비 가동, 작업지시 진행, 자재 알림, 품질 이슈
- * 2. **점검 현황**: 일상점검, 정기점검, 예방보전(PM WO) 오늘 기준 요약
- * 3. API: /equipment/equips/stats, /production/job-orders, /material/stocks,
- *         /material/shelf-life, /quality/defect-logs/stats/by-status
+ * - 데이터/갱신은 useDashboardData, 예외 큐 산출은 buildAttention(순수 함수) 에 있다.
+ * - 이 파일은 헤더 + 두 전환 그룹 + 형태 분기만 담당한다. 화면 구조는 각 Layout 컴포넌트에 있다.
+ * - 색은 의미 토큰(text-primary/error/warning/success, border-border)만 쓴다. 파스텔 배경·카드박스 금지.
  */
-import { useState, useEffect, useCallback } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Cpu, ClipboardList, PackageSearch, Bug,
-  LayoutDashboard, RefreshCw,
-  ClipboardCheck, CalendarCheck, Wrench,
-} from "lucide-react";
+import { Maximize2, Minimize2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui";
-import InspectSummaryCard from "./components/InspectSummaryCard";
-import type { InspectItem } from "./components/InspectSummaryCard";
-import api from "@/services/api";
+import { useNow, formatClock } from "@/components/monitoring/BoardClock";
+import { useBoardSkin, useTvMode } from "@/components/monitoring";
+import {
+  DASHBOARD_DEFAULT_SKIN, DASHBOARD_SKIN_IDS, DASHBOARD_SKIN_STORAGE_KEY, DASHBOARD_SKINS, type DashboardSkinId,
+} from "./components/skins";
+import {
+  DASHBOARD_DEFAULT_LAYOUT, DASHBOARD_LAYOUT_IDS, DASHBOARD_LAYOUT_STORAGE_KEY, DASHBOARD_LAYOUTS, type DashboardLayoutId,
+} from "./components/layouts";
+import { useDashboardData } from "./components/useDashboardData";
+import { buildAttention, attentionTotal } from "./components/buildAttention";
+import CockpitLayout from "./components/CockpitLayout";
+import BoardLayout from "./components/BoardLayout";
+import FlowMapLayout from "./components/FlowMapLayout";
+import RadialLayout from "./components/RadialLayout";
 
-/* ── Status Card ── */
-interface StatusCardProps {
-  title: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-  gradient: string;
-  items: { label: string; value: number; accent?: string }[];
-}
+const MOTION_CSS = `
+@keyframes ds-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.ds-rise { animation: ds-rise .55s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes ds-flow { to { stroke-dashoffset: -28; } }
+.ds-flow { animation: ds-flow 1.2s linear infinite; }
+@keyframes ds-blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+.ds-blink { animation: ds-blink 1.4s ease-in-out infinite; }
+@keyframes ds-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.ds-grow { transform-origin: bottom; animation: ds-grow .6s cubic-bezier(.2,.7,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { .ds-rise, .ds-flow, .ds-blink, .ds-grow { animation: none; } }
+`;
 
-function StatusCard({ title, icon: Icon, color, gradient, items }: StatusCardProps) {
-  return (
-    <div className={`p-[1.5px] rounded-2xl ${gradient}`}>
-      <div className="bg-card rounded-2xl p-3 h-full">
-        <div className="flex items-center gap-2 mb-3">
-          <Icon className={`w-4 h-4 ${color}`} />
-          <span className="text-xs font-semibold text-text">{title}</span>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          {items.map((item) => (
-            <div key={item.label} className="text-center p-1.5 rounded-md bg-surface dark:bg-slate-800/50">
-              <div className={`text-lg font-bold leading-tight ${item.accent || "text-text"}`}>
-                {item.value}
-              </div>
-              <div className="text-[10px] text-text-muted mt-0.5">{item.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+const LAYOUT_COMPONENT = {
+  cockpit: CockpitLayout,
+  board: BoardLayout,
+  map: FlowMapLayout,
+  radial: RadialLayout,
+} as const satisfies Record<DashboardLayoutId, React.ComponentType<React.ComponentProps<typeof CockpitLayout>>>;
 
-/* ── Types ── */
-interface EquipStats {
-  normal: number; maint: number; stop: number; total: number;
-}
-interface JobStats {
-  wait: number; running: number; done: number; total: number;
-}
-interface MatAlert {
-  lowStock: number; nearExpiry: number; expired: number;
-}
-interface DefectStats {
-  wait: number; repair: number; rework: number; done: number; total: number;
-}
-
-interface InspectSummary {
-  items: InspectItem[];
-  total: number;
-  completed: number;
-  pass: number;
-  fail: number;
-}
-
-const emptySummary: InspectSummary = { items: [], total: 0, completed: 0, pass: 0, fail: 0 };
-
-function formatDate(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+const segBtn = (active: boolean) =>
+  `h-7 min-w-7 px-1.5 rounded text-xs font-bold flex items-center justify-center transition-colors ${
+    active ? "bg-primary text-primary-foreground" : "text-text-muted hover:text-text hover:bg-muted"
+  }`;
 
 export default function DashboardPage() {
   const { t } = useTranslation();
-  const [equip, setEquip] = useState<EquipStats>({ normal: 0, maint: 0, stop: 0, total: 0 });
-  const [job, setJob] = useState<JobStats>({ wait: 0, running: 0, done: 0, total: 0 });
-  const [mat, setMat] = useState<MatAlert>({ lowStock: 0, nearExpiry: 0, expired: 0 });
-  const [defect, setDefect] = useState<DefectStats>({ wait: 0, repair: 0, rework: 0, done: 0, total: 0 });
-  const [daily, setDaily] = useState<InspectSummary>(emptySummary);
-  const [periodic, setPeriodic] = useState<InspectSummary>(emptySummary);
-  const [pm, setPm] = useState<InspectSummary>(emptySummary);
-  const [loading, setLoading] = useState(false);
-  const [inspectLoading, setInspectLoading] = useState(false);
+  const { data, loading, updatedAt, refresh } = useDashboardData();
+  const now = useNow();
+  const clock = now ? formatClock(now) : null;
 
-  const today = formatDate(new Date());
+  const attention = useMemo(() => buildAttention(data), [data]);
+  const attentionCount = attentionTotal(attention);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setInspectLoading(true);
-    try {
-      const res = await api.get("/dashboard/summary", { params: { date: today } });
-      const { equip, job, mat, defect, daily, periodic, pm } = res.data.data;
-
-      if (equip) setEquip(equip);
-      if (job) setJob(job);
-      if (mat) setMat(mat);
-      if (defect) setDefect(defect);
-      if (daily) setDaily(daily);
-      if (periodic) setPeriodic(periodic);
-      if (pm) setPm(pm);
-    } catch {
-      /* keep current state */
-    } finally {
-      setLoading(false);
-      setInspectLoading(false);
-    }
-  }, [today]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const { skin: layoutId, setSkin: setLayout } = useBoardSkin<DashboardLayoutId>(DASHBOARD_LAYOUT_STORAGE_KEY, DASHBOARD_LAYOUT_IDS, DASHBOARD_DEFAULT_LAYOUT);
+  const { skin: skinId, setSkin } = useBoardSkin<DashboardSkinId>(DASHBOARD_SKIN_STORAGE_KEY, DASHBOARD_SKIN_IDS, DASHBOARD_DEFAULT_SKIN);
+  const { tvMode, toggleTvMode } = useTvMode();
+  const skin = DASHBOARD_SKINS.find((item) => item.id === skinId) ?? DASHBOARD_SKINS[0];
+  const Layout = LAYOUT_COMPONENT[layoutId];
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
-      {/* Header */}
-      <div className="flex justify-between items-center flex-shrink-0">
+    <div
+      data-dashboard-skin={skin.id}
+      data-dashboard-layout={layoutId}
+      style={skin.vars}
+      className={`${tvMode ? "fixed inset-0 z-50" : "h-full"} flex flex-col overflow-hidden bg-background text-text px-6 pt-5 pb-4 gap-4 ${skin.fontClass ?? ""}`}
+    >
+      <style>{MOTION_CSS}</style>
+
+      {/* 헤더 */}
+      <div className="flex items-end justify-between flex-shrink-0">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <LayoutDashboard className="w-7 h-7 text-primary" />{t("dashboard.title")}
-          </h1>
-          <p className="text-text-muted mt-1">{t("dashboard.subtitle")}</p>
+          <h1 className="text-xl font-bold text-text tracking-tight">{t("dashboard.title")}</h1>
+          <p className="text-xs text-text-muted mt-0.5">{t("dashboard.subtitle")}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={fetchData}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} /> {t("common.refresh")}
-        </Button>
-      </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right tabular-nums leading-none">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-text-muted">{clock?.date ?? ""}</div>
+            <div className="text-2xl font-extrabold text-text mt-1">
+              {clock?.hm ?? "--:--"}<span className="text-text-muted">:{clock?.sec ?? "--"}</span>
+            </div>
+          </div>
+          <div className="h-8 w-px bg-border" />
+          <div className="text-[11px] text-text-muted tabular-nums">
+            {t("dashboard.updatedAt")} {updatedAt ? formatClock(updatedAt).hms : "--:--:--"}
+          </div>
+          <Button variant="secondary" size="sm" onClick={refresh} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} /> {t("common.refresh")}
+          </Button>
+          <div className="h-8 w-px bg-border" />
 
-      {/* Status Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-shrink-0">
-        <StatusCard
-          title={t("dashboard.equipStatus", "설비 가동 현황")}
-          icon={Cpu} color="text-indigo-500"
-          gradient="bg-gradient-to-br from-indigo-400 via-purple-400 to-blue-500"
-          items={[
-            { label: t("dashboard.equipNormal", "가동"), value: equip.normal, accent: "text-success" },
-            { label: t("dashboard.equipMaint", "정비중"), value: equip.maint, accent: "text-warning" },
-            { label: t("dashboard.equipStop", "정지"), value: equip.stop, accent: equip.stop > 0 ? "text-error" : "text-text" },
-            { label: t("dashboard.equipTotal", "전체"), value: equip.total },
-          ]}
-        />
-        <StatusCard
-          title={t("dashboard.jobStatus", "오늘 작업지시")}
-          icon={ClipboardList} color="text-sky-500"
-          gradient="bg-gradient-to-br from-sky-400 to-cyan-500"
-          items={[
-            { label: t("dashboard.jobWait", "대기"), value: job.wait },
-            { label: t("dashboard.jobRunning", "진행"), value: job.running, accent: "text-info" },
-            { label: t("dashboard.jobDone", "완료"), value: job.done, accent: "text-success" },
-            { label: t("dashboard.jobTotal", "전체"), value: job.total },
-          ]}
-        />
-        <StatusCard
-          title={t("dashboard.matAlert", "자재 알림")}
-          icon={PackageSearch} color="text-amber-500"
-          gradient="bg-gradient-to-br from-amber-400 to-orange-500"
-          items={[
-            { label: t("dashboard.matLowStock", "안전재고 미달"), value: mat.lowStock, accent: mat.lowStock > 0 ? "text-warning" : "text-text" },
-            { label: t("dashboard.matNearExpiry", "유효기한 임박"), value: mat.nearExpiry, accent: mat.nearExpiry > 0 ? "text-warning" : "text-text" },
-            { label: t("dashboard.matExpired", "기한 초과"), value: mat.expired, accent: mat.expired > 0 ? "text-error" : "text-text" },
-            { label: t("dashboard.matAlertTotal", "알림 합계"), value: mat.lowStock + mat.nearExpiry + mat.expired },
-          ]}
-        />
-        <StatusCard
-          title={t("dashboard.defectStatus", "불량 현황")}
-          icon={Bug} color="text-rose-500"
-          gradient="bg-gradient-to-br from-rose-400 to-red-500"
-          items={[
-            { label: t("dashboard.defectWait", "미처리"), value: defect.wait, accent: defect.wait > 0 ? "text-error" : "text-text" },
-            { label: t("dashboard.defectRepair", "수리중"), value: defect.repair, accent: "text-warning" },
-            { label: t("dashboard.defectRework", "재작업"), value: defect.rework, accent: "text-warning" },
-            { label: t("dashboard.defectDone", "처리완료"), value: defect.done, accent: "text-success" },
-          ]}
-        />
-      </div>
+          {/* 그룹 1: 형태 — 구조가 다른 대시보드 4종 */}
+          <div className="flex items-center gap-1.5" role="group" aria-label={t("dashboard.layout.group")}>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">{t("dashboard.layout.group")}</span>
+            <div className="flex items-center gap-0.5 rounded-lg border border-border p-0.5">
+              {DASHBOARD_LAYOUTS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    title={t(item.titleKey)}
+                    aria-label={t(item.titleKey)}
+                    aria-pressed={item.id === layoutId}
+                    onClick={() => setLayout(item.id)}
+                    className={segBtn(item.id === layoutId)}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span className="ml-1 hidden 2xl:inline">{t(item.titleKey)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-      {/* Scrollable content area */}
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-4">
-        {/* Inspection Summary (3 columns) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <InspectSummaryCard
-            title={t("dashboard.inspect.dailyTitle", "일상점검")}
-            icon={ClipboardCheck}
-            iconColor="text-blue-500"
-            gradient="bg-gradient-to-br from-sky-400 to-blue-500"
-            items={daily.items}
-            total={daily.total}
-            completed={daily.completed}
-            pass={daily.pass}
-            fail={daily.fail}
-            loading={inspectLoading}
-            linkPath="/equipment/inspect-calendar"
-          />
-          <InspectSummaryCard
-            title={t("dashboard.inspect.periodicTitle", "정기점검")}
-            icon={CalendarCheck}
-            iconColor="text-purple-500"
-            gradient="bg-gradient-to-br from-purple-400 to-violet-500"
-            items={periodic.items}
-            total={periodic.total}
-            completed={periodic.completed}
-            pass={periodic.pass}
-            fail={periodic.fail}
-            loading={inspectLoading}
-            linkPath="/equipment/periodic-inspect-calendar"
-          />
-          <InspectSummaryCard
-            title={t("dashboard.inspect.pmTitle", "예방보전")}
-            icon={Wrench}
-            iconColor="text-orange-500"
-            gradient="bg-gradient-to-br from-amber-400 to-orange-500"
-            items={pm.items}
-            total={pm.total}
-            completed={pm.completed}
-            pass={pm.pass}
-            fail={pm.fail}
-            loading={inspectLoading}
-            linkPath="/equipment/pm-calendar"
-          />
+          {/* 그룹 2: 색상 — 같은 구조에 다른 팔레트 A/B/C (모니터링 보드와 같은 순서) + TV */}
+          <div className="flex items-center gap-1.5" role="group" aria-label={t("dashboard.skinGroup")}>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted">{t("dashboard.skinGroup")}</span>
+            <div className="flex items-center gap-0.5 rounded-lg border border-border p-0.5">
+              {DASHBOARD_SKINS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  title={t(item.titleKey)}
+                  aria-label={t(item.titleKey)}
+                  aria-pressed={item.id === skin.id}
+                  onClick={() => setSkin(item.id)}
+                  className={segBtn(item.id === skin.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+              <span className="h-4 w-px bg-border mx-0.5" />
+              <button
+                type="button"
+                title={t("dashboard.tvMode")}
+                aria-label={t("dashboard.tvMode")}
+                aria-pressed={tvMode}
+                onClick={toggleTvMode}
+                className={segBtn(tvMode)}
+              >
+                {tvMode ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+
+      <Layout data={data} attention={attention} attentionCount={attentionCount} now={now} />
     </div>
   );
 }
