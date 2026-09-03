@@ -11,3 +11,4 @@ export * from './job-order-rules';
 export * from './process-capa-rules';
 export * from './work-instruction-rules';
 export * from './vendor-barcode-rules';
+export * from './mat-issue-rules';

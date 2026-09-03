@@ -219,6 +219,8 @@ export default function WorkOrderRequestPanel({
     if (!selectedOrderNo) return;
     setMode('create');
     resetCreateState();
+    // 출고 공정 기본값 = 작업지시 대표 공정(라우팅 첫 SEQ 상속). 생산 출고는 공정재고 적재가 필수라 필수 입력이다.
+    setSelectedProcessCode(selectedOrder?.processCode ?? '');
     setIsLoadingBom(true);
     try {
       const items = await loadBomRequestItems(selectedOrderNo);
@@ -232,7 +234,7 @@ export default function WorkOrderRequestPanel({
     } finally {
       setIsLoadingBom(false);
     }
-  }, [selectedOrderNo, loadBomRequestItems, resetCreateState, t]);
+  }, [selectedOrderNo, selectedOrder, loadBomRequestItems, resetCreateState, t]);
 
   const updateQty = (itemCode: string, qty: number) => {
     setDetailItems((prev) =>
@@ -308,6 +310,7 @@ export default function WorkOrderRequestPanel({
 
   const canSubmit =
     !!selectedOrderNo
+    && !!selectedProcessCode
     && detailItems.some((r) => r.requestQty > 0)
     && !isSubmitting
     && !isLoadingBom;
@@ -551,7 +554,7 @@ export default function WorkOrderRequestPanel({
                     <ChevronLeft className="w-4 h-4 mr-1" /> {t('material.request.backToHistory')}
                   </Button>
                   <div className="w-40">
-                    <ProcessSelect value={selectedProcessCode} onChange={setSelectedProcessCode} fullWidth />
+                    <ProcessSelect value={selectedProcessCode} onChange={setSelectedProcessCode} fullWidth required />
                   </div>
                   <div className="w-40">
                     <Select options={reasonOptions} value={reason} onChange={setReason} fullWidth />
@@ -571,10 +574,14 @@ export default function WorkOrderRequestPanel({
               </div>
             )}
 
-            {mode === 'create' && selectedProcessCode && (
-              <div className="m-3 mb-0 flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 text-primary text-sm">
+            {mode === 'create' && (
+              <div className={`m-3 mb-0 flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${selectedProcessCode ? 'bg-primary/5 text-primary' : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'}`}>
                 <Info className="w-4 h-4 shrink-0" />
-                <span>{t('material.request.processStockNotice', { defaultValue: '지정 공정의 공정재고(장착 대기)로 적재됩니다. 미지정 시 자재창고로 출고됩니다.' })}</span>
+                <span>
+                  {selectedProcessCode
+                    ? t('material.request.processStockNotice', { defaultValue: '지정 공정의 공정재고(장착 대기)로 적재됩니다.' })
+                    : t('material.issue.processRequired', { defaultValue: '출고 공정을 선택하세요.' })}
+                </span>
               </div>
             )}
 

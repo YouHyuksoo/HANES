@@ -14,8 +14,10 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle, Package, AlertTriangle, Info } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
+import { isProductionIssueType } from '@harness/shared';
 import { Modal, Button, Input, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
+import ProcessSelect from '@/components/shared/ProcessSelect';
 import { useApiQuery, useInvalidateQueries } from '@/hooks/useApi';
 import { api } from '@/services/api';
 import { useComCodeOptions } from '@/hooks/useComCode';
@@ -47,12 +49,14 @@ const roundUpToPack = (qty: number, minPackQty: number) =>
 interface RequestDetail {
   id: string;
   requestNo: string;
-  workOrderNo: string;
+  orderNo?: string | null;
   requester: string;
   status: string;
   issueType?: string;
-  /** 출고 대상 공정(지정 시 공정재고로 적재) */
+  /** 요청에 지정된 출고 공정 */
   processCode?: string | null;
+  /** 출고 시 적용될 공정(요청 공정 → 작업지시 공정 → 라우팅 첫 공정). 백엔드가 계산 */
+  issueProcessCode?: string | null;
   items: RequestDetailItem[];
 }
 
@@ -89,6 +93,7 @@ export default function IssueFromRequestModal({
   const invalidate = useInvalidateQueries();
   const issueTypeOptions = useComCodeOptions('ISSUE_TYPE');
   const [issueType, setIssueType] = useState<string>('PRODUCTION');
+  const [processCode, setProcessCode] = useState<string>('');
   const [issueRows, setIssueRows] = useState<IssueRow[]>([]);
   const [availableStocksByItem, setAvailableStocksByItem] = useState<Record<string, AvailableStock[]>>({});
   const [selectedMatUids, setSelectedMatUids] = useState<Record<string, string>>({});
@@ -130,7 +135,12 @@ export default function IssueFromRequestModal({
     if (detail.issueType) {
       setIssueType(detail.issueType);
     }
+    // 출고 공정 기본값: 요청 공정 → 작업지시 공정 → 라우팅 첫 공정(백엔드 계산값)
+    setProcessCode(detail.processCode ?? detail.issueProcessCode ?? '');
   }, [detail]);
+
+  const isProductionIssue = isProductionIssueType(issueType);
+  const processMissing = isProductionIssue && !processCode;
 
   useEffect(() => {
     if (!isOpen || issueRows.length === 0) return;
@@ -206,6 +216,11 @@ export default function IssueFromRequestModal({
       setErrorMsg(`${missingLot.itemCode} 출고 LOT를 선택해주세요.`);
       return;
     }
+    // 생산 출고는 공정재고 적재가 필수(백엔드도 차단)
+    if (processMissing) {
+      setErrorMsg(t('material.issue.processRequired', { defaultValue: '출고 공정을 선택하세요.' }));
+      return;
+    }
 
     setIsSubmitting(true);
     setErrorMsg(null);
@@ -217,6 +232,7 @@ export default function IssueFromRequestModal({
           issueQty: r.issueQty,
         })),
         issueType,
+        processCode: processCode || undefined,
       });
       invalidate(['issue-requests']);
       invalidate(['issue-request-detail']);
@@ -227,7 +243,7 @@ export default function IssueFromRequestModal({
     } finally {
       setIsSubmitting(false);
     }
-  }, [issueRows, requestId, issueType, selectedMatUids, invalidate, onClose]);
+  }, [issueRows, requestId, issueType, processCode, processMissing, selectedMatUids, invalidate, onClose, t]);
 
   // 컬럼 정의
   const columns = useMemo<ColumnDef<IssueRow>[]>(() => [
@@ -338,7 +354,7 @@ export default function IssueFromRequestModal({
             </div>
             <div>
               <span className="text-text-muted">{t('material.col.workOrder')}:</span>{' '}
-              <span className="font-medium text-primary">{detail.workOrderNo}</span>
+              <span className="font-medium text-primary">{detail.orderNo ?? '-'}</span>
             </div>
             <div>
               <span className="text-text-muted">{t('material.col.requester')}:</span>{' '}
@@ -347,30 +363,42 @@ export default function IssueFromRequestModal({
           </div>
         )}
 
+        {/* 출고계정 + 출고 공정 선택 */}
+        <div className="flex gap-3">
+          <div className="w-64">
+            <Select
+              label={t('material.issueAccount')}
+              options={issueTypeOptions}
+              value={issueType}
+              onChange={setIssueType}
+              required
+              fullWidth
+            />
+          </div>
+          <div className="w-64">
+            <ProcessSelect
+              label={t('material.issue.processLabel', { defaultValue: '출고 공정' })}
+              value={processCode}
+              onChange={setProcessCode}
+              required={isProductionIssue}
+              error={processMissing ? t('material.issue.processRequired', { defaultValue: '출고 공정을 선택하세요.' }) : undefined}
+              fullWidth
+            />
+          </div>
+        </div>
+
         {/* 공정 지정 출고 안내 (공정재고 적재) */}
-        {detail?.processCode && (
+        {processCode && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 text-primary text-sm">
             <Info className="w-4 h-4 shrink-0" />
             <span>
               {t('material.issue.processStockNotice', {
                 defaultValue: '공정 {{code}}의 공정재고(장착 대기)로 적재됩니다.',
-                code: detail.processCode,
+                code: processCode,
               })}
             </span>
           </div>
         )}
-
-        {/* 출고계정 선택 */}
-        <div className="w-64">
-          <Select
-            label={t('material.issueAccount')}
-            options={issueTypeOptions}
-            value={issueType}
-            onChange={setIssueType}
-            required
-            fullWidth
-          />
-        </div>
 
         {/* 에러 메시지 */}
         {errorMsg && (
@@ -400,7 +428,7 @@ export default function IssueFromRequestModal({
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={totalIssueQty <= 0 || isLoadingLots}
+              disabled={totalIssueQty <= 0 || isLoadingLots || processMissing}
               isLoading={isSubmitting}
             >
               <Package className="w-4 h-4 mr-1" />

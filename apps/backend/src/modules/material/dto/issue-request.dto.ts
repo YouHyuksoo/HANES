@@ -173,6 +173,14 @@ export class RequestIssueDto {
   @MaxLength(20)
   issueType?: string;
 
+  @ApiPropertyOptional({
+    description: '출고 공정코드 — 지정 시 요청/작업지시 공정 대신 이 공정의 공정재고로 적재. 미지정 시 요청 공정 → 작업지시 대표 공정 → 라우팅 첫 공정 순으로 결정',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  processCode?: string;
+
   @ApiPropertyOptional({ description: '작업자 ID' })
   @IsOptional()
   @IsString()

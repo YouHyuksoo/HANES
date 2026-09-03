@@ -13,6 +13,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, FindOptionsWhere, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { isProductionIssueType } from '@harness/shared';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
@@ -21,6 +22,7 @@ import { BomMaster } from '../../../entities/bom-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatIssueService } from './mat-issue.service';
 import { NumberingService } from '../../../shared/numbering.service';
@@ -49,6 +51,8 @@ export class IssueRequestService {
     private readonly matIssueRepository: Repository<MatIssue>,
     @InjectRepository(MatStock)
     private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(RoutingProcess)
+    private readonly routingProcessRepository: Repository<RoutingProcess>,
     private readonly matIssueService: MatIssueService,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
@@ -187,6 +191,36 @@ export class IssueRequestService {
         minPackQty: this.toNumber(part?.minPackQty),
       };
     });
+  }
+
+  /**
+   * 출고 공정 결정: 요청 공정 → 작업지시 대표 공정 → 라우팅 첫 SEQ 공정.
+   * 끝내 없으면 null(생산 출고는 호출측이 차단, 기타 출고는 단순출고 허용).
+   */
+  private async resolveIssueProcessCode(
+    request: Pick<MatIssueRequest, 'orderNo' | 'processCode'>,
+    company?: string | null,
+    plant?: string | null,
+  ): Promise<string | null> {
+    if (request.processCode) return request.processCode;
+    if (!request.orderNo) return null;
+
+    const jobOrder = await this.jobOrderRepository.findOne({
+      where: { orderNo: request.orderNo, ...this.tenantWhere(company, plant) },
+    });
+    if (!jobOrder) return null;
+    if (jobOrder.processCode) return jobOrder.processCode;
+    if (!jobOrder.routingCode) return null;
+
+    const firstProcess = await this.routingProcessRepository.findOne({
+      where: {
+        routingCode: jobOrder.routingCode,
+        useYn: 'Y',
+        ...this.tenantWhere(jobOrder.company ?? company, jobOrder.plant ?? plant),
+      },
+      order: { seq: 'ASC' },
+    });
+    return firstProcess?.processCode ?? null;
   }
 
   /** 요청 헤더 조회 + 존재 검증 */
@@ -463,7 +497,9 @@ export class IssueRequestService {
     const requestTenantWhere = this.tenantWhere(request.company, request.plant);
     const items = await this.requestItemRepository.find({ where: { requestId: requestNo, ...requestTenantWhere } });
     const flatItems = await this.flattenItems(items, request.company, request.plant);
-    return { ...request, items: flatItems };
+    // 출고 시 실제 적용될 공정(요청 공정 → 작업지시 공정 → 라우팅 첫 공정) — 출고 모달 기본값
+    const issueProcessCode = await this.resolveIssueProcessCode(request, request.company, request.plant);
+    return { ...request, items: flatItems, issueProcessCode };
   }
 
   /** 출고요청 승인 (REQUESTED -> APPROVED) */
@@ -494,9 +530,10 @@ export class IssueRequestService {
 
   /**
    * 요청 기반 실출고 처리
-   * - APPROVED 상태만 출고 가능
-   * - MatIssueService.create()로 실제 출고 수행
-   * - 모든 품목 완전 출고 시 COMPLETED 처리
+   * - APPROVED/PARTIAL 상태만 출고 가능
+   * - MatIssueService.createInTx()로 실제 출고 수행(같은 트랜잭션)
+   * - 생산 출고는 반드시 공정재고로 적재: 공정은 dto → 요청 → 작업지시 → 라우팅 첫 공정 순으로 결정, 없으면 차단
+   * - 모든 품목 완전 출고 시 COMPLETED, 아니면 PARTIAL
    */
   async issueFromRequest(requestNo: string, dto: RequestIssueDto, company?: string, plant?: string) {
     const request = await this.getRequestOrFail(requestNo, company, plant);
@@ -507,9 +544,11 @@ export class IssueRequestService {
     const effectiveCompany = request.company ?? company;
     const effectivePlant = request.plant ?? plant;
     const requestTenantWhere = this.tenantWhere(effectiveCompany, effectivePlant);
+    const issueType = dto.issueType ?? request.issueType ?? 'PRODUCTION';
 
     return this.tx.run(async (queryRunner) => {
-      const validatedItems: Array<{ dtoItem: RequestIssueDto['items'][number]; reqItem: MatIssueRequestItem }> = [];
+      // 같은 요청 품목에 여러 LOT가 오면 수량을 합산해 검증/갱신한다(마지막 LOT만 반영되는 덮어쓰기 방지)
+      const addedQtyBySeq = new Map<number, number>();
 
       // 검증에 필요한 항목/품목/LOT를 각각 1회 일괄 조회 후 메모리 매칭(N+1 제거)
       const reqSeqs = [...new Set(dto.items.map((i) => Number(i.requestItemId)))];
@@ -542,9 +581,10 @@ export class IssueRequestService {
         const minPackQty = this.toNumber(part?.minPackQty);
         const remainingQty = reqItem.requestQty - reqItem.issuedQty;
         const allowedQty = this.roundUpToPack(remainingQty, minPackQty);
-        if (dtoItem.issueQty > allowedQty) {
+        const accumulatedQty = (addedQtyBySeq.get(reqItemSeq) ?? 0) + dtoItem.issueQty;
+        if (accumulatedQty > allowedQty) {
           throw new BadRequestException(
-            `요청 수량을 초과해 출고할 수 없습니다. 항목 ${reqItemSeq}, 잔여(포장단위 올림): ${allowedQty}, 요청: ${dtoItem.issueQty}`,
+            `요청 수량을 초과해 출고할 수 없습니다. 항목 ${reqItemSeq}, 잔여(포장단위 올림): ${allowedQty}, 요청: ${accumulatedQty}`,
           );
         }
 
@@ -559,34 +599,41 @@ export class IssueRequestService {
           );
         }
 
-        validatedItems.push({ dtoItem, reqItem });
+        addedQtyBySeq.set(reqItemSeq, accumulatedQty);
+      }
+
+      // 생산 출고는 공정재고 적재가 필수 — 공정을 끝내 결정할 수 없으면 조용한 단순출고 대신 차단한다
+      const processCode = dto.processCode?.trim()
+        || await this.resolveIssueProcessCode(request, effectiveCompany, effectivePlant);
+      if (isProductionIssueType(issueType) && !processCode) {
+        throw new BadRequestException(
+          `출고 공정을 결정할 수 없습니다. 출고요청 ${requestNo}에 공정이 없고` +
+          `${request.orderNo ? ` 작업지시 ${request.orderNo}의 대표 공정/라우팅 첫 공정도 없습니다.` : ' 작업지시도 없습니다.'}` +
+          ' 출고 공정을 지정하세요.',
+        );
       }
 
       const issueResult = await this.matIssueService.createInTx(queryRunner, {
         orderNo: request.orderNo ?? undefined,
-        processCode: request.processCode ?? undefined,
+        processCode: processCode ?? undefined,
         warehouseCode: dto.warehouseCode,
-        issueType: dto.issueType ?? request.issueType ?? 'PRODUCTION',
+        issueType,
         items: dto.items.map((i) => ({ matUid: i.matUid, issueQty: i.issueQty })),
         workerId: dto.workerId,
         remark: dto.remark ?? `출고요청 ${request.requestNo} 기반 출고`,
       }, effectiveCompany ?? undefined, effectivePlant ?? undefined);
 
-      // 각 요청 품목의 issuedQty 갱신
-      for (const { dtoItem, reqItem } of validatedItems) {
+      // 각 요청 품목의 issuedQty 갱신(품목별 합산)
+      for (const [seq, addedQty] of addedQtyBySeq) {
+        const reqItem = reqItemMap.get(seq)!;
         await queryRunner.manager.update(MatIssueRequestItem, { requestId: reqItem.requestId, seq: reqItem.seq, ...requestTenantWhere }, {
-          issuedQty: reqItem.issuedQty + dtoItem.issueQty,
+          issuedQty: reqItem.issuedQty + addedQty,
         });
       }
 
-      // 모든 품목 완전 출고 여부 확인
-      const allItems = await this.requestItemRepository.find({ where: { requestId: requestNo, ...requestTenantWhere } });
-      const allCompleted = allItems.every((item) => {
-        const addedQty = dto.items
-          .filter((d) => Number(d.requestItemId) === item.seq)
-          .reduce((sum, d) => sum + d.issueQty, 0);
-        return (item.issuedQty + addedQty) >= item.requestQty;
-      });
+      // 모든 품목 완전 출고 여부 — 같은 트랜잭션에서 갱신 후 값으로 판정
+      const allItems = await queryRunner.manager.find(MatIssueRequestItem, { where: { requestId: requestNo, ...requestTenantWhere } });
+      const allCompleted = allItems.every((item) => item.issuedQty >= item.requestQty);
 
       // 전량 출고 완료면 COMPLETED, 일부만 출고됐으면 PARTIAL(부분출고)
       await queryRunner.manager.update(MatIssueRequest, { requestNo, ...requestTenantWhere }, {

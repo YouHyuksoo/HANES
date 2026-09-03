@@ -288,6 +288,7 @@ export function useMatIssuingScan(): UseMatIssuingScanReturn {
         await api.post("/material/issues/scan", {
           matUid: lot.matUid,
           issueType,
+          orderNo: jobOrder.orderNo,
           remark: `PDA 작업지시 출고: ${jobOrder.orderNo}`,
         });
       } catch (err: unknown) {

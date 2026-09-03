@@ -187,6 +187,18 @@ export default function SelfInspectPanel({
           {t('kiosk.selfInspect.title')}
         </span>
       </div>
+      {/* 중물검사 필수 안내 — "중물 필수 공정" 구분 데이터가 아직 없어 공정 무관 항상 표시한다.
+          가운데 열은 좁아 줄바꿈되므로 3열 폭 전체에 한 줄로 가운데 정렬한다. */}
+      <div
+        className={`text-center text-[11px] font-semibold leading-tight whitespace-nowrap ${
+          midInspectDone ? 'text-text-muted opacity-40' : 'text-red-600 dark:text-red-400'
+        }`}
+      >
+        {t('kiosk.selfInspect.midRequiredNotice', {
+          defaultValue: '실적 {{pct}}% 초과 시 중물검사 입력 필수',
+          pct: midBlockPct,
+        })}
+      </div>
       <div className="grid grid-cols-3 gap-1">
         <TimingBtn
           timing="FIRST"

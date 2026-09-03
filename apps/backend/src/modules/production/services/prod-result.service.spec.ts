@@ -624,8 +624,17 @@ describe('ProdResultService', () => {
     queryRunner.manager.findOne.mockImplementation(async (entity: any) =>
       entity === JobOrder ? ({ orderNo: 'JO-1', itemCode: 'FG-001', company: 'C1', plant: 'P1' } as any) : null,
     );
+    // 작업지시 실적 집계 갱신용 raw 합계 쿼리 — 이번 실적 포함 양품 7 / 불량 3
+    queryRunner.query.mockResolvedValue([{ totalGoodQty: '7', totalDefectQty: '3' }] as any);
 
     await service.create({ orderNo: 'JO-1', equipCode: 'EQ-001', goodQty: 7, defectQty: 3 } as any, 'C1', 'P1');
+
+    // 실적 저장 즉시 JOB_ORDERS.GOOD_QTY/DEFECT_QTY 갱신 (키오스크 상단 진행률·TV 보드가 읽는 값)
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      JobOrder,
+      expect.objectContaining({ orderNo: 'JO-1' }),
+      { goodQty: 7, defectQty: 3 },
+    );
 
     expect(queryRunner.manager.find).toHaveBeenCalledWith(
       ConsumableMaster,
@@ -636,6 +645,49 @@ describe('ProdResultService', () => {
       ConsumableMaster,
       expect.objectContaining({ consumableCode: 'MOLD-1' }),
       expect.objectContaining({ currentCount: 12, status: 'NORMAL' }),
+    );
+  });
+
+  it('create accrues mounted consumable lot count by usage-per-unit and writes a USAGE log', async () => {
+    jobOrderRepo.findOne.mockResolvedValue({
+      orderNo: 'JO-1', status: 'RUNNING', planQty: 100, itemCode: 'FG-001',
+      part: { itemCode: 'FG-001' }, company: 'C1', plant: 'P1',
+    } as any);
+    equipBomRelRepo.find.mockResolvedValue([]);
+    equipMasterRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'C1', plant: 'P1' } as any);
+    prodResultRepo.createQueryBuilder.mockReturnValue({
+      select: jest.fn().mockReturnThis(), addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '0', totalDefect: '0' }),
+    } as any);
+    numbering.next.mockResolvedValue('PR-1');
+    queryRunner.manager.create.mockImplementation((_e: any, v: any) => v);
+    queryRunner.manager.save.mockImplementation(async (_e: any, v: any) => v ?? { resultNo: 'PR-1' });
+    sysConfigService.getValue.mockResolvedValue('OFF');
+    autoIssueService.execute.mockResolvedValue({ issued: [], warnings: [], skipped: false } as any);
+    prodResultRepo.findOne.mockResolvedValue({ resultNo: 'PR-1' } as any);
+    queryRunner.query.mockResolvedValue([{ totalGoodQty: '10', totalDefectQty: '0' }] as any);
+    queryRunner.manager.query.mockResolvedValue([{ nextSeq: 7 }] as any);
+
+    const { ConsumableUsageMap } = await import('../../../entities/consumable-usage-map.entity');
+    const { ConsumableStock } = await import('../../../entities/consumable-stock.entity');
+    const { ConsumableLog } = await import('../../../entities/consumable-log.entity');
+    queryRunner.manager.find.mockImplementation(async (entity: any) => {
+      if (entity === ConsumableUsageMap) return [{ consumableCode: 'CM-1', usagePerUnit: 2 }] as any;
+      if (entity === ConsumableStock) return [{ conUid: 'LOT-1', consumableCode: 'CM-1', currentCount: 5 }] as any;
+      return [] as any;
+    });
+    queryRunner.manager.findOne.mockImplementation(async (entity: any) =>
+      entity === JobOrder ? ({ orderNo: 'JO-1', itemCode: 'FG-001', company: 'C1', plant: 'P1' } as any) : null,
+    );
+
+    await service.create({ orderNo: 'JO-1', equipCode: 'EQ-001', goodQty: 10, defectQty: 0 } as any, 'C1', 'P1');
+
+    // 5 + (usagePerUnit 2 × 10개) = 25
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(ConsumableStock, { conUid: 'LOT-1' }, { currentCount: 25 });
+    expect(queryRunner.manager.save).toHaveBeenCalledWith(
+      ConsumableLog,
+      expect.objectContaining({ conUid: 'LOT-1', consumableCode: 'CM-1', logType: 'USAGE', qty: 20, equipCode: 'EQ-001', seq: 7 }),
     );
   });
 

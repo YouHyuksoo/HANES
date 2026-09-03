@@ -9,13 +9,14 @@
  * - 하단(스크롤): 금일 스캔 출고 이력 테이블
  */
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  QrCode, AlertTriangle, CheckCircle, XCircle, Package, Loader2,
+  QrCode, AlertTriangle, CheckCircle, XCircle, Package, Loader2, ClipboardList, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { BarcodeScanInput, ProcessSelect } from '@/components/shared';
+import JobOrderSelectModal, { type JobOrder } from '@/components/production/JobOrderSelectModal';
 import { useBarcodeScan } from '@/hooks/material/useBarcodeScan';
 
 /** 양산계정 고정 */
@@ -24,14 +25,30 @@ const PRODUCTION_ISSUE_TYPE = 'PRODUCTION';
 export default function IssueScanPanel() {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isJobOrderModalOpen, setIsJobOrderModalOpen] = useState(false);
+  const [selectedJobOrder, setSelectedJobOrder] = useState<JobOrder | null>(null);
 
   const {
     scanInput, setScanInput,
     processCode, setProcessCode,
+    setOrderNo,
     scannedLot, scanHistory, isScanning, error,
     handleScan, handleIssue, handleCancel,
     setIssueType,
   } = useBarcodeScan();
+
+  // 작업지시 선택 → orderNo 전송 + 출고 공정 기본값을 작업지시 공정으로
+  const handleSelectJobOrder = useCallback((jobOrder: JobOrder) => {
+    setSelectedJobOrder(jobOrder);
+    setOrderNo(jobOrder.orderNo);
+    if (jobOrder.processCode) setProcessCode(jobOrder.processCode);
+    setIsJobOrderModalOpen(false);
+  }, [setOrderNo, setProcessCode]);
+
+  const handleClearJobOrder = useCallback(() => {
+    setSelectedJobOrder(null);
+    setOrderNo('');
+  }, [setOrderNo]);
 
   // 양산계정 고정
   useEffect(() => {
@@ -67,6 +84,43 @@ export default function IssueScanPanel() {
             {t('material.issueAccount')}: 양산
           </span>
         </h2>
+
+        {/* 작업지시 선택(선택 사항) — 지정 시 해당 작업지시 출고요청에 우선 배분 + MAT_ISSUES.ORDER_NO 기록 */}
+        <div>
+          <label className="block text-sm font-medium text-text mb-1.5">
+            {t('material.issue.jobOrderLabel', { defaultValue: '작업지시' })}
+          </label>
+          {selectedJobOrder ? (
+            <div className="flex items-center gap-2 h-9 px-2.5 border border-primary/40 bg-primary/5 rounded-lg text-xs min-w-0">
+              <ClipboardList className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+              <span className="font-mono font-semibold text-primary truncate">{selectedJobOrder.orderNo}</span>
+              <span className="text-text-muted truncate flex-1 min-w-0">{selectedJobOrder.itemName}</span>
+              <button
+                type="button"
+                className="p-0.5 rounded hover:bg-surface flex-shrink-0"
+                onClick={handleClearJobOrder}
+                disabled={isScanning}
+                aria-label={t('common.clear', { defaultValue: '해제' })}
+              >
+                <X className="w-3.5 h-3.5 text-text-muted" />
+              </button>
+            </div>
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsJobOrderModalOpen(true)}
+              disabled={isScanning}
+              className="w-full h-9 justify-start text-xs"
+            >
+              <ClipboardList className="w-3.5 h-3.5 mr-1.5" />
+              {t('material.issue.selectJobOrder', { defaultValue: '작업지시 선택' })}
+              <span className="ml-auto text-text-muted font-normal">
+                {t('material.issue.noJobOrder', { defaultValue: '미지정 시 요청 자동 배분' })}
+              </span>
+            </Button>
+          )}
+        </div>
 
         <ProcessSelect
           label={t('material.issue.processLabel', { defaultValue: '출고 공정' })}
@@ -193,7 +247,13 @@ export default function IssueScanPanel() {
                     })}
                   </td>
                   <td className="px-3 py-1.5 truncate max-w-0" style={{ maxWidth: 100 }}>
-                    {item.itemName ?? item.itemCode}
+                    <div className="truncate">{item.itemName ?? item.itemCode}</div>
+                    {/* 배분된 출고요청 번호 — 무매칭이면 표시 없음 */}
+                    {item.allocatedRequestNos.length > 0 && (
+                      <div className="truncate text-[10px] text-primary font-mono">
+                        {t('material.issue.allocatedTo', { defaultValue: '배분' })}: {item.allocatedRequestNos.join(', ')}
+                      </div>
+                    )}
                   </td>
                   <td className="px-3 py-1.5 text-right font-medium text-text whitespace-nowrap">
                     {(item.issueQty ?? 0).toLocaleString()} {item.unit}
@@ -204,6 +264,12 @@ export default function IssueScanPanel() {
           </table>
         )}
       </div>
+
+      <JobOrderSelectModal
+        isOpen={isJobOrderModalOpen}
+        onClose={() => setIsJobOrderModalOpen(false)}
+        onConfirm={handleSelectJobOrder}
+      />
     </div>
   );
 }

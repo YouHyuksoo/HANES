@@ -2574,6 +2574,7 @@
         "requested": "Requested",
         "approved": "Approved",
         "completed": "Completed",
+        "partial": "Partial",
         "rejected": "Rejected"
       },
       "modalTitle": "Issue Request",
@@ -2594,7 +2595,7 @@
       "requestQtyLabel": "Request Qty",
       "minPackQty": "Pack Unit",
       "issueQtyLabel": "Issue Qty",
-      "processStockNotice": "Items will be staged to the designated process WIP stock (awaiting mount). Otherwise issued to the material warehouse.",
+      "processStockNotice": "Items will be staged to the designated process WIP stock (awaiting mount).",
       "registerRequest": "Submit Request",
       "manualRequest": "Manual Request",
       "workOrderListTitle": "Work Orders",
@@ -2678,6 +2679,12 @@
       "noScanHistory": "No scan issue history.",
       "scanTime": "Time",
       "history": {
+      "processLabel": "Issue Process",
+      "processRequired": "Select the issue process.",
+      "jobOrderLabel": "Job Order",
+      "selectJobOrder": "Select Job Order",
+      "noJobOrder": "Auto-allocate to requests if unset",
+      "allocatedTo": "Allocated",
         "tabTitle": "Issue History",
         "issueNo": "Issue No.",
         "issueDate": "Issue Date",
@@ -8490,7 +8497,8 @@
       "selectJobOrderFirst": "Please select a work order first.",
       "workerRequiredForInspect": "Please add at least one worker.",
       "selectJobOrderHint": "Select a work order to view production results.",
-      "inputDisabled": "Input is disabled."
+      "inputDisabled": "Input is disabled.",
+      "orderLifecycleHint": "The work order starts automatically on the first result entry · Close the work order in Work Order Management"
     },
     "equip": {
       "modalTitle": "Select Equipment",
@@ -8740,7 +8748,8 @@
       "noHistory": "No inspection history",
       "delegating": "Requesting",
       "blockBadge": "Blocked!",
-      "notifyBadge": "Recommended↑"
+      "notifyBadge": "Recommended↑",
+      "midRequiredNotice": "Mid-lot inspection is required once results exceed {{pct}}%"
     },
     "defect": {
       "title": "Defect Input",

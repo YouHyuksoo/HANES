@@ -212,6 +212,14 @@ export default function EquipHeader({
           </button>
         </div>
 
+        {/* 작업지시 시작/종료 안내 — h-11 칸 레이아웃을 건드리지 않도록 Row1 바깥 아래 한 줄로 둔다 */}
+        <div className="flex items-center gap-1 px-4 py-0.5 text-[11px] text-black/50 dark:text-white/50 bg-surface/50">
+          <ClipboardList className="h-3 w-3 shrink-0 opacity-60" />
+          <span className="truncate">
+            {t('kiosk.header.orderLifecycleHint', '최초 실적입력 시 작업지시 자동 시작 · 작업지시 종료는 작업지시관리에서 진행')}
+          </span>
+        </div>
+
         {/* ── Row 2: 생산실적 (중앙, 크게) — 헤더 1행과 톤을 달리해 숫자 영역이 도드라지게 ── */}
         <div className="flex items-center justify-center gap-5 py-3 bg-surface border-t border-border/60">
           {selectedJobOrder ? (

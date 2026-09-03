@@ -2574,6 +2574,7 @@
         "requested": "已申请",
         "approved": "已审批",
         "completed": "已完成",
+        "partial": "部分出库",
         "rejected": "已驳回"
       },
       "modalTitle": "出库请求",
@@ -2594,7 +2595,7 @@
       "requestQtyLabel": "请求数量",
       "minPackQty": "包装单位",
       "issueQtyLabel": "实际出库数量",
-      "processStockNotice": "将入库到指定工序的工序库存(待装配)。未指定时出库至物料仓库。",
+      "processStockNotice": "将入库到指定工序的工序库存(待装配)。",
       "registerRequest": "提交请求",
       "manualRequest": "手动出库请求",
       "workOrderListTitle": "工单列表",
@@ -2678,6 +2679,12 @@
       "noScanHistory": "没有扫描出库记录。",
       "scanTime": "时间",
       "history": {
+      "processLabel": "出库工序",
+      "processRequired": "请选择出库工序。",
+      "jobOrderLabel": "作业指示",
+      "selectJobOrder": "选择作业指示",
+      "noJobOrder": "未指定时自动分配至申请",
+      "allocatedTo": "分配",
         "tabTitle": "出库记录",
         "issueNo": "出库编号",
         "issueDate": "出库日期",
@@ -8490,7 +8497,8 @@
       "selectJobOrderFirst": "请先选择工单。",
       "workerRequiredForInspect": "请至少添加一名作业员。",
       "selectJobOrderHint": "选择工单后将显示生产实绩。",
-      "inputDisabled": "无法输入。"
+      "inputDisabled": "无法输入。",
+      "orderLifecycleHint": "首次录入实绩时工单自动开始 · 工单结束请在工单管理中进行"
     },
     "equip": {
       "modalTitle": "选择设备",
@@ -8740,7 +8748,8 @@
       "noHistory": "无检查履历",
       "delegating": "委托中",
       "blockBadge": "已阻止！",
-      "notifyBadge": "建议↑"
+      "notifyBadge": "建议↑",
+      "midRequiredNotice": "实绩超过 {{pct}}% 时必须录入中间检查"
     },
     "defect": {
       "title": "不良输入",

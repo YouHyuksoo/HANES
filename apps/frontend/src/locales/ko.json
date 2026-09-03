@@ -2984,6 +2984,7 @@
         "requested": "요청",
         "approved": "승인",
         "completed": "완료",
+        "partial": "부분출고",
         "rejected": "반려"
       },
       "modalTitle": "출고요청",
@@ -3004,7 +3005,7 @@
       "requestQtyLabel": "요청수량",
       "minPackQty": "포장단위",
       "issueQtyLabel": "실출고수량",
-      "processStockNotice": "지정 공정의 공정재고(장착 대기)로 적재됩니다. 미지정 시 자재창고로 출고됩니다.",
+      "processStockNotice": "지정 공정의 공정재고(장착 대기)로 적재됩니다.",
       "registerRequest": "요청등록",
       "manualRequest": "수동 출고요청",
       "workOrderListTitle": "작업지시 목록",
@@ -3088,6 +3089,12 @@
       "noScanHistory": "스캔 출고 이력이 없습니다.",
       "scanTime": "시간",
       "history": {
+      "processLabel": "출고 공정",
+      "processRequired": "출고 공정을 선택하세요.",
+      "jobOrderLabel": "작업지시",
+      "selectJobOrder": "작업지시 선택",
+      "noJobOrder": "미지정 시 요청 자동 배분",
+      "allocatedTo": "배분",
         "tabTitle": "출고이력",
         "issueNo": "출고번호",
         "issueDate": "출고일",
@@ -8497,7 +8504,8 @@
       "selectJobOrderFirst": "작업지시를 먼저 선택하세요.",
       "workerRequiredForInspect": "작업자를 1명 이상 추가하세요.",
       "selectJobOrderHint": "작업지시를 선택하면 생산실적이 표시됩니다.",
-      "inputDisabled": "입력할 수 없습니다."
+      "inputDisabled": "입력할 수 없습니다.",
+      "orderLifecycleHint": "최초 실적입력 시 작업지시 자동 시작 · 작업지시 종료는 작업지시관리에서 진행"
     },
     "equip": {
       "modalTitle": "설비 선택",
@@ -8747,7 +8755,8 @@
       "noHistory": "검사 이력 없음",
       "delegating": "의뢰중",
       "blockBadge": "차단!",
-      "notifyBadge": "권장↑"
+      "notifyBadge": "권장↑",
+      "midRequiredNotice": "실적 {{pct}}% 초과 시 중물검사 입력 필수"
     },
     "defect": {
       "title": "불량입력",

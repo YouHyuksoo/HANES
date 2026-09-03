@@ -55,6 +55,7 @@ export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: I
     { value: '', label: t('common.allStatus') },
     { value: 'REQUESTED', label: t('material.request.status.requested') },
     { value: 'APPROVED', label: t('material.request.status.approved') },
+    { value: 'PARTIAL', label: t('material.request.status.partial') },
     { value: 'COMPLETED', label: t('material.request.status.completed') },
     { value: 'REJECTED', label: t('material.request.status.rejected') },
   ], [t]);
@@ -89,7 +90,7 @@ export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: I
     { accessorKey: 'requestNo', header: t('material.col.requestNo'), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'requestDate', header: t('material.col.requestDate'), size: 100, meta: { filterType: 'date' as const } },
     {
-      accessorKey: 'workOrderNo',
+      accessorKey: 'orderNo',
       header: t('material.col.workOrder'),
       size: 160,
       meta: { filterType: 'text' as const },
@@ -161,7 +162,8 @@ export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: I
                 </button>
               </>
             )}
-            {record.status === 'APPROVED' && (
+            {/* 승인 또는 부분출고(잔량 재출고) 상태에서 출고처리 가능 — 백엔드 issueFromRequest 허용 상태와 동일 */}
+            {['APPROVED', 'PARTIAL'].includes(record.status) && (
               <button
                 type="button"
                 className="p-1 hover:bg-surface rounded"

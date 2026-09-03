@@ -106,6 +106,13 @@ export default function RoutingMaterialEditor({ selectedProcess }: { selectedPro
     return { ...evaluated, processCount };
   }, [assignments, selectedProcess.seq]);
 
+  /** 전체 선택/해제 — selected만 바꾸고 allocQty 등 나머지 입력값은 그대로 둔다 */
+  const setAllSelected = useCallback((selected: boolean) => {
+    setMaterials((prev) => prev.map((material) => (
+      material.selected === selected ? material : { ...material, selected }
+    )));
+  }, []);
+
   const save = useCallback(async () => {
     setSaving(true);
     try {
@@ -155,6 +162,12 @@ export default function RoutingMaterialEditor({ selectedProcess }: { selectedPro
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {isDirty && <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">{t("master.routing.unsavedChanges")}</span>}
+          <Button size="sm" variant="secondary" onClick={() => setAllSelected(true)} disabled={loading || saving || materials.length === 0}>
+            {t("common.selectAll")}
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => setAllSelected(false)} disabled={loading || saving || materials.length === 0}>
+            {t("common.deselectAll")}
+          </Button>
           <Button size="sm" onClick={save} disabled={saving || !isDirty}>
             {saving ? <RefreshCw className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
             {t("common.save")}

@@ -14,6 +14,7 @@ import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { ProcMatStockService } from '../../inventory/services/proc-mat-stock.service';
+import { IssueRequestAllocationService } from './issue-request-allocation.service';
 
 describe('MatIssueService', () => {
   let target: MatIssueService;
@@ -28,6 +29,9 @@ describe('MatIssueService', () => {
   let mockNumbering: DeepMocked<NumberingService>;
   let mockTx: DeepMocked<TransactionService>;
   let mockProcMatStockService: DeepMocked<ProcMatStockService>;
+  let mockAllocation: DeepMocked<IssueRequestAllocationService>;
+
+  const emptyAllocation = { allocations: [], allocatedQty: 0, unallocatedQty: 0 };
 
   beforeEach(async () => {
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
@@ -41,6 +45,8 @@ describe('MatIssueService', () => {
     mockNumbering = createMock<NumberingService>();
     mockTx = createMock<TransactionService>();
     mockProcMatStockService = createMock<ProcMatStockService>();
+    mockAllocation = createMock<IssueRequestAllocationService>();
+    mockAllocation.allocateIssuedQtyInTx.mockResolvedValue(emptyAllocation);
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
@@ -63,6 +69,7 @@ describe('MatIssueService', () => {
         { provide: NumberingService, useValue: mockNumbering },
         { provide: TransactionService, useValue: mockTx },
         { provide: ProcMatStockService, useValue: mockProcMatStockService },
+        { provide: IssueRequestAllocationService, useValue: mockAllocation },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -178,7 +185,7 @@ describe('MatIssueService', () => {
       ]);
       mockItemMasterRepo.findOne.mockResolvedValue(null);
 
-      jest.spyOn(target, 'create').mockResolvedValue([
+      jest.spyOn(target, 'createInTx').mockResolvedValue([
         {
           issueNo: 'ISS-001',
           seq: 1,
@@ -221,7 +228,7 @@ describe('MatIssueService', () => {
         { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'C1', plant: 'P1' } as MatStock,
       ]);
       mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
-      jest.spyOn(target, 'create').mockResolvedValue([
+      jest.spyOn(target, 'createInTx').mockResolvedValue([
         {
           issueNo: 'ISS-001',
           seq: 1,
@@ -274,7 +281,7 @@ describe('MatIssueService', () => {
       }, 'C1', 'P1')).rejects.toThrow(BadRequestException);
     });
 
-    it('스캔 출고는 공정코드를 create로 넘겨 공정재고 이동을 탄다', async () => {
+    it('스캔 출고는 공정코드를 createInTx로 넘겨 공정재고 이동을 탄다', async () => {
       mockMatLotRepo.findOne.mockResolvedValue({
         matUid: 'MAT-001',
         itemCode: 'ITEM-001',
@@ -287,7 +294,7 @@ describe('MatIssueService', () => {
         { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'C1', plant: 'P1' } as MatStock,
       ]);
       mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
-      const createSpy = jest.spyOn(target, 'create').mockResolvedValue([
+      const createSpy = jest.spyOn(target, 'createInTx').mockResolvedValue([
         { issueNo: 'ISS-001', seq: 1, matUid: 'MAT-001', issueQty: 5 } as any,
       ]);
 
@@ -300,14 +307,96 @@ describe('MatIssueService', () => {
       }, 'C1', 'P1');
 
       expect(createSpy).toHaveBeenCalledWith(
+        mockQueryRunner,
         expect.objectContaining({
           processCode: 'PRC1',
           issueType: 'PROD',
+          orderNo: undefined,
           items: [{ matUid: 'MAT-001', issueQty: 5 }],
         }),
         'C1',
         'P1',
       );
+    });
+
+    it('스캔 출고는 출고와 출고요청 배분을 한 트랜잭션에서 처리하고 배분 결과를 응답에 포함한다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        iqcStatus: 'PASS',
+        status: 'NORMAL',
+        company: 'C1',
+        plant: 'P1',
+      } as MatLot);
+      mockMatStockRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'C1', plant: 'P1' } as MatStock,
+      ]);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
+      const createSpy = jest.spyOn(target, 'createInTx').mockResolvedValue([
+        { issueNo: 'ISS-001', seq: 1, matUid: 'MAT-001', issueQty: 5 } as any,
+      ]);
+      const allocation = {
+        allocations: [{ requestNo: 'REQ-001', seq: 1, orderNo: 'WO-001', allocatedQty: 5, requestStatus: 'COMPLETED' as const }],
+        allocatedQty: 5,
+        unallocatedQty: 0,
+      };
+      mockAllocation.allocateIssuedQtyInTx.mockResolvedValue(allocation);
+
+      const result = await target.scanIssue({
+        matUid: 'MAT-001',
+        warehouseCode: 'WH-01',
+        issueType: 'PRODUCTION',
+        processCode: 'PRC1',
+        orderNo: 'WO-001',
+        workerId: 'worker',
+      }, 'C1', 'P1');
+
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      // MAT_ISSUES.ORDER_NO 기록
+      expect(createSpy).toHaveBeenCalledWith(
+        mockQueryRunner,
+        expect.objectContaining({ orderNo: 'WO-001', processCode: 'PRC1' }),
+        'C1',
+        'P1',
+      );
+      // 출고 후 같은 QueryRunner로 배분
+      expect(mockAllocation.allocateIssuedQtyInTx).toHaveBeenCalledWith(
+        mockQueryRunner,
+        expect.objectContaining({
+          itemCode: 'ITEM-001',
+          qty: 5,
+          issueType: 'PRODUCTION',
+          processCode: 'PRC1',
+          orderNo: 'WO-001',
+          company: 'C1',
+          plant: 'P1',
+        }),
+        'ISS-001',
+      );
+      expect(result.allocation).toEqual(allocation);
+      expect(result.issuedQty).toBe(5);
+    });
+
+    it('스캔 출고 중 배분이 실패하면 트랜잭션이 통째로 실패한다(출고만 남지 않음)', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        iqcStatus: 'PASS',
+        status: 'NORMAL',
+      } as MatLot);
+      mockMatStockRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5 } as MatStock,
+      ]);
+      mockItemMasterRepo.findOne.mockResolvedValue(null);
+      jest.spyOn(target, 'createInTx').mockResolvedValue([{ issueNo: 'ISS-001', seq: 1 } as any]);
+      mockAllocation.allocateIssuedQtyInTx.mockRejectedValue(new Error('allocation failed'));
+
+      await expect(target.scanIssue({
+        matUid: 'MAT-001',
+        issueType: 'PROD',
+        processCode: 'PRC1',
+      })).rejects.toThrow('allocation failed');
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
     });
 
     it('스캔 출고에 공정코드가 없으면 거부한다', async () => {
@@ -342,7 +431,7 @@ describe('MatIssueService', () => {
         { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'C1', plant: 'P1' } as MatStock,
       ]);
       mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
-      jest.spyOn(target, 'create').mockResolvedValue([
+      jest.spyOn(target, 'createInTx').mockResolvedValue([
         { issueNo: 'ISS-001', seq: 1, matUid: 'MAT-001', issueQty: 5 } as any,
       ]);
 

@@ -34,6 +34,12 @@ export class ScanIssueDto {
   @MaxLength(50)
   processCode?: string;
 
+  @ApiPropertyOptional({ description: '작업지시 번호 — 지정 시 MAT_ISSUES.ORDER_NO 기록 + 해당 작업지시 출고요청에 우선 배분' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  orderNo?: string;
+
   @ApiPropertyOptional({ description: '작업자 ID' })
   @IsOptional()
   @IsString()

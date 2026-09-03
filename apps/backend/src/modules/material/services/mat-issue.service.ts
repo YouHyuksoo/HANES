@@ -6,6 +6,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, DataSource, In } from 'typeorm';
+import { isProductionIssueType } from '@harness/shared';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -20,6 +21,7 @@ import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { ProcMatStockService } from '../../inventory/services/proc-mat-stock.service';
+import { IssueRequestAllocationService } from './issue-request-allocation.service';
 
 @Injectable()
 export class MatIssueService {
@@ -40,6 +42,7 @@ export class MatIssueService {
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
     private readonly procMatStockService: ProcMatStockService,
+    private readonly issueRequestAllocation: IssueRequestAllocationService,
   ) {}
 
   private sortStocksForIssue(stocks: MatStock[], warehouseCode?: string) {
@@ -371,32 +374,48 @@ export class MatIssueService {
     }
 
     const processCode = dto.processCode?.trim();
-    const isProductionIssue = ['PROD', 'PRODUCTION'].includes((dto.issueType || '').toUpperCase());
-    if (isProductionIssue && !processCode) {
+    if (isProductionIssueType(dto.issueType) && !processCode) {
       throw new BadRequestException('스캔 출고는 공정코드가 필요합니다. 공정재고로 이동할 공정을 지정하세요.');
     }
-
-    const result = await this.create({
-      warehouseCode: dto.warehouseCode,
-      issueType: dto.issueType,
-      processCode: processCode || undefined,
-      items: [{ matUid: lot.matUid, issueQty: stockQty }],
-      workerId: dto.workerId,
-      remark: dto.remark ?? `바코드 스캔 출고: ${dto.matUid}`,
-    }, company, plant);
+    const orderNo = dto.orderNo?.trim() || undefined;
 
     const part = await this.itemMasterRepository.findOne({
       where: { itemCode: lot.itemCode, ...tenantWhere },
     });
 
-    return {
-      ...result[0],
-      matUid: lot.matUid,
-      issuedQty: stockQty,
-      itemCode: lot.itemCode,
-      itemName: part?.itemName ?? null,
-      unit: part?.unit ?? null,
-    };
+    // 출고(+공정재고 적재)와 출고요청 배분(ISSUED_QTY 가산)을 한 트랜잭션으로 묶는다.
+    return this.tx.run(async (queryRunner) => {
+      const result = await this.createInTx(queryRunner, {
+        orderNo,
+        warehouseCode: dto.warehouseCode,
+        issueType: dto.issueType,
+        processCode: processCode || undefined,
+        items: [{ matUid: lot.matUid, issueQty: stockQty }],
+        workerId: dto.workerId,
+        remark: dto.remark ?? `바코드 스캔 출고: ${dto.matUid}`,
+      }, company, plant);
+      const issued = result[0];
+
+      const allocation = await this.issueRequestAllocation.allocateIssuedQtyInTx(queryRunner, {
+        itemCode: lot.itemCode,
+        qty: stockQty,
+        issueType: dto.issueType,
+        processCode: processCode ?? null,
+        orderNo: orderNo ?? null,
+        company: lot.company ?? company,
+        plant: lot.plant ?? plant,
+      }, issued?.issueNo ?? '');
+
+      return {
+        ...issued,
+        matUid: lot.matUid,
+        issuedQty: stockQty,
+        itemCode: lot.itemCode,
+        itemName: part?.itemName ?? null,
+        unit: part?.unit ?? null,
+        allocation,
+      };
+    });
   }
 
   async cancel(issueNo: string, seq: number, reason?: string, company?: string, plant?: string) {

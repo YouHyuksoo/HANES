@@ -31,6 +31,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableUsageMap } from '../../../entities/consumable-usage-map.entity';
 import { ConsumableStock } from '../../../entities/consumable-stock.entity';
+import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { User } from '../../../entities/user.entity';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
@@ -874,6 +875,10 @@ export class ProdResultService {
         );
       }
 
+      // 작업지시 실적 집계(GOOD_QTY/DEFECT_QTY) 즉시 갱신 — 키오스크 상단 진행률·TV 보드가 이 컬럼을 읽는다.
+      // 상태(DONE 전이)는 건드리지 않는다(종료는 작업지시관리에서 수동).
+      await this.refreshJobOrderQtyInTx(queryRunner, dto.orderNo, company, plant);
+
       // FG 바코드는 조립(서브공정) 키팅 공정에서 발행한다(라우팅 ISSUE_LABEL_TYPE='FG'). 실적 등록 시 사전발행하지 않는다.
 
       // 불량 상세 로그 저장 (불량입력 모달에서 등록된 유형별 불량)
@@ -914,6 +919,7 @@ export class ProdResultService {
           equipCode: dto.equipCode,
           orderNo: dto.orderNo,
           totalQty,
+          refId: saved.resultNo,
         }, jobOrder.company, jobOrder.plant);
       }
 
@@ -1136,6 +1142,7 @@ export class ProdResultService {
         equipCode: prodResult.equipCode,
         orderNo: prodResult.orderNo,
         totalQty: -((prodResult.goodQty ?? 0) + (prodResult.defectQty ?? 0)),
+        refId: prodResult.resultNo,
       }, company, plant);
     }
 
@@ -1185,11 +1192,11 @@ export class ProdResultService {
    */
   private async accrueConsumableUsageInTx(
     queryRunner: import('typeorm').QueryRunner,
-    params: { equipCode: string; orderNo: string; totalQty: number },
+    params: { equipCode: string; orderNo: string; totalQty: number; refId?: string },
     company?: string,
     plant?: string,
   ): Promise<void> {
-    const { equipCode, orderNo, totalQty } = params;
+    const { equipCode, orderNo, totalQty, refId } = params;
     if (!equipCode || !totalQty) return;
     const tenant = { ...(company ? { company } : {}), ...(plant ? { plant } : {}) };
 
@@ -1230,10 +1237,27 @@ export class ProdResultService {
       if (bucket) bucket.push(lot);
       else lotsByCode.set(lot.consumableCode, [lot]);
     }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     for (const cmap of consumMaps) {
       for (const lot of lotsByCode.get(cmap.consumableCode) ?? []) {
-        const newCount = Math.max(0, lot.currentCount + cmap.usagePerUnit * totalQty);
+        const delta = cmap.usagePerUnit * totalQty;
+        const newCount = Math.max(0, lot.currentCount + delta);
         await queryRunner.manager.update(ConsumableStock, { conUid: lot.conUid }, { currentCount: newCount });
+        // 누적 이력 — 실적 단위로 남겨 "언제 얼마나 올랐는지" 추적 가능하게 (현장 요청 2026-09-03)
+        const seqRow = await queryRunner.manager.query(`SELECT SEQ_CONSUMABLE_LOGS.NEXTVAL AS "nextSeq" FROM DUAL`);
+        await queryRunner.manager.save(ConsumableLog, queryRunner.manager.create(ConsumableLog, {
+          transDate: today,
+          seq: Number(seqRow[0]?.nextSeq),
+          consumableCode: lot.consumableCode,
+          conUid: lot.conUid,
+          logType: 'USAGE',
+          qty: delta,
+          equipCode,
+          remark: `${delta >= 0 ? '타수 누적' : '타수 되돌림'} ${lot.currentCount} → ${newCount} (실적 ${refId ?? '-'}, 지시 ${orderNo})`,
+          company: consumJobOrder.company,
+          plant: consumJobOrder.plant,
+        }));
         this.logger.log(`소모품 롯트 사용횟수 누적: ${lot.conUid} (${lot.currentCount} → ${newCount})`);
       }
     }
@@ -1286,6 +1310,7 @@ export class ProdResultService {
           equipCode: prodResult.equipCode,
           orderNo: prodResult.orderNo,
           totalQty,
+          refId: prodResult.resultNo,
         }, company, plant);
 
         // 3. 설비의 현재 작업지시번호 해제
@@ -1595,6 +1620,28 @@ export class ProdResultService {
 
     throw new BadRequestException(
       `이미 후공정이 진행된 생산실적입니다. ${details}. 출하 -> 팔레트 -> 박스/OQC -> FG 라벨 순서로 역처리 후 다시 취소해 주세요.`,
+    );
+  }
+
+  /** 작업지시 GOOD_QTY/DEFECT_QTY를 취소 제외 실적 합계로 갱신 (상태는 변경하지 않음) */
+  private async refreshJobOrderQtyInTx(
+    qr: import('typeorm').QueryRunner,
+    orderNo: string,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    // raw SQL — 같은 트랜잭션의 미커밋 실적까지 포함해 집계 (물리 컬럼명 사용)
+    const params: unknown[] = [orderNo];
+    let sql = `SELECT NVL(SUM(GOOD_QTY), 0) AS "totalGoodQty", NVL(SUM(DEFECT_QTY), 0) AS "totalDefectQty"
+                 FROM PROD_RESULTS WHERE ORDER_NO = :1 AND STATUS <> 'CANCELED'`;
+    if (company) { params.push(company); sql += ` AND COMPANY = :${params.length}`; }
+    if (plant) { params.push(plant); sql += ` AND PLANT_CD = :${params.length}`; }
+    const rows: Array<{ totalGoodQty?: string | number; totalDefectQty?: string | number }> | undefined = await qr.query(sql, params);
+    const summary = rows?.[0];
+    await qr.manager.update(
+      JobOrder,
+      { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      { goodQty: Number(summary?.totalGoodQty ?? 0), defectQty: Number(summary?.totalDefectQty ?? 0) },
     );
   }
 

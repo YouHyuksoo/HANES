@@ -12,6 +12,7 @@ import { BomMaster } from '../../../entities/bom-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatIssueService } from './mat-issue.service';
 import { NumberingService } from '../../../shared/numbering.service';
@@ -28,6 +29,7 @@ describe('IssueRequestService', () => {
   let matIssueRepo: DeepMocked<Repository<MatIssue>>;
   let matStockRepo: DeepMocked<Repository<MatStock>>;
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
+  let routingProcessRepo: DeepMocked<Repository<RoutingProcess>>;
   let matIssueService: DeepMocked<MatIssueService>;
   let numbering: DeepMocked<NumberingService>;
   let dataSource: DeepMocked<DataSource>;
@@ -43,6 +45,7 @@ describe('IssueRequestService', () => {
     matIssueRepo = createMock<Repository<MatIssue>>();
     matStockRepo = createMock<Repository<MatStock>>();
     warehouseRepo = createMock<Repository<Warehouse>>();
+    routingProcessRepo = createMock<Repository<RoutingProcess>>();
     matIssueService = createMock<MatIssueService>();
     numbering = createMock<NumberingService>();
     dataSource = createMock<DataSource>();
@@ -56,6 +59,9 @@ describe('IssueRequestService', () => {
     queryRunner.commitTransaction.mockResolvedValue(undefined);
     queryRunner.rollbackTransaction.mockResolvedValue(undefined);
     queryRunner.release.mockResolvedValue(undefined);
+    // 공정 폴백 조회 기본값: 작업지시/라우팅 없음(테스트별로 덮어쓴다)
+    jobOrderRepo.findOne.mockResolvedValue(null);
+    routingProcessRepo.findOne.mockResolvedValue(null);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -68,6 +74,7 @@ describe('IssueRequestService', () => {
         { provide: getRepositoryToken(MatIssue), useValue: matIssueRepo },
         { provide: getRepositoryToken(MatStock), useValue: matStockRepo },
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
+        { provide: getRepositoryToken(RoutingProcess), useValue: routingProcessRepo },
         { provide: MatIssueService, useValue: matIssueService },
         { provide: NumberingService, useValue: numbering },
         { provide: DataSource, useValue: dataSource },
@@ -199,6 +206,25 @@ describe('IssueRequestService', () => {
       expect(itemMasterRepo.find).toHaveBeenCalledWith({
         where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
       });
+    });
+
+    it('상세 조회 응답에 출고 시 적용될 공정(요청 → 작업지시 → 라우팅 첫 공정)을 포함한다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'APPROVED',
+        orderNo: 'WO-001',
+        processCode: null,
+        company: 'C1',
+        plant: 'P1',
+      } as MatIssueRequest);
+      requestItemRepo.find.mockResolvedValue([]);
+      itemMasterRepo.find.mockResolvedValue([]);
+      jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'WO-001', processCode: null, routingCode: 'RT1', company: 'C1', plant: 'P1' } as JobOrder);
+      routingProcessRepo.findOne.mockResolvedValue({ routingCode: 'RT1', seq: 10, processCode: 'PRC-RT' } as RoutingProcess);
+
+      const result = await service.findByRequestNo('REQ-001', 'C1', 'P1');
+
+      expect(result.issueProcessCode).toBe('PRC-RT');
     });
 
     it('상세 조회 응답에 품목 포장단위(minPackQty)를 포함한다', async () => {
@@ -501,6 +527,7 @@ describe('IssueRequestService', () => {
         requestNo: 'REQ-001',
         status: 'APPROVED',
         orderNo: 'WO-001',
+        processCode: 'PRC1',
         issueType: 'PRODUCTION',
         company: 'C1',
         plant: 'P1',
@@ -509,10 +536,11 @@ describe('IssueRequestService', () => {
       requestItemRepo.find.mockResolvedValue([
         { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 2 } as MatIssueRequestItem,
       ]);
-      queryRunner.manager.find.mockResolvedValue([{
-        matUid: 'MAT-001',
-        itemCode: 'ITEM-001',
-      } as MatLot]);
+      queryRunner.manager.find.mockImplementation(async (entity: unknown) => (
+        entity === MatLot
+          ? [{ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot]
+          : [{ requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 10 } as MatIssueRequestItem]
+      ) as any);
 
       await service.issueFromRequest('REQ-001', {
         warehouseCode: 'WH-01',
@@ -524,6 +552,7 @@ describe('IssueRequestService', () => {
       expect(tx.run).toHaveBeenCalledTimes(1);
       expect((matIssueService as any).createInTx).toHaveBeenCalledWith(queryRunner, expect.objectContaining({
         orderNo: 'WO-001',
+        processCode: 'PRC1',
         warehouseCode: 'WH-01',
         items: [{ matUid: 'MAT-001', issueQty: 8 }],
       }), 'C1', 'P1');
@@ -532,8 +561,225 @@ describe('IssueRequestService', () => {
         { requestId: 'REQ-001', seq: 1, company: 'C1', plant: 'P1' },
         { issuedQty: 10 },
       );
+      // 완료 판정은 트랜잭션 밖 repository 가 아니라 같은 QueryRunner 재조회(갱신 후 값)로 한다
+      expect(queryRunner.manager.find).toHaveBeenCalledWith(
+        MatIssueRequestItem,
+        { where: { requestId: 'REQ-001', company: 'C1', plant: 'P1' } },
+      );
+      expect(queryRunner.manager.update).toHaveBeenCalledWith(
+        MatIssueRequest,
+        { requestNo: 'REQ-001', company: 'C1', plant: 'P1' },
+        { status: 'COMPLETED' },
+      );
       expect(matIssueService.create).not.toHaveBeenCalled();
       expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+    });
+
+    it('같은 요청 품목에 여러 LOT를 출고하면 수량을 합산해 한 번 갱신한다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'APPROVED',
+        orderNo: null,
+        processCode: 'PRC1',
+        issueType: 'PRODUCTION',
+        company: 'C1',
+        plant: 'P1',
+      } as MatIssueRequest);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 0 } as MatIssueRequestItem,
+      ]);
+      itemMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', minPackQty: 0 } as ItemMaster]);
+      queryRunner.manager.find.mockImplementation(async (entity: unknown) => (
+        entity === MatLot
+          ? [
+            { matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot,
+            { matUid: 'MAT-002', itemCode: 'ITEM-001' } as MatLot,
+          ]
+          : [{ requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 8 } as MatIssueRequestItem]
+      ) as any);
+
+      await service.issueFromRequest('REQ-001', {
+        warehouseCode: 'WH-01',
+        items: [
+          { requestItemId: '1', matUid: 'MAT-001', issueQty: 5 },
+          { requestItemId: '1', matUid: 'MAT-002', issueQty: 3 },
+        ],
+      }, 'C1', 'P1');
+
+      const itemUpdates = queryRunner.manager.update.mock.calls.filter((call) => call[0] === MatIssueRequestItem);
+      expect(itemUpdates).toHaveLength(1);
+      expect(itemUpdates[0][2]).toEqual({ issuedQty: 8 });
+
+      // 합산이 잔여를 넘으면 차단
+      await expect(service.issueFromRequest('REQ-001', {
+        warehouseCode: 'WH-01',
+        items: [
+          { requestItemId: '1', matUid: 'MAT-001', issueQty: 6 },
+          { requestItemId: '1', matUid: 'MAT-002', issueQty: 5 },
+        ],
+      }, 'C1', 'P1')).rejects.toThrow('요청 수량을 초과해 출고할 수 없습니다');
+    });
+
+    it('요청에 공정이 없으면 작업지시 대표 공정으로 출고한다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'APPROVED',
+        orderNo: 'WO-001',
+        processCode: null,
+        issueType: null,
+        company: 'C1',
+        plant: 'P1',
+      } as MatIssueRequest);
+      jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'WO-001', processCode: 'PRC-JO', routingCode: 'RT1', company: 'C1', plant: 'P1' } as JobOrder);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 0 } as MatIssueRequestItem,
+      ]);
+      queryRunner.manager.find.mockImplementation(async (entity: unknown) => (
+        entity === MatLot ? [{ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot] : []
+      ) as any);
+
+      await service.issueFromRequest('REQ-001', {
+        warehouseCode: 'WH-01',
+        items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 4 }],
+      }, 'C1', 'P1');
+
+      expect(jobOrderRepo.findOne).toHaveBeenCalledWith({ where: { orderNo: 'WO-001', company: 'C1', plant: 'P1' } });
+      expect(routingProcessRepo.findOne).not.toHaveBeenCalled();
+      expect((matIssueService as any).createInTx).toHaveBeenCalledWith(
+        queryRunner,
+        expect.objectContaining({ processCode: 'PRC-JO', issueType: 'PRODUCTION' }),
+        'C1',
+        'P1',
+      );
+    });
+
+    it('작업지시 대표 공정도 없으면 라우팅 첫 SEQ 공정으로 출고한다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'APPROVED',
+        orderNo: 'WO-001',
+        processCode: null,
+        issueType: 'PRODUCTION',
+        company: 'C1',
+        plant: 'P1',
+      } as MatIssueRequest);
+      jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'WO-001', processCode: null, routingCode: 'RT1', company: 'C1', plant: 'P1' } as JobOrder);
+      routingProcessRepo.findOne.mockResolvedValue({ routingCode: 'RT1', seq: 10, processCode: 'PRC-RT' } as RoutingProcess);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 0 } as MatIssueRequestItem,
+      ]);
+      queryRunner.manager.find.mockImplementation(async (entity: unknown) => (
+        entity === MatLot ? [{ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot] : []
+      ) as any);
+
+      await service.issueFromRequest('REQ-001', {
+        warehouseCode: 'WH-01',
+        items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 4 }],
+      }, 'C1', 'P1');
+
+      expect(routingProcessRepo.findOne).toHaveBeenCalledWith({
+        where: { routingCode: 'RT1', useYn: 'Y', company: 'C1', plant: 'P1' },
+        order: { seq: 'ASC' },
+      });
+      expect((matIssueService as any).createInTx).toHaveBeenCalledWith(
+        queryRunner,
+        expect.objectContaining({ processCode: 'PRC-RT' }),
+        'C1',
+        'P1',
+      );
+    });
+
+    it('생산 출고인데 공정을 끝내 결정할 수 없으면 단순출고 대신 차단한다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'APPROVED',
+        orderNo: 'WO-001',
+        processCode: null,
+        issueType: 'PRODUCTION',
+        company: 'C1',
+        plant: 'P1',
+      } as MatIssueRequest);
+      jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'WO-001', processCode: null, routingCode: null, company: 'C1', plant: 'P1' } as JobOrder);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 0 } as MatIssueRequestItem,
+      ]);
+      queryRunner.manager.find.mockResolvedValue([{ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot]);
+
+      await expect(service.issueFromRequest('REQ-001', {
+        warehouseCode: 'WH-01',
+        items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 4 }],
+      }, 'C1', 'P1')).rejects.toThrow('출고 공정을 결정할 수 없습니다');
+
+      expect((matIssueService as any).createInTx).not.toHaveBeenCalled();
+      expect(queryRunner.manager.update).not.toHaveBeenCalled();
+    });
+
+    it('출고 DTO의 공정이 요청/작업지시 공정보다 우선한다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'APPROVED',
+        orderNo: 'WO-001',
+        processCode: 'PRC-REQ',
+        issueType: 'PRODUCTION',
+        company: 'C1',
+        plant: 'P1',
+      } as MatIssueRequest);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 0 } as MatIssueRequestItem,
+      ]);
+      queryRunner.manager.find.mockImplementation(async (entity: unknown) => (
+        entity === MatLot ? [{ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot] : []
+      ) as any);
+
+      await service.issueFromRequest('REQ-001', {
+        warehouseCode: 'WH-01',
+        processCode: 'PRC-USER',
+        items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 4 }],
+      }, 'C1', 'P1');
+
+      expect(jobOrderRepo.findOne).not.toHaveBeenCalled();
+      expect((matIssueService as any).createInTx).toHaveBeenCalledWith(
+        queryRunner,
+        expect.objectContaining({ processCode: 'PRC-USER' }),
+        'C1',
+        'P1',
+      );
+    });
+
+    it('기타출고(MANUAL)는 공정이 없어도 기존처럼 단순출고를 허용한다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'APPROVED',
+        orderNo: null,
+        processCode: null,
+        issueType: 'MANUAL',
+        company: 'C1',
+        plant: 'P1',
+      } as MatIssueRequest);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 0 } as MatIssueRequestItem,
+      ]);
+      queryRunner.manager.find.mockImplementation(async (entity: unknown) => (
+        entity === MatLot ? [{ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot] : []
+      ) as any);
+
+      await service.issueFromRequest('REQ-001', {
+        warehouseCode: 'WH-01',
+        items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 4 }],
+      }, 'C1', 'P1');
+
+      expect((matIssueService as any).createInTx).toHaveBeenCalledWith(
+        queryRunner,
+        expect.objectContaining({ processCode: undefined, issueType: 'MANUAL' }),
+        'C1',
+        'P1',
+      );
     });
 
     it('요청 항목을 찾을 수 없으면 출고를 차단한다', async () => {
@@ -643,6 +889,7 @@ describe('IssueRequestService', () => {
         requestNo: 'REQ-001',
         status: 'APPROVED',
         orderNo: 'WO-001',
+        processCode: 'PRC1',
         issueType: 'PRODUCTION',
         company: 'C1',
         plant: 'P1',
@@ -710,6 +957,7 @@ describe('IssueRequestService', () => {
         requestNo: 'REQ-001',
         status: 'APPROVED',
         orderNo: 'WO-001',
+        processCode: 'PRC1',
         issueType: 'PRODUCTION',
         company: 'C1',
         plant: 'P1',
@@ -719,10 +967,11 @@ describe('IssueRequestService', () => {
         { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 0 } as MatIssueRequestItem,
       ]);
       itemMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', minPackQty: 0 } as ItemMaster]);
-      queryRunner.manager.find.mockResolvedValue([{
-        matUid: 'MAT-001',
-        itemCode: 'ITEM-001',
-      } as MatLot]);
+      queryRunner.manager.find.mockImplementation(async (entity: unknown) => (
+        entity === MatLot
+          ? [{ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot]
+          : [{ requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 4 } as MatIssueRequestItem]
+      ) as any);
 
       // 요청 10 중 4만 출고 → 잔여 6 → PARTIAL
       await service.issueFromRequest('REQ-001', {
@@ -744,6 +993,7 @@ describe('IssueRequestService', () => {
         requestNo: 'REQ-001',
         status: 'PARTIAL',
         orderNo: 'WO-001',
+        processCode: 'PRC1',
         issueType: 'PRODUCTION',
         company: 'C1',
         plant: 'P1',
@@ -753,10 +1003,11 @@ describe('IssueRequestService', () => {
         { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 4 } as MatIssueRequestItem,
       ]);
       itemMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', minPackQty: 0 } as ItemMaster]);
-      queryRunner.manager.find.mockResolvedValue([{
-        matUid: 'MAT-001',
-        itemCode: 'ITEM-001',
-      } as MatLot]);
+      queryRunner.manager.find.mockImplementation(async (entity: unknown) => (
+        entity === MatLot
+          ? [{ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot]
+          : [{ requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 10 } as MatIssueRequestItem]
+      ) as any);
 
       // 잔여 6 전량 출고 → COMPLETED
       await service.issueFromRequest('REQ-001', {
