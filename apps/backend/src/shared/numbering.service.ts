@@ -33,6 +33,8 @@ const LEGACY_SEQUENCE_FORMATS: Record<string, { sequence: string; prefix: string
   STOCK_TX: { sequence: 'SEQ_LEGACY_STOCK_TX', prefix: 'TX', pad: 5 },
   CANCEL_TX: { sequence: 'SEQ_LEGACY_CANCEL_TX', prefix: 'CTX', pad: 5 },
   RECEIVE: { sequence: 'SEQ_LEGACY_RECEIVE', prefix: 'RCV', pad: 4 },
+  SUBCON_DELIVERY: { sequence: 'SEQ_SUBCON_DELIVERY', prefix: 'SCD', pad: 4 },
+  SUBCON_RECEIVE: { sequence: 'SEQ_SUBCON_RECEIVE', prefix: 'SCR', pad: 4 },
 };
 
 @Injectable()

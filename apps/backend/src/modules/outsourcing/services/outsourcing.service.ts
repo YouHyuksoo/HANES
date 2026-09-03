@@ -397,16 +397,8 @@ export class OutsourcingService {
       throw new BadRequestException(`출고 가능 수량(${remainQty})을 초과했습니다.`);
     }
 
-    // 출고번호 생성
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const count = await this.subconDeliveryRepository.count({
-      where: {
-        deliveryNo: `SCD${today}%`,
-      },
-    });
-    const deliveryNo = `SCD${today}${String(count + 1).padStart(4, '0')}`;
-
     return this.tx.run(async (queryRunner) => {
+      const deliveryNo = await this.numbering.next('SUBCON_DELIVERY', queryRunner);
       const delivery = queryRunner.manager.create(SubconDelivery, {
         orderNo: dto.orderId,
         deliveryNo,
@@ -420,15 +412,19 @@ export class OutsourcingService {
       await queryRunner.manager.save(delivery);
 
       // 발주 출고수량 업데이트
-      const newDeliveredQty = order.deliveredQty + dto.qty;
-      await queryRunner.manager.update(
-        SubconOrder,
-        { orderNo: dto.orderId, ...this.tenantWhere(company, plant) },
-        {
-          deliveredQty: newDeliveredQty,
-          status: newDeliveredQty >= order.orderQty ? 'DELIVERED' : 'ORDERED',
-        },
-      );
+      const updateResult = await queryRunner.manager.createQueryBuilder()
+        .update(SubconOrder)
+        .set({
+          deliveredQty: () => 'DELIVERED_QTY + :qty',
+          status: () => "CASE WHEN DELIVERED_QTY + :qty >= ORDER_QTY THEN 'DELIVERED' ELSE 'ORDERED' END",
+        })
+        .where({ orderNo: dto.orderId, ...this.tenantWhere(company, plant) })
+        .andWhere('DELIVERED_QTY + :qty <= ORDER_QTY')
+        .setParameters({ qty: dto.qty })
+        .execute();
+      if (updateResult.affected !== 1) {
+        throw new BadRequestException('동시 출고로 외주 발주 잔량이 부족해졌습니다.');
+      }
 
       return delivery;
     });
@@ -448,19 +444,11 @@ export class OutsourcingService {
   async createReceive(dto: CreateSubconReceiveDto, company?: string, plant?: string) {
     const order = await this.findOrderById(dto.orderId, company, plant);
 
-    // 입고번호 생성
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const count = await this.subconReceiveRepository.count({
-      where: {
-        receiveNo: `SCR${today}%`,
-      },
-    });
-    const receiveNo = `SCR${today}${String(count + 1).padStart(4, '0')}`;
-
     const goodQty = dto.goodQty ?? dto.qty;
     const defectQty = dto.defectQty ?? 0;
 
     return this.tx.run(async (queryRunner) => {
+      const receiveNo = await this.numbering.next('SUBCON_RECEIVE', queryRunner);
       const receive = queryRunner.manager.create(SubconReceive, {
         orderNo: dto.orderId,
         receiveNo,
@@ -477,25 +465,20 @@ export class OutsourcingService {
       await queryRunner.manager.save(receive);
 
       // 발주 입고수량 업데이트
-      const newReceivedQty = order.receivedQty + dto.qty;
-      const newDefectQty = order.defectQty + defectQty;
-
-      let newStatus = order.status;
-      if (newReceivedQty >= order.orderQty) {
-        newStatus = 'RECEIVED';
-      } else if (newReceivedQty > 0) {
-        newStatus = 'PARTIAL_RECV';
+      const updateResult = await queryRunner.manager.createQueryBuilder()
+        .update(SubconOrder)
+        .set({
+          receivedQty: () => 'RECEIVED_QTY + :qty',
+          defectQty: () => 'DEFECT_QTY + :defectQty',
+          status: () => "CASE WHEN RECEIVED_QTY + :qty >= ORDER_QTY THEN 'RECEIVED' ELSE 'PARTIAL_RECV' END",
+        })
+        .where({ orderNo: dto.orderId, ...this.tenantWhere(company, plant) })
+        .andWhere('RECEIVED_QTY + :qty <= ORDER_QTY')
+        .setParameters({ qty: dto.qty, defectQty })
+        .execute();
+      if (updateResult.affected !== 1) {
+        throw new BadRequestException('동시 입고로 외주 발주 잔량이 부족해졌습니다.');
       }
-
-      await queryRunner.manager.update(
-        SubconOrder,
-        { orderNo: dto.orderId, ...this.tenantWhere(company, plant) },
-        {
-          receivedQty: newReceivedQty,
-          defectQty: newDefectQty,
-          status: newStatus,
-        },
-      );
 
       return receive;
     });

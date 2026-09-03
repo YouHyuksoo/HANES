@@ -1265,17 +1265,19 @@ export class ArrivalService {
     });
 
     if (existing) {
-      const newQty = Math.max(0, existing.qty + qtyDelta);
-      await manager.update(MatStock,
-        {
+      const result = await manager.update(MatStock, {
           warehouseCode: existing.warehouseCode,
           itemCode: existing.itemCode,
           matUid: existing.matUid,
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
-        },
-        { qty: newQty, availableQty: Math.max(0, newQty - existing.reservedQty) },
-      );
+        }, {
+          qty: () => `QTY + ${Number(qtyDelta)}`,
+          availableQty: () => `AVAILABLE_QTY + ${Number(qtyDelta)}`,
+        });
+      if (result?.affected !== undefined && result.affected !== 1) {
+        throw new BadRequestException(`동시 처리로 자재재고 수량이 변경되었습니다. LOT: ${resolvedMatUid}`);
+      }
     } else if (qtyDelta > 0) {
       const newStock = manager.create(MatStock, {
         warehouseCode,
@@ -1313,16 +1315,15 @@ export class ArrivalService {
       throw new BadRequestException(`입하재고가 부족합니다. LOT: ${matUid}, 요청=${qty}, 입하재고=${stock.availableQty}`);
     }
 
-    const newQty = stock.qty - qty;
-    await manager.update(MatArrivalStock, {
-      company: stock.company,
-      plant: stock.plant,
-      matUid: stock.matUid,
-    }, {
-      qty: newQty,
-      availableQty: Math.max(0, stock.availableQty - qty),
-      status: newQty > 0 ? 'AVAILABLE' : 'DEPLETED',
-    });
+    const result = await manager.update(MatArrivalStock,
+      { company: stock.company, plant: stock.plant, matUid: stock.matUid }, {
+        qty: () => `QTY - ${Number(qty)}`,
+        availableQty: () => `AVAILABLE_QTY - ${Number(qty)}`,
+        status: () => `CASE WHEN QTY - ${Number(qty)} > 0 THEN 'AVAILABLE' ELSE 'DEPLETED' END`,
+      });
+    if (result?.affected !== undefined && result.affected !== 1) {
+      throw new BadRequestException(`동시 처리로 입하재고가 부족해졌습니다. LOT: ${matUid}`);
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────

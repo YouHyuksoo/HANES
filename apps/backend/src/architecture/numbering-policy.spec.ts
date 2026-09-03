@@ -38,7 +38,8 @@ describe('numbering safety policy', () => {
       const source = read(filePath);
       const hasMaxLookup = /SELECT\s+(?:NVL\s*\(\s*)?MAX\s*\([^\r\n;]+\)/i.test(source);
       const hasLastNumberIncrement = /last(?:No|Id|Seq)[\s\S]{0,240}\+\s*1/i.test(source);
-      return hasMaxLookup && hasLastNumberIncrement ? [relative(filePath)] : [];
+      const hasCountIncrement = /(?:const|let)\s+\w*count\s*=\s*await[\s\S]{0,180}\.count\s*\([\s\S]{0,300}\w*count\s*\+\s*1/i.test(source);
+      return (hasMaxLookup && hasLastNumberIncrement) || hasCountIncrement ? [relative(filePath)] : [];
     });
 
     expect(offenders).toEqual([]);

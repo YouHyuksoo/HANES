@@ -11,7 +11,7 @@
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { InterLog } from '../../../entities/inter-log.entity';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
@@ -239,7 +239,7 @@ export class ErpMaterialService {
   async retryFailed(company?: string, plant?: string) {
     const tenantWhere = this.tenantWhere(company, plant);
     const failedLogs = await this.interLogRepo.find({
-      where: { status: 'FAILED', direction: 'OUTBOUND', ...tenantWhere },
+      where: { status: In(['FAILED', 'RETRY']), direction: 'OUTBOUND', ...tenantWhere },
       order: { transDate: 'ASC' },
     });
 
@@ -247,22 +247,28 @@ export class ErpMaterialService {
     for (const log of failedLogs) {
       if (log.retryCount >= 3) continue;
 
+      const newRetry = log.retryCount + 1;
+      const claimed = await this.interLogRepo.update(
+        { transDate: log.transDate, seq: log.seq, status: log.status, retryCount: log.retryCount, ...tenantWhere },
+        { status: 'RETRY', retryCount: newRetry },
+      );
+      if (claimed.affected !== 1) continue;
+
       try {
         const data = JSON.parse(log.payload || '{}');
-        this.logger.log(`ERP 재시도 (${log.retryCount + 1}/3): ${log.messageType} ${log.interfaceId}`);
+        this.logger.log(`ERP 재시도 (${newRetry}/3): ${log.messageType} ${log.interfaceId}`);
         await this.sendToErp(data);
 
         await this.interLogRepo.update(
           { transDate: log.transDate, seq: log.seq, ...tenantWhere },
-          { status: 'SUCCESS', retryCount: log.retryCount + 1 },
+          { status: 'SUCCESS' },
         );
         results.push({ transDate: log.transDate, seq: log.seq, status: 'SUCCESS' });
       } catch (error: unknown) {
         const errMsg = error instanceof Error ? error.message : String(error);
-        const newRetry = log.retryCount + 1;
         await this.interLogRepo.update(
           { transDate: log.transDate, seq: log.seq, ...tenantWhere },
-          { retryCount: newRetry, errorMsg: errMsg, status: newRetry >= 3 ? 'FAILED' : 'RETRY' },
+          { errorMsg: errMsg, status: newRetry >= 3 ? 'FAILED' : 'RETRY' },
         );
         results.push({ transDate: log.transDate, seq: log.seq, status: newRetry >= 3 ? 'FAILED' : 'RETRY' });
       }

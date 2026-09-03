@@ -229,7 +229,7 @@ describe('ProductInventoryService', () => {
       }));
       expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(
         ProductStock,
-        { warehouseCode: 'FG_WIP', itemCode: 'FG-001', qualityStatus: 'GOOD', company: 'C1', plant: 'P1', qty: 0, reservedQty: 0 },
+        { warehouseCode: 'FG_WIP', itemCode: 'FG-001', qualityStatus: 'GOOD', company: 'C1', plant: 'P1', qty: 0, availableQty: 0, reservedQty: 0 },
       );
       expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
         ProductStock,

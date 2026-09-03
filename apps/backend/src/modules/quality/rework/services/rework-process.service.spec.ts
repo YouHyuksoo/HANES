@@ -110,7 +110,7 @@ describe('ReworkProcessService', () => {
     it('should count and aggregate results within tenant', async () => {
       const proc = { reworkOrderId: 'RW-001', processCode: 'P01', status: 'IN_PROGRESS', company: 'CO', plant: 'P01' } as any;
       mockProcessRepo.findOne.mockResolvedValue(proc);
-      mockResultRepo.count.mockResolvedValue(0);
+      mockResultRepo.query.mockResolvedValue([{ NEXT_SEQ: 1 }]);
       mockResultRepo.create.mockReturnValue({ reworkOrderId: 'RW-001', processCode: 'P01', seq: 1, resultQty: 5 } as any);
       mockResultRepo.save.mockResolvedValue({ reworkOrderId: 'RW-001', processCode: 'P01', seq: 1, resultQty: 5 } as any);
       mockResultRepo.find.mockResolvedValue([{ resultQty: 5 } as any]);
@@ -125,9 +125,9 @@ describe('ReworkProcessService', () => {
       expect(mockProcessRepo.findOne).toHaveBeenCalledWith({
         where: { reworkOrderId: 'RW-001', processCode: 'P01', company: 'CO', plant: 'P01' },
       });
-      expect(mockResultRepo.count).toHaveBeenCalledWith({
-        where: { reworkOrderId: 'RW-001', processCode: 'P01', company: 'CO', plant: 'P01' },
-      });
+      expect(mockResultRepo.query).toHaveBeenCalledWith(
+        'SELECT SEQ_REWORK_RESULT.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+      );
       expect(mockResultRepo.find).toHaveBeenCalledWith({
         where: { reworkOrderId: 'RW-001', processCode: 'P01', company: 'CO', plant: 'P01' },
       });

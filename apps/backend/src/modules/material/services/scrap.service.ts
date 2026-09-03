@@ -147,7 +147,6 @@ export class ScrapService {
         );
       }
 
-      const newStockQty = stock.qty - qty;
       const changed = await queryRunner.manager.createQueryBuilder().update(MatStock)
         .set({ qty: () => '"QTY" - :stockDelta', availableQty: () => '"AVAILABLE_QTY" - :stockDelta' })
         .where({ warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere })
@@ -156,7 +155,10 @@ export class ScrapService {
       if ((changed.affected ?? 0) !== 1) throw new BadRequestException('동시 처리로 폐기 대상 재고가 변경되었습니다. 다시 조회해 주세요.');
 
       // 재고 0이면 LOT 상태만 DEPLETED로 변경
-      if (newStockQty === 0) {
+      const remainingStock = await queryRunner.manager.findOne(MatStock, {
+        where: { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere },
+      });
+      if (remainingStock?.qty === 0) {
         await queryRunner.manager.update(MatLot, { matUid: lot.matUid, ...tenantWhere }, { status: 'DEPLETED' });
       }
 

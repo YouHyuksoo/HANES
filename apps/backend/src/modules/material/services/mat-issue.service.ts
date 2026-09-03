@@ -273,14 +273,27 @@ export class MatIssueService {
         await queryRunner.manager.save(stockTx);
 
         // 원자재창고 차감(기존 유지)
-        await queryRunner.manager.update(
-          MatStock,
-          { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere },
-          {
-            qty: Math.max(0, stock.qty - issueQty),
-            availableQty: Math.max(0, stock.availableQty - issueQty),
-          },
-        );
+        const stockResult = await queryRunner.manager
+          .createQueryBuilder()
+          .update(MatStock)
+          .set({
+            qty: () => 'QTY - :issueQty',
+            availableQty: () => 'AVAILABLE_QTY - :issueQty',
+          })
+          .where({
+            warehouseCode: stock.warehouseCode,
+            itemCode: stock.itemCode,
+            matUid: stock.matUid,
+            ...tenantWhere,
+          })
+          .andWhere('QTY >= :issueQty AND AVAILABLE_QTY >= :issueQty')
+          .setParameters({ issueQty })
+          .execute();
+        if (stockResult.affected !== 1) {
+          throw new BadRequestException(
+            `동시 출고로 재고가 부족해졌습니다. LOT: ${item.matUid}, 창고: ${stock.warehouseCode}`,
+          );
+        }
 
         // 이동이면 공정 단위 공정재고(PROC_MAT_STOCKS=장착 대기)에 동량 가산
         if (isMove && processCode) {

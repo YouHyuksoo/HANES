@@ -467,14 +467,14 @@ export class ReworkService {
       throw new BadRequestException('재검사대기 상태가 아닙니다.');
     }
 
-    // seq 자동채번: 해당 reworkOrderId의 검사 건수 + 1
-    const existingCount = await this.inspectRepo.count({
-      where: { reworkOrderId: order.reworkNo, company, plant },
-    });
+    const seqRows = await this.inspectRepo.query(
+      'SELECT SEQ_REWORK_INSPECT.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+    );
+    const nextSeq = Number(seqRows[0]?.NEXT_SEQ ?? seqRows[0]?.next_seq);
 
     const inspect = this.inspectRepo.create({
       reworkOrderId: order.reworkNo,
-      seq: existingCount + 1,
+      seq: nextSeq,
       inspectorCode: dto.inspectorCode,
       inspectMethod: dto.inspectMethod,
       inspectResult: dto.inspectResult,

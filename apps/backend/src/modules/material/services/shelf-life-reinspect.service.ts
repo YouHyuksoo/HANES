@@ -137,11 +137,10 @@ export class ShelfLifeReInspectService {
     }
     const extendDays = dto.extendDays ?? maxExtDays;
 
-    // 회차 계산: 이 시리얼의 기존 RETEST 이력 수 + 1
-    const prevCount = await this.iqcLogRepo.count({
-      where: { matUid: dto.matUid, inspectType: 'RETEST', ...lotTenant },
-    });
-    const retestRound = prevCount + 1;
+    const roundRows = await this.iqcLogRepo.query(
+      'SELECT SEQ_IQC_RETEST_ROUND.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+    );
+    const retestRound = Number(roundRows[0]?.NEXT_SEQ ?? roundRows[0]?.next_seq);
 
     const inspectionDate = new Date();
     inspectionDate.setHours(0, 0, 0, 0);

@@ -229,21 +229,19 @@ export class MiscReceiptService {
 
       if (existingStock) {
         this.assertSameTenant(existingStock, company, plant, '기존 재고');
-        const nextQty = existingStock.qty + qty;
-        await queryRunner.manager.update(
-          MatStock,
-          {
+        const stockResult = await queryRunner.manager.update(MatStock, {
             warehouseCode: existingStock.warehouseCode,
             itemCode: existingStock.itemCode,
             matUid: existingStock.matUid,
             ...(company ? { company } : {}),
             ...(plant ? { plant } : {}),
-          },
-          {
-            qty: nextQty,
-            availableQty: Math.max(0, nextQty - (existingStock.reservedQty ?? 0)),
-          },
-        );
+          }, {
+            qty: () => `QTY + ${Number(qty)}`,
+            availableQty: () => `AVAILABLE_QTY + ${Number(qty)}`,
+          });
+        if (stockResult?.affected !== undefined && stockResult.affected !== 1) {
+          throw new BadRequestException(`자재재고 입고 반영에 실패했습니다. LOT: ${effectiveMatUid}`);
+        }
       } else {
         const newStock = queryRunner.manager.create(MatStock, {
           warehouseCode: warehouse.warehouseCode,

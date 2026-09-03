@@ -97,7 +97,7 @@ describe('MiscReceiptService', () => {
     });
   });
 
-  it('recalculates availableQty from qty and reservedQty when stock already exists', async () => {
+  it('increments qty and availableQty atomically when stock already exists', async () => {
     stockTxRepo.findOne.mockResolvedValue(null);
 
     queryRunner.manager.findOne
@@ -115,6 +115,7 @@ describe('MiscReceiptService', () => {
 
     queryRunner.manager.create.mockReturnValue({ transNo: 'MISC2026010100001' } as any);
     queryRunner.manager.save.mockResolvedValue({ transNo: 'MISC2026010100001' } as any);
+    queryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
 
     await service.create({
       warehouseId: 'WH-01',
@@ -128,8 +129,8 @@ describe('MiscReceiptService', () => {
       MatStock,
       { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001' },
       expect.objectContaining({
-        qty: 15,
-        availableQty: 7,
+        qty: expect.any(Function),
+        availableQty: expect.any(Function),
       }),
     );
     expect(tx.run).toHaveBeenCalledTimes(1);

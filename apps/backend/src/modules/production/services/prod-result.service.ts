@@ -2293,32 +2293,47 @@ export class ProdResultService {
           },
         });
 
-        if (stock) {
-          this.assertTenantConsistency('제품 재고 역분개', {
+        if (!stock) {
+          throw new BadRequestException(
+            `복원 취소할 제품재고를 찾을 수 없습니다. warehouse=${tx.toWarehouseId}, item=${tx.itemCode}`,
+          );
+        }
+        this.assertTenantConsistency('제품 재고 역분개', {
             expected: { company, plant },
             sources: [
               { label: 'productTx', company: tx.company, plant: tx.plant },
               { label: 'productStock', company: stock.company, plant: stock.plant },
             ],
-          });
-          const newQty = Math.max(stock.qty - tx.qty, 0);
-          const stockKey = {
-            warehouseCode: stock.warehouseCode,
-            itemCode: stock.itemCode,
-            qualityStatus: tx.qualityStatus || 'GOOD',
-            company: stock.company,
-            plant: stock.plant,
-          };
-          // 입고 취소로 수량이 0이 되고 예약도 없으면 빈 재고행을 남기지 않는다
-          // (sentinel '*' 포함, qty=0 잔재 행 누적 방지).
-          if (newQty === 0 && stock.reservedQty === 0) {
-            await qr.manager.delete(ProductStock, stockKey);
-          } else {
-            await qr.manager.update(ProductStock, stockKey,
-              { qty: newQty, availableQty: Math.max(newQty - stock.reservedQty, 0) },
-            );
-          }
+        });
+        const stockKey = {
+          warehouseCode: stock.warehouseCode,
+          itemCode: stock.itemCode,
+          qualityStatus: tx.qualityStatus || 'GOOD',
+          company: stock.company,
+          plant: stock.plant,
+        };
+        const stockResult = await qr.manager.createQueryBuilder()
+          .update(ProductStock)
+          .set({
+            qty: () => 'QTY - :cancelQty',
+            availableQty: () => 'AVAILABLE_QTY - :cancelQty',
+          })
+          .where(stockKey)
+          .andWhere('QTY >= :cancelQty AND AVAILABLE_QTY >= :cancelQty')
+          .setParameters({ cancelQty: tx.qty })
+          .execute();
+        if (stockResult.affected !== 1) {
+          throw new BadRequestException(
+            `제품재고가 이미 사용 또는 예약되어 생산실적을 취소할 수 없습니다. item=${tx.itemCode}`,
+          );
         }
+        // 0행 정리는 갱신 후 정확한 0 상태를 조건으로 수행해 동시 입고 행을 삭제하지 않는다.
+        await qr.manager.delete(ProductStock, {
+          ...stockKey,
+          qty: 0,
+          availableQty: 0,
+          reservedQty: 0,
+        });
       }
 
       // (c) 취소 트랜잭션 생성 (역분개)

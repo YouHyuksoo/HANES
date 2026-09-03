@@ -93,6 +93,12 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
 
   describe('reverseProductStock empty-row cleanup', () => {
     function buildQr(stockQty: number, reservedQty: number) {
+      const stockQb = {
+        update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(),
+        setParameters: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      };
       const manager = {
         find: jest.fn().mockResolvedValue([
           {
@@ -112,15 +118,17 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
           prdUid: '*',
           qty: stockQty,
           reservedQty,
+          availableQty: stockQty - reservedQty,
           company: 'C1',
           plant: 'P1',
         }),
         update: jest.fn().mockResolvedValue(undefined),
+        createQueryBuilder: jest.fn().mockReturnValue(stockQb),
         delete: jest.fn().mockResolvedValue(undefined),
         create: jest.fn((_e, p) => ({ ...p })),
         save: jest.fn().mockResolvedValue(undefined),
       };
-      return { qr: { manager } as any, manager };
+      return { qr: { manager } as any, manager, stockQb };
     }
 
     it('deletes the stock row when cancel drives qty to 0 with no reservation', async () => {
@@ -131,7 +139,7 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
       // PRD_UID 비키화(78d46411): 재고 키는 품목+창고 기준, prdUid는 키에서 제외
       expect(manager.delete).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ warehouseCode: 'SFG_WIP', itemCode: 'ITEM-1' }),
+        expect.objectContaining({ warehouseCode: 'SFG_WIP', itemCode: 'ITEM-1', qty: 0, availableQty: 0, reservedQty: 0 }),
       );
       // 빈 행은 update가 아니라 delete 되어야 한다
       expect(manager.update).not.toHaveBeenCalledWith(
@@ -146,11 +154,9 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
 
       await (target as any).reverseProductStock(qr, 'PR-1', 'C1', 'P1');
 
-      expect(manager.delete).not.toHaveBeenCalled();
-      expect(manager.update).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({ warehouseCode: 'SFG_WIP', itemCode: 'ITEM-1' }),
-        expect.objectContaining({ qty: 50 }),
+      expect(manager.createQueryBuilder).toHaveBeenCalled();
+      expect(manager.delete).toHaveBeenCalledWith(
+        expect.anything(), expect.objectContaining({ qty: 0, availableQty: 0, reservedQty: 0 }),
       );
     });
 
@@ -159,7 +165,7 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
 
       await (target as any).reverseProductStock(qr, 'PR-1', 'C1', 'P1');
 
-      expect(manager.delete).not.toHaveBeenCalled();
+      expect(manager.createQueryBuilder).toHaveBeenCalled();
     });
   });
 

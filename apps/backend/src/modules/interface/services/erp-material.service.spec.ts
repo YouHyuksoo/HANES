@@ -273,12 +273,16 @@ describe('ErpMaterialService', () => {
     await target.retryFailed('C1', 'P1');
 
     expect(interLogRepo.find).toHaveBeenCalledWith({
-      where: { status: 'FAILED', direction: 'OUTBOUND', company: 'C1', plant: 'P1' },
+      where: { status: expect.anything(), direction: 'OUTBOUND', company: 'C1', plant: 'P1' },
       order: { transDate: 'ASC' },
     });
     expect(interLogRepo.update).toHaveBeenCalledWith(
+      { transDate, seq: 1, status: 'FAILED', retryCount: 0, company: 'C1', plant: 'P1' },
+      { status: 'RETRY', retryCount: 1 },
+    );
+    expect(interLogRepo.update).toHaveBeenCalledWith(
       { transDate, seq: 1, company: 'C1', plant: 'P1' },
-      expect.objectContaining({ status: 'SUCCESS', retryCount: 1 }),
+      { status: 'SUCCESS' },
     );
   });
 

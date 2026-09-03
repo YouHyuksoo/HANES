@@ -173,15 +173,15 @@ export class ReworkProcessService {
   ) {
     const proc = await this.findProcess(dto.reworkOrderId, dto.processCode, company, plant);
 
-    // seq 자동채번: 해당 공정의 실적 건수 + 1
-    const existingCount = await this.resultRepo.count({
-      where: { reworkOrderId: dto.reworkOrderId, processCode: dto.processCode, ...this.tenantWhere(company, plant) },
-    });
+    const seqRows = await this.resultRepo.query(
+      'SELECT SEQ_REWORK_RESULT.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+    );
+    const nextSeq = Number(seqRows[0]?.NEXT_SEQ ?? seqRows[0]?.next_seq);
 
     const result = this.resultRepo.create({
       reworkOrderId: dto.reworkOrderId,
       processCode: dto.processCode,
-      seq: existingCount + 1,
+      seq: nextSeq,
       workerId: dto.workerId,
       resultQty: dto.resultQty,
       goodQty: dto.goodQty,

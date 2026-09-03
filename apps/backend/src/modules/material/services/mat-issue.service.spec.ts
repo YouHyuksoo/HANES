@@ -381,7 +381,7 @@ describe('MatIssueService', () => {
         ]),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
-      createQueryBuilder: jest.fn(() => ({ update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }) })),
+      createQueryBuilder: jest.fn(() => ({ update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }) })),
       update: jest.fn().mockResolvedValue(undefined),
     };
     (mockQueryRunner as any).manager = manager;
@@ -402,16 +402,7 @@ describe('MatIssueService', () => {
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-001', qty: -3 }));
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-002', qty: -2 }));
-    expect(manager.update).toHaveBeenCalledWith(
-      MatStock,
-      { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
-      { qty: 0, availableQty: 0 },
-    );
-    expect(manager.update).toHaveBeenCalledWith(
-      MatStock,
-      { warehouseCode: 'W2', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
-      { qty: 2, availableQty: 2 },
-    );
+    expect(manager.createQueryBuilder).toHaveBeenCalledTimes(2);
   });
 
   it('moves stock to the process PROC_MAT_STOCKS when processCode is given', async () => {
@@ -439,7 +430,7 @@ describe('MatIssueService', () => {
         ]),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
-      createQueryBuilder: jest.fn(() => ({ update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }) })),
+      createQueryBuilder: jest.fn(() => ({ update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }) })),
       update: jest.fn().mockResolvedValue(undefined),
     };
     (mockQueryRunner as any).manager = manager;
@@ -469,11 +460,7 @@ describe('MatIssueService', () => {
       }),
     );
     // 원자재창고 차감
-    expect(manager.update).toHaveBeenCalledWith(
-      MatStock,
-      { warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
-      { qty: 0, availableQty: 0 },
-    );
+    expect(manager.createQueryBuilder).toHaveBeenCalledTimes(1);
     // 공정재고 가산은 ProcMatStockService.addStockInTx 로 위임(PROC_MAT_STOCKS)
     expect(mockProcMatStockService.addStockInTx).toHaveBeenCalledWith(
       mockQueryRunner,
@@ -512,6 +499,7 @@ describe('MatIssueService', () => {
         ]),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
+      createQueryBuilder: jest.fn(() => ({ update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }) })),
       update: jest.fn().mockResolvedValue(undefined),
     };
     (mockQueryRunner as any).manager = manager;

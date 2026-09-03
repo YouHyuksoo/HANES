@@ -460,9 +460,9 @@ export class ProductInventoryService {
 
     // 3. 출고 창고 재고 감소 (소진 시 행 삭제 — qty0 잔재 방지, FIFO/transfer 차감과 일관)
     await this.decrementStockAtomically(qr, dto);
-    if (stock.qty - dto.qty <= 0 && stock.reservedQty === 0) {
-      await qr.manager.delete(ProductStock, { ...this.stockKey(dto), qty: 0, reservedQty: 0 });
-    }
+    await qr.manager.delete(ProductStock, {
+      ...this.stockKey(dto), qty: 0, availableQty: 0, reservedQty: 0,
+    });
 
     // 4. 이동 대상 창고가 있으면 입고 처리
     if (dto.toWarehouseId) {
@@ -757,9 +757,9 @@ export class ProductInventoryService {
           plant: originalTrans.plant,
         } as ProductIssueStockDto);
         // 입고 취소로 수량이 0이 되고 예약도 없으면 빈 행을 남기지 않는다(qty0 잔재 방지).
-        if (stock.qty - Math.abs(originalTrans.qty) === 0 && stock.reservedQty === 0) {
-          await qr.manager.delete(ProductStock, { ...stockKey, qty: 0, reservedQty: 0 });
-        }
+        await qr.manager.delete(ProductStock, {
+          ...stockKey, qty: 0, availableQty: 0, reservedQty: 0,
+        });
       }
     }
 

@@ -71,6 +71,8 @@ describe('NumberingService', () => {
       ['STOCK_TX', 'SEQ_LEGACY_STOCK_TX', 'TX20260318-00007'],
       ['CANCEL_TX', 'SEQ_LEGACY_CANCEL_TX', 'CTX20260318-00007'],
       ['RECEIVE', 'SEQ_LEGACY_RECEIVE', 'RCV20260318-0007'],
+      ['SUBCON_DELIVERY', 'SEQ_SUBCON_DELIVERY', 'SCD20260318-0007'],
+      ['SUBCON_RECEIVE', 'SEQ_SUBCON_RECEIVE', 'SCR20260318-0007'],
     ])('formats %s without a mutable counter row', async (type, sequenceName, expected) => {
       mockQueryRunner.manager.query.mockResolvedValueOnce([{ NEXT_SEQ: 7 }]);
 

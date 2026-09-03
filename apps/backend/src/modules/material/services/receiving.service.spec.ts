@@ -741,7 +741,7 @@ describe('ReceivingService', () => {
     expect(manager.update).toHaveBeenCalledWith(
       MatArrivalStock,
       expect.objectContaining({ matUid: 'MAT-001' }),
-      expect.objectContaining({ qty: 5, availableQty: 5 }),
+      expect.objectContaining({ qty: expect.any(Function), availableQty: expect.any(Function) }),
     );
   });
 });

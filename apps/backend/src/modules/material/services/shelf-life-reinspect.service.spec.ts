@@ -198,7 +198,7 @@ describe('ShelfLifeReInspectService', () => {
         plant: 'P01',
       } as MatLot);
       itemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', expiryExtDays: 90 } as ItemMaster);
-      iqcLogRepo.count.mockResolvedValue(1);
+      iqcLogRepo.query.mockResolvedValue([{ NEXT_SEQ: 2 }]);
       iqcLogRepo.create.mockReturnValue({} as IqcLog);
       iqcLogRepo.save.mockResolvedValue({ inspectDate: new Date(), seq: 1 } as any);
       matStockRepo.findOne.mockResolvedValue({
