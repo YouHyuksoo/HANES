@@ -582,11 +582,11 @@
     "goHome": "Đi đến bảng điều khiển"
   },
   "dashboard": {
-    "layout": { "group": "Dạng", "cockpit": "Buồng lái", "board": "Bảng khởi hành", "map": "Sơ đồ tuyến", "radial": "Mặt đồng hồ" },
+    "layout": { "group": "Dạng", "cockpit": "Buồng lái", "board": "Bảng khởi hành", "map": "Sơ đồ tuyến", "charts": "Biểu đồ" },
     "skinGroup": "Màu",
     "board": { "orders": "Bảng khởi hành lệnh SX", "orderNo": "Số lệnh", "item": "Mặt hàng", "where": "Công đoạn · Thiết bị", "qty": "Thực tế / Kế hoạch", "progress": "Tiến độ", "status": "Trạng thái", "noOrders": "Hôm nay không có lệnh sản xuất.", "equipRun": "Thiết bị đang chạy", "page": "{{page}} / {{count}}" },
     "map": { "flowLine": "Tuyến vật tư", "equipLine": "Tuyến thiết bị", "hint": "Chạm vào ga để chỉ xem giai đoạn đó. Chạm lại để xem tất cả", "station": "Ga đã chọn", "all": "Tất cả", "pressure": "Áp lực" },
-    "radial": { "hourRing": "Mặt đồng hồ sản lượng 24h", "stageRing": "Áp lực giai đoạn", "center": "Tỷ lệ đạt", "now": "Bây giờ" },
+    "charts": { "hourly": "Sản lượng theo giờ (hôm nay)", "byProcess": "Tỷ lệ lỗi theo công đoạn", "topDefects": "Loại lỗi hàng đầu", "status": "Phân bố trạng thái", "orderStatus": "Lệnh sản xuất", "equipStatus": "Thiết bị", "equipNormal": "Bình thường", "equipMaint": "Bảo trì", "equipStop": "Dừng", "inventory": "Hạng mục xử lý tồn kho", "rate": "Tỷ lệ lỗi", "qty": "Số lượng", "noData": "Không có dữ liệu" },
     "skin": { "control": "Tháp điều khiển", "departure": "Bảng khởi hành", "datawall": "Tường dữ liệu" },
     "tvMode": "Chế độ TV",
     "title": "Bảng điều khiển",

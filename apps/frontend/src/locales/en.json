@@ -582,11 +582,11 @@
     "goHome": "Go to Dashboard"
   },
   "dashboard": {
-    "layout": { "group": "Form", "cockpit": "Cockpit", "board": "Departure board", "map": "Line map", "radial": "Clock dial" },
+    "layout": { "group": "Form", "cockpit": "Cockpit", "board": "Departure board", "map": "Line map", "charts": "Charts" },
     "skinGroup": "Color",
     "board": { "orders": "Job order departures", "orderNo": "Order No.", "item": "Item", "where": "Process · Equip", "qty": "Actual / Plan", "progress": "Progress", "status": "Status", "noOrders": "No job orders today.", "equipRun": "Equipment running", "page": "{{page}} / {{count}}" },
     "map": { "flowLine": "Flow line", "equipLine": "Equipment line", "hint": "Tap a station to see only that stage. Tap again for all", "station": "Station", "all": "All", "pressure": "Pressure" },
-    "radial": { "hourRing": "24-hour output dial", "stageRing": "Stage pressure", "center": "Achievement", "now": "Now" },
+    "charts": { "hourly": "Hourly output (today)", "byProcess": "Defect rate by process", "topDefects": "Top defect types", "status": "Status mix", "orderStatus": "Job orders", "equipStatus": "Equipment", "equipNormal": "Normal", "equipMaint": "Maintenance", "equipStop": "Stopped", "inventory": "Inventory actions", "rate": "Defect rate", "qty": "Qty", "noData": "No data" },
     "skin": { "control": "Control tower", "departure": "Departure board", "datawall": "Data wall" },
     "tvMode": "TV mode",
     "title": "Dashboard",

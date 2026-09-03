@@ -582,11 +582,11 @@
     "goHome": "前往仪表盘"
   },
   "dashboard": {
-    "layout": { "group": "形态", "cockpit": "驾驶舱", "board": "出发看板", "map": "线路图", "radial": "时钟盘" },
+    "layout": { "group": "形态", "cockpit": "驾驶舱", "board": "出发看板", "map": "线路图", "charts": "图表" },
     "skinGroup": "配色",
     "board": { "orders": "工单出发看板", "orderNo": "工单号", "item": "品目", "where": "工序 · 设备", "qty": "实绩 / 计划", "progress": "进度", "status": "状态", "noOrders": "今日暂无工单。", "equipRun": "设备运行", "page": "{{page}} / {{count}}" },
     "map": { "flowLine": "物流线", "equipLine": "设备线", "hint": "点击站点仅显示该阶段的处理项，再点一次显示全部", "station": "选中站点", "all": "全部", "pressure": "压力" },
-    "radial": { "hourRing": "24小时实绩时钟盘", "stageRing": "阶段压力", "center": "达成率", "now": "现在" },
+    "charts": { "hourly": "分时实绩（今日）", "byProcess": "工序不良率", "topDefects": "主要不良类型", "status": "状态分布", "orderStatus": "工单", "equipStatus": "设备", "equipNormal": "正常", "equipMaint": "保养中", "equipStop": "停止", "inventory": "库存处理项", "rate": "不良率", "qty": "数量", "noData": "暂无数据" },
     "skin": { "control": "管制塔", "departure": "航班牌", "datawall": "数据墙" },
     "tvMode": "电视模式",
     "title": "仪表盘",

@@ -8,17 +8,17 @@
  *   cockpit  콕핏   : 오늘의 한 줄 → 가치흐름 리본 → 리듬/점검 → 조치 큐 (기본)
  *   board    전광판 : 좌측 초대형 숫자 + 중앙 작업지시 출발 전광판(자동 순환) + 우측 조치 큐
  *   map      노선도 : 지하철 노선도처럼 물류 라인·설비 라인의 "역"을 눌러 그 단계의 조치만 본다
- *   radial   시계판 : 24시간 원형 시계판(시간대별 실적을 방사형 막대로) + 단계 압력 링 + 지금 바늘
+ *   charts   차트   : 시간대별 실적·7일 불량률·공정별 불량률·상위 불량·상태 도넛·재고 조치 — 익숙한 차트 6개(recharts)
  *
  * 새 형태를 추가할 때: 여기 항목 하나 + 레이아웃 컴포넌트 하나 + i18n dashboard.layout.{id} 4언어.
  */
 import type { LucideIcon } from "lucide-react";
-import { LayoutPanelTop, Radar, Route, Table2 } from "lucide-react";
+import { BarChart3, LayoutPanelTop, Route, Table2 } from "lucide-react";
 import type { AttentionItem, DashboardData } from "./types";
 
-export type DashboardLayoutId = "cockpit" | "board" | "map" | "radial";
+export type DashboardLayoutId = "cockpit" | "board" | "map" | "charts";
 
-export const DASHBOARD_LAYOUT_IDS = ["cockpit", "board", "map", "radial"] as const;
+export const DASHBOARD_LAYOUT_IDS = ["cockpit", "board", "map", "charts"] as const;
 
 export interface DashboardLayoutDef {
   id: DashboardLayoutId;
@@ -31,7 +31,7 @@ export const DASHBOARD_LAYOUTS: readonly DashboardLayoutDef[] = [
   { id: "cockpit", titleKey: "dashboard.layout.cockpit", icon: LayoutPanelTop },
   { id: "board", titleKey: "dashboard.layout.board", icon: Table2 },
   { id: "map", titleKey: "dashboard.layout.map", icon: Route },
-  { id: "radial", titleKey: "dashboard.layout.radial", icon: Radar },
+  { id: "charts", titleKey: "dashboard.layout.charts", icon: BarChart3 },
 ];
 
 export const DASHBOARD_LAYOUT_STORAGE_KEY = "dashboard:layout";

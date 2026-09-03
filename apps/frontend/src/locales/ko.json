@@ -582,11 +582,11 @@
     "goHome": "대시보드로 이동"
   },
   "dashboard": {
-    "layout": { "group": "형태", "cockpit": "콕핏", "board": "전광판", "map": "노선도", "radial": "시계판" },
+    "layout": { "group": "형태", "cockpit": "콕핏", "board": "전광판", "map": "노선도", "charts": "차트" },
     "skinGroup": "색상",
     "board": { "orders": "작업지시 전광판", "orderNo": "지시번호", "item": "품목", "where": "공정 · 설비", "qty": "실적 / 계획", "progress": "진행", "status": "상태", "noOrders": "오늘 작업지시가 없습니다.", "equipRun": "설비 가동", "page": "{{page}} / {{count}}" },
     "map": { "flowLine": "물류 라인", "equipLine": "설비 라인", "hint": "역을 누르면 그 단계의 조치만 보입니다. 다시 누르면 전체", "station": "선택 역", "all": "전체", "pressure": "압력" },
-    "radial": { "hourRing": "24시간 실적 시계판", "stageRing": "단계 압력", "center": "달성률", "now": "지금" },
+    "charts": { "hourly": "시간대별 실적 (금일)", "byProcess": "공정별 불량률", "topDefects": "상위 불량 유형", "status": "상태 분포", "orderStatus": "작업지시", "equipStatus": "설비", "equipNormal": "정상", "equipMaint": "보전중", "equipStop": "정지", "inventory": "재고 조치 항목", "rate": "불량률", "qty": "수량", "noData": "데이터 없음" },
     "skin": { "control": "관제탑", "departure": "출발 전광판", "datawall": "데이터 월" },
     "tvMode": "TV 모드",
     "title": "대시보드",

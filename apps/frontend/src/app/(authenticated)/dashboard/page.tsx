@@ -8,7 +8,7 @@
  *     콕핏   CockpitLayout : 오늘의 한 줄 → 가치흐름 리본 → 리듬/점검 → 조치 큐 (기본)
  *     전광판 BoardLayout   : 초대형 숫자 + 작업지시 출발 전광판(자동 순환) + 조치 큐
  *     노선도 FlowMapLayout : 물류/설비 라인의 역을 눌러 그 단계의 조치만 본다
- *     시계판 RadialLayout  : 24시간 원형 시계판 + 단계 압력 링 + 지금 바늘
+ *     차트   ChartsLayout  : 시간대별 실적·7일 불량률·공정별 불량률·상위 불량·상태 도넛·재고 조치(recharts)
  *   색상 3종 (components/skins.ts) — A 관제탑 / B 출발 전광판 / C 데이터 월. CSS 변수 오버라이드.
  *
  * 두 축은 독립이라 어떤 조합도 동작한다. 선택은 각각 localStorage(dashboard:layout / dashboard:skin)에 남고,
@@ -36,7 +36,7 @@ import { buildAttention, attentionTotal } from "./components/buildAttention";
 import CockpitLayout from "./components/CockpitLayout";
 import BoardLayout from "./components/BoardLayout";
 import FlowMapLayout from "./components/FlowMapLayout";
-import RadialLayout from "./components/RadialLayout";
+import ChartsLayout from "./components/ChartsLayout";
 
 const MOTION_CSS = `
 @keyframes ds-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -54,7 +54,7 @@ const LAYOUT_COMPONENT = {
   cockpit: CockpitLayout,
   board: BoardLayout,
   map: FlowMapLayout,
-  radial: RadialLayout,
+  charts: ChartsLayout,
 } as const satisfies Record<DashboardLayoutId, React.ComponentType<React.ComponentProps<typeof CockpitLayout>>>;
 
 const segBtn = (active: boolean) =>
