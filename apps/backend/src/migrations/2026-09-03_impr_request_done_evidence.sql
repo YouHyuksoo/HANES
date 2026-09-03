@@ -1,0 +1,17 @@
+-- 개선요청 처리됨(DONE) 판정 근거 컬럼 (2026-09-03)
+-- DONE 전이는 FIX_COMMIT·FIX_TEST·DEPLOY_SHA 3개가 모두 있을 때만 허용한다(shared missingImprDoneEvidence, 백엔드 updateStatus가 강제).
+ALTER TABLE IMPR_REQUESTS ADD (
+  FIX_COMMIT VARCHAR2(40),
+  FIX_TEST   VARCHAR2(500),
+  DEPLOY_SHA VARCHAR2(40),
+  DONE_AT    TIMESTAMP
+)
+/
+COMMENT ON COLUMN IMPR_REQUESTS.FIX_COMMIT IS '수정 커밋 해시 (DONE 필수, 7~40자 hex)'
+/
+COMMENT ON COLUMN IMPR_REQUESTS.FIX_TEST IS '테스트 근거 — spec 파일 경로 또는 실행 결과 요약 (DONE 필수)'
+/
+COMMENT ON COLUMN IMPR_REQUESTS.DEPLOY_SHA IS '배포된 빌드 커밋 SHA (DONE 필수)'
+/
+COMMENT ON COLUMN IMPR_REQUESTS.DONE_AT IS 'DONE 전이 시각'
+/

@@ -9,6 +9,7 @@
  * 4. updateStatus: PATCH /system/improvement-requests/:id/status
  */
 import { api } from './api';
+import type { ImprDoneEvidence } from '@harness/shared';
 
 export interface ImprRequestItem {
   imprId: string;
@@ -18,6 +19,13 @@ export interface ImprRequestItem {
   description: string;
   screenshot?: string | null;
   status: 'PENDING' | 'IN_PROGRESS' | 'DONE';
+  /** DONE 판정 근거 — 수정 커밋 해시 */
+  fixCommit?: string | null;
+  /** DONE 판정 근거 — 테스트 근거 */
+  fixTest?: string | null;
+  /** DONE 판정 근거 — 배포 SHA */
+  deploySha?: string | null;
+  doneAt?: string | null;
   requesterId: string;
   requesterNm: string | null;
   createdAt: string;
@@ -51,8 +59,9 @@ export const improvementRequestService = {
       .get(`/system/improvement-requests/${id}`)
       .then((r) => unwrap<ImprRequestItem>(r as any)),
 
-  updateStatus: (id: string, status: string): Promise<ImprRequestItem> =>
+  /** 상태 변경 — DONE 전이는 evidence(커밋 해시·테스트 근거·배포 SHA)가 서버에서 필수 검증된다 */
+  updateStatus: (id: string, status: string, evidence?: ImprDoneEvidence): Promise<ImprRequestItem> =>
     api
-      .patch(`/system/improvement-requests/${id}/status`, { status })
+      .patch(`/system/improvement-requests/${id}/status`, { status, ...(evidence ?? {}) })
       .then((r) => unwrap<ImprRequestItem>(r as any)),
 };

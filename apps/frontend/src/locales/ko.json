@@ -8346,7 +8346,8 @@
       "REF_INTEGRITY": "참조 무결성",
       "INACTIVE_REF": "비활성 참조",
       "DATA_QUALITY": "데이터 품질",
-      "BIZ_REVERSE_REF": "운영 역참조"
+      "BIZ_REVERSE_REF": "운영 역참조",
+      "TXN_INVARIANT": "트랜잭션 불변식"
     },
     "status": {
       "OK": "정상",
@@ -8883,7 +8884,15 @@
     "statusChanged": "상태가 변경되었습니다",
     "statusChangeError": "상태 변경 실패",
     "startProcessing": "처리 시작",
-    "completeProcessing": "완료 처리"
+    "completeProcessing": "완료 처리",
+    "doneEvidenceTitle": "처리됨 판정 근거 (3개 모두 필수)",
+    "fixCommit": "수정 커밋 해시",
+    "fixTest": "테스트 근거",
+    "deploySha": "배포 SHA",
+    "doneEvidenceHint": "커밋 해시·테스트 근거·배포 SHA가 모두 있어야 완료 처리할 수 있습니다",
+    "doneEvidenceMissing": "누락 또는 형식 오류: {{fields}}",
+    "doneAt": "완료 시각",
+    "fixTestPlaceholder": "spec 파일 경로 또는 실행 결과 요약 (예: mat-issue.service.spec.ts 27 pass)"
   },
   "selfInspect": {
     "typeVisual": "판정형",

@@ -8339,7 +8339,8 @@
       "REF_INTEGRITY": "Referential Integrity",
       "INACTIVE_REF": "Inactive Reference",
       "DATA_QUALITY": "Data Quality",
-      "BIZ_REVERSE_REF": "Biz Reverse Ref"
+      "BIZ_REVERSE_REF": "Biz Reverse Ref",
+      "TXN_INVARIANT": "Transaction Invariant"
     },
     "status": {
       "OK": "OK",
@@ -8876,7 +8877,15 @@
     "statusChanged": "Status has been changed",
     "statusChangeError": "Failed to change status",
     "startProcessing": "Start Processing",
-    "completeProcessing": "Mark Complete"
+    "completeProcessing": "Mark Complete",
+    "doneEvidenceTitle": "Done evidence (all 3 required)",
+    "fixCommit": "Fix commit SHA",
+    "fixTest": "Test evidence",
+    "deploySha": "Deploy SHA",
+    "doneEvidenceHint": "Commit SHA, test evidence and deploy SHA are all required to mark as done",
+    "doneEvidenceMissing": "Missing or invalid: {{fields}}",
+    "doneAt": "Done at",
+    "fixTestPlaceholder": "Spec file path or run summary (e.g. mat-issue.service.spec.ts 27 pass)"
   },
   "selfInspect": {
     "typeVisual": "Judgment",

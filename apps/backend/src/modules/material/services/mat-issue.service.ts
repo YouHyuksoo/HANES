@@ -197,8 +197,16 @@ export class MatIssueService {
     const tenantWhere = this.tenantWhere(company, plant);
 
     // 출고 시 processCode가 지정되면 원자재창고 → 공정재고(PROC_MAT_STOCKS=장착 대기)로 이동한다(ADR 0002).
-    // 설비는 출고 시점에 정하지 않는다(설비 장착은 별도 단계). processCode가 없으면 단순 출고(MAT_OUT) 유지.
-    const processCode = dto.processCode ?? null;
+    // 설비는 출고 시점에 정하지 않는다(설비 장착은 별도 단계).
+    // 생산 출고(isProductionIssueType)는 공정재고 적재가 필수다 — 공정코드 없이 단순출고(MAT_OUT)로
+    // 조용히 빠지면 이후 실적 자동차감이 참조할 재고가 없어 사라지므로(현장 개선요청 06) 호출 경로와 무관하게 여기서 차단한다.
+    // 단순 출고(MAT_OUT)는 생산 외 출고 유형(기타출고 등)에서만 허용한다.
+    const processCode = dto.processCode?.trim() || null;
+    if (isProductionIssueType(issueType) && !processCode) {
+      throw new BadRequestException(
+        `생산 출고(${issueType})는 공정코드가 필요합니다. 공정재고로 적재할 공정을 지정하세요.`,
+      );
+    }
     const isMove = !!processCode;
 
     for (const item of items) {

@@ -8339,7 +8339,8 @@
       "REF_INTEGRITY": "Toàn vẹn tham chiếu",
       "INACTIVE_REF": "Tham chiếu ngừng dùng",
       "DATA_QUALITY": "Chất lượng dữ liệu",
-      "BIZ_REVERSE_REF": "Tham chiếu ngược vận hành"
+      "BIZ_REVERSE_REF": "Tham chiếu ngược vận hành",
+      "TXN_INVARIANT": "Bất biến giao dịch"
     },
     "status": {
       "OK": "OK",
@@ -8876,7 +8877,15 @@
     "statusChanged": "Trạng thái đã được thay đổi",
     "statusChangeError": "Thay đổi trạng thái thất bại",
     "startProcessing": "Bắt đầu xử lý",
-    "completeProcessing": "Hoàn tất xử lý"
+    "completeProcessing": "Hoàn tất xử lý",
+    "doneEvidenceTitle": "Bằng chứng hoàn thành (bắt buộc cả 3)",
+    "fixCommit": "Mã commit sửa lỗi",
+    "fixTest": "Bằng chứng kiểm thử",
+    "deploySha": "SHA triển khai",
+    "doneEvidenceHint": "Cần đủ mã commit, bằng chứng kiểm thử và SHA triển khai để đánh dấu hoàn thành",
+    "doneEvidenceMissing": "Thiếu hoặc sai định dạng: {{fields}}",
+    "doneAt": "Thời điểm hoàn thành",
+    "fixTestPlaceholder": "Đường dẫn file spec hoặc tóm tắt kết quả chạy (vd: mat-issue.service.spec.ts 27 pass)"
   },
   "selfInspect": {
     "typeVisual": "Đánh giá",

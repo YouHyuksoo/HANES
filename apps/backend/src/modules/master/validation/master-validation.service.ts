@@ -54,6 +54,26 @@ export class MasterValidationService {
     };
   }
 
+  /**
+   * 정기 실행 진입점 — SCHEDULER_JOBS(EXEC_TYPE=SERVICE, TENANT_AWARE) 'MasterValidationService.scheduledRun'.
+   * ERROR 심각도 위반이나 규칙 실행 실패가 있으면 success=false로 반환해 잡 로그가 FAILED로 남고 관리자 알림을 탄다.
+   * message에는 위반 규칙 id와 건수를 남겨 SCHEDULER_LOGS.RESULT_MSG만으로 무엇이 깨졌는지 알 수 있게 한다.
+   */
+  async scheduledRun(company: string, plantCd: string): Promise<{ success: boolean; affectedRows: number; message: string }> {
+    const result = await this.run(undefined, company, plantCd);
+    const { totalRules, errorCount, warnCount, failedRules } = result.summary;
+    const detail = result.results
+      .filter((r) => r.status !== 'OK')
+      .map((r) => (r.status === 'ERROR' ? `${r.rule.id}=실행실패` : `${r.rule.id}=${r.totalCount}건`))
+      .join(', ');
+    const summaryLine =
+      `검증 규칙 ${totalRules}건 실행(${company}/${plantCd}): ERROR 위반 ${errorCount}건, WARN 위반 ${warnCount}건, 실행실패 ${failedRules}건, ${result.durationMs}ms`;
+    const message = (detail ? `${summaryLine} — ${detail}` : summaryLine).slice(0, 1900);
+    const success = errorCount === 0 && failedRules === 0;
+    if (success) this.logger.log(message); else this.logger.warn(message);
+    return { success, affectedRows: errorCount + warnCount, message };
+  }
+
   /** 규칙 1건 실행 — 실패는 해당 규칙만 ERROR로 격리한다 */
   private async runRule(rule: ValidationRule, company: string, plantCd: string): Promise<RuleRunResult> {
     const meta = {

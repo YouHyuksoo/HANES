@@ -4,7 +4,8 @@
  */
 
 /** 규칙 카테고리 */
-export const RULE_CATEGORIES = ['REF_INTEGRITY', 'INACTIVE_REF', 'DATA_QUALITY', 'BIZ_REVERSE_REF'] as const;
+/** TXN_INVARIANT: 트랜잭션 테이블 간 항상 성립해야 하는 등식(집계=원장 합계 등). 위반=코드 결함 신호 */
+export const RULE_CATEGORIES = ['REF_INTEGRITY', 'INACTIVE_REF', 'DATA_QUALITY', 'BIZ_REVERSE_REF', 'TXN_INVARIANT'] as const;
 export type RuleCategory = (typeof RULE_CATEGORIES)[number];
 
 /** 심각도 */

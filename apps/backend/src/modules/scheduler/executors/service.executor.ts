@@ -96,16 +96,15 @@ export class ServiceExecutor implements IJobExecutor {
       ? await method.call(serviceInstance, job.company, job.plantCd)
       : await method.call(serviceInstance, params);
 
-    // 결과에서 affectedRows 추출 (있으면)
-    const affectedRows =
-      typeof result === 'object' && result !== null && 'affectedRows' in result
-        ? (result as { affectedRows: number }).affectedRows
-        : undefined;
+    // 결과에서 affectedRows/success/message 추출 (있으면). 서비스가 success=false를 돌려주면
+    // (예: 불변식 검증 위반) 잡을 FAILED로 기록해 재시도·관리자 알림 경로를 태운다.
+    const record = typeof result === 'object' && result !== null ? (result as Record<string, unknown>) : null;
+    const affectedRows = typeof record?.affectedRows === 'number' ? record.affectedRows : undefined;
+    const success = record?.success !== false;
+    const message = typeof record?.message === 'string' && record.message.trim()
+      ? record.message
+      : `서비스 메서드 실행 완료: ${execTarget}`;
 
-    return {
-      success: true,
-      affectedRows,
-      message: `서비스 메서드 실행 완료: ${execTarget}`,
-    };
+    return { success, affectedRows, message };
   }
 }

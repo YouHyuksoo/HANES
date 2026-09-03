@@ -1,18 +1,21 @@
 {
-  "_comment": "메뉴 코드 설정 - 프론트엔드 menuConfig.ts와 동기화 필요",
+  "_comment": "메뉴 코드 설정 — 자동 생성 파일(직접 수정 금지). 출처: apps/frontend/src/config/menuConfig.ts, 재생성: node scripts/sync-menu-config-seed.mjs",
   "topMenuCodes": [
     "DASHBOARD",
+    "WORKFLOW",
     "MONITORING",
     "MASTER",
-    "INVENTORY",
-    "PRODUCT_INVENTORY",
     "MATERIAL",
+    "PRODUCT_INVENTORY",
+    "PRODUCT_MGMT",
     "PURCHASING",
     "PRODUCTION",
     "INSPECTION",
     "QUALITY",
     "EQUIPMENT",
+    "GAUGE_MGMT",
     "SHIPPING",
+    "SALES",
     "CUSTOMS",
     "CONSUMABLES",
     "OUTSOURCING",
@@ -20,62 +23,206 @@
     "SYSTEM"
   ],
   "childMenuCodes": {
-    "MONITORING": ["MON_EQUIP_STATUS", "MON_PROD_BOARD", "MON_QUALITY_BOARD", "MON_INV_BOARD", "MON_JOB_BOARD"],
+    "MONITORING": [
+      "MON_PROD_BOARD",
+      "MON_QUALITY_BOARD",
+      "MON_INV_BOARD",
+      "MON_JOB_BOARD",
+      "MON_EQUIP_STATUS"
+    ],
     "MASTER": [
-      "MST_PART", "MST_BOM", "MST_PARTNER", "MST_PROCESS",
-      "MST_WORKER", "MST_WORK_INST", "MST_WAREHOUSE", "MST_LABEL",
-      "MST_VENDOR_BARCODE", "MST_PROCESS_CAPA", "MST_VALIDATION", "SYS_DOCUMENT", "MST_WORK_CALENDAR"
-    ],
-    "INVENTORY": [
-      "INV_MAT_STOCK", "INV_TRANSACTION", "INV_LOT",
-      "INV_MAT_PHYSICAL_INV", "INV_MAT_PHYSICAL_INV_APPLY", "INV_MAT_PHYSICAL_INV_HISTORY",
-      "INV_ARRIVAL_STOCK"
-    ],
-    "PRODUCT_INVENTORY": [
-      "INV_PRODUCT_STOCK", "INV_PRODUCT_PHYSICAL_INV",
-      "INV_PRODUCT_PHYSICAL_INV_HISTORY"
+      "MST_PART",
+      "MST_BOM",
+      "MST_PARTNER",
+      "EQUIP_MASTER",
+      "MST_PROCESS",
+      "MST_PROD_LINE",
+      "MST_ROUTING",
+      "MST_WORK_CALENDAR",
+      "MST_WORKER",
+      "MST_WORK_INST",
+      "MST_WAREHOUSE",
+      "MST_LABEL",
+      "MST_VENDOR_BARCODE",
+      "MST_PROCESS_CAPA",
+      "MST_VALIDATION",
+      "SYS_DOCUMENT"
     ],
     "MATERIAL": [
-      "MAT_ARRIVAL", "MAT_RECEIVE_LABEL", "MAT_RECEIVE",
-      "MAT_REQUEST", "MAT_REQUEST_OTHER", "MAT_ISSUE", "MAT_ISSUE_OTHER", "MAT_LOT", "MAT_LOT_SPLIT",
-      "MAT_LOT_MERGE", "MAT_SHELF_LIFE", "MAT_HOLD", "MAT_SCRAP",
-      "MAT_STOCK_TRANSFER", "MAT_ADJUSTMENT", "MAT_MISC_RECEIPT", "MAT_RECEIPT_CANCEL"
+      "MAT_ARRIVAL",
+      "MAT_ARRIVAL_RESULT",
+      "MAT_ARRIVAL_TRANSACTION",
+      "MAT_RECEIVE_LABEL",
+      "MAT_RECEIVE",
+      "MAT_RECEIVE_HISTORY",
+      "MAT_REQUEST",
+      "MAT_REQUEST_OTHER",
+      "MAT_ISSUE",
+      "MAT_ISSUE_OTHER",
+      "MAT_ISSUE_HIST",
+      "MAT_LOT",
+      "MAT_LOT_SPLIT",
+      "MAT_LOT_MERGE",
+      "MAT_SHELF_LIFE",
+      "MAT_SHELF_LIFE_REINSPECT",
+      "MAT_SHELF_LIFE_HISTORY",
+      "MAT_SCRAP",
+      "MAT_STOCK_TRANSFER",
+      "MAT_ADJUSTMENT",
+      "MAT_MISC_RECEIPT",
+      "MAT_RECEIPT_CANCEL",
+      "INV_MAT_STOCK",
+      "INV_TRANSACTION",
+      "INV_MAT_PHYSICAL_INV",
+      "INV_MAT_PHYSICAL_INV_APPLY",
+      "INV_MAT_PHYSICAL_INV_HISTORY",
+      "INV_ARRIVAL_STOCK",
+      "MAT_HOLD"
     ],
-    "PURCHASING": ["PUR_PO", "PUR_PO_STATUS"],
+    "PRODUCT_INVENTORY": [
+      "INV_PRODUCT_STOCK",
+      "INV_PRODUCT_PHYSICAL_INV",
+      "INV_PRODUCT_PHYSICAL_INV_HISTORY",
+      "PROD_HOLD"
+    ],
+    "PRODUCT_MGMT": [
+      "PROD_RECEIVE",
+      "PROD_RECEIPT_CANCEL",
+      "PROD_ISSUE",
+      "PROD_ISSUE_CANCEL",
+      "PROD_DEFECT_TRANSFER"
+    ],
+    "PURCHASING": [
+      "PUR_PO",
+      "PUR_PO_STATUS"
+    ],
     "PRODUCTION": [
+      "PROD_MONTHLY_PLAN",
       "PROD_SIMULATION",
-      "PROD_ORDER", "PROD_RESULT", "PROD_ORDER_RESULT", "PROD_PROGRESS",
+      "PROD_SPEC_SETUP",
+      "PROD_KITTING",
+      "PROD_INPUT_ASSEMBLY",
+      "PROD_ORDER",
+      "PROD_RESULT",
+      "PROD_ORDER_RESULT",
+      "PROD_PROGRESS",
+      "PROD_INPUT_KIOSK",
       "PROD_INPUT_INSPECT",
-      "PROD_INPUT_EQUIP", "PROD_SAMPLE_INSPECT", "PROD_RESULT_SUMMARY",
-      "PROD_PACK_RESULT", "PROD_WIP_STOCK", "PROD_FG_STOCK"
+      "PROD_INPUT_EQUIP",
+      "PROD_RESULT_SUMMARY",
+      "PROD_WIP_STOCK",
+      "PROD_FG_STOCK",
+      "PROD_WIP_MAT_STOCK",
+      "PROD_WIP_MAT_TRANS",
+      "QC_REWORK",
+      "QC_REWORK_HISTORY",
+      "PROD_REPAIR"
     ],
-    "INSPECTION": ["INSP_RESULT", "INSP_TERMINAL_RESULT", "INSP_EQUIP"],
+    "INSPECTION": [
+      "INSP_INTEGRATED",
+      "INSP_STRUCTURE",
+      "INSP_RESULT",
+      "INSP_TERMINAL_RESULT",
+      "INSP_HISTORY",
+      "INSP_PROTOCOL"
+    ],
     "QUALITY": [
-      "QC_IQC", "QC_IQC_HISTORY", "QC_DEFECT", "QC_DEFECT_CODE", "QC_INSPECT",
-      "QC_TRACE", "QC_IQC_ITEM", "QC_OQC", "QC_OQC_HISTORY",
-      "QC_CHANGE", "QC_CAPA", "QC_COMPLAINT", "QC_FAI", "QC_PPAP",
-      "QC_SPC", "QC_CONTROL_PLAN", "QC_MSA", "QC_AUDIT", "SYS_TRAINING"
+      "QC_IQC_ITEM",
+      "QC_IQC_PART_SPEC",
+      "QC_AQL",
+      "QC_IQC",
+      "QC_IQC_HISTORY",
+      "QC_CONCESSION",
+      "QC_DEFECT",
+      "QC_DEFECT_CODE",
+      "QC_REWORK_INSPECT",
+      "QC_INSPECT",
+      "QC_REQUEST_INSPECT",
+      "QC_SELF_INSPECT_HISTORY",
+      "QC_SAMPLE_INSPECT",
+      "QC_OQC",
+      "QC_OQC_HISTORY",
+      "QC_TRACE",
+      "QC_CHANGE",
+      "QC_COMPLAINT",
+      "QC_CAPA",
+      "QC_FAI",
+      "QC_PPAP",
+      "QC_SPC",
+      "QC_CONTROL_PLAN",
+      "QC_AUDIT",
+      "SYS_TRAINING"
     ],
     "EQUIPMENT": [
-      "EQUIP_MASTER", "EQUIP_PM_PLAN", "EQUIP_PM", "EQUIP_PM_CALENDAR",
-      "EQUIP_INSPECT_CALENDAR", "EQUIP_PERIODIC_CALENDAR",
-      "EQUIP_DAILY", "EQUIP_PERIODIC", "EQUIP_HISTORY",
-      "EQUIP_MOLD", "EQ_MOLD_MGMT", "EQUIP_INSPECT_ITEM", "GAUGE_MASTER"
+      "EQ_MOLD_MGMT",
+      "EQUIP_INSPECT_ITEM_MASTER",
+      "EQUIP_INSPECT_ITEM",
+      "EQUIP_INSPECT_CALENDAR",
+      "EQUIP_DAILY",
+      "EQUIP_PERIODIC_CALENDAR",
+      "EQUIP_PERIODIC",
+      "EQUIP_HISTORY",
+      "EQUIP_PM_PLAN",
+      "EQUIP_PM_CALENDAR",
+      "EQUIP_PM_RESULT"
+    ],
+    "GAUGE_MGMT": [
+      "GAUGE_MASTER",
+      "GAUGE_CALIBRATION",
+      "GAUGE_CALIBRATION_HISTORY"
     ],
     "SHIPPING": [
-      "SHIP_PACK", "SHIP_BOX_STOCK", "SHIP_PALLET", "SHIP_PALLET_SHIP", "SHIP_CONFIRM", "SHIP_ORDER",
-      "SHIP_HISTORY", "SHIP_RETURN", "SHIP_CUST_PO", "SHIP_CUST_PO_STATUS"
+      "SHIP_PACK_RESULT",
+      "SHIP_PACK",
+      "SHIP_ORDER",
+      "SHIP_BOX_STOCK",
+      "SHIP_CONFIRM",
+      "SHIP_PALLET",
+      "SHIP_PALLET_SHIP",
+      "SHIP_HISTORY",
+      "SHIP_RETURN"
     ],
-    "CUSTOMS": ["CUST_ENTRY", "CUST_STOCK", "CUST_USAGE"],
+    "SALES": [
+      "SALES_CUST_PO",
+      "SALES_CUST_PO_STATUS"
+    ],
+    "CUSTOMS": [
+      "CUST_ENTRY",
+      "CUST_STOCK",
+      "CUST_USAGE"
+    ],
     "CONSUMABLES": [
-      "CONS_MASTER", "CONS_RECEIVING", "CONS_ISSUING",
-      "CONS_STOCK", "CONS_LIFE"
+      "CONS_MASTER",
+      "CONS_LABEL",
+      "CONS_RECEIVING",
+      "CONS_ISSUING",
+      "CONS_STOCK",
+      "CONS_LIFE",
+      "CONS_MOUNT"
     ],
-    "OUTSOURCING": ["OUT_VENDOR", "OUT_ORDER", "OUT_RECEIVE"],
-    "INTERFACE": ["IF_DASHBOARD", "IF_LOG", "IF_MANUAL"],
+    "OUTSOURCING": [
+      "OUT_VENDOR",
+      "OUT_ORDER",
+      "OUT_RECEIVE"
+    ],
+    "INTERFACE": [
+      "IF_DASHBOARD",
+      "IF_LOG",
+      "IF_MANUAL"
+    ],
     "SYSTEM": [
-      "SYS_COMPANY", "SYS_DEPT", "SYS_USER", "SYS_ROLE",
-      "SYS_COMM", "SYS_CONFIG", "SYS_CODE", "SYS_ER_VIEW", "SYS_MENU_CATEGORY"
+      "SYS_COMPANY",
+      "SYS_DEPT",
+      "SYS_USER",
+      "SYS_ROLE",
+      "SYS_PDA_ROLE",
+      "SYS_COMM",
+      "SYS_CONFIG",
+      "SYS_CODE",
+      "SYS_SCHEDULER",
+      "SYS_ER_VIEW",
+      "SYS_MENU_CATEGORY",
+      "SYS_IMPR_REQ"
     ]
   }
 }

@@ -8,7 +8,8 @@
  * 3. findOne: 스크린샷 포함 단건 조회
  * 4. updateStatus: PENDING → IN_PROGRESS → DONE 상태 전이
  */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { missingImprDoneEvidence, requiresImprDoneEvidence } from '@harness/shared';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ImprRequest } from '../../../entities/impr-request.entity';
@@ -57,7 +58,8 @@ export class ImprRequestService {
     const qb = this.repo.createQueryBuilder('r')
       .select([
         'r.imprId', 'r.pageUrl', 'r.elementText', 'r.elementTag',
-        'r.description', 'r.status', 'r.requesterId', 'r.requesterNm',
+        'r.description', 'r.status', 'r.fixCommit', 'r.fixTest', 'r.deploySha', 'r.doneAt',
+        'r.requesterId', 'r.requesterNm',
         'r.company', 'r.plantCd', 'r.createdAt', 'r.updatedAt',
       ])
       .where('r.company = :company AND r.plantCd = :plantCd', { company, plantCd });
@@ -104,6 +106,19 @@ export class ImprRequestService {
     plantCd: string,
   ): Promise<ImprRequest> {
     const item = await this.findOne(imprId, company, plantCd);
+    // 처리됨(DONE) 판정은 커밋 해시·테스트 근거·배포 SHA 3개가 모두 있어야 한다 — 프론트와 같은 shared 규칙
+    if (requiresImprDoneEvidence(dto.status)) {
+      const missing = missingImprDoneEvidence(dto);
+      if (missing.length > 0) {
+        throw new BadRequestException(
+          `처리됨(DONE) 판정에는 수정 커밋 해시·테스트 근거·배포 SHA가 모두 필요합니다. 누락/형식오류: ${missing.join(', ')}`,
+        );
+      }
+      item.fixCommit = (dto.fixCommit ?? '').trim();
+      item.fixTest = (dto.fixTest ?? '').trim();
+      item.deploySha = (dto.deploySha ?? '').trim();
+      item.doneAt = new Date();
+    }
     item.status = dto.status;
     return this.repo.save(item);
   }

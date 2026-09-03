@@ -8339,7 +8339,8 @@
       "REF_INTEGRITY": "引用完整性",
       "INACTIVE_REF": "停用引用",
       "DATA_QUALITY": "数据质量",
-      "BIZ_REVERSE_REF": "业务反向引用"
+      "BIZ_REVERSE_REF": "业务反向引用",
+      "TXN_INVARIANT": "事务不变式"
     },
     "status": {
       "OK": "正常",
@@ -8876,7 +8877,15 @@
     "statusChanged": "状态已变更",
     "statusChangeError": "状态变更失败",
     "startProcessing": "开始处理",
-    "completeProcessing": "完成处理"
+    "completeProcessing": "完成处理",
+    "doneEvidenceTitle": "完成判定依据（3项全部必填）",
+    "fixCommit": "修复提交哈希",
+    "fixTest": "测试依据",
+    "deploySha": "部署SHA",
+    "doneEvidenceHint": "提交哈希、测试依据、部署SHA全部填写后才能完成处理",
+    "doneEvidenceMissing": "缺失或格式错误：{{fields}}",
+    "doneAt": "完成时间",
+    "fixTestPlaceholder": "spec文件路径或执行结果摘要（例：mat-issue.service.spec.ts 27 pass）"
   },
   "selfInspect": {
     "typeVisual": "判定型",

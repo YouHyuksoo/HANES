@@ -38,6 +38,7 @@ import { HttpExecutor } from './executors/http.executor';
 import { ScriptExecutor } from './executors/script.executor';
 import { DbBackupService } from './services/db-backup.service';
 import { SERVICE_CLASS_MAP } from './config/scheduler-security.config';
+import { MasterValidationService } from '../master/validation/master-validation.service';
 
 @Module({
   imports: [
@@ -68,5 +69,7 @@ export class SchedulerModule implements OnModuleInit {
   /** 모듈 초기화 시 SERVICE_CLASS_MAP에 서비스 클래스 등록 */
   onModuleInit(): void {
     SERVICE_CLASS_MAP.set('DbBackupService', DbBackupService);
+    // 기준정보·트랜잭션 불변식 정기 검증(MasterModule 제공, ModuleRef strict:false로 조회)
+    SERVICE_CLASS_MAP.set('MasterValidationService', MasterValidationService);
   }
 }

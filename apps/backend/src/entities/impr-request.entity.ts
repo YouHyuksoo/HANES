@@ -6,6 +6,7 @@
  * 1. IMPR_ID: UUID 문자열 PK (Oracle 시퀀스 대신 애플리케이션에서 uuid 생성)
  * 2. SCREENSHOT: CLOB 타입으로 base64 이미지 문자열 저장
  * 3. STATUS: PENDING → IN_PROGRESS → DONE 상태 흐름
+ * 4. DONE 전이는 FIX_COMMIT·FIX_TEST·DEPLOY_SHA 3개 근거가 모두 있어야 한다(shared impr-request-rules)
  */
 import {
   Entity,
@@ -41,6 +42,22 @@ export class ImprRequest {
   /** PENDING | IN_PROGRESS | DONE */
   @Column({ name: 'STATUS', type: 'varchar2', length: 20, default: 'PENDING' })
   status: string;
+
+  /** 수정 커밋 해시 (DONE 필수) */
+  @Column({ type: 'varchar2', name: 'FIX_COMMIT', length: 40, nullable: true })
+  fixCommit: string | null;
+
+  /** 테스트 근거 — spec 경로 또는 실행 결과 요약 (DONE 필수) */
+  @Column({ type: 'varchar2', name: 'FIX_TEST', length: 500, nullable: true })
+  fixTest: string | null;
+
+  /** 배포된 빌드 커밋 SHA (DONE 필수) */
+  @Column({ type: 'varchar2', name: 'DEPLOY_SHA', length: 40, nullable: true })
+  deploySha: string | null;
+
+  /** DONE 전이 시각 */
+  @Column({ name: 'DONE_AT', type: 'timestamp', nullable: true })
+  doneAt: Date | null;
 
   @Column({ name: 'REQUESTER_ID', type: 'varchar2', length: 100 })
   requesterId: string;

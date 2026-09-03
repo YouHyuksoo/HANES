@@ -483,7 +483,7 @@ describe('MatIssueService', () => {
     mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as ItemMaster);
 
     await target.create({
-      issueType: 'PROD',
+      issueType: 'OTHER', // 비생산 출고 — 생산 출고(PROD)는 공정코드 필수라 재고 분할 자체를 검증하려면 기타출고로
       items: [{ matUid: 'MAT-001', issueQty: 5 }],
     } as any, 'HANES', 'P01');
 
@@ -568,7 +568,7 @@ describe('MatIssueService', () => {
     );
   });
 
-  it('keeps the simple MAT_OUT issue when orderNo is absent', async () => {
+  it('keeps the simple MAT_OUT issue for a non-production issue type without processCode', async () => {
     const manager = {
       findOne: jest.fn().mockResolvedValueOnce({
         matUid: 'MAT-001',
@@ -600,7 +600,7 @@ describe('MatIssueService', () => {
     mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as ItemMaster);
 
     await target.create({
-      issueType: 'PROD',
+      issueType: 'OTHER',
       items: [{ matUid: 'MAT-001', issueQty: 5 }],
     } as any, 'HANES', 'P01');
 
@@ -614,6 +614,47 @@ describe('MatIssueService', () => {
       }),
     );
     // 공정재고 가산(addStockInTx)이 호출되지 않아야 한다
+    expect(mockProcMatStockService.addStockInTx).not.toHaveBeenCalled();
+  });
+
+  it('blocks a production issue without processCode instead of silently falling back to MAT_OUT', async () => {
+    const manager = {
+      findOne: jest.fn().mockResolvedValueOnce({
+        matUid: 'MAT-001',
+        itemCode: 'ITEM-001',
+        iqcStatus: 'PASS',
+        status: 'NORMAL',
+        company: 'HANES',
+        plant: 'P01',
+      } as MatLot),
+      find: jest
+        .fn()
+        .mockResolvedValueOnce([
+          { warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'HANES', plant: 'P01' } as MatStock,
+        ])
+        .mockResolvedValueOnce([
+          { warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0, company: 'HANES', plant: 'P01' } as MatStock,
+        ]),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+      createQueryBuilder: jest.fn(() => ({ update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }) })),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    mockNumbering.nextInTx
+      .mockResolvedValueOnce('ISS-001')
+      .mockResolvedValueOnce('TX-001');
+    mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot);
+    mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as ItemMaster);
+
+    await expect(target.create({
+      issueType: 'PROD',
+      items: [{ matUid: 'MAT-001', issueQty: 5 }],
+    } as any, 'HANES', 'P01')).rejects.toThrow('공정코드가 필요합니다');
+
+    // 출고 이력/재고 거래가 하나도 기록되지 않아야 한다(단순출고 폴백 제거)
+    expect(manager.save).not.toHaveBeenCalled();
     expect(mockProcMatStockService.addStockInTx).not.toHaveBeenCalled();
   });
 

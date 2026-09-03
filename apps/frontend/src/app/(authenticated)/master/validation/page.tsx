@@ -15,12 +15,12 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Play, RefreshCw, Copy, ExternalLink, ShieldCheck } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Card, CardContent, Button, StatCard } from "@/components/ui";
+import { Card, CardContent, Button } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 
-type RuleCategory = "REF_INTEGRITY" | "INACTIVE_REF" | "DATA_QUALITY" | "BIZ_REVERSE_REF";
+type RuleCategory = "REF_INTEGRITY" | "INACTIVE_REF" | "DATA_QUALITY" | "BIZ_REVERSE_REF" | "TXN_INVARIANT";
 type RuleSeverity = "ERROR" | "WARN";
 
 interface RuleMeta {
@@ -57,6 +57,7 @@ const ALL_CATEGORIES: RuleCategory[] = [
   "INACTIVE_REF",
   "DATA_QUALITY",
   "BIZ_REVERSE_REF",
+  "TXN_INVARIANT",
 ];
 
 export default function MasterValidationPage() {
@@ -195,13 +196,24 @@ export default function MasterValidationPage() {
     ? runResult.results.filter((r) => r.status === "VIOLATION").length
     : 0;
 
+  const summaryStats: { label: string; value: number; className: string }[] = runResult
+    ? [
+        { label: t("validation.summary.errors"), value: runResult.summary.errorCount, className: "text-red-600" },
+        { label: t("validation.summary.warns"), value: runResult.summary.warnCount, className: "text-amber-600" },
+        { label: t("validation.summary.violatedRules"), value: violatedRules, className: "text-text" },
+        { label: t("validation.summary.failedRules"), value: runResult.summary.failedRules, className: "text-text-muted" },
+      ]
+    : [];
+
   return (
-    <div className="flex flex-col gap-4 p-4">
-      {/* 헤더: 카테고리 선택 + 실행 */}
-      <Card>
-        <CardContent className="flex flex-wrap items-center gap-3 py-3">
+    <div className="flex h-full flex-col gap-3 overflow-hidden p-4">
+      {/* 헤더 한 줄: 제목 + 카테고리 + 실행 + 요약 수치 */}
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 text-blue-600" />
           <h1 className="text-lg font-semibold">{t("validation.title")}</h1>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
           {ALL_CATEGORIES.map((c) => (
             <label key={c} className="flex items-center gap-1 text-sm">
               <input
@@ -212,96 +224,94 @@ export default function MasterValidationPage() {
               {t(`validation.category.${c}`)}
             </label>
           ))}
-          <Button onClick={runValidation} disabled={running || categories.length === 0}>
-            {running ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <Play className="h-4 w-4" />
-            )}
-            {running ? t("validation.running") : t("validation.run")}
-          </Button>
-          {runResult && (
-            <span className="text-xs text-muted-foreground">
+        </div>
+        <Button size="sm" onClick={runValidation} disabled={running || categories.length === 0}>
+          {running ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <Play className="h-4 w-4" />
+          )}
+          {running ? t("validation.running") : t("validation.run")}
+        </Button>
+        {runResult && (
+          <>
+            <div className="flex items-center divide-x divide-border rounded-md border border-border text-sm">
+              {summaryStats.map((s) => (
+                <div key={s.label} className="flex items-baseline gap-1.5 px-3 py-1">
+                  <span className="text-xs text-text-muted">{s.label}</span>
+                  <span className={`font-data text-base font-bold leading-none ${s.className}`}>{s.value}</span>
+                </div>
+              ))}
+            </div>
+            <span className="text-xs text-text-muted">
               {t("validation.lastRun")}: {new Date(runResult.runAt).toLocaleString()} (
               {runResult.durationMs}ms)
             </span>
-          )}
-        </CardContent>
-      </Card>
+          </>
+        )}
+      </div>
 
       {runError && (
-        <div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="flex-shrink-0 rounded border border-red-500 px-3 py-2 text-sm text-red-600">
           {runError}
         </div>
       )}
 
-      {/* 요약 카드 */}
-      {runResult && (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <StatCard label={t("validation.summary.errors")} value={runResult.summary.errorCount} icon={ShieldCheck} color="red" />
-          <StatCard label={t("validation.summary.warns")} value={runResult.summary.warnCount} icon={ShieldCheck} color="orange" />
-          <StatCard label={t("validation.summary.violatedRules")} value={violatedRules} icon={ShieldCheck} color="yellow" />
-          <StatCard label={t("validation.summary.failedRules")} value={runResult.summary.failedRules} icon={ShieldCheck} color="gray" />
-        </div>
-      )}
-
-      {/* 규칙 결과 그리드 */}
-      {runResult && (
-        <Card>
-          <CardContent className="py-3">
-            <div className="mb-2 flex items-center gap-2">
-              <label className="flex items-center gap-1 text-sm">
-                <input
-                  type="checkbox"
-                  checked={showOk}
-                  onChange={(e) => setShowOk(e.target.checked)}
-                />
-                {t("validation.showOkRules")}
-              </label>
-            </div>
-            <DataGrid
-              data={visibleResults}
-              columns={ruleColumns}
-              isLoading={running}
-              emptyMessage={t("validation.empty.noViolation")}
-              onRowClick={(row) =>
-                setSelectedRuleId(row.rule.id === selectedRuleId ? null : row.rule.id)
-              }
-              selectedRowId={selectedRuleId ?? undefined}
-              getRowId={(row) => row.rule.id}
-              maxHeight="calc(100vh - 480px)"
-            />
-          </CardContent>
-        </Card>
-      )}
-
       {!runResult && !running && (
-        <div className="py-16 text-center text-sm text-muted-foreground">
+        <div className="py-16 text-center text-sm text-text-muted">
           {t("validation.empty.prompt")}
         </div>
       )}
 
-      {/* 위반 상세 */}
+      {/* 규칙 결과 그리드 — 남은 높이를 채우고 내부 스크롤 */}
+      {runResult && (
+        <Card padding="none" className={selectedRule ? "flex min-h-0 flex-[3] flex-col" : "flex min-h-0 flex-1 flex-col"}>
+          <CardContent className="flex h-full min-h-0 flex-col p-3">
+            <label className="mb-2 flex flex-shrink-0 items-center gap-1 text-sm">
+              <input
+                type="checkbox"
+                checked={showOk}
+                onChange={(e) => setShowOk(e.target.checked)}
+              />
+              {t("validation.showOkRules")}
+            </label>
+            <div className="min-h-0 flex-1">
+              <DataGrid
+                data={visibleResults}
+                columns={ruleColumns}
+                isLoading={running}
+                emptyMessage={t("validation.empty.noViolation")}
+                onRowClick={(row) =>
+                  setSelectedRuleId(row.rule.id === selectedRuleId ? null : row.rule.id)
+                }
+                selectedRowId={selectedRuleId ?? undefined}
+                getRowId={(row) => row.rule.id}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 위반 상세 — 하단 분할, 내부 스크롤 */}
       {selectedRule && (
-        <Card>
-          <CardContent className="py-3">
-            <div className="mb-2">
+        <Card padding="none" className="flex min-h-0 flex-[2] flex-col">
+          <CardContent className="flex h-full min-h-0 flex-col p-3">
+            <div className="mb-2 flex-shrink-0 text-sm">
               <span className="font-semibold">
                 [{selectedRule.rule.id}] {selectedRule.rule.title}
               </span>
-              <span className="ml-2 text-sm text-muted-foreground">
-                {selectedRule.rule.description}
-              </span>
+              <span className="ml-2 text-text-muted">{selectedRule.rule.description}</span>
               {selectedRule.status === "ERROR" && (
-                <div className="mt-1 text-sm text-red-600">{selectedRule.errorMessage}</div>
+                <div className="mt-1 text-red-600">{selectedRule.errorMessage}</div>
               )}
             </div>
-            <DataGrid
-              data={selectedRule.rows}
-              columns={detailColumns}
-              emptyMessage={t("validation.empty.noRows")}
-              maxHeight="320px"
-            />
+            <div className="min-h-0 flex-1">
+              <DataGrid
+                data={selectedRule.rows}
+                columns={detailColumns}
+                emptyMessage={t("validation.empty.noRows")}
+              />
+            </div>
           </CardContent>
         </Card>
       )}

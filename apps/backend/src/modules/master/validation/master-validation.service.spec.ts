@@ -56,4 +56,33 @@ describe('MasterValidationService', () => {
     const expectedKey = first.rule.severity === 'ERROR' ? 'errorCount' : 'warnCount';
     expect(result.summary[expectedKey]).toBe(3);
   });
+
+  it('scheduledRun은 ERROR 위반이 있으면 success=false와 위반 규칙 id를 message에 담는다', async () => {
+    const firstError = ALL_RULES.find((r) => r.severity === 'ERROR');
+    if (!firstError) throw new Error('ERROR 규칙이 없다');
+    const query = jest.fn().mockImplementation((sql: string) => {
+      if (sql.includes(firstError.sql) && sql.startsWith('SELECT COUNT')) return Promise.resolve([{ CNT: 2 }]);
+      if (sql.includes(firstError.sql)) return Promise.resolve([{ REF_KEY: 'A' }, { REF_KEY: 'B' }]);
+      return Promise.resolve([{ CNT: 0 }]);
+    });
+    const svc = makeService(query);
+    const out = await svc.scheduledRun('40', '1000');
+    expect(out.success).toBe(false);
+    expect(out.affectedRows).toBe(2);
+    expect(out.message).toContain(`${firstError.id}=2건`);
+  });
+
+  it('scheduledRun은 위반이 없으면 success=true다', async () => {
+    const svc = makeService(jest.fn().mockResolvedValue([{ CNT: 0 }]));
+    const out = await svc.scheduledRun('40', '1000');
+    expect(out.success).toBe(true);
+    expect(out.affectedRows).toBe(0);
+  });
+
+  it('규칙 SQL의 :company/:plantCd 바인드는 각 1회만 등장한다(배열 위치 바인드 계약)', () => {
+    for (const r of ALL_RULES.filter((x) => x.tenantScoped !== false)) {
+      expect((r.sql.match(/:company\b/g) ?? []).length).toBe(1);
+      expect((r.sql.match(/:plantCd\b/g) ?? []).length).toBe(1);
+    }
+  });
 });

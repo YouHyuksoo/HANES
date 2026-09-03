@@ -38,6 +38,24 @@ export class UpdateImprStatusDto {
   @ApiProperty({ description: '변경할 상태', enum: ['PENDING', 'IN_PROGRESS', 'DONE'] })
   @IsIn(['PENDING', 'IN_PROGRESS', 'DONE'])
   status: string;
+
+  @ApiPropertyOptional({ description: '수정 커밋 해시 (DONE 전이 시 필수, 7~40자 hex)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  fixCommit?: string;
+
+  @ApiPropertyOptional({ description: '테스트 근거 — spec 파일 경로 또는 실행 결과 요약 (DONE 전이 시 필수)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  fixTest?: string;
+
+  @ApiPropertyOptional({ description: '배포된 빌드 커밋 SHA (DONE 전이 시 필수, 7~40자 hex)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  deploySha?: string;
 }
 
 export class ImprRequestQueryDto {

@@ -23,6 +23,7 @@ export const ALLOWED_SERVICE_METHODS: string[] = [
   'InterfaceService.scheduledBulkRetry',
   'InterfaceService.scheduledSyncItemMaster',
   'DbBackupService.runBackup',
+  'MasterValidationService.scheduledRun',
 ];
 
 /**
@@ -32,6 +33,7 @@ export const ALLOWED_SERVICE_METHODS: string[] = [
 export const TENANT_AWARE_SERVICE_METHODS: string[] = [
   'InterfaceService.scheduledSyncBom',
   'InterfaceService.scheduledBulkRetry',
+  'MasterValidationService.scheduledRun',
 ];
 
 /**

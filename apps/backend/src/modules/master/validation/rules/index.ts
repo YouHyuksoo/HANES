@@ -10,6 +10,7 @@ import { ITEM_RULES } from './item.rules';
 import { QUALITY_MASTER_RULES } from './quality-master.rules';
 import { WAREHOUSE_RULES } from './warehouse.rules';
 import { BIZ_REVERSE_RULES } from './biz-reverse.rules';
+import { TXN_INVARIANT_RULES } from './txn-invariant.rules';
 
 /** 전체 검증 규칙 */
 export const ALL_RULES: ValidationRule[] = [
@@ -19,4 +20,5 @@ export const ALL_RULES: ValidationRule[] = [
   ...QUALITY_MASTER_RULES,
   ...WAREHOUSE_RULES,
   ...BIZ_REVERSE_RULES,
+  ...TXN_INVARIANT_RULES,
 ];

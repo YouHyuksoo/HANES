@@ -9,7 +9,7 @@
  * 4. 설비(equipCode) 배정 시: 공정재고(WIP_MAT_STOCKS)에서 소비.
  *    - WipMatStockService.deductStockInTx 위임 → WIP_MAT_TRANSACTIONS(PROD_CONSUME) 기록.
  *    - 원자재재고(MAT_STOCKS)는 절대 건드리지 않는다(이중차감 방지).
- * 5. 설비 미배정(fallback): 기존 원자재창고 FIFO 차감(MAT_OUT + MatIssue PROD_AUTO).
+ * 5. 설비 미배정: 원자재창고 우회 차감(fallback) 없이 오류로 드러낸다(ADR 0002, 이중차감 방지).
  * 6. 외부 트랜잭션(queryRunner)이 전달되면 그것을 공유하고,
  *    없으면 자체 트랜잭션을 생성합니다.
  *

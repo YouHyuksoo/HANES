@@ -12,3 +12,4 @@ export * from './process-capa-rules';
 export * from './work-instruction-rules';
 export * from './vendor-barcode-rules';
 export * from './mat-issue-rules';
+export * from './impr-request-rules';
