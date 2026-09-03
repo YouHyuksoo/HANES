@@ -1,20 +1,19 @@
 /**
  * @file src/shared/numbering.service.ts
- * @description 통합 채번 파사드 — SeqGeneratorService + NumRuleService를 단일 인터페이스로 제공
+ * @description 통합 채번 파사드 — Oracle SEQUENCE 기반 채번을 단일 인터페이스로 제공
  *
  * 초보자 가이드:
  * 1. **next(type, qr?)** → 채번 유형에 따라 적절한 메커니즘 자동 선택
  *    - SEQ_TYPES (PKG_SEQ_GENERATOR 기반): MAT_UID, PRD_UID, CON_UID, JOB_ORDER 등
- *    - RULE_TYPES (NUM_RULE_MASTERS 기반): ARRIVAL, MAT_ISSUE, PROD_RESULT 등
+ *    - 레거시 형식 채널도 전용 전역 Oracle SEQUENCE로 발급
  * 2. **nextInTx(qr, type, userId?)** → 외부 트랜잭션 내에서 채번 (결번 없음)
  * 3. 신규 코드에서는 이 서비스만 주입하면 됨
  *
- * 기존 SeqGeneratorService/NumRuleService는 하위호환을 위해 유지됨
+ * NUM_RULE_MASTERS의 변경 가능한 행 카운터는 동시성/tenant 위험 때문에 사용하지 않는다.
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { DataSource, QueryRunner } from 'typeorm';
 import { SeqGeneratorService } from './seq-generator.service';
-import { NumRuleService } from '../modules/num-rule/num-rule.service';
 
 /** PKG_SEQ_GENERATOR로 처리되는 채번 유형 */
 const SEQ_TYPES = new Set([
@@ -28,12 +27,13 @@ const SEQ_TYPES = new Set([
   'DOC_NO', 'OQC_REQUEST',
 ]);
 
-/** NUM_RULE_MASTERS로 처리되는 채번 유형 */
-const RULE_TYPES = new Set([
-  'ARRIVAL', 'RECEIVING', 'MAT_ISSUE',
-  'SCRAP', 'RECEIPT_CANCEL', 'ISSUE_REQUEST',
-  'STOCK_TX', 'CANCEL_TX', 'RECEIVE',
-]);
+const LEGACY_SEQUENCE_FORMATS: Record<string, { sequence: string; prefix: string; pad: number }> = {
+  ARRIVAL: { sequence: 'SEQ_LEGACY_ARRIVAL', prefix: 'ARR', pad: 4 },
+  MAT_ISSUE: { sequence: 'SEQ_LEGACY_MAT_ISSUE', prefix: 'ISS', pad: 4 },
+  STOCK_TX: { sequence: 'SEQ_LEGACY_STOCK_TX', prefix: 'TX', pad: 5 },
+  CANCEL_TX: { sequence: 'SEQ_LEGACY_CANCEL_TX', prefix: 'CTX', pad: 5 },
+  RECEIVE: { sequence: 'SEQ_LEGACY_RECEIVE', prefix: 'RCV', pad: 4 },
+};
 
 @Injectable()
 export class NumberingService {
@@ -41,7 +41,6 @@ export class NumberingService {
 
   constructor(
     private readonly seqGenerator: SeqGeneratorService,
-    private readonly numRule: NumRuleService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -51,7 +50,7 @@ export class NumberingService {
    * @param qr 트랜잭션 QueryRunner (선택)
    * @param userId 사용자ID (NUM_RULE 방식에서 사용, 기본 SYSTEM)
    */
-  async next(type: string, qr?: QueryRunner, userId?: string): Promise<string> {
+  async next(type: string, qr?: QueryRunner, _userId?: string, now: Date = new Date()): Promise<string> {
     // 공정 거래번호(WIP_TX): 전용 Oracle SEQUENCE(SEQ_WIP_TX) 기반 애플리케이션 포맷 채널
     if (type === 'WIP_TX') {
       return this.nextWipTx(qr);
@@ -61,10 +60,15 @@ export class NumberingService {
       return this.seqGenerator.getNo(type, qr);
     }
 
-    if (RULE_TYPES.has(type)) {
-      return qr
-        ? this.numRule.nextNumberInTx(qr, type, userId)
-        : this.numRule.nextNumber(type, userId);
+    const legacy = LEGACY_SEQUENCE_FORMATS[type];
+    if (legacy) {
+      const manager = qr?.manager ?? this.dataSource.manager;
+      const rows = await manager.query(
+        `SELECT ${legacy.sequence}.NEXTVAL AS "NEXT_SEQ" FROM DUAL`,
+      );
+      const seq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
+      const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+      return `${legacy.prefix}${date}-${String(seq).padStart(legacy.pad, '0')}`;
     }
 
     // 알 수 없는 유형 → SEQ_GENERATOR에 위임 (확장 가능)

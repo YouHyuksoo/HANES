@@ -5,7 +5,7 @@ describe('NumberingService.nextGenealogyId', () => {
     const dataSource: any = {
       manager: { query: jest.fn().mockResolvedValue([{ NEXT_SEQ: 42 }]) },
     };
-    const svc = new NumberingService({} as any, {} as any, dataSource);
+    const svc = new NumberingService({} as any, dataSource);
     const id = await svc.nextGenealogyId();
     expect(id).toBe(42);
     expect(dataSource.manager.query).toHaveBeenCalledWith(

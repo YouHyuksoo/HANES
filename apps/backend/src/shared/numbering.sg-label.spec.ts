@@ -5,7 +5,7 @@ describe('NumberingService.nextSgLabel', () => {
     const dataSource: any = {
       manager: { query: jest.fn().mockResolvedValue([{ NEXT_SEQ: 7 }]) },
     };
-    const svc = new NumberingService({} as any, {} as any, dataSource);
+    const svc = new NumberingService({} as any, dataSource);
     const no = await svc.nextSgLabel();
     expect(no).toMatch(/^SG\d{6}-00007$/);
     expect(dataSource.manager.query).toHaveBeenCalledWith(

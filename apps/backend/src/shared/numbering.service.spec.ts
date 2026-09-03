@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * - SEQ_TYPES → SeqGeneratorService.getNo() 호출
- * - RULE_TYPES → NumRuleService.nextNumber()/nextNumberInTx() 호출
+ * - 레거시 번호 형식 → 전용 Oracle SEQUENCE.NEXTVAL 호출
  * - 실행: `pnpm test -- -t "NumberingService"`
  */
 import { Test, TestingModule } from '@nestjs/testing';
@@ -12,19 +12,16 @@ import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { DataSource, QueryRunner } from 'typeorm';
 import { NumberingService } from './numbering.service';
 import { SeqGeneratorService } from './seq-generator.service';
-import { NumRuleService } from '../modules/num-rule/num-rule.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('NumberingService', () => {
   let target: NumberingService;
   let mockSeqGenerator: DeepMocked<SeqGeneratorService>;
-  let mockNumRule: DeepMocked<NumRuleService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockDataSource: { manager: { query: jest.Mock } };
 
   beforeEach(async () => {
     mockSeqGenerator = createMock<SeqGeneratorService>();
-    mockNumRule = createMock<NumRuleService>();
     mockQueryRunner = createMock<QueryRunner>();
     mockDataSource = { manager: { query: jest.fn() } };
 
@@ -32,7 +29,6 @@ describe('NumberingService', () => {
       providers: [
         NumberingService,
         { provide: SeqGeneratorService, useValue: mockSeqGenerator },
-        { provide: NumRuleService, useValue: mockNumRule },
         { provide: DataSource, useValue: mockDataSource },
       ],
     })
@@ -65,39 +61,23 @@ describe('NumberingService', () => {
       // Assert
       expect(result).toBe(`${type}-001`);
       expect(mockSeqGenerator.getNo).toHaveBeenCalledWith(type, undefined);
-      expect(mockNumRule.nextNumber).not.toHaveBeenCalled();
     });
   });
 
-  describe('RULE_TYPES routing', () => {
+  describe('legacy-format global sequences', () => {
     it.each([
-      'ARRIVAL', 'RECEIVING', 'MAT_ISSUE',
-      'SCRAP', 'RECEIPT_CANCEL', 'ISSUE_REQUEST',
-      'STOCK_TX', 'CANCEL_TX', 'RECEIVE',
-    ])('should route %s to NumRuleService.nextNumber without qr', async (type) => {
-      // Arrange
-      mockNumRule.nextNumber.mockResolvedValue(`${type}-001`);
+      ['ARRIVAL', 'SEQ_LEGACY_ARRIVAL', 'ARR20260318-0007'],
+      ['MAT_ISSUE', 'SEQ_LEGACY_MAT_ISSUE', 'ISS20260318-0007'],
+      ['STOCK_TX', 'SEQ_LEGACY_STOCK_TX', 'TX20260318-00007'],
+      ['CANCEL_TX', 'SEQ_LEGACY_CANCEL_TX', 'CTX20260318-00007'],
+      ['RECEIVE', 'SEQ_LEGACY_RECEIVE', 'RCV20260318-0007'],
+    ])('formats %s without a mutable counter row', async (type, sequenceName, expected) => {
+      mockQueryRunner.manager.query.mockResolvedValueOnce([{ NEXT_SEQ: 7 }]);
 
-      // Act
-      const result = await target.next(type);
-
-      // Assert
-      expect(result).toBe(`${type}-001`);
-      expect(mockNumRule.nextNumber).toHaveBeenCalledWith(type, undefined);
-      expect(mockSeqGenerator.getNo).not.toHaveBeenCalled();
-    });
-
-    it('should route RULE_TYPE to NumRuleService.nextNumberInTx with qr', async () => {
-      // Arrange
-      mockNumRule.nextNumberInTx.mockResolvedValue('ARR20260318-0001');
-
-      // Act
-      const result = await target.next('ARRIVAL', mockQueryRunner, 'admin');
-
-      // Assert
-      expect(result).toBe('ARR20260318-0001');
-      expect(mockNumRule.nextNumberInTx).toHaveBeenCalledWith(
-        mockQueryRunner, 'ARRIVAL', 'admin',
+      await expect(target.next(type, mockQueryRunner, 'admin', new Date('2026-03-18T12:00:00+09:00')))
+        .resolves.toBe(expected);
+      expect(mockQueryRunner.manager.query).toHaveBeenCalledWith(
+        `SELECT ${sequenceName}.NEXTVAL AS "NEXT_SEQ" FROM DUAL`,
       );
     });
   });

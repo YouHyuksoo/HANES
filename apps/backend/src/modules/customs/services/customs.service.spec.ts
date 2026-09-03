@@ -254,10 +254,17 @@ describe('CustomsService', () => {
     it('ORDER_NO를 orderNo 엔티티 속성으로 저장한다', async () => {
       const lot = { entryNo: 'E001', matUid: 'M001', remainQty: 100, usedQty: 0, qty: 100 } as CustomsLot;
       const manager = createMock<any>();
+      const lotUpdateQb = {
+        update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(),
+        setParameters: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      };
       mockLotRepo.findOne.mockResolvedValue(lot);
       mockEntryRepo.findOne.mockResolvedValue({ entryNo: 'E001' } as CustomsEntry);
       mockUsageRepo.find.mockResolvedValue([]);
-      mockUsageRepo.count.mockResolvedValue(0);
+      manager.query.mockResolvedValue([{ NEXT_SEQ: 1 }]);
+      manager.createQueryBuilder.mockReturnValue(lotUpdateQb);
       manager.create.mockImplementation((_entity: any, value: any) => value);
       manager.save.mockImplementation(async (value: any) => value);
       manager.update.mockResolvedValue({ affected: 1 });
@@ -281,6 +288,12 @@ describe('CustomsService', () => {
         expect.objectContaining({
           jobOrderId: 'WO-001',
         }),
+      );
+      expect(manager.query).toHaveBeenCalledWith(
+        'SELECT SEQ_CUSTOMS_USAGE.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+      );
+      expect(lotUpdateQb.andWhere).toHaveBeenCalledWith(
+        'REMAIN_QTY >= :usageQty', { usageQty: 10 },
       );
     });
   });

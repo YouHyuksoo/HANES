@@ -48,7 +48,12 @@ describe('numbering safety policy', () => {
     const offenders = walk(migrationsRoot)
       .filter((filePath) => filePath.endsWith('.sql'))
       .filter((filePath) => !historicalMigrationBaseline.has(path.basename(filePath)))
-      .filter((filePath) => /ALTER\s+SEQUENCE[\s\S]{0,120}\bRESTART\b|CREATE\s+SEQUENCE[\s\S]{0,500}\bCYCLE\b/i.test(read(filePath)))
+      .filter((filePath) => {
+        const source = read(filePath);
+        const resetsSequence = /ALTER\s+SEQUENCE[\s\S]{0,120}\bRESTART\b/i.test(source);
+        const createsCyclingSequence = /CREATE\s+SEQUENCE\s+\w+(?:(?!\r?\n\s*\/\s*(?:\r?\n|$))[\s\S]){0,500}(?<!NO)\bCYCLE\b/i.test(source);
+        return resetsSequence || createsCyclingSequence;
+      })
       .map(relative);
 
     expect(offenders).toEqual([]);

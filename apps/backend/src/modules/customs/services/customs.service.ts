@@ -478,17 +478,36 @@ export class CustomsService {
       );
     }
 
-    // 시퀀스 생성
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const count = await this.customsUsageReportRepository.count({
-      where: {
-        reportNo: `USG${today}%`,
-      },
-    });
-    const reportNo = `USG${today}${String(count + 1).padStart(4, '0')}`;
-
     // 트랜잭션으로 사용신고 생성 및 LOT 업데이트
     return this.tx.run(async (queryRunner) => {
+      const rows = await queryRunner.manager.query(
+        'SELECT SEQ_CUSTOMS_USAGE.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+      );
+      const nextSeq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
+      const now = new Date();
+      const today = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+      const reportNo = `USG${today}${String(nextSeq).padStart(4, '0')}`;
+
+      const stockResult = await queryRunner.manager
+        .createQueryBuilder()
+        .update(CustomsLot)
+        .set({
+          usedQty: () => 'USED_QTY + :usageQty',
+          remainQty: () => 'REMAIN_QTY - :usageQty',
+          status: () => "CASE WHEN REMAIN_QTY - :usageQty = 0 THEN 'RELEASED' ELSE 'PARTIAL' END",
+        })
+        .where({
+          entryNo: dto.lotEntryNo,
+          matUid: dto.lotMatUid,
+          ...this.tenantWhere(company, plant),
+        })
+        .andWhere('REMAIN_QTY >= :usageQty', { usageQty: dto.usageQty })
+        .setParameters({ usageQty: dto.usageQty })
+        .execute();
+      if (stockResult.affected !== 1) {
+        throw new BadRequestException('사용 수량이 보세 LOT 잔량을 초과합니다.');
+      }
+
       const report = queryRunner.manager.create(CustomsUsageReport, {
         reportNo,
         lotEntryNo: dto.lotEntryNo,
@@ -501,21 +520,6 @@ export class CustomsService {
       });
 
       await queryRunner.manager.save(report);
-
-      // LOT 잔여수량 업데이트
-      const newUsedQty = lot.usedQty + dto.usageQty;
-      const newRemainQty = lot.qty - newUsedQty;
-      const newStatus = newRemainQty === 0 ? 'RELEASED' : 'PARTIAL';
-
-      await queryRunner.manager.update(
-        CustomsLot,
-        { entryNo: dto.lotEntryNo, matUid: dto.lotMatUid, ...this.tenantWhere(company, plant) },
-        {
-          usedQty: newUsedQty,
-          remainQty: newRemainQty,
-          status: newStatus,
-        },
-      );
 
       return report;
     });
