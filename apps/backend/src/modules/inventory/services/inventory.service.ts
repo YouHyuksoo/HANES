@@ -31,6 +31,13 @@ import { InventoryQueryService } from './inventory-query.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
 
+function isOracleDuplicate(error: unknown): boolean {
+  if ((typeof error !== 'object' && typeof error !== 'function') || error === null) return false;
+  return Reflect.get(error, 'errorNum') === 1
+    || Reflect.get(error, 'code') === 'ORA-00001'
+    || (error instanceof Error && error.message.includes('ORA-00001'));
+}
+
 @Injectable()
 export class InventoryService {
   constructor(
@@ -70,6 +77,76 @@ export class InventoryService {
       throw new BadRequestException(
         `${context} 사업장 정보가 일치하지 않습니다. request=${requested.plant}, row=${actual.plant ?? 'NULL'}`,
       );
+    }
+  }
+
+  private async decrementStockAtomically(
+    queryRunner: QueryRunner,
+    stock: MatStock,
+    quantity: number,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    const result = await queryRunner.manager
+      .createQueryBuilder()
+      .update(MatStock)
+      .set({
+        qty: () => '"QTY" - :stockDelta',
+        availableQty: () => '"AVAILABLE_QTY" - :stockDelta',
+      })
+      .where({
+        warehouseCode: stock.warehouseCode,
+        itemCode: stock.itemCode,
+        matUid: stock.matUid ?? IsNull(),
+        ...this.tenantWhere(company, plant),
+      })
+      .andWhere('"QTY" >= :stockDelta AND "AVAILABLE_QTY" >= :stockDelta')
+      .setParameters({ stockDelta: quantity })
+      .execute();
+
+    if ((result.affected ?? 0) !== 1) {
+      throw new BadRequestException('동시 처리로 재고가 변경되었거나 가용 재고가 부족합니다. 다시 조회해 주세요.');
+    }
+  }
+
+  private async incrementOrCreateStockAtomically(
+    queryRunner: QueryRunner,
+    stockKey: { warehouseCode: string; itemCode: string; matUid?: string | null },
+    quantity: number,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    const increment = async () => queryRunner.manager
+      .createQueryBuilder()
+      .update(MatStock)
+      .set({
+        qty: () => '"QTY" + :stockDelta',
+        availableQty: () => '"AVAILABLE_QTY" + :stockDelta',
+      })
+      .where({
+        warehouseCode: stockKey.warehouseCode,
+        itemCode: stockKey.itemCode,
+        matUid: stockKey.matUid ?? IsNull(),
+        ...this.tenantWhere(company, plant),
+      })
+      .setParameters({ stockDelta: quantity })
+      .execute();
+
+    if ((await increment()).affected === 1) return;
+
+    try {
+      await queryRunner.manager.save(MatStock, {
+        warehouseCode: stockKey.warehouseCode,
+        itemCode: stockKey.itemCode,
+        matUid: stockKey.matUid || null,
+        qty: quantity,
+        reservedQty: 0,
+        availableQty: quantity,
+        company: company || null,
+        plant: plant || null,
+      });
+    } catch (error) {
+      if (!isOracleDuplicate(error) || (await increment()).affected !== 1) throw error;
     }
   }
 
@@ -180,40 +257,8 @@ export class InventoryService {
 
       const savedTransaction = await queryRunner.manager.save(StockTransaction, transaction);
 
-      // 2. 재고 업데이트
-      const existingStock = await queryRunner.manager.findOne(MatStock, {
-        where: {
-          warehouseCode: dto.warehouseCode,
-          itemCode: dto.itemCode,
-          matUid: dto.matUid || IsNull(),
-          ...(company && { company }),
-          ...(plant && { plant }),
-        },
-      });
-
-      if (existingStock) {
-        await queryRunner.manager.update(MatStock,
-          {
-            warehouseCode: existingStock.warehouseCode,
-            itemCode: existingStock.itemCode,
-            matUid: existingStock.matUid,
-            ...(company && { company }),
-            ...(plant && { plant }),
-          },
-          { qty: existingStock.qty + dto.qty, availableQty: existingStock.qty + dto.qty - existingStock.reservedQty },
-        );
-      } else {
-        await queryRunner.manager.save(MatStock, {
-          warehouseCode: dto.warehouseCode,
-          itemCode: dto.itemCode,
-          matUid: dto.matUid || null,
-          qty: dto.qty,
-          reservedQty: 0,
-          availableQty: dto.qty,
-          company: company || null,
-          plant: plant || null,
-        });
-      }
+      // 2. 재고 원자적 증가. 동시 최초 입고의 INSERT 경합은 중복키 후 UPDATE로 재시도한다.
+      await this.incrementOrCreateStockAtomically(queryRunner, dto, dto.qty, company, plant);
 
       // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리
 
@@ -265,52 +310,15 @@ export class InventoryService {
       const savedTransaction = await queryRunner.manager.save(StockTransaction, transaction);
 
       // 3. 출고 창고 재고 감소
-      await queryRunner.manager.update(MatStock,
-        {
-          warehouseCode: stock.warehouseCode,
-          itemCode: stock.itemCode,
-          matUid: stock.matUid,
-          ...(company && { company }),
-          ...(plant && { plant }),
-        },
-        { qty: stock.qty - dto.qty, availableQty: stock.availableQty - dto.qty },
-      );
+      await this.decrementStockAtomically(queryRunner, stock, dto.qty, company, plant);
 
       // 4. 이동 대상 창고가 있으면 입고 처리
       if (dto.toWarehouseCode) {
-        const targetStock = await queryRunner.manager.findOne(MatStock, {
-          where: {
-            warehouseCode: dto.toWarehouseCode,
-            itemCode: dto.itemCode,
-            matUid: dto.matUid || IsNull(),
-            ...(company && { company }),
-            ...(plant && { plant }),
-          },
-        });
-
-        if (targetStock) {
-          await queryRunner.manager.update(MatStock,
-            {
-              warehouseCode: targetStock.warehouseCode,
-              itemCode: targetStock.itemCode,
-              matUid: targetStock.matUid,
-              ...(company && { company }),
-              ...(plant && { plant }),
-            },
-            { qty: targetStock.qty + dto.qty, availableQty: targetStock.qty + dto.qty - targetStock.reservedQty },
-          );
-        } else {
-          await queryRunner.manager.save(MatStock, {
-            warehouseCode: dto.toWarehouseCode,
-            itemCode: dto.itemCode,
-            matUid: dto.matUid || null,
-            qty: dto.qty,
-            reservedQty: 0,
-            availableQty: dto.qty,
-            company: company || null,
-            plant: plant || null,
-          });
-        }
+        await this.incrementOrCreateStockAtomically(queryRunner, {
+          warehouseCode: dto.toWarehouseCode,
+          itemCode: dto.itemCode,
+          matUid: dto.matUid,
+        }, dto.qty, company, plant);
       }
 
       // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리

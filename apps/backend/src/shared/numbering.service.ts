@@ -22,6 +22,10 @@ const SEQ_TYPES = new Set([
   'JOB_ORDER', 'OQC_REQ', 'MAT_REQ', 'SHIPMENT',
   'SUBCON', 'INSPECT_RESULT', 'PROD_RESULT',
   'TRAINING_PLAN',
+  'ADJ_TX', 'MISC_TX', 'PHYS_CNT_TX', 'INV_TX', 'PRODUCT_TX',
+  'AUDIT_NO', 'FAI_NO', 'COMPLAINT_NO', 'ECN_NO', 'CAPA_CA', 'CAPA_PA',
+  'SPC_CHART', 'CALIBRATION', 'CONTROL_PLAN', 'REWORK_NO', 'PPAP_NO',
+  'DOC_NO', 'OQC_REQUEST',
 ]);
 
 /** NUM_RULE_MASTERS로 처리되는 채번 유형 */
@@ -29,12 +33,6 @@ const RULE_TYPES = new Set([
   'ARRIVAL', 'RECEIVING', 'MAT_ISSUE',
   'SCRAP', 'RECEIPT_CANCEL', 'ISSUE_REQUEST',
   'STOCK_TX', 'CANCEL_TX', 'RECEIVE',
-  // 2026-09-03 MAX+1 안티패턴 정비 — 재고/거래원장
-  'ADJ_TX', 'MISC_TX', 'PHYS_CNT_TX', 'INV_TX', 'PRODUCT_TX',
-  // 2026-09-03 MAX+1 안티패턴 정비 — 품질/시스템 (당일 리셋 3자리)
-  'AUDIT_NO', 'FAI_NO', 'COMPLAINT_NO', 'ECN_NO', 'CAPA_CA', 'CAPA_PA',
-  'SPC_CHART', 'CALIBRATION', 'CONTROL_PLAN', 'REWORK_NO', 'PPAP_NO',
-  'DOC_NO', 'OQC_REQUEST',
 ]);
 
 @Injectable()
@@ -216,68 +214,33 @@ export class NumberingService {
     return rows.map((r) => Number(r.NEXT_SEQ ?? r.next_seq ?? 0));
   }
 
-  // ─────────────────────────────────────────────
-  // 스코프 채번 채널 (2026-09-03) — 임의 스코프별 번호 리셋 포맷용
-  // PP-YYYYMM-NNN / PM-YYYYMMDD-NNN 은 "사용자가 지정한 월/예정일" 기준으로
-  // 스코프별 001부터 재시작하므로 단일 카운터(SEQUENCE/NUM_RULE)로 표현할 수 없고,
-  // 전역 시퀀스는 3자리 자릿수 오버플로를 유발한다.
-  // → NUM_RULE_MASTERS의 락 전용 행을 FOR UPDATE로 잠가 동시 채번을 직렬화한 뒤
-  //   스코프 내 MAX+1을 같은 트랜잭션에서 수행한다 (락은 COMMIT/ROLLBACK 시 해제).
-  // ─────────────────────────────────────────────
-
-  /** 채번 직렬화 락 — NUM_RULE_MASTERS 행 잠금 (반드시 외부 트랜잭션 내에서 호출) */
-  private async lockScope(qr: QueryRunner, ruleType: string): Promise<void> {
-    const rows = await qr.query(
-      `SELECT "RULE_TYPE" FROM "NUM_RULE_MASTERS"
-        WHERE "RULE_TYPE" = :1 AND "USE_YN" = 'Y'
-          FOR UPDATE`,
-      [ruleType],
-    );
-    if (!rows || rows.length === 0) {
-      throw new Error(`채번 락 행 미등록: NUM_RULE_MASTERS.RULE_TYPE=${ruleType}`);
-    }
-  }
-
   /**
-   * 생산계획번호 채번: PP-YYYYMM-NNN (월 스코프 3자리 재시작).
-   * @param qr 외부 트랜잭션 QueryRunner (필수 — 락 유지를 위해 커밋 전까지 사용)
+   * 생산계획번호 채번: PP-YYYYMM-NNN.
+   * 날짜는 표시용이며 유일성은 일별 리셋 없는 전역 Sequence가 보장한다.
    * @param planMonth 'YYYY-MM' 또는 'YYYYMM'
    */
   async nextProdPlanNo(qr: QueryRunner, planMonth: string): Promise<string> {
-    await this.lockScope(qr, 'PROD_PLAN');
     const prefix = `PP-${planMonth.replace('-', '')}-`;
     const rows = await qr.query(
-      `SELECT MAX("PLAN_NO") AS "LAST_NO" FROM "PROD_PLANS" WHERE "PLAN_NO" LIKE :1`,
-      [`${prefix}%`],
+      'SELECT SEQ_PROD_PLAN_NO.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
     );
-    const lastNo: string | null = rows[0]?.LAST_NO ?? rows[0]?.last_no ?? null;
-    let seq = 1;
-    if (lastNo) {
-      const lastSeq = parseInt(lastNo.slice(prefix.length), 10);
-      if (!isNaN(lastSeq)) seq = lastSeq + 1;
-    }
+    const seq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
     return `${prefix}${String(seq).padStart(3, '0')}`;
   }
 
   /**
-   * 설비보전 WO번호 채번: {PM|CBM}-YYYYMMDD-NNN (예정일 스코프 3자리 재시작).
+   * 설비보전 WO번호 채번: {PM|CBM}-YYYYMMDD-NNN.
+   * 날짜는 표시용이며 유일성은 일별 리셋 없는 전역 Sequence가 보장한다.
    * @param qr 외부 트랜잭션 QueryRunner (필수)
    * @param dateStr 'YYYYMMDD' (WO 예정일 — 오늘이 아닐 수 있음)
    * @param kind 'PM'(예방보전/배치) 또는 'CBM'(센서 상태기반)
    */
   async nextPmWoNo(qr: QueryRunner, dateStr: string, kind: 'PM' | 'CBM' = 'PM'): Promise<string> {
-    await this.lockScope(qr, 'PM_WO');
     const prefix = `${kind}-${dateStr}-`;
     const rows = await qr.query(
-      `SELECT MAX("WORK_ORDER_NO") AS "LAST_NO" FROM "PM_WORK_ORDERS" WHERE "WORK_ORDER_NO" LIKE :1`,
-      [`${prefix}%`],
+      'SELECT SEQ_PM_WORK_ORDER_NO.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
     );
-    const lastNo: string | null = rows[0]?.LAST_NO ?? rows[0]?.last_no ?? null;
-    let seq = 1;
-    if (lastNo) {
-      const lastSeq = parseInt(lastNo.slice(prefix.length), 10);
-      if (!isNaN(lastSeq)) seq = lastSeq + 1;
-    }
+    const seq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
     return `${prefix}${String(seq).padStart(3, '0')}`;
   }
 

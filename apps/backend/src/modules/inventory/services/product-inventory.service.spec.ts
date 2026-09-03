@@ -29,6 +29,7 @@ describe('ProductInventoryService', () => {
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockTx: DeepMocked<TransactionService>;
+  let mockStockQb: any;
 
   beforeEach(async () => {
     mockTransRepo = createMock<Repository<ProductTransaction>>();
@@ -40,6 +41,11 @@ describe('ProductInventoryService', () => {
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockTx = createMock<TransactionService>();
+    mockStockQb = {
+      update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(),
+      setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockQueryRunner.connect.mockResolvedValue(undefined);
@@ -47,6 +53,7 @@ describe('ProductInventoryService', () => {
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
     mockQueryRunner.rollbackTransaction.mockResolvedValue(undefined);
     mockQueryRunner.release.mockResolvedValue(undefined);
+    mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockStockQb);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -127,14 +134,10 @@ describe('ProductInventoryService', () => {
         plant: 'P1',
       } as any);
 
-      expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
-        where: { warehouseCode: 'WH', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
+      expect(mockStockQb.where).toHaveBeenCalledWith({
+        warehouseCode: 'WH', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1',
       });
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        ProductStock,
-        { warehouseCode: 'WH', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
-        expect.objectContaining({ qty: 30, availableQty: 25 }),
-      );
+      expect(mockStockQb.setParameters).toHaveBeenCalledWith({ stockDelta: 10 });
     });
 
     it('keeps defect stock as a separate product stock bucket in the same WIP warehouse', async () => {
@@ -143,6 +146,7 @@ describe('ProductInventoryService', () => {
       mockTransRepo.create.mockReturnValue({ transNo: 'PTX001' } as any);
       mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'PTX001' } as any);
       mockQueryRunner.manager.findOne.mockResolvedValue(null);
+      mockStockQb.execute.mockResolvedValue({ affected: 0 });
 
       await target.receiveStock({
         warehouseId: 'SFG_WIP',
@@ -162,9 +166,6 @@ describe('ProductInventoryService', () => {
         toWarehouseId: 'SFG_WIP',
         qualityStatus: 'DEFECT',
       }));
-      expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
-        where: { warehouseCode: 'SFG_WIP', itemCode: 'SFG-001', qualityStatus: 'DEFECT', company: 'C1', plant: 'P1' },
-      });
       expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
         ProductStock,
         expect.objectContaining({
@@ -197,6 +198,9 @@ describe('ProductInventoryService', () => {
           plant: 'P1',
         } as any)
         .mockResolvedValueOnce(null);
+      mockStockQb.execute
+        .mockResolvedValueOnce({ affected: 1 })
+        .mockResolvedValueOnce({ affected: 0 });
 
       await target.receiveFinishedFromWip({
         warehouseId: 'FG_MAIN',
@@ -225,7 +229,7 @@ describe('ProductInventoryService', () => {
       }));
       expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(
         ProductStock,
-        { warehouseCode: 'FG_WIP', itemCode: 'FG-001', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
+        { warehouseCode: 'FG_WIP', itemCode: 'FG-001', qualityStatus: 'GOOD', company: 'C1', plant: 'P1', qty: 0, reservedQty: 0 },
       );
       expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
         ProductStock,
@@ -464,19 +468,12 @@ describe('ProductInventoryService', () => {
       expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(1, ProductStock, {
         where: { warehouseCode: 'WH-FROM', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
       });
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        ProductStock,
-        { warehouseCode: 'WH-FROM', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
-        expect.objectContaining({ qty: 40, availableQty: 40 }),
-      );
-      expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(2, ProductStock, {
-        where: { warehouseCode: 'WH-TO', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
+      expect(mockStockQb.where).toHaveBeenCalledWith({
+        warehouseCode: 'WH-FROM', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1',
       });
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        ProductStock,
-        { warehouseCode: 'WH-TO', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
-        expect.objectContaining({ qty: 15, availableQty: 15 }),
-      );
+      expect(mockStockQb.where).toHaveBeenCalledWith({
+        warehouseCode: 'WH-TO', itemCode: 'IT', qualityStatus: 'GOOD', company: 'C1', plant: 'P1',
+      });
     });
 
     it('issues only GOOD product stock by default so defect WIP cannot feed downstream', async () => {
@@ -535,6 +532,9 @@ describe('ProductInventoryService', () => {
           plant: 'P1',
         } as any)
         .mockResolvedValueOnce(null);
+      mockStockQb.execute
+        .mockResolvedValueOnce({ affected: 1 })
+        .mockResolvedValueOnce({ affected: 0 });
       mockQueryRunner.manager.create.mockReturnValue({ transNo: 'PTX-DEFECT' } as any);
       mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'PTX-DEFECT' } as any);
 
@@ -559,11 +559,9 @@ describe('ProductInventoryService', () => {
         qualityStatus: 'DEFECT',
         qty: -2,
       }));
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        ProductStock,
-        { warehouseCode: 'SFG_WIP', itemCode: 'SFG-001', qualityStatus: 'DEFECT', company: 'C1', plant: 'P1' },
-        expect.objectContaining({ qty: 3, availableQty: 3 }),
-      );
+      expect(mockStockQb.where).toHaveBeenCalledWith({
+        warehouseCode: 'SFG_WIP', itemCode: 'SFG-001', qualityStatus: 'DEFECT', company: 'C1', plant: 'P1',
+      });
       expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
         ProductStock,
         expect.objectContaining({

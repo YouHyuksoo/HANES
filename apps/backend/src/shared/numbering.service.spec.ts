@@ -51,6 +51,10 @@ describe('NumberingService', () => {
       'MAT_UID', 'PRD_UID', 'CON_UID', 'FG_BARCODE',
       'JOB_ORDER', 'OQC_REQ', 'MAT_REQ', 'SHIPMENT',
       'SUBCON', 'INSPECT_RESULT', 'PROD_RESULT',
+      'ADJ_TX', 'MISC_TX', 'PHYS_CNT_TX', 'INV_TX', 'PRODUCT_TX',
+      'AUDIT_NO', 'FAI_NO', 'COMPLAINT_NO', 'ECN_NO', 'CAPA_CA', 'CAPA_PA',
+      'SPC_CHART', 'CALIBRATION', 'CONTROL_PLAN', 'REWORK_NO', 'PPAP_NO',
+      'DOC_NO', 'OQC_REQUEST',
     ])('should route %s to SeqGeneratorService', async (type) => {
       // Arrange
       mockSeqGenerator.getNo.mockResolvedValue(`${type}-001`);
@@ -175,6 +179,30 @@ describe('NumberingService', () => {
       expect(qrManagerQuery).toHaveBeenCalled();
       // dataSource는 호출되지 않아야 함
       expect(mockDataSource.manager.query).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('global sequence scoped-date formats', () => {
+    it('nextProdPlanNo uses a global sequence while preserving the requested month', async () => {
+      mockQueryRunner.query.mockResolvedValueOnce([{ NEXT_SEQ: 42 }]);
+
+      const result = await target.nextProdPlanNo(mockQueryRunner, '2026-09');
+
+      expect(result).toBe('PP-202609-042');
+      expect(mockQueryRunner.query).toHaveBeenCalledWith(
+        'SELECT SEQ_PROD_PLAN_NO.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+      );
+    });
+
+    it('nextPmWoNo uses a global sequence while preserving kind and requested date', async () => {
+      mockQueryRunner.query.mockResolvedValueOnce([{ NEXT_SEQ: 1002 }]);
+
+      const result = await target.nextPmWoNo(mockQueryRunner, '20260903', 'CBM');
+
+      expect(result).toBe('CBM-20260903-1002');
+      expect(mockQueryRunner.query).toHaveBeenCalledWith(
+        'SELECT SEQ_PM_WORK_ORDER_NO.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
+      );
     });
   });
 });

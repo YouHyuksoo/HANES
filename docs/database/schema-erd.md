@@ -1,21 +1,21 @@
 ---
 sources: []
-verifiedCommit: 8ff64f1e
+verifiedCommit: 923dcaa7
 generated: true
 ---
 
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-07-04 01:44:28
+- 작성일: 2026-09-03 12:37:58
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
 
 ## 1. 요약
 
-- 테이블 수: 172
-- 컬럼 수: 2856
-- PK 보유 테이블: 168
+- 테이블 수: 173
+- 컬럼 수: 2865
+- PK 보유 테이블: 169
 - DB FK 수: 29
 - COM_CODES 그룹 수: 161
 
@@ -142,6 +142,7 @@ generated: true
 - `SUBCON_ORDERS`: 외주 발주 / PK: `ORDER_NO`
 - `SUBCON_RECEIVES`: 외주 수입(완성품 입고) / PK: `RECEIVE_NO`
 - `USER_AUTHS`: 사용자별 메뉴 권한 / PK: `USER_EMAIL, MENU_CODE`
+- `USER_MENU_FAVORITES`: 사용자별 사이드바 메뉴 즐겨찾기 / PK: `COMPANY, PLANT_CD, USER_EMAIL, MENU_CODE`
 - `WAREHOUSES`: 창고 마스터 / PK: `COMPANY, PLANT_CD, WAREHOUSE_CODE`
 - `WORK_INSTRUCTIONS`: 작업표준서(작업지시서) 마스터 / PK: `ITEM_CODE, PROCESS_CODE, REVISION`
 - `migrations`: - / PK: `id`
@@ -2561,6 +2562,17 @@ erDiagram
     TIMESTAMP_6 CREATED_AT NOT_NULL
     TIMESTAMP_6 UPDATED_AT NOT_NULL
   }
+  USER_MENU_FAVORITES {
+    VARCHAR2_20 COMPANY PK NOT_NULL
+    VARCHAR2_20 PLANT_CD PK NOT_NULL
+    VARCHAR2_100 USER_EMAIL PK NOT_NULL
+    VARCHAR2_100 MENU_CODE PK NOT_NULL
+    NUMBER_10 SORT_ORDER NOT_NULL
+    TIMESTAMP_6 CREATED_AT NOT_NULL
+    VARCHAR2_50 CREATED_BY NOT_NULL
+    TIMESTAMP_6 UPDATED_AT NOT_NULL
+    VARCHAR2_50 UPDATED_BY NOT_NULL
+  }
   VENDOR_BARCODE_MAPPINGS {
     VARCHAR2_200 VENDOR_BARCODE PK NOT_NULL
     VARCHAR2_50 ITEM_CODE NOT_NULL
@@ -4669,6 +4681,17 @@ erDiagram
     VARCHAR2_50 UPDATED_BY
     TIMESTAMP_6 CREATED_AT NOT_NULL
     TIMESTAMP_6 UPDATED_AT NOT_NULL
+  }
+  USER_MENU_FAVORITES {
+    VARCHAR2_20 COMPANY PK NOT_NULL
+    VARCHAR2_20 PLANT_CD PK NOT_NULL
+    VARCHAR2_100 USER_EMAIL PK NOT_NULL
+    VARCHAR2_100 MENU_CODE PK NOT_NULL
+    NUMBER_10 SORT_ORDER NOT_NULL
+    TIMESTAMP_6 CREATED_AT NOT_NULL
+    VARCHAR2_50 CREATED_BY NOT_NULL
+    TIMESTAMP_6 UPDATED_AT NOT_NULL
+    VARCHAR2_50 UPDATED_BY NOT_NULL
   }
   WAREHOUSES {
     VARCHAR2_50 WAREHOUSE_CODE PK NOT_NULL
@@ -7009,7 +7032,7 @@ erDiagram
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` | 수정일시 |
 | `ADJUST_STATUS` | `VARCHAR2(20)` | `N` |  | 기본값 `'APPROVED'` | 보정승인상태(PENDING/APPROVED/REJECTED) |
 | `ADJ_DATE` | `DATE` | `N` | PK | 기본값 `SYSDATE` |  |
-| `SEQ` | `NUMBER(5)` | `N` | PK | 기본값 `1` |  |
+| `SEQ` | `NUMBER(5)` | `N` | PK | 기본값 `"TEST"."SEQ_INV_ADJ_LOGS"."NEXTVAL"` |  |
 
 ### `IQC_AQL_POLICIES`
 
@@ -7641,9 +7664,9 @@ erDiagram
 | `WAREHOUSE_CODE` | `VARCHAR2(50)` | `N` | PK |  | 창고코드 (FK -> WAREHOUSES) |
 | `ITEM_CODE` | `VARCHAR2(50)` | `N` | PK |  | 품목ID (FK -> PART_MASTERS) |
 | `MAT_UID` | `VARCHAR2(50)` | `N` | PK |  | LOT ID (FK -> MAT_LOTS) |
-| `QTY` | `NUMBER` | `N` |  | 기본값 `0` | 재고수량 |
-| `RESERVED_QTY` | `NUMBER` | `N` |  | 기본값 `0` | 예약수량 |
-| `AVAILABLE_QTY` | `NUMBER` | `N` |  | 기본값 `0` | 가용수량 |
+| `QTY` | `NUMBER` | `N` |  | 기본값 `0`<br>CHECK `QTY >= 0 AND RESERVED_QTY >= 0 AND AVAILABLE_QTY >= 0 AND AVAILABLE_QTY = QTY - RESERVED_QTY` | 재고수량 |
+| `RESERVED_QTY` | `NUMBER` | `N` |  | 기본값 `0`<br>CHECK `QTY >= 0 AND RESERVED_QTY >= 0 AND AVAILABLE_QTY >= 0 AND AVAILABLE_QTY = QTY - RESERVED_QTY` | 예약수량 |
+| `AVAILABLE_QTY` | `NUMBER` | `N` |  | 기본값 `0`<br>CHECK `QTY >= 0 AND RESERVED_QTY >= 0 AND AVAILABLE_QTY >= 0 AND AVAILABLE_QTY = QTY - RESERVED_QTY` | 가용수량 |
 | `LAST_COUNT` | `TIMESTAMP(6)` | `Y` |  |  | 최종재고조사일시 |
 | `COMPANY` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 회사코드 (멀티테넌시) |
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 공장코드 (멀티테넌시) |
@@ -8331,9 +8354,9 @@ erDiagram
 | `PRD_UID` | `VARCHAR2(50)` | `Y` |  |  | (폐기 예정) 시리얼 추적은 FG_LABELS/SG_LABELS, 재고는 품목+창고 수량. NULL 허용 과도기 |
 | `ORDER_NO` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `PROCESS_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
-| `QTY` | `NUMBER` | `N` |  | 기본값 `0` |  |
-| `RESERVED_QTY` | `NUMBER` | `N` |  | 기본값 `0` |  |
-| `AVAILABLE_QTY` | `NUMBER` | `N` |  | 기본값 `0` |  |
+| `QTY` | `NUMBER` | `N` |  | 기본값 `0`<br>CHECK `QTY >= 0 AND RESERVED_QTY >= 0 AND AVAILABLE_QTY >= 0 AND AVAILABLE_QTY = QTY - RESERVED_QTY` |  |
+| `RESERVED_QTY` | `NUMBER` | `N` |  | 기본값 `0`<br>CHECK `QTY >= 0 AND RESERVED_QTY >= 0 AND AVAILABLE_QTY >= 0 AND AVAILABLE_QTY = QTY - RESERVED_QTY` |  |
+| `AVAILABLE_QTY` | `NUMBER` | `N` |  | 기본값 `0`<br>CHECK `QTY >= 0 AND RESERVED_QTY >= 0 AND AVAILABLE_QTY >= 0 AND AVAILABLE_QTY = QTY - RESERVED_QTY` |  |
 | `STATUS` | `VARCHAR2(20)` | `N` |  | 기본값 `'NORMAL'` |  |
 | `HOLD_REASON` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `HOLD_AT` | `TIMESTAMP(6)` | `Y` |  |  |  |
@@ -9554,6 +9577,23 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` | 등록일시 |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` | 수정일시 |
+
+### `USER_MENU_FAVORITES`
+
+- 설명: 사용자별 사이드바 메뉴 즐겨찾기
+- PK: `COMPANY, PLANT_CD, USER_EMAIL, MENU_CODE`
+
+| 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
+|---|---|---|---|---|---|
+| `COMPANY` | `VARCHAR2(20)` | `N` | PK | 테넌트 범위 컬럼 | 회사 코드 |
+| `PLANT_CD` | `VARCHAR2(20)` | `N` | PK | 테넌트 범위 컬럼 | 사업장 코드 |
+| `USER_EMAIL` | `VARCHAR2(100)` | `N` | PK |  | 사용자 이메일 (USERS.EMAIL) |
+| `MENU_CODE` | `VARCHAR2(100)` | `N` | PK |  | 메뉴 코드 (menuConfig leaf) |
+| `SORT_ORDER` | `NUMBER(10)` | `N` |  | 기본값 `0` | 즐겨찾기 표시 순서 |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `CREATED_BY` | `VARCHAR2(50)` | `N` |  |  |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_BY` | `VARCHAR2(50)` | `N` |  |  |  |
 
 ### `VENDOR_BARCODE_MAPPINGS`
 

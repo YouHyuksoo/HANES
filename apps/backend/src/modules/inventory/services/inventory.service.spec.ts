@@ -35,6 +35,7 @@ describe('InventoryService', () => {
   let mockInventoryQueryService: DeepMocked<InventoryQueryService>;
   let mockTransactionService: DeepMocked<TransactionService>;
   let mockNumbering: DeepMocked<NumberingService>;
+  let mockStockUpdateQueryBuilder: any;
 
   beforeEach(async () => {
     mockStockTransRepo = createMock<Repository<StockTransaction>>();
@@ -47,6 +48,14 @@ describe('InventoryService', () => {
     mockInventoryQueryService = createMock<InventoryQueryService>();
     mockTransactionService = createMock<TransactionService>();
     mockNumbering = createMock<NumberingService>();
+    mockStockUpdateQueryBuilder = {
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      setParameters: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
 
     // QueryRunner 체인 모킹
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
@@ -56,6 +65,7 @@ describe('InventoryService', () => {
     mockQueryRunner.rollbackTransaction.mockResolvedValue(undefined);
     mockQueryRunner.release.mockResolvedValue(undefined);
     mockTransactionService.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
+    mockQueryRunner.manager.createQueryBuilder.mockReturnValue(mockStockUpdateQueryBuilder);
     mockLotRepo.findOne.mockResolvedValue(null);
 
     const module: TestingModule = await Test.createTestingModule({
@@ -213,6 +223,7 @@ describe('InventoryService', () => {
     beforeEach(() => {
       // generateTransNo 내부 호출 모킹
       mockStockTransRepo.findOne.mockResolvedValue(null);
+      mockStockUpdateQueryBuilder.execute.mockResolvedValue({ affected: 0 });
     });
 
     it('should create transaction and new stock when no existing stock', async () => {
@@ -288,18 +299,34 @@ describe('InventoryService', () => {
       mockStockTransRepo.create.mockReturnValue(savedTrans);
       mockQueryRunner.manager.save.mockResolvedValue(savedTrans);
       mockQueryRunner.manager.findOne.mockResolvedValue(existingStock); // 기존 재고 있음
-      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+      mockStockUpdateQueryBuilder.execute.mockResolvedValue({ affected: 1 });
 
       // Act
       await target.receiveStock(receiveDto as any);
 
       // Assert
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        MatStock,
-        { warehouseCode: 'WH-RM', itemCode: 'PART-001', matUid: 'RM202603180001' },
-        { qty: 150, availableQty: 140 }, // 50+100=150, 150-10=140
-      );
+      expect(mockStockUpdateQueryBuilder.set).toHaveBeenCalledWith({
+        qty: expect.any(Function),
+        availableQty: expect.any(Function),
+      });
+      expect(mockStockUpdateQueryBuilder.setParameters).toHaveBeenCalledWith({ stockDelta: 100 });
       expect(mockTransactionService.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries atomic increment when concurrent insert wins the stock row race', async () => {
+      mockStockTransRepo.create.mockImplementation((value: any) => value);
+      mockQueryRunner.manager.save
+        .mockImplementationOnce(async (_entity: any, value: any) => value)
+        .mockRejectedValueOnce(Object.assign(new Error('ORA-00001: unique constraint'), { errorNum: 1 }));
+      mockQueryRunner.manager.findOne.mockResolvedValue(null);
+      mockStockUpdateQueryBuilder.execute
+        .mockResolvedValueOnce({ affected: 0 })
+        .mockResolvedValueOnce({ affected: 1 });
+
+      await target.receiveStock(receiveDto as any, 'TESTV', 'WAREHOUSES');
+
+      expect(mockStockUpdateQueryBuilder.execute).toHaveBeenCalledTimes(2);
+      expect(mockStockUpdateQueryBuilder.setParameters).toHaveBeenLastCalledWith({ stockDelta: 100 });
     });
 
     it('should rollback on error', async () => {
@@ -328,6 +355,28 @@ describe('InventoryService', () => {
 
     beforeEach(() => {
       mockStockTransRepo.findOne.mockResolvedValue(null);
+      mockStockUpdateQueryBuilder.execute.mockResolvedValue({ affected: 1 });
+    });
+
+    it('atomically decrements only when current available quantity is sufficient', async () => {
+      const stock = {
+        warehouseCode: 'WH-RM', itemCode: 'PART-001', matUid: 'RM202603180001',
+        qty: 100, reservedQty: 0, availableQty: 100,
+      };
+      mockQueryRunner.manager.findOne.mockResolvedValue(stock as any);
+      mockStockTransRepo.create.mockImplementation((value: any) => value);
+      mockQueryRunner.manager.save.mockImplementation(async (_entity: any, value: any) => value);
+
+      await target.issueStock(issueDto as any, '40', '1000');
+
+      expect(mockStockUpdateQueryBuilder.set).toHaveBeenCalledWith({
+        qty: expect.any(Function),
+        availableQty: expect.any(Function),
+      });
+      expect(mockStockUpdateQueryBuilder.andWhere).toHaveBeenCalledWith(
+        '"QTY" >= :stockDelta AND "AVAILABLE_QTY" >= :stockDelta',
+      );
+      expect(mockStockUpdateQueryBuilder.setParameters).toHaveBeenCalledWith({ stockDelta: 30 });
     });
 
     it('should issue stock and decrease qty', async () => {
@@ -351,11 +400,7 @@ describe('InventoryService', () => {
 
       // Assert
       expect(result.qty).toBe(-30);
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        MatStock,
-        { warehouseCode: 'WH-RM', itemCode: 'PART-001', matUid: 'RM202603180001' },
-        { qty: 70, availableQty: 70 }, // 100-30, 100-30
-      );
+      expect(mockStockUpdateQueryBuilder.setParameters).toHaveBeenCalledWith({ stockDelta: 30 });
       expect(mockTransactionService.run).toHaveBeenCalledTimes(1);
     });
 
@@ -430,6 +475,9 @@ describe('InventoryService', () => {
         .mockResolvedValueOnce(null);
       mockQueryRunner.manager.save.mockResolvedValue(savedTrans);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+      mockStockUpdateQueryBuilder.execute
+        .mockResolvedValueOnce({ affected: 1 })
+        .mockResolvedValueOnce({ affected: 0 });
 
       // Act
       await target.issueStock(issueDtoWithTarget as any);
@@ -457,6 +505,9 @@ describe('InventoryService', () => {
         .mockResolvedValueOnce(null);
       mockQueryRunner.manager.save.mockResolvedValue(savedTrans);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+      mockStockUpdateQueryBuilder.execute
+        .mockResolvedValueOnce({ affected: 1 })
+        .mockResolvedValueOnce({ affected: 0 });
 
       // Act
       await (target as any).issueStock(issueDtoWithTarget, 'TESTV', 'WAREHOUSES');
