@@ -26,6 +26,7 @@ import { Repository, QueryRunner, In } from 'typeorm';
 
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingMaterial } from '../../../entities/routing-material.entity';
+import { resolveRoutingConsumeQty } from '@harness/shared';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { JobMaterialLot } from '../../../entities/job-material-lot.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -172,8 +173,10 @@ export class AutoIssueService {
     /* ── 4-1. 공정별 자재 차감 필터 (ROUTING_MATERIALS 배정 기반) ───────────
      * 라우팅에 ROUTING_MATERIALS 배정이 있으면: 현재 공정(processCode→seq)에 배정된 자재만 차감.
      * 배정이 없으면 BOM 전체 일괄 차감하지 않는다(첫 실적에서 전량 소비 방지).
-     * 차감량은 BOM.qtyPer 유지 — ROUTING_MATERIALS는 "어느 공정에서 차감할지" 필터 역할만. */
+     * 차감량은 공정 배정의 투입수량(ALLOC_QTY)이 있으면 그 값, 없으면 BOM.qtyPer (resolveRoutingConsumeQty).
+     * 예: 터미널 BOM 2개를 두 공정이 1개씩 나눠 소비. */
     let bomList = fullBomList;
+    const allocByItem = new Map<string, number>();
     if (processCode && jobOrder.routingCode) {
       const routingMaterials = await qr.manager.find(RoutingMaterial, {
         where: { routingCode: jobOrder.routingCode, useYn: 'Y', ...this.tenantWhere(tenant) },
@@ -188,9 +191,9 @@ export class AutoIssueService {
       const step = await qr.manager.findOne(RoutingProcess, {
         where: { routingCode: jobOrder.routingCode, processCode, ...this.tenantWhere(tenant) },
       });
-      const assignedItems = new Set(
-        routingMaterials.filter((rm) => rm.seq === step?.seq).map((rm) => rm.childItemCode),
-      );
+      const stepMaterials = routingMaterials.filter((rm) => rm.seq === step?.seq);
+      const assignedItems = new Set(stepMaterials.map((rm) => rm.childItemCode));
+      for (const rm of stepMaterials) allocByItem.set(rm.childItemCode, Number(rm.allocQty ?? 0));
       bomList = fullBomList.filter((b) => assignedItems.has(b.childItemCode));
       this.logger.log(
         `공정별 자재 차감 — orderNo=${orderNo}, 공정=${processCode}(seq=${step?.seq}): ${bomList.length}/${fullBomList.length}건 대상`,
@@ -253,7 +256,7 @@ export class AutoIssueService {
 
     /* ── 6. 자식 품목별 차감 (스캔 LOT 우선) ── */
     for (const bom of bomList) {
-      const requiredQty = Number(bom.qtyPer) * qty;
+      const requiredQty = resolveRoutingConsumeQty(bom.qtyPer, allocByItem.get(bom.childItemCode)) * qty;
       if (requiredQty <= 0) continue;
 
       /* 공정재고(설비 장착분, WIP_MAT_STOCKS) 소비 — WipMatStockService에 위임.

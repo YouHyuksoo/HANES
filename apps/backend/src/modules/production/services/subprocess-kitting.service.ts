@@ -28,6 +28,7 @@ import { ProductGenealogy } from '../../../entities/product-genealogy.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { RoutingMaterial } from '../../../entities/routing-material.entity';
+import { resolveRoutingConsumeQty } from '@harness/shared';
 import { ConfirmAssemblyDto, ConfirmSubKitDto } from '../dto/subprocess-kitting.dto';
 import { ProductionSpecificationService } from './production-specification.service';
 import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
@@ -97,11 +98,15 @@ export class SubprocessKittingService {
     const step = await qr.manager.findOne(RoutingProcess, {
       where: { routingCode, processCode, ...tenant },
     });
-    const assigned = new Set(
-      routingMaterials.filter((rm) => rm.seq === step?.seq).map((rm) => rm.childItemCode),
-    );
+    const stepMaterials = routingMaterials.filter((rm) => rm.seq === step?.seq);
+    const assigned = new Set(stepMaterials.map((rm) => rm.childItemCode));
     for (const key of [...rawQtyPerByItem.keys()]) {
       if (!assigned.has(key)) rawQtyPerByItem.delete(key);
+    }
+    // 공정 배정 투입수량(ALLOC_QTY)이 있으면 BOM 소요량 대신 그 값을 쓴다 (auto-issue와 동일 규칙)
+    for (const rm of stepMaterials) {
+      const bomQty = rawQtyPerByItem.get(rm.childItemCode);
+      if (bomQty !== undefined) rawQtyPerByItem.set(rm.childItemCode, resolveRoutingConsumeQty(bomQty, rm.allocQty));
     }
   }
 

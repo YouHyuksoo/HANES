@@ -389,6 +389,16 @@ export class RoutingGroupService {
     });
   }
 
+  /** 라우팅 전체 공정의 자재 배정 — 화면에서 자재별 공정 투입수량 합계 vs BOM 소요량을 검증하는 데 쓴다 */
+  async findAllMaterials(routingCode: string, company?: string, plant?: string) {
+    const rows = await this.materialRepo.find({
+      where: { routingCode, useYn: 'Y', ...this.tenantWhere(company, plant) },
+      select: ['seq', 'childItemCode', 'allocQty'],
+      order: { seq: 'ASC' },
+    });
+    return rows.map((r) => ({ seq: r.seq, childItemCode: r.childItemCode, allocQty: Number(r.allocQty ?? 0) }));
+  }
+
   async findMaterials(routingCode: string, seq: number, company?: string, plant?: string) {
     const group = await this.findGroupByCode(routingCode, company, plant);
     if (!group.itemCode) return [];

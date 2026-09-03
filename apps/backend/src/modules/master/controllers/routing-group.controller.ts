@@ -139,6 +139,12 @@ export class RoutingGroupController {
     );
   }
 
+  @Get(':code/materials')
+  @ApiOperation({ summary: '라우팅 전체 공정 자재 배정 (공정별 투입수량 합계 검증용)' })
+  async findAllMaterials(@Param('code') code: string, @Company() co: string, @Plant() pl: string) {
+    return ResponseUtil.success(await this.svc.findAllMaterials(code, co, pl));
+  }
+
   @Get(':code/processes/:seq/materials')
   @ApiOperation({ summary: '공정별 투입자재 목록' })
   async findMaterials(

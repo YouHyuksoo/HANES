@@ -1,11 +1,24 @@
 "use client";
 
+/**
+ * @file src/app/(authenticated)/master/routing/components/RoutingMaterialEditor.tsx
+ * @description 라우팅 공정별 투입자재 편집 — 어떤 자재를 이 공정에서 소비할지(체크)와 제품 1개당 투입수량.
+ *
+ * 초보자 가이드:
+ * 1. 투입수량(allocQty)이 0/빈값이면 소비 시 BOM 소요량을 그대로 쓴다. 값을 넣으면 그 값이 우선한다
+ *    (소비 로직: @harness/shared resolveRoutingConsumeQty — auto-issue / subprocess-kitting 공통).
+ * 2. 같은 자재를 여러 공정에 나눠 배정하면(터미널 좌·우 등) 공정별 투입수량 합계가 BOM 소요량과
+ *    같아야 한다. 라우팅 전체 배정(GET /materials)을 받아 자재마다 합계 상태를 바로 표시한다.
+ */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCw, Save } from "lucide-react";
+import { evaluateAllocSum, type AllocSumStatus } from "@harness/shared";
 import { Button } from "@/components/ui";
 import api from "@/services/api";
 import type { EditableRoutingMaterial, RoutingMaterial, SelectedProcess } from "../types";
+
+interface Assignment { seq: number; childItemCode: string; allocQty: number }
 
 function toEditable(material: RoutingMaterial): EditableRoutingMaterial {
   return {
@@ -21,15 +34,23 @@ function toEditable(material: RoutingMaterial): EditableRoutingMaterial {
     stripA: material.stripA ?? null,
     stripB: material.stripB ?? null,
     circuitOptions: material.circuitOptions ?? [],
-    allocQty: material.allocQty != null ? String(material.allocQty) : String(material.qtyPer || 0),
+    allocQty: material.allocQty != null && Number(material.allocQty) > 0 ? String(material.allocQty) : "",
     issueMethod: material.issueMethod || "BACKFLUSH",
   };
 }
+
+const SUM_CLS: Record<AllocSumStatus, string> = {
+  match: "text-emerald-600 dark:text-emerald-400",
+  under: "text-amber-600 dark:text-amber-400",
+  over: "text-red-600 dark:text-red-400",
+  bomOnly: "text-text-muted dark:text-gray-400",
+};
 
 export default function RoutingMaterialEditor({ selectedProcess }: { selectedProcess: SelectedProcess }) {
   const { t } = useTranslation();
   const [materials, setMaterials] = useState<EditableRoutingMaterial[]>([]);
   const [original, setOriginal] = useState<EditableRoutingMaterial[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -38,13 +59,18 @@ export default function RoutingMaterialEditor({ selectedProcess }: { selectedPro
   const fetchMaterials = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/master/routing-groups/${selectedProcess.routingCode}/processes/${selectedProcess.seq}/materials`);
+      const [res, allRes] = await Promise.all([
+        api.get(`/master/routing-groups/${selectedProcess.routingCode}/processes/${selectedProcess.seq}/materials`),
+        api.get(`/master/routing-groups/${selectedProcess.routingCode}/materials`),
+      ]);
       const data = (res.data?.data ?? []).map(toEditable);
       setMaterials(data);
       setOriginal(data);
+      setAssignments(allRes.data?.data ?? []);
     } catch {
       setMaterials([]);
       setOriginal([]);
+      setAssignments([]);
     } finally {
       setLoading(false);
     }
@@ -71,6 +97,15 @@ export default function RoutingMaterialEditor({ selectedProcess }: { selectedPro
     });
   }, [change]);
 
+  /** 자재별: 다른 공정 배정 + 이 공정의 현재 입력값 → 합계 상태 (저장 전 입력값이 즉시 반영된다) */
+  const sumOf = useCallback((material: EditableRoutingMaterial) => {
+    const others = assignments.filter((a) => a.childItemCode === material.childItemCode && a.seq !== selectedProcess.seq);
+    const current = material.selected ? Number(material.allocQty || 0) : null;
+    const processCount = others.length + (material.selected ? 1 : 0);
+    const evaluated = evaluateAllocSum(material.qtyPer, [...others.map((a) => a.allocQty), current]);
+    return { ...evaluated, processCount };
+  }, [assignments, selectedProcess.seq]);
+
   const save = useCallback(async () => {
     setSaving(true);
     try {
@@ -92,6 +127,15 @@ export default function RoutingMaterialEditor({ selectedProcess }: { selectedPro
 
   const inputCls = "w-full px-2 py-1 text-xs border border-border dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-text dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-primary";
 
+  const sumLabel = (status: AllocSumStatus, processCount: number) => {
+    if (status === "match") return t("master.routing.allocMatch", { defaultValue: "일치" });
+    if (status === "under") return t("master.routing.allocUnder", { defaultValue: "부족" });
+    if (status === "over") return t("master.routing.allocOver", { defaultValue: "초과" });
+    return processCount > 1
+      ? t("master.routing.allocBomOnlyMulti", { defaultValue: "BOM 전량 × {{n}}공정 (과다)", n: processCount })
+      : t("master.routing.allocBomOnly", { defaultValue: "BOM 전량" });
+  };
+
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-start justify-between mb-4 shrink-0 gap-4">
@@ -104,6 +148,9 @@ export default function RoutingMaterialEditor({ selectedProcess }: { selectedPro
             <span>&gt;</span>
             <span className="font-medium text-text dark:text-gray-200 truncate">{selectedProcess.processName}</span>
             <span>{selectedProcess.processCode}</span>
+          </div>
+          <div className="mt-1 text-[11px] text-text-muted dark:text-gray-400">
+            {t("master.routing.allocHint", { defaultValue: "투입수량을 비우면 BOM 소요량으로 소비합니다. 같은 자재를 여러 공정에 나누면 공정 합계가 BOM수량과 같아야 합니다." })}
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -125,80 +172,95 @@ export default function RoutingMaterialEditor({ selectedProcess }: { selectedPro
             {t("master.routing.noBomMaterial", { defaultValue: "이 라우팅 품목에 등록된 BOM 자재가 없습니다." })}
           </div>
         ) : (
-          <table className="min-w-[760px] w-full text-xs border-collapse">
+          <table className="min-w-[860px] w-full text-xs border-collapse">
             <thead className="sticky top-0 z-10 bg-surface dark:bg-gray-800">
               <tr className="border-b border-border dark:border-gray-600">
                 <th className="py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-14 whitespace-nowrap">{t("common.select")}</th>
                 <th className="text-left py-2 px-2 font-medium text-text-muted dark:text-gray-400 min-w-[170px] whitespace-nowrap">{t("master.bom.childItem", { defaultValue: "자재" })}</th>
                 <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[80px] whitespace-nowrap">{t("master.bom.qtyPer", { defaultValue: "BOM수량" })}</th>
+                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[100px] whitespace-nowrap">{t("master.routing.allocQty", { defaultValue: "투입수량" })}</th>
+                <th className="text-left py-2 px-2 font-medium text-text-muted dark:text-gray-400 min-w-[150px] whitespace-nowrap">{t("master.routing.allocSum", { defaultValue: "공정 배정 합계" })}</th>
                 <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 min-w-[150px] whitespace-nowrap">{t("master.routing.circuitSpec", { defaultValue: "회로사양" })}</th>
                 <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[120px] whitespace-nowrap">{t("master.routing.cutStripSpec", { defaultValue: "길이/Strip" })}</th>
-                <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[90px] whitespace-nowrap">{t("master.routing.allocQty", { defaultValue: "투입수량" })}</th>
                 <th className="text-center py-2 px-2 font-medium text-text-muted dark:text-gray-400 w-[110px] whitespace-nowrap">{t("master.routing.issueMethod", { defaultValue: "투입방식" })}</th>
               </tr>
             </thead>
             <tbody>
-              {materials.map((material) => (
-                <tr key={material.childItemCode} className="border-b border-border/50 dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-700/50">
-                  <td className="py-1.5 px-2 text-center">
-                    <input
-                      type="checkbox"
-                      checked={material.selected}
-                      onChange={(e) => change(material.childItemCode, { selected: e.target.checked })}
-                      className="w-4 h-4 rounded text-primary cursor-pointer"
-                    />
-                  </td>
-                  <td className="py-1.5 px-2 min-w-0">
-                    <div className="font-medium text-text dark:text-gray-100 truncate">{material.childItemName || material.childItemCode}</div>
-                    <div className="text-[11px] text-text-muted dark:text-gray-400 truncate">
-                      {material.childItemCode}{material.childItemNo ? ` / ${material.childItemNo}` : ""}
-                    </div>
-                  </td>
-                  <td className="py-1.5 px-2 text-center text-text dark:text-gray-200">{material.qtyPer}</td>
-                  <td className="py-1.5 px-2">
-                    <select
-                      value={material.circuitId}
-                      disabled={!material.selected}
-                      onChange={(e) => changeCircuit(material, e.target.value)}
-                      className={`${inputCls} disabled:opacity-50`}
-                    >
-                      <option value="">{t("master.routing.noCircuitLink", { defaultValue: "미연결" })}</option>
-                      {material.circuitOptions.map((circuit) => (
-                        <option key={circuit.circuitId} value={circuit.circuitId}>
-                          {circuit.circuitNo}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="py-1.5 px-2 text-center text-[11px] text-text-muted dark:text-gray-400">
-                    {material.circuitId
-                      ? `${material.lengthMm ?? "-"} / ${material.stripA ?? "-"} / ${material.stripB ?? "-"}`
-                      : "-"}
-                  </td>
-                  <td className="py-1.5 px-2">
-                    <input
-                      type="number"
-                      step="0.0001"
-                      min="0"
-                      value={material.allocQty}
-                      disabled={!material.selected}
-                      onChange={(e) => change(material.childItemCode, { allocQty: e.target.value })}
-                      className={`${inputCls} text-center disabled:opacity-50`}
-                    />
-                  </td>
-                  <td className="py-1.5 px-2">
-                    <select
-                      value={material.issueMethod}
-                      disabled={!material.selected}
-                      onChange={(e) => change(material.childItemCode, { issueMethod: e.target.value })}
-                      className={`${inputCls} disabled:opacity-50`}
-                    >
-                      <option value="BACKFLUSH">{t("master.routing.backflush", { defaultValue: "백플러시" })}</option>
-                      <option value="PRE_ISSUE">{t("master.routing.preIssue", { defaultValue: "선투입" })}</option>
-                    </select>
-                  </td>
-                </tr>
-              ))}
+              {materials.map((material) => {
+                const sum = sumOf(material);
+                return (
+                  <tr key={material.childItemCode} className="border-b border-border/50 dark:border-gray-700 hover:bg-surface-hover dark:hover:bg-gray-700/50">
+                    <td className="py-1.5 px-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={material.selected}
+                        onChange={(e) => change(material.childItemCode, { selected: e.target.checked })}
+                        className="w-4 h-4 rounded text-primary cursor-pointer"
+                      />
+                    </td>
+                    <td className="py-1.5 px-2 min-w-0">
+                      <div className="font-medium text-text dark:text-gray-100 truncate">{material.childItemName || material.childItemCode}</div>
+                      <div className="text-[11px] text-text-muted dark:text-gray-400 truncate">
+                        {material.childItemCode}{material.childItemNo ? ` / ${material.childItemNo}` : ""}
+                      </div>
+                    </td>
+                    <td className="py-1.5 px-2 text-center text-text dark:text-gray-200 tabular-nums">{material.qtyPer}</td>
+                    <td className="py-1.5 px-2">
+                      <input
+                        type="number"
+                        step="0.0001"
+                        min="0"
+                        value={material.allocQty}
+                        placeholder={String(material.qtyPer)}
+                        disabled={!material.selected}
+                        title={t("master.routing.allocQtyTitle", { defaultValue: "비우면 BOM수량으로 소비" })}
+                        onChange={(e) => change(material.childItemCode, { allocQty: e.target.value })}
+                        className={`${inputCls} text-center tabular-nums disabled:opacity-50`}
+                      />
+                    </td>
+                    <td className={`py-1.5 px-2 whitespace-nowrap tabular-nums ${material.selected || sum.processCount > 0 ? SUM_CLS[sum.status] : "text-text-muted dark:text-gray-400"}`}>
+                      {sum.processCount === 0 ? (
+                        <span>—</span>
+                      ) : sum.status === "bomOnly" ? (
+                        <span>{sumLabel(sum.status, sum.processCount)}</span>
+                      ) : (
+                        <span><b>{sum.sum}</b> / {material.qtyPer} · {sumLabel(sum.status, sum.processCount)}</span>
+                      )}
+                    </td>
+                    <td className="py-1.5 px-2">
+                      <select
+                        value={material.circuitId}
+                        disabled={!material.selected}
+                        onChange={(e) => changeCircuit(material, e.target.value)}
+                        className={`${inputCls} disabled:opacity-50`}
+                      >
+                        <option value="">{t("master.routing.noCircuitLink", { defaultValue: "미연결" })}</option>
+                        {material.circuitOptions.map((circuit) => (
+                          <option key={circuit.circuitId} value={circuit.circuitId}>
+                            {circuit.circuitNo}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="py-1.5 px-2 text-center text-[11px] text-text-muted dark:text-gray-400">
+                      {material.circuitId
+                        ? `${material.lengthMm ?? "-"} / ${material.stripA ?? "-"} / ${material.stripB ?? "-"}`
+                        : "-"}
+                    </td>
+                    <td className="py-1.5 px-2">
+                      <select
+                        value={material.issueMethod}
+                        disabled={!material.selected}
+                        onChange={(e) => change(material.childItemCode, { issueMethod: e.target.value })}
+                        className={`${inputCls} disabled:opacity-50`}
+                      >
+                        <option value="BACKFLUSH">{t("master.routing.backflush", { defaultValue: "백플러시" })}</option>
+                        <option value="PRE_ISSUE">{t("master.routing.preIssue", { defaultValue: "선투입" })}</option>
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

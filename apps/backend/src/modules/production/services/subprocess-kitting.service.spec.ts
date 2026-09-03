@@ -127,4 +127,27 @@ describe('SubprocessKittingService BOM effective date', () => {
 
     expect(map.size).toBe(0);
   });
+
+  it('공정 배정 투입수량(ALLOC_QTY)이 있으면 BOM 소요량 대신 그 값으로 차감한다', async () => {
+    // 터미널 BOM 2개를 두 공정이 1개씩 나눠 소비하는 라우팅 — 현재 공정(seq 10)은 1개만
+    qr.manager.find.mockResolvedValueOnce([
+      { routingCode: 'RT-1', seq: 10, childItemCode: 'TERM-001', allocQty: 1, useYn: 'Y' },
+      { routingCode: 'RT-1', seq: 20, childItemCode: 'TERM-001', allocQty: 1, useYn: 'Y' },
+      { routingCode: 'RT-1', seq: 10, childItemCode: 'WIRE-001', allocQty: 0, useYn: 'Y' },
+    ]);
+    qr.manager.findOne.mockResolvedValueOnce({ routingCode: 'RT-1', processCode: 'PROC-1', seq: 10 });
+    const map = new Map<string, number>([['TERM-001', 2], ['WIRE-001', 3], ['OTHER-001', 5]]);
+
+    await (service as any).filterRawByRoutingMaterials(
+      qr,
+      'RT-1',
+      'PROC-1',
+      { company: 'C1', plant: 'P1' },
+      map,
+    );
+
+    expect(map.get('TERM-001')).toBe(1);   // ALLOC_QTY 우선
+    expect(map.get('WIRE-001')).toBe(3);   // ALLOC_QTY 0 → BOM 유지
+    expect(map.has('OTHER-001')).toBe(false); // 이 공정 미배정 → 제외
+  });
 });
