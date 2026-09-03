@@ -163,6 +163,34 @@
     "fallback": "요청번호 / 품목 / 비고 검색",
     "file": "app/(authenticated)/material/request-other/page.tsx"
   },
+  "productMgmt.defectTransfer.targetTitle": {
+    "fallback": "입고 대상 불량 재고",
+    "file": "app/(authenticated)/product/defect-transfer/page.tsx"
+  },
+  "productMgmt.defectTransfer.targetSearchPlaceholder": {
+    "fallback": "품목코드, 품목명, 창고 검색...",
+    "file": "app/(authenticated)/product/defect-transfer/page.tsx"
+  },
+  "productMgmt.defectTransfer.historyTitle": {
+    "fallback": "불량창고 입고 이력",
+    "file": "app/(authenticated)/product/defect-transfer/page.tsx"
+  },
+  "productMgmt.issue.col.toWarehouse": {
+    "fallback": "도착창고",
+    "file": "app/(authenticated)/product/issue/productIssueColumns.tsx"
+  },
+  "productMgmt.issue.col.qualityStatus": {
+    "fallback": "품질",
+    "file": "app/(authenticated)/product/issue/productIssueColumns.tsx"
+  },
+  "productMgmt.issue.defectStock": {
+    "fallback": "불량",
+    "file": "app/(authenticated)/product/issue/productIssueColumns.tsx"
+  },
+  "productMgmt.issue.goodStock": {
+    "fallback": "양품",
+    "file": "app/(authenticated)/product/issue/productIssueColumns.tsx"
+  },
   "production.equipMaterial.expectedBom": {
     "fallback": "작업지시 BOM 장착 품목",
     "file": "app/(authenticated)/production/input-assembly/components/EquipMaterialMountPanel.tsx"
@@ -179,6 +207,26 @@
     "fallback": "회로",
     "file": "app/(authenticated)/production/input-assembly/components/SgScanPanel.tsx"
   },
+  "production.subprocess.assignOrderFailed": {
+    "fallback": "설비 현재 작업지시 저장에 실패했습니다.",
+    "file": "app/(authenticated)/production/input-assembly/page.tsx"
+  },
+  "production.subprocess.restoreError": {
+    "fallback": "설비 현재 작업 상태를 불러오지 못했습니다.",
+    "file": "app/(authenticated)/production/input-assembly/page.tsx"
+  },
+  "production.subprocess.clearOrderFailed": {
+    "fallback": "설비 현재 작업지시 해제에 실패했습니다.",
+    "file": "app/(authenticated)/production/input-assembly/page.tsx"
+  },
+  "kiosk.material.waitingPickHint": {
+    "fallback": "미장착 품목의 LOT를 선택하면 스캔과 동일하게 장착합니다.",
+    "file": "app/(authenticated)/production/input-kiosk/components/MaterialScanModal.tsx"
+  },
+  "kiosk.material.noWaitingLot": {
+    "fallback": "장착 대기 LOT 없음",
+    "file": "app/(authenticated)/production/input-kiosk/components/MaterialScanModal.tsx"
+  },
   "kiosk.header.restoreError": {
     "fallback": "설비 현재 상태를 불러오지 못했습니다.",
     "file": "app/(authenticated)/production/input-kiosk/page.tsx"
@@ -186,6 +234,122 @@
   "kiosk.header.workerAssignError": {
     "fallback": "현재 작업자 저장에 실패했습니다.",
     "file": "app/(authenticated)/production/input-kiosk/page.tsx"
+  },
+  "production.order.equipUnassignedAllowed": {
+    "fallback": "미지정 허용",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "common.finishedProduct": {
+    "fallback": "완제품",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "common.semiProduct": {
+    "fallback": "반제품",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "common.rawMaterial": {
+    "fallback": "원자재",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.createSuccess": {
+    "fallback": "작업지시를 생성했습니다.",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.operationEquipProgress": {
+    "fallback": "공정 설비 {{done}}/{{total}} 지정",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.createPreview": {
+    "fallback": "생성될 작업지시",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.itemOrder": {
+    "fallback": "품목지시",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.operationOrder": {
+    "fallback": "공정지시",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.assignedEquip": {
+    "fallback": "설비지정",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.createPreviewDesc": {
+    "fallback": "저장 전에 공정지시별 설비를 지정합니다. 미지정도 허용됩니다.",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.bomPreview": {
+    "fallback": "BOM 전개",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.bomPreviewDesc": {
+    "fallback": "저장 시 반제품 작업지시는 BOM 계층 기준으로 자동 생성됩니다.",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.bomItemCount": {
+    "fallback": "표시 {{count}}건",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.bomSemiProductCount": {
+    "fallback": "반제품 {{count}}건",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.selectPartForBom": {
+    "fallback": "품목을 선택하면 BOM 계층이 펼쳐집니다.",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.routingPreview": {
+    "fallback": "라우팅 표시",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.routingPreviewDesc": {
+    "fallback": "작업지시로 생성될 공정과 공정별 설비 배정을 표시합니다.",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.operationOrderCount": {
+    "fallback": "공정지시 {{count}}건",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.selectedItem": {
+    "fallback": "선택 {{itemCode}} · {{count}}건",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.assignedEquipCount": {
+    "fallback": "설비지정 {{count}}건",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "common.sequence": {
+    "fallback": "순번",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.selectPartForRouting": {
+    "fallback": "품목을 선택하면 라우팅 공정지시가 펼쳐집니다.",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.ready": {
+    "fallback": "준비",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.equipAssigned": {
+    "fallback": "지정",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.equipUnassigned": {
+    "fallback": "미지정",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.unassignedEquipNotice": {
+    "fallback": "설비 미지정 공정도 저장할 수 있으며, 생성 후 작업지시 수정에서 설비를 배정할 수 있습니다.",
+    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
+  },
+  "production.order.selectRoutingProcess": {
+    "fallback": "라우팅 공정 선택",
+    "file": "app/(authenticated)/production/order/components/JobOrderFormPanel.tsx"
+  },
+  "production.order.selectProcessFirstForEquip": {
+    "fallback": "공정을 먼저 선택하면 해당 공정 설비만 표시됩니다.",
+    "file": "app/(authenticated)/production/order/components/JobOrderFormPanel.tsx"
   },
   "production.order.toolView": {
     "fallback": "도구보기",
@@ -219,6 +383,10 @@
     "fallback": "전체 설비",
     "file": "app/(authenticated)/production/result/page.tsx"
   },
+  "production.result.productionType": {
+    "fallback": "생산유형",
+    "file": "app/(authenticated)/production/result/productionResultColumns.tsx"
+  },
   "production.wipMaterialStock.lotCount": {
     "fallback": "LOT 수",
     "file": "app/(authenticated)/production/wip-material-stock/wipMaterialStockColumns.tsx"
@@ -226,6 +394,18 @@
   "common.equipName": {
     "fallback": "설비명",
     "file": "app/(authenticated)/production/wip-material-trans/wipMaterialTransColumns.tsx"
+  },
+  "production.wipStock.qualityStatus": {
+    "fallback": "품질",
+    "file": "app/(authenticated)/production/wip-stock/WipStockView.tsx"
+  },
+  "production.wipStock.defectStock": {
+    "fallback": "불량",
+    "file": "app/(authenticated)/production/wip-stock/WipStockView.tsx"
+  },
+  "production.wipStock.goodStock": {
+    "fallback": "양품",
+    "file": "app/(authenticated)/production/wip-stock/WipStockView.tsx"
   },
   "production.wipStock.boxNo": {
     "fallback": "박스번호",
@@ -467,30 +647,6 @@
     "fallback": "보조 연결 보기",
     "file": "app/(authenticated)/workflow/components/WorkflowFlow.tsx"
   },
-  "workflowGuide.stepSuffix": {
-    "fallback": "단계",
-    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
-  },
-  "workflowGuide.why": {
-    "fallback": "왜 하는가",
-    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
-  },
-  "workflowGuide.when": {
-    "fallback": "언제 하는가",
-    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
-  },
-  "workflowGuide.cautions": {
-    "fallback": "주의점",
-    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
-  },
-  "workflowGuide.inputs": {
-    "fallback": "입력",
-    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
-  },
-  "workflowGuide.outputs": {
-    "fallback": "산출",
-    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
-  },
   "workflowGuide.routes": {
     "fallback": "화면 바로가기",
     "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
@@ -501,10 +657,6 @@
   },
   "workflowGuide.help": {
     "fallback": "관련 화면 도움말",
-    "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
-  },
-  "workflowGuide.dataObjects": {
-    "fallback": "생성/변경 데이터",
     "file": "app/(authenticated)/workflow/components/WorkflowGuide.tsx"
   },
   "workflowGuide.viewSchema": {
@@ -547,26 +699,6 @@
     "fallback": "설명",
     "file": "app/(authenticated)/workflow/components/WorkflowSchemaPanel.tsx"
   },
-  "workflowGuide.pageTitle": {
-    "fallback": "업무 가이드",
-    "file": "app/(authenticated)/workflow/page.tsx"
-  },
-  "workflowGuide.pageSubtitle": {
-    "fallback": "처음 사용자를 위한 단계별 업무 지침과 화면 바로가기를 제공합니다.",
-    "file": "app/(authenticated)/workflow/page.tsx"
-  },
-  "workflowGuide.tabGuide": {
-    "fallback": "가이드",
-    "file": "app/(authenticated)/workflow/page.tsx"
-  },
-  "workflowGuide.tabFlow": {
-    "fallback": "흐름도",
-    "file": "app/(authenticated)/workflow/page.tsx"
-  },
-  "workflowGuide.searchPlaceholder": {
-    "fallback": "업무, 화면, 데이터 객체 검색",
-    "file": "app/(authenticated)/workflow/page.tsx"
-  },
   "ai.chat.tab.chat": {
     "fallback": "채팅",
     "file": "components/ai/AiChatPanel.tsx"
@@ -579,12 +711,24 @@
     "fallback": "실행로그",
     "file": "components/ai/AiChatPanel.tsx"
   },
+  "ai.chat.persona": {
+    "fallback": "페르소나",
+    "file": "components/ai/AiChatPanel.tsx"
+  },
   "ai.chat.toolApproveTitle": {
     "fallback": "작업 실행 승인 필요",
     "file": "components/ai/AiChatPanel.tsx"
   },
   "help.resize": {
     "fallback": "드래그하여 너비 조절",
+    "file": "components/help/HelpPanel.tsx"
+  },
+  "help.searchInCurrentDoc": {
+    "fallback": "현재 도움말에서 찾기",
+    "file": "components/help/HelpPanel.tsx"
+  },
+  "common.previous": {
+    "fallback": "이전",
     "file": "components/help/HelpPanel.tsx"
   },
   "material.iqc.defectCode": {
