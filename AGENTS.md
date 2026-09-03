@@ -89,6 +89,8 @@
 - `pnpm build`는 사용자가 요청했거나, dev 서버가 없고 전체 빌드 검증이 필요한 경우에만 실행한다.
 - HANES 프론트 검증은 기본 포트 `3002`를 사용한다. 예상 포트/서버/라우트가 unavailable이면 임의 대체 포트를 띄우지 말고 실패를 보고한다.
 - Playwright는 실제 사용자 UI 흐름이나 브라우저 렌더 검증이 필요한 경우에 사용한다. 단순 확인에는 남발하지 않는다.
+- 현장 개선요청/이슈를 `처리됨(DONE)`으로 표시하려면 수정 커밋 해시, 테스트 근거(spec 경로 또는 실행 결과), 배포 SHA 3개가 모두 있어야 한다. 개선요청 화면(IMPR_REQUESTS.FIX_COMMIT/FIX_TEST/DEPLOY_SHA)과 shared `missingImprDoneEvidence`가 이를 강제한다. 코드만 커밋하고 배포 전인 건은 `IN_PROGRESS`로 둔다.
+- 트랜잭션 불변식(작업지시 집계=실적 합계, 생산출고=공정재고 적재, 공정재고 잔량=원장, 출고요청 상태=배분, DB 메뉴코드=검증기)은 기준정보검증 화면 `TXN_INVARIANT` 카테고리와 스케줄러 잡 `MST_VALIDATION_DAILY`가 검사한다. 같은 사실을 두 곳에 쓰는 구조를 새로 만들면 규칙을 `txn-invariant.rules.ts`에 1건 추가한다.
 
 ## 8. 리뷰와 판단 규칙
 
