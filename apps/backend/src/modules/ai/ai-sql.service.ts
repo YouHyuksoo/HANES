@@ -100,8 +100,62 @@ const GENERAL_PROMPT =
   '회사·거래처·인물·품목·생산·재고 등 MES에 있을 법한 정보는 학습된 일반 지식으로 추측해 답하지 마세요. ' +
   'MES 데이터로 확인이 필요한 질문이면 "MES 데이터에서 확인이 필요합니다"라고 안내하세요.';
 
-const NO_KNOWLEDGE_RESPONSE =
-  '도움말/문서 출처를 찾지 못했습니다. 현재 설정에서는 출처 없는 LLM 일반지식 답변을 생성하지 않습니다. 관련 도움말을 추가하거나 임베딩 재생성을 실행한 뒤 다시 질문해 주세요.';
+const NO_KNOWLEDGE_RESPONSE = [
+  '죄송해요, 이 질문에 맞는 도움말/문서 출처를 찾지 못했습니다. HANES AI는 확인된 화면 도움말과 MES 데이터만 근거로 답하도록 되어 있어서, 일반 지식으로 지어내 답하지 않아요.',
+  '',
+  '이렇게 해보시면 찾을 확률이 높아요.',
+  '- 화면(메뉴) 이름을 넣어 다시 질문하기 — 예) "자재출고 화면에서 부분출고는 어떻게 해?"',
+  '- 데이터가 궁금하면 앞에 `/MES` 붙이기 — 예) "/MES 오늘 작업지시 현황"',
+  '- 도움말만 찾고 싶으면 앞에 `/HELP` 붙이기',
+  '',
+  '관리자라면 해당 화면 도움말을 추가하거나 임베딩 재생성을 실행한 뒤 다시 질문해 주세요.',
+].join('\n');
+
+/**
+ * 인사·감사·자기소개 요청 같은 잡담은 도움말 출처가 있을 리 없으므로 검색 파이프라인을 태우지 않고
+ * 정해진 문구로 부드럽게 응답한다(LLM 호출 없음 → 일반지식 생성 금지 원칙과 충돌하지 않음).
+ * 30자 이내의 짧은 문장만 대상으로 해서 "안녕, 자재출고 어떻게 해?" 같은 실제 질문은 정상 경로로 보낸다.
+ */
+type SmallTalkKind = 'greeting' | 'thanks' | 'about' | 'bye';
+
+const SMALL_TALK_MAX_LENGTH = 30;
+
+const SMALL_TALK_PATTERNS: Array<{ kind: SmallTalkKind; pattern: RegExp }> = [
+  { kind: 'bye', pattern: /^(잘\s?있어|잘\s?가|안녕히|바이|bye|수고(했어|하세요|해)?|고생(했어|하셨어요)?)/i },
+  { kind: 'thanks', pattern: /^(고마워|고맙|감사|땡큐|thanks?|thank you|ㄱㅅ)/i },
+  { kind: 'about', pattern: /(누구(야|니|세요|예요)|넌?\s?뭐(야|니)|뭘?\s?할\s?수\s?있|무엇을\s?할\s?수|할\s?수\s?있는\s?(게|것|일)|기능이?\s?뭐|자기\s?소개|소개해)/i },
+  { kind: 'greeting', pattern: /^(안녕|하이|헬로|hello|hi|hey|반가워|좋은\s?(아침|오후|저녁)|ㅎㅇ|ㅎㅎ|ㅋㅋ|ai\s?가?\s?안녕|ai야|에이아이)/i },
+];
+
+const SMALL_TALK_RESPONSES: Record<SmallTalkKind, string> = {
+  greeting: [
+    '안녕하세요! HANES MES AI 비서예요. 😊',
+    '화면 사용법이나 현장 데이터가 궁금하면 편하게 물어보세요.',
+    '',
+    '- 예) "자재출고는 어떻게 해?" — 화면 도움말을 찾아 안내해요',
+    '- 예) "오늘 작업지시 현황 보여줘" — MES 데이터를 조회해요',
+    '- `/HELP` 로 도움말만, `/MES` 로 데이터만 찾을 수도 있어요',
+  ].join('\n'),
+  thanks: '천만에요! 더 궁금한 게 있으면 언제든 말씀해 주세요. 😊',
+  about: [
+    '저는 HANES MES 안에서 일하는 AI 비서예요.',
+    '',
+    '- 화면 사용법·업무 절차: 등록된 화면 도움말을 근거로 설명해요',
+    '- 현장 데이터: 작업지시·실적·재고·품질 데이터를 읽기 전용 SQL로 조회해요 (쓰기는 승인 후에만)',
+    '- 지금 보고 있는 화면의 등록/처리 작업: 초안을 만들어 드리고 승인받아 실행해요',
+    '',
+    '확인된 도움말과 데이터만 근거로 답하기 때문에, 출처가 없는 내용은 지어내지 않아요.',
+  ].join('\n'),
+  bye: '네, 수고하셨어요! 필요할 때 다시 불러 주세요. 👋',
+};
+
+function detectSmallTalk(message: string): SmallTalkKind | null {
+  const text = message.trim().replace(/[?!.~,\s]+$/g, '');
+  if (!text || text.length > SMALL_TALK_MAX_LENGTH) return null;
+  // 실제 업무 질문이 섞인 문장("안녕, 자재출고 어떻게 해?")은 잡담으로 보지 않는다
+  if (/(어떻게|방법|현황|조회|보여|알려|왜|언제|얼마|몇|등록|출고|입고|실적|재고|작업지시|검사)/.test(text)) return null;
+  return SMALL_TALK_PATTERNS.find(({ pattern }) => pattern.test(text))?.kind ?? null;
+}
 
 const PAGE_WORKFLOW_KEYWORDS = [
   '등록',
@@ -151,6 +205,9 @@ export class AiSqlService {
     const route = this.parseRouteMode(rawUserMessage);
     const userMessage = route.message;
     if (!userMessage.trim()) return { content: '질문을 입력해 주세요.' };
+    // 인사·잡담은 출처 검색 없이 부드럽게 응답 (/MES, /DO 처럼 목적이 명시된 라우트는 제외)
+    const smallTalk = route.mode === 'auto' || route.mode === 'help' ? detectSmallTalk(userMessage) : null;
+    if (smallTalk) return { content: SMALL_TALK_RESPONSES[smallTalk] };
     if (route.mode === 'web') {
       return {
         content:

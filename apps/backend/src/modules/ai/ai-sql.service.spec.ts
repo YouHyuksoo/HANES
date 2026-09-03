@@ -79,6 +79,34 @@ describe('AiSqlService response quality prompts', () => {
     expect(systemPrompt).toContain('다음 확인');
   });
 
+  it.each([
+    ['안녕?', '안녕하세요'],
+    ['ai 가 안녕?', '안녕하세요'],
+    ['고마워!', '천만에요'],
+    ['넌 뭘 할 수 있어?', 'AI 비서'],
+    ['수고했어', '수고하셨어요'],
+  ])('잡담 "%s"은 출처 검색·LLM 호출 없이 부드러운 정해진 문구로 답한다', async (input, expected) => {
+    const complete = jest.fn();
+    const { target, knowledge } = createTarget(complete);
+
+    const result = await target.process([{ role: 'user', content: input }]);
+
+    expect(result.content).toContain(expected);
+    expect(result.content).not.toContain('출처를 찾지 못했습니다');
+    expect(complete).not.toHaveBeenCalled();
+    expect(knowledge.search).not.toHaveBeenCalled();
+  });
+
+  it('인사가 섞여도 업무 질문이면 잡담으로 처리하지 않고 정상 경로를 탄다', async () => {
+    const complete = jest.fn().mockResolvedValueOnce('[]').mockResolvedValueOnce('답변');
+    const { target } = createTarget(complete);
+
+    const result = await target.process([{ role: 'user', content: '안녕, 자재출고는 어떻게 해?' }]);
+
+    expect(complete).toHaveBeenCalled();
+    expect(result.content).not.toContain('안녕하세요! HANES MES AI 비서예요');
+  });
+
   it('도움말 문서나 SQL 결과가 없으면 LLM 일반지식 답변을 생성하지 않는다', async () => {
     const complete = jest.fn().mockResolvedValueOnce('[]').mockResolvedValueOnce('모델 일반지식 답변');
     const { target } = createTarget(complete);
