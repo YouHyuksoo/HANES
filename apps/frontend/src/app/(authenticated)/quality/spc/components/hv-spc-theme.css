@@ -1,0 +1,212 @@
+/**
+ * @file src/app/(authenticated)/quality/spc/components/hv-spc-theme.css
+ * @description 고전압 하네스 SPC 화면 스코프 토큰 (.hvspc-root). 다른 화면에 영향 없음.
+ *
+ * 규칙: docs/design/hv-spc.md (원본 WebDisplay 에서 이식)
+ * - 바탕·선·잉크는 HANES globals.css 토큰(--background/--card/--border/--foreground/--muted)을 따른다.
+ *   테마 전환은 HANES ThemeProvider 가 <html class="dark"> 를 토글하므로 `.dark .hvspc-root` 로 덮어쓴다.
+ * - 상태색(run/warn/stop)과 강조색(앰버)은 SPC 전용이다. 파랑/보라 그라데이션 금지, 파스텔 배경 금지.
+ * - 색은 var(--hv-*) 만 쓴다. Tailwind 는 레이아웃 유틸리티(flex/grid/gap) 전용.
+ */
+
+.hvspc-root {
+  --hv-font: var(--font-sans, "Pretendard", "Malgun Gothic", system-ui, sans-serif);
+  --hv-mono: var(--font-mono, "JetBrains Mono", "Consolas", monospace);
+
+  /* light — HANES 토큰 매핑 (흰색 카드 대신 페이지 바탕/뮤트 면을 쓴다) */
+  --hv-bg: var(--background);
+  --hv-bg-deep: var(--muted);
+  --hv-panel: var(--background);
+  --hv-line: var(--border);
+  --hv-hair: color-mix(in oklab, var(--border) 60%, transparent);
+  --hv-ink: var(--foreground);
+  --hv-ink-dim: #4b5563;
+  --hv-ink-mute: #8a94a3;
+  --hv-accent: #b45309;
+  --hv-accent-soft: rgba(180, 83, 9, 0.12);
+  --hv-run: #15803d;
+  --hv-warn: #b45309;
+  --hv-stop: #b91c1c;
+  --hv-idle: #6b7280;
+  --hv-zone-1: rgba(20, 24, 31, 0.035);
+  --hv-zone-2: rgba(20, 24, 31, 0.07);
+  --hv-series: #1f2937;
+  --hv-series-2: #0f766e;
+
+  font-family: var(--hv-font);
+  color: var(--hv-ink);
+  background: var(--hv-bg);
+}
+
+.dark .hvspc-root {
+  --hv-bg: var(--background);
+  --hv-bg-deep: var(--muted);
+  --hv-panel: var(--card);
+  --hv-line: var(--border);
+  --hv-hair: rgba(255, 255, 255, 0.05);
+  --hv-ink: var(--foreground);
+  --hv-ink-dim: #9aa6b4;
+  --hv-ink-mute: #6b7787;
+  --hv-accent: #f59e0b;
+  --hv-accent-soft: rgba(245, 158, 11, 0.14);
+  --hv-run: #34d399;
+  --hv-warn: #fbbf24;
+  --hv-stop: #f87171;
+  --hv-idle: #64748b;
+  --hv-zone-1: rgba(255, 255, 255, 0.035);
+  --hv-zone-2: rgba(255, 255, 255, 0.07);
+  --hv-series: #e8edf2;
+  --hv-series-2: #5eead4;
+}
+
+/* 숫자 — 표 정렬을 위해 고정폭 */
+.hv-num {
+  font-family: var(--hv-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 마이크로 라벨 (영문·코드 전용, 한글은 .hv-label 사용) */
+.hv-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--hv-ink-mute);
+}
+
+.hv-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hv-ink-mute);
+}
+
+/* 상태 색 — health 값과 1:1 */
+.hv-tone-STABLE { color: var(--hv-run); }
+.hv-tone-WARN { color: var(--hv-warn); }
+.hv-tone-OOC { color: var(--hv-stop); }
+.hv-tone-idle { color: var(--hv-idle); }
+
+.hv-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: currentColor;
+}
+
+/* 목록 행 */
+.hv-row {
+  border-bottom: 1px solid var(--hv-hair);
+  transition: background 120ms ease;
+}
+.hv-row:hover { background: var(--hv-bg-deep); }
+.hv-row[data-selected="true"] {
+  background: var(--hv-accent-soft);
+  box-shadow: inset 3px 0 0 var(--hv-accent);
+}
+
+/* 툴바 컨트롤 */
+.hv-input {
+  background: var(--hv-bg-deep);
+  border: 1px solid var(--hv-line);
+  color: var(--hv-ink);
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  outline: none;
+}
+.hv-input:focus { border-color: var(--hv-accent); }
+.hv-input::placeholder { color: var(--hv-ink-mute); }
+
+.hv-seg {
+  display: inline-flex;
+  border: 1px solid var(--hv-line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.hv-seg button {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  color: var(--hv-ink-dim);
+  background: transparent;
+  border-right: 1px solid var(--hv-line);
+}
+.hv-seg button:last-child { border-right: 0; }
+.hv-seg button[data-active="true"] {
+  background: var(--hv-accent);
+  color: #0b0f14;
+}
+
+/* KPI 스트립 — 카드 박스 대신 수직 구분선 */
+.hv-kpi {
+  display: flex;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--hv-line);
+  border-bottom: 1px solid var(--hv-line);
+}
+.hv-kpi > div {
+  flex: 1 1 110px;
+  padding: 10px 14px;
+  border-right: 1px solid var(--hv-hair);
+  min-width: 0;
+}
+.hv-kpi > div:last-child { border-right: 0; }
+.hv-kpi .value {
+  font-family: var(--hv-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* 표 */
+.hv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+.hv-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--hv-ink-mute);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--hv-line);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: var(--hv-panel);
+}
+.hv-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--hv-hair);
+  white-space: nowrap;
+}
+.hv-table td.num, .hv-table th.num { text-align: right; }
+.hv-table tr[data-flag="OOC"] td { color: var(--hv-stop); }
+.hv-table tr[data-flag="WARN"] td { color: var(--hv-warn); }
+
+.hv-badge {
+  display: inline-block;
+  font-family: var(--hv-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  line-height: 1.5;
+}
+
+/* 목업 데이터 배너 — 배경 없이 점선 테두리만 */
+.hv-banner {
+  font-size: 11px;
+  color: var(--hv-warn);
+  border: 1px dashed var(--hv-warn);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.hv-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--hv-line) transparent;
+}

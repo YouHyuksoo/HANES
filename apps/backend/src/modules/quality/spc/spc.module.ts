@@ -18,21 +18,25 @@
 
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SystemModule } from '../../system/system.module';
 
 // Controllers
 import { SpcController } from './controllers/spc.controller';
 import { MsaController } from './controllers/msa.controller';
 import { ControlPlanController } from './controllers/control-plan.controller';
+import { HvSpcController } from './hv/hv-spc.controller';
 
 // Services
 import { SpcService } from './services/spc.service';
 import { MsaService } from './services/msa.service';
 import { ControlPlanService } from './services/control-plan.service';
+import { HvSpcService } from './hv/hv-spc.service';
 
 // Entities
 import { SpcChart } from '../../../entities/spc-chart.entity';
 import { SpcData } from '../../../entities/spc-data.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
 import { GaugeMaster } from '../../../entities/gauge-master.entity';
 import { CalibrationLog } from '../../../entities/calibration-log.entity';
 import { ControlPlan } from '../../../entities/control-plan.entity';
@@ -44,21 +48,26 @@ import { ControlPlanItem } from '../../../entities/control-plan-item.entity';
       SpcChart,
       SpcData,
       ProcessMaster,
+      ItemMaster,
       GaugeMaster,
       CalibrationLog,
       ControlPlan,
       ControlPlanItem,
     ]),
+    // HV SPC 소스 전환 설정(SPC_HV_SOURCE) 조회용 SysConfigService
+    SystemModule,
   ],
   controllers: [
     SpcController,
     MsaController,
     ControlPlanController,
+    HvSpcController,
   ],
   providers: [
     SpcService,
     MsaService,
     ControlPlanService,
+    HvSpcService,
   ],
   exports: [
     SpcService,
