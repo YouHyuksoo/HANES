@@ -104,6 +104,26 @@ describe('ScrapService', () => {
       );
     });
 
+    it('검색어를 품목코드/LOT 매칭 where 조건에 반영한다(이전엔 destructure만 되고 조건에 안 쓰여 검색이 무시됐음)', async () => {
+      stockTxRepo.find.mockResolvedValue([]);
+      stockTxRepo.count.mockResolvedValue(0);
+
+      await service.findAll({ page: 1, limit: 10, search: 'ITEM-001' } as any, 'C1', 'P1');
+
+      expect(stockTxRepo.find).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.arrayContaining([
+          expect.objectContaining({ itemCode: expect.anything(), transType: 'SCRAP' }),
+          expect.objectContaining({ matUid: expect.anything(), transType: 'SCRAP' }),
+        ]),
+      }));
+      expect(stockTxRepo.count).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.arrayContaining([
+          expect.objectContaining({ itemCode: expect.anything() }),
+          expect.objectContaining({ matUid: expect.anything() }),
+        ]),
+      }));
+    });
+
     it('폐기 이력 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
       stockTxRepo.find.mockResolvedValue([
         {

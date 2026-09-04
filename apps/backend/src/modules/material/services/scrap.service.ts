@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In, FindOptionsWhere } from 'typeorm';
+import { Repository, Between, In, Like, FindOptionsWhere } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -71,14 +71,22 @@ export class ScrapService {
       where.transDate = Between(parseDateStart(fromDate)!, parseDateEnd(toDate)!);
     }
 
+    // 검색어(품목코드/LOT)를 where 절에 반영 — 이전엔 destructure만 되고 조건에 안 쓰여 검색이 항상 무시됐음
+    const searchWhere: FindOptionsWhere<StockTransaction>[] | FindOptionsWhere<StockTransaction> = search
+      ? [
+          { ...where, itemCode: Like(`%${search}%`) },
+          { ...where, matUid: Like(`%${search}%`) },
+        ]
+      : where;
+
     const [data, total] = await Promise.all([
       this.stockTransactionRepository.find({
-        where,
+        where: searchWhere,
         skip,
         take: limit,
         order: { transDate: 'DESC' },
       }),
-      this.stockTransactionRepository.count({ where }),
+      this.stockTransactionRepository.count({ where: searchWhere }),
     ]);
 
     // part, lot 정보 조회

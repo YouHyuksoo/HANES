@@ -37,15 +37,15 @@ export class HoldService {
     const { page = 1, limit = 10, search, status } = query;
     const skip = (page - 1) * limit;
 
-    const where: FindOptionsWhere<MatLot> = this.tenantWhere(company, plant);
-
+    const baseWhere: FindOptionsWhere<MatLot> = this.tenantWhere(company, plant);
     if (status) {
-      where.status = status;
+      baseWhere.status = status;
     }
 
-    // 검색어로 LOT 번호 또는 품목 코드 검색
+    // 검색어로 LOT 번호 또는 품목 코드/품목명 검색 — LOT번호 매칭과 품목 매칭을 OR로 묶는다
+    // (matUid 조건만 걸면 품목코드/품목명으로 찾는 검색이 항상 0건이 되던 결함)
+    let where: FindOptionsWhere<MatLot> | FindOptionsWhere<MatLot>[] = baseWhere;
     if (search) {
-      // 먼저 품목 검색
       const parts = await this.itemMasterRepository.find({
         where: [
           { itemCode: Like(`%${search}%`), ...this.tenantWhere(company, plant) },
@@ -54,10 +54,12 @@ export class HoldService {
       });
       const itemCodes = parts.map((p) => p.itemCode);
 
-      where.matUid = Like(`%${search}%`);
-      if (itemCodes.length > 0) {
-        // itemCode 조건 추가 (OR 조건을 위해 별도 처리 필요)
-      }
+      where = itemCodes.length > 0
+        ? [
+            { ...baseWhere, matUid: Like(`%${search}%`) },
+            { ...baseWhere, itemCode: In(itemCodes) },
+          ]
+        : { ...baseWhere, matUid: Like(`%${search}%`) };
     }
 
     const [data, total] = await Promise.all([

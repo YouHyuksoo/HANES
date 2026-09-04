@@ -84,6 +84,22 @@ describe('HoldService', () => {
       });
       expect(result).toEqual(expect.objectContaining({ page: 3, limit: 100, total: 0 }));
     });
+
+    it('검색어가 품목코드/품목명에 매치되면 LOT번호 매칭과 OR로 묶어 조회한다(이전엔 matUid만 걸려 품목 검색이 0건이었음)', async () => {
+      matLotRepo.find.mockResolvedValue([]);
+      matLotRepo.count.mockResolvedValue(0);
+      partRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001' } as any]);
+      matStockRepo.find.mockResolvedValue([]);
+
+      await service.findAll({ page: 1, limit: 10, search: 'ITEM-001' } as any, 'C1', 'P1');
+
+      expect(matLotRepo.find).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.arrayContaining([
+          expect.objectContaining({ matUid: expect.anything(), company: 'C1', plant: 'P1' }),
+          expect.objectContaining({ itemCode: expect.anything(), company: 'C1', plant: 'P1' }),
+        ]),
+      }));
+    });
   });
 
   describe('hold', () => {
