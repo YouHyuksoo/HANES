@@ -5118,7 +5118,13 @@
         "colLot": "LOT",
         "colSamples": "测量值",
         "colFlag": "判定",
-        "subtitle": "按工序查看管理特性的 X̄-R 控制图与工序能力(Cpk)，监视超出控制限及模式规则违反。"
+        "subtitle": "按工序查看管理特性的 X̄-R 控制图与工序能力(Cpk)，监视超出控制限及模式规则违反。",
+        "capabilityChart": "过程能力分布",
+        "normalCurve": "正态曲线期望",
+        "cpkTrend": "Cpk 趋势",
+        "cpkTrendHint": "最近 {{n}} 个子组滑动窗口",
+        "cpkGood": "良好",
+        "cpkMin": "最低"
       }
     },
     "controlPlan": {

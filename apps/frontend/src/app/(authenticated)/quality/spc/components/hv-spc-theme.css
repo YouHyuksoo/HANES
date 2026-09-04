@@ -140,24 +140,30 @@
 
 /* KPI 스트립 — 카드 박스 대신 수직 구분선 */
 .hv-kpi {
-  display: flex;
-  flex-wrap: wrap;
+  /* 능력지수 9칸을 한 줄에: 칸 폭·글자 크기가 패널 폭에 따라 줄어든다(최소 84px). 그보다 좁으면 두 줄 */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
   border-top: 1px solid var(--hv-line);
   border-bottom: 1px solid var(--hv-line);
 }
 .hv-kpi > div {
-  flex: 1 1 110px;
-  padding: 10px 14px;
+  padding: 8px 10px;
   border-right: 1px solid var(--hv-hair);
   min-width: 0;
 }
 .hv-kpi > div:last-child { border-right: 0; }
+.hv-kpi .hv-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .hv-kpi .value {
   font-family: var(--hv-mono);
   font-variant-numeric: tabular-nums;
-  font-size: 22px;
+  font-size: clamp(14px, 1.15vw, 22px);
   font-weight: 700;
   line-height: 1.1;
+  white-space: nowrap;
 }
 
 /* 표 */

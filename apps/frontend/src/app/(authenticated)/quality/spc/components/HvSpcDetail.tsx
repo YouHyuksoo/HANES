@@ -117,7 +117,7 @@ export default function HvSpcDetail({ data, loading, error }: Props) {
       {/* 관리도 */}
       <div className="px-5 py-4">
         {stats ? (
-          <HvSpcCharts subgroups={subgroups} stats={stats} spec={target.spec} unit={target.unit} decimals={target.decimals} flags={flags} />
+          <HvSpcCharts subgroups={subgroups} stats={stats} spec={target.spec} unit={target.unit} decimals={target.decimals} flags={flags} capability={capability} />
         ) : (
           <div className="text-sm" style={{ color: "var(--hv-ink-mute)" }}>{t("quality.spc.hv.notEnoughData", "서브그룹이 2건 미만이라 관리도를 산출하지 않았습니다")}</div>
         )}

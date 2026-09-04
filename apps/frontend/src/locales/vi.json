@@ -5118,7 +5118,13 @@
         "colLot": "LOT",
         "colSamples": "Giá trị đo",
         "colFlag": "Đánh giá",
-        "subtitle": "Xem biểu đồ kiểm soát X̄-R và năng lực công đoạn (Cpk) theo đặc tính, giám sát điểm vượt giới hạn và vi phạm quy tắc mẫu."
+        "subtitle": "Xem biểu đồ kiểm soát X̄-R và năng lực công đoạn (Cpk) theo đặc tính, giám sát điểm vượt giới hạn và vi phạm quy tắc mẫu.",
+        "capabilityChart": "Phân bố năng lực quá trình",
+        "normalCurve": "Đường chuẩn (kỳ vọng)",
+        "cpkTrend": "Xu hướng Cpk",
+        "cpkTrendHint": "Cửa sổ trượt {{n}} nhóm con gần nhất",
+        "cpkGood": "Tốt",
+        "cpkMin": "Tối thiểu"
       }
     },
     "controlPlan": {

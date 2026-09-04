@@ -101,3 +101,15 @@ test('no stray files in spc folder besides the board set', () => {
   const files = readdirSync(`${DIR}/components`).sort();
   assert.deepEqual(files, ['HvSpcBoard.tsx', 'HvSpcCharts.tsx', 'HvSpcDetail.tsx', 'HvSpcTargetList.tsx', 'hv-spc-theme.css', 'spc-rules.ts']);
 });
+
+test('detail charts include the process capability distribution and the Cpk trend', () => {
+  const charts = read(`${DIR}/components/HvSpcCharts.tsx`);
+  assert.match(charts, /quality\.spc\.hv\.capabilityChart/);
+  assert.match(charts, /normalPdf\(/);
+  assert.match(charts, /quality\.spc\.hv\.cpkTrend/);
+  assert.match(charts, /CPK_WINDOW = 25/);
+  const css = read(`${DIR}/components/hv-spc-theme.css`);
+  assert.match(css, /\.hv-kpi \{[\s\S]*grid-template-columns: repeat\(auto-fit, minmax\(84px, 1fr\)\)/);
+  assert.match(css, /font-size: clamp\(/);
+});
+

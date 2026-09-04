@@ -5638,7 +5638,13 @@
         "colLot": "LOT",
         "colSamples": "측정값",
         "colFlag": "판정",
-        "subtitle": "공정별 관리 특성의 X̄-R 관리도와 공정능력(Cpk)을 조회하고 관리한계 이탈·패턴 규칙 위반을 감시합니다."
+        "subtitle": "공정별 관리 특성의 X̄-R 관리도와 공정능력(Cpk)을 조회하고 관리한계 이탈·패턴 규칙 위반을 감시합니다.",
+        "capabilityChart": "공정능력 분포",
+        "normalCurve": "정규곡선 기대",
+        "cpkTrend": "Cpk 추이",
+        "cpkTrendHint": "최근 {{n}} 서브그룹 이동 창",
+        "cpkGood": "양호",
+        "cpkMin": "최소"
       }
     },
     "controlPlan": {

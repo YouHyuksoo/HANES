@@ -5118,7 +5118,13 @@
         "colLot": "LOT",
         "colSamples": "Samples",
         "colFlag": "Flag",
-        "subtitle": "Review X̄-R control charts and process capability (Cpk) per process characteristic, and monitor out-of-control points and pattern rule violations."
+        "subtitle": "Review X̄-R control charts and process capability (Cpk) per process characteristic, and monitor out-of-control points and pattern rule violations.",
+        "capabilityChart": "Process capability distribution",
+        "normalCurve": "Normal curve (expected)",
+        "cpkTrend": "Cpk trend",
+        "cpkTrendHint": "Rolling window of last {{n}} subgroups",
+        "cpkGood": "Good",
+        "cpkMin": "Minimum"
       }
     },
     "controlPlan": {
