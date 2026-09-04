@@ -181,7 +181,7 @@ export class ProdResultQueryDto extends PaginationQueryDto {
   @IsString()
   orderNo?: string;
 
-  @ApiPropertyOptional({ description: '설비 ID 필터' })
+  @ApiPropertyOptional({ description: '설비 코드 필터 (쉼표 구분 복수 허용, 예: EQ1,EQ2)' })
   @IsOptional()
   @IsString()
   equipCode?: string;
@@ -196,7 +196,7 @@ export class ProdResultQueryDto extends PaginationQueryDto {
   @IsString()
   prdUid?: string;
 
-  @ApiPropertyOptional({ description: '공정 코드 필터' })
+  @ApiPropertyOptional({ description: '공정 코드 필터 (쉼표 구분 복수 허용, 예: CUT,CRIMP)' })
   @IsOptional()
   @IsString()
   processCode?: string;

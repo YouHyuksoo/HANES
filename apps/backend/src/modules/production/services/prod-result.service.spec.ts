@@ -252,6 +252,52 @@ describe('ProdResultService', () => {
     );
   });
 
+  describe('findAll multi-value filters (comma separated → IN)', () => {
+    const buildListQb = () => ({
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+      getCount: jest.fn().mockResolvedValue(0),
+    }) as any;
+
+    it('uses equality for a single processCode/equipCode', async () => {
+      const qb = buildListQb();
+      prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll({ processCode: 'CUT', equipCode: 'EQ1' } as any, 'C1', 'P1');
+
+      expect(qb.andWhere).toHaveBeenCalledWith('pr.processCode = :processCode', { processCode: 'CUT' });
+      expect(qb.andWhere).toHaveBeenCalledWith('pr.equipCode = :equipCode', { equipCode: 'EQ1' });
+    });
+
+    it('uses IN for comma separated processCode/equipCode and ignores blanks', async () => {
+      const qb = buildListQb();
+      prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll({ processCode: 'CUT, CRIMP,', equipCode: 'EQ1,EQ2' } as any, 'C1', 'P1');
+
+      expect(qb.andWhere).toHaveBeenCalledWith('pr.processCode IN (:...processCodes)', { processCodes: ['CUT', 'CRIMP'] });
+      expect(qb.andWhere).toHaveBeenCalledWith('pr.equipCode IN (:...equipCodes)', { equipCodes: ['EQ1', 'EQ2'] });
+      const clauses = qb.andWhere.mock.calls.map((c: unknown[]) => c[0]);
+      expect(clauses).not.toContain('pr.processCode = :processCode');
+      expect(clauses).not.toContain('pr.equipCode = :equipCode');
+    });
+
+    it('adds no process/equip clause when the filters are empty', async () => {
+      const qb = buildListQb();
+      prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll({ processCode: '', equipCode: ' , ' } as any, 'C1', 'P1');
+
+      const clauses = qb.andWhere.mock.calls.map((c: unknown[]) => String(c[0]));
+      expect(clauses.some((c: string) => c.includes('pr.processCode'))).toBe(false);
+      expect(clauses.some((c: string) => c.includes('pr.equipCode'))).toBe(false);
+    });
+  });
+
   it('create persists result', async () => {
     jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, company: 'C1', plant: 'P1' } as any);
 

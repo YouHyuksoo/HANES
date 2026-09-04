@@ -62,6 +62,7 @@ import { SelfInspectItem } from '../../../entities/self-inspect-item.entity';
 import { ComCode } from '../../../entities/com-code.entity';
 import { ProductGenealogy } from '../../../entities/product-genealogy.entity';
 import { ShiftResolver } from '../../../utils/shift-resolver';
+import { parseCsvList } from '../../../common/utils/csv-list.util';
 
 const SELF_INSPECT_BATCH_WINDOW_MS = 10_000;
 
@@ -172,10 +173,15 @@ export class ProdResultService {
       );
     }
     if (orderNo) qb.andWhere('pr.orderNo = :orderNo', { orderNo });
-    if (equipCode) qb.andWhere('pr.equipCode = :equipCode', { equipCode });
+    // 설비/공정 필터는 복수 선택(쉼표 구분)을 허용한다: 1건이면 =, 2건 이상이면 IN
+    const equipCodes = parseCsvList(equipCode);
+    if (equipCodes.length === 1) qb.andWhere('pr.equipCode = :equipCode', { equipCode: equipCodes[0] });
+    else if (equipCodes.length > 1) qb.andWhere('pr.equipCode IN (:...equipCodes)', { equipCodes });
     if (workerId) qb.andWhere('pr.workerId = :workerId', { workerId });
     if (prdUid) qb.andWhere('pr.prdUid LIKE :prdUid', { prdUid: `%${prdUid}%` });
-    if (processCode) qb.andWhere('pr.processCode = :processCode', { processCode });
+    const processCodes = parseCsvList(processCode);
+    if (processCodes.length === 1) qb.andWhere('pr.processCode = :processCode', { processCode: processCodes[0] });
+    else if (processCodes.length > 1) qb.andWhere('pr.processCode IN (:...processCodes)', { processCodes });
     if (status) qb.andWhere('pr.status = :status', { status });
     if (productionType) qb.andWhere('pr.productionType = :productionType', { productionType });
     if (shiftCode) qb.andWhere('pr.shiftCode = :shiftCode', { shiftCode });

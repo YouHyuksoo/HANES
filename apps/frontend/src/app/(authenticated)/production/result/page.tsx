@@ -9,6 +9,7 @@
  * 2. **공정유형**: CUT(절단), CRIMP(압착), ASSY(조립), INSP(검사), PACK(포장)
  * 3. **작업자 아바타**: 부서별 색상 이니셜 아바타 표시
  * 4. API: GET /production/prod-results
+ * 5. 공정/설비 필터는 복수 선택(MultiSelectFilter) — 쉼표 구분으로 서버에 전달(processCode=CUT,CRIMP)
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,13 +17,12 @@ import {
   Search, RefreshCw, Factory,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Card, CardContent, Button, Input, Select, ConfirmModal, Modal } from '@/components/ui';
+import { Card, CardContent, Button, Input, ConfirmModal, Modal } from '@/components/ui';
 import { getTodayLocal } from '@/utils/date';
-import { QtyInput } from '@/components/shared';
+import { QtyInput, MultiSelectFilter } from '@/components/shared';
 import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import DataGrid from '@/components/data-grid/DataGrid';
-import { useComCodeOptions } from '@/hooks/useComCode';
-import { useEquipOptions } from '@/hooks/useMasterOptions';
+import { useEquipOptions, useProcessOptions } from '@/hooks/useMasterOptions';
 import api from '@/services/api';
 import { createProductionResultGridColumns, ProdResult } from './productionResultColumns';
 
@@ -36,23 +36,19 @@ export default function ProdResultPage() {
   const [editForm, setEditForm] = useState({ goodQty: '', defectQty: '', remark: '' });
   const [savingEdit, setSavingEdit] = useState(false);
 
-  /** 공정 유형 필터 */
-  const comCodeProcessOptions = useComCodeOptions('PROCESS_TYPE');
-  const processTypeOptions = useMemo(() => [
-    { value: '', label: t('production.order.processAll') },
-    ...comCodeProcessOptions.filter(o => ['CUT','CRIMP','ASSY','INSP','PACK'].includes(o.value))
-  ], [t, comCodeProcessOptions]);
+  /**
+   * 공정 필터 옵션 (복수 선택)
+   * PROD_RESULTS.PROCESS_CODE 는 공정 기준정보 코드(예: MASSY, GCRMP)이므로
+   * PROCESS_TYPE 공통코드가 아닌 공정 마스터 옵션을 사용한다.
+   */
+  const { options: processTypeOptions } = useProcessOptions();
 
-  /** 설비 필터 */
-  const { options: rawEquipOptions } = useEquipOptions(undefined, { includeInactive: true });
-  const equipOptions = useMemo(() => [
-    { value: '', label: t('production.result.equipAll', '전체 설비') },
-    ...rawEquipOptions,
-  ], [rawEquipOptions, t]);
+  /** 설비 필터 옵션 (복수 선택) */
+  const { options: equipOptions } = useEquipOptions(undefined, { includeInactive: true });
 
-  // 필터 상태
-  const [processTypeFilter, setProcessTypeFilter] = useState('');
-  const [equipFilter, setEquipFilter] = useState('');
+  // 필터 상태 — 공정/설비는 복수 선택 배열
+  const [processTypeFilter, setProcessTypeFilter] = useState<string[]>([]);
+  const [equipFilter, setEquipFilter] = useState<string[]>([]);
   const [startDate, setStartDate] = useState(() => getTodayLocal());
   const [endDate, setEndDate] = useState(() => getTodayLocal());
   const [searchText, setSearchText] = useState('');
@@ -62,8 +58,8 @@ export default function ProdResultPage() {
     try {
       const params: Record<string, string> = { limit: '5000' };
       if (searchText) params.search = searchText;
-      if (processTypeFilter) params.processCode = processTypeFilter;
-      if (equipFilter) params.equipCode = equipFilter;
+      if (processTypeFilter.length > 0) params.processCode = processTypeFilter.join(',');
+      if (equipFilter.length > 0) params.equipCode = equipFilter.join(',');
       if (startDate) params.startTimeFrom = startDate;
       if (endDate) params.startTimeTo = endDate;
       const res = await api.get('/production/prod-results', { params });
@@ -164,11 +160,13 @@ export default function ProdResultPage() {
                 <div className="flex-1 min-w-0">
                   <Input placeholder={t('production.result.searchPlaceholder')} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>
-                <div className="w-32 flex-shrink-0">
-                  <Select options={processTypeOptions} value={processTypeFilter} onChange={setProcessTypeFilter} fullWidth />
+                <div className="w-40 flex-shrink-0">
+                  <MultiSelectFilter options={processTypeOptions} value={processTypeFilter} onChange={setProcessTypeFilter}
+                    labelPrefix={t('production.result.processCol', '공정')} fullWidth />
                 </div>
-                <div className="w-44 flex-shrink-0">
-                  <Select options={equipOptions} value={equipFilter} onChange={setEquipFilter} fullWidth />
+                <div className="w-52 flex-shrink-0">
+                  <MultiSelectFilter options={equipOptions} value={equipFilter} onChange={setEquipFilter}
+                    labelPrefix={t('production.result.equipment', '설비')} fullWidth />
                 </div>
                 <DateRangeFilter from={startDate} to={endDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
               </div>
