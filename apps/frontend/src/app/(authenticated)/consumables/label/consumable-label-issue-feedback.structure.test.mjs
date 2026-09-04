@@ -12,7 +12,7 @@ assert.match(page, /const \[categoryFilter, setCategoryFilter\]/, "카테고리 
 assert.match(page, /categoryFilterOptions/, "그리드 상단 카테고리 드롭다운 옵션을 구성해야 합니다.");
 assert.match(page, /handleCategoryFilterChange/, "카테고리 필터 변경 시 숨은 선택값이 남지 않도록 처리해야 합니다.");
 assert.match(page, /m\.category === categoryFilter/, "카테고리 필터는 그리드 데이터 자체를 고정 필터링해야 합니다.");
-assert.match(page, /aria-label="카테고리 필터"[\s\S]*value=\{categoryFilter\}[\s\S]*onChange=\{handleCategoryFilterChange\}/, "카테고리 필터 드롭다운은 그리드 상단 toolbar에 고정 표시되어야 합니다.");
+assert.match(page, /aria-label=\{t\("consumables\.label\.categoryFilter", "카테고리 필터"\)\}[\s\S]*value=\{categoryFilter\}[\s\S]*onChange=\{handleCategoryFilterChange\}/, "카테고리 필터 드롭다운은 그리드 상단 toolbar에 고정 표시되어야 합니다.");
 assert.match(page, /role="status"[\s\S]*aria-live="polite"/, "UID 발행 상태는 헤더 액션 영역의 한 줄 라이브 상태로 표시해야 합니다.");
 assert.match(page, /toast\.loading\(/, "UID 생성/출력 시작 시 발행중 메시지를 표시해야 합니다.");
 assert.match(page, /toast\.success\(/, "UID 발행 완료 시 완료 메시지를 표시해야 합니다.");

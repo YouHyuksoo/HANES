@@ -156,10 +156,11 @@ test('/master/part exposes defect model group from ITEM_MASTERS.DEFECT_MODEL_GRO
   assert.match(types, /defectModelGroup\?: string \| null; \/\/ 불량 모델구분/);
   assert.match(page, /useComCodeOptions\("DEFECT_MODEL_GROUP"\)/);
   assert.match(partColumns, /accessorKey: "defectModelGroup"[\s\S]*header: t\("master\.part\.defectModelGroup", "모델구분"\)/);
-  assert.match(panel, /const defectModelGroupOptions = useComCodeOptions\("DEFECT_MODEL_GROUP"\)/);
+  // 모델구분은 공통 FieldComCodeSelect(공통코드 DEFECT_MODEL_GROUP)로 선택한다 — 화면별 옵션 조합 금지
+  assert.match(panel, /FieldComCodeSelect field="defectModelGroup" groupCode="DEFECT_MODEL_GROUP"/);
   assert.match(panel, /defectModelGroup: editingPart\?\.defectModelGroup \|\| ""/);
   assert.match(panel, /defectModelGroup: form\.defectModelGroup \|\| undefined/);
-  assert.match(panel, /<FieldSelect field="defectModelGroup" label=\{t\("master\.part\.defectModelGroup", "모델구분"\)\}/);
+  assert.match(panel, /<FieldComCodeSelect field="defectModelGroup" groupCode="DEFECT_MODEL_GROUP" includeAll=\{false\}\s+label=\{t\("master\.part\.defectModelGroup", "모델구분"\)\}/);
   assert.match(fieldHelp, /defectModelGroup: \{ db: "ITEM_MASTERS\.DEFECT_MODEL_GROUP", description: "불량코드 적용 범위를 저전압\/고전압 같은 모델군으로 구분하는 기준입니다\." \}/);
   assert.match(partDto, /@ApiPropertyOptional\(\{ description: '불량 모델구분', example: 'LV' \}\)[\s\S]*?@MaxLength\(50\)[\s\S]*?defectModelGroup\?: string;/);
   assert.match(partEntity, /@Column\(\{ type: 'varchar2', name: 'DEFECT_MODEL_GROUP', length: 50, nullable: true \}\)[\s\S]*?defectModelGroup: string \| null;/);

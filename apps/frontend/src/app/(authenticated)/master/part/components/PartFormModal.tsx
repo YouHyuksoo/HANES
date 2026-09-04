@@ -213,7 +213,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div>
           <Field field="boxQty" label={t("master.part.boxQty", "박스장입수량")}>
-            <QtyInput value={Number(form.boxQty) || 0} onChange={(n) => setField("boxQty", n)} fullWidth />
+            <QtyInput list="part-modal-box-qty-options" value={Number(form.boxQty) || 0} onChange={(n) => setField("boxQty", n)} fullWidth />
           </Field>
           <datalist id="part-modal-box-qty-options">
             {PACKAGING_QTY_OPTIONS.map(qty => <option key={qty} value={qty} />)}

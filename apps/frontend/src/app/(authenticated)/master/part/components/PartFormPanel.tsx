@@ -333,7 +333,7 @@ export default function PartFormPanel({ editingPart, onClose, onSave, animate = 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Field field="boxQty" label={t("master.part.boxQty", "박스장입수량")}>
-                <QtyInput value={Number(form.boxQty) || 0} onChange={(n) => setField("boxQty", n)} fullWidth />
+                <QtyInput list="part-panel-box-qty-options" value={Number(form.boxQty) || 0} onChange={(n) => setField("boxQty", n)} fullWidth />
               </Field>
               <datalist id="part-panel-box-qty-options">
                 {PACKAGING_QTY_OPTIONS.map(qty => <option key={qty} value={qty} />)}

@@ -117,7 +117,9 @@ test("consumables.mount locale keys are present in every locale", () => {
 
 test("consumables mount page uses translated keys", () => {
   const pagePath = resolve(repoRoot, "apps/frontend/src/app/(authenticated)/consumables/mount/page.tsx");
-  const source = readFileSync(pagePath, "utf8");
+  // 그리드 컬럼 정의는 consumableMountColumns.tsx 로 분리되어 있어 page 와 함께 검사한다
+  const columnsPath = resolve(repoRoot, "apps/frontend/src/app/(authenticated)/consumables/mount/consumableMountColumns.tsx");
+  const source = readFileSync(pagePath, "utf8") + readFileSync(columnsPath, "utf8");
   assert.match(source, /t\("consumables\.mount\.title"\)/, "page title should use translation key");
   assert.match(source, /t\("consumables\.mount\.operStatus"\)/, "operStatus should use translation key");
   assert.match(source, /t\("consumables\.mount\.mountedEquip"\)/, "mountedEquip should use translation key");

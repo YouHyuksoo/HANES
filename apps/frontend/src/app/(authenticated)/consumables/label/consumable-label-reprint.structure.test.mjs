@@ -13,11 +13,11 @@ assert.match(panel, /onPreview: \(instance: InstanceItem\) => void/, "우측 패
 assert.match(panel, /Printer/, "우측 패널 재발행 버튼은 프린터 아이콘을 사용해야 합니다.");
 assert.match(panel, /onClick=\{\(\) => onReprint\(inst\)\}/, "각 기발행 UID 행에서 해당 UID만 재발행해야 합니다.");
 assert.match(panel, /onClick=\{\(\) => onPreview\(inst\)\}/, "각 기발행 UID 행에서 해당 UID를 미리볼 수 있어야 합니다.");
-assert.match(panel, />\s*미리보기\s*</, "기발행 UID 목록에는 미리보기 버튼이 보여야 합니다.");
-assert.match(panel, />\s*재발행\s*</, "기발행 UID 목록에는 재발행 버튼이 보여야 합니다.");
+assert.match(panel, /\{t\("consumables\.label\.preview", "미리보기"\)\}/, "기발행 UID 목록에는 미리보기 버튼이 보여야 합니다.");
+assert.match(panel, /\{t\("consumables\.label\.reprint", "재발행"\)\}/, "기발행 UID 목록에는 재발행 버튼이 보여야 합니다.");
 assert.doesNotMatch(panel, /<table[\s\S]*재발행[\s\S]*<\/table>/, "420px 우측 패널에서는 재발행 버튼이 잘릴 수 있는 넓은 테이블 구조를 쓰면 안 됩니다.");
-assert.match(panel, /aria-label=\{`\$\{inst\.conUid\} 라벨 재발행`\}/, "재발행 버튼은 UID별 접근 가능한 이름을 가져야 합니다.");
-assert.match(panel, /aria-label=\{`\$\{inst\.conUid\} 라벨 미리보기`\}/, "미리보기 버튼은 UID별 접근 가능한 이름을 가져야 합니다.");
+assert.match(panel, /aria-label=\{t\("consumables\.label\.reprintAria", "\{\{conUid\}\} 라벨 재발행", \{ conUid: inst\.conUid \}\)\}/, "재발행 버튼은 UID별 접근 가능한 이름을 가져야 합니다.");
+assert.match(panel, /aria-label=\{t\("consumables\.label\.previewAria", "\{\{conUid\}\} 라벨 미리보기", \{ conUid: inst\.conUid \}\)\}/, "미리보기 버튼은 UID별 접근 가능한 이름을 가져야 합니다.");
 
 assert.match(page, /const \[activePrintItems, setActivePrintItems\]/, "신규 발행과 재발행이 공통 출력 렌더링 상태를 사용해야 합니다.");
 assert.match(page, /previewPrintItem/, "재발행 전 미리보기 대상 상태가 있어야 합니다.");
