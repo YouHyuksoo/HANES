@@ -417,9 +417,18 @@ describe('module repository boundaries', () => {
 
   it('does not keep mock placeholders in runtime backend source', () => {
     const placeholderPattern = /\b(mock|dummy|stub|fixture)\b|(?:mock|dummy|stub|fixture)[A-Z_]/;
+    // 예외: 고전압 하네스 SPC 목업 데이터 소스 — 임시 자리표시자가 아니라 SYS_CONFIGS SPC_HV_SOURCE(MOCK|DB) 로
+    // 명시 전환되는 정식 구현이며 화면에 "목업 데이터" 배지로 드러난다(WebDisplay /hanes/spc 와 같은 계약).
+    const allowedMockSourceFiles = new Set([
+      'modules/quality/spc/hv/hv-spc-mock.source.ts',
+      'modules/quality/spc/hv/hv-spc-source.ts',
+      'modules/quality/spc/hv/hv-spc-targets.ts',
+      'modules/quality/spc/hv/hv-spc.service.ts',
+    ]);
     const allBackendRuntimeFiles = walk(srcRoot)
       .filter((filePath) => filePath.endsWith('.ts'))
-      .filter((filePath) => !filePath.endsWith('.spec.ts'));
+      .filter((filePath) => !filePath.endsWith('.spec.ts'))
+      .filter((filePath) => !allowedMockSourceFiles.has(relative(filePath)));
 
     const offenders = allBackendRuntimeFiles
       .filter((filePath) => placeholderPattern.test(read(filePath)))

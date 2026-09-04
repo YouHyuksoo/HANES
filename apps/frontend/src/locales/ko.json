@@ -8909,7 +8909,7 @@
       "workerRequiredForInspect": "작업자를 1명 이상 추가하세요.",
       "selectJobOrderHint": "작업지시를 선택하면 생산실적이 표시됩니다.",
       "inputDisabled": "입력할 수 없습니다.",
-      "orderLifecycleHint": "최초 실적입력 시 작업지시 자동 시작 · 작업지시 종료는 작업지시관리에서 진행"
+      "orderLifecycleHint": "최초 실적입력 시 작업지시 자동 시작 · 양품이 계획수량에 도달하면 자동 종료 (조기 종료는 작업지시관리에서)"
     },
     "equip": {
       "modalTitle": "설비 선택",

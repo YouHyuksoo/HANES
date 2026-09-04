@@ -8902,7 +8902,7 @@
       "workerRequiredForInspect": "Vui lòng thêm ít nhất một công nhân.",
       "selectJobOrderHint": "Chọn lệnh sản xuất để xem kết quả sản xuất.",
       "inputDisabled": "Không thể nhập.",
-      "orderLifecycleHint": "Lệnh sản xuất tự động bắt đầu khi nhập kết quả lần đầu · Kết thúc lệnh sản xuất tại Quản lý lệnh sản xuất"
+      "orderLifecycleHint": "Tự động bắt đầu khi nhập kết quả đầu tiên · tự động kết thúc khi lượng tốt đạt kế hoạch (kết thúc sớm tại Quản lý lệnh sản xuất)"
     },
     "equip": {
       "modalTitle": "Chọn thiết bị",

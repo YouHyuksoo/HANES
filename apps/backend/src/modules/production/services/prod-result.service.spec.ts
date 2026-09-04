@@ -640,6 +640,85 @@ describe('ProdResultService', () => {
     });
   });
 
+  const setupCreateForSync = (order: Record<string, unknown>, totals: Record<string, string>) => {
+    jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, itemCode: 'FG-001', part: { itemCode: 'FG-001' }, company: 'C1', plant: 'P1', ...order } as any);
+    equipBomRelRepo.find.mockResolvedValue([]);
+    equipMasterRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'C1', plant: 'P1' } as any);
+    prodResultRepo.createQueryBuilder.mockReturnValue({
+      select: jest.fn().mockReturnThis(), addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ totalGood: '0', totalDefect: '0' }),
+    } as any);
+    numbering.next.mockResolvedValue('PR-1');
+    queryRunner.manager.create.mockReturnValue({ resultNo: 'PR-1' } as any);
+    queryRunner.manager.save.mockResolvedValue({ resultNo: 'PR-1' } as any);
+    sysConfigService.getValue.mockResolvedValue('OFF');
+    autoIssueService.execute.mockResolvedValue({ issued: [], warnings: [], skipped: false } as any);
+    prodResultRepo.findOne.mockResolvedValue({ resultNo: 'PR-1' } as any);
+    queryRunner.manager.find.mockResolvedValue([] as any);
+    queryRunner.manager.findOne.mockImplementation(async (entity: any) =>
+      entity === JobOrder ? ({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, startAt: new Date('2026-09-01'), company: 'C1', plant: 'P1', ...order } as any) : null,
+    );
+    queryRunner.query.mockResolvedValue([totals] as any);
+  };
+
+  it('create auto-completes the job order when good qty reaches the plan and releases the equipment binding', async () => {
+    setupCreateForSync({}, { resultCount: '3', totalGoodQty: '100', totalDefectQty: '2' });
+
+    await service.create({ orderNo: 'JO-1', equipCode: 'EQ-001', goodQty: 40, defectQty: 0 } as any, 'C1', 'P1');
+
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      JobOrder,
+      expect.objectContaining({ orderNo: 'JO-1' }),
+      expect.objectContaining({ goodQty: 100, defectQty: 2, status: 'DONE', endAt: expect.any(Date) }),
+    );
+    // 완료된 지시를 설비가 계속 물고 있으면 키오스크가 다음 날 복원한다 → 바인딩 해제
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      EquipMaster,
+      expect.objectContaining({ currentJobOrderId: 'JO-1' }),
+      { currentJobOrderId: null },
+    );
+  });
+
+  it('create promotes a WAITING job order to RUNNING with startAt on the first result', async () => {
+    setupCreateForSync({ status: 'WAITING', startAt: null }, { resultCount: '1', totalGoodQty: '5', totalDefectQty: '0' });
+
+    await service.create({ orderNo: 'JO-1', equipCode: 'EQ-001', goodQty: 5, defectQty: 0 } as any, 'C1', 'P1');
+
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      JobOrder,
+      expect.objectContaining({ orderNo: 'JO-1' }),
+      expect.objectContaining({ status: 'RUNNING', startAt: expect.any(Date), goodQty: 5 }),
+    );
+  });
+
+  it('sync keeps a HOLD job order status and only refreshes the totals (HOLD/CANCELED are set by people, not by results)', async () => {
+    queryRunner.manager.findOne.mockImplementation(async (entity: any) =>
+      entity === JobOrder ? ({ orderNo: 'JO-1', status: 'HOLD', planQty: 100, startAt: new Date('2026-09-01'), company: 'C1', plant: 'P1' } as any) : null,
+    );
+    queryRunner.query.mockResolvedValue([{ resultCount: '3', totalGoodQty: '100', totalDefectQty: '0' }] as any);
+
+    await (service as any).syncJobOrderFromResultsInTx(queryRunner, 'JO-1', 'C1', 'P1');
+
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(JobOrder, expect.objectContaining({ orderNo: 'JO-1' }), { goodQty: 100, defectQty: 0 });
+    expect(queryRunner.manager.update).not.toHaveBeenCalledWith(EquipMaster, expect.anything(), expect.anything());
+  });
+
+  it('sync returns a job order to WAITING when its last result is canceled', async () => {
+    queryRunner.manager.findOne.mockImplementation(async (entity: any) =>
+      entity === JobOrder ? ({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, startAt: new Date('2026-09-01'), company: 'C1', plant: 'P1' } as any) : null,
+    );
+    queryRunner.query.mockResolvedValue([{ resultCount: '0', totalGoodQty: '0', totalDefectQty: '0' }] as any);
+
+    await (service as any).syncJobOrderFromResultsInTx(queryRunner, 'JO-1', 'C1', 'P1');
+
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      JobOrder,
+      expect.objectContaining({ orderNo: 'JO-1' }),
+      { goodQty: 0, defectQty: 0, status: 'WAITING', startAt: null, endAt: null },
+    );
+  });
+
   it('create accrues consumable usage count on the equipment (kiosk results never pass through complete())', async () => {
     jobOrderRepo.findOne.mockResolvedValue({
       orderNo: 'JO-1', status: 'RUNNING', planQty: 100, itemCode: 'FG-001',
@@ -668,18 +747,18 @@ describe('ProdResultService', () => {
       return [] as any;
     });
     queryRunner.manager.findOne.mockImplementation(async (entity: any) =>
-      entity === JobOrder ? ({ orderNo: 'JO-1', itemCode: 'FG-001', company: 'C1', plant: 'P1' } as any) : null,
+      entity === JobOrder ? ({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, startAt: new Date('2026-09-01'), itemCode: 'FG-001', company: 'C1', plant: 'P1' } as any) : null,
     );
-    // 작업지시 실적 집계 갱신용 raw 합계 쿼리 — 이번 실적 포함 양품 7 / 불량 3
-    queryRunner.query.mockResolvedValue([{ totalGoodQty: '7', totalDefectQty: '3' }] as any);
+    // 작업지시 동기화용 raw 합계 쿼리 — 이번 실적 포함 1건, 양품 7 / 불량 3 (계획 100 미달 → RUNNING 유지)
+    queryRunner.query.mockResolvedValue([{ resultCount: '1', totalGoodQty: '7', totalDefectQty: '3' }] as any);
 
     await service.create({ orderNo: 'JO-1', equipCode: 'EQ-001', goodQty: 7, defectQty: 3 } as any, 'C1', 'P1');
 
-    // 실적 저장 즉시 JOB_ORDERS.GOOD_QTY/DEFECT_QTY 갱신 (키오스크 상단 진행률·TV 보드가 읽는 값)
+    // 실적 저장 즉시 JOB_ORDERS.GOOD_QTY/DEFECT_QTY 갱신 (키오스크 상단 진행률·TV 보드가 읽는 값), 계획 미달이라 RUNNING
     expect(queryRunner.manager.update).toHaveBeenCalledWith(
       JobOrder,
       expect.objectContaining({ orderNo: 'JO-1' }),
-      { goodQty: 7, defectQty: 3 },
+      expect.objectContaining({ goodQty: 7, defectQty: 3, status: 'RUNNING', endAt: null }),
     );
 
     expect(queryRunner.manager.find).toHaveBeenCalledWith(

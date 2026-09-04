@@ -600,6 +600,45 @@ describe('IssueRequestService', () => {
       expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
+    it('재조회 품목 중 미달(issuedQty null 포함)이 있으면 shared 규칙으로 PARTIAL 로 갱신한다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-001',
+        status: 'APPROVED',
+        orderNo: 'WO-001',
+        processCode: 'PRC1',
+        issueType: 'PRODUCTION',
+        company: 'C1',
+        plant: 'P1',
+      } as MatIssueRequest);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue([{ issueNo: 'ISSUE-001' }]);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 0 } as MatIssueRequestItem,
+      ]);
+      // 갱신 후 재조회: 1번 품목은 전량, 2번 품목은 issuedQty 가 아직 NULL(미출고)
+      queryRunner.manager.find.mockImplementation(async (entity: unknown) => (
+        entity === MatLot
+          ? [{ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot]
+          : [
+            { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 10 } as MatIssueRequestItem,
+            { requestId: 'REQ-001', seq: 2, itemCode: 'ITEM-002', requestQty: 5, issuedQty: null } as unknown as MatIssueRequestItem,
+          ]
+      ) as any);
+
+      await service.issueFromRequest('REQ-001', {
+        warehouseCode: 'WH-01',
+        issueType: 'PRODUCTION',
+        workerId: 'user',
+        items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 10 }],
+      }, 'C1', 'P1');
+
+      expect(queryRunner.manager.update).toHaveBeenCalledWith(
+        MatIssueRequest,
+        { requestNo: 'REQ-001', company: 'C1', plant: 'P1' },
+        { status: 'PARTIAL' },
+      );
+      expect(queryRunner.manager.update).not.toHaveBeenCalledWith(MatIssueRequest, expect.anything(), { status: 'COMPLETED' });
+    });
+
     it('같은 요청 품목에 여러 LOT를 출고하면 수량을 합산해 한 번 갱신한다', async () => {
       requestRepo.findOne.mockResolvedValue({
         requestNo: 'REQ-001',

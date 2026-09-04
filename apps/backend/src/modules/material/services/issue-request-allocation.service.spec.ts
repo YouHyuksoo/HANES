@@ -197,6 +197,26 @@ describe('IssueRequestAllocationService', () => {
     ]);
   });
 
+  it('헤더 완료 판정은 출고처리와 같은 shared 규칙(deriveIssueRequestStatusFromItems)을 따른다 — 다른 품목이 이미 전량이면 COMPLETED', async () => {
+    headers = [header({ requestNo: 'REQ-001', requestDate: new Date('2026-09-01') })];
+    items = [
+      item({ requestId: 'REQ-001', seq: 1, requestQty: 5 }),
+      item({ requestId: 'REQ-001', seq: 2, itemCode: 'RM-OTHER', requestQty: 3, issuedQty: 3 }),
+    ];
+
+    const result = await service.allocateIssuedQtyInTx(qr, {
+      itemCode: 'RM-001', qty: 5, issueType: 'PRODUCTION', company: 'C1', plant: 'P1',
+    }, 'ISS-001');
+
+    expect(result.allocations[0].requestStatus).toBe('COMPLETED');
+    expect(qr.manager.update).toHaveBeenCalledWith(
+      MatIssueRequest,
+      expect.objectContaining({ requestNo: expect.objectContaining({ value: ['REQ-001'] }) }),
+      { status: 'COMPLETED' },
+    );
+    expect(qr.manager.update).not.toHaveBeenCalledWith(MatIssueRequest, expect.anything(), { status: 'PARTIAL' });
+  });
+
   it('헤더 완료 판정은 배분 품목뿐 아니라 같은 요청의 다른 품목까지 본다', async () => {
     headers = [header({ requestNo: 'REQ-001', requestDate: new Date('2026-09-01') })];
     items = [

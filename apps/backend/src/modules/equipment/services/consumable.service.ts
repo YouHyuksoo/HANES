@@ -51,6 +51,7 @@ import {
 } from '../dto/consumable.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
+import { resolveConsumableLifeStatus } from '@harness/shared';
 
 @Injectable()
 export class ConsumableService {
@@ -394,13 +395,10 @@ export class ConsumableService {
 
     if (!consumable) return;
 
-    let newStatus = 'NORMAL';
-
-    if (consumable.expectedLife && consumable.currentCount >= consumable.expectedLife) {
-      newStatus = 'REPLACE';
-    } else if (consumable.warningCount && consumable.currentCount >= consumable.warningCount) {
-      newStatus = 'WARNING';
-    }
+    // 수명 상태 재판정 — shared 공통 규칙(수명 외 상태는 덮어쓰지 않음)
+    const newStatus = resolveConsumableLifeStatus(
+      consumable.currentCount, consumable.warningCount, consumable.expectedLife, consumable.status,
+    );
 
     if (consumable.status !== newStatus) {
       await this.consumableMasterRepository.update(

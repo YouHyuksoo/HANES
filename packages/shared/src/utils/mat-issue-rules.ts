@@ -16,3 +16,16 @@ export function isProductionIssueType(issueType?: string | null): boolean {
 export const ISSUE_REQUEST_PENDING_STATUSES = ['REQUESTED', 'APPROVED', 'PARTIAL'] as const;
 /** 목록 API status 파라미터에서 "미완료 전체"를 뜻하는 가상 상태값 */
 export const ISSUE_REQUEST_PENDING_FILTER = 'PENDING';
+
+/**
+ * 출고요청 헤더 상태를 품목 출고 수량으로 판정 — 출고처리(issueFromRequest)와 스캔 출고 배분(allocation)의 단일 출처.
+ *
+ * - 모든 품목이 requestQty 이상 출고됐으면 'COMPLETED', 하나라도 미달이면 'PARTIAL'.
+ * - issuedQty 가 null 이면 0 으로 본다.
+ * - 품목이 0건이면 'COMPLETED' 를 반환한다(빈 배열 every === true — 기존 두 서비스의 동작을 그대로 유지).
+ */
+export function deriveIssueRequestStatusFromItems(
+  items: ReadonlyArray<{ requestQty: number; issuedQty: number | null }>,
+): 'COMPLETED' | 'PARTIAL' {
+  return items.every((item) => (item.issuedQty ?? 0) >= item.requestQty) ? 'COMPLETED' : 'PARTIAL';
+}

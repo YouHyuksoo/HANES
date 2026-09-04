@@ -13,7 +13,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, FindOptionsWhere, LessThanOrEqual, MoreThanOrEqual, Between } from 'typeorm';
-import { isProductionIssueType, ISSUE_REQUEST_PENDING_STATUSES, ISSUE_REQUEST_PENDING_FILTER } from '@harness/shared';
+import { isProductionIssueType, ISSUE_REQUEST_PENDING_STATUSES, ISSUE_REQUEST_PENDING_FILTER, deriveIssueRequestStatusFromItems } from '@harness/shared';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
@@ -648,11 +648,9 @@ export class IssueRequestService {
 
       // 모든 품목 완전 출고 여부 — 같은 트랜잭션에서 갱신 후 값으로 판정
       const allItems = await queryRunner.manager.find(MatIssueRequestItem, { where: { requestId: requestNo, ...requestTenantWhere } });
-      const allCompleted = allItems.every((item) => item.issuedQty >= item.requestQty);
-
-      // 전량 출고 완료면 COMPLETED, 일부만 출고됐으면 PARTIAL(부분출고)
+      // 전량 출고 완료면 COMPLETED, 일부만 출고됐으면 PARTIAL(부분출고) — 규칙은 shared 단일 출처
       await queryRunner.manager.update(MatIssueRequest, { requestNo, ...requestTenantWhere }, {
-        status: allCompleted ? 'COMPLETED' : 'PARTIAL',
+        status: deriveIssueRequestStatusFromItems(allItems),
       });
 
       return { request: await this.findByRequestNo(requestNo, effectiveCompany ?? undefined, effectivePlant ?? undefined), issueResult };

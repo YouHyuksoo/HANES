@@ -407,6 +407,41 @@ describe('ConsumablesService', () => {
     });
   });
 
+  // shared 규칙(resolveConsumableLifeStatus): 임계 미달로 내려오면 WARNING → NORMAL 복귀 (이전 구현은 올라가기만 했다)
+  describe('updateShotCount (shared life-status rule)', () => {
+    it('should return status to NORMAL when count falls below warningCount', async () => {
+      // Arrange
+      const mockQr = {
+        manager: {
+          findOne: jest.fn().mockResolvedValue({
+            consumableCode: 'C001',
+            currentCount: 95,
+            expectedLife: 100,
+            warningCount: 90,
+            status: 'WARNING',
+          } as ConsumableMaster),
+          update: jest.fn().mockResolvedValue({ affected: 1 } as any),
+          create: jest.fn().mockReturnValue({} as any),
+          save: jest.fn().mockResolvedValue({} as any),
+          query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
+        },
+      };
+      mockTx.run.mockImplementationOnce(async (callback) => callback(mockQr as any));
+
+      // Act — 보정(-10)으로 85타: 경고 임계(90) 미달
+      const result = await target.updateShotCount({ consumableId: 'C001', addCount: -10 } as any);
+
+      // Assert
+      expect(result.currentCount).toBe(85);
+      expect(result.currentStatus).toBe('NORMAL');
+      expect(mockQr.manager.update).toHaveBeenCalledWith(
+        ConsumableMaster,
+        expect.objectContaining({ consumableCode: 'C001' }),
+        { currentCount: 85, status: 'NORMAL' },
+      );
+    });
+  });
+
   // ─── resetShotCount ───
   describe('resetShotCount', () => {
     it('should reset shot count and status to NORMAL', async () => {

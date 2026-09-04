@@ -41,6 +41,7 @@ import {
 } from '../dto/consumables.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
+import { resolveConsumableLifeStatus } from '@harness/shared';
 
 @Injectable()
 export class ConsumablesService {
@@ -632,14 +633,8 @@ ${tenantSql}
       }
 
       const newCount = consumable.currentCount + dto.addCount;
-      let newStatus = consumable.status;
-
-      // 상태 업데이트
-      if (consumable.expectedLife && newCount >= consumable.expectedLife) {
-        newStatus = 'REPLACE';
-      } else if (consumable.warningCount && newCount >= consumable.warningCount) {
-        newStatus = 'WARNING';
-      }
+      // 수명 상태 재판정 — shared 공통 규칙(임계 미달로 내려오면 WARNING/REPLACE → NORMAL 복귀)
+      const newStatus = resolveConsumableLifeStatus(newCount, consumable.warningCount, consumable.expectedLife, consumable.status);
 
       await queryRunner.manager.update(
         ConsumableMaster,

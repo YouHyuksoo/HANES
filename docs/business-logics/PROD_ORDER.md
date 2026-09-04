@@ -122,6 +122,21 @@ stateDiagram-v2
 | --- | --- |
 | `JOB_ORDER_STATUS` | 작업지시 상태 (WAITING/RUNNING/HOLD/DONE/CANCELED) |
 
+### 상태 전이 규칙 (2026-09-04 통일)
+
+실적 저장·취소·완료 어느 경로든 `@harness/shared` `deriveJobOrderStatusFromResults`(취소 제외 실적 합계 → 상태) 한 함수로 판정하고,
+백엔드 `ProdResultService.syncJobOrderFromResultsInTx` 한 곳에서 집계(GOOD/DEFECT_QTY)·상태·시작/종료시각·설비 바인딩 해제를 같이 갱신한다.
+
+| 조건 | 상태 | 부수효과 |
+| --- | --- | --- |
+| 취소되지 않은 실적 0건 | WAITING | startAt/endAt null (마지막 실적 취소 시 대기로 복귀) |
+| 실적 있음, 양품 합계 < 계획수량 | RUNNING | 첫 진입 시 startAt |
+| 양품 합계 ≥ 계획수량 (계획 > 0) | DONE (자동 완료) | endAt, EQUIP_MASTERS.CURRENT_JOB_ORDER_ID 해제 |
+| HOLD / CANCELED | 변경 없음 | 사람이 정한 상태라 실적이 바꾸지 않음(집계만 갱신) |
+
+작업지시관리의 "완료" 버튼은 계획 미달 상태에서 조기 종료할 때만 쓴다(RUNNING → DONE, 실적 합계 확정 + 설비 바인딩 해제).
+
+
 ## 9. DB 테이블 영향
 
 | 테이블 | 작업 | 설명 |

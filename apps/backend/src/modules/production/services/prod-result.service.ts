@@ -14,6 +14,7 @@
  * - status: compatibility field; production results are confirmed at registration time.
  */
 
+import { deriveJobOrderStatusFromResults, canAutoTransitionJobOrder } from '@harness/shared';
 import {
   Injectable,
   NotFoundException,
@@ -63,6 +64,7 @@ import { ComCode } from '../../../entities/com-code.entity';
 import { ProductGenealogy } from '../../../entities/product-genealogy.entity';
 import { ShiftResolver } from '../../../utils/shift-resolver';
 import { parseCsvList } from '../../../common/utils/csv-list.util';
+import { resolveConsumableLifeStatus } from '@harness/shared';
 
 const SELF_INSPECT_BATCH_WINDOW_MS = 10_000;
 
@@ -872,18 +874,9 @@ export class ProdResultService {
       const saved = await queryRunner.manager.save(ProdResult, prodResult);
       savedResultNo = saved.resultNo;
 
-      // 실적이 최초 등록되면 작업지시를 RUNNING으로 승격한다.
-      if (jobOrder.status === 'WAITING') {
-        await queryRunner.manager.update(
-          JobOrder,
-          { orderNo: dto.orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-          { status: 'RUNNING', startAt: new Date() },
-        );
-      }
-
-      // 작업지시 실적 집계(GOOD_QTY/DEFECT_QTY) 즉시 갱신 — 키오스크 상단 진행률·TV 보드가 이 컬럼을 읽는다.
-      // 상태(DONE 전이)는 건드리지 않는다(종료는 작업지시관리에서 수동).
-      await this.refreshJobOrderQtyInTx(queryRunner, dto.orderNo, company, plant);
+      // 작업지시 집계(GOOD/DEFECT_QTY)와 상태를 실적 합계로 동기화 — 첫 실적이면 RUNNING(시작시각),
+      // 양품 합계가 계획수량에 도달하면 DONE(종료시각 + 설비 바인딩 해제). 저장·취소·완료 경로가 같은 규칙을 쓴다.
+      await this.syncJobOrderFromResultsInTx(queryRunner, dto.orderNo, company, plant);
 
       // FG 바코드는 조립(서브공정) 키팅 공정에서 발행한다(라우팅 ISSUE_LABEL_TYPE='FG'). 실적 등록 시 사전발행하지 않는다.
 
@@ -1120,7 +1113,7 @@ export class ProdResultService {
         ...(plant ? { plant } : {}),
       });
 
-      await this.syncJobOrderFromRemainingResults(queryRunner, prodResult.orderNo, company, plant);
+      await this.syncJobOrderFromResultsInTx(queryRunner, prodResult.orderNo, company, plant);
     });
 
     return { resultNo };
@@ -1215,7 +1208,7 @@ export class ProdResultService {
       await queryRunner.manager.update(
         ConsumableMaster,
         { consumableCode: mold.consumableCode, ...tenant },
-        { currentCount: newCount, status: this.resolveConsumableLifeStatus(newCount, mold.warningCount, mold.expectedLife, mold.status) },
+        { currentCount: newCount, status: resolveConsumableLifeStatus(newCount, mold.warningCount, mold.expectedLife, mold.status) },
       );
       this.logger.log(`금형 타수 누적: ${mold.consumableCode} (${mold.currentCount} → ${newCount})`);
     }
@@ -1267,13 +1260,6 @@ export class ProdResultService {
         this.logger.log(`소모품 롯트 사용횟수 누적: ${lot.conUid} (${lot.currentCount} → ${newCount})`);
       }
     }
-  }
-
-  /** 타수 대비 수명 상태: 교체 임계 ≥ REPLACE, 경고 임계 ≥ WARNING, 그 외 NORMAL(감소 시 복귀 포함) */
-  private resolveConsumableLifeStatus(count: number, warningCount: number | null, expectedLife: number | null, current: string): string {
-    if (expectedLife && count >= expectedLife) return 'REPLACE';
-    if (warningCount && count >= warningCount) return 'WARNING';
-    return current === 'WARNING' || current === 'REPLACE' ? 'NORMAL' : current;
   }
 
   /**
@@ -1364,65 +1350,8 @@ export class ProdResultService {
         plant,
       });
 
-      // 6. 작업지시 자동 완료 체크
-      // 해당 작업지시의 모든 실적이 DONE이고 계획수량 달성 시 자동 완료
-      const autoCompleteJobOrder = await queryRunner.manager.findOne(JobOrder, {
-        where: {
-          orderNo: prodResult.orderNo,
-          ...(company ? { company } : {}),
-          ...(plant ? { plant } : {}),
-        },
-      });
-
-      if (autoCompleteJobOrder && !['DONE', 'CANCELED'].includes(autoCompleteJobOrder.status)) {
-        const pendingResults = await queryRunner.manager.count(ProdResult, {
-          where: {
-            orderNo: prodResult.orderNo,
-            status: In(['RUNNING', 'WAITING']),
-            ...(company ? { company } : {}),
-            ...(plant ? { plant } : {}),
-          },
-        });
-
-        if (pendingResults === 0) {
-          const summaryQb = queryRunner.manager
-            .createQueryBuilder(ProdResult, 'pr')
-            .select('SUM(pr.goodQty)', 'totalGoodQty')
-            .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
-            .where('pr.orderNo = :orderNo AND pr.status = :status', {
-              orderNo: prodResult.orderNo,
-              status: 'DONE',
-            });
-          if (company) {
-            summaryQb.andWhere('pr.company = :company', { company });
-          }
-          if (plant) {
-            summaryQb.andWhere('pr.plant = :plant', { plant });
-          }
-          const summary = await summaryQb.getRawOne();
-
-          const totalGood = parseInt(summary?.totalGoodQty) || 0;
-          const totalDefect = parseInt(summary?.totalDefectQty) || 0;
-
-          if (totalGood >= autoCompleteJobOrder.planQty) {
-            await queryRunner.manager.update(
-              JobOrder,
-              {
-                orderNo: prodResult.orderNo,
-                ...(company ? { company } : {}),
-                ...(plant ? { plant } : {}),
-              },
-              {
-                status: 'DONE',
-                endAt: new Date(),
-                goodQty: totalGood,
-                defectQty: totalDefect,
-              },
-            );
-            this.logger.log(`작업지시 자동 완료: ${prodResult.orderNo} (양품 ${totalGood} >= 계획 ${autoCompleteJobOrder.planQty})`);
-          }
-        }
-      }
+      // 6. 작업지시 집계·상태 동기화(계획 달성 시 자동 완료) — 실적 저장/취소 경로와 같은 규칙
+      await this.syncJobOrderFromResultsInTx(queryRunner, prodResult.orderNo, company, plant);
     });
 
     return this.prodResultRepository.findOne({
@@ -1476,7 +1405,7 @@ export class ProdResultService {
         },
       );
 
-      await this.syncJobOrderFromRemainingResults(queryRunner, prodResult.orderNo, company, plant);
+      await this.syncJobOrderFromResultsInTx(queryRunner, prodResult.orderNo, company, plant);
     });
 
     return this.prodResultRepository.findOne({
@@ -1630,75 +1559,56 @@ export class ProdResultService {
   }
 
   /** 작업지시 GOOD_QTY/DEFECT_QTY를 취소 제외 실적 합계로 갱신 (상태는 변경하지 않음) */
-  private async refreshJobOrderQtyInTx(
+  /**
+   * 작업지시를 실적 합계로 동기화한다 — 실적 저장/취소/완료 경로가 모두 이 한 곳을 거친다.
+   * - GOOD_QTY/DEFECT_QTY: 취소 제외 실적 합계 (키오스크 상단 진행률·TV 보드가 읽는 컬럼)
+   * - 상태: shared deriveJobOrderStatusFromResults (0건 WAITING / 계획 달성 DONE / 그 외 RUNNING).
+   *   HOLD/CANCELED 는 사람이 정한 상태라 집계만 갱신하고 상태는 건드리지 않는다.
+   * - RUNNING 진입 시 startAt, DONE 진입 시 endAt + 설비 현재작업지시 해제(다음 날 키오스크가 완료 지시를 복원하지 않게).
+   * raw SQL 로 같은 트랜잭션의 미커밋 실적까지 포함한다.
+   */
+  private async syncJobOrderFromResultsInTx(
     qr: import('typeorm').QueryRunner,
     orderNo: string,
     company?: string,
     plant?: string,
   ): Promise<void> {
-    // raw SQL — 같은 트랜잭션의 미커밋 실적까지 포함해 집계 (물리 컬럼명 사용)
+    const tenantWhere = { ...(company ? { company } : {}), ...(plant ? { plant } : {}) };
+    const jobOrder = await qr.manager.findOne(JobOrder, { where: { orderNo, ...tenantWhere } });
+    if (!jobOrder) return;
+
     const params: unknown[] = [orderNo];
-    let sql = `SELECT NVL(SUM(GOOD_QTY), 0) AS "totalGoodQty", NVL(SUM(DEFECT_QTY), 0) AS "totalDefectQty"
+    let sql = `SELECT COUNT(*) AS "resultCount", NVL(SUM(GOOD_QTY), 0) AS "totalGoodQty", NVL(SUM(DEFECT_QTY), 0) AS "totalDefectQty"
                  FROM PROD_RESULTS WHERE ORDER_NO = :1 AND STATUS <> 'CANCELED'`;
     if (company) { params.push(company); sql += ` AND COMPANY = :${params.length}`; }
     if (plant) { params.push(plant); sql += ` AND PLANT_CD = :${params.length}`; }
-    const rows: Array<{ totalGoodQty?: string | number; totalDefectQty?: string | number }> | undefined = await qr.query(sql, params);
+    const rows: Array<{ resultCount?: string | number; totalGoodQty?: string | number; totalDefectQty?: string | number }> | undefined =
+      await qr.query(sql, params);
     const summary = rows?.[0];
-    await qr.manager.update(
-      JobOrder,
-      { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-      { goodQty: Number(summary?.totalGoodQty ?? 0), defectQty: Number(summary?.totalDefectQty ?? 0) },
-    );
-  }
-
-  private async syncJobOrderFromRemainingResults(
-    qr: import('typeorm').QueryRunner,
-    orderNo: string,
-    company?: string,
-    plant?: string,
-  ): Promise<void> {
-    const jobOrder = await qr.manager.findOne(JobOrder, {
-      where: { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-    });
-    if (!jobOrder || jobOrder.status === 'CANCELED' || jobOrder.status === 'HOLD') return;
-
-    const summaryQb = qr.manager
-      .createQueryBuilder(ProdResult, 'pr')
-      .select('COUNT(pr.resultNo)', 'resultCount')
-      .addSelect('SUM(pr.goodQty)', 'totalGoodQty')
-      .addSelect('SUM(pr.defectQty)', 'totalDefectQty')
-      .where('pr.orderNo = :orderNo', { orderNo })
-      .andWhere('pr.status != :canceled', { canceled: 'CANCELED' });
-    if (company) summaryQb.andWhere('pr.company = :company', { company });
-    if (plant) summaryQb.andWhere('pr.plant = :plant', { plant });
-    const summary = await summaryQb.getRawOne();
-
     const resultCount = Number(summary?.resultCount ?? 0);
     const totalGood = Number(summary?.totalGoodQty ?? 0);
     const totalDefect = Number(summary?.totalDefectQty ?? 0);
-    const nextStatus = resultCount === 0
-      ? 'WAITING'
-      : totalGood >= Number(jobOrder.planQty ?? 0)
-        ? 'DONE'
-        : 'RUNNING';
 
-    const updateData: Partial<JobOrder> = {
-      status: nextStatus,
-      goodQty: totalGood,
-      defectQty: totalDefect,
-      endAt: nextStatus === 'DONE' ? new Date() : null,
-    };
-    if (nextStatus === 'WAITING') {
-      updateData.startAt = null;
-    } else if (!jobOrder.startAt) {
-      updateData.startAt = new Date();
+    const updateData: Partial<JobOrder> = { goodQty: totalGood, defectQty: totalDefect };
+
+    if (canAutoTransitionJobOrder(jobOrder.status)) {
+      const nextStatus = deriveJobOrderStatusFromResults({ resultCount, totalGoodQty: totalGood, planQty: Number(jobOrder.planQty ?? 0) });
+      updateData.status = nextStatus;
+      if (nextStatus === 'WAITING') {
+        updateData.startAt = null;
+        updateData.endAt = null;
+      } else {
+        if (!jobOrder.startAt) updateData.startAt = new Date();
+        updateData.endAt = nextStatus === 'DONE' ? (jobOrder.status === 'DONE' && jobOrder.endAt ? jobOrder.endAt : new Date()) : null;
+      }
+      if (nextStatus === 'DONE' && jobOrder.status !== 'DONE') {
+        this.logger.log(`작업지시 자동 완료: ${orderNo} (양품 ${totalGood} >= 계획 ${jobOrder.planQty})`);
+        // 완료된 지시를 설비가 계속 물고 있으면 키오스크가 다음 날 그 지시를 다시 복원한다 → 설비 바인딩 해제
+        await qr.manager.update(EquipMaster, { currentJobOrderId: orderNo, ...tenantWhere }, { currentJobOrderId: null });
+      }
     }
 
-    await qr.manager.update(
-      JobOrder,
-      { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-      updateData,
-    );
+    await qr.manager.update(JobOrder, { orderNo, ...tenantWhere }, updateData);
   }
 
   private async reverseAutoIssue(

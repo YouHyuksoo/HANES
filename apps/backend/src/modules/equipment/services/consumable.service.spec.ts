@@ -129,6 +129,28 @@ describe('Equipment ConsumableService', () => {
     expect((result as { worker: unknown }).worker).toBeNull();
   });
 
+  it('updateWarningStatus 는 shared 수명 규칙을 쓴다 — 임계 초과 REPLACE, 수명 외 상태는 임계 미달이어도 덮어쓰지 않는다', async () => {
+    // (1) 교체 임계 도달 → REPLACE 로 갱신
+    masterRepo.findOne.mockResolvedValueOnce({
+      consumableCode: 'CON-1', company: 'COMP', plant: 'PLANT',
+      currentCount: 100, warningCount: 80, expectedLife: 100, status: 'WARNING', mountedEquipCode: null,
+    } as ConsumableMaster);
+    await service.updateWarningStatus('CON-1', 'COMP', 'PLANT');
+    expect(masterRepo.update).toHaveBeenCalledWith(
+      expect.objectContaining({ consumableCode: 'CON-1' }),
+      { status: 'REPLACE' },
+    );
+
+    // (2) 수명 외 상태(예: 폐기)는 임계 미달이어도 NORMAL 로 되돌리지 않는다 (이전 구현은 무조건 NORMAL 부터 재계산했다)
+    masterRepo.update.mockClear();
+    masterRepo.findOne.mockResolvedValueOnce({
+      consumableCode: 'CON-2', company: 'COMP', plant: 'PLANT',
+      currentCount: 10, warningCount: 80, expectedLife: 100, status: 'DISCARDED', mountedEquipCode: null,
+    } as ConsumableMaster);
+    await service.updateWarningStatus('CON-2', 'COMP', 'PLANT');
+    expect(masterRepo.update).not.toHaveBeenCalled();
+  });
+
   it('allocates CONSUMABLE_MOUNT_LOGS seq from Oracle sequence', async () => {
     masterRepo.findOne.mockResolvedValue({
       consumableCode: 'CON-1',

@@ -143,6 +143,8 @@ describe('ProdResultService complete workflow', () => {
 
     queryRunner.manager.count.mockResolvedValue(0);
     queryRunner.manager.createQueryBuilder.mockReturnValue(summaryQb as any);
+    // 작업지시 동기화는 raw 합계 쿼리(취소 제외 실적 1건, 양품 10 ≥ 계획 10 → DONE)를 본다
+    queryRunner.query.mockResolvedValue([{ resultCount: '1', totalGoodQty: '10', totalDefectQty: '1' }] as any);
 
     await target.complete('PR-100', { goodQty: 10, defectQty: 1 } as any, 'C1', 'P1');
 

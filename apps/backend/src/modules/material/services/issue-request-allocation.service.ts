@@ -12,7 +12,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { In, QueryRunner } from 'typeorm';
-import { isProductionIssueType } from '@harness/shared';
+import { isProductionIssueType, deriveIssueRequestStatusFromItems } from '@harness/shared';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
 
@@ -143,8 +143,9 @@ export class IssueRequestAllocationService {
         list.push(item);
         itemsByRequest.set(item.requestId, list);
       }
+      // 헤더 완료 판정은 출고처리(issueFromRequest)와 같은 shared 규칙을 쓴다
       const completedNos = [...touchedRequestNos].filter((requestNo) =>
-        (itemsByRequest.get(requestNo) ?? []).every((item) => item.issuedQty >= item.requestQty),
+        deriveIssueRequestStatusFromItems(itemsByRequest.get(requestNo) ?? []) === 'COMPLETED',
       );
       const completedSet = new Set(completedNos);
       const partialNos = [...touchedRequestNos].filter((requestNo) => !completedSet.has(requestNo));

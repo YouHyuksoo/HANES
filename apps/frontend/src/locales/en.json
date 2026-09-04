@@ -8902,7 +8902,7 @@
       "workerRequiredForInspect": "Please add at least one worker.",
       "selectJobOrderHint": "Select a work order to view production results.",
       "inputDisabled": "Input is disabled.",
-      "orderLifecycleHint": "The work order starts automatically on the first result entry · Close the work order in Work Order Management"
+      "orderLifecycleHint": "Order starts automatically on the first result · completes automatically when good qty reaches the plan (early close in Job Order Management)"
     },
     "equip": {
       "modalTitle": "Select Equipment",

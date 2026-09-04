@@ -216,7 +216,7 @@ export default function EquipHeader({
         <div className="flex items-center gap-1 px-4 py-0.5 text-[11px] text-black/50 dark:text-white/50 bg-surface/50">
           <ClipboardList className="h-3 w-3 shrink-0 opacity-60" />
           <span className="truncate">
-            {t('kiosk.header.orderLifecycleHint', '최초 실적입력 시 작업지시 자동 시작 · 작업지시 종료는 작업지시관리에서 진행')}
+            {t('kiosk.header.orderLifecycleHint', '최초 실적입력 시 작업지시 자동 시작 · 양품이 계획수량에 도달하면 자동 종료 (조기 종료는 작업지시관리에서)')}
           </span>
         </div>
 

@@ -8902,7 +8902,7 @@
       "workerRequiredForInspect": "请至少添加一名作业员。",
       "selectJobOrderHint": "选择工单后将显示生产实绩。",
       "inputDisabled": "无法输入。",
-      "orderLifecycleHint": "首次录入实绩时工单自动开始 · 工单结束请在工单管理中进行"
+      "orderLifecycleHint": "首次录入实绩时自动开始 · 良品达到计划数量时自动结束（提前结束请在作业指示管理中操作）"
     },
     "equip": {
       "modalTitle": "选择设备",

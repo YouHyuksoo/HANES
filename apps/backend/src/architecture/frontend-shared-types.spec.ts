@@ -51,7 +51,8 @@ describe('frontend shared type boundaries', () => {
   });
 
   it('does not keep sample data placeholders in runtime frontend source', () => {
-    const allowedPaths = new Set<string>();
+    // 예외: SPC 보드는 백엔드 sourceKind='MOCK'(설정으로 명시 전환되는 정식 목업 소스)을 받아 배지를 띄운다
+    const allowedPaths = new Set<string>(['app/(authenticated)/quality/spc/components/HvSpcBoard.tsx']);
     const placeholderPattern = /\b(mock|dummy|stub|fixture)\b|(?:mock|dummy|stub|fixture)[A-Z_]/;
     const runtimeFiles = frontendSourceFiles.filter((filePath) => {
       const relativePath = relativeToFrontend(filePath);
