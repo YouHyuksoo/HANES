@@ -720,29 +720,36 @@ export class ProductTraceabilityService {
     plant: string,
   ): Promise<TraceCandidate[]> {
     if (!equipCode) return [];
-    const prodResults = await this.prodResultRepo.find({
-      where: { equipCode, company, plant },
-      take: 500,
-      order: { startAt: 'DESC' },
-    });
-    const fromTime = dateFrom ? new Date(`${dateFrom}T00:00:00`).getTime() : Number.NEGATIVE_INFINITY;
-    const toTime = dateTo ? new Date(`${dateTo}T23:59:59`).getTime() : Number.POSITIVE_INFINITY;
-    const orderNos = [
-      ...new Set(
-        prodResults
-          .filter((result) => {
-            const at = result.startAt ?? result.createdAt;
-            const time = at instanceof Date ? at.getTime() : 0;
-            return time >= fromTime && time <= toTime;
-          })
-          .map((result) => result.orderNo),
-      ),
-    ];
+    const prodResults = await this.queryProdResultsByPeriod('pr.equipCode = :equipCode', { equipCode }, dateFrom, dateTo, company, plant);
+    const orderNos = [...new Set(prodResults.map((result) => result.orderNo))];
     const byOrder = orderNos.length
       ? await this.fgLabelRepo.find({ where: { orderNo: In(orderNos), company, plant }, take: 500, order: { issuedAt: 'DESC' } })
       : [];
     const direct = await this.fgLabelRepo.find({ where: { equipCode, company, plant }, take: 500, order: { issuedAt: 'DESC' } });
     return this.fgRowsToCandidates([...byOrder, ...direct], '설비 + 기간', equipCode, company, plant);
+  }
+
+  /** 기간(startAt, 없으면 createdAt로 대체) 조건을 DB where 절에서 적용해 생산실적을 조회한다. take로 자른 뒤 메모리에서 걸러 페이지 밖으로 밀리는 결과가 없도록 한다. */
+  private async queryProdResultsByPeriod(
+    whereClause: string,
+    whereParams: Record<string, unknown>,
+    dateFrom: string,
+    dateTo: string,
+    company: string,
+    plant: string,
+  ): Promise<ProdResult[]> {
+    const qb = this.prodResultRepo
+      .createQueryBuilder('pr')
+      .where(whereClause, whereParams)
+      .andWhere('pr.company = :company', { company })
+      .andWhere('pr.plant = :plant', { plant });
+    if (dateFrom) {
+      qb.andWhere('COALESCE(pr.startAt, pr.createdAt) >= :fromTime', { fromTime: new Date(`${dateFrom}T00:00:00`) });
+    }
+    if (dateTo) {
+      qb.andWhere('COALESCE(pr.startAt, pr.createdAt) <= :toTime', { toTime: new Date(`${dateTo}T23:59:59`) });
+    }
+    return qb.orderBy('pr.startAt', 'DESC').take(500).getMany();
   }
 
   /** 작업자코드 + 기간 기준으로 해당 작업자가 생산실적을 남긴 제품을 조회 */
@@ -754,24 +761,8 @@ export class ProductTraceabilityService {
     plant: string,
   ): Promise<TraceCandidate[]> {
     if (!workerCode) return [];
-    const prodResults = await this.prodResultRepo.find({
-      where: { workerId: workerCode, company, plant },
-      take: 500,
-      order: { startAt: 'DESC' },
-    });
-    const fromTime = dateFrom ? new Date(`${dateFrom}T00:00:00`).getTime() : Number.NEGATIVE_INFINITY;
-    const toTime = dateTo ? new Date(`${dateTo}T23:59:59`).getTime() : Number.POSITIVE_INFINITY;
-    const orderNos = [
-      ...new Set(
-        prodResults
-          .filter((result) => {
-            const at = result.startAt ?? result.createdAt;
-            const time = at instanceof Date ? at.getTime() : 0;
-            return time >= fromTime && time <= toTime;
-          })
-          .map((result) => result.orderNo),
-      ),
-    ];
+    const prodResults = await this.queryProdResultsByPeriod('pr.workerId = :workerCode', { workerCode }, dateFrom, dateTo, company, plant);
+    const orderNos = [...new Set(prodResults.map((result) => result.orderNo))];
     const byOrder = orderNos.length
       ? await this.fgLabelRepo.find({ where: { orderNo: In(orderNos), company, plant }, take: 500, order: { issuedAt: 'DESC' } })
       : [];

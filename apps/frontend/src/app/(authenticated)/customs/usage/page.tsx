@@ -15,33 +15,49 @@ import { Plus, RefreshCw, Search, Send, CheckCircle, Clock } from "lucide-react"
 import { Card, CardContent, Button, Input, Modal, Select, StatCard } from "@/components/ui";
 import { QtyInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import ServerPager from "@/components/shared/ServerPager";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 import { createCustomsUsageGridColumns, type UsageReport } from "./customsUsageColumns";
+
+/** 서버 페이지당 건수 */
+const PAGE_SIZE = 50;
 
 export default function CustomsUsagePage() {
   const { t } = useTranslation();
   const [data, setData] = useState<UsageReport[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  // 이력성 조회 — 조건 없는 전량 조회 금지: 기본 사용일 당일
+  const [fromDate, setFromDate] = useState(() => getTodayLocal());
+  const [toDate, setToDate] = useState(() => getTodayLocal());
   const [form, setForm] = useState({ lotEntryNo: "", lotMatUid: "", usageQty: "", jobOrderNo: "", remark: "" });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
+      const params: Record<string, string> = { page: String(page), limit: String(PAGE_SIZE) };
       if (searchTerm) params.search = searchTerm;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/customs/usage", { params });
       setData(res.data?.data ?? []);
+      setTotal(res.data?.meta?.total ?? 0);
     } catch {
       setData([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [searchTerm]);
+  }, [searchTerm, fromDate, toDate, page]);
 
+  useEffect(() => { setPage(1); }, [searchTerm, fromDate, toDate]);
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleSave = useCallback(async () => {
@@ -117,6 +133,7 @@ export default function CustomsUsagePage() {
           data={data}
           columns={columns}
           isLoading={loading}
+          pageSize={PAGE_SIZE}
           enableColumnFilter
           enableExport
           exportFileName={t("customs.usage.title")}
@@ -125,6 +142,8 @@ export default function CustomsUsagePage() {
               <div className="flex-1 min-w-0">
                 <Input placeholder={t("customs.usage.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
+              <DateRangeFilter from={fromDate} to={toDate} onFromChange={setFromDate} onToChange={setToDate} className="flex-shrink-0" />
+              <ServerPager page={page} limit={PAGE_SIZE} total={total} onPageChange={setPage} disabled={loading} className="flex-shrink-0" />
             </div>
           }
         

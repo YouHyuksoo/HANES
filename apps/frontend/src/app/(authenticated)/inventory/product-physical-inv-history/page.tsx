@@ -16,9 +16,13 @@ import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { WarehouseSelect } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import ServerPager from "@/components/shared/ServerPager";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
 import { createProductPhysicalInvHistoryGridColumns } from "./productPhysicalInvHistoryColumns";
+
+/** 서버 페이지당 건수 */
+const PAGE_SIZE = 50;
 
 interface InvHistoryItem {
   id: string;
@@ -39,6 +43,8 @@ interface InvHistoryItem {
 export default function ProductPhysicalInvHistoryPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<InvHistoryItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState("");
@@ -48,20 +54,23 @@ export default function ProductPhysicalInvHistoryPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
+      const params: Record<string, string> = { page: String(page), limit: String(PAGE_SIZE) };
       if (searchText) params.search = searchText;
       if (warehouseFilter) params.warehouseCode = warehouseFilter;
       if (fromDate) params.fromDate = fromDate;
       if (toDate) params.toDate = toDate;
       const res = await api.get("/inventory/product-physical-inv/history", { params });
       setData(res.data?.data ?? []);
+      setTotal(res.data?.meta?.total ?? 0);
     } catch {
       setData([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [searchText, warehouseFilter, fromDate, toDate]);
+  }, [searchText, warehouseFilter, fromDate, toDate, page]);
 
+  useEffect(() => { setPage(1); }, [searchText, warehouseFilter, fromDate, toDate]);
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const stats = useMemo(() => ({
@@ -102,7 +111,7 @@ export default function ProductPhysicalInvHistoryPage() {
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter rowClassName={rowClassName} enableExport exportFileName={t("inventory.productPhysicalInvHistory.title")}
+        <DataGrid data={data} columns={columns} isLoading={loading} pageSize={PAGE_SIZE} enableColumnFilter rowClassName={rowClassName} enableExport exportFileName={t("inventory.productPhysicalInvHistory.title")}
           toolbarLeft={
             <div className="flex gap-3 flex-1 min-w-0">
               <div className="flex-1 min-w-0">
@@ -120,8 +129,9 @@ export default function ProductPhysicalInvHistoryPage() {
                 onToChange={setEndDate}
                 className="flex-shrink-0"
               />
+              <ServerPager page={page} limit={PAGE_SIZE} total={total} onPageChange={setPage} disabled={loading} className="flex-shrink-0" />
             </div>
-          } 
+          }
           sqlQuery={`SELECT *\nFROM PROD_PHYSICAL_INV_HIST\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
     </div>

@@ -15,9 +15,15 @@ import { useTranslation } from "react-i18next";
 import { RefreshCw, Search, RotateCcw, ArrowDownCircle, ArrowUpCircle, Network } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, Select } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import ServerPager from "@/components/shared/ServerPager";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 import { createInterfaceLogGridColumns } from "./interfaceLogColumns";
 import type { InterLog } from "./types";
+
+/** 서버 페이지 크기 */
+const PAGE_SIZE = 200;
 
 const statusColors: Record<string, string> = {
   SUCCESS: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
@@ -29,6 +35,7 @@ const statusColors: Record<string, string> = {
 export default function InterfaceLogPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<InterLog[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const statusLabels: Record<string, string> = useMemo(() => ({
@@ -49,24 +56,34 @@ export default function InterfaceLogPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [directionFilter, setDirectionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  // 송수신일 구간 — 이력성 화면은 날짜 구간이 필수, 기본 당일
+  const [fromDate, setFromDate] = useState(() => getTodayLocal());
+  const [toDate, setToDate] = useState(() => getTodayLocal());
+  const [page, setPage] = useState(1);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<InterLog | null>(null);
+
+  useEffect(() => { setPage(1); }, [searchTerm, directionFilter, statusFilter, fromDate, toDate]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
+      const params: Record<string, string> = { page: String(page), limit: String(PAGE_SIZE) };
       if (searchTerm) params.search = searchTerm;
       if (directionFilter) params.direction = directionFilter;
       if (statusFilter) params.status = statusFilter;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/interface/logs", { params });
       setData(res.data?.data ?? []);
+      setTotal(Number(res.data?.meta?.total ?? 0));
     } catch {
       setData([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, directionFilter, statusFilter]);
+  }, [page, searchTerm, directionFilter, statusFilter, fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -96,9 +113,12 @@ export default function InterfaceLogPage() {
           <h1 className="text-xl font-bold text-text flex items-center gap-2"><Network className="w-7 h-7 text-primary" />{t("interface.log.title")}</h1>
           <p className="text-text-muted mt-1">{t("interface.log.description")}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={fetchData}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-        </Button>
+        <div className="flex items-center gap-3">
+          <ServerPager page={page} limit={PAGE_SIZE} total={total} onPageChange={setPage} />
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
+        </div>
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
@@ -111,6 +131,14 @@ export default function InterfaceLogPage() {
           exportFileName={t("interface.log.title")}
           toolbarLeft={
             <div className="flex gap-3 flex-1 min-w-0">
+              <DateRangeFilter
+                from={fromDate}
+                to={toDate}
+                onFromChange={setFromDate}
+                onToChange={setToDate}
+                presets
+                className="flex-shrink-0"
+              />
               <div className="flex-1 min-w-0">
                 <Input placeholder={t("interface.log.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>

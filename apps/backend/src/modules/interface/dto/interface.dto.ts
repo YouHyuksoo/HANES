@@ -52,6 +52,11 @@ export class InterLogQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   sort?: string;
+
+  @ApiPropertyOptional({ description: '검색어 (인터페이스ID/오류메시지)' })
+  @IsOptional()
+  @IsString()
+  search?: string;
 }
 
 // ============================================================================

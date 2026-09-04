@@ -23,3 +23,11 @@ test('pm result columns keep required accessors and display rules', () => {
   assert.match(columns, /resultColors/);
   assert.match(columns, /priorityColors/);
 });
+
+test('pm result page enforces default date range + server paging (no unconditional full load)', () => {
+  assert.doesNotMatch(page, /limit:\s*["']5000["']/);
+  assert.match(page, /getTodayLocal/);
+  assert.match(page, /DateRangeFilter/);
+  assert.match(page, /ServerPager/);
+  assert.match(page, /page:\s*String\(page\)/);
+});

@@ -18,15 +18,15 @@ import {
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import ServerPager from "@/components/shared/ServerPager";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 import { createInspectHistoryGridColumns } from "./inspectHistoryColumns";
 import type { InspectHistory } from "./types";
 
-const todayStr = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
+/** 서버 페이지 크기 */
+const PAGE_SIZE = 200;
 
 const inspectHistorySqlPreview = `SELECT
   log.*,
@@ -46,19 +46,23 @@ export default function InspectHistoryPage() {
   const { t } = useTranslation();
 
   const [data, setData] = useState<InspectHistory[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [equipTypeFilter, setEquipTypeFilter] = useState("");
   const [resultFilter, setResultFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState(todayStr);
-  const [dateTo, setDateTo] = useState(todayStr);
+  // 점검일 구간 — 이력 화면은 날짜 구간이 필수, 기본 당일
+  const [dateFrom, setDateFrom] = useState(() => getTodayLocal());
+  const [dateTo, setDateTo] = useState(() => getTodayLocal());
+  const [page, setPage] = useState(1);
 
+  useEffect(() => { setPage(1); }, [searchText, typeFilter, equipTypeFilter, resultFilter, dateFrom, dateTo]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
+      const params: Record<string, string> = { page: String(page), limit: String(PAGE_SIZE) };
       if (searchText) params.search = searchText;
       if (typeFilter) params.inspectType = typeFilter;
       if (equipTypeFilter) params.equipType = equipTypeFilter;
@@ -67,12 +71,14 @@ export default function InspectHistoryPage() {
       if (dateTo) params.inspectDateTo = dateTo;
       const res = await api.get("/equipment/inspect-history", { params });
       setData(res.data?.data ?? []);
+      setTotal(Number(res.data?.meta?.total ?? 0));
     } catch {
       setData([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [searchText, typeFilter, equipTypeFilter, resultFilter, dateFrom, dateTo]);
+  }, [page, searchText, typeFilter, equipTypeFilter, resultFilter, dateFrom, dateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -87,9 +93,12 @@ export default function InspectHistoryPage() {
           </h1>
           <p className="text-text-muted mt-1">{t("equipment.inspectHistory.subtitle")}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={fetchData}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-        </Button>
+        <div className="flex items-center gap-3">
+          <ServerPager page={page} limit={PAGE_SIZE} total={total} onPageChange={setPage} />
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
+        </div>
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">

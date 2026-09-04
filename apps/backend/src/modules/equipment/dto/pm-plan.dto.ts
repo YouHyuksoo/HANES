@@ -362,4 +362,14 @@ export class PmWorkOrderQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({ description: '예정일 시작 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  fromDate?: string;
+
+  @ApiPropertyOptional({ description: '예정일 종료 (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  toDate?: string;
 }

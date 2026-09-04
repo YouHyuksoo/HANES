@@ -98,4 +98,67 @@ describe('MsaService', () => {
       await expect(target.deleteCalibration('CAL-999')).rejects.toThrow(NotFoundException);
     });
   });
+
+  describe('findAllCalibrations', () => {
+    const createQb = (rows: any[], total: number) => {
+      const qb: any = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(total),
+        getMany: jest.fn().mockResolvedValue(rows),
+      };
+      return qb;
+    };
+
+    it('조회기간(fromDate/toDate)을 날짜 경계 조건으로 적용한다', async () => {
+      const qb = createQb([], 0);
+      mockCalRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await target.findAllCalibrations(
+        { page: 1, limit: 50, fromDate: '2026-09-01', toDate: '2026-09-04' } as any,
+        'C1',
+        'P1',
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith('c.calibrationDate >= :dateFrom', expect.objectContaining({ dateFrom: expect.any(Date) }));
+      expect(qb.andWhere).toHaveBeenCalledWith('c.calibrationDate <= :dateTo', expect.objectContaining({ dateTo: expect.any(Date) }));
+    });
+
+    it('날짜 없이 호출하면 날짜 조건 없이 전체(테넌트 범위 내) 조회한다', async () => {
+      const qb = createQb([], 0);
+      mockCalRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await target.findAllCalibrations({ page: 1, limit: 50 } as any, 'C1', 'P1');
+
+      const dateCalls = qb.andWhere.mock.calls.filter((c: any[]) => String(c[0]).includes('calibrationDate'));
+      expect(dateCalls.length).toBe(0);
+    });
+
+    it('search 파라미터로 교정번호/계측기코드/계측기명을 LIKE 검색한다', async () => {
+      const qb = createQb([], 0);
+      mockCalRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await target.findAllCalibrations({ page: 1, limit: 50, search: 'cal-01' } as any, 'C1', 'P1');
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('c.calibrationNo'),
+        { search: '%CAL-01%' },
+      );
+    });
+
+    it('page/limit 로 서버 페이징하고 total/page/limit 을 반환한다', async () => {
+      const rows = [{ calibrationNo: 'CAL-1' }];
+      const qb = createQb(rows, 7);
+      mockCalRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await target.findAllCalibrations({ page: 2, limit: 3 } as any, 'C1', 'P1');
+
+      expect(qb.skip).toHaveBeenCalledWith(3);
+      expect(qb.take).toHaveBeenCalledWith(3);
+      expect(result).toEqual({ data: rows, total: 7, page: 2, limit: 3 });
+    });
+  });
 });

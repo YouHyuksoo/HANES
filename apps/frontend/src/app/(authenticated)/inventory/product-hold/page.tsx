@@ -19,17 +19,26 @@ import { Card, CardContent, Button, Input, Select, Modal, StatCard } from "@/com
 import { ComCodeBadge } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
+import ServerPager from "@/components/shared/ServerPager";
 import api from "@/services/api";
 import { createProductHoldGridColumns, type ProductHoldStock } from "./productHoldColumns";
+
+/** 서버 페이지당 건수 */
+const PAGE_SIZE = 50;
+/** 현재상태 화면의 기본 활성 조건 — 보류중 재고 */
+const DEFAULT_STATUS_FILTER = "HOLD";
 
 export default function ProductHoldPage() {
   const { t } = useTranslation();
 
   const [data, setData] = useState<ProductHoldStock[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  // 기본은 보류중(HOLD)만 — 정상/전체를 볼 때도 서버 페이징으로 나눠 받는다.
+  const [statusFilter, setStatusFilter] = useState(DEFAULT_STATUS_FILTER);
   const [typeFilter, setTypeFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStock, setSelectedStock] = useState<ProductHoldStock | null>(null);
@@ -39,19 +48,22 @@ export default function ProductHoldPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
+      const params: Record<string, string> = { page: String(page), limit: String(PAGE_SIZE) };
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
       if (typeFilter) params.itemType = typeFilter;
       const res = await api.get("/inventory/product-hold", { params });
       setData(res.data?.data ?? []);
+      setTotal(res.data?.meta?.total ?? 0);
     } catch {
       setData([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter, typeFilter]);
+  }, [searchText, statusFilter, typeFilter, page]);
 
+  useEffect(() => { setPage(1); }, [searchText, statusFilter, typeFilter]);
   useEffect(() => { fetchData(); }, [fetchData]);
 
 
@@ -114,6 +126,7 @@ export default function ProductHoldPage() {
           data={data}
           columns={columns}
           isLoading={loading}
+          pageSize={PAGE_SIZE}
           enableColumnFilter
           enableExport
           exportFileName={t("productHold.title")}
@@ -134,6 +147,7 @@ export default function ProductHoldPage() {
               <div className="w-32 flex-shrink-0">
                 <ComCodeSelect groupCode="PRODUCT_HOLD_STATUS" labelPrefix={t('common.status')} value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
+              <ServerPager page={page} limit={PAGE_SIZE} total={total} onPageChange={setPage} disabled={loading} className="flex-shrink-0" />
             </div>
           }
         

@@ -257,4 +257,9 @@ export class CalibrationFilterDto extends PaginationQueryDto {
   @IsOptional()
   @IsDateString()
   toDate?: string;
+
+  @ApiPropertyOptional({ description: '검색어 (교정번호/계측기코드/계측기명)' })
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

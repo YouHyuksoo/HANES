@@ -95,6 +95,40 @@ describe('InterfaceService', () => {
         seq: 7,
       }));
     });
+
+    it('fromDate/toDate 구간을 createdAt where 조건으로 적용한다 (search 없음)', async () => {
+      mockLogRepo.find.mockResolvedValue([]);
+      mockLogRepo.count.mockResolvedValue(0);
+
+      await target.findAllLogs({ page: 1, limit: 10, fromDate: '2026-09-01', toDate: '2026-09-04' } as any, 'C1', 'P1');
+
+      expect(mockLogRepo.find).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ createdAt: expect.anything() }),
+      }));
+    });
+
+    it('search 파라미터가 있으면 queryBuilder로 interfaceId/errorMsg 를 LIKE 검색한다', async () => {
+      const qb = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        clone: jest.fn(),
+        getMany: jest.fn().mockResolvedValue([]),
+        getCount: jest.fn().mockResolvedValue(0),
+      };
+      qb.clone.mockReturnValue(qb);
+      mockLogRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await target.findAllLogs({ page: 1, limit: 10, search: 'if-01' } as any, 'C1', 'P1');
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('log.interfaceId'),
+        { search: '%IF-01%' },
+      );
+      expect(qb.skip).toHaveBeenCalledWith(0);
+      expect(qb.take).toHaveBeenCalledWith(10);
+    });
   });
 
   // ─── findLogById ───

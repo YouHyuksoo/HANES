@@ -25,7 +25,7 @@ import {
   ExecutePmWorkOrderDto,
   PmWorkOrderQueryDto,
 } from '../dto/pm-plan.dto';
-import { parseDateStart } from '../../../shared/date.util';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
 
@@ -496,7 +496,7 @@ export class PmPlanService {
 
   /** WO 목록 조회 */
   async findAllWorkOrders(query: PmWorkOrderQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 50, equipCode, status, search } = query;
+    const { page = 1, limit = 50, equipCode, status, search, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.pmWorkOrderRepo.createQueryBuilder('wo');
@@ -509,6 +509,11 @@ export class PmPlanService {
       const upper = search.toUpperCase();
       qb.andWhere('wo.workOrderNo LIKE :search', { search: `%${upper}%` });
     }
+    // 예정일 구간(로컬 날짜, 종료일 당일 포함) — 프론트가 기본 당일을 보내 전량 조회를 막는다
+    const dateFrom = parseDateStart(fromDate);
+    const dateTo = parseDateEnd(toDate);
+    if (dateFrom) qb.andWhere('wo.scheduledDate >= :dateFrom', { dateFrom });
+    if (dateTo) qb.andWhere('wo.scheduledDate <= :dateTo', { dateTo });
 
     const total = await qb.getCount();
 

@@ -25,7 +25,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual } from 'typeorm';
 import { GaugeMaster } from '../../../../entities/gauge-master.entity';
 import { CalibrationLog } from '../../../../entities/calibration-log.entity';
-import { parseDateStart } from '../../../../shared/date.util';
+import { parseDateStart, parseDateEnd } from '../../../../shared/date.util';
 import { NumberingService } from '../../../../shared/numbering.service';
 import {
   CreateGaugeDto,
@@ -227,6 +227,7 @@ export class MsaService {
       result,
       fromDate,
       toDate,
+      search,
     } = query;
 
     const qb = this.calRepo
@@ -240,11 +241,17 @@ export class MsaService {
       qb.andWhere('c.calibrationType = :calibrationType', { calibrationType });
     }
     if (result) qb.andWhere('c.result = :result', { result });
-    if (fromDate && toDate) {
-      qb.andWhere('c.calibrationDate BETWEEN :fromDate AND :toDate', {
-        fromDate: new Date(`${fromDate}T00:00:00`),
-        toDate: new Date(`${toDate}T23:59:59`),
-      });
+    // 교정일 구간(로컬 날짜, 종료일 당일 포함) — 프론트가 기본 당일을 보내 전량 조회를 막는다
+    const dateFrom = parseDateStart(fromDate);
+    const dateTo = parseDateEnd(toDate);
+    if (dateFrom) qb.andWhere('c.calibrationDate >= :dateFrom', { dateFrom });
+    if (dateTo) qb.andWhere('c.calibrationDate <= :dateTo', { dateTo });
+    const trimmedSearch = search?.trim();
+    if (trimmedSearch) {
+      qb.andWhere(
+        '(UPPER(c.calibrationNo) LIKE :search OR UPPER(c.gaugeCode) LIKE :search OR UPPER(COALESCE(g.gaugeName, \'\')) LIKE :search)',
+        { search: `%${trimmedSearch.toUpperCase()}%` },
+      );
     }
 
     qb.orderBy('c.calibrationDate', 'DESC');

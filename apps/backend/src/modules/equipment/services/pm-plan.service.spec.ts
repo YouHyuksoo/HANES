@@ -86,6 +86,48 @@ describe('PmPlanService', () => {
     });
   });
 
+  describe('findAllWorkOrders', () => {
+    it('예정일 구간(fromDate/toDate)을 날짜 경계 조건으로 적용한다', async () => {
+      const qb = mockQueryBuilder([]);
+      mockWoRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await target.findAllWorkOrders(
+        { page: 1, limit: 50, fromDate: '2026-09-01', toDate: '2026-09-04' } as any,
+        'CO',
+        'P01',
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith('wo.scheduledDate >= :dateFrom', expect.objectContaining({ dateFrom: expect.any(Date) }));
+      expect(qb.andWhere).toHaveBeenCalledWith('wo.scheduledDate <= :dateTo', expect.objectContaining({ dateTo: expect.any(Date) }));
+    });
+
+    it('날짜 없이 호출하면 날짜 조건 없이 조회한다', async () => {
+      const qb = mockQueryBuilder([]);
+      mockWoRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await target.findAllWorkOrders({ page: 1, limit: 50 } as any, 'CO', 'P01');
+
+      const dateCalls = qb.andWhere.mock.calls.filter((c: any[]) => String(c[0]).includes('scheduledDate'));
+      expect(dateCalls.length).toBe(0);
+    });
+
+    it('page/limit 로 서버 페이징하고 total/page/limit 을 반환한다', async () => {
+      const wo = { workOrderNo: 'WO-1', equipCode: 'EQ-001', company: 'CO', plant: 'P01' };
+      const qb = mockQueryBuilder([wo]);
+      qb.getCount = jest.fn().mockResolvedValue(9);
+      mockWoRepo.createQueryBuilder.mockReturnValue(qb);
+      mockEquipRepo.find.mockResolvedValue([{ equipCode: 'EQ-001', equipName: 'Equip' }] as any);
+
+      const result = await target.findAllWorkOrders({ page: 2, limit: 5 } as any, 'CO', 'P01');
+
+      expect(qb.skip).toHaveBeenCalledWith(5);
+      expect(qb.take).toHaveBeenCalledWith(5);
+      expect(result.total).toBe(9);
+      expect(result.page).toBe(2);
+      expect(result.limit).toBe(5);
+    });
+  });
+
   describe('findPlanById', () => {
     it('should return plan with equip', async () => {
       mockPlanRepo.findOne.mockResolvedValue({ planCode: 'PM-001', equipCode: 'EQ-001', items: [] } as any);

@@ -29,3 +29,10 @@ test('inspect history data columns carry field help headers', () => {
     assert.match(columns, new RegExp(`header:\\s*headerWithHelp\\('${key}'`), `${key} 헤더 도움말 누락`);
   }
 });
+
+test('inspect history page enforces default date range + server paging (no unconditional full load)', () => {
+  assert.doesNotMatch(page, /limit:\s*["']5000["']/);
+  assert.match(page, /getTodayLocal/);
+  assert.match(page, /ServerPager/);
+  assert.match(page, /page:\s*String\(page\)/);
+});

@@ -19,3 +19,12 @@ test('calibration history columns keep required accessors and status helpers', (
   assert.match(columns, /StatusHeaderHelp/);
   assert.match(columns, /StatusBadge/);
 });
+
+test('calibration history page enforces default date range + server paging (no unconditional full load)', () => {
+  assert.doesNotMatch(page, /limit:\s*["']5000["']/);
+  assert.match(page, /getTodayLocal/);
+  assert.match(page, /DateRangeFilter/);
+  assert.match(page, /ServerPager/);
+  assert.match(page, /params\.fromDate\s*=\s*fromDate/);
+  assert.match(page, /params\.toDate\s*=\s*toDate/);
+});

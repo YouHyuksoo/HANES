@@ -22,3 +22,11 @@ test('interface log columns keep required accessors and action wiring', () => {
   assert.match(columns, /StatusHeaderHelp/);
   assert.match(columns, /StatusBadge/);
 });
+
+test('interface log page enforces default date range + server paging (no unconditional full load)', () => {
+  assert.doesNotMatch(page, /limit:\s*["']5000["']/);
+  assert.match(page, /getTodayLocal/);
+  assert.match(page, /DateRangeFilter/);
+  assert.match(page, /ServerPager/);
+  assert.match(page, /page:\s*String\(page\)/);
+});

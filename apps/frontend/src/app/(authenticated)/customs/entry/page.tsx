@@ -15,34 +15,50 @@ import { Plus, Eye, RefreshCw, FileText, Search, CheckCircle, Package, Layers } 
 import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import ServerPager from "@/components/shared/ServerPager";
 import { createCustomsEntryGridColumns, type CustomsEntry } from "./customsEntryColumns";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
+
+/** 서버 페이지당 건수 */
+const PAGE_SIZE = 50;
 
 export default function CustomsEntryPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<CustomsEntry[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<CustomsEntry | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  // 이력성 조회 — 조건 없는 전량 조회 금지: 기본 신고일 당일
+  const [fromDate, setFromDate] = useState(() => getTodayLocal());
+  const [toDate, setToDate] = useState(() => getTodayLocal());
   const [form, setForm] = useState({ entryNo: "", blNo: "", invoiceNo: "", origin: "", hsCode: "", totalAmount: "", currency: "USD", declarationDate: "", clearanceDate: "", status: "PENDING" });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
+      const params: Record<string, string> = { page: String(page), limit: String(PAGE_SIZE) };
       if (searchTerm) params.search = searchTerm;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/customs/entries", { params });
       setData(res.data?.data ?? []);
+      setTotal(res.data?.meta?.total ?? 0);
     } catch {
       setData([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [searchTerm]);
+  }, [searchTerm, fromDate, toDate, page]);
 
+  useEffect(() => { setPage(1); }, [searchTerm, fromDate, toDate]);
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const openEdit = useCallback((entry: CustomsEntry) => {
@@ -112,6 +128,7 @@ export default function CustomsEntryPage() {
           data={data}
           columns={columns}
           isLoading={loading}
+          pageSize={PAGE_SIZE}
           enableColumnFilter
           enableExport
           exportFileName={t("customs.entry.title")}
@@ -120,6 +137,8 @@ export default function CustomsEntryPage() {
               <div className="flex-1 min-w-0">
                 <Input placeholder={t("customs.entry.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
+              <DateRangeFilter from={fromDate} to={toDate} onFromChange={setFromDate} onToChange={setToDate} className="flex-shrink-0" />
+              <ServerPager page={page} limit={PAGE_SIZE} total={total} onPageChange={setPage} disabled={loading} className="flex-shrink-0" />
             </div>
           }
         

@@ -11,7 +11,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThanOrEqual, Between, In, EntityManager } from 'typeorm';
+import { Repository, MoreThanOrEqual, LessThanOrEqual, Between, In, EntityManager } from 'typeorm';
 import { TransactionService } from '../../../shared/transaction.service';
 import { OracleService } from '../../../common/services/oracle.service';
 import { InterLog } from '../../../entities/inter-log.entity';
@@ -87,29 +87,56 @@ export class InterfaceService {
   }
 
   async findAllLogs(query: InterLogQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, direction, messageType, status, fromDate, toDate } = query;
+    const { page = 1, limit = 10, direction, messageType, status, fromDate, toDate, search } = query;
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = {
-      ...(company && { company }),
-      ...(plant && { plant }),
-      ...(direction && { direction }),
-      ...(messageType && { messageType }),
-      ...(status && { status }),
-      ...(fromDate && toDate && {
-        createdAt: Between(parseDateStart(fromDate)!, parseDateEnd(toDate)!),
-      }),
-    };
+    // 송수신일 구간(로컬 날짜, 종료일 당일 포함) — 프론트가 기본 당일을 보내 전량 조회를 막는다
+    const dateFrom = parseDateStart(fromDate);
+    const dateTo = parseDateEnd(toDate);
+    const createdAtWhere = dateFrom && dateTo ? Between(dateFrom, dateTo)
+      : dateFrom ? MoreThanOrEqual(dateFrom)
+      : dateTo ? LessThanOrEqual(dateTo)
+      : undefined;
 
-    const [data, total] = await Promise.all([
-      this.interLogRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { createdAt: 'DESC' },
-      }),
-      this.interLogRepository.count({ where }),
-    ]);
+    const trimmedSearch = search?.trim();
+    let data: InterLog[];
+    let total: number;
+
+    if (trimmedSearch) {
+      const qb = this.interLogRepository.createQueryBuilder('log');
+      if (company) qb.andWhere('log.company = :company', { company });
+      if (plant) qb.andWhere('log.plant = :plant', { plant });
+      if (direction) qb.andWhere('log.direction = :direction', { direction });
+      if (messageType) qb.andWhere('log.messageType = :messageType', { messageType });
+      if (status) qb.andWhere('log.status = :status', { status });
+      if (dateFrom) qb.andWhere('log.createdAt >= :dateFrom', { dateFrom });
+      if (dateTo) qb.andWhere('log.createdAt <= :dateTo', { dateTo });
+      qb.andWhere(
+        '(UPPER(COALESCE(log.interfaceId, \'\')) LIKE :search OR UPPER(COALESCE(log.errorMsg, \'\')) LIKE :search)',
+        { search: `%${trimmedSearch.toUpperCase()}%` },
+      );
+      total = await qb.clone().getCount();
+      data = await qb.orderBy('log.createdAt', 'DESC').skip(skip).take(limit).getMany();
+    } else {
+      const where: Record<string, unknown> = {
+        ...(company && { company }),
+        ...(plant && { plant }),
+        ...(direction && { direction }),
+        ...(messageType && { messageType }),
+        ...(status && { status }),
+        ...(createdAtWhere && { createdAt: createdAtWhere }),
+      };
+
+      [data, total] = await Promise.all([
+        this.interLogRepository.find({
+          where,
+          skip,
+          take: limit,
+          order: { createdAt: 'DESC' },
+        }),
+        this.interLogRepository.count({ where }),
+      ]);
+    }
 
     return { data: data.map((log) => this.logWithClientId(log)), total, page, limit };
   }

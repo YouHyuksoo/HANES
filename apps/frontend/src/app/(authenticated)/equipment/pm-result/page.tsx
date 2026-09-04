@@ -18,41 +18,58 @@ import {
 } from "lucide-react";
 import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
+import ServerPager from "@/components/shared/ServerPager";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 import { createPmResultGridColumns } from "./pmResultColumns";
 import type { WoRow } from "./types";
+
+/** 서버 페이지 크기 */
+const PAGE_SIZE = 200;
 
 export default function PmResultPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<WoRow[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  // 예정일 구간 — 이력성 화면은 날짜 구간이 필수, 기본 당일
+  const [fromDate, setFromDate] = useState(() => getTodayLocal());
+  const [toDate, setToDate] = useState(() => getTodayLocal());
+  const [page, setPage] = useState(1);
+
+  useEffect(() => { setPage(1); }, [searchText, statusFilter, fromDate, toDate]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
+      const params: Record<string, string> = { page: String(page), limit: String(PAGE_SIZE) };
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
+      if (fromDate) params.fromDate = fromDate;
+      if (toDate) params.toDate = toDate;
       const res = await api.get("/equipment/pm-work-orders", { params });
       setData(res.data?.data ?? []);
+      setTotal(Number(res.data?.meta?.total ?? 0));
     } catch {
       setData([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter]);
+  }, [page, searchText, statusFilter, fromDate, toDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const stats = useMemo(() => ({
-    total: data.length,
+    total,
     completed: data.filter(d => d.status === "COMPLETED").length,
     planned: data.filter(d => d.status === "PLANNED" || d.status === "IN_PROGRESS").length,
     overdue: data.filter(d => d.status === "OVERDUE").length,
-  }), [data]);
+  }), [data, total]);
 
   const columns = useMemo(() => createPmResultGridColumns(t), [t]);
 
@@ -65,9 +82,12 @@ export default function PmResultPage() {
           </h1>
           <p className="text-text-muted mt-1">{t("equipment.pmResult.subtitle", "예방보전 Work Order 실행 결과를 조회합니다.")}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={fetchData}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
-        </Button>
+        <div className="flex items-center gap-3">
+          <ServerPager page={page} limit={PAGE_SIZE} total={total} onPageChange={setPage} />
+          <Button variant="secondary" size="sm" onClick={fetchData}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-3 flex-shrink-0">
@@ -82,6 +102,15 @@ export default function PmResultPage() {
           enableExport exportFileName={t("equipment.pmResult.title", "PM보전결과")}
           toolbarLeft={
             <div className="flex gap-3 flex-1 min-w-0">
+              <DateRangeFilter
+                from={fromDate}
+                to={toDate}
+                onFromChange={setFromDate}
+                onToChange={setToDate}
+                presets
+                label={t("equipment.pmResult.scheduledDate", "예정일")}
+                className="flex-shrink-0"
+              />
               <div className="flex-1 min-w-0">
                 <Input placeholder={t("equipment.pmResult.searchPlaceholder", "WO번호, 설비코드 검색...")}
                   value={searchText} onChange={e => setSearchText(e.target.value)}
@@ -92,7 +121,7 @@ export default function PmResultPage() {
                   value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
             </div>
-          } 
+          }
           sqlQuery={`SELECT *\nFROM PM_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>
       </CardContent></Card>
     </div>
