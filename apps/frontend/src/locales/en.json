@@ -4432,7 +4432,19 @@
       "typeContinuity": "Continuity Inspection",
       "inspectType": "Inspection Type",
       "title": "Inspection History",
-      "subtitle": "View visual, terminal, and continuity inspection history"
+      "subtitle": "View visual, terminal, and continuity inspection history",
+      "viewChart": "View as Chart",
+      "viewGrid": "View as List",
+      "chart": {
+        "total": "Total Inspections",
+        "passRate": "Pass Rate",
+        "trendHourly": "Hourly Inspection Trend",
+        "trendDaily": "Daily Inspection Trend",
+        "byType": "Results by Inspection Type",
+        "topDefects": "Top Defect Codes",
+        "failCount": "Fail Count",
+        "noData": "No data"
+      }
     },
     "structure": {
       "selectLabel": "Select FG Label",

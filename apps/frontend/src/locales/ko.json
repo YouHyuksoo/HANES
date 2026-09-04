@@ -4952,7 +4952,19 @@
       "typeContinuity": "통전검사",
       "inspectType": "검사유형",
       "title": "검사이력",
-      "subtitle": "외관검사, 단자검사, 통전검사 이력 조회"
+      "subtitle": "외관검사, 단자검사, 통전검사 이력 조회",
+      "viewChart": "차트로 보기",
+      "viewGrid": "목록으로 보기",
+      "chart": {
+        "total": "총 검사",
+        "passRate": "합격률",
+        "trendHourly": "시간대별 검사 추이",
+        "trendDaily": "일별 검사 추이",
+        "byType": "검사유형별 결과",
+        "topDefects": "상위 불량코드",
+        "failCount": "불합격 건수",
+        "noData": "데이터 없음"
+      }
     },
     "structure": {
       "selectLabel": "FG 라벨 선택",

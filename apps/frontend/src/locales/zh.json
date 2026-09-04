@@ -4432,7 +4432,19 @@
       "typeContinuity": "导通检验",
       "inspectType": "检验类型",
       "title": "检验履历",
-      "subtitle": "查询外观检验、端子检验、导通检验履历"
+      "subtitle": "查询外观检验、端子检验、导通检验履历",
+      "viewChart": "图表查看",
+      "viewGrid": "列表查看",
+      "chart": {
+        "total": "检验总数",
+        "passRate": "合格率",
+        "trendHourly": "按小时检验趋势",
+        "trendDaily": "按日检验趋势",
+        "byType": "按检验类型结果",
+        "topDefects": "主要不良代码",
+        "failCount": "不合格数量",
+        "noData": "无数据"
+      }
     },
     "structure": {
       "selectLabel": "选择FG标签",

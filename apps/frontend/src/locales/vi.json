@@ -4432,7 +4432,19 @@
       "typeContinuity": "Kiểm tra thông mạch",
       "inspectType": "Loại kiểm tra",
       "title": "Lịch sử kiểm tra",
-      "subtitle": "Tra cứu lịch sử kiểm tra ngoại quan, đầu cốt, thông mạch"
+      "subtitle": "Tra cứu lịch sử kiểm tra ngoại quan, đầu cốt, thông mạch",
+      "viewChart": "Xem biểu đồ",
+      "viewGrid": "Xem danh sách",
+      "chart": {
+        "total": "Tổng số kiểm tra",
+        "passRate": "Tỷ lệ đạt",
+        "trendHourly": "Xu hướng kiểm tra theo giờ",
+        "trendDaily": "Xu hướng kiểm tra theo ngày",
+        "byType": "Kết quả theo loại kiểm tra",
+        "topDefects": "Mã lỗi hàng đầu",
+        "failCount": "Số lượng không đạt",
+        "noData": "Không có dữ liệu"
+      }
     },
     "structure": {
       "selectLabel": "Chọn nhãn FG",
