@@ -43,7 +43,7 @@ test('PartSearchModal supports a larger multi-select picker with a bulk add acti
 
   assert.match(
     partSearchModal,
-    /size=\{multiSelect \? "2xl" : "xl"\}/,
+    /size=\{multiSelect \? "2xl" : modalSize\}/,
     'multi-select modal should open wider than the single-select modal',
   );
 

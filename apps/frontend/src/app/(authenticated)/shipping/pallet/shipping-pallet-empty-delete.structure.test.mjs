@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const pageSource = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+// 그리드 액션 컬럼 정의는 palletColumns.tsx 로 분리되어 있어 page 와 함께 검사한다
+const columnsSource = readFileSync(new URL("./palletColumns.tsx", import.meta.url), "utf8");
+const source = pageSource + columnsSource;
 
 test("pallet page can delete only empty OPEN pallets", () => {
   assert.match(source, /deletePalletTarget/, "page should keep a pallet delete confirmation target");
@@ -12,7 +15,7 @@ test("pallet page can delete only empty OPEN pallets", () => {
   assert.match(source, /!pallet\.shipmentId/, "delete eligibility should require no shipment assignment");
   assert.match(source, /api\.delete\(`\/shipping\/pallets\/\$\{deletePalletTarget\.palletNo\}`\)/, "delete should call the existing pallet delete API");
   assert.match(source, /setDeletePalletTarget\(pallet\)/, "grid action should open delete confirmation for eligible pallets");
-  assert.match(source, /빈 팔레트 삭제/, "page should label the action clearly");
+  assert.match(source, /shipping\.pallet\.deleteEmptyPallet/, "page should label the action with a translation key");
 });
 
 test("pallet page keeps toolbar controls aligned and narrows the included-box panel", () => {

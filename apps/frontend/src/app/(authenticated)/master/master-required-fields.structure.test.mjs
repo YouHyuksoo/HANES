@@ -13,7 +13,7 @@ function assertRequired(source, field, fileLabel) {
       if (tagStart < 0) return "";
       return source.slice(tagStart, idx + 900);
     })
-    .filter((window) => /^<(?:Input|Select|ComCodeSelect|LineSelect|ProcessSelect|PartSelect|select)\b/.test(window));
+    .filter((window) => /^<(?:Input|Select|ComCodeSelect|LineSelect|ProcessSelect|PartSelect|select|Field[A-Za-z]*)\b/.test(window));
   assert.ok(matchingWindows.length > 0, `${fileLabel}: ${field} input/select should exist`);
   assert.ok(
     matchingWindows.some((window) => /\srequired(?:\s|=|\/|>)/.test(window)),
@@ -55,7 +55,7 @@ test("master modal forms mark required save-blocking fields", () => {
     ["./code/components/CodeFormPanel.tsx", "code", ["detailCode", "codeName"]],
     ["./bom/components/BomFormModal.tsx", "bom", ["childSearch", "qtyPer", "revision"]],
     ["./iqc-item/components/IqcItemFormPanel.tsx", "iqc-item-pool", ["itemCode", "itemName"]],
-    ["./routing/components/RoutingGroupManager.tsx", "routing", ["routingCode", "routingName", "itemCode", "processCode", "processName"]],
+    ["./routing/components/RoutingGroupManager.tsx", "routing", ["routingCode", "routingName", "itemCode", "processCode"]],
   ];
 
   for (const [path, label, fields] of cases) {

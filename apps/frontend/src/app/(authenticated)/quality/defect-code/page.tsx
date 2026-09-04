@@ -292,33 +292,38 @@ export default function DefectCodeMasterPage() {
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(620px,1fr)_440px] gap-4">
         {/* 좌측: DataGrid */}
         <Card padding="none" className="min-h-0 overflow-hidden">
-          <CardContent className="h-full p-3">
-            <DataGrid
-              data={codes}
-              columns={columns}
-              isLoading={loading}
-              enableColumnFilter
-              enableExport
-              exportFileName={t("quality.defectCode.title", "불량코드관리")}
-              onRowClick={handleCodeSelect}
-              selectedRowId={selectedCode?.defectCode}
-              getRowId={(row) => row.defectCode}
-              toolbarLeft={
-                <div className="flex gap-2 flex-1 min-w-0">
-                  <div className="flex-1 min-w-0">
-                    <Input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder={t("quality.defectCode.search", "불량코드/불량명 검색")}
-                      fullWidth
-                    />
+          <CardContent className="h-full p-3 flex flex-col">
+            <div className="mb-2 flex-shrink-0 text-sm font-semibold text-text">
+              {t("quality.defectCode.allCodes", "등록된 불량 전체")}
+            </div>
+            <div className="flex-1 min-h-0" data-testid="defect-code-grid">
+              <DataGrid
+                data={codes}
+                columns={columns}
+                isLoading={loading}
+                enableColumnFilter
+                enableExport
+                exportFileName={t("quality.defectCode.title", "불량코드관리")}
+                onRowClick={handleCodeSelect}
+                selectedRowId={selectedCode?.defectCode}
+                getRowId={(row) => row.defectCode}
+                toolbarLeft={
+                  <div className="flex gap-2 flex-1 min-w-0">
+                    <div className="flex-1 min-w-0">
+                      <Input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder={t("quality.defectCode.search", "불량코드/불량명 검색")}
+                        fullWidth
+                      />
+                    </div>
+                    <Button variant="secondary" onClick={fetchCodes}>
+                      {t("common.search", "검색")}
+                    </Button>
                   </div>
-                  <Button variant="secondary" onClick={fetchCodes}>
-                    {t("common.search", "검색")}
-                  </Button>
-                </div>
-              }
-            />
+                }
+              />
+            </div>
           </CardContent>
         </Card>
 

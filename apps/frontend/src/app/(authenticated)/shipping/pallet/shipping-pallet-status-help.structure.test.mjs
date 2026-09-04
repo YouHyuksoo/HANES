@@ -2,15 +2,22 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const columnsSource = readFileSync(new URL("./palletColumns.tsx", import.meta.url), "utf8");
+const localesRoot = new URL("../../../../locales/", import.meta.url);
 
-test("pallet grid status column exposes detailed transition help with a question icon", () => {
-  assert.match(source, /HelpCircle/, "status header should use a question help icon");
-  assert.match(source, /const palletStatusHelpText/, "page should define detailed pallet status transition help");
-  for (const status of ["OPEN", "CLOSED", "LOADED", "SHIPPED"]) {
-    assert.match(source, new RegExp(`${status}:\\s*[^\\n]`), `${status} should be explained in the help text`);
+test("pallet grid status column exposes transition help via the shared StatusHeaderHelp", () => {
+  assert.match(columnsSource, /import StatusHeaderHelp from "@\/components\/shared\/StatusHeaderHelp"/, "status column should reuse the shared status help header component");
+  assert.match(
+    columnsSource,
+    /header:\s*\(\)\s*=>\s*<StatusHeaderHelp label=\{t\("common\.status"\)\} codeType="PALLET_STATUS"/,
+    "status column should render StatusHeaderHelp bound to the PALLET_STATUS common code",
+  );
+
+  for (const locale of ["ko", "en", "zh", "vi"]) {
+    const json = JSON.parse(readFileSync(new URL(`${locale}.json`, localesRoot), "utf8"));
+    for (const status of ["OPEN", "CLOSED", "LOADED", "SHIPPED"]) {
+      assert.ok(json.comCode?.PALLET_STATUS?.[status], `${locale} comCode.PALLET_STATUS.${status} should be defined`);
+      assert.ok(json.comCodeDesc?.PALLET_STATUS?.[status], `${locale} comCodeDesc.PALLET_STATUS.${status} should explain the state`);
+    }
   }
-  assert.match(source, /OPEN -> CLOSED -> LOADED -> SHIPPED/, "help text should show the main state transition");
-  assert.match(source, /CLOSED -> OPEN/, "help text should explain reopen transition");
-  assert.match(source, /header:\s*\(\)\s*=>\s*<PalletStatusHeader/, "status column should render the custom help header");
 });

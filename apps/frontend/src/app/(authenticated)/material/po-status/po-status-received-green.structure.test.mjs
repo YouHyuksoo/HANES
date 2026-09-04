@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const source = readFileSync(new URL("./poStatusColumns.tsx", import.meta.url), "utf8");
 
 test("PO status screen renders RECEIVED status as green even when com code color differs", () => {
   assert.match(
@@ -22,7 +22,7 @@ test("PO status screen renders RECEIVED status as green even when com code color
   );
   assert.match(
     source,
-    /isReceived\s*\?\s*poStatusMap\.RECEIVED\?\.codeName\s*\|\|\s*"입고완료"\s*:\s*poStatusMap\[s\]\?\.codeName\s*\|\|\s*s/,
+    /isReceived\s*\?\s*poStatusMap\.RECEIVED\?\.codeName\s*\|\|\s*t\("material\.poStatus\.stats\.received",\s*"입고완료"\)\s*:\s*poStatusMap\[s\]\?\.codeName\s*\|\|\s*s/,
     "입고율 100% 행은 좌측 상태 배지 문구도 입고완료로 표시해야 합니다.",
   );
   assert.match(

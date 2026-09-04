@@ -14,8 +14,8 @@ test('normalizes paged equipment response data into selectable options', () => {
   });
 
   assert.deepEqual(result, [
-    { equipCode: 'EQ-CUT-01', equipName: '자동재단기' },
-    { equipCode: 'EQ-ASM-01', equipName: '조립 지그' },
+    { equipCode: 'EQ-CUT-01', equipName: '자동재단기', currentJobOrderId: null, currentWorkerCodes: null },
+    { equipCode: 'EQ-ASM-01', equipName: '조립 지그', currentJobOrderId: null, currentWorkerCodes: null },
   ]);
 });
 
@@ -29,6 +29,6 @@ test('normalizes item-wrapped equipment response data into selectable options', 
   });
 
   assert.deepEqual(result, [
-    { equipCode: 'EQ-TEST-01', equipName: '검사기' },
+    { equipCode: 'EQ-TEST-01', equipName: '검사기', currentJobOrderId: null, currentWorkerCodes: null },
   ]);
 });

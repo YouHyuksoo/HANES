@@ -29,10 +29,9 @@ test('input kiosk restores current job order and workers from equipment master k
 test('input kiosk restores self inspection completion state from result history', () => {
   assert.match(source, /refreshSelfInspectStatus/);
   assert.match(source, /\/production\/self-inspect\/results\/\$\{encodeURIComponent\(selectedJobOrder\.orderNo\)\}/);
-  assert.match(source, /latestFirstInspectBatchPassed\(rows\)/);
-  assert.match(source, /setFirstInspectDone\(firstInspectPassed\)/);
-  assert.match(source, /setMidInspectDone\(doneTimings\.has\('MID'\)\)/);
-  assert.match(source, /setLastInspectDone\(doneTimings\.has\('LAST'\)\)/);
+  assert.match(source, /setFirstInspectDone\(latestInspectBatchPassed\(rows, 'FIRST'\)\)/);
+  assert.match(source, /setMidInspectDone\(latestInspectBatchPassed\(rows, 'MID'\)\)/);
+  assert.match(source, /setLastInspectDone\(latestInspectBatchPassed\(rows, 'LAST'\)\)/);
 });
 
 test('input kiosk ignores FIRST pending delegates for production blocking before mass production', () => {

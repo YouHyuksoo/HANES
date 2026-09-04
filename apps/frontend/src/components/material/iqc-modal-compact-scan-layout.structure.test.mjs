@@ -10,8 +10,12 @@ test('IQC modal uses expanded compact scanner-first layout', () => {
   assert.doesNotMatch(modalSource, /min-h-\[620px\]/);
   assert.match(modalSource, /className="grid min-h-0 flex-1 grid-cols-12 gap-2"/);
   assert.match(modalSource, /className="col-span-3 flex min-h-0 flex-col gap-2\.5 overflow-y-auto/);
-  assert.match(modalSource, /className="relative"/);
-  assert.match(modalSource, /className="h-9 w-full pl-8 pr-3 text-sm rounded-md/);
+  assert.match(modalSource, /import \{ BarcodeScanInput \} from "@\/components\/shared"/, 'serial scan input should use the common BarcodeScanInput component');
+  assert.match(
+    modalSource,
+    /<BarcodeScanInput\s+ref=\{serialScanInputRef\}[\s\S]*?onScan=\{handleSerialScan\}/,
+    'serial scan should be a single common scan-first input, not a manual icon+input layout',
+  );
 });
 
 test('IQC modal keeps judge body visible without separate bottom form blocks', () => {

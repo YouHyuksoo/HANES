@@ -56,16 +56,16 @@ test('defect code registration derives model group from selected level 2 categor
 });
 
 test('defect code grid separates category levels into three columns', () => {
-  const page = read('apps/frontend/src/app/(authenticated)/quality/defect-code/page.tsx');
-  assert.match(page, /categoryLevels\(row\.categoryCode\)/);
-  assert.match(page, /quality\.defectCode\.level1/);
-  assert.match(page, /quality\.defectCode\.level2/);
-  assert.match(page, /quality\.defectCode\.level3/);
-  assert.doesNotMatch(page, /quality\.defectCode\.categoryPath/);
-  assert.doesNotMatch(page, /categoryPath\(row\.categoryCode\)/);
-  assert.match(page, /\{levels\.level1\}/);
-  assert.match(page, /\{levels\.level2\}/);
-  assert.match(page, /\{levels\.level3\}/);
+  const columnsFile = read('apps/frontend/src/app/(authenticated)/quality/defect-code/defectCodeColumns.tsx');
+  assert.match(columnsFile, /categoryLevels\(row\.categoryCode\)/);
+  assert.match(columnsFile, /quality\.defectCode\.level1/);
+  assert.match(columnsFile, /quality\.defectCode\.level2/);
+  assert.match(columnsFile, /quality\.defectCode\.level3/);
+  assert.doesNotMatch(columnsFile, /quality\.defectCode\.categoryPath/);
+  assert.doesNotMatch(columnsFile, /categoryPath\(row\.categoryCode\)/);
+  assert.match(columnsFile, /\.level1/);
+  assert.match(columnsFile, /\.level2/);
+  assert.match(columnsFile, /\.level3/);
 });
 
 test('defect code page uses bounded flex height instead of viewport calc overflow', () => {
@@ -111,17 +111,22 @@ test('defect code master form labels do not expose raw database field keys', () 
 
 test('defect code master translates enum values instead of rendering raw keys', () => {
   const page = read('apps/frontend/src/app/(authenticated)/quality/defect-code/page.tsx');
+  const columnsFile = read('apps/frontend/src/app/(authenticated)/quality/defect-code/defectCodeColumns.tsx');
 
   for (const rawOption of ['label: "CRITICAL"', 'label: "MAJOR"', 'label: "MINOR"']) {
     assert.doesNotMatch(page, new RegExp(rawOption));
+    assert.doesNotMatch(columnsFile, new RegExp(rawOption));
   }
 
-  assert.doesNotMatch(page, /<td className="px-2 py-2">\{row\.defectGrade\}<\/td>/);
-  assert.doesNotMatch(page, /<td className="px-2 py-2">\{row\.defectScope\}<\/td>/);
-  assert.doesNotMatch(page, /<td className="px-2 py-2">\{row\.useYn\}<\/td>/);
-  assert.match(page, /formatDefectGrade\(row\.defectGrade\)/);
-  assert.match(page, /formatDefectScope\(row\.defectScope\)/);
-  assert.match(page, /formatUseYn\(row\.useYn\)/);
+  assert.doesNotMatch(columnsFile, /<td className="px-2 py-2">\{row\.defectGrade\}<\/td>/);
+  assert.doesNotMatch(columnsFile, /<td className="px-2 py-2">\{row\.defectScope\}<\/td>/);
+  assert.doesNotMatch(columnsFile, /<td className="px-2 py-2">\{row\.useYn\}<\/td>/);
+  assert.match(columnsFile, /formatDefectGrade\(getValue\(\) as DefectCode\["defectGrade"\]\)/);
+  assert.match(columnsFile, /formatDefectScope\(getValue\(\) as DefectCode\["defectScope"\]\)/);
+  // useYn 컬럼은 formatUseYn 헬퍼 대신 인라인 t()로 사용/비활성을 번역한다 (원시 코드값 노출은 없음)
+  assert.doesNotMatch(columnsFile, /\{v\}<\/span>/);
+  assert.match(columnsFile, /t\("common\.use"/);
+  assert.match(columnsFile, /t\("common\.inactive"/);
 
   for (const key of ['gradeCritical', 'gradeMajor', 'gradeMinor']) {
     assert.match(page, new RegExp(`quality\\.defectCode\\.${key}`));

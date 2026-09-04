@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const pageSource = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+// 그리드 액션 컬럼 정의는 palletColumns.tsx 로 분리되어 있어 page 와 함께 검사한다
+const columnsSource = readFileSync(new URL("./palletColumns.tsx", import.meta.url), "utf8");
+const source = pageSource + columnsSource;
 
 test("pallet page creates pallets only through a confirmed ship order", () => {
   assert.match(source, /interface ShipOrderSummary/, "page should keep confirmed ship order summaries");
@@ -18,7 +21,7 @@ test("pallet create modal is scan-first and shows waiting orders as a helper lis
   assert.match(source, /shipOrderScanInputRef/, "create modal should focus a ship order scan input");
   assert.match(source, /shipOrderScanText/, "create modal should keep scanned ship order text");
   assert.match(source, /handleShipOrderScan/, "create modal should resolve scanned ship order number");
-  assert.match(source, /onKeyDown=\{\(e: React\.KeyboardEvent<HTMLInputElement>\) => \{ if \(e\.key === "Enter"\)/, "scan input should submit with Enter");
+  assert.match(source, /<BarcodeScanInput[\s\S]*?onScan=\{handleShipOrderScan\}/, "scan input should be the common BarcodeScanInput and submit via onScan");
   assert.match(source, /shipping\.pallet\.waitingShipOrders/, "modal should label the waiting ship-order list");
   assert.match(source, /shipOrders\.map\(\(order\) => \(/, "modal should render waiting ship orders");
   assert.doesNotMatch(source, /options=\{shipOrderOptions\}/, "create modal should not rely on a select dropdown for ship order entry");

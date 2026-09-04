@@ -4,6 +4,8 @@ import { existsSync, readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('./SidebarMenu.tsx', import.meta.url), 'utf8');
 const sidebarSource = readFileSync(new URL('./Sidebar.tsx', import.meta.url), 'utf8');
+// 도움말 메뉴 제외 로직은 useMenuTree 훅으로 이동되어 Sidebar 와 함께 검사한다
+const useMenuTreeSource = readFileSync(new URL('../../hooks/useMenuTree.ts', import.meta.url), 'utf8');
 const tabBarSource = readFileSync(new URL('./TabBar.tsx', import.meta.url), 'utf8');
 const tabContextMenuSource = readFileSync(new URL('./TabContextMenu.tsx', import.meta.url), 'utf8');
 const navigationUrl = new URL('./clientNavigation.ts', import.meta.url);
@@ -41,7 +43,8 @@ test('layout tab navigation avoids Next Link/router route fetches', () => {
 test('sidebar keeps full help link in a fixed bottom area', () => {
   assert.match(sidebarSource, /const HELP_MENU_PATH = ["']\/help["']/);
   assert.match(sidebarSource, /labelKey: ["']help\.viewAll["']/);
-  assert.match(sidebarSource, /excludeHelpMenuItems\(result\)/);
+  assert.match(useMenuTreeSource, /function excludeHelpMenuItems\(/, 'help menu items should be centrally excluded from the tree in the shared hook');
+  assert.match(useMenuTreeSource, /excludeHelpMenuItems\(result\)/);
   assert.match(sidebarSource, /className=["']min-h-0 flex-1 overflow-y-auto p-3["']/);
   assert.match(sidebarSource, /className=["']flex-shrink-0 border-t border-border bg-surface p-3["']/);
   assert.match(sidebarSource, /isMenuDisabled=\{\(\) => false\}/);

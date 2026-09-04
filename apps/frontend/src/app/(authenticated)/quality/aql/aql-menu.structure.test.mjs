@@ -18,8 +18,9 @@ test('AQL menu code is accepted by backend menu validator', () => {
 
 test('AQL route has page registry and localized labels', () => {
   const registry = read('apps/frontend/src/components/layout/pageRegistry.generated.ts');
+  const aqlRegistry = read('apps/frontend/src/components/layout/page-registries/quality__aql.generated.ts');
   assert.match(registry, /"\/quality\/aql"/);
-  assert.match(registry, /@\/app\/\(authenticated\)\/quality\/aql\/page/);
+  assert.match(aqlRegistry, /@\/app\/\(authenticated\)\/quality\/aql\/page/);
 
   for (const locale of ['ko', 'en', 'zh', 'vi']) {
     const source = read(`apps/frontend/src/locales/${locale}.json`);

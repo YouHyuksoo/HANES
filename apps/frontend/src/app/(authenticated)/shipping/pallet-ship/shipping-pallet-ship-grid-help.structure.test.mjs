@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const pageSource = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+// 그리드 컬럼/행 타입 정의는 palletShipColumns.tsx 로 분리되어 있어 page 와 함께 검사한다
+const columnsSource = readFileSync(new URL("./palletShipColumns.tsx", import.meta.url), "utf8");
+const source = pageSource + columnsSource;
 
 test("pallet ship center grid status column exposes detailed transition help", () => {
   assert.match(source, /HelpCircle/, "status header should use a question help icon");

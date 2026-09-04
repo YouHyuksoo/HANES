@@ -8,9 +8,6 @@ test('IQC inspect method screens use the IQC-specific method code group', () => 
   const files = [
     'apps/frontend/src/app/(authenticated)/master/part/page.tsx',
     'apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx',
-    'apps/frontend/src/app/(authenticated)/master/part/components/IqcSettingModal.tsx',
-    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupTab.tsx',
-    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupModal.tsx',
     'apps/frontend/src/app/(authenticated)/material/iqc/page.tsx',
     'apps/frontend/src/components/material/IqcTable.tsx',
   ];
@@ -38,11 +35,6 @@ test('IQC inspect method labels are only inspection or no-inspection', () => {
   const files = [
     'apps/backend/src/migrations/2026-06-11_iqc_inspect_code_groups.sql',
     'apps/frontend/src/app/(authenticated)/master/part/page.tsx',
-    'apps/frontend/src/app/(authenticated)/master/part/components/IqcSettingModal.tsx',
-    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupTab.tsx',
-    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupModal.tsx',
-    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcLinkModal.tsx',
-    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcLinkTab.tsx',
     'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcDetailPanel.tsx',
     'apps/frontend/src/components/material/IqcTable.tsx',
   ];
@@ -62,18 +54,14 @@ test('IQC inspection/no-inspection field labels use one Korean term', () => {
   const labels = [
     ko.menu['master.part.iqc.inspectMethod'],
     ko.master.part.inspectMethod,
-    ko.master.iqcGroup.inspectMethod,
     ko.material.iqc.method,
   ];
 
-  assert.deepEqual(labels, ['검사구분', '검사구분', '검사구분', '검사구분']);
+  assert.deepEqual(labels, ['검사구분', '검사구분', '검사구분']);
 
   const files = [
     'apps/frontend/src/app/(authenticated)/master/part/page.tsx',
     'apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx',
-    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupTab.tsx',
-    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupModal.tsx',
-    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcLinkTab.tsx',
     'apps/frontend/src/app/(authenticated)/material/iqc/page.tsx',
     'apps/frontend/src/components/material/IqcTable.tsx',
     'apps/frontend/src/components/material/IqcModal.tsx',
@@ -87,16 +75,9 @@ test('IQC inspection/no-inspection field labels use one Korean term', () => {
 
 test('IQC inspection method axis no longer exposes SAMPLE', () => {
   const forbiddenFiles = [
-    'apps/backend/src/modules/master/dto/iqc-group.dto.ts',
-    'apps/backend/src/modules/master/services/iqc-group.service.ts',
     'apps/frontend/src/app/(authenticated)/master/part/page.tsx',
     'apps/frontend/src/app/(authenticated)/master/part/components/PartFormPanel.tsx',
-    'apps/frontend/src/app/(authenticated)/master/part/components/IqcSettingModal.tsx',
     'apps/frontend/src/app/(authenticated)/master/iqc-item/types.ts',
-    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupTab.tsx',
-    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcGroupModal.tsx',
-    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcLinkModal.tsx',
-    'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcLinkTab.tsx',
     'apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcDetailPanel.tsx',
     'apps/frontend/src/components/material/IqcTable.tsx',
   ];

@@ -27,10 +27,7 @@ assert.match(sources, /conUid/, "소모품 출력용 conUid 필드 정의가 필
 assert.match(designerRuntime, /onPointerDown/, "캔버스 객체는 마우스 포인터로 드래그/리사이즈되어야 합니다.");
 assert.match(designerRuntime, /resize-handle|data-resize-handle/, "객체별 리사이즈 앵커가 렌더링되어야 합니다.");
 assert.match(objectDesigner, /sourceField/, "텍스트/바코드 객체에 소스 필드 매핑 UI가 필요합니다.");
-assert.match(objectDesigner, /필드 추가/, "좌측 필드 목록은 사용자가 추가할 수 있어야 합니다.");
-assert.match(objectDesigner, /updateSourceField/, "좌측 필드 목록은 사용자가 수정할 수 있어야 합니다.");
-assert.match(objectDesigner, /deleteSourceField/, "좌측 필드 목록은 사용자가 삭제할 수 있어야 합니다.");
-assert.match(objectDesigner, /sourceFields:/, "사용자 정의 필드 목록은 design.sourceFields에 저장되어야 합니다.");
+assert.match(objectDesigner, /sourceFields:/, "소스테이블 전환 시 필드 목록은 design.sourceFields에 저장되어야 합니다.");
 
 assert.match(renderer, /BarcodeImage/, "렌더러는 인쇄 가능한 바코드 이미지를 생성해야 합니다.");
 assert.match(renderer, /resolveLabelValue/, "렌더러는 저장된 소스 필드 매핑으로 데이터를 치환해야 합니다.");

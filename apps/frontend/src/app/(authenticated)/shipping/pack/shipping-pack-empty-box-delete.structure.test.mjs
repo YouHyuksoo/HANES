@@ -18,10 +18,19 @@ test('shipping pack exposes empty-box deletion only for empty open boxes', () =>
   );
 });
 
-test('shipping pack keeps row action buttons in stable slots', () => {
-  assert.match(source, /grid grid-cols-4/, 'row actions should be a fixed four-slot grid');
-  assert.match(source, /h-8 w-8/, 'row action buttons should have fixed dimensions');
-  assert.equal(source.includes('flex flex-wrap gap-1.5 justify-center'), false, 'row actions must not wrap unevenly');
+test('shipping pack keeps box actions in a stable selection toolbar', () => {
+  assert.match(
+    source,
+    /<div className="flex gap-1 ml-auto flex-wrap">[\s\S]*?<\/div>/,
+    'box actions should live in one shared toolbar instead of per-row icon grids',
+  );
+  assert.match(
+    source,
+    /disabled=\{!selectedBox \|\| !canDeleteEmptyBox\(selectedBox\)\}/,
+    'delete action must gate on selection state, not appear inline per row',
+  );
+  const actionButtonSizes = source.match(/<Button size="sm"/g) ?? [];
+  assert.ok(actionButtonSizes.length >= 5, 'all box actions should share the same fixed button size');
 });
 
 test('shipping pack clearly shows the active box being packed', () => {

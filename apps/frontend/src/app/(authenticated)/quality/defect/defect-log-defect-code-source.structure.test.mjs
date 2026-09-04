@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 const page = readFileSync('apps/frontend/src/app/(authenticated)/quality/defect/page.tsx', 'utf8');
+const formPanel = readFileSync('apps/frontend/src/app/(authenticated)/quality/defect/components/DefectFormPanel.tsx', 'utf8');
 
 test('/quality/defect loads defect-code options from dedicated master API', () => {
   assert.match(page, /quality\/defect-codes\/options/);
@@ -15,6 +16,6 @@ test('/quality/defect no longer uses COM_CODES DEFECT_TYPE for filters or regist
 });
 
 test('/quality/defect derives defectName from dedicated defect-code option', () => {
-  assert.match(page, /defectCodeOptions\.find/);
-  assert.match(page, /defectName/);
+  assert.match(formPanel, /defectCodeOptions\.find/);
+  assert.match(formPanel, /defectName/);
 });

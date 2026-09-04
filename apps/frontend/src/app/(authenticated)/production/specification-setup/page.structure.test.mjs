@@ -81,6 +81,6 @@ test('production specification setup uses a modal for revise and cancel does not
   assert.doesNotMatch(page, /window\.prompt/);
   assert.match(page, /reviseModalOpen/);
   assert.match(page, /confirmReviseDrawing/);
-  assert.match(page, /<Modal[\s\S]*title="Rev 생성"/);
+  assert.match(page, /<Modal[\s\S]*title=\{t\("production\.specSetup\.createRev", "Rev 생성"\)\}/);
   assert.match(page, /onClick=\{\(\) => setReviseModalOpen\(false\)\}/);
 });

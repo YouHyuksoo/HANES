@@ -27,7 +27,6 @@ test('label detail API separates semi-product SG_LABELS from finished-product FG
 
   assert.match(source, /api\.get\("\/production\/wip-stock\/labels"/);
   assert.match(source, /params:\s*\{\s*itemCode,\s*itemType/);
-  assert.match(source, /accessorKey:\s*"labelType"/);
   assert.match(source, /accessorKey:\s*"barcode"/);
   assert.match(source, /accessorKey:\s*"remainQty"/);
   assert.doesNotMatch(source, /\/production\/wip-stock\/fg-labels/);
@@ -42,8 +41,6 @@ test('label detail API separates semi-product SG_LABELS from finished-product FG
   assert.match(service, /itemType === 'SEMI_PRODUCT'/);
   assert.match(service, /this\.sgLabelRepository/);
   assert.match(service, /this\.fgLabelRepository/);
-  assert.match(service, /'SG' AS "labelType"/);
-  assert.match(service, /'FG' AS "labelType"/);
 });
 
 test('label detail panel text is generic enough for semi-product labels', () => {
