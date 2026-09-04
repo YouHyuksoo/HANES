@@ -21,6 +21,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { LotSplitDto, LotSplitQueryDto } from '../dto/lot-split.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { MAT_LOT_ACTIVE_STATUSES, MAT_LOT_STATUS, isMatLotMergeableOrSplittable, isMatLotOnHold } from '@harness/shared';
 
 /**
  * 입고완료 게이팅: 해당 matUid의 유효 입고(RECEIVE + 분할/병합 IN) 합 >= INIT_QTY.
@@ -79,7 +80,7 @@ export class LotSplitService {
     const qb = this.matLotRepository.createQueryBuilder('lot')
       .innerJoin(MatStock, 'stock', 'stock.matUid = lot.matUid AND stock.company = lot.company AND stock.plant = lot.plant')
       .where('stock.qty > 1')
-      .andWhere("lot.status = 'NORMAL'")
+      .andWhere('lot.status IN (:...activeStatuses)', { activeStatuses: [...MAT_LOT_ACTIVE_STATUSES] })
       .andWhere('NVL(stock.reservedQty, 0) = 0')
       .andWhere(RECEIVED_GATE_SQL);
 
@@ -148,10 +149,10 @@ export class LotSplitService {
       }
       this.assertSameTenant(sourceLot, company, plant, '원본 LOT');
 
-      if (sourceLot.status === 'HOLD') {
+      if (isMatLotOnHold(sourceLot.status)) {
         throw new BadRequestException('HOLD 상태인 LOT은 분할할 수 없습니다.');
       }
-      if (sourceLot.status !== 'NORMAL') {
+      if (!isMatLotMergeableOrSplittable(sourceLot.status)) {
         throw new BadRequestException(`정상(NORMAL) 상태가 아닌 LOT은 분할할 수 없습니다. 현재 상태: ${sourceLot.status}`);
       }
 
@@ -226,7 +227,7 @@ export class LotSplitService {
 
       // 7) 원본 폐기 (status=SPLIT, 재고 0)
       await queryRunner.manager.update(MatLot, { matUid: sourceLot.matUid, ...tenantWhere }, {
-        status: 'SPLIT',
+        status: MAT_LOT_STATUS.SPLIT,
         currentQty: 0,
         updatedBy: userId ?? null,
       });
@@ -325,7 +326,7 @@ export class LotSplitService {
       invoiceNo: sourceLot.invoiceNo,
       poNo: sourceLot.poNo,
       iqcStatus: sourceLot.iqcStatus,
-      status: 'NORMAL',
+      status: MAT_LOT_STATUS.NORMAL,
       company: sourceLot.company,
       plant: sourceLot.plant,
       createdBy: userId ?? null,

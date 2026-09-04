@@ -24,6 +24,8 @@ import { ProductInventoryService } from '../../inventory/services/product-invent
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { ShipmentService } from './shipment.service';
+import { ShipmentReturn } from '../../../entities/shipment-return.entity';
+import { SHIP_ORDER_OPEN_STATUSES, SHIP_ORDER_STATUSES, deriveShipOrderStatusFromLines, isShipOrderOpen } from '@harness/shared';
 
 describe('ShipOrderService', () => {
   let target: ShipOrderService;
@@ -576,9 +578,11 @@ describe('ShipOrderService.shipBox', () => {
       return [];
     }),
     update: jest.fn(),
+    create: jest.fn((_entity: any, payload: any) => ({ ...payload })),
+    save: jest.fn(async (entity: any) => entity),
   });
 
-  const buildService = async (overrides: Partial<Record<string, any>>) => {
+  const buildService = async (overrides: Partial<Record<string, any>>, repos: { shipment?: any; box?: any } = {}) => {
     managed = makeManager(overrides);
     issueStockInTx = jest.fn().mockResolvedValue({ transNo: 'PTX_TEST' });
     receiveStockInTx = jest.fn().mockResolvedValue({ transNo: 'PTX_CANCEL' });
@@ -591,9 +595,9 @@ describe('ShipOrderService.shipBox', () => {
         { provide: getRepositoryToken(ItemMaster), useValue: {} },
         { provide: getRepositoryToken(PartnerMaster), useValue: {} },
         { provide: getRepositoryToken(Warehouse), useValue: {} },
-        { provide: getRepositoryToken(BoxMaster), useValue: {} },
+        { provide: getRepositoryToken(BoxMaster), useValue: repos.box ?? {} },
         { provide: getRepositoryToken(PalletMaster), useValue: {} },
-        { provide: getRepositoryToken(ShipmentLog), useValue: {} },
+        { provide: getRepositoryToken(ShipmentLog), useValue: repos.shipment ?? {} },
         { provide: TransactionService, useValue: { run: (cb: any) => cb({ manager: managed }) } },
         { provide: ProductInventoryService, useValue: { issueStockByItemFifoInTx: issueStockInTx, receiveStockInTx, cancelTransactionInTx } },
         { provide: SysConfigService, useValue: { isEnabled: jest.fn().mockResolvedValue(true) } },
@@ -738,5 +742,72 @@ describe('ShipOrderService.shipBox', () => {
     expect(managed.update).toHaveBeenCalledWith(ShipmentOrder, expect.objectContaining({ shipOrderNo: 'SO1' }), { status: 'CONFIRMED' });
     expect(res.lineShippedQty).toBe(0);
     expect(res.orderStatus).toBe('CONFIRMED');
+  });
+
+  it('출하 취소 후 다른 라인이 아직 전량 출하 상태여도 지시는 CONFIRMED 로 되돌린다(shared 규칙)', async () => {
+    await buildService({
+      order: { shipOrderNo: 'SO1', status: 'CLOSED' },
+      box: { boxNo: 'BX1', itemCode: 'HNS01', qty: 2, status: 'SHIPPED', oqcStatus: 'PASS', serialList: null },
+      line: { shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 2, shippedQty: 2 },
+      warehouse: { warehouseCode: 'FG_MAIN' },
+      originalFgOut: { transNo: 'PTX_OUT', transType: 'FG_OUT', refType: 'SHIP_ORDER', refId: 'SO1', itemCode: 'HNS01', qty: -2, status: 'DONE', fromWarehouseId: 'FG_MAIN' },
+      allLines: [
+        { shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 2, shippedQty: 2 },
+        { shipOrderNo: 'SO1', seq: 2, itemCode: 'HNS02', orderQty: 3, shippedQty: 3 },
+      ],
+    });
+
+    const res = await service.cancelShipBox('SO1', { boxNo: 'BX1', workerId: 'worker1' }, '40', '1000');
+
+    expect(managed.update).toHaveBeenCalledWith(ShipmentOrder, expect.objectContaining({ shipOrderNo: 'SO1' }), { status: 'CONFIRMED' });
+    expect(res.orderStatus).toBe('CONFIRMED');
+  });
+
+  it('출하지시 단위 출하취소 이력(SHIPMENT_RETURNS)은 정본 어휘 CLOSED 로 기록한다(COMPLETED 아님)', async () => {
+    const box = { boxNo: 'BX1', itemCode: 'HNS01', qty: 2, status: 'SHIPPED', oqcStatus: 'PASS', serialList: null, palletNo: null, shipOrderNo: 'SO1' };
+    await buildService(
+      {
+        order: { shipOrderNo: 'SO1', status: 'CLOSED' },
+        box,
+        line: { shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 2, shippedQty: 2 },
+        warehouse: { warehouseCode: 'FG_MAIN' },
+        originalFgOut: { transNo: 'PTX_OUT', transType: 'FG_OUT', refType: 'SHIP_ORDER', refId: 'SO1', itemCode: 'HNS01', qty: -2, status: 'DONE', fromWarehouseId: 'FG_MAIN' },
+        allLines: [{ shipOrderNo: 'SO1', seq: 1, itemCode: 'HNS01', orderQty: 2, shippedQty: 2 }],
+      },
+      {
+        shipment: { find: jest.fn().mockResolvedValue([]) },
+        box: { find: jest.fn().mockResolvedValue([box]) },
+      },
+    );
+
+    const res = await service.cancelOrderShipment('SO1', { reason: '고객 요청', workerId: 'worker1' } as any, '40', '1000');
+
+    expect(managed.create).toHaveBeenCalledWith(
+      ShipmentReturn,
+      expect.objectContaining({ returnNo: 'RT-TEST', shipmentId: 'SO1', status: 'CLOSED' }),
+    );
+    expect(managed.create).not.toHaveBeenCalledWith(ShipmentReturn, expect.objectContaining({ status: 'COMPLETED' }));
+    expect(res).toEqual(expect.objectContaining({ returnNo: 'RT-TEST' }));
+  });
+});
+
+// ─── shared 상태 규칙 (packages/shared ship-order-rules) ───
+describe('ship-order-rules', () => {
+  it('정본 어휘는 COM_CODES.SHIP_ORDER_STATUS 5종이고 미완료 집합은 그 부분집합이다', () => {
+    expect([...SHIP_ORDER_STATUSES]).toEqual(['DRAFT', 'CONFIRMED', 'SHIPPING', 'SHIPPED', 'CLOSED']);
+    for (const s of SHIP_ORDER_OPEN_STATUSES) expect(SHIP_ORDER_STATUSES).toContain(s);
+    expect(isShipOrderOpen('CONFIRMED')).toBe(true);
+    expect(isShipOrderOpen('closed')).toBe(false);
+    expect(isShipOrderOpen('SHIPPED')).toBe(false);
+    expect(isShipOrderOpen(null)).toBe(false);
+  });
+
+  it('라인 전량 출하 → CLOSED, 일부/미출하/라인 없음 → CONFIRMED', () => {
+    expect(deriveShipOrderStatusFromLines([])).toBe('CONFIRMED');
+    expect(deriveShipOrderStatusFromLines([{ orderQty: 10, shippedQty: 0 }])).toBe('CONFIRMED');
+    expect(deriveShipOrderStatusFromLines([{ orderQty: 10, shippedQty: null }])).toBe('CONFIRMED');
+    expect(deriveShipOrderStatusFromLines([{ orderQty: 10, shippedQty: 10 }, { orderQty: 5, shippedQty: 4 }])).toBe('CONFIRMED');
+    expect(deriveShipOrderStatusFromLines([{ orderQty: 10, shippedQty: 10 }, { orderQty: 5, shippedQty: 5 }])).toBe('CLOSED');
+    expect(deriveShipOrderStatusFromLines([{ orderQty: 10, shippedQty: 12 }])).toBe('CLOSED');
   });
 });

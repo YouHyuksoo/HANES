@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. **PO 생성**: 품목 목록과 함께 PO 생성 (트랜잭션 처리)
- * 2. **PO 확정**: DRAFT -> CONFIRMED 상태 변경
+ * 2. **PO 확정**: DRAFT -> CONFIRMED 상태 변경. 이후 PARTIAL/RECEIVED 는 입하 라인에서 파생(@harness/shared purchase-order-rules), CLOSED 는 마감 버튼
  * 3. **금액 계산**: 품목별 수량 x 단가 합산
  */
 
@@ -20,6 +20,12 @@ import { CreatePurchaseOrderDto, UpdatePurchaseOrderDto, PurchaseOrderQueryDto }
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
+import {
+  PO_CLOSABLE_STATUSES,
+  canAutoTransitionPurchaseOrder,
+  derivePurchaseOrderLineStatus,
+  derivePurchaseOrderStatusFromLines,
+} from '@harness/shared';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -252,8 +258,14 @@ export class PurchaseOrderService {
 
   async update(poNo: string, dto: UpdatePurchaseOrderDto, company?: string, plant?: string) {
     const tenantWhere = this.tenantWhere(company, plant);
-    await this.findById(poNo, company, plant);
+    const current = await this.findById(poNo, company, plant);
     const { items, poNo: _ignoredPoNo, ...poData } = dto;
+
+    if (items && current.items.some((item) => (item.receivedQty ?? 0) > 0)) {
+      throw new BadRequestException(
+        '입하가 진행된 구매오더의 품목은 교체할 수 없습니다. 입하부터 먼저 취소해 주세요.',
+      );
+    }
 
     const resolvedPartnerName = await this.resolvePartnerName(dto.partnerCode, dto.partnerName);
 
@@ -280,11 +292,20 @@ export class PurchaseOrderService {
             revNo: item.revNo ?? 1,
             unitPrice: item.unitPrice ?? null,
             remark: item.remark,
+            lineStatus: derivePurchaseOrderLineStatus({ orderQty: item.orderQty, receivedQty: 0 }),
             company: company ?? null,
             plant: plant ?? null,
           }),
         );
-        await queryRunner.manager.save(itemEntities);
+        const savedItems = await queryRunner.manager.save(itemEntities);
+
+        // 품목이 바뀌었으니 헤더 파생 상태도 같은 규칙으로 다시 판정한다(DRAFT/CLOSED 는 유지)
+        if (canAutoTransitionPurchaseOrder(current.status)) {
+          const derived = derivePurchaseOrderStatusFromLines(savedItems);
+          if (derived !== current.status) {
+            await queryRunner.manager.update(PurchaseOrder, { poNo, ...tenantWhere }, { status: derived });
+          }
+        }
       } else {
         const updateData = { ...this.buildPurchaseOrderUpdate(poData), ...(resolvedPartnerName !== null ? { partnerName: resolvedPartnerName } : {}) };
         if (Object.keys(updateData).length > 0) {
@@ -311,14 +332,14 @@ export class PurchaseOrderService {
     return this.findById(poNo, company, plant);
   }
 
-  /** PO 마감 (RECEIVED -> CLOSED) */
+  /** PO 마감 (PARTIAL/RECEIVED -> CLOSED) — 마감 가능 상태는 shared PO_CLOSABLE_STATUSES 단일 출처 */
   async close(poNo: string, company?: string, plant?: string) {
     const tenantWhere = this.tenantWhere(company, plant);
     const po = await this.purchaseOrderRepository.findOne({
       where: { poNo, ...tenantWhere },
     });
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${poNo}`);
-    if (!['RECEIVED', 'PARTIAL'].includes(po.status)) {
+    if (!(PO_CLOSABLE_STATUSES as readonly string[]).includes(po.status)) {
       throw new BadRequestException(`마감 가능한 상태가 아닙니다. 현재 상태: ${po.status}`);
     }
 

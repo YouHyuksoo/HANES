@@ -13,6 +13,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { isMatLotIssuable, isMatLotTerminal } from '@harness/shared';
 
 describe('ShelfLifeReInspectService', () => {
   let service: ShelfLifeReInspectService;
@@ -246,6 +247,79 @@ describe('ShelfLifeReInspectService', () => {
       ).rejects.toThrow('회사 정보가 일치하지 않습니다');
 
       expect(tx.run).not.toHaveBeenCalled();
+    });
+
+    it('이미 DISCARDED 된 LOT 은 재검사를 거부한다', async () => {
+      matLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'DISCARDED', company: 'HANES', plant: 'P01',
+      } as MatLot);
+
+      await expect(service.create({ matUid: 'MAT-001', result: 'PASS' }, 'HANES', 'P01'))
+        .rejects.toThrow('이미 폐기 처리된 LOT입니다.');
+      expect(iqcLogRepo.save).not.toHaveBeenCalled();
+    });
+
+    it.each(['DEPLETED', 'MERGED', 'SPLIT'])('종결 LOT(%s)은 재검사(연장/폐기) 대상이 아니다', async (status) => {
+      matLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001', itemCode: 'ITEM-001', status, company: 'HANES', plant: 'P01',
+      } as MatLot);
+
+      await expect(service.create({ matUid: 'MAT-001', result: 'PASS' }, 'HANES', 'P01'))
+        .rejects.toThrow('종결된 LOT은 재검사할 수 없습니다');
+      expect(iqcLogRepo.save).not.toHaveBeenCalled();
+      expect(matLotRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('재검 FAIL 전이: NORMAL → DISCARDED 는 종결 상태라 출고 불가가 된다', async () => {
+      matLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'NORMAL', company: 'HANES', plant: 'P01',
+      } as MatLot);
+      itemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', expiryExtDays: 90 } as ItemMaster);
+      iqcLogRepo.query.mockResolvedValue([{ NEXT_SEQ: 2 }]);
+      iqcLogRepo.create.mockReturnValue({} as IqcLog);
+      iqcLogRepo.save.mockResolvedValue({ inspectDate: new Date(), seq: 1 } as any);
+      matStockRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001', itemCode: 'ITEM-001', qty: 10, availableQty: 10, reservedQty: 0,
+        warehouseCode: 'WH-01', company: 'HANES', plant: 'P01',
+      } as MatStock);
+      warehouseRepo.findOne.mockResolvedValue({
+        warehouseCode: 'WH-DEF', warehouseType: 'DEFECT', useYn: 'Y', company: 'HANES', plant: 'P01',
+      } as Warehouse);
+      queryRunner.manager.findOne.mockResolvedValue(null);
+      queryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+      queryRunner.manager.save.mockResolvedValue({} as any);
+
+      await service.create({ matUid: 'MAT-001', result: 'FAIL' });
+
+      const lotPatch = (queryRunner.manager.update as jest.Mock).mock.calls
+        .filter(([entity]) => entity === MatLot)
+        .map(([, , patch]) => patch as { status: string });
+      expect(lotPatch).toHaveLength(1);
+      expect(lotPatch[0].status).toBe('DISCARDED');
+      expect(isMatLotTerminal(lotPatch[0].status)).toBe(true);
+      expect(isMatLotIssuable(lotPatch[0].status)).toBe(false);
+    });
+
+    it('재검 FAIL 인데 재고 행이 없어도 LOT 은 DISCARDED 로 종결한다', async () => {
+      matLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'NORMAL', company: 'HANES', plant: 'P01',
+      } as MatLot);
+      itemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', expiryExtDays: 90 } as ItemMaster);
+      iqcLogRepo.query.mockResolvedValue([{ NEXT_SEQ: 2 }]);
+      iqcLogRepo.create.mockReturnValue({} as IqcLog);
+      iqcLogRepo.save.mockResolvedValue({ inspectDate: new Date(), seq: 1 } as any);
+      warehouseRepo.findOne.mockResolvedValue({
+        warehouseCode: 'WH-DEF', warehouseType: 'DEFECT', useYn: 'Y', company: 'HANES', plant: 'P01',
+      } as Warehouse);
+      matStockRepo.findOne.mockResolvedValue(null);
+
+      await service.create({ matUid: 'MAT-001', result: 'FAIL' }, 'HANES', 'P01');
+
+      expect(tx.run).not.toHaveBeenCalled();
+      expect(matLotRepo.update).toHaveBeenCalledWith(
+        { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
+        { status: 'DISCARDED' },
+      );
     });
 
     it('재검 FAIL 자동 이동은 TransactionService로 재고 이동과 DISCARDED 처리를 함께 저장한다', async () => {

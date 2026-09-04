@@ -6,7 +6,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, DataSource, In } from 'typeorm';
-import { isProductionIssueType } from '@harness/shared';
+import { isProductionIssueType, isMatLotIssuable, isMatLotOnHold, MAT_LOT_STATUS } from '@harness/shared';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -223,8 +223,11 @@ export class MatIssueService {
         throw new BadRequestException(`IQC 합격 상태가 아닌 LOT입니다: ${lot.matUid}`);
       }
 
-      if (lot.status === 'HOLD') {
+      if (isMatLotOnHold(lot.status)) {
         throw new BadRequestException(`보류 상태의 LOT는 출고할 수 없습니다: ${lot.matUid}`);
+      }
+      if (!isMatLotIssuable(lot.status)) {
+        throw new BadRequestException(`출고할 수 없는 상태의 LOT입니다: ${lot.matUid} (상태: ${lot.status})`);
       }
 
       const stockRows = await queryRunner.manager.find(MatStock, {
@@ -342,7 +345,7 @@ export class MatIssueService {
       );
 
       if (totalRemainingQty <= 0) {
-        await queryRunner.manager.update(MatLot, { matUid: lot.matUid, ...tenantWhere }, { status: 'DEPLETED' });
+        await queryRunner.manager.update(MatLot, { matUid: lot.matUid, ...tenantWhere }, { status: MAT_LOT_STATUS.DEPLETED });
       }
 
       results.push(await this.flattenIssue(savedIssue, company, plant));
@@ -364,9 +367,14 @@ export class MatIssueService {
         `IQC 미합격 LOT입니다: ${dto.matUid} (상태: ${lot.iqcStatus})`,
       );
     }
-    if (lot.status === 'HOLD') {
+    if (isMatLotOnHold(lot.status)) {
       throw new BadRequestException(
         `보류 상태의 LOT는 출고할 수 없습니다: ${dto.matUid}`,
+      );
+    }
+    if (!isMatLotIssuable(lot.status)) {
+      throw new BadRequestException(
+        `출고할 수 없는 상태의 LOT입니다: ${dto.matUid} (상태: ${lot.status})`,
       );
     }
 
@@ -377,7 +385,7 @@ export class MatIssueService {
     });
     const stockQty = stocks.reduce((sum, stock) => sum + (stock.availableQty ?? stock.qty ?? 0), 0);
 
-    if (lot.status === 'DEPLETED' || stockQty <= 0) {
+    if (stockQty <= 0) {
       throw new BadRequestException(`이미 소진된 LOT입니다: ${dto.matUid}`);
     }
 
@@ -545,7 +553,7 @@ export class MatIssueService {
         await queryRunner.manager.update(
           MatLot,
           { matUid: rawIssue.matUid, ...tenantWhere },
-          { status: 'NORMAL', currentQty: (lotRow?.currentQty ?? 0) + rawIssue.issueQty },
+          { status: MAT_LOT_STATUS.NORMAL, currentQty: (lotRow?.currentQty ?? 0) + rawIssue.issueQty },
         );
       }
 

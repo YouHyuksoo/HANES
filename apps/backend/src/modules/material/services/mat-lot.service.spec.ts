@@ -11,7 +11,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
-import { Repository, MoreThan } from 'typeorm';
+import { Repository, MoreThan, In } from 'typeorm';
 import { MatLotService } from './mat-lot.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
@@ -129,7 +129,7 @@ describe('MatLotService', () => {
       await target.findAll({ page: 1, limit: 50, activeOnly: true }, 'C1', 'P1');
 
       expect(mockMatLotRepo.find).toHaveBeenCalledWith(expect.objectContaining({
-        where: expect.objectContaining({ status: 'NORMAL', currentQty: MoreThan(0), company: 'C1', plant: 'P1' }),
+        where: expect.objectContaining({ status: In(['NORMAL']), currentQty: MoreThan(0), company: 'C1', plant: 'P1' }),
         skip: 0,
         take: 50,
       }));

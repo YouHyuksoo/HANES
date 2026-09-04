@@ -16,6 +16,7 @@ import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
+import { MAT_LOT_STATUS } from '@harness/shared';
 
 @Injectable()
 export class ScrapService {
@@ -159,7 +160,7 @@ export class ScrapService {
         where: { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere },
       });
       if (remainingStock?.qty === 0) {
-        await queryRunner.manager.update(MatLot, { matUid: lot.matUid, ...tenantWhere }, { status: 'DEPLETED' });
+        await queryRunner.manager.update(MatLot, { matUid: lot.matUid, ...tenantWhere }, { status: MAT_LOT_STATUS.DEPLETED });
       }
 
       // 폐기 트랜잭션 생성

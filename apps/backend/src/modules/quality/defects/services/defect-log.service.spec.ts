@@ -552,6 +552,16 @@ describe('DefectLogService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('should reject a non-canonical target (WAIT → WAITING, 재작업공정 어휘 혼입 차단)', async () => {
+      const defect = createDefectLog({ status: 'WAIT' });
+      mockDefectLogRepo.findOne.mockResolvedValue(defect);
+      mockReworkOrderRepo.findOne.mockResolvedValue(null);
+      await expect(
+        target.changeStatus('1', { status: 'WAITING' } as any),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockDefectLogRepo.update).not.toHaveBeenCalled();
+    });
+
     it('should reject WAIT → DONE (직접 완료 불가)', async () => {
       // Arrange
       const defect = createDefectLog({ status: 'WAIT' });

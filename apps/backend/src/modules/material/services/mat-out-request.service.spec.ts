@@ -80,6 +80,15 @@ describe('MatOutRequestService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it.each(['MERGED', 'SPLIT', 'DISCARDED', 'DEPLETED'])('blocks request for terminal lot (%s)', async (status) => {
+      matLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', status } as MatLot);
+
+      await expect(
+        service.create({ matUid: 'MAT-001', itemCode: 'ITEM-001', qty: 1, outType: 'SCRAP' }),
+      ).rejects.toThrow(`Cannot create material-out request for ${status} lot`);
+      expect(matStockRepo.findOne).not.toHaveBeenCalled();
+    });
+
     it('updates reservedQty and availableQty when creating request', async () => {
       matLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', status: 'NORMAL' } as MatLot);
       matStockRepo.findOne.mockResolvedValue({
@@ -144,6 +153,15 @@ describe('MatOutRequestService', () => {
       matLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', status: 'HOLD' } as MatLot);
 
       await expect(service.approve('TX-001', 'approver')).rejects.toThrow(BadRequestException);
+    });
+
+    it.each(['MERGED', 'SPLIT', 'DISCARDED', 'DEPLETED'])('blocks approve for terminal lot (%s)', async (status) => {
+      stockTxRepo.findOne.mockResolvedValue({
+        transNo: 'TX-001', status: 'PENDING_APPROVAL', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: -2,
+      } as StockTransaction);
+      matLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', status } as MatLot);
+
+      await expect(service.approve('TX-001', 'approver')).rejects.toThrow(`Cannot approve material-out for ${status} lot`);
     });
 
     it('blocks approve when physical stock is insufficient', async () => {

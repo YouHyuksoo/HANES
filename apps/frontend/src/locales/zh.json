@@ -6906,7 +6906,8 @@
       "HOLD": "因质量待确认而暂时保留、禁止使用的批次",
       "DEPLETED": "余量已全部用尽、库存为零的批次",
       "SPLIT": "已拆分为多个批次、原批次终结",
-      "MERGED": "已与其他批次合并、原批次终结"
+      "MERGED": "已与其他批次合并、原批次终结",
+      "DISCARDED": "因有效期复检不合格等原因确定报废，不可使用或出库的终止状态"
     },
     "MOLD_LIFE_STATUS": {
       "NORMAL": "压接模具寿命状态良好",
@@ -7560,7 +7561,10 @@
     "MAT_LOT_STATUS": {
       "NORMAL": "正常",
       "HOLD": "保留",
-      "DEPLETED": "耗尽"
+      "DEPLETED": "耗尽",
+      "SPLIT": "已拆分",
+      "MERGED": "已合并",
+      "DISCARDED": "已报废"
     },
     "ISSUE_TYPE": {
       "PRODUCTION": "量产",

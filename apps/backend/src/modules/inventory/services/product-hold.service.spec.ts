@@ -145,6 +145,27 @@ describe('ProductHoldService', () => {
       mockQueryRunner.manager.findOne.mockResolvedValue({ status: 'NORMAL' } as any);
       await expect(target.release({ stockId: 'WH::IT::LOT1', reason: 'test' } as any)).rejects.toThrow(BadRequestException);
     });
+
+    it('보류/해제가 기록하는 STATUS는 공통코드 PRODUCT_HOLD_STATUS(HOLD/NORMAL) 정본값이다', async () => {
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'IT', itemName: 'Item' } as any);
+
+      mockQueryRunner.manager.findOne.mockResolvedValue({ status: 'NORMAL', qty: 10, itemCode: 'IT' } as any);
+      mockStockRepo.findOne.mockResolvedValue({ status: 'HOLD', qty: 10, itemCode: 'IT' } as any);
+      const held = await target.hold({ stockId: 'WH::IT', reason: 'qc' } as any, 'CO', 'P01', 'user');
+      expect(mockQueryRunner.manager.update).toHaveBeenLastCalledWith(
+        expect.anything(), expect.anything(), expect.objectContaining({ status: 'HOLD' }),
+      );
+      expect(held.status).toBe('HOLD');
+
+      mockQueryRunner.manager.findOne.mockResolvedValue({ status: 'HOLD', qty: 10, itemCode: 'IT' } as any);
+      mockStockRepo.findOne.mockResolvedValue({ status: 'NORMAL', qty: 10, itemCode: 'IT' } as any);
+      const released = await target.release({ stockId: 'WH::IT', reason: 'ok' } as any, 'CO', 'P01', 'user');
+      expect(mockQueryRunner.manager.update).toHaveBeenLastCalledWith(
+        expect.anything(), expect.anything(), expect.objectContaining({ status: 'NORMAL' }),
+      );
+      expect(released.status).toBe('NORMAL');
+    });
   });
 
   describe('findAll', () => {

@@ -6906,7 +6906,8 @@
       "HOLD": "Lô bị giữ tạm, ngưng sử dụng chờ xác nhận chất lượng",
       "DEPLETED": "Lô đã dùng hết, không còn số lượng tồn",
       "SPLIT": "Đã tách thành nhiều lô con, lô gốc kết thúc",
-      "MERGED": "Đã gộp vào lô khác, lô gốc kết thúc"
+      "MERGED": "Đã gộp vào lô khác, lô gốc kết thúc",
+      "DISCARDED": "Trạng thái kết thúc: đã hủy (vd: không đạt tái kiểm hạn dùng), không thể sử dụng hay xuất"
     },
     "MOLD_LIFE_STATUS": {
       "NORMAL": "Tuổi thọ khuôn bấm cốt còn tốt",
@@ -7560,7 +7561,10 @@
     "MAT_LOT_STATUS": {
       "NORMAL": "Bình thường",
       "HOLD": "Giữ lại",
-      "DEPLETED": "Đã hết"
+      "DEPLETED": "Đã hết",
+      "SPLIT": "Đã tách",
+      "MERGED": "Đã gộp",
+      "DISCARDED": "Đã hủy"
     },
     "ISSUE_TYPE": {
       "PRODUCTION": "Sản xuất",

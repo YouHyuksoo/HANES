@@ -4,7 +4,7 @@
  *
  * 초보자 가이드:
  * 1. **CRUD**: 출하지시 생성/조회/수정/삭제 + 품목 관리
- * 2. **상태 흐름**: DRAFT -> CONFIRMED -> CLOSED
+ * 2. **상태 흐름**: DRAFT -> CONFIRMED -> CLOSED (정본 어휘 COM_CODES.SHIP_ORDER_STATUS, 파생 규칙은 @harness/shared ship-order-rules)
  *    - DRAFT: 작성 중 (수정/삭제 가능)
  *    - CONFIRMED: 확정 (실출하 생성 가능, 수정/삭제 불가)
  *    - CLOSED: 실출하 완료 후 자동 마감
@@ -31,6 +31,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { ShipmentReturn } from '../../../entities/shipment-return.entity';
 import { ShipmentReturnItem } from '../../../entities/shipment-return-item.entity';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
+import { SHIP_ORDER_OPEN_STATUSES, SHIP_RETURN_STATUS_CLOSED, deriveShipOrderStatusFromLines } from '@harness/shared';
 import {
   CreateShipOrderDto,
   UpdateShipOrderDto,
@@ -180,8 +181,8 @@ export class ShipOrderService {
     const { page = 1, limit = 10, search, status, dueDateFrom, dueDateTo, shipDateFrom, shipDateTo, includeOpen } = query;
     const skip = (page - 1) * limit;
 
-    // 미완료(작업 대상) 상태 — 기간 밖이어도 항상 노출 대상
-    const OPEN_STATUSES = ['DRAFT', 'CONFIRMED', 'SHIPPING'];
+    // 미완료(작업 대상) 상태 — 기간 밖이어도 항상 노출 대상 (shared 단일 출처)
+    const OPEN_STATUSES = [...SHIP_ORDER_OPEN_STATUSES];
 
     // 날짜·상태를 제외한 공통 조건
     const common: FindOptionsWhere<ShipmentOrder> = {
@@ -883,13 +884,13 @@ export class ShipOrderService {
         );
       }
 
-      const fullyShipped = order.items.every((line) => {
-        const shipped = line.shippedQty + (itemQtyMap.get(line.itemCode) ?? 0);
-        return shipped >= line.orderQty;
-      });
-      if (fullyShipped) {
-        await qr.manager.update(ShipmentOrder, { shipOrderNo, ...this.tenantWhere(company, plant) }, { status: 'CLOSED' });
-      }
+      const orderStatus = deriveShipOrderStatusFromLines(
+        order.items.map((line) => ({
+          orderQty: line.orderQty,
+          shippedQty: line.shippedQty + (itemQtyMap.get(line.itemCode) ?? 0),
+        })),
+      );
+      await qr.manager.update(ShipmentOrder, { shipOrderNo, ...this.tenantWhere(company, plant) }, { status: orderStatus });
 
       await qr.manager.update(
         ShipmentLog,
@@ -974,12 +975,11 @@ export class ShipOrderService {
       await qr.manager.update(ShipmentOrderItem, { shipOrderNo, seq: line.seq, ...where }, { shippedQty: newShipped });
 
       const allLines = await qr.manager.find(ShipmentOrderItem, { where: { shipOrderNo, ...where } });
-      const fullyShipped = allLines.every((l) =>
-        (l.seq === line.seq ? newShipped : l.shippedQty) >= l.orderQty,
+      const orderStatus = deriveShipOrderStatusFromLines(
+        allLines.map((l) => ({ orderQty: l.orderQty, shippedQty: l.seq === line.seq ? newShipped : l.shippedQty })),
       );
-      if (fullyShipped) {
-        await qr.manager.update(ShipmentOrder, { shipOrderNo, ...where }, { status: 'CLOSED' });
-      }
+      const fullyShipped = orderStatus === 'CLOSED';
+      await qr.manager.update(ShipmentOrder, { shipOrderNo, ...where }, { status: orderStatus });
 
       return {
         shipOrderNo,
@@ -988,7 +988,7 @@ export class ShipOrderService {
         qty: box.qty,
         lineShippedQty: newShipped,
         lineOrderQty: line.orderQty,
-        orderStatus: fullyShipped ? 'CLOSED' : 'CONFIRMED',
+        orderStatus,
         fullyShipped,
       };
     });
@@ -1067,7 +1067,12 @@ export class ShipOrderService {
 
     const newShipped = line.shippedQty - box.qty;
     await qr.manager.update(ShipmentOrderItem, { shipOrderNo, seq: line.seq, ...where }, { shippedQty: newShipped });
-    await qr.manager.update(ShipmentOrder, { shipOrderNo, ...where }, { status: 'CONFIRMED' });
+    // 출하가 되돌아왔으니 출하지시 상태도 같은 규칙으로 다시 판정한다(전량 출하 아님 → CONFIRMED)
+    const allLines = await qr.manager.find(ShipmentOrderItem, { where: { shipOrderNo, ...where } });
+    const orderStatus = deriveShipOrderStatusFromLines(
+      allLines.map((l) => ({ orderQty: l.orderQty, shippedQty: l.seq === line.seq ? newShipped : l.shippedQty })),
+    );
+    await qr.manager.update(ShipmentOrder, { shipOrderNo, ...where }, { status: orderStatus });
 
     return {
       shipOrderNo,
@@ -1076,7 +1081,7 @@ export class ShipOrderService {
       qty: box.qty,
       lineShippedQty: newShipped,
       lineOrderQty: line.orderQty,
-      orderStatus: 'CONFIRMED',
+      orderStatus,
       canceled: true,
     };
   }
@@ -1174,7 +1179,7 @@ export class ShipOrderService {
         shipmentId: shipOrderNo,
         returnDate: new Date(),
         returnReason: dto.reason,
-        status: 'COMPLETED',
+        status: SHIP_RETURN_STATUS_CLOSED,
         remark: `출하취소(shipments:${canceledShipments.join(',') || '-'} / boxes:${canceledBoxes.length})`,
         company,
         plant,

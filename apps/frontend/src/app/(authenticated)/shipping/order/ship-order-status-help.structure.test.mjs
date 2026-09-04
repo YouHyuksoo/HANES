@@ -1,17 +1,21 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import test from "node:test";
+import { test } from "node:test";
 
-const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+// 상태 컬럼 헤더 도움말은 화면별 문구 상수가 아니라 공통 StatusHeaderHelp(공통코드 SHIP_ORDER_STATUS 전체 값+의미 자동 나열)를 쓴다.
+const columns = readFileSync(new URL("./shippingOrderColumns.tsx", import.meta.url), "utf8");
+const page = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 
-test("ship order grid status column exposes detailed help with a question icon", () => {
-  assert.match(source, /HelpCircle/, "status header should use a question help icon");
-  assert.match(source, /const shipOrderStatusHelpText/, "page should define detailed status help text");
-  for (const status of ["DRAFT", "CONFIRMED", "SHIPPING", "SHIPPED", "CLOSED"]) {
-    assert.match(source, new RegExp(`${status}:\\s*[^\\\\n]`), `${status} should be explained in the help text`);
-  }
-  assert.match(source, /function ShipOrderStatusHeader/, "status header should be a dedicated component");
-  assert.match(source, /title=\{shipOrderStatusHelpText\}/, "question icon should show the detailed explanation on hover");
-  assert.match(source, /aria-label=\{shipOrderStatusHelpText\}/, "question icon should expose explanation for accessibility");
-  assert.match(source, /header:\s*\(\)\s*=>\s*<ShipOrderStatusHeader/, "status column should render the custom help header");
+test("ship order grid status column exposes the common comCode help header", () => {
+  assert.match(columns, /import StatusHeaderHelp from "@\/components\/shared\/StatusHeaderHelp"/);
+  assert.match(columns, /accessorKey: "status",\s*header: \(\) => <StatusHeaderHelp label=\{t\("common\.status"\)\} codeType="SHIP_ORDER_STATUS"/);
+  assert.match(columns, /<ComCodeBadge groupCode="SHIP_ORDER_STATUS"/);
+  // 화면별 상태 설명 사전을 새로 만들지 않는다(i18n comCode.SHIP_ORDER_STATUS 단일 출처)
+  assert.doesNotMatch(page, /shipOrderStatusHelpText|ShipOrderStatusHeader/);
+});
+
+test("ship order open/closed judgement comes from the shared rule, not a hardcoded status", () => {
+  assert.match(page, /import \{ isShipOrderOpen \} from "@harness\/shared"/);
+  assert.match(page, /isShipOrderOpen\(o\.status\)/);
+  assert.doesNotMatch(page, /o\.status !== "SHIPPED"/);
 });

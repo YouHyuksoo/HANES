@@ -34,6 +34,7 @@ import { DefectLog } from '../../../../entities/defect-log.entity';
 import { ItemMaster } from '../../../../entities/item-master.entity';
 import { ProductInventoryService } from '../../../inventory/services/product-inventory.service';
 import { NumberingService } from '../../../../shared/numbering.service';
+import { DEFECT_LOG_STATUS, deriveDefectLogStatusFromReworkInspect } from '@harness/shared';
 import {
   CreateReworkOrderDto,
   UpdateReworkOrderDto,
@@ -216,7 +217,7 @@ export class ReworkService {
     // 불량 이력 상태 연동 — defectLogId 형식: "occurAt|seq"
     if (dto.defectLogId) {
       const defectWhere = this.defectLogWhere(dto.defectLogId, company, plant);
-      if (defectWhere) await this.defectLogRepo.update(defectWhere, { status: 'REWORK' });
+      if (defectWhere) await this.defectLogRepo.update(defectWhere, { status: DEFECT_LOG_STATUS.REWORK });
     }
 
     this.logger.log(
@@ -275,7 +276,7 @@ export class ReworkService {
     }
     if (item.defectLogId) {
       const defectWhere = this.defectLogWhere(item.defectLogId, company, plant);
-      if (defectWhere) await this.defectLogRepo.update(defectWhere, { status: 'WAIT' });
+      if (defectWhere) await this.defectLogRepo.update(defectWhere, { status: DEFECT_LOG_STATUS.WAIT });
     }
     await this.processRepo.delete({ reworkOrderId: reworkNo, ...this.tenantWhere(company, plant) });
     await this.reworkRepo.delete({ reworkNo, ...this.tenantWhere(company, plant) });
@@ -501,12 +502,7 @@ export class ReworkService {
 
     // 불량 이력 상태 연동 (복합 PK 기준 업데이트)
     if (order.defectLogId) {
-      const defectStatus =
-        dto.inspectResult === 'PASS'
-          ? 'DONE'
-          : dto.inspectResult === 'SCRAP'
-            ? 'SCRAP'
-            : 'REWORK';
+      const defectStatus = deriveDefectLogStatusFromReworkInspect(dto.inspectResult);
       const reworkOrder = await this.reworkRepo.findOne({
         where: { reworkNo: dto.reworkNo, company, plant },
       });

@@ -22,6 +22,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { LotMergeDto, LotMergeQueryDto } from '../dto/lot-merge.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { MAT_LOT_ACTIVE_STATUSES, MAT_LOT_STATUS, isMatLotMergeableOrSplittable, isMatLotOnHold } from '@harness/shared';
 
 /**
  * 입고완료 게이팅: 해당 matUid의 유효 입고(RECEIVE + 분할/병합 IN) 합 >= INIT_QTY.
@@ -79,7 +80,7 @@ export class LotMergeService {
     const qb = this.matLotRepository.createQueryBuilder('lot')
       .innerJoin(MatStock, 'stock', 'stock.matUid = lot.matUid AND stock.company = lot.company AND stock.plant = lot.plant')
       .where('stock.qty > 0')
-      .andWhere("lot.status = 'NORMAL'")
+      .andWhere('lot.status IN (:...activeStatuses)', { activeStatuses: [...MAT_LOT_ACTIVE_STATUSES] })
       .andWhere('NVL(stock.reservedQty, 0) = 0')
       .andWhere(RECEIVED_GATE_SQL);
 
@@ -111,10 +112,10 @@ export class LotMergeService {
     }
     this.assertSameTenant(lot, company, plant, '시리얼');
 
-    if (lot.status === 'HOLD') {
+    if (isMatLotOnHold(lot.status)) {
       throw new BadRequestException(`HOLD 상태인 LOT은 병합할 수 없습니다: ${matUid}`);
     }
-    if (lot.status !== 'NORMAL') {
+    if (!isMatLotMergeableOrSplittable(lot.status)) {
       throw new BadRequestException(`정상(NORMAL) 상태가 아닌 LOT은 병합할 수 없습니다. 현재 상태: ${lot.status}`);
     }
 
@@ -185,10 +186,10 @@ export class LotMergeService {
 
       // 5) 상태/재고/예약/입고완료 검증
       for (const lot of lots) {
-        if (lot.status === 'HOLD') {
+        if (isMatLotOnHold(lot.status)) {
           throw new BadRequestException(`HOLD 상태인 LOT은 병합할 수 없습니다: ${lot.matUid}`);
         }
-        if (lot.status !== 'NORMAL') {
+        if (!isMatLotMergeableOrSplittable(lot.status)) {
           throw new BadRequestException(`정상(NORMAL) 상태가 아닌 LOT은 병합할 수 없습니다: ${lot.matUid} (${lot.status})`);
         }
         const lotStock = stockMap.get(lot.matUid);
@@ -264,7 +265,7 @@ export class LotMergeService {
         }));
 
         await queryRunner.manager.update(MatLot, { matUid: lot.matUid, ...tenantWhere }, {
-          status: 'MERGED',
+          status: MAT_LOT_STATUS.MERGED,
           currentQty: 0,
           updatedBy: userId ?? null,
         });
@@ -293,7 +294,7 @@ export class LotMergeService {
         invoiceNo: base.invoiceNo,
         poNo: base.poNo,
         iqcStatus: base.iqcStatus,
-        status: 'NORMAL',
+        status: MAT_LOT_STATUS.NORMAL,
         company: base.company,
         plant: base.plant,
         createdBy: userId ?? null,

@@ -9,6 +9,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { isMatLotIssuable } from '@harness/shared';
 
 describe('HoldService', () => {
   let service: HoldService;
@@ -98,6 +99,24 @@ describe('HoldService', () => {
       await expect(service.hold({ matUid: 'MAT-001', reason: 'test' })).rejects.toThrow(BadRequestException);
     });
 
+    it.each(['MERGED', 'SPLIT', 'DISCARDED'])('종결 LOT(%s)은 HOLD 할 수 없다', async (status) => {
+      matLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', status } as MatLot);
+
+      await expect(service.hold({ matUid: 'MAT-001', reason: 'test' })).rejects.toThrow('종결된 LOT은 HOLD할 수 없습니다');
+      expect(matLotRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('NORMAL → HOLD 전이 후에는 출고 불가 상태가 된다', async () => {
+      matLotRepo.findOne
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'NORMAL' } as MatLot)
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'HOLD' } as MatLot);
+      partRepo.findOne.mockResolvedValue(null);
+
+      const result = await service.hold({ matUid: 'MAT-001', reason: 'test' });
+
+      expect(isMatLotIssuable(result.status)).toBe(false);
+    });
+
     it('updates lot status to HOLD', async () => {
       matLotRepo.findOne
         .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'NORMAL' } as MatLot)
@@ -134,6 +153,25 @@ describe('HoldService', () => {
       matLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', status: 'NORMAL' } as MatLot);
 
       await expect(service.release({ matUid: 'MAT-001' })).rejects.toThrow(BadRequestException);
+    });
+
+    it.each(['DEPLETED', 'MERGED', 'SPLIT', 'DISCARDED'])('종결 LOT(%s)은 HOLD 해제 대상이 아니다', async (status) => {
+      matLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-001', status } as MatLot);
+
+      await expect(service.release({ matUid: 'MAT-001' })).rejects.toThrow(BadRequestException);
+      expect(matLotRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('HOLD → NORMAL 해제 후에는 다시 출고 가능 상태가 된다', async () => {
+      matLotRepo.findOne
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'HOLD' } as MatLot)
+        .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'NORMAL' } as MatLot);
+      partRepo.findOne.mockResolvedValue(null);
+
+      const result = await service.release({ matUid: 'MAT-001' });
+
+      expect(result.status).toBe('NORMAL');
+      expect(isMatLotIssuable(result.status)).toBe(true);
     });
 
     it('updates lot status to NORMAL', async () => {

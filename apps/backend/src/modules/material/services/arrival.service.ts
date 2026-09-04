@@ -41,7 +41,15 @@ import {
   PoLineQueryDto,
   ArrivalResultQueryDto,
 } from '../dto/arrival.dto';
-import { isIqcExempt, PO_LINE_PENDING_FILTER, PO_LINE_PENDING_STATUSES } from '@harness/shared';
+import {
+  isIqcExempt,
+  PO_LINE_PENDING_FILTER,
+  PO_LINE_PENDING_STATUSES,
+  PO_RECEIVABLE_STATUSES,
+  canAutoTransitionPurchaseOrder,
+  derivePurchaseOrderLineStatus,
+  derivePurchaseOrderStatusFromLines,
+} from '@harness/shared';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
@@ -100,7 +108,7 @@ export class ArrivalService {
   /** 입하 가능 PO 목록 조회 (CONFIRMED/PARTIAL 상태) */
   async findReceivablePOs(company?: string, plant?: string) {
     const where: FindOptionsWhere<PurchaseOrder> = {
-      status: In(['CONFIRMED', 'PARTIAL']),
+      status: In([...PO_RECEIVABLE_STATUSES]),
     };
     if (company) where.company = company;
     if (plant) where.plant = plant;
@@ -196,7 +204,7 @@ export class ArrivalService {
     });
     if (!po) throw new NotFoundException(`PO를 찾을 수 없습니다: ${dto.poId}`);
     this.assertSameTenant('PO', { company, plant }, po);
-    if (!['CONFIRMED', 'PARTIAL'].includes(po.status)) {
+    if (!(PO_RECEIVABLE_STATUSES as readonly string[]).includes(po.status)) {
       throw new BadRequestException(`입하 불가 상태입니다: ${po.status}`);
     }
 
@@ -309,13 +317,16 @@ export class ArrivalService {
         // 4. PurchaseOrderItem.receivedQty 증가
         const poItem = poItems.find((pi) => pi.seq === Number(item.poItemId) || `${pi.poNo}-${pi.seq}` === item.poItemId);
         if (poItem) {
+          // 같은 품목이 한 요청에 여러 줄 오면 누계가 이어지도록 메모리 객체도 갱신한다
+          poItem.receivedQty = poItem.receivedQty + item.receivedQty;
           await queryRunner.manager.update(PurchaseOrderItem, {
             poNo: poItem.poNo,
             seq: poItem.seq,
             ...(po.company ? { company: po.company } : {}),
             ...(po.plant ? { plant: po.plant } : {}),
           }, {
-            receivedQty: poItem.receivedQty + item.receivedQty,
+            receivedQty: poItem.receivedQty,
+            lineStatus: derivePurchaseOrderLineStatus(poItem),
           });
         }
 
@@ -898,8 +909,10 @@ export class ArrivalService {
           ? await queryRunner.manager.findOne(PurchaseOrderItem, { where: { poNo, seq: poSeq, ...tenantWhere } })
           : null;
         if (poItem) {
+          const restoredQty = Math.max(0, poItem.receivedQty - original.qty);
           await queryRunner.manager.update(PurchaseOrderItem, { poNo: poItem.poNo, seq: poItem.seq, ...tenantWhere }, {
-            receivedQty: Math.max(0, poItem.receivedQty - original.qty),
+            receivedQty: restoredQty,
+            lineStatus: derivePurchaseOrderLineStatus({ orderQty: poItem.orderQty, receivedQty: restoredQty }),
           });
           await this.updatePOStatus(queryRunner.manager, poItem.poNo, original.company, original.plant);
         }
@@ -1015,7 +1028,7 @@ export class ArrivalService {
         .andWhere(plant ? 'tx.plant = :plant' : '1=1', { plant })
         .getRawOne(),
       this.purchaseOrderRepository.count({
-        where: { status: In(['CONFIRMED', 'PARTIAL']), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        where: { status: In([...PO_RECEIVABLE_STATUSES]), ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       }),
       this.matArrivalTransactionRepository.count({
         where: { transType: 'ARRIVAL_IN', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
@@ -1228,31 +1241,24 @@ export class ArrivalService {
     };
   }
 
-  /** PO 상태 재계산 */
+  /**
+   * PO 헤더 상태 재계산 — 라인 입하수량 → 헤더 상태 규칙은 @harness/shared purchase-order-rules 단일 출처.
+   * DRAFT/CLOSED 는 사람이 정한 상태라 자동 전이하지 않는다(마감 PO 의 입하취소가 PARTIAL 로 되살리지 않음).
+   */
   private async updatePOStatus(manager: EntityManager, poNo: string, company?: string | null, plant?: string | null) {
     const tenantWhere = {
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
     };
+    const po = await manager.findOne(PurchaseOrder, { where: { poNo, ...tenantWhere } });
+    if (!po) throw new NotFoundException(`PO 헤더 없음: ${poNo}`);
+    if (!canAutoTransitionPurchaseOrder(po.status)) return;
+
     const poItems = await manager.find(PurchaseOrderItem, {
       where: { poNo, ...tenantWhere },
     });
-
-    const allReceived = poItems.every(
-      (item: PurchaseOrderItem) => item.receivedQty >= item.orderQty,
-    );
-    const someReceived = poItems.some(
-      (item: PurchaseOrderItem) => item.receivedQty > 0,
-    );
-
-    let newStatus: string;
-    if (allReceived) {
-      newStatus = 'RECEIVED';
-    } else if (someReceived) {
-      newStatus = 'PARTIAL';
-    } else {
-      newStatus = 'CONFIRMED';
-    }
+    const newStatus = derivePurchaseOrderStatusFromLines(poItems);
+    if (newStatus === po.status) return;
 
     await manager.update(PurchaseOrder, { poNo, ...tenantWhere }, { status: newStatus });
   }
@@ -1517,7 +1523,7 @@ export class ArrivalService {
 
       // 7. PO 라인 잔량 + 상태 갱신
       poItem.receivedQty += dto.receivedQty;
-      poItem.lineStatus = poItem.receivedQty >= poItem.orderQty ? 'CLOSE' : 'PARTIAL';
+      poItem.lineStatus = derivePurchaseOrderLineStatus(poItem);
       await qr.manager.save(PurchaseOrderItem, poItem);
 
       // 8. 입하재고 + 입하원장 기록 (시리얼당 1건)
@@ -1557,6 +1563,9 @@ export class ArrivalService {
         });
         await qr.manager.save(MatArrival, arrivalRow);
       }
+
+      // 10. PO 헤더 상태 재계산 — PO 입하(createPoArrival)와 같은 shared 규칙
+      await this.updatePOStatus(qr.manager, po.poNo, po.company, po.plant);
 
       return { arrivalNo, serials: savedLots };
     });

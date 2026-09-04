@@ -26,6 +26,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, DataSource } from 'typeorm';
 import { ShipmentLog } from '../../../entities/shipment-log.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
+import { deriveShipOrderStatusFromLines } from '@harness/shared';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
@@ -606,17 +607,15 @@ export class ShipmentService {
           }
         }
 
+        // 갱신된 라인을 다시 읽어 출하지시 상태를 shared 규칙으로 판정한다(전량 출하 → CLOSED)
         const allLines = await queryRunner.manager.find(ShipmentOrderItem, {
           where: { shipOrderNo: shipment.shipOrderNo, ...this.tenantWhere(company, plant) },
         });
-        const fullyShipped = allLines.every((l) => l.shippedQty >= l.orderQty);
-        if (fullyShipped) {
-          await queryRunner.manager.update(
-            ShipmentOrder,
-            { shipOrderNo: shipment.shipOrderNo, ...this.tenantWhere(company, plant) },
-            { status: 'CLOSED' },
-          );
-        }
+        await queryRunner.manager.update(
+          ShipmentOrder,
+          { shipOrderNo: shipment.shipOrderNo, ...this.tenantWhere(company, plant) },
+          { status: deriveShipOrderStatusFromLines(allLines) },
+        );
       }
     });
 
@@ -809,10 +808,12 @@ export class ShipmentService {
       for (const l of lines) {
         if (!lineByItem.has(l.itemCode)) lineByItem.set(l.itemCode, l);
       }
+      const restoredShippedBySeq = new Map<number, number>();
       for (const [itemCode, qty] of itemQtyMap) {
         const line = lineByItem.get(itemCode);
         if (line) {
           const newShipped = Math.max(0, line.shippedQty - qty);
+          restoredShippedBySeq.set(line.seq, newShipped);
           await qr.manager.update(
             ShipmentOrderItem,
             { shipOrderNo: shipment.shipOrderNo, seq: line.seq, ...this.tenantWhere(company, plant) },
@@ -821,11 +822,15 @@ export class ShipmentService {
         }
       }
 
-      // 역분개 시에는 CONFIRMED로 되돌림
+      // 역분개 후 출하지시 상태를 shared 규칙으로 다시 판정한다(출하분이 줄었으니 CONFIRMED)
       await qr.manager.update(
         ShipmentOrder,
         { shipOrderNo: shipment.shipOrderNo, ...this.tenantWhere(company, plant) },
-        { status: 'CONFIRMED' },
+        {
+          status: deriveShipOrderStatusFromLines(
+            lines.map((l) => ({ orderQty: l.orderQty, shippedQty: restoredShippedBySeq.get(l.seq) ?? l.shippedQty })),
+          ),
+        },
       );
     }
 

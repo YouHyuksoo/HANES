@@ -399,6 +399,36 @@ describe('MatIssueService', () => {
       expect(mockTx.run).toHaveBeenCalledTimes(1);
     });
 
+    it('HOLD LOT 스캔 출고는 거부한다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue({
+        matUid: 'MAT-001', itemCode: 'ITEM-001', iqcStatus: 'PASS', status: 'HOLD',
+      } as MatLot);
+      const createInTx = jest.spyOn(target, 'createInTx');
+
+      await expect(target.scanIssue({
+        matUid: 'MAT-001', issueType: 'PROD', processCode: 'PRC1', workerId: 'worker',
+      })).rejects.toThrow('보류 상태의 LOT는 출고할 수 없습니다');
+      expect(createInTx).not.toHaveBeenCalled();
+    });
+
+    it.each(['MERGED', 'SPLIT', 'DISCARDED', 'DEPLETED'])(
+      '종결 LOT(%s)은 MAT_STOCKS 잔량이 남아 있어도 스캔 출고를 거부한다',
+      async (status) => {
+        mockMatLotRepo.findOne.mockResolvedValue({
+          matUid: 'MAT-001', itemCode: 'ITEM-001', iqcStatus: 'PASS', status,
+        } as MatLot);
+        mockMatStockRepo.find.mockResolvedValue([
+          { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5 } as MatStock,
+        ]);
+        const createInTx = jest.spyOn(target, 'createInTx');
+
+        await expect(target.scanIssue({
+          matUid: 'MAT-001', issueType: 'PROD', processCode: 'PRC1', workerId: 'worker',
+        })).rejects.toThrow(`출고할 수 없는 상태의 LOT입니다: MAT-001 (상태: ${status})`);
+        expect(createInTx).not.toHaveBeenCalled();
+      },
+    );
+
     it('스캔 출고에 공정코드가 없으면 거부한다', async () => {
       mockMatLotRepo.findOne.mockResolvedValue({
         matUid: 'MAT-001',
@@ -446,6 +476,21 @@ describe('MatIssueService', () => {
       expect(result.matUid).toBe('MAT-001');
       expect(result.issuedQty).toBe(5);
     });
+  });
+
+  it.each(['MERGED', 'SPLIT', 'DISCARDED'])('create: 종결 LOT(%s)은 재고가 남아 있어도 수동 출고를 거부한다', async (status) => {
+    mockQueryRunner.manager.findOne.mockResolvedValueOnce({
+      matUid: 'MAT-001', itemCode: 'ITEM-001', iqcStatus: 'PASS', status, company: 'C1', plant: 'P1',
+    } as MatLot);
+    mockQueryRunner.manager.find.mockResolvedValue([
+      { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'C1', plant: 'P1' } as MatStock,
+    ]);
+
+    await expect(target.create({
+      issueType: 'ETC', workerId: 'worker',
+      items: [{ matUid: 'MAT-001', issueQty: 1 }],
+    } as any, 'C1', 'P1')).rejects.toThrow(`출고할 수 없는 상태의 LOT입니다: MAT-001 (상태: ${status})`);
+    expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
   });
 
   it('create splits manual issue across multiple stock rows', async () => {

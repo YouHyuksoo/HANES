@@ -21,6 +21,7 @@ import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import ServerPager from "@/components/shared/ServerPager";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
+import { useComCodeOptions } from "@/hooks/useComCode";
 import { createLotGridColumns, type MatLotItem } from "./lotColumns";
 
 /** 상태 셀렉트의 기본값: 재고 있는 LOT(잔량>0, NORMAL). 서버 activeOnly=true 로 전달된다. */
@@ -88,13 +89,13 @@ export default function MatLotPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // LOT 상태 옵션은 공통코드 MAT_LOT_STATUS(NORMAL/HOLD/DEPLETED/SPLIT/MERGED/DISCARDED)가 단일 출처 — 화면에 값을 고정하지 않는다
+  const lotStatusCodeOptions = useComCodeOptions("MAT_LOT_STATUS");
   const LOT_STATUS = useMemo(() => [
     { value: LOT_ACTIVE_FILTER, label: t("material.lot.status.activeOnly", "재고 있는 LOT (잔량>0·정상)") },
     { value: "", label: `LOT${t("common.status")}: ${t("common.all")}` },
-    { value: "NORMAL", label: `LOT${t("common.status")}: ${t("material.lot.status.normal")}` },
-    { value: "HOLD", label: `LOT${t("common.status")}: ${t("material.lot.status.hold")}` },
-    { value: "DEPLETED", label: `LOT${t("common.status")}: ${t("material.lot.status.depleted")}` },
-  ], [t]);
+    ...lotStatusCodeOptions.map((o) => ({ value: o.value, label: `LOT${t("common.status")}: ${o.label}` })),
+  ], [t, lotStatusCodeOptions]);
 
   const IQC_STATUS = useMemo(() => [
     { value: "", label: `IQC${t("common.status")}: ${t("common.all")}` },

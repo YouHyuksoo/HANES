@@ -6,6 +6,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { isMatLotIssuable, isMatLotOnHold } from '@harness/shared';
 
 @Injectable()
 export class MatOutRequestService {
@@ -67,8 +68,11 @@ export class MatOutRequestService {
         ...(dto.plant ? { plant: dto.plant } : {}),
       },
     });
-    if (lot?.status === 'HOLD') {
+    if (lot && isMatLotOnHold(lot.status)) {
       throw new BadRequestException(`Cannot create material-out request for HOLD lot: ${dto.matUid}`);
+    }
+    if (lot && !isMatLotIssuable(lot.status)) {
+      throw new BadRequestException(`Cannot create material-out request for ${lot.status} lot: ${dto.matUid}`);
     }
 
     const stock = await this.matStockRepo.findOne({
@@ -140,8 +144,11 @@ export class MatOutRequestService {
 
     if (tx.matUid) {
       const lot = await this.matLotRepo.findOne({ where: { matUid: tx.matUid, ...txTenantWhere } });
-      if (lot?.status === 'HOLD') {
+      if (lot && isMatLotOnHold(lot.status)) {
         throw new BadRequestException(`Cannot approve material-out for HOLD lot: ${tx.matUid}`);
+      }
+      if (lot && !isMatLotIssuable(lot.status)) {
+        throw new BadRequestException(`Cannot approve material-out for ${lot.status} lot: ${tx.matUid}`);
       }
     }
 

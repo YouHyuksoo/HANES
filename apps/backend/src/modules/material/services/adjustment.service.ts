@@ -21,6 +21,7 @@ import { CreateAdjustmentDto, AdjustmentQueryDto } from '../dto/adjustment.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
+import { MAT_LOT_STATUS } from '@harness/shared';
 
 @Injectable()
 export class AdjustmentService {
@@ -252,7 +253,7 @@ export class AdjustmentService {
       // LOT 상태 업데이트 (재고 0이면 DEPLETED — currentQty는 MatStock에서만 관리)
       if (matUid) {
         if (afterQty <= 0) {
-          await queryRunner.manager.update(MatLot, { matUid, ...adjTenantWhere }, { status: 'DEPLETED' });
+          await queryRunner.manager.update(MatLot, { matUid, ...adjTenantWhere }, { status: MAT_LOT_STATUS.DEPLETED });
         }
       }
 
@@ -388,7 +389,7 @@ export class AdjustmentService {
       // LOT 상태 업데이트 (재고 0이면 DEPLETED — currentQty는 MatStock에서만 관리)
       if (matUid) {
         if (afterQty <= 0) {
-          await queryRunner.manager.update(MatLot, { matUid, ...tenantWhere }, { status: 'DEPLETED' });
+          await queryRunner.manager.update(MatLot, { matUid, ...tenantWhere }, { status: MAT_LOT_STATUS.DEPLETED });
         }
       }
 

@@ -6912,7 +6912,8 @@
       "HOLD": "품질·확인 사유로 사용이 일시 보류된 LOT",
       "DEPLETED": "잔량이 모두 소진되어 재고가 없는 LOT",
       "SPLIT": "여러 LOT로 분할되어 원본이 종료된 상태",
-      "MERGED": "다른 LOT와 병합되어 원본이 종료된 상태"
+      "MERGED": "다른 LOT와 병합되어 원본이 종료된 상태",
+      "DISCARDED": "유효기간 재검사 불합격 등으로 폐기 확정되어 사용·출고가 불가한 종결 상태"
     },
     "MOLD_LIFE_STATUS": {
       "NORMAL": "크림핑 금형 수명이 양호한 상태",
@@ -7566,7 +7567,10 @@
     "MAT_LOT_STATUS": {
       "NORMAL": "정상",
       "HOLD": "보류",
-      "DEPLETED": "소진"
+      "DEPLETED": "소진",
+      "SPLIT": "분할완료",
+      "MERGED": "병합완료",
+      "DISCARDED": "폐기"
     },
     "ISSUE_TYPE": {
       "PRODUCTION": "양산",

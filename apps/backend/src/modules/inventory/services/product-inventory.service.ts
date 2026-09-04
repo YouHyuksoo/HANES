@@ -19,6 +19,14 @@ import { BoxMaster } from '../../../entities/box-master.entity';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import {
+  PRODUCT_STOCK_HOLD_STATUS,
+  PRODUCT_TRANSACTION_STATUS,
+  PRODUCT_QUALITY_STATUS,
+  isProductStockOnHold,
+  isProductTransactionCanceled,
+  normalizeProductQualityStatus,
+} from '@harness/shared';
+import {
   ProductReceiveStockDto,
   ProductIssueStockDto,
   ProductDefectTransferDto,
@@ -107,7 +115,7 @@ export class ProductInventoryService {
   }
 
   private normalizeQualityStatus(value?: string | null): 'GOOD' | 'DEFECT' {
-    return value === 'DEFECT' ? 'DEFECT' : 'GOOD';
+    return normalizeProductQualityStatus(value);
   }
 
   private stockKey(dto: { warehouseId: string; itemCode: string; qualityStatus?: string | null; company?: string | null; plant?: string | null }) {
@@ -129,7 +137,7 @@ export class ProductInventoryService {
       .where(this.stockKey(dto))
       .andWhere('"STATUS" <> :holdStatus')
       .andWhere('"QTY" >= :stockDelta AND "AVAILABLE_QTY" >= :stockDelta')
-      .setParameters({ stockDelta: dto.qty, holdStatus: 'HOLD' })
+      .setParameters({ stockDelta: dto.qty, holdStatus: PRODUCT_STOCK_HOLD_STATUS.HOLD })
       .execute();
     if ((result.affected ?? 0) !== 1) {
       throw new BadRequestException('동시 처리로 제품재고가 변경되었거나 가용 재고가 부족합니다. 다시 조회해 주세요.');
@@ -182,7 +190,7 @@ export class ProductInventoryService {
           refType: 'BOX',
           refId: dto.refId,
           transType: In(['FG_IN', 'WIP_IN']),
-          status: 'DONE',
+          status: PRODUCT_TRANSACTION_STATUS.DONE,
           ...tenantWhere,
         },
       });
@@ -214,7 +222,7 @@ export class ProductInventoryService {
         refId: dto.refId,
         workerId: dto.workerId,
         remark: dto.remark,
-        status: 'DONE',
+        status: PRODUCT_TRANSACTION_STATUS.DONE,
         company: dto.company,
         plant: dto.plant,
       });
@@ -249,7 +257,7 @@ export class ProductInventoryService {
           refType: 'BOX',
           refId: dto.refId,
           transType: In(['FG_IN', 'WIP_IN']),
-          status: 'DONE',
+          status: PRODUCT_TRANSACTION_STATUS.DONE,
           ...tenantWhere,
         },
       });
@@ -278,7 +286,7 @@ export class ProductInventoryService {
       refId: dto.refId,
       workerId: dto.workerId,
       remark: dto.remark,
-      status: 'DONE',
+      status: PRODUCT_TRANSACTION_STATUS.DONE,
       company: dto.company,
       plant: dto.plant,
     });
@@ -313,7 +321,7 @@ export class ProductInventoryService {
             refType: 'BOX',
             refId: dto.refId,
             transType: In(['WIP_OUT', 'FG_IN', 'WIP_IN']),
-            status: 'DONE',
+            status: PRODUCT_TRANSACTION_STATUS.DONE,
             ...tenantWhere,
           },
         });
@@ -366,7 +374,7 @@ export class ProductInventoryService {
       if (!stock || stock.availableQty < dto.qty) {
         throw new BadRequestException(`재고 부족: 가용 ${stock?.availableQty || 0}, 요청 ${dto.qty}`);
       }
-      if (stock.status === 'HOLD') {
+      if (isProductStockOnHold(stock.status)) {
         throw new BadRequestException(`HOLD stock cannot be issued: ${dto.itemCode}`);
       }
 
@@ -389,7 +397,7 @@ export class ProductInventoryService {
         workerId: dto.workerId,
         issueType: dto.issueType,
         remark: dto.remark,
-        status: 'DONE',
+        status: PRODUCT_TRANSACTION_STATUS.DONE,
         company: dto.company,
         plant: dto.plant,
       });
@@ -428,7 +436,7 @@ export class ProductInventoryService {
         `재고 부족으로 출고할 수 없습니다: ${dto.itemCode} (가용 ${stock?.availableQty || 0}, 요청 ${dto.qty})`,
       );
     }
-    if (stock.status === 'HOLD') {
+    if (isProductStockOnHold(stock.status)) {
       throw new BadRequestException(`HOLD stock cannot be issued: ${dto.itemCode}`);
     }
 
@@ -451,7 +459,7 @@ export class ProductInventoryService {
       workerId: dto.workerId,
       issueType: dto.issueType,
       remark: dto.remark,
-      status: 'DONE',
+      status: PRODUCT_TRANSACTION_STATUS.DONE,
       company: dto.company,
       plant: dto.plant,
     });
@@ -634,7 +642,7 @@ export class ProductInventoryService {
         toWarehouseId: defectWarehouse.warehouseCode,
         itemCode: dto.itemCode,
         itemType,
-        qualityStatus: 'DEFECT',
+        qualityStatus: PRODUCT_QUALITY_STATUS.DEFECT,
         qty: dto.qty,
         transType: 'DEFECT_IN',
         refType: 'ADJUST',
@@ -659,7 +667,7 @@ export class ProductInventoryService {
       throw new NotFoundException('원본 트랜잭션을 찾을 수 없습니다.');
     }
 
-    if (originalTrans.status === 'CANCELED') {
+    if (isProductTransactionCanceled(originalTrans.status)) {
       throw new BadRequestException('이미 취소된 트랜잭션입니다.');
     }
     this.assertSameTenant('원본 제품거래', { company, plant }, originalTrans);
@@ -699,7 +707,7 @@ export class ProductInventoryService {
     const qualityStatus = this.normalizeQualityStatus(originalTrans.qualityStatus);
 
     // 1. 원본 트랜잭션 상태 변경
-    await qr.manager.update(ProductTransaction, { transNo: originalTrans.transNo, ...tenantWhere }, { status: 'CANCELED' });
+    await qr.manager.update(ProductTransaction, { transNo: originalTrans.transNo, ...tenantWhere }, { status: PRODUCT_TRANSACTION_STATUS.CANCELED });
 
     // 2. 취소 트랜잭션 생성 (반대 수량)
     const cancelTrans = qr.manager.create(ProductTransaction, {
@@ -723,7 +731,7 @@ export class ProductInventoryService {
       workerId: dto.workerId,
       issueType: originalTrans.issueType,
       remark: dto.remark || `취소: ${originalTrans.transNo}`,
-      status: 'DONE',
+      status: PRODUCT_TRANSACTION_STATUS.DONE,
       company: originalTrans.company,
       plant: originalTrans.plant,
     });

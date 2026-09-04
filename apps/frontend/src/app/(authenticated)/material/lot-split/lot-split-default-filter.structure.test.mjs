@@ -16,7 +16,8 @@ test('/material/lot-split uses server paging instead of fetching everything', ()
 
 test('backend restricts split candidates in the DB query, not in memory', () => {
   assert.match(service, /\.where\('stock\.qty > 1'\)/);
-  assert.match(service, /\.andWhere\("lot\.status = 'NORMAL'"\)/);
+  // 활성 LOT 집합은 shared MAT_LOT_ACTIVE_STATUSES 단일 출처(하드코딩 'NORMAL' 금지)
+  assert.match(service, /\.andWhere\('lot\.status IN \(:\.\.\.activeStatuses\)', \{ activeStatuses: \[\.\.\.MAT_LOT_ACTIVE_STATUSES\] \}\)/);
   assert.match(service, /\.andWhere\('NVL\(stock\.reservedQty, 0\) = 0'\)/);
   assert.match(service, /\.skip\(skip\)\.take\(limit\)\.getMany\(\)/);
 });

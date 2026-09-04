@@ -20,6 +20,7 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { StockQueryDto, StockAdjustDto, StockTransferDto } from '../dto/mat-stock.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
+import { isMatLotIssuable } from '@harness/shared';
 
 @Injectable()
 export class MatStockService {
@@ -267,7 +268,8 @@ export class MatStockService {
     }).filter((s) => (
       (s.iqcStatus === 'PASS' || (s.iqcStatus === 'FAIL' && s.specialAcceptYn === 'Y'))
       && s.qty > 0
-      && s.lotStatus !== 'HOLD'
+      // 출고 가능 LOT 상태는 shared 규칙 한 곳(NORMAL). 종결 LOT(MERGED/SPLIT/DISCARDED/DEPLETED)은 재고가 남아 있어도 출고 목록에서 뺀다.
+      && isMatLotIssuable(s.lotStatus)
     ));
 
     if (search) {

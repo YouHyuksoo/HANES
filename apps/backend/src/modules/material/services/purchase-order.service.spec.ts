@@ -21,6 +21,13 @@ import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import {
+  PO_CLOSABLE_STATUSES,
+  PO_RECEIVABLE_STATUSES,
+  canAutoTransitionPurchaseOrder,
+  derivePurchaseOrderLineStatus,
+  derivePurchaseOrderStatusFromLines,
+} from '@harness/shared';
 
 describe('PurchaseOrderService', () => {
   let target: PurchaseOrderService;
@@ -357,6 +364,55 @@ describe('PurchaseOrderService', () => {
     });
   });
 
+  describe('update — 헤더 상태 파생(shared 규칙)', () => {
+    it('입하가 진행된 PO 의 품목 교체는 거부한다(receivedQty 소실 방지)', async () => {
+      mockPoRepo.findOne.mockResolvedValue(createPo({ status: 'PARTIAL' }));
+      mockPoItemRepo.find.mockResolvedValue([
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 4 } as PurchaseOrderItem,
+      ]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+
+      await expect(
+        target.update('PO-001', { items: [{ itemCode: 'ITEM-002', orderQty: 1 }] } as any),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
+    it('품목 교체 후 헤더 상태를 라인에서 다시 판정한다(입하 없음 → CONFIRMED)', async () => {
+      mockPoRepo.findOne.mockResolvedValue(createPo({ status: 'PARTIAL' }));
+      mockPoItemRepo.find.mockResolvedValue([
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0 } as PurchaseOrderItem,
+      ]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+      mockQueryRunner.manager.create.mockImplementation((_entity, value) => value as any);
+      mockQueryRunner.manager.save.mockImplementation(async (entities: any) => entities);
+
+      await target.update('PO-001', { items: [{ itemCode: 'ITEM-002', orderQty: 3, unitPrice: 100 }] } as any);
+
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(
+        PurchaseOrderItem,
+        expect.objectContaining({ itemCode: 'ITEM-002', lineStatus: 'OPEN' }),
+      );
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(PurchaseOrder, { poNo: 'PO-001' }, { status: 'CONFIRMED' });
+    });
+
+    it('DRAFT PO 는 품목을 교체해도 헤더 상태를 자동 전이하지 않는다', async () => {
+      mockPoRepo.findOne.mockResolvedValue(createPo({ status: 'DRAFT' }));
+      mockPoItemRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+      mockQueryRunner.manager.create.mockImplementation((_entity, value) => value as any);
+      mockQueryRunner.manager.save.mockImplementation(async (entities: any) => entities);
+
+      await target.update('PO-001', { items: [{ itemCode: 'ITEM-002', orderQty: 3 }] } as any);
+
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalledWith(
+        PurchaseOrder,
+        expect.anything(),
+        expect.objectContaining({ status: expect.anything() }),
+      );
+    });
+  });
+
   // ─── confirm ───
   describe('confirm', () => {
     it('DRAFT 상태 PO를 확정한다', async () => {
@@ -414,6 +470,52 @@ describe('PurchaseOrderService', () => {
       mockPoRepo.findOne.mockResolvedValue(createPo({ status: 'DRAFT' }));
 
       await expect(target.close('PO-001')).rejects.toThrow(BadRequestException);
+    });
+
+    it('부분입고(PARTIAL) PO 도 단축 마감할 수 있다', async () => {
+      mockPoRepo.findOne.mockResolvedValue(createPo({ status: 'PARTIAL' }));
+      mockPoRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockPoItemRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+
+      await target.close('PO-001');
+
+      expect(mockPoRepo.update).toHaveBeenCalledWith({ poNo: 'PO-001' }, { status: 'CLOSED' });
+    });
+  });
+
+  // ─── shared 상태 규칙 (packages/shared purchase-order-rules) ───
+  describe('purchase-order-rules', () => {
+    it('라인 상태: 입하 0 → OPEN, 일부 → PARTIAL, 발주수량 이상 → CLOSE', () => {
+      expect(derivePurchaseOrderLineStatus({ orderQty: 10, receivedQty: 0 })).toBe('OPEN');
+      expect(derivePurchaseOrderLineStatus({ orderQty: 10, receivedQty: null })).toBe('OPEN');
+      expect(derivePurchaseOrderLineStatus({ orderQty: 10, receivedQty: 3 })).toBe('PARTIAL');
+      expect(derivePurchaseOrderLineStatus({ orderQty: 10, receivedQty: 10 })).toBe('CLOSE');
+      expect(derivePurchaseOrderLineStatus({ orderQty: 10, receivedQty: 12 })).toBe('CLOSE');
+    });
+
+    it('헤더 상태: 전 라인 마감 → RECEIVED, 일부 입하 → PARTIAL, 입하 없음/라인 없음 → CONFIRMED', () => {
+      expect(derivePurchaseOrderStatusFromLines([])).toBe('CONFIRMED');
+      expect(derivePurchaseOrderStatusFromLines([{ orderQty: 10, receivedQty: 0 }, { orderQty: 5, receivedQty: 0 }])).toBe('CONFIRMED');
+      expect(derivePurchaseOrderStatusFromLines([{ orderQty: 10, receivedQty: 10 }, { orderQty: 5, receivedQty: 0 }])).toBe('PARTIAL');
+      expect(derivePurchaseOrderStatusFromLines([{ orderQty: 10, receivedQty: 2 }])).toBe('PARTIAL');
+      expect(derivePurchaseOrderStatusFromLines([{ orderQty: 10, receivedQty: 10 }, { orderQty: 5, receivedQty: 7 }])).toBe('RECEIVED');
+    });
+
+    it('DRAFT/CLOSED 는 사람이 정한 상태라 자동 전이하지 않는다', () => {
+      expect(canAutoTransitionPurchaseOrder('DRAFT')).toBe(false);
+      expect(canAutoTransitionPurchaseOrder('CLOSED')).toBe(false);
+      expect(canAutoTransitionPurchaseOrder('closed')).toBe(false);
+      expect(canAutoTransitionPurchaseOrder('CONFIRMED')).toBe(true);
+      expect(canAutoTransitionPurchaseOrder('PARTIAL')).toBe(true);
+      expect(canAutoTransitionPurchaseOrder('RECEIVED')).toBe(true);
+    });
+
+    it('입하 가능/마감 가능 상태 집합은 공통코드 PO_STATUS 값만 쓴다', () => {
+      const canonical = ['DRAFT', 'CONFIRMED', 'PARTIAL', 'RECEIVED', 'CLOSED'];
+      expect([...PO_RECEIVABLE_STATUSES]).toEqual(['CONFIRMED', 'PARTIAL']);
+      expect([...PO_CLOSABLE_STATUSES]).toEqual(['PARTIAL', 'RECEIVED']);
+      for (const s of [...PO_RECEIVABLE_STATUSES, ...PO_CLOSABLE_STATUSES]) expect(canonical).toContain(s);
     });
   });
 

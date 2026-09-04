@@ -19,6 +19,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { CreateMatLotDto, UpdateMatLotDto, MatLotQueryDto } from '../dto/mat-lot.dto';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
+import { MAT_LOT_ACTIVE_STATUSES } from '@harness/shared';
 
 @Injectable()
 export class MatLotService {
@@ -56,7 +57,7 @@ export class MatLotService {
 
     const where: FindOptionsWhere<MatLot> = {
       // 기본 조건: 재고 있는 LOT(잔량>0, NORMAL). DB 조건으로 걸어야 페이지 밖으로 밀리는 행이 없다.
-      ...(activeOnly && { status: 'NORMAL', currentQty: MoreThan(0) }),
+      ...(activeOnly && { status: In([...MAT_LOT_ACTIVE_STATUSES]), currentQty: MoreThan(0) }),
       ...(recvDateWhere && { recvDate: recvDateWhere }),
       ...(itemCode && { itemCode }),
       ...(matUid && { matUid: Like(`%${matUid}%`) }),

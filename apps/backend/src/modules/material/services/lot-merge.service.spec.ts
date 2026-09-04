@@ -19,6 +19,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { isMatLotIssuable, isMatLotTerminal } from '@harness/shared';
 
 describe('LotMergeService', () => {
   let target: LotMergeService;
@@ -114,6 +115,16 @@ describe('LotMergeService', () => {
         .rejects.toThrow(BadRequestException);
     });
 
+    it.each(['MERGED', 'SPLIT', 'DISCARDED', 'DEPLETED'])('종결 LOT(%s)이 섞이면 재고가 남아 있어도 BadRequestException', async (status) => {
+      mockQueryRunner.manager.find
+        .mockResolvedValueOnce([lot('MAT-001'), lot('MAT-002', { status })])
+        .mockResolvedValueOnce([stock('MAT-001'), stock('MAT-002', 50)]);
+
+      await expect(target.merge({ sourceLotIds: ['MAT-001', 'MAT-002'] }, 'C1', 'P1'))
+        .rejects.toThrow('정상(NORMAL) 상태가 아닌 LOT은 병합할 수 없습니다');
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
+
     it('입고 미완료 LOT이 섞이면 BadRequestException', async () => {
       mockQueryRunner.manager.find
         .mockResolvedValueOnce([lot('MAT-001'), lot('MAT-002')])
@@ -161,12 +172,55 @@ describe('LotMergeService', () => {
         expect.objectContaining({ matUid: 'NEW-MERGED', initQty: 50, currentQty: 50, status: 'NORMAL' }),
       );
     });
+
+    it('병합 전이: 원본은 MERGED(종결·출고 불가)+재고 0, 새 통합 LOT 은 NORMAL(출고 가능)', async () => {
+      mockQueryRunner.manager.find
+        .mockResolvedValueOnce([lot('MAT-001'), lot('MAT-002')])
+        .mockResolvedValueOnce([stock('MAT-001', 30), stock('MAT-002', 20)])
+        .mockResolvedValueOnce([]);
+      (mockQueryRunner.manager.query as jest.Mock).mockResolvedValue([{ RECVD: 100 }]);
+      mockQueryRunner.manager.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'PART-A', company: 'C1', plant: 'P1' } as ItemMaster);
+      (mockQueryRunner.manager.create as jest.Mock).mockImplementation((_e: unknown, obj: unknown) => obj);
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.merge({ sourceLotIds: ['MAT-001', 'MAT-002'] }, 'C1', 'P1');
+
+      const lotUpdates = (mockQueryRunner.manager.update as jest.Mock).mock.calls
+        .filter(([entity]) => entity === MatLot)
+        .map(([, , patch]) => patch as { status: string; currentQty: number });
+      expect(lotUpdates).toHaveLength(2);
+      for (const patch of lotUpdates) {
+        expect(isMatLotTerminal(patch.status)).toBe(true);
+        expect(isMatLotIssuable(patch.status)).toBe(false);
+        expect(patch.currentQty).toBe(0);
+      }
+      // 원본 MAT_STOCKS 잔량도 0 으로 비운다 (종결 LOT 재고 잔존 방지)
+      const stockUpdates = (mockQueryRunner.manager.update as jest.Mock).mock.calls
+        .filter(([entity]) => entity === MatStock)
+        .map(([, , patch]) => patch as { qty: number; availableQty: number });
+      expect(stockUpdates).toHaveLength(2);
+      expect(stockUpdates.every((p) => p.qty === 0 && p.availableQty === 0)).toBe(true);
+
+      const created = (mockQueryRunner.manager.save as jest.Mock).mock.calls
+        .map(([arg]) => arg as { matUid?: string; status?: string })
+        .find((arg) => arg?.matUid === 'NEW-MERGED');
+      expect(created).toBeDefined();
+      expect(isMatLotIssuable(created!.status)).toBe(true);
+    });
   });
 
   describe('findByBarcode', () => {
     it('미존재 시리얼이면 예외', async () => {
       mockMatLotRepo.findOne.mockResolvedValue(null);
       await expect(target.findByBarcode('NOPE', 'C1', 'P1')).rejects.toThrow();
+    });
+
+    it.each(['MERGED', 'SPLIT', 'DISCARDED', 'DEPLETED'])('종결 LOT(%s) 시리얼은 병합 후보로 받지 않는다', async (status) => {
+      mockMatLotRepo.findOne.mockResolvedValue(lot('MAT-001', { status }));
+      mockMatStockRepo.findOne.mockResolvedValue(stock('MAT-001', 50));
+
+      await expect(target.findByBarcode('MAT-001', 'C1', 'P1')).rejects.toThrow(BadRequestException);
     });
 
     it('정상 시리얼은 메타와 함께 반환', async () => {
@@ -212,7 +266,7 @@ describe('LotMergeService', () => {
       await target.findMergeableLots({ page: 3, limit: 50, search: 'MAT' }, 'C1', 'P1');
 
       expect(qb.where).toHaveBeenCalledWith('stock.qty > 0');
-      expect(qb.andWhere).toHaveBeenCalledWith("lot.status = 'NORMAL'");
+      expect(qb.andWhere).toHaveBeenCalledWith('lot.status IN (:...activeStatuses)', { activeStatuses: ['NORMAL'] });
       expect(qb.andWhere).toHaveBeenCalledWith('NVL(stock.reservedQty, 0) = 0');
       expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('lot.initQty <='));
       expect(qb.andWhere).toHaveBeenCalledWith('lot.company = :company', { company: 'C1' });

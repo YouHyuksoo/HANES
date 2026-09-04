@@ -32,6 +32,7 @@ import { CreateBulkReceiveDto, ReceivingQueryDto } from '../dto/receiving.dto';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart } from '../../../shared/date.util';
+import { MAT_LOT_LIVE_STATUSES } from '@harness/shared';
 import { SysConfigService } from '../../system/services/sys-config.service';
 
 @Injectable()
@@ -95,7 +96,7 @@ export class ReceivingService {
     // - IQC 불합격(FAIL)이지만 특채(SPECIAL_ACCEPT_YN='Y') 승인된 LOT → 양품입고 허용
     const qb = this.matLotRepository.createQueryBuilder('lot')
       .where("(lot.iqcStatus = 'PASS' OR (lot.iqcStatus = 'FAIL' AND lot.specialAcceptYn = 'Y'))")
-      .andWhere('lot.status IN (:...statuses)', { statuses: ['NORMAL', 'HOLD'] })
+      .andWhere('lot.status IN (:...statuses)', { statuses: [...MAT_LOT_LIVE_STATUSES] })
       .andWhere('lot.initQty > 0');
 
     if (company) qb.andWhere('lot.company = :company', { company });
@@ -660,7 +661,8 @@ export class ReceivingService {
     const validLots = await this.matLotRepository.createQueryBuilder('lot')
       .select(['lot.matUid', 'lot.initQty'])
       .where('lot.iqcStatus = :iqcStatus', { iqcStatus: 'PASS' })
-      .andWhere('lot.status = :status', { status: 'NORMAL' })
+      // 입고 가능 목록(findReceivable)과 같은 살아있는 상태 집합(NORMAL/HOLD) — 통계와 목록이 다른 LOT 를 세지 않게
+      .andWhere('lot.status IN (:...statuses)', { statuses: [...MAT_LOT_LIVE_STATUSES] })
       .andWhere('lot.initQty > 0')
       .andWhere(company ? 'lot.company = :company' : '1=1', { company })
       .andWhere(plant ? 'lot.plant = :plant' : '1=1', { plant })

@@ -6,7 +6,7 @@
  * - matUid가 PK (자재시리얼) - 자재 고유식별자로 직접 식별
  * - itemCode로 품목마스터(ITEM_MASTERS)와 연결
  * - iqcStatus: IQC 검사 상태 (PENDING/PASS/FAIL/HOLD)
- * - status: LOT 상태 (NORMAL/HOLD/DEPLETED/SPLIT/MERGED)
+ * - status: LOT 상태 (NORMAL/HOLD/DEPLETED/SPLIT/MERGED/DISCARDED) — 규칙은 @harness/shared mat-lot-rules
  */
 import {
   Entity,

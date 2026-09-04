@@ -32,7 +32,8 @@ test('filters reset to page 1 when any list condition changes', () => {
 test('backend applies activeOnly and recv-date range as DB conditions (no post-page memory filter)', () => {
   assert.match(dto, /activeOnly\?: boolean/);
   assert.match(dto, /fromDate\?: string/);
-  assert.match(service, /activeOnly && \{ status: 'NORMAL', currentQty: MoreThan\(0\) \}/);
+  // 활성 LOT 집합은 shared MAT_LOT_ACTIVE_STATUSES 단일 출처(하드코딩 'NORMAL' 금지)
+  assert.match(service, /activeOnly && \{ status: In\(\[\.\.\.MAT_LOT_ACTIVE_STATUSES\]\), currentQty: MoreThan\(0\) \}/);
   assert.match(service, /recvDateWhere && \{ recvDate: recvDateWhere \}/);
   assert.match(service, /parseDateStart\(fromDate\)/);
   assert.match(service, /parseDateEnd\(toDate\)/);

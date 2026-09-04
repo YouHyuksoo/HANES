@@ -21,6 +21,7 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { ShelfLifeQueryDto, ShelfLifeExpiryStatus } from '../dto/shelf-life.dto';
+import { MAT_LOT_STATUS } from '@harness/shared';
 
 @Injectable()
 export class ShelfLifeService {
@@ -51,10 +52,10 @@ export class ShelfLifeService {
     nearExpiryDate: Date,
   ) {
     if (expiryStatus === 'DISCARDED') {
-      qb.andWhere(`lot.status = 'DISCARDED'`);
+      qb.andWhere(`lot.status = '${MAT_LOT_STATUS.DISCARDED}'`);
       return;
     }
-    qb.andWhere(`lot.status <> 'DISCARDED'`);
+    qb.andWhere(`lot.status <> '${MAT_LOT_STATUS.DISCARDED}'`);
     switch (expiryStatus) {
       case 'EXPIRED':
         qb.andWhere('lot.expireDate < :today', { today });
@@ -141,7 +142,7 @@ export class ShelfLifeService {
       let daysUntilExpiry: number | null = null;
 
       // 폐기 처리된 LOT는 별도 상태로 표시
-      if (lot.status === 'DISCARDED') {
+      if (lot.status === MAT_LOT_STATUS.DISCARDED) {
         status = 'DISCARDED';
       } else if (expireDate) {
         expireDate.setHours(0, 0, 0, 0);

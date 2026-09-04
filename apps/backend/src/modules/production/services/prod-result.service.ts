@@ -14,7 +14,7 @@
  * - status: compatibility field; production results are confirmed at registration time.
  */
 
-import { deriveJobOrderStatusFromResults, canAutoTransitionJobOrder } from '@harness/shared';
+import { deriveJobOrderStatusFromResults, canAutoTransitionJobOrder, DEFECT_LOG_STATUS } from '@harness/shared';
 import {
   Injectable,
   NotFoundException,
@@ -893,7 +893,7 @@ export class ProdResultService {
             defectCode: d.defectCode,
             defectName: d.defectName ?? null,
             qty: d.qty ?? 1,
-            status: 'WAIT',
+            status: DEFECT_LOG_STATUS.WAIT,
             company: jobOrder.company,
             plant: jobOrder.plant,
           });

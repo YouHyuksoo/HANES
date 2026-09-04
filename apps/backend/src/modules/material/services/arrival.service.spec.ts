@@ -208,6 +208,10 @@ describe('ArrivalService', () => {
   });
 
   // ─── createPoArrival ───
+  /** 트랜잭션 manager.findOne — updatePOStatus 가 헤더 상태를 읽으므로 PurchaseOrder 만 응답한다 */
+  const poHeaderFindOne = (status = 'CONFIRMED') =>
+    jest.fn((entity: unknown) => Promise.resolve(entity === PurchaseOrder ? { poNo: 'PO-001', status } : null));
+
   describe('createPoArrival', () => {
     it('존재하지 않는 PO이면 NotFoundException', async () => {
       mockPurchaseOrderRepo.findOne.mockResolvedValue(null);
@@ -267,7 +271,7 @@ describe('ArrivalService', () => {
       mockNumbering.next.mockResolvedValueOnce('TX-PO-001');
 
       const manager = {
-        findOne: jest.fn().mockResolvedValue(null),
+        findOne: poHeaderFindOne(),
         find: jest.fn().mockResolvedValue([
           { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 10 } as PurchaseOrderItem,
         ]),
@@ -323,7 +327,7 @@ describe('ArrivalService', () => {
       mockNumbering.next.mockResolvedValueOnce('TX-PO-001');
 
       const manager = {
-        findOne: jest.fn().mockResolvedValue(null),
+        findOne: poHeaderFindOne(),
         find: jest.fn().mockResolvedValue([
           { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 10 } as PurchaseOrderItem,
         ]),
@@ -368,7 +372,7 @@ describe('ArrivalService', () => {
       mockNumbering.next.mockResolvedValueOnce('TX-PO-001');
 
       const manager = {
-        findOne: jest.fn().mockResolvedValue(null),
+        findOne: poHeaderFindOne(),
         find: jest.fn().mockResolvedValue([
           { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 10 } as PurchaseOrderItem,
         ]),
@@ -407,7 +411,7 @@ describe('ArrivalService', () => {
       mockNumbering.nextMatSerial.mockResolvedValueOnce('MAT-PO-001');
       mockNumbering.next.mockResolvedValueOnce('TX-PO-001');
       (mockQueryRunner as any).manager = {
-        findOne: jest.fn().mockResolvedValue(null),
+        findOne: poHeaderFindOne(),
         find: jest.fn().mockResolvedValue([
           { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 10 } as PurchaseOrderItem,
         ]),
@@ -449,7 +453,7 @@ describe('ArrivalService', () => {
       mockNumbering.next.mockResolvedValueOnce('TX-PO-001');
 
       const manager = {
-        findOne: jest.fn().mockResolvedValue(null),
+        findOne: poHeaderFindOne(),
         find: jest.fn().mockResolvedValue([
           { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-MISSING', orderQty: 10, receivedQty: 10 } as PurchaseOrderItem,
         ]),
@@ -477,7 +481,7 @@ describe('ArrivalService', () => {
       expect(manager.update).toHaveBeenCalledWith(
         PurchaseOrderItem,
         { poNo: 'PO-001', seq: 1, company: 'CO', plant: 'P01' },
-        { receivedQty: 10 },
+        { receivedQty: 10, lineStatus: 'CLOSE' },
       );
       expect(manager.find).toHaveBeenCalledWith(PurchaseOrderItem, {
         where: { poNo: 'PO-001', company: 'CO', plant: 'P01' },
@@ -487,6 +491,136 @@ describe('ArrivalService', () => {
         { poNo: 'PO-001', company: 'CO', plant: 'P01' },
         { status: 'RECEIVED' },
       );
+    });
+  });
+
+  describe('createPoArrival — PO 상태 파생(shared 규칙)', () => {
+    const setupPartialArrival = (headerStatus: string) => {
+      mockPurchaseOrderRepo.findOne.mockResolvedValue({
+        poNo: 'PO-001', status: 'CONFIRMED', partnerCode: 'V-001', partnerName: 'Vendor', company: 'CO', plant: 'P01',
+      } as PurchaseOrder);
+      mockPurchaseOrderItemRepo.find.mockResolvedValue([
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0, company: 'CO', plant: 'P01' } as PurchaseOrderItem,
+      ]);
+      mockStockTxRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster]);
+      mockWarehouseRepo.find.mockResolvedValue([{ warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse]);
+      mockNumbering.nextInTx.mockResolvedValueOnce('ARR-PO-002');
+      mockNumbering.nextMatSerial.mockResolvedValueOnce('MAT-PO-002');
+      mockNumbering.next.mockResolvedValueOnce('TX-PO-002');
+      const manager = {
+        findOne: poHeaderFindOne(headerStatus),
+        find: jest.fn().mockResolvedValue([
+          { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 4 } as PurchaseOrderItem,
+        ]),
+        create: jest.fn((entity, payload) => ({ ...payload })),
+        save: jest.fn().mockImplementation(async (entity) => entity),
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
+      (mockQueryRunner as any).manager = manager;
+      return manager;
+    };
+
+    it('일부 입하면 라인은 PARTIAL, 헤더는 PARTIAL 로 같은 규칙에서 판정한다', async () => {
+      const manager = setupPartialArrival('CONFIRMED');
+
+      await target.createPoArrival({
+        poId: 'PO-001',
+        items: [{ poItemId: '1', itemCode: 'ITEM-001', receivedQty: 4, warehouseId: 'WH-001' }],
+      } as any, 'CO', 'P01');
+
+      expect(manager.update).toHaveBeenCalledWith(
+        PurchaseOrderItem,
+        expect.objectContaining({ poNo: 'PO-001', seq: 1 }),
+        { receivedQty: 4, lineStatus: 'PARTIAL' },
+      );
+      expect(manager.update).toHaveBeenCalledWith(
+        PurchaseOrder,
+        { poNo: 'PO-001', company: 'CO', plant: 'P01' },
+        { status: 'PARTIAL' },
+      );
+    });
+
+    it('헤더가 이미 파생 결과와 같으면 헤더 UPDATE 를 내지 않는다', async () => {
+      const manager = setupPartialArrival('PARTIAL');
+
+      await target.createPoArrival({
+        poId: 'PO-001',
+        items: [{ poItemId: '1', itemCode: 'ITEM-001', receivedQty: 4, warehouseId: 'WH-001' }],
+      } as any, 'CO', 'P01');
+
+      expect(manager.update).not.toHaveBeenCalledWith(PurchaseOrder, expect.anything(), expect.anything());
+    });
+
+    it('트랜잭션 안에서 PO 헤더가 없으면 조용히 넘기지 않고 NotFoundException', async () => {
+      const manager = setupPartialArrival('CONFIRMED');
+      manager.findOne = jest.fn().mockResolvedValue(null);
+
+      await expect(target.createPoArrival({
+        poId: 'PO-001',
+        items: [{ poItemId: '1', itemCode: 'ITEM-001', receivedQty: 4, warehouseId: 'WH-001' }],
+      } as any, 'CO', 'P01')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('cancel — PO 헤더 상태 되돌리기(shared 규칙)', () => {
+    const setupPoCancel = (headerStatus: string) => {
+      mockMatArrivalTxRepo.findOne.mockResolvedValue({
+        transNo: 'TX-PO-C', status: 'DONE', transType: 'ARRIVAL_IN', matUid: 'MAT-PO-C', itemCode: 'ITEM-001', qty: 10,
+        warehouseCode: 'WH-001', refType: 'PO', refId: 'PO-001-1', company: 'CO', plant: 'P01',
+      } as MatArrivalTransaction);
+      mockIqcLogRepo.findOne.mockResolvedValue(null);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
+      mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse);
+      mockDataSource.getRepository.mockReturnValue({ findOne: jest.fn().mockResolvedValue(null) } as any);
+      const manager = {
+        findOne: jest.fn((entity: unknown) => {
+          if (entity === MatArrivalStock) return Promise.resolve({ matUid: 'MAT-PO-C', itemCode: 'ITEM-001', qty: 10, availableQty: 10, company: 'CO', plant: 'P01' });
+          if (entity === PurchaseOrderItem) return Promise.resolve({ poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 10, company: 'CO', plant: 'P01' });
+          if (entity === PurchaseOrder) return Promise.resolve({ poNo: 'PO-001', status: headerStatus, company: 'CO', plant: 'P01' });
+          return Promise.resolve(null);
+        }),
+        find: jest.fn().mockResolvedValue([
+          { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0 } as PurchaseOrderItem,
+        ]),
+        create: jest.fn((entity, payload) => ({ ...payload })),
+        save: jest.fn().mockImplementation(async (entity) => entity),
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+      (manager as any).createQueryBuilder = jest.fn(successfulAtomicUpdateQb);
+      (mockQueryRunner as any).manager = manager;
+      return manager;
+    };
+
+    it('입하취소로 입하가 0 이 되면 라인 OPEN, 헤더 CONFIRMED 로 되돌린다', async () => {
+      const manager = setupPoCancel('RECEIVED');
+
+      await target.cancel({ transactionId: 'TX-PO-C', reason: 'cancel', workerId: 'user' } as any, 'CO', 'P01');
+
+      expect(manager.update).toHaveBeenCalledWith(
+        PurchaseOrderItem,
+        expect.objectContaining({ poNo: 'PO-001', seq: 1 }),
+        { receivedQty: 0, lineStatus: 'OPEN' },
+      );
+      expect(manager.update).toHaveBeenCalledWith(
+        PurchaseOrder,
+        { poNo: 'PO-001', company: 'CO', plant: 'P01' },
+        { status: 'CONFIRMED' },
+      );
+    });
+
+    it('마감(CLOSED)된 PO 는 입하취소로 되살리지 않는다(라인만 되돌림)', async () => {
+      const manager = setupPoCancel('CLOSED');
+
+      await target.cancel({ transactionId: 'TX-PO-C', reason: 'cancel', workerId: 'user' } as any, 'CO', 'P01');
+
+      expect(manager.update).toHaveBeenCalledWith(
+        PurchaseOrderItem,
+        expect.objectContaining({ poNo: 'PO-001', seq: 1 }),
+        { receivedQty: 0, lineStatus: 'OPEN' },
+      );
+      expect(manager.update).not.toHaveBeenCalledWith(PurchaseOrder, expect.anything(), expect.anything());
     });
   });
 

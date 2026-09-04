@@ -5,6 +5,7 @@ import { ProductStock } from '../../../entities/product-stock.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { ProductHoldActionDto, ProductReleaseHoldDto, ProductHoldQueryDto } from '../dto/product-hold.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { PRODUCT_STOCK_HOLD_STATUS, isProductStockOnHold } from '@harness/shared';
 
 @Injectable()
 export class ProductHoldService {
@@ -82,11 +83,11 @@ export class ProductHoldService {
         where: scopedKey,
       });
       if (!stock) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
-      if (stock.status === 'HOLD') throw new BadRequestException('�̹� HOLD �����Դϴ�.');
+      if (isProductStockOnHold(stock.status)) throw new BadRequestException('�̹� HOLD �����Դϴ�.');
       if (stock.qty <= 0) throw new BadRequestException('������ 0�� ���� HOLD�� �� �����ϴ�.');
 
       await queryRunner.manager.update(ProductStock, scopedKey, {
-        status: 'HOLD',
+        status: PRODUCT_STOCK_HOLD_STATUS.HOLD,
         holdReason: reason,
         holdAt: new Date(),
         holdBy: userId || null,
@@ -102,7 +103,7 @@ export class ProductHoldService {
 
     return {
       id: stockId,
-      status: 'HOLD',
+      status: PRODUCT_STOCK_HOLD_STATUS.HOLD,
       itemCode: updated.itemCode,
       itemName: part?.itemName ?? null,
       qty: updated.qty,
@@ -124,10 +125,10 @@ export class ProductHoldService {
         where: scopedKey,
       });
       if (!stock) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
-      if (stock.status !== 'HOLD') throw new BadRequestException('HOLD ���°� �ƴմϴ�.');
+      if (!isProductStockOnHold(stock.status)) throw new BadRequestException('HOLD ���°� �ƴմϴ�.');
 
       await queryRunner.manager.update(ProductStock, scopedKey, {
-        status: 'NORMAL',
+        status: PRODUCT_STOCK_HOLD_STATUS.NORMAL,
         holdReason: null,
         holdAt: null,
         holdBy: null,
@@ -143,7 +144,7 @@ export class ProductHoldService {
 
     return {
       id: stockId,
-      status: 'NORMAL',
+      status: PRODUCT_STOCK_HOLD_STATUS.NORMAL,
       itemCode: updated.itemCode,
       itemName: part?.itemName ?? null,
       qty: updated.qty,

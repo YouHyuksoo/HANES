@@ -21,6 +21,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
+import { MAT_LOT_STATUS, isMatLotTerminal } from '@harness/shared';
 
 export interface ReInspectHistoryQuery {
   page?: number;
@@ -156,8 +157,12 @@ export class ShelfLifeReInspectService {
     if (!lot) throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.matUid}`);
     this.assertSameTenant(lot, company, plant, 'LOT');
 
-    if (lot.status === 'DISCARDED') {
+    if (lot.status === MAT_LOT_STATUS.DISCARDED) {
       throw new BadRequestException('이미 폐기 처리된 LOT입니다.');
+    }
+    // 소진/분할완료/병합완료 LOT 도 종결이라 재검사(연장·폐기) 대상이 아니다
+    if (isMatLotTerminal(lot.status)) {
+      throw new BadRequestException(`종결된 LOT은 재검사할 수 없습니다. (상태: ${lot.status})`);
     }
 
     const lotTenant = this.tenantWhere(lot.company, lot.plant);
@@ -235,7 +240,7 @@ export class ShelfLifeReInspectService {
     });
     if (!stock || stock.qty <= 0) {
       // 재고 없어도 DISCARDED 처리는 진행
-      await this.matLotRepo.update({ matUid, ...tenantWhere }, { status: 'DISCARDED' });
+      await this.matLotRepo.update({ matUid, ...tenantWhere }, { status: MAT_LOT_STATUS.DISCARDED });
       return;
     }
     this.assertSameTenant(stock, company, plant, '재검 대상 재고');
@@ -298,7 +303,7 @@ export class ShelfLifeReInspectService {
         company, plant,
       });
 
-      await queryRunner.manager.update(MatLot, { matUid, ...tenantWhere }, { status: 'DISCARDED' });
+      await queryRunner.manager.update(MatLot, { matUid, ...tenantWhere }, { status: MAT_LOT_STATUS.DISCARDED });
     });
   }
 }

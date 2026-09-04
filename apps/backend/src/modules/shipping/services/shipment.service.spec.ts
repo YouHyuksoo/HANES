@@ -10,6 +10,8 @@ import { BoxMaster } from '../../../entities/box-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
+import { ShipmentOrder } from '../../../entities/shipment-order.entity';
+import { ShipmentOrderItem } from '../../../entities/shipment-order-item.entity';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -117,6 +119,47 @@ describe('ShipmentService', () => {
     expect(mockQueryRunner.release).not.toHaveBeenCalled();
   });
 
+  it('markAsShipped 는 출하지시 연계 시 라인 전량 출하면 지시를 CLOSED 로 판정한다(shared 규칙)', async () => {
+    mockShipmentRepo.findOne.mockResolvedValue({
+      shipNo: 'SHIP-002',
+      status: 'LOADED',
+      shipOrderNo: 'SO-002',
+      company: 'HANES',
+      plant: 'P01',
+    } as ShipmentLog);
+    mockPalletRepo.find.mockResolvedValue([{ palletNo: 'PALLET-001' } as PalletMaster]);
+    mockBoxRepo.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    } as any);
+    mockBoxRepo.find.mockResolvedValue([
+      { boxNo: 'BOX-001', itemCode: 'ITEM-001', qty: 2, serialList: JSON.stringify(['FG-001', 'FG-002']) } as BoxMaster,
+    ]);
+    const fgLabelRepo = { find: jest.fn().mockResolvedValue([
+      { fgBarcode: 'FG-001', itemCode: 'ITEM-001' } as FgLabel,
+      { fgBarcode: 'FG-002', itemCode: 'ITEM-001' } as FgLabel,
+    ]) };
+    const lineBefore = { shipOrderNo: 'SO-002', seq: 1, itemCode: 'ITEM-001', orderQty: 2, shippedQty: 0 } as ShipmentOrderItem;
+    const lineAfter = { ...lineBefore, shippedQty: 2 } as ShipmentOrderItem;
+    const manager = {
+      update: jest.fn().mockResolvedValue(undefined),
+      findOne: jest.fn((entity) => (entity === Warehouse ? { warehouseCode: 'FG-WH' } : null)),
+      find: jest.fn().mockResolvedValueOnce([lineBefore]).mockResolvedValueOnce([lineAfter]),
+      getRepository: jest.fn((entity) => {
+        if (entity === FgLabel) return fgLabelRepo;
+        throw new Error('unexpected repository');
+      }),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    await target.markAsShipped('SHIP-002');
+
+    expect(manager.update).toHaveBeenCalledWith(ShipmentOrderItem, expect.objectContaining({ shipOrderNo: 'SO-002', seq: 1 }), { shippedQty: 2 });
+    expect(manager.update).toHaveBeenCalledWith(ShipmentOrder, expect.objectContaining({ shipOrderNo: 'SO-002' }), { status: 'CLOSED' });
+  });
+
   it('markAsShipped blocks boxes without OQC pass', async () => {
     mockShipmentRepo.findOne.mockResolvedValue({
       shipNo: 'SHIP-001',
@@ -186,6 +229,33 @@ describe('ShipmentService', () => {
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();
     expect(mockQueryRunner.release).not.toHaveBeenCalled();
+  });
+
+  it('reverseShipment 는 출하지시 연계 시 shippedQty 를 되돌리고 지시를 CONFIRMED 로 판정한다(shared 규칙)', async () => {
+    mockShipmentRepo.findOne
+      .mockResolvedValueOnce({ shipNo: 'SHIP-003', status: 'SHIPPED', shipOrderNo: 'SO-003', company: 'HANES', plant: 'P01' } as ShipmentLog)
+      .mockResolvedValueOnce({ shipNo: 'SHIP-003', status: 'LOADED' } as ShipmentLog);
+
+    const manager = {
+      update: jest.fn().mockResolvedValue(undefined),
+      find: jest.fn().mockImplementation((entity: unknown) => {
+        if (entity === PalletMaster) return Promise.resolve([{ palletNo: 'PALLET-001' }]);
+        if (entity === BoxMaster) return Promise.resolve([
+          { boxNo: 'BOX-001', itemCode: 'ITEM-001', qty: 2, serialList: JSON.stringify(['FG-001', 'FG-002']) },
+        ]);
+        if (entity === ProductTransaction) return Promise.resolve([]);
+        if (entity === ShipmentOrderItem) return Promise.resolve([
+          { shipOrderNo: 'SO-003', seq: 1, itemCode: 'ITEM-001', orderQty: 2, shippedQty: 2 },
+        ]);
+        return Promise.resolve([]);
+      }),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    await target.reverseShipment('SHIP-003', 'rollback');
+
+    expect(manager.update).toHaveBeenCalledWith(ShipmentOrderItem, expect.objectContaining({ shipOrderNo: 'SO-003', seq: 1 }), { shippedQty: 0 });
+    expect(manager.update).toHaveBeenCalledWith(ShipmentOrder, expect.objectContaining({ shipOrderNo: 'SO-003' }), { status: 'CONFIRMED' });
   });
 
   it('reverseShipment blocks when ERP sync has already completed', async () => {

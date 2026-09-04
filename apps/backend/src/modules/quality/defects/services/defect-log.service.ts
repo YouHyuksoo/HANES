@@ -36,6 +36,11 @@ import {
   DefectTypeStatsDto,
   DefectStatusStatsDto,
 } from '../dto/defect-log.dto';
+import {
+  DEFECT_LOG_STATUS,
+  DEFECT_LOG_OPEN_STATUSES,
+  canTransitionDefectLogStatus,
+} from '@harness/shared';
 
 @Injectable()
 export class DefectLogService {
@@ -329,7 +334,7 @@ export class DefectLogService {
       defectCode: defectCodeMaster.defectCode,
       defectName: defectCodeMaster.defectName,
       qty: dto.qty ?? 1,
-      status: dto.status ?? 'WAIT',
+      status: dto.status ?? DEFECT_LOG_STATUS.WAIT,
       cause: dto.cause,
       occurAt: dto.occurAt ? new Date(dto.occurAt) : new Date(),
       imageUrl: dto.imageUrl,
@@ -445,15 +450,8 @@ export class DefectLogService {
    * 상태 변경 유효성 검사
    */
   private validateStatusChange(currentStatus: string, newStatus: string) {
-    const validTransitions: Record<string, string[]> = {
-      'WAIT': ['REPAIR', 'REWORK', 'SCRAP'],
-      'REPAIR': ['DONE', 'SCRAP', 'WAIT'],
-      'REWORK': ['DONE', 'SCRAP', 'WAIT'],
-      'SCRAP': [], // 폐기 후 변경 불가
-      'DONE': [], // 완료 후 변경 불가
-    };
-
-    if (!validTransitions[currentStatus]?.includes(newStatus)) {
+    // 전이표는 @harness/shared defect-log-rules 단일 출처(공통코드 DEFECT_LOG_STATUS 정본)
+    if (!canTransitionDefectLogStatus(currentStatus, newStatus)) {
       throw new BadRequestException(
         `${currentStatus}에서 ${newStatus}로 상태 변경이 불가능합니다.`
       );
@@ -492,10 +490,10 @@ export class DefectLogService {
       let newStatus: string;
       switch (dto.result) {
         case 'PASS':
-          newStatus = 'DONE';
+          newStatus = DEFECT_LOG_STATUS.DONE;
           break;
         case 'SCRAP':
-          newStatus = 'SCRAP';
+          newStatus = DEFECT_LOG_STATUS.SCRAP;
           break;
         default:
           // FAIL인 경우 상태 유지
@@ -641,7 +639,7 @@ export class DefectLogService {
   async getPendingDefects(company?: string, plant?: string) {
     return this.defectLogRepository.find({
       where: {
-        status: In(['WAIT', 'REPAIR', 'REWORK']),
+        status: In([...DEFECT_LOG_OPEN_STATUSES]),
         ...this.tenantWhere(company, plant),
       },
       order: { occurAt: 'ASC' },

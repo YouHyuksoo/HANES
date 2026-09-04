@@ -6906,7 +6906,8 @@
       "HOLD": "On hold; use suspended pending quality review",
       "DEPLETED": "Fully consumed; no remaining quantity left",
       "SPLIT": "Split into child lots; original lot closed",
-      "MERGED": "Merged into another lot; original lot closed"
+      "MERGED": "Merged into another lot; original lot closed",
+      "DISCARDED": "Terminal state: discarded (e.g. failed shelf-life re-inspection), cannot be used or issued"
     },
     "MOLD_LIFE_STATUS": {
       "NORMAL": "Crimp mold life is within a healthy range",
@@ -7560,7 +7561,10 @@
     "MAT_LOT_STATUS": {
       "NORMAL": "Normal",
       "HOLD": "Hold",
-      "DEPLETED": "Depleted"
+      "DEPLETED": "Depleted",
+      "SPLIT": "Split",
+      "MERGED": "Merged",
+      "DISCARDED": "Discarded"
     },
     "ISSUE_TYPE": {
       "PRODUCTION": "Production",

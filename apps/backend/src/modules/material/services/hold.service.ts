@@ -11,6 +11,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { HoldActionDto, ReleaseHoldDto, HoldQueryDto } from '../dto/hold.dto';
+import { MAT_LOT_STATUS, canHoldMatLot, canReleaseMatLot, isMatLotOnHold, isMatLotTerminal } from '@harness/shared';
 
 @Injectable()
 export class HoldService {
@@ -121,17 +122,21 @@ export class HoldService {
       throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
     }
 
-    if (lot.status === 'HOLD') {
+    if (isMatLotOnHold(lot.status)) {
       throw new BadRequestException('이미 HOLD 상태인 LOT입니다.');
     }
 
-    if (lot.status === 'DEPLETED') {
-      throw new BadRequestException('소진된 LOT은 HOLD할 수 없습니다.');
+    // 종결 LOT(소진/분할완료/병합완료/폐기)은 다시 살아나지 않으므로 보류 대상이 아니다
+    if (isMatLotTerminal(lot.status)) {
+      throw new BadRequestException(`종결된 LOT은 HOLD할 수 없습니다. (상태: ${lot.status})`);
+    }
+    if (!canHoldMatLot(lot.status)) {
+      throw new BadRequestException(`HOLD할 수 없는 상태의 LOT입니다. (상태: ${lot.status})`);
     }
 
     // HOLD 상태로 변경
     await this.matLotRepository.update({ matUid, ...this.tenantWhere(company, plant) }, {
-      status: 'HOLD',
+      status: MAT_LOT_STATUS.HOLD,
     });
 
     const updatedLot = await this.matLotRepository.findOne({ where: { matUid: matUid, ...this.tenantWhere(company, plant) } });
@@ -141,7 +146,7 @@ export class HoldService {
 
     return {
       id: matUid,
-      status: 'HOLD',
+      status: MAT_LOT_STATUS.HOLD,
       matUid: updatedLot?.matUid,
       itemCode: updatedLot?.itemCode,
       itemName: part?.itemName ?? null,
@@ -160,13 +165,13 @@ export class HoldService {
       throw new NotFoundException(`LOT을 찾을 수 없습니다: ${matUid}`);
     }
 
-    if (lot.status !== 'HOLD') {
+    if (!canReleaseMatLot(lot.status)) {
       throw new BadRequestException('HOLD 상태가 아닌 LOT입니다.');
     }
 
     // NORMAL 상태로 변경
     await this.matLotRepository.update({ matUid, ...this.tenantWhere(company, plant) }, {
-      status: 'NORMAL',
+      status: MAT_LOT_STATUS.NORMAL,
     });
 
     const updatedLot = await this.matLotRepository.findOne({ where: { matUid: matUid, ...this.tenantWhere(company, plant) } });
@@ -176,7 +181,7 @@ export class HoldService {
 
     return {
       id: matUid,
-      status: 'NORMAL',
+      status: MAT_LOT_STATUS.NORMAL,
       matUid: updatedLot?.matUid,
       itemCode: updatedLot?.itemCode,
       itemName: part?.itemName ?? null,

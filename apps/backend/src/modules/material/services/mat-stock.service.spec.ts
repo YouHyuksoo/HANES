@@ -238,6 +238,34 @@ describe('MatStockService', () => {
       expect(result.data).toHaveLength(1);
     });
 
+    it('HOLD LOT 은 재고가 있어도 출고 가능 목록에서 제외한다', async () => {
+      mockMatStockRepo.find.mockResolvedValue([createStock()]);
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-001', iqcStatus: 'PASS', status: 'HOLD', itemCode: 'ITEM-001' } as MatLot,
+      ]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAvailable({ page: 1, limit: 10 });
+
+      expect(result.data).toHaveLength(0);
+    });
+
+    it.each(['MERGED', 'SPLIT', 'DISCARDED', 'DEPLETED'])(
+      '종결 LOT(%s)은 MAT_STOCKS 잔량이 남아 있어도 출고 가능 목록에서 제외한다',
+      async (status) => {
+        mockMatStockRepo.find.mockResolvedValue([createStock({ qty: 10, availableQty: 10 })]);
+        mockMatLotRepo.find.mockResolvedValue([
+          { matUid: 'MAT-001', iqcStatus: 'PASS', status, itemCode: 'ITEM-001' } as MatLot,
+        ]);
+        mockItemMasterRepo.find.mockResolvedValue([]);
+
+        const result = await target.findAvailable({ page: 1, limit: 10 });
+
+        expect(result.data).toHaveLength(0);
+        expect(result.total).toBe(0);
+      },
+    );
+
     it('품목 마스터가 누락되어도 출고 가능 재고의 원본 itemCode와 matUid는 유지한다', async () => {
       const stock = createStock({ itemCode: 'ITEM-MISSING', matUid: 'MAT-001' });
       mockMatStockRepo.find.mockResolvedValue([stock]);

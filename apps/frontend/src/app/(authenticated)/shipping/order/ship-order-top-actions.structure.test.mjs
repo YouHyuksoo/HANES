@@ -19,7 +19,10 @@ test("shipping order row management keeps only edit while top buttons act on sel
   assert.match(source, /title=\{t\("shipping\.shipOrder\.confirmOrder"/, "top toolbar should expose a confirm button");
   assert.match(source, /title=\{t\("shipping\.shipOrder\.unconfirmOrder"/, "top toolbar should expose an unconfirm button");
 
-  const actionsColumn = source.match(/id: "actions"[\s\S]*?\}\s*,\s*\{\s*accessorKey: "shipOrderNo"/)?.[0] ?? "";
+  // 그리드 컬럼(관리 컬럼 포함)은 shippingOrderColumns.tsx 로 분리되어 있다
+  const columns = readFileSync(new URL("./shippingOrderColumns.tsx", import.meta.url), "utf8");
+  const actionsColumn = columns.match(/id: "actions"[\s\S]*?\}\s*,\s*\{\s*accessorKey: "shipOrderNo"/)?.[0] ?? "";
+  assert.notEqual(actionsColumn, "", "columns file should define the actions column before shipOrderNo");
   assert.match(actionsColumn, /<Edit2/, "row actions should keep edit");
   assert.doesNotMatch(actionsColumn, /<Printer/, "row actions should not keep print");
   assert.doesNotMatch(actionsColumn, /<CheckCircle/, "row actions should not keep confirm");

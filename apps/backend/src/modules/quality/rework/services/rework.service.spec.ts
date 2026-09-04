@@ -168,6 +168,83 @@ describe('ReworkService', () => {
     });
   });
 
+  describe('create — 불량이력 상태 연동', () => {
+    it('defectLogId가 있으면 불량이력을 공통코드 DEFECT_LOG_STATUS.REWORK 로 바꾸고, 재작업 공정은 REWORK_PROCESS_STATUS.WAITING 으로 만든다', async () => {
+      mockNumbering.next.mockResolvedValue('RW-100');
+      mockReworkRepo.create.mockImplementation((v: any) => v);
+      mockReworkRepo.save.mockResolvedValue({} as any);
+      mockReworkRepo.findOne.mockResolvedValue({ reworkNo: 'RW-100', status: 'REGISTERED' } as any);
+      mockProcessRepo.create.mockImplementation((v: any) => v);
+      mockProcessRepo.save.mockResolvedValue([] as any);
+      mockDefectLogRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.create(
+        {
+          defectLogId: '2026-04-08T00:00:00.000Z|1',
+          itemCode: 'IT-1',
+          reworkQty: 5,
+          reworkMethod: 'RESOLDER',
+          processItems: [{ processCode: 'P10', processName: '재납땜', seq: 1 }],
+        } as any,
+        'CO',
+        'P01',
+        'user',
+      );
+
+      expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
+        { occurAt: new Date('2026-04-08T00:00:00.000Z'), seq: 1, company: 'CO', plant: 'P01' },
+        { status: 'REWORK' },
+      );
+      const processes = mockProcessRepo.save.mock.calls[0][0] as any[];
+      expect(processes).toHaveLength(1);
+      expect(processes[0].status).toBe('WAITING');
+      expect(mockReworkRepo.create).toHaveBeenCalledWith(expect.objectContaining({ status: 'REGISTERED' }));
+    });
+  });
+
+  describe('createInspect — 불량이력 상태 연동', () => {
+    const order = {
+      reworkNo: 'RW-200',
+      status: 'INSPECT_PENDING',
+      itemCode: 'IT-1',
+      defectLogId: '2026-04-08T00:00:00.000Z|2',
+      company: 'CO',
+      plant: 'P01',
+    };
+
+    beforeEach(() => {
+      mockReworkRepo.findOne.mockResolvedValue(order as any);
+      mockProcessRepo.find.mockResolvedValue([]);
+      mockInspectRepo.query.mockResolvedValue([{ NEXT_SEQ: 1 }]);
+      mockInspectRepo.create.mockImplementation((v: any) => v);
+      mockInspectRepo.save.mockImplementation(async (v: any) => v);
+      mockReworkRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockDefectLogRepo.update.mockResolvedValue({ affected: 1 } as any);
+    });
+
+    it.each([
+      ['PASS', 'DONE'],
+      ['SCRAP', 'SCRAP'],
+      ['FAIL', 'REWORK'],
+    ])('검사결과 %s → 불량이력 상태 %s (DEFECT_LOG_STATUS 정본만 기록)', async (inspectResult, expectedDefectStatus) => {
+      await target.createInspect(
+        { reworkNo: 'RW-200', inspectResult, passQty: 0, failQty: 0, inspectorCode: 'QC1', inspectMethod: 'VISUAL' } as any,
+        'CO',
+        'P01',
+        'user',
+      );
+
+      expect(mockReworkRepo.update).toHaveBeenCalledWith(
+        { reworkNo: 'RW-200', company: 'CO', plant: 'P01' },
+        expect.objectContaining({ status: inspectResult }),
+      );
+      expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
+        { occurAt: new Date('2026-04-08T00:00:00.000Z'), seq: 2, company: 'CO', plant: 'P01' },
+        { status: expectedDefectStatus },
+      );
+    });
+  });
+
   describe('qcApprove', () => {
     it('should approve QC pending', async () => {
       mockReworkRepo.findOne.mockResolvedValue({ reworkNo: 'RW-001', status: 'QC_PENDING', id: 1 } as any);

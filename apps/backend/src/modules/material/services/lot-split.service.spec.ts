@@ -19,6 +19,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { isMatLotIssuable, isMatLotTerminal } from '@harness/shared';
 
 describe('LotSplitService', () => {
   let target: LotSplitService;
@@ -131,7 +132,7 @@ describe('LotSplitService', () => {
       await target.findSplittableLots({ page: 2, limit: 50, search: 'MAT' }, 'C1', 'P1');
 
       expect(qb.where).toHaveBeenCalledWith('stock.qty > 1');
-      expect(qb.andWhere).toHaveBeenCalledWith("lot.status = 'NORMAL'");
+      expect(qb.andWhere).toHaveBeenCalledWith('lot.status IN (:...activeStatuses)', { activeStatuses: ['NORMAL'] });
       expect(qb.andWhere).toHaveBeenCalledWith('NVL(stock.reservedQty, 0) = 0');
       expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('lot.initQty <='));
       expect(qb.andWhere).toHaveBeenCalledWith('lot.company = :company', { company: 'C1' });
@@ -154,6 +155,23 @@ describe('LotSplitService', () => {
       mockQueryRunner.manager.save.mockResolvedValue({} as any);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
     };
+
+    it('HOLD 원본은 분할을 차단한다', async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(sourceLot({ status: 'HOLD' }));
+
+      await expect(target.split({ sourceLotId: 'MAT-001', splitQty: 3 }, 'C1', 'P1'))
+        .rejects.toThrow('HOLD 상태인 LOT은 분할할 수 없습니다');
+    });
+
+    it.each(['SPLIT', 'MERGED', 'DISCARDED', 'DEPLETED'])('종결 LOT(%s) 원본은 재고가 남아 있어도 분할을 차단한다', async (status) => {
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce(sourceLot({ status }))
+        .mockResolvedValueOnce(sourceStock());
+
+      await expect(target.split({ sourceLotId: 'MAT-001', splitQty: 3 }, 'C1', 'P1'))
+        .rejects.toThrow('정상(NORMAL) 상태가 아닌 LOT은 분할할 수 없습니다');
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
 
     it('입고 미완료(RECEIVE 합 < initQty) LOT은 분할을 차단한다', async () => {
       mockQueryRunner.manager.findOne.mockResolvedValueOnce(sourceLot());
@@ -219,6 +237,33 @@ describe('LotSplitService', () => {
         MatLot,
         expect.objectContaining({ matUid: 'NEW-1', initQty: 3, currentQty: 3, origin: 'MAT-001', status: 'NORMAL' }),
       );
+    });
+
+    it('분할 전이: 원본은 SPLIT(종결·출고 불가)+재고 0, 자식 2조각은 NORMAL(출고 가능)', async () => {
+      wireHappyPath();
+
+      await target.split({ sourceLotId: 'MAT-001', splitQty: 3 }, 'C1', 'P1');
+
+      const sourcePatch = (mockQueryRunner.manager.update as jest.Mock).mock.calls
+        .filter(([entity]) => entity === MatLot)
+        .map(([, , patch]) => patch as { status: string; currentQty: number });
+      expect(sourcePatch).toHaveLength(1);
+      expect(isMatLotTerminal(sourcePatch[0].status)).toBe(true);
+      expect(isMatLotIssuable(sourcePatch[0].status)).toBe(false);
+      expect(sourcePatch[0].currentQty).toBe(0);
+
+      // 원본 MAT_STOCKS 잔량 0 (종결 LOT 재고 잔존 방지)
+      const stockPatch = (mockQueryRunner.manager.update as jest.Mock).mock.calls
+        .filter(([entity]) => entity === MatStock)
+        .map(([, , patch]) => patch as { qty: number; availableQty: number });
+      expect(stockPatch).toHaveLength(1);
+      expect(stockPatch[0]).toEqual(expect.objectContaining({ qty: 0, availableQty: 0 }));
+
+      const children = (mockQueryRunner.manager.create as jest.Mock).mock.calls
+        .filter(([entity]) => entity === MatLot)
+        .map(([, obj]) => obj as { matUid: string; status: string; currentQty: number });
+      expect(children.map((c) => c.matUid)).toEqual(['NEW-1', 'NEW-2']);
+      expect(children.every((c) => isMatLotIssuable(c.status) && c.currentQty > 0)).toBe(true);
     });
   });
 });

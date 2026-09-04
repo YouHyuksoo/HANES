@@ -5,7 +5,7 @@
  *
  * 초보자 가이드:
  * 1. SHIP_ORDER_NO가 PK (UUID 대신 자연키)
- * 2. 상태 흐름: DRAFT → CONFIRMED → SHIPPED → CLOSED
+ * 2. 상태 흐름: DRAFT → CONFIRMED → CLOSED (정본 어휘 COM_CODES.SHIP_ORDER_STATUS, 파생 규칙 @harness/shared ship-order-rules)
  */
 import {
   Entity,
