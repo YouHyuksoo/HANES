@@ -123,6 +123,23 @@ describe('LotSplitService', () => {
       expect(mockPartRepo.find).toHaveBeenCalledWith({ where: expect.objectContaining({ company: 'C1', plant: 'P1' }) });
       expect(mockMatStockRepo.find).toHaveBeenCalledWith({ where: expect.objectContaining({ company: 'C1', plant: 'P1' }) });
     });
+
+    it('분할 대상 조건(재고>1, NORMAL, 예약0, 입고완료)을 DB where 로 걸고 서버 페이징한다', async () => {
+      const qb = buildQb([]);
+      mockMatLotRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await target.findSplittableLots({ page: 2, limit: 50, search: 'MAT' }, 'C1', 'P1');
+
+      expect(qb.where).toHaveBeenCalledWith('stock.qty > 1');
+      expect(qb.andWhere).toHaveBeenCalledWith("lot.status = 'NORMAL'");
+      expect(qb.andWhere).toHaveBeenCalledWith('NVL(stock.reservedQty, 0) = 0');
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('lot.initQty <='));
+      expect(qb.andWhere).toHaveBeenCalledWith('lot.company = :company', { company: 'C1' });
+      expect(qb.andWhere).toHaveBeenCalledWith('lot.plant = :plant', { plant: 'P1' });
+      expect(qb.andWhere).toHaveBeenCalledWith('lot.matUid LIKE :search', { search: '%MAT%' });
+      expect(qb.skip).toHaveBeenCalledWith(50);
+      expect(qb.take).toHaveBeenCalledWith(50);
+    });
   });
 
   describe('split', () => {

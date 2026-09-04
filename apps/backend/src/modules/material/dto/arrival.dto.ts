@@ -11,7 +11,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString, IsOptional, IsInt, Min, Max,
-  MaxLength, IsDateString, IsArray, ValidateNested,
+  MaxLength, IsDateString, IsArray, ValidateNested, IsIn, Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
@@ -315,10 +315,26 @@ export class ChangeManufacturerDto {
 
 /** PO 라인 그리드 조회 쿼리 DTO (IQC005) */
 export class PoLineQueryDto {
-  @ApiPropertyOptional({ description: '라인 상태 (OPEN/PARTIAL/CLOSE)' })
+  @ApiPropertyOptional({
+    description: '라인 상태. PENDING(기본, 미지정 포함) = 미완료 전체(OPEN/PARTIAL). ALL = 전 상태 — CLOSE/ALL 은 fromDate/toDate 로 발주일 구간을 한정할 것',
+    enum: ['OPEN', 'PARTIAL', 'CLOSE', 'PENDING', 'ALL'],
+  })
   @IsOptional()
   @IsString()
-  status?: 'OPEN' | 'PARTIAL' | 'CLOSE';
+  @IsIn(['OPEN', 'PARTIAL', 'CLOSE', 'PENDING', 'ALL'])
+  status?: 'OPEN' | 'PARTIAL' | 'CLOSE' | 'PENDING' | 'ALL';
+
+  @ApiPropertyOptional({ description: '발주일 시작 (YYYY-MM-DD, 로컬 날짜)' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  fromDate?: string;
+
+  @ApiPropertyOptional({ description: '발주일 종료 (YYYY-MM-DD, 로컬 날짜, 당일 포함)' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  toDate?: string;
 
   @ApiPropertyOptional({ description: '품목 코드' })
   @IsOptional()

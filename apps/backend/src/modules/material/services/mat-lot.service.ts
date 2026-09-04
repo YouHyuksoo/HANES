@@ -11,14 +11,14 @@
 
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, In, Not, FindOptionsWhere } from 'typeorm';
+import { Repository, Like, In, Not, FindOptionsWhere, MoreThan, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { CreateMatLotDto, UpdateMatLotDto, MatLotQueryDto } from '../dto/mat-lot.dto';
-import { parseDateStart } from '../../../shared/date.util';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
 export class MatLotService {
@@ -43,10 +43,21 @@ export class MatLotService {
   }
 
   async findAll(query: MatLotQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, itemCode, matUid, vendor, iqcStatus, status } = query;
+    const { page = 1, limit = 10, itemCode, matUid, vendor, iqcStatus, status, activeOnly, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
+    // 입고일 구간(로컬 날짜, 종료일 당일 포함) — 전체(소진 포함) 조회 시 기간 없이 전량을 훑지 않도록 프론트가 기본 당일을 보낸다
+    const dateFrom = parseDateStart(fromDate);
+    const dateTo = parseDateEnd(toDate);
+    const recvDateWhere = dateFrom && dateTo ? Between(dateFrom, dateTo)
+      : dateFrom ? MoreThanOrEqual(dateFrom)
+      : dateTo ? LessThanOrEqual(dateTo)
+      : undefined;
+
     const where: FindOptionsWhere<MatLot> = {
+      // 기본 조건: 재고 있는 LOT(잔량>0, NORMAL). DB 조건으로 걸어야 페이지 밖으로 밀리는 행이 없다.
+      ...(activeOnly && { status: 'NORMAL', currentQty: MoreThan(0) }),
+      ...(recvDateWhere && { recvDate: recvDateWhere }),
       ...(itemCode && { itemCode }),
       ...(matUid && { matUid: Like(`%${matUid}%`) }),
       ...(vendor && { vendor: Like(`%${vendor}%`) }),

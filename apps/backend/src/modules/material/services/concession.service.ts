@@ -17,6 +17,8 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
+import { CONCESSION_ACCEPTED_FILTER, CONCESSION_PENDING_FILTER } from '@harness/shared';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { ConcessionTargetQueryDto, ApplyConcessionDto } from '../dto/concession.dto';
 
 @Injectable()
@@ -66,11 +68,25 @@ export class ConcessionService {
         search: `%${query.search}%`,
       });
     }
+    // 입하일 구간(로컬 날짜, 종료일 당일 포함) — 특채완료/전체 조회 시 기간 없이 전량을 훑지 않도록 프론트가 기본 당일을 보낸다
+    const recvDateFrom = parseDateStart(query.fromDate);
+    const recvDateTo = parseDateEnd(query.toDate);
+    if (recvDateFrom) qb.andWhere('lot.recvDate >= :recvDateFrom', { recvDateFrom });
+    if (recvDateTo) qb.andWhere('lot.recvDate <= :recvDateTo', { recvDateTo });
 
     qb.groupBy('lot.arrivalNo')
       .addGroupBy('lot.itemCode')
-      .addGroupBy('lot.vendor')
-      .orderBy('MIN(lot.createdAt)', 'DESC');
+      .addGroupBy('lot.vendor');
+
+    // 기본은 미특채 그룹만(조건 없는 전량 조회 금지). 그룹 전체 시리얼이 특채되면 "특채완료"로 본다.
+    const status = query.status ?? CONCESSION_PENDING_FILTER;
+    if (status === CONCESSION_PENDING_FILTER) {
+      qb.having("SUM(CASE WHEN lot.specialAcceptYn = 'Y' THEN 1 ELSE 0 END) < COUNT(*)");
+    } else if (status === CONCESSION_ACCEPTED_FILTER) {
+      qb.having("SUM(CASE WHEN lot.specialAcceptYn = 'Y' THEN 1 ELSE 0 END) >= COUNT(*)");
+    }
+
+    qb.orderBy('MIN(lot.createdAt)', 'DESC');
 
     const rows = await qb.getRawMany<{
       arrivalNo: string;

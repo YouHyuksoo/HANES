@@ -7,7 +7,7 @@ const page = readFileSync(new URL('../page.tsx', import.meta.url), 'utf8');
 
 test('arrival label modal prints selected mat_lot template through local print-agent', () => {
   assert.match(page, /api\.get\('\/master\/label-templates',\s*\{\s*params:\s*\{\s*category:\s*'mat_lot'\s*\}/s);
-  assert.match(page, /Select[\s\S]*aria-label="입하 라벨 템플릿"[\s\S]*selectedTemplateKey[\s\S]*handleTemplateChange/s);
+  assert.match(page, /Select[\s\S]*aria-label=\{t\('material\.arrival\.labelTemplate', '입하 라벨 템플릿'\)\}[\s\S]*selectedTemplateKey[\s\S]*handleTemplateChange/s);
   assert.match(page, /labelDesign=\{labelDesign\}/);
   assert.match(page, /templateOptions=\{templateOptions\}/);
   assert.match(page, /selectedTemplateKey=\{selectedTemplateKey\}/);

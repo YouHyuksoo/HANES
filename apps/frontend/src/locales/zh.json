@@ -165,6 +165,11 @@
       "thisMonth": "本月",
       "presets": "选择期间",
       "openIncludedNotice": "已包含 {{count}} 件超出日期范围但进行中的记录。"
+    },
+    "serverPager": {
+      "summary": "第 {{page}} / {{totalPages}} 页 · 共 {{total}} 条",
+      "prev": "上一页",
+      "next": "下一页"
     }
   },
   "help": {
@@ -2331,7 +2336,8 @@
         "done": "完成",
         "canceled": "已取消",
         "arrived": "已到货",
-        "iqcReady": "待检验"
+        "iqcReady": "待检验",
+        "pendingAll": "未完成（未入库·部分入库）"
       },
       "col": {
         "transNo": "交易编号",
@@ -2644,7 +2650,8 @@
         "approved": "已审批",
         "partial": "部分出库",
         "completed": "已完成",
-        "rejected": "已驳回"
+        "rejected": "已驳回",
+        "pendingAll": "未完成（申请·批准·部分出库）"
       },
       "modalTitle": "出库请求",
       "workOrderLabel": "作业指示",
@@ -2766,7 +2773,10 @@
         "cancelReason": "取消原因",
         "cancelReasonPlaceholder": "请输入取消原因...",
         "confirmCancel": "确认取消"
-      }
+      },
+      "noAvailableLot": "无可出库LOT（仓库库存为0）",
+      "lotLoading": "LOT查询中",
+      "lotSelect": "选择LOT"
     },
     "stock": {
       "title": "物料库存",
@@ -2825,7 +2835,8 @@
       "status": {
         "normal": "正常",
         "hold": "保留",
-        "depleted": "耗尽"
+        "depleted": "耗尽",
+        "activeOnly": "有库存的LOT（余量>0·正常）"
       },
       "allIqc": "全部IQC状态",
       "iqcStatus": {
@@ -3086,7 +3097,10 @@
       "extendDaysHint": "按品目自动",
       "viewDetail": "查看检验明细",
       "noInspectDetail": "无逐项测量值（手动判定）",
-      "historySubtitle": "查询有寿命物料的复检结果履历。"
+      "historySubtitle": "查询有寿命物料的复检结果履历。",
+      "activeScopeHint": "默认：有余量的已过期·临近过期批次",
+      "inspectDate": "检验日期",
+      "reinspectScopeHint": "默认：待复检 = 有余量的已过期·临近过期批次"
     },
     "hold": {
       "title": "物料库存冻结",
@@ -3263,7 +3277,9 @@
         "mismatch": "不一致",
         "matched": "一致"
       },
-      "confirmMessage": "是否反映{{count}}条盘点结果?"
+      "confirmMessage": "是否反映{{count}}条盘点结果?",
+      "inStockOnly": "仅有库存",
+      "includeZeroQty": "包含零库存"
     },
     "physicalInvHistory": {
       "title": "库存盘点查询",

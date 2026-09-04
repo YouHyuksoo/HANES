@@ -11,7 +11,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException } from '@nestjs/common';
-import { Repository, DataSource, QueryRunner } from 'typeorm';
+import { Repository, DataSource, QueryRunner, MoreThan } from 'typeorm';
 import { MatStockService } from './mat-stock.service';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -160,10 +160,16 @@ describe('MatStockService', () => {
       });
     });
 
-    it('검색어가 matUid와 일치하면 해당 LOT 재고도 반환한다', async () => {
+    it('검색어(matUid/품목코드/품목명)는 DB WHERE(QueryBuilder)로 걸어 페이지 안에서 거르지 않는다', async () => {
       const stock = createStock({ matUid: 'MAT-SEARCH-001', itemCode: 'ITEM-001' });
-      mockMatStockRepo.find.mockResolvedValue([stock]);
-      mockMatStockRepo.count.mockResolvedValue(1);
+      const qb = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[stock], 1]),
+      };
+      mockMatStockRepo.createQueryBuilder.mockReturnValue(qb as any);
       mockItemMasterRepo.find.mockResolvedValue([
         { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as ItemMaster,
       ]);
@@ -172,10 +178,46 @@ describe('MatStockService', () => {
       ]);
       mockWarehouseRepo.find.mockResolvedValue([]);
 
-      const result = await target.findAll({ page: 1, limit: 10, search: 'MAT-SEARCH' });
+      const result = await target.findAll({ page: 2, limit: 10, search: 'mat-search' }, 'C1', 'P1');
 
-      expect(result.data).toHaveLength(1);
+      expect(mockMatStockRepo.find).not.toHaveBeenCalled();
+      expect(qb.andWhere).toHaveBeenCalledWith('stock.qty > 0');
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('LIKE :search'), { search: '%MAT-SEARCH%' });
+      expect(qb.skip).toHaveBeenCalledWith(10);
+      expect(qb.take).toHaveBeenCalledWith(10);
+      expect(result.total).toBe(1);
       expect(result.data[0].matUid).toBe('MAT-SEARCH-001');
+    });
+
+    it('기본 조회는 수량>0 조건을 DB where 에 건다 (소진 행은 페이지 밖으로 밀리지 않는다)', async () => {
+      mockMatStockRepo.find.mockResolvedValue([]);
+      mockMatStockRepo.count.mockResolvedValue(0);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+      mockMatLotRepo.find.mockResolvedValue([]);
+      mockWarehouseRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
+
+      expect(mockMatStockRepo.find).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ qty: MoreThan(0), company: 'C1', plant: 'P1' }),
+      }));
+    });
+
+    it('includeZero=true 면 수량 조건을 빼고 fromDate/toDate 는 최종변동일 구간(종료일 당일 포함)으로 반영한다', async () => {
+      mockMatStockRepo.find.mockResolvedValue([]);
+      mockMatStockRepo.count.mockResolvedValue(0);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+      mockMatLotRepo.find.mockResolvedValue([]);
+      mockWarehouseRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 1, limit: 10, includeZero: true, fromDate: '2026-09-01', toDate: '2026-09-03' }, 'C1', 'P1');
+
+      const call = mockMatStockRepo.find.mock.calls.at(-1)?.[0] as { where: { qty?: unknown; updatedAt?: { _type?: string; _value?: unknown } } };
+      expect(call.where.qty).toBeUndefined();
+      expect(call.where.updatedAt?._type).toBe('between');
+      const [from, to] = call.where.updatedAt?._value as [Date, Date];
+      expect(from.getTime()).toBeLessThan(to.getTime());
+      expect(to.getDate()).toBe(3);
     });
   });
 

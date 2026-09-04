@@ -70,6 +70,65 @@ describe('ShelfLifeReInspectService', () => {
     jest.clearAllMocks();
   });
 
+  describe('findAll', () => {
+    function mockQb(rows: IqcLog[] = [], total = rows.length) {
+      const whereCalls: Array<{ sql: string; params?: Record<string, unknown> }> = [];
+      const qb = {
+        whereCalls,
+        where: jest.fn((sql: string, params?: Record<string, unknown>) => { whereCalls.push({ sql, params }); return qb; }),
+        andWhere: jest.fn((sql: string, params?: Record<string, unknown>) => { whereCalls.push({ sql, params }); return qb; }),
+        orderBy: jest.fn(() => qb),
+        addOrderBy: jest.fn(() => qb),
+        skip: jest.fn(() => qb),
+        take: jest.fn(() => qb),
+        getManyAndCount: jest.fn().mockResolvedValue([rows, total]),
+      };
+      iqcLogRepo.createQueryBuilder.mockReturnValue(qb as unknown as ReturnType<Repository<IqcLog>['createQueryBuilder']>);
+      return qb;
+    }
+
+    it('fromDate/toDate 는 검사일 구간(종료일 당일 포함) DB 조건으로 반영한다', async () => {
+      const qb = mockQb();
+      itemMasterRepo.find.mockResolvedValue([]);
+
+      await service.findAll({ page: 1, limit: 20, fromDate: '2026-09-01', toDate: '2026-09-03' }, 'C1', 'P1');
+
+      const fromCall = qb.whereCalls.find((c) => c.sql.includes('log.inspectDate >= :dateFrom'));
+      const toCall = qb.whereCalls.find((c) => c.sql.includes('log.inspectDate <= :dateTo'));
+      expect(fromCall).toBeDefined();
+      expect(toCall).toBeDefined();
+      const from = fromCall?.params?.dateFrom as Date;
+      const to = toCall?.params?.dateTo as Date;
+      expect(from.getTime()).toBeLessThan(to.getTime());
+      expect(to.getDate()).toBe(3);
+      expect(to.getHours()).toBe(23);
+      expect(to.getMinutes()).toBe(59);
+      // RETEST 고정 + 테넌트 스코프
+      const sql = qb.whereCalls.map((c) => c.sql).join(' | ');
+      expect(sql).toContain('log.inspectType = :inspectType');
+      expect(sql).toContain('log.company = :company');
+      expect(sql).toContain('log.plant = :plant');
+    });
+
+    it('결과/품목/검색어 조건은 메모리 필터가 아닌 DB 조건으로 반영하고 페이지는 DB에서 자른다', async () => {
+      const qb = mockQb([{ itemCode: 'ITEM-001', matUid: 'MAT-001', result: 'PASS' } as IqcLog], 41);
+      itemMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA' } as ItemMaster]);
+
+      const res = await service.findAll({ page: 3, limit: 20, result: 'PASS', itemCode: 'ITEM-001', search: ' mat ' });
+
+      const sql = qb.whereCalls.map((c) => c.sql.replace(/\s+/g, ' ')).join(' | ');
+      expect(sql).toContain('log.result = :result');
+      expect(sql).toContain('log.itemCode = :itemCode');
+      expect(sql).toContain("UPPER(COALESCE(log.matUid, '')) LIKE :search");
+      expect(sql).toContain('UPPER(im.ITEM_NAME) LIKE :search');
+      expect(qb.whereCalls.find((c) => c.sql.includes(':search'))?.params?.search).toBe('%MAT%');
+      expect(qb.skip).toHaveBeenCalledWith(40);
+      expect(qb.take).toHaveBeenCalledWith(20);
+      expect(res.total).toBe(41);
+      expect(res.data[0].itemName).toBe('커넥터A');
+    });
+  });
+
   describe('create', () => {
     it('재검 PASS는 검사일 + 연장일 기준으로 LOT 만료일을 갱신한다', async () => {
       matLotRepo.findOne.mockResolvedValue({

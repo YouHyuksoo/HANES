@@ -20,6 +20,8 @@ test("concession apply payload includes selected worker code", () => {
 test("concession modal supports worker QR scan lookup", () => {
   assert.match(source, /workerQrText/);
   assert.match(source, /handleWorkerQrLookup/);
-  assert.match(source, /\/master\/workers\/by-qr\/\$\{encodeURIComponent\(workerQrText\.trim\(\)\)\}/);
-  assert.match(source, /onKeyDown=\{\(e\) => \{\s*if \(e\.key === "Enter"\)/s);
+  assert.match(source, /\/master\/workers\/by-qr\/\$\{encodeURIComponent\(workerQr\)\}/);
+  // 스캔 입력은 공통 BarcodeScanInput 의 onScan 으로 Enter 처리 — 일반 Input + onKeyDown 조합을 쓰지 않는다
+  assert.match(source, /<BarcodeScanInput[\s\S]*onScan=\{handleWorkerQrLookup\}/s);
+  assert.doesNotMatch(source, /onKeyDown=\{\(e\) => \{\s*if \(e\.key === "Enter"\)/s);
 });

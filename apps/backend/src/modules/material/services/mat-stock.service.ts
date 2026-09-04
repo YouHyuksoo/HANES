@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In, FindOptionsWhere, IsNull, QueryRunner } from 'typeorm';
+import { Repository, DataSource, In, FindOptionsWhere, IsNull, QueryRunner, MoreThan, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
@@ -19,6 +19,7 @@ import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { StockQueryDto, StockAdjustDto, StockTransferDto } from '../dto/mat-stock.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
 export class MatStockService {
@@ -80,10 +81,21 @@ export class MatStockService {
   }
 
   async findAll(query: StockQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, itemCode, warehouseCode, locationCode, search, lowStockOnly } = query;
+    const { page = 1, limit = 10, itemCode, warehouseCode, locationCode, search, lowStockOnly, includeZero, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
+    // 최종변동일(UPDATED_AT) 구간 — 소진(0) 포함 조회 시 기간 없이 전량을 훑지 않도록 프론트가 기본 당일을 보낸다
+    const dateFrom = parseDateStart(fromDate);
+    const dateTo = parseDateEnd(toDate);
+    const updatedAtWhere = dateFrom && dateTo ? Between(dateFrom, dateTo)
+      : dateFrom ? MoreThanOrEqual(dateFrom)
+      : dateTo ? LessThanOrEqual(dateTo)
+      : undefined;
+
     const where: FindOptionsWhere<MatStock> = {
+      // 기본 조건: 수량>0. 페이지(take)를 먼저 자른 뒤 메모리에서 거르면 소진 행에 밀려 실제 재고가 페이지 밖으로 나간다.
+      ...(!includeZero && { qty: MoreThan(0) }),
+      ...(updatedAtWhere && { updatedAt: updatedAtWhere }),
       ...(itemCode && { itemCode }),
       ...(warehouseCode && { warehouseCode }),
       ...(locationCode && { locationCode }),
@@ -91,15 +103,51 @@ export class MatStockService {
       ...(plant && { plant }),
     };
 
-    const [data, total] = await Promise.all([
-      this.matStockRepository.find({
-        where,
-        skip,
-        take: limit,
-        order: { updatedAt: 'DESC' },
-      }),
-      this.matStockRepository.count({ where }),
-    ]);
+    let data: MatStock[] = [];
+    let total = 0;
+    const trimmedSearch = search?.trim();
+
+    if (trimmedSearch) {
+      // 검색어(품목코드/품목명/시리얼)는 DB WHERE 로 건다 — 페이지를 자른 뒤 메모리에서 거르면 검색 결과가 페이지 밖으로 밀린다.
+      const searchValue = `%${trimmedSearch.toUpperCase()}%`;
+      const qb = this.matStockRepository.createQueryBuilder('stock');
+      if (!includeZero) qb.andWhere('stock.qty > 0');
+      if (dateFrom) qb.andWhere('stock.updatedAt >= :dateFrom', { dateFrom });
+      if (dateTo) qb.andWhere('stock.updatedAt <= :dateTo', { dateTo });
+      if (itemCode) qb.andWhere('stock.itemCode = :itemCode', { itemCode });
+      if (warehouseCode) qb.andWhere('stock.warehouseCode = :warehouseCode', { warehouseCode });
+      if (locationCode) qb.andWhere('stock.locationCode = :locationCode', { locationCode });
+      if (company) qb.andWhere('stock.company = :company', { company });
+      if (plant) qb.andWhere('stock.plant = :plant', { plant });
+      qb.andWhere(`
+        (
+          UPPER(stock.itemCode) LIKE :search
+          OR UPPER(COALESCE(stock.matUid, '')) LIKE :search
+          OR EXISTS (
+            SELECT 1 FROM "ITEM_MASTERS" im
+            WHERE im."ITEM_CODE" = stock.itemCode
+              AND im."COMPANY" = stock.company
+              AND im."PLANT_CD" = stock.plant
+              AND UPPER(im."ITEM_NAME") LIKE :search
+          )
+        )
+      `, { search: searchValue });
+      [data, total] = await qb
+        .orderBy('stock.updatedAt', 'DESC')
+        .skip(skip)
+        .take(limit)
+        .getManyAndCount();
+    } else {
+      [data, total] = await Promise.all([
+        this.matStockRepository.find({
+          where,
+          skip,
+          take: limit,
+          order: { updatedAt: 'DESC' },
+        }),
+        this.matStockRepository.count({ where }),
+      ]);
+    }
 
     // part, lot 정보 조회
     const itemCodes = data.map((stock) => stock.itemCode).filter(Boolean);
@@ -175,24 +223,18 @@ export class MatStockService {
       result = result.filter((stock) => stock.qty < (stock.safetyStock ?? 0));
     }
 
-    // 검색어 필터링 (itemCode, itemName)
-    if (search) {
-      const searchLower = search.toLowerCase();
-      result = result.filter(
-        (stock) =>
-          stock.itemCode.toLowerCase().includes(searchLower) ||
-          (stock.itemName ?? '').toLowerCase().includes(searchLower) ||
-          (stock.matUid ?? '').toLowerCase().includes(searchLower),
-      );
-    }
-
     return { data: result, total, page, limit };
   }
 
   /** 출고 가능 재고 조회 (IQC PASS + 잔량 > 0 인 LOT만) */
   async findAvailable(query: StockQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, itemCode, warehouseCode, search } = query;
-    const where: FindOptionsWhere<MatStock> = { ...(itemCode && { itemCode }), ...(warehouseCode && { warehouseCode }), ...(company && { company }), ...(plant && { plant }) };
+    // 소진(QTY=0) 행은 DB에서 제외한다 — 페이지(take)를 먼저 자른 뒤 메모리에서 거르면
+    // 소진 LOT가 많은 품목에서 실제 가용 LOT가 페이지 밖으로 밀려 "출고 가능 LOT 없음"으로 보인다.
+    const where: FindOptionsWhere<MatStock> = {
+      qty: MoreThan(0),
+      ...(itemCode && { itemCode }), ...(warehouseCode && { warehouseCode }), ...(company && { company }), ...(plant && { plant }),
+    };
 
     const stocks = await this.matStockRepository.find({
       where, skip: (page - 1) * limit, take: limit, order: { updatedAt: 'DESC' },

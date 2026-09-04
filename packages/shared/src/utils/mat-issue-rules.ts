@@ -11,3 +11,8 @@ export function isProductionIssueType(issueType?: string | null): boolean {
   const value = (issueType ?? '').trim().toUpperCase();
   return PRODUCTION_ISSUE_TYPE_VALUES.includes(value as ProductionIssueTypeValue);
 }
+
+/** 출고요청 "미완료" 상태 집합 — 출고요청처리 목록 기본 필터(프론트)와 status=PENDING 해석(백엔드)의 단일 출처 */
+export const ISSUE_REQUEST_PENDING_STATUSES = ['REQUESTED', 'APPROVED', 'PARTIAL'] as const;
+/** 목록 API status 파라미터에서 "미완료 전체"를 뜻하는 가상 상태값 */
+export const ISSUE_REQUEST_PENDING_FILTER = 'PENDING';

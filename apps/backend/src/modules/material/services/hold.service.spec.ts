@@ -64,6 +64,25 @@ describe('HoldService', () => {
         }),
       );
     });
+
+    it('status=HOLD 와 page/limit 은 where 상태 조건과 서버 페이징(skip/take)으로 반영한다', async () => {
+      matLotRepo.find.mockResolvedValue([]);
+      matLotRepo.count.mockResolvedValue(0);
+      partRepo.find.mockResolvedValue([]);
+      matStockRepo.find.mockResolvedValue([]);
+
+      const result = await service.findAll({ page: 3, limit: 100, status: 'HOLD' }, 'C1', 'P1');
+
+      expect(matLotRepo.find).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ status: 'HOLD', company: 'C1', plant: 'P1' }),
+        skip: 200,
+        take: 100,
+      }));
+      expect(matLotRepo.count).toHaveBeenCalledWith({
+        where: expect.objectContaining({ status: 'HOLD', company: 'C1', plant: 'P1' }),
+      });
+      expect(result).toEqual(expect.objectContaining({ page: 3, limit: 100, total: 0 }));
+    });
   });
 
   describe('hold', () => {

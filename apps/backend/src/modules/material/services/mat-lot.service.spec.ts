@@ -11,7 +11,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Repository, MoreThan } from 'typeorm';
 import { MatLotService } from './mat-lot.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
@@ -119,6 +119,40 @@ describe('MatLotService', () => {
       await target.findAll({ page: 1, limit: 20, itemCode: 'ITEM-001', iqcStatus: 'PASS' }, 'HANES', 'P01');
 
       expect(mockMatLotRepo.find).toHaveBeenCalled();
+    });
+
+    it('activeOnly=true 는 재고 있는 LOT(잔량>0, NORMAL) 조건을 DB where 에 건다', async () => {
+      mockMatLotRepo.find.mockResolvedValue([]);
+      mockMatLotRepo.count.mockResolvedValue(0);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 1, limit: 50, activeOnly: true }, 'C1', 'P1');
+
+      expect(mockMatLotRepo.find).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ status: 'NORMAL', currentQty: MoreThan(0), company: 'C1', plant: 'P1' }),
+        skip: 0,
+        take: 50,
+      }));
+    });
+
+    it('fromDate/toDate 는 입고일(recvDate) 구간(종료일 당일 포함) 조건으로 반영하고 명시 status 가 우선한다', async () => {
+      mockMatLotRepo.find.mockResolvedValue([]);
+      mockMatLotRepo.count.mockResolvedValue(0);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+
+      await target.findAll({ page: 2, limit: 50, status: 'DEPLETED', fromDate: '2026-09-01', toDate: '2026-09-03' }, 'C1', 'P1');
+
+      const call = mockMatLotRepo.find.mock.calls.at(-1)?.[0] as {
+        where: { status?: string; currentQty?: unknown; recvDate?: { _type?: string; _value?: unknown } };
+        skip: number;
+      };
+      expect(call.skip).toBe(50);
+      expect(call.where.status).toBe('DEPLETED');
+      expect(call.where.currentQty).toBeUndefined();
+      expect(call.where.recvDate?._type).toBe('between');
+      const [from, to] = call.where.recvDate?._value as [Date, Date];
+      expect(from.getTime()).toBeLessThan(to.getTime());
+      expect(to.getDate()).toBe(3);
     });
 
     it('품목 마스터가 누락되어도 LOT 원본 itemCode는 유지한다', async () => {

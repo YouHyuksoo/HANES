@@ -12,8 +12,9 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, FindOptionsWhere, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
-import { isProductionIssueType } from '@harness/shared';
+import { Repository, In, FindOptionsWhere, LessThanOrEqual, MoreThanOrEqual, Between } from 'typeorm';
+import { isProductionIssueType, ISSUE_REQUEST_PENDING_STATUSES, ISSUE_REQUEST_PENDING_FILTER } from '@harness/shared';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
@@ -378,9 +379,20 @@ export class IssueRequestService {
 
   /** 출고요청 목록 조회 (페이지네이션 + 필터) */
   async findAll(query: IssueRequestQueryDto, company?: string, plant?: string) {
-    const { page = 1, limit = 10, status, search, orderNo, issueType } = query;
+    const { page = 1, limit = 10, status, search, orderNo, issueType, fromDate, toDate } = query;
+    // status=PENDING(미완료 전체)은 shared 상태 집합으로 해석 — 프론트 기본 필터와 같은 정의
+    const pendingStatuses = [...ISSUE_REQUEST_PENDING_STATUSES];
+    const statusWhere = status === ISSUE_REQUEST_PENDING_FILTER ? In(pendingStatuses) : status;
+    // 요청일 구간(로컬 날짜, 종료일 당일 포함) — 전 상태 조회 시 기간 없이 전량을 훑지 않도록 프론트가 기본 당일을 보낸다
+    const dateFrom = parseDateStart(fromDate);
+    const dateTo = parseDateEnd(toDate);
+    const requestDateWhere = dateFrom && dateTo ? Between(dateFrom, dateTo)
+      : dateFrom ? MoreThanOrEqual(dateFrom)
+      : dateTo ? LessThanOrEqual(dateTo)
+      : undefined;
     const where: FindOptionsWhere<MatIssueRequest> = {
-      ...(status && { status }),
+      ...(statusWhere && { status: statusWhere }),
+      ...(requestDateWhere && { requestDate: requestDateWhere }),
       ...(orderNo && { orderNo }),
       ...(issueType && { issueType }),
       ...(company && { company }),
@@ -394,7 +406,10 @@ export class IssueRequestService {
     if (trimmedSearch) {
       const searchValue = `%${trimmedSearch.toUpperCase()}%`;
       const qb = this.requestRepository.createQueryBuilder('req');
-      if (status) qb.andWhere('req.status = :status', { status });
+      if (status === ISSUE_REQUEST_PENDING_FILTER) qb.andWhere('req.status IN (:...pendingStatuses)', { pendingStatuses });
+      else if (status) qb.andWhere('req.status = :status', { status });
+      if (dateFrom) qb.andWhere('req.requestDate >= :dateFrom', { dateFrom });
+      if (dateTo) qb.andWhere('req.requestDate <= :dateTo', { dateTo });
       if (orderNo) qb.andWhere('req.orderNo = :orderNo', { orderNo });
       if (issueType) qb.andWhere('req.issueType = :issueType', { issueType });
       if (company) qb.andWhere('req.company = :company', { company });

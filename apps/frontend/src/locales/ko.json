@@ -165,6 +165,11 @@
       "thisMonth": "이번 달",
       "presets": "기간 선택",
       "openIncludedNotice": "기간 밖이지만 진행 중인 {{count}}건이 포함되어 있습니다."
+    },
+    "serverPager": {
+      "summary": "{{page}} / {{totalPages}} 페이지 · 총 {{total}}건",
+      "prev": "이전 페이지",
+      "next": "다음 페이지"
     }
   },
   "help": {
@@ -2847,7 +2852,8 @@
         "done": "완료",
         "canceled": "취소",
         "arrived": "입하",
-        "iqcReady": "검사대기"
+        "iqcReady": "검사대기",
+        "pendingAll": "미완료 (미입하·일부입하)"
       },
       "col": {
         "transNo": "트랜잭션번호",
@@ -3160,7 +3166,8 @@
         "approved": "승인",
         "partial": "부분출고",
         "completed": "완료",
-        "rejected": "반려"
+        "rejected": "반려",
+        "pendingAll": "미완료 (요청·승인·부분출고)"
       },
       "modalTitle": "출고요청",
       "workOrderLabel": "작업지시",
@@ -3282,7 +3289,10 @@
         "cancelReason": "취소 사유",
         "cancelReasonPlaceholder": "취소 사유를 입력하세요...",
         "confirmCancel": "취소 확정"
-      }
+      },
+      "noAvailableLot": "출고 가능 LOT 없음 (창고재고 0)",
+      "lotLoading": "LOT 조회 중",
+      "lotSelect": "LOT 선택"
     },
     "stock": {
       "title": "자재재고현황",
@@ -3341,7 +3351,8 @@
       "status": {
         "normal": "정상",
         "hold": "보류",
-        "depleted": "소진"
+        "depleted": "소진",
+        "activeOnly": "재고 있는 LOT (잔량>0·정상)"
       },
       "allIqc": "전체 IQC상태",
       "iqcStatus": {
@@ -3602,7 +3613,10 @@
       "extendDaysHint": "품목 기준 자동",
       "viewDetail": "검사 상세보기",
       "noInspectDetail": "항목별 측정값 없음 (수동 판정)",
-      "historySubtitle": "유수명자재 재검사 결과 이력을 조회합니다."
+      "historySubtitle": "유수명자재 재검사 결과 이력을 조회합니다.",
+      "activeScopeHint": "기본: 잔량이 있는 만료·만료임박 LOT",
+      "inspectDate": "검사일",
+      "reinspectScopeHint": "기본: 재검사 대기 = 잔량이 있는 만료·만료임박 LOT"
     },
     "hold": {
       "title": "자재재고홀드",
@@ -3779,7 +3793,9 @@
         "counted": "실사완료",
         "mismatch": "불일치",
         "matched": "일치"
-      }
+      },
+      "inStockOnly": "재고 있는 것만",
+      "includeZeroQty": "0재고 포함"
     },
     "physicalInvHistory": {
       "title": "재고실사 조회",

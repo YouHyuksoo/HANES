@@ -22,8 +22,7 @@ import {
   IsIn,
   IsArray,
   ValidateNested,
-  MaxLength,
-} from 'class-validator';
+  MaxLength, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
@@ -105,13 +104,25 @@ export class IssueRequestQueryDto extends PaginationQueryDto {
 
 
   @ApiPropertyOptional({
-    description: '상태 필터',
-    enum: ['REQUESTED', 'APPROVED', 'PARTIAL', 'REJECTED', 'COMPLETED'],
+    description: '상태 필터. PENDING = 미완료 전체(REQUESTED/APPROVED/PARTIAL). 미지정 시 전 상태 — 이 경우 fromDate/toDate 로 기간을 한정할 것',
+    enum: ['REQUESTED', 'APPROVED', 'PARTIAL', 'REJECTED', 'COMPLETED', 'PENDING'],
   })
   @IsOptional()
   @IsString()
-  @IsIn(['REQUESTED', 'APPROVED', 'PARTIAL', 'REJECTED', 'COMPLETED'])
+  @IsIn(['REQUESTED', 'APPROVED', 'PARTIAL', 'REJECTED', 'COMPLETED', 'PENDING'])
   status?: string;
+
+  @ApiPropertyOptional({ description: '요청일 시작 (YYYY-MM-DD, 로컬 날짜)' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  fromDate?: string;
+
+  @ApiPropertyOptional({ description: '요청일 종료 (YYYY-MM-DD, 로컬 날짜, 당일 포함)' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  toDate?: string;
 
   @ApiPropertyOptional({ description: '검색어 (요청번호, 요청자, 작업지시, 출고유형, 품목, 비고)' })
   @IsOptional()

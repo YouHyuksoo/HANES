@@ -5,7 +5,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, IsIn, Matches } from 'class-validator';
 
 /** 특채 대상(FAIL 입하+품목 그룹) 조회 */
 export class ConcessionTargetQueryDto {
@@ -13,6 +13,27 @@ export class ConcessionTargetQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({
+    description: '특채 상태. PENDING(기본, 미지정 포함) = 미특채 그룹만, ACCEPTED = 특채완료 그룹만, ALL = 전체 — ACCEPTED/ALL 은 fromDate/toDate 로 입하일 구간을 한정할 것',
+    enum: ['PENDING', 'ACCEPTED', 'ALL'],
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['PENDING', 'ACCEPTED', 'ALL'])
+  status?: 'PENDING' | 'ACCEPTED' | 'ALL';
+
+  @ApiPropertyOptional({ description: '입하일 시작 (YYYY-MM-DD, 로컬 날짜)' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  fromDate?: string;
+
+  @ApiPropertyOptional({ description: '입하일 종료 (YYYY-MM-DD, 로컬 날짜, 당일 포함)' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  toDate?: string;
 }
 
 /** 특채 처리/취소 (입하번호+품목 그룹 단위) */

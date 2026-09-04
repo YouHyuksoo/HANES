@@ -9,8 +9,8 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsInt, Min, IsNumber } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsOptional, IsInt, Min, IsNumber, IsBoolean } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 import { BaseListQueryDto } from '@common/dto/base-query.dto';
 
 /**
@@ -37,6 +37,16 @@ export class StockQueryDto extends BaseListQueryDto {
   @IsOptional()
   @Type(() => Boolean)
   lowStockOnly?: boolean;
+
+  /**
+   * 수량 0(소진) 재고 포함 여부. 기본 false → QTY > 0 만 조회(현재상태 화면 기본 조건).
+   * true로 볼 때는 최종변동일(UPDATED_AT) 구간 fromDate/toDate 를 함께 보내 전량 조회를 막는다.
+   */
+  @ApiPropertyOptional({ description: '수량 0 재고 포함 (기본 false = QTY>0만)', default: false })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true' || value === '1')
+  @IsBoolean()
+  includeZero?: boolean;
 }
 
 export class StockAdjustDto {

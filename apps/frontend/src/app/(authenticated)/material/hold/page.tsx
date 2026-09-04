@@ -18,17 +18,26 @@ import {
 import { Card, CardContent, Button, Input, Select, Modal } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
+import ServerPager from "@/components/shared/ServerPager";
 import api from "@/services/api";
 import { createHoldGridColumns, formatQty, type HoldLot } from "./holdColumns";
+
+/** 서버 페이지당 건수 — 전량(limit 5000)을 받아 클라이언트에서 거르지 않는다 */
+const PAGE_SIZE = 100;
+/** 현재상태 화면의 기본 활성 조건 — 보류중 LOT */
+const DEFAULT_STATUS_FILTER = "HOLD";
 
 export default function HoldPage() {
   const { t } = useTranslation();
 
   const [data, setData] = useState<HoldLot[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  // 기본은 보류중(HOLD)만 — 정상/전체를 볼 때도 서버 페이징으로 나눠 받는다.
+  const [statusFilter, setStatusFilter] = useState(DEFAULT_STATUS_FILTER);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLot, setSelectedLot] = useState<HoldLot | null>(null);
   const [actionType, setActionType] = useState<"hold" | "release">("hold");
@@ -37,18 +46,21 @@ export default function HoldPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
+      const params: Record<string, string> = { page: String(page), limit: String(PAGE_SIZE) };
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
       const res = await api.get("/material/hold", { params });
       setData(res.data?.data ?? []);
+      setTotal(res.data?.meta?.total ?? 0);
     } catch {
       setData([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [searchText, statusFilter]);
+  }, [searchText, statusFilter, page]);
 
+  useEffect(() => { setPage(1); }, [searchText, statusFilter]);
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleAction = useCallback(async () => {
@@ -89,7 +101,7 @@ export default function HoldPage() {
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("material.hold.title")}
+        <DataGrid data={data} columns={columns} isLoading={loading} pageSize={PAGE_SIZE} enableColumnFilter enableExport exportFileName={t("material.hold.title")}
           toolbarLeft={
             <div className="flex gap-3 flex-1 min-w-0">
               <div className="flex-1 min-w-0">
@@ -101,6 +113,7 @@ export default function HoldPage() {
                 <ComCodeSelect groupCode="MAT_LOT_STATUS" labelPrefix={t("common.status")}
                   value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
+              <ServerPager page={page} limit={PAGE_SIZE} total={total} onPageChange={setPage} disabled={loading} className="flex-shrink-0" />
             </div>
           } 
           sqlQuery={`SELECT l.MAT_UID, l.ITEM_CODE, l.CURRENT_QTY, l.STATUS, l.VENDOR,\n       s.WAREHOUSE_CODE, s.AVAILABLE_QTY\nFROM MAT_LOTS l\nLEFT JOIN MAT_STOCKS s\n  ON s.COMPANY = l.COMPANY\n AND s.PLANT_CD = l.PLANT_CD\n AND s.ITEM_CODE = l.ITEM_CODE\n AND s.MAT_UID = l.MAT_UID\nWHERE l.COMPANY = '40'\n  AND l.PLANT_CD = '1000'\nORDER BY l.CREATED_AT DESC`}/>

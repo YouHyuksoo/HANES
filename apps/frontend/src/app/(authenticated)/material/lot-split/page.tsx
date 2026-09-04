@@ -9,6 +9,9 @@
  * 2. 분할 시 원본 폐기(SPLIT) → 신규 시리얼 2개 발번
  * 3. 분할 결과 신규 2건 자재라벨 발행(MatLabelPreviewModal 재사용)
  * API: GET /material/lot-split, POST /material/lot-split
+ *
+ * 목록 기본 조건(처리성 화면): 분할 대상이 되는 LOT만 — 서버가 재고>1·NORMAL·예약0·입고완료를 DB 조건으로 건다.
+ * 전량(limit 5000)을 받지 않고 서버 페이징(page/limit)으로 받는다.
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -17,19 +20,25 @@ import { Scissors, Search, RefreshCw, GitBranch } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
 import { QtyInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
+import ServerPager from "@/components/shared/ServerPager";
 import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
 import type { PoLineReceiptResponse } from "../arrival/components/types";
 import { createLotSplitGridColumns, type SplittableLot } from "./lotSplitColumns";
 
+const PAGE_SIZE = 50;
+
 export default function LotSplitPage() {
   const { t } = useTranslation();
 
   const [data, setData] = useState<SplittableLot[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [page, setPage] = useState(1);
+  useEffect(() => { setPage(1); }, [searchText]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLot, setSelectedLot] = useState<SplittableLot | null>(null);
   const [splitForm, setSplitForm] = useState({ splitQty: "", remark: "" });
@@ -53,23 +62,27 @@ export default function LotSplitPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
+      const params: Record<string, string> = { page: String(page), limit: String(PAGE_SIZE) };
       if (searchText) params.search = searchText;
       const res = await api.get("/material/lot-split", { params });
-      setData(res.data?.data ?? []);
+      const rows: SplittableLot[] = res.data?.data ?? [];
+      setData(rows);
+      setTotal(Number(res.data?.meta?.total ?? rows.length));
     } catch {
       setData([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [searchText]);
+  }, [page, searchText]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // total 은 서버 meta 기준(분할 대상 전체 건수), totalQty 는 현재 페이지 합계
   const stats = useMemo(() => ({
-    total: data.length,
+    total,
     totalQty: data.reduce((s, d) => s + d.qty, 0),
-  }), [data]);
+  }), [data, total]);
 
   const handleSplit = useCallback(async () => {
     if (!selectedLot || !splitForm.splitQty) return;
@@ -136,18 +149,19 @@ export default function LotSplitPage() {
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
+        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter pageSize={PAGE_SIZE}
           enableExport exportFileName={t("material.lotSplit.title")}
           toolbarLeft={
-            <div className="flex gap-3 flex-1 min-w-0">
+            <div className="flex gap-3 flex-1 min-w-0 items-center">
               <div className="flex-1 min-w-0">
                 <Input placeholder={t("material.lotSplit.searchPlaceholder")}
                   value={searchText} onChange={e => setSearchText(e.target.value)}
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
+              <ServerPager page={page} limit={PAGE_SIZE} total={total} onPageChange={setPage} />
             </div>
           }
-          sqlQuery={`SELECT ml.*\nFROM MAT_LOTS ml\nWHERE ml.STATUS = 'NORMAL'\n  AND ml.COMPANY = '40'\n  AND ml.PLANT_CD = '1000'\n  AND ml.INIT_QTY <= NVL((SELECT SUM(st.QTY) FROM STOCK_TRANSACTIONS st\n    WHERE st.MAT_UID = ml.MAT_UID AND st.TRANS_TYPE IN ('RECEIVE','LOT_SPLIT_IN','LOT_MERGE_IN') AND st.STATUS <> 'CANCELED'), 0)\nORDER BY ml.CREATED_AT DESC`}/>
+          sqlQuery={`SELECT ml.*\nFROM MAT_LOTS ml\nJOIN MAT_STOCKS ms ON ms.MAT_UID = ml.MAT_UID AND ms.COMPANY = ml.COMPANY AND ms.PLANT_CD = ml.PLANT_CD\nWHERE ms.QTY > 1\n  AND ml.STATUS = 'NORMAL'\n  AND NVL(ms.RESERVED_QTY, 0) = 0\n  AND ml.COMPANY = '40'\n  AND ml.PLANT_CD = '1000'\n  AND ml.INIT_QTY <= NVL((SELECT SUM(st.QTY) FROM STOCK_TRANSACTIONS st\n    WHERE st.MAT_UID = ml.MAT_UID AND st.TRANS_TYPE IN ('RECEIVE','LOT_SPLIT_IN','LOT_MERGE_IN') AND st.STATUS <> 'CANCELED'), 0)\nORDER BY ml.CREATED_AT DESC\nOFFSET :skip ROWS FETCH NEXT :limit ROWS ONLY`}/>
       </CardContent></Card>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}

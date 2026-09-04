@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file src/modules/material/dto/physical-inv.dto.ts
  * @description 재고실사 관련 DTO — 실사 항목, 조회 필터, 세션(개시/완료) DTO
  *
@@ -132,6 +132,14 @@ export class PhysicalInvCountQueryDto extends PaginationQueryDto {
   @IsString()
   search?: string;
 
+  @ApiPropertyOptional({
+    description: "0재고 행 포함 여부. 기본 'N' = 수량 > 0 인 재고만(현재상태 화면 기본 활성 조건)",
+    enum: ['Y', 'N'],
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['Y', 'N'])
+  includeZeroQty?: 'Y' | 'N';
 }
 
 /** 실사 완료 요청 DTO */

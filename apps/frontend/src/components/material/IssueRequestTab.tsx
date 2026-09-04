@@ -23,6 +23,8 @@ import DataGrid from '@/components/data-grid/DataGrid';
 import { IssueRequestStatusBadge } from '@/components/material';
 import IssueFromRequestModal from '@/components/material/IssueFromRequestModal';
 import ComCodeBadge from '@/components/ui/ComCodeBadge';
+import { ISSUE_REQUEST_PENDING_FILTER } from '@harness/shared';
+import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import { useIssueRequests } from '@/hooks/material/useIssueRequests';
 import type { IssueRequestRecord } from '@/hooks/material/useIssueRequests';
 import type { IssueRequestStatus } from '@/components/material';
@@ -37,6 +39,7 @@ export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: I
   const {
     records, isLoading, refetch,
     statusFilter, setStatusFilter, searchText, setSearchText,
+    fromDate, setFromDate, toDate, setToDate, dateRangeApplies,
     handleApprove, handleReject,
   } = useIssueRequests({
     issueType,
@@ -52,6 +55,7 @@ export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: I
 
   // 상태 필터 옵션
   const statusOptions = useMemo(() => [
+    { value: ISSUE_REQUEST_PENDING_FILTER, label: t('material.request.status.pendingAll', '미완료 (요청·승인·부분출고)') },
     { value: '', label: t('common.allStatus') },
     { value: 'REQUESTED', label: t('material.request.status.requested') },
     { value: 'APPROVED', label: t('material.request.status.approved') },
@@ -204,7 +208,7 @@ export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: I
                     fullWidth
                   />
                 </div>
-                <div className="w-40 flex-shrink-0">
+                <div className="w-52 flex-shrink-0">
                   <Select
                     options={statusOptions}
                     value={statusFilter}
@@ -212,6 +216,17 @@ export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: I
                     fullWidth
                   />
                 </div>
+                {/* 미완료 외(전체/완료/반려)는 요청일 구간이 필수 — 기본 당일 */}
+                {dateRangeApplies && (
+                  <DateRangeFilter
+                    from={fromDate}
+                    to={toDate}
+                    onFromChange={setFromDate}
+                    onToChange={setToDate}
+                    presets
+                    className="flex-shrink-0"
+                  />
+                )}
                 <Button variant="secondary" size="sm" onClick={() => refetch()} className="flex-shrink-0">
                   <RefreshCw className="w-4 h-4" />
                 </Button>

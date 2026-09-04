@@ -15,58 +15,93 @@ import { useTranslation } from "react-i18next";
 import {
   ClipboardList, Search, RefreshCw, CheckSquare, AlertTriangle, CheckCircle,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, StatCard, Modal } from "@/components/ui";
+import { Card, CardContent, Button, Input, StatCard, Modal, Select } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import ServerPager from "@/components/shared/ServerPager";
 import { WarehouseSelect } from "@/components/shared";
 import api from "@/services/api";
 import { createPhysicalInvGridColumns, StockForCount } from "./physicalInvColumns";
 
+/** 서버 페이지당 건수 — 전량(limit 5000)을 받아 클라이언트에서 거르지 않는다 */
+const PAGE_SIZE = 100;
+
+/** GET /material/physical-inv 응답 (ResponseUtil.success 로 감싼 페이징 결과) */
+interface PhysicalInvListPayload {
+  data: Omit<StockForCount, "countedQty">[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export default function PhysicalInvPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<StockForCount[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState("");
+  // 현재상태 화면의 기본 활성 조건 — 수량 > 0 인 재고만. 0재고는 사용자가 명시적으로 포함할 때만.
+  const [includeZeroQty, setIncludeZeroQty] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  // 실사수량 입력값은 서버 페이지를 넘겨도 유지되도록 행 id 별로 따로 보관한다.
+  const [countedRows, setCountedRows] = useState<Map<string, StockForCount>>(() => new Map());
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
+      const params: Record<string, string> = { page: String(page), limit: String(PAGE_SIZE) };
       if (searchText) params.search = searchText;
       if (warehouseFilter) params.warehouseCode = warehouseFilter;
-      const res = await api.get("/material/physical-inv", { params });
-      const rows = (res.data?.data ?? []).map((s: any) => ({
-        ...s,
-        countedQty: null,
-      }));
+      if (includeZeroQty) params.includeZeroQty = "Y";
+      const res = await api.get<{ data?: PhysicalInvListPayload }>("/material/physical-inv", { params });
+      const payload = res.data?.data;
+      const rows: StockForCount[] = (payload?.data ?? []).map((s) => ({ ...s, countedQty: null }));
       setData(rows);
+      setTotal(payload?.total ?? rows.length);
     } catch {
       setData([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [searchText, warehouseFilter]);
+  }, [searchText, warehouseFilter, includeZeroQty, page]);
 
+  useEffect(() => { setPage(1); }, [searchText, warehouseFilter, includeZeroQty]);
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const updateCountedQty = useCallback((id: string, value: number | null) => {
-    setData(prev => prev.map(row =>
-      row.id === id ? { ...row, countedQty: value } : row
-    ));
-  }, []);
+    setCountedRows((prev) => {
+      const next = new Map(prev);
+      const base = data.find((row) => row.id === id) ?? prev.get(id);
+      if (value === null || !base) next.delete(id);
+      else next.set(id, { ...base, countedQty: value });
+      return next;
+    });
+  }, [data]);
 
-  const countedItems = useMemo(() => data.filter(d => d.countedQty !== null), [data]);
+  // 현재 페이지 행에 보관 중인 입력값을 덧씌워 표시한다.
+  const displayRows = useMemo(
+    () => data.map((row) => countedRows.get(row.id) ?? row),
+    [data, countedRows],
+  );
+
+  const countedItems = useMemo(() => Array.from(countedRows.values()), [countedRows]);
   const mismatchItems = useMemo(() =>
     countedItems.filter(d => d.countedQty !== d.qty), [countedItems]);
 
   const stats = useMemo(() => ({
-    total: data.length,
+    total,
     counted: countedItems.length,
     mismatch: mismatchItems.length,
     matched: countedItems.filter(d => d.countedQty === d.qty).length,
-  }), [data, countedItems, mismatchItems]);
+  }), [total, countedItems, mismatchItems]);
+
+  const zeroQtyOptions = useMemo(() => [
+    { value: "N", label: t("material.physicalInv.inStockOnly", "재고 있는 것만") },
+    { value: "Y", label: t("material.physicalInv.includeZeroQty", "0재고 포함") },
+  ], [t]);
 
   const handleApply = useCallback(async () => {
     if (countedItems.length === 0) return;
@@ -80,8 +115,9 @@ export default function PhysicalInvPage() {
         })),
       });
       setShowConfirm(false);
+      setCountedRows(new Map());
       fetchData();
-    } catch (e) {
+    } catch (e: unknown) {
       console.error("Apply failed:", e);
     } finally {
       setSaving(false);
@@ -119,7 +155,7 @@ export default function PhysicalInvPage() {
       </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
-        <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter enableExport exportFileName={t("material.physicalInv.title")}
+        <DataGrid data={displayRows} columns={columns} isLoading={loading} pageSize={PAGE_SIZE} enableColumnFilter enableExport exportFileName={t("material.physicalInv.title")}
           toolbarLeft={
             <div className="flex gap-3 flex-1 min-w-0">
               <div className="flex-1 min-w-0">
@@ -130,6 +166,11 @@ export default function PhysicalInvPage() {
               <div className="w-40 flex-shrink-0">
                 <WarehouseSelect includeAll labelPrefix={t("common.warehouse", "창고")} value={warehouseFilter} onChange={setWarehouseFilter} fullWidth />
               </div>
+              <div className="w-36 flex-shrink-0">
+                <Select aria-label={t("material.physicalInv.includeZeroQty", "0재고 포함")} options={zeroQtyOptions}
+                  value={includeZeroQty ? "Y" : "N"} onChange={(v) => setIncludeZeroQty(v === "Y")} fullWidth />
+              </div>
+              <ServerPager page={page} limit={PAGE_SIZE} total={total} onPageChange={setPage} disabled={loading} className="flex-shrink-0" />
             </div>
           } 
           sqlQuery={`SELECT *\nFROM MAT_PHYSICAL_INV\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY CREATED_AT DESC`}/>

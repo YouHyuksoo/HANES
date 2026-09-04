@@ -7,10 +7,11 @@
  * 2. 합격: 새 만료일 = 검사일 + 적용연장일(item.expiryExtDays 상한)
  * 3. 불합격: 불용창고 이동 + MatLot.status = 'DISCARDED'
  * 4. 회차: 해당 시리얼의 이전 RETEST IqcLog 수 + 1
+ * 5. findAll(): 이력성 조회 — 검사일 구간/결과/품목/검색어를 전부 DB 조건으로 처리
  */
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { IqcLog } from '../../../entities/iqc-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -19,6 +20,20 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
+
+export interface ReInspectHistoryQuery {
+  page?: number;
+  limit?: number;
+  matUid?: string;
+  itemCode?: string;
+  result?: string;
+  search?: string;
+  /** 검사일 시작 (YYYY-MM-DD) */
+  fromDate?: string;
+  /** 검사일 종료 (YYYY-MM-DD, 당일 포함) */
+  toDate?: string;
+}
 
 interface CreateReInspectDto {
   matUid: string;
@@ -70,27 +85,56 @@ export class ShelfLifeReInspectService {
     }
   }
 
-  /** 재검사 이력 조회 (inspectType = RETEST) */
-  async findAll(query: { page?: number; limit?: number; matUid?: string; result?: string }, company?: string, plant?: string) {
-    const { page = 1, limit = 20 } = query;
-    const where: FindOptionsWhere<IqcLog> = {
-      inspectType: 'RETEST',
-      ...(company && { company }),
-      ...(plant && { plant }),
-      ...(query.matUid && { matUid: query.matUid }),
-      ...(query.result && { result: query.result }),
-    };
-    const [data, total] = await this.iqcLogRepo.findAndCount({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { inspectDate: 'DESC' },
-    });
+  /**
+   * 재검사 이력 조회 (inspectType = RETEST)
+   * - 검사일 구간(fromDate/toDate)·결과·품목·검색어 전부 DB WHERE로 처리한다(메모리 필터 금지).
+   * - toDate는 당일 포함(parseDateEnd → 23:59:59.999).
+   */
+  async findAll(query: ReInspectHistoryQuery, company?: string, plant?: string) {
+    const { page = 1, limit = 20, matUid, itemCode, result, search, fromDate, toDate } = query;
+    const dateFrom = parseDateStart(fromDate);
+    const dateTo = parseDateEnd(toDate);
 
-    // 품목명 보강
+    const qb = this.iqcLogRepo.createQueryBuilder('log')
+      .where('log.inspectType = :inspectType', { inspectType: 'RETEST' });
+    if (company) qb.andWhere('log.company = :company', { company });
+    if (plant) qb.andWhere('log.plant = :plant', { plant });
+    if (matUid) qb.andWhere('log.matUid = :matUid', { matUid });
+    if (itemCode) qb.andWhere('log.itemCode = :itemCode', { itemCode });
+    if (result) qb.andWhere('log.result = :result', { result });
+    if (dateFrom) qb.andWhere('log.inspectDate >= :dateFrom', { dateFrom });
+    if (dateTo) qb.andWhere('log.inspectDate <= :dateTo', { dateTo });
+
+    const trimmedSearch = search?.trim();
+    if (trimmedSearch) {
+      qb.andWhere(
+        `(
+          UPPER(COALESCE(log.matUid, '')) LIKE :search
+          OR UPPER(log.itemCode) LIKE :search
+          OR UPPER(COALESCE(log.inspectorName, '')) LIKE :search
+          OR EXISTS (
+            SELECT 1 FROM ITEM_MASTERS im
+            WHERE im.ITEM_CODE = log.itemCode
+              AND im.COMPANY = log.company
+              AND im.PLANT_CD = log.plant
+              AND UPPER(im.ITEM_NAME) LIKE :search
+          )
+        )`,
+        { search: `%${trimmedSearch.toUpperCase()}%` },
+      );
+    }
+
+    const [data, total] = await qb
+      .orderBy('log.inspectDate', 'DESC')
+      .addOrderBy('log.seq', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    // 품목명 보강 (IN 절 일괄 조회, 테넌트 스코프)
     const itemCodes = [...new Set(data.map(d => d.itemCode).filter(Boolean))];
     const parts = itemCodes.length > 0
-      ? await this.itemMasterRepo.find({ where: itemCodes.map(code => ({ itemCode: code, ...(company && { company }), ...(plant && { plant }) })) })
+      ? await this.itemMasterRepo.find({ where: { itemCode: In(itemCodes), ...(company && { company }), ...(plant && { plant }) } })
       : [];
     const partMap = new Map(parts.map(p => [p.itemCode, p]));
 

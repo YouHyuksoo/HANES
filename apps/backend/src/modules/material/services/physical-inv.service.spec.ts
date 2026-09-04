@@ -2,7 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource, QueryRunner, Repository } from 'typeorm';
+import { DataSource, QueryRunner, Repository, SelectQueryBuilder } from 'typeorm';
 import { PhysicalInvService } from './physical-inv.service';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
@@ -435,7 +435,9 @@ describe('PhysicalInvService', () => {
       const stockQb = {
         andWhere: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
         getMany: jest.fn().mockResolvedValue([
           {
             warehouseCode: 'WH-01',
@@ -476,7 +478,9 @@ describe('PhysicalInvService', () => {
       const stockQb = {
         andWhere: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
         getMany: jest.fn().mockResolvedValue([
           {
             warehouseCode: 'WH-01',
@@ -511,7 +515,9 @@ describe('PhysicalInvService', () => {
         andWhere: jest.fn().mockReturnThis(),
         leftJoin: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
         getMany: jest.fn().mockResolvedValue([]),
       };
       matStockRepo.createQueryBuilder.mockReturnValue(stockQb as any);
@@ -523,6 +529,43 @@ describe('PhysicalInvService', () => {
         'sp',
         'sp.itemCode = stock.itemCode AND sp.company = stock.company AND sp.plant = stock.plant',
       );
+    });
+
+    it('기본은 수량 > 0 인 재고만 조회하고 page/limit 으로 서버 페이징한다', async () => {
+      sessionRepo.find.mockResolvedValue([]);
+      const stockQb = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(250),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      matStockRepo.createQueryBuilder.mockReturnValue(stockQb as unknown as SelectQueryBuilder<MatStock>);
+
+      const result = await service.findStocksWithCounts({ page: 2, limit: 100 }, 'C1', 'P1');
+
+      expect(stockQb.andWhere).toHaveBeenCalledWith('stock.qty > 0');
+      expect(stockQb.skip).toHaveBeenCalledWith(100);
+      expect(stockQb.take).toHaveBeenCalledWith(100);
+      expect(result).toEqual(expect.objectContaining({ total: 250, page: 2, limit: 100 }));
+    });
+
+    it("includeZeroQty='Y' 이면 0재고 행도 포함한다", async () => {
+      sessionRepo.find.mockResolvedValue([]);
+      const stockQb = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      matStockRepo.createQueryBuilder.mockReturnValue(stockQb as unknown as SelectQueryBuilder<MatStock>);
+
+      await service.findStocksWithCounts({ page: 1, limit: 100, includeZeroQty: 'Y' }, 'C1', 'P1');
+
+      expect(stockQb.andWhere).not.toHaveBeenCalledWith('stock.qty > 0');
     });
   });
 

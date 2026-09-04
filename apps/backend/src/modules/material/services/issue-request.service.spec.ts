@@ -2,7 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource, LessThanOrEqual, MoreThanOrEqual, QueryRunner, Repository } from 'typeorm';
+import { DataSource, LessThanOrEqual, MoreThanOrEqual, QueryRunner, Repository, In } from 'typeorm';
 import { IssueRequestService } from './issue-request.service';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
@@ -92,6 +92,31 @@ describe('IssueRequestService', () => {
   });
 
   describe('findAll', () => {
+    it('status=PENDING 은 미완료 상태 집합(REQUESTED/APPROVED/PARTIAL) IN 조건으로 해석한다', async () => {
+      requestRepo.find.mockResolvedValue([]);
+      requestRepo.count.mockResolvedValue(0);
+
+      await service.findAll({ page: 1, limit: 20, status: 'PENDING' }, 'C1', 'P1');
+
+      expect(requestRepo.find).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ status: In(['REQUESTED', 'APPROVED', 'PARTIAL']), company: 'C1', plant: 'P1' }),
+      }));
+    });
+
+    it('fromDate/toDate 는 요청일 구간(종료일 당일 포함) 조건으로 반영한다', async () => {
+      requestRepo.find.mockResolvedValue([]);
+      requestRepo.count.mockResolvedValue(0);
+
+      await service.findAll({ page: 1, limit: 20, fromDate: '2026-09-01', toDate: '2026-09-03' }, 'C1', 'P1');
+
+      const call = requestRepo.find.mock.calls.at(-1)?.[0] as { where: { requestDate?: { _type?: string; _value?: unknown } } };
+      expect(call.where.requestDate).toBeDefined();
+      expect(call.where.requestDate?._type).toBe('between');
+      const [from, to] = call.where.requestDate?._value as [Date, Date];
+      expect(from.getTime()).toBeLessThan(to.getTime());
+      expect(to.getDate()).toBe(3);
+    });
+
     it('품목 마스터가 누락되어도 출고요청 품목 원본 itemCode는 유지한다', async () => {
       requestRepo.find.mockResolvedValue([
         { requestNo: 'REQ-001', status: 'REQUESTED', requester: 'SYSTEM' } as MatIssueRequest,

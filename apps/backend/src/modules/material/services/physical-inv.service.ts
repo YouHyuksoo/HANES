@@ -497,7 +497,8 @@ export class PhysicalInvService {
    * 세션(기준연월) 기반으로 MatStock + CountDetail JOIN
    */
   async findStocksWithCounts(query: PhysicalInvCountQueryDto, company?: string, plant?: string) {
-    const { countMonth, warehouseCode, search, limit = 5000 } = query;
+    const { countMonth, warehouseCode, search, includeZeroQty, page = 1, limit = 100 } = query;
+    const skip = (page - 1) * limit;
 
     // 해당 기준연월의 모든 세션 찾기
     let sessions: PhysicalInvSession[] = [];
@@ -519,6 +520,8 @@ export class PhysicalInvService {
     if (company) stockQb.andWhere('stock.company = :company', { company });
     if (plant) stockQb.andWhere('stock.plant = :plant', { plant });
     if (warehouseCode) stockQb.andWhere('stock.warehouseCode = :warehouseCode', { warehouseCode });
+    // 기본은 수량 > 0 인 재고만(현재상태 화면의 활성 조건) — 0재고는 사용자가 명시적으로 포함할 때만
+    if (includeZeroQty !== 'Y') stockQb.andWhere('stock.qty > 0');
 
     if (search) {
       const upper = search.toUpperCase();
@@ -529,8 +532,11 @@ export class PhysicalInvService {
         );
     }
 
+    // 서버 페이징 — 전량을 내려주고 클라이언트에서 거르지 않는다
+    const total = await stockQb.getCount();
     const stocks = await stockQb
       .orderBy('stock.updatedAt', 'DESC')
+      .skip(skip)
       .take(limit)
       .getMany();
 
@@ -608,7 +614,9 @@ export class PhysicalInvService {
 
     return {
       data: result,
-      total: result.length,
+      total,
+      page,
+      limit,
       sessions: sessionList,
       activeSession: activeSession ? {
         sessionDate: formatDate(activeSession.sessionDate),

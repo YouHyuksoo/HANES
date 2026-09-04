@@ -12,7 +12,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { Repository, DataSource, QueryRunner } from 'typeorm';
+import { Repository, DataSource, QueryRunner, SelectQueryBuilder } from 'typeorm';
 import { ArrivalService } from './arrival.service';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
@@ -1238,6 +1238,52 @@ describe('ArrivalService', () => {
       expect(mockItemMasterRepo.findOne).toHaveBeenCalledWith({
         where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
       });
+    });
+  });
+
+  describe('listPoLines (IQC005 목록 기본 조건)', () => {
+    const buildQb = () => {
+      const qb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+      };
+      mockPurchaseOrderItemRepo.createQueryBuilder.mockReturnValue(qb as unknown as SelectQueryBuilder<PurchaseOrderItem>);
+      return qb;
+    };
+
+    it('status 미지정/PENDING 은 미완료 상태 집합(OPEN/PARTIAL) IN 조건으로 해석한다', async () => {
+      const qb = buildQb();
+
+      await target.listPoLines({}, 'C1', 'P1');
+
+      expect(qb.where).toHaveBeenCalledWith(
+        "NVL(pi.LINE_STATUS, 'OPEN') IN (:...pendingStatuses)",
+        { pendingStatuses: ['OPEN', 'PARTIAL'] },
+      );
+      expect(qb.andWhere).not.toHaveBeenCalledWith('po.ORDER_DATE >= :orderDateFrom', expect.anything());
+    });
+
+    it('CLOSE + fromDate/toDate 는 상태 조건과 발주일 구간(종료일 당일 포함)을 함께 반영한다', async () => {
+      const qb = buildQb();
+
+      await target.listPoLines({ status: 'CLOSE', fromDate: '2026-09-01', toDate: '2026-09-03' }, 'C1', 'P1');
+
+      expect(qb.where).toHaveBeenCalledWith("NVL(pi.LINE_STATUS, 'OPEN') = :st", { st: 'CLOSE' });
+      const fromCall = qb.andWhere.mock.calls.find((c) => c[0] === 'po.ORDER_DATE >= :orderDateFrom');
+      const toCall = qb.andWhere.mock.calls.find((c) => c[0] === 'po.ORDER_DATE <= :orderDateTo');
+      expect(fromCall).toBeDefined();
+      expect(toCall).toBeDefined();
+      const from = (fromCall?.[1] as { orderDateFrom: Date }).orderDateFrom;
+      const to = (toCall?.[1] as { orderDateTo: Date }).orderDateTo;
+      expect(from.getDate()).toBe(1);
+      expect(to.getDate()).toBe(3);
+      expect(to.getHours()).toBe(23);
     });
   });
 });

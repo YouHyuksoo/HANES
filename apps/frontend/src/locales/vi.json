@@ -165,6 +165,11 @@
       "thisMonth": "Tháng này",
       "presets": "Chọn khoảng",
       "openIncludedNotice": "Đã bao gồm {{count}} mục đang xử lý nằm ngoài khoảng ngày."
+    },
+    "serverPager": {
+      "summary": "Trang {{page}} / {{totalPages}} · tổng {{total}}",
+      "prev": "Trang trước",
+      "next": "Trang sau"
     }
   },
   "help": {
@@ -2331,7 +2336,8 @@
         "done": "Hoàn thành",
         "canceled": "Đã hủy",
         "arrived": "Đã nhập",
-        "iqcReady": "Chờ kiểm tra"
+        "iqcReady": "Chờ kiểm tra",
+        "pendingAll": "Chưa hoàn tất (chưa nhận / nhận một phần)"
       },
       "col": {
         "transNo": "Mã giao dịch",
@@ -2644,7 +2650,8 @@
         "approved": "Đã phê duyệt",
         "partial": "Xuất một phần",
         "completed": "Hoàn thành",
-        "rejected": "Từ chối"
+        "rejected": "Từ chối",
+        "pendingAll": "Chưa hoàn tất (yêu cầu · duyệt · xuất một phần)"
       },
       "modalTitle": "Yêu cầu xuất kho",
       "workOrderLabel": "Lệnh sản xuất",
@@ -2766,7 +2773,10 @@
         "cancelReason": "Lý do hủy",
         "cancelReasonPlaceholder": "Nhập lý do hủy...",
         "confirmCancel": "Xác nhận hủy"
-      }
+      },
+      "noAvailableLot": "Không có LOT khả dụng để xuất (tồn kho 0)",
+      "lotLoading": "Đang tải LOT",
+      "lotSelect": "Chọn LOT"
     },
     "stock": {
       "title": "Tồn kho vật tư",
@@ -2825,7 +2835,8 @@
       "status": {
         "normal": "Bình thường",
         "hold": "Tạm giữ",
-        "depleted": "Đã hết"
+        "depleted": "Đã hết",
+        "activeOnly": "LOT còn tồn (SL>0, bình thường)"
       },
       "allIqc": "Tất cả trạng thái IQC",
       "iqcStatus": {
@@ -3086,7 +3097,10 @@
       "extendDaysHint": "Tự động theo mặt hàng",
       "viewDetail": "Xem chi tiết kiểm tra",
       "noInspectDetail": "Không có giá trị đo theo hạng mục (đánh giá thủ công)",
-      "historySubtitle": "Tra cứu lịch sử kết quả tái kiểm vật tư có hạn sử dụng."
+      "historySubtitle": "Tra cứu lịch sử kết quả tái kiểm vật tư có hạn sử dụng.",
+      "activeScopeHint": "Mặc định: lô còn tồn đã hết hạn hoặc sắp hết hạn",
+      "inspectDate": "Ngày kiểm tra",
+      "reinspectScopeHint": "Mặc định: chờ tái kiểm = lô còn tồn đã hết hạn hoặc sắp hết hạn"
     },
     "hold": {
       "title": "Giữ tồn kho vật tư",
@@ -3263,7 +3277,9 @@
         "mismatch": "Không khớp",
         "matched": "Khớp"
       },
-      "confirmMessage": "Áp dụng {{count}} kết quả kiểm kê?"
+      "confirmMessage": "Áp dụng {{count}} kết quả kiểm kê?",
+      "inStockOnly": "Chỉ hàng còn tồn",
+      "includeZeroQty": "Bao gồm tồn kho 0"
     },
     "physicalInvHistory": {
       "title": "Lịch sử kiểm kê",

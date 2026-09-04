@@ -9,6 +9,9 @@
  * 2. 병합 시 원본 전부 폐기(MERGED) → 합산 수량의 신규 통합 시리얼 1개 발번
  * 3. 신규 시리얼 자재라벨 발행(MatLabelPreviewModal 재사용)
  * API: GET /material/lot-merge, GET /material/lot-merge/by-barcode/:matUid, POST /material/lot-merge
+ *
+ * 목록 기본 조건(처리성 화면): 병합 대상이 되는 LOT만 — 서버가 재고>0·NORMAL·예약0·입고완료를 DB 조건으로 건다.
+ * 전량(limit 5000)을 받지 않고 서버 페이징(page/limit)으로 받는다.
  */
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -17,18 +20,24 @@ import { Merge, Search, RefreshCw, ScanLine, X, AlertCircle, Plus } from "lucide
 import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
 import { BarcodeScanInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
+import ServerPager from "@/components/shared/ServerPager";
 import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
 import type { PoLineReceiptResponse } from "../arrival/components/types";
 import { createLotMergeGridColumns, type MergeableLot } from "./lotMergeColumns";
 
+const PAGE_SIZE = 50;
+
 export default function LotMergePage() {
   const { t } = useTranslation();
 
   const [data, setData] = useState<MergeableLot[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [page, setPage] = useState(1);
+  useEffect(() => { setPage(1); }, [searchText]);
 
   // 바코드 스캔 누적
   const [scanned, setScanned] = useState<MergeableLot[]>([]);
@@ -58,16 +67,19 @@ export default function LotMergePage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
+      const params: Record<string, string> = { page: String(page), limit: String(PAGE_SIZE) };
       if (searchText) params.search = searchText;
       const res = await api.get("/material/lot-merge", { params });
-      setData(res.data?.data ?? []);
+      const rows: MergeableLot[] = res.data?.data ?? [];
+      setData(rows);
+      setTotal(Number(res.data?.meta?.total ?? rows.length));
     } catch {
       setData([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [searchText]);
+  }, [page, searchText]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -228,6 +240,7 @@ export default function LotMergePage() {
           columns={columns}
           isLoading={loading}
           enableColumnFilter
+          pageSize={PAGE_SIZE}
           enableExport
           exportFileName={t("material.lotMerge.title")}
           toolbarLeft={
@@ -235,9 +248,10 @@ export default function LotMergePage() {
               <Input placeholder={t("material.lotMerge.searchPlaceholder")}
                 value={searchText} onChange={(e) => setSearchText(e.target.value)}
                 leftIcon={<Search className="w-4 h-4" />} />
+              <ServerPager page={page} limit={PAGE_SIZE} total={total} onPageChange={setPage} />
             </div>
           }
-          sqlQuery={`SELECT ml.*\nFROM MAT_LOTS ml\nWHERE ml.STATUS = 'NORMAL'\n  AND ml.COMPANY = '40'\n  AND ml.PLANT_CD = '1000'\n  AND ml.INIT_QTY <= NVL((SELECT SUM(st.QTY) FROM STOCK_TRANSACTIONS st\n    WHERE st.MAT_UID = ml.MAT_UID AND st.TRANS_TYPE IN ('RECEIVE','LOT_SPLIT_IN','LOT_MERGE_IN') AND st.STATUS <> 'CANCELED'), 0)\nORDER BY ml.ITEM_CODE, ml.ORIGIN, ml.MAT_UID`}/>
+          sqlQuery={`SELECT ml.*\nFROM MAT_LOTS ml\nJOIN MAT_STOCKS ms ON ms.MAT_UID = ml.MAT_UID AND ms.COMPANY = ml.COMPANY AND ms.PLANT_CD = ml.PLANT_CD\nWHERE ms.QTY > 0\n  AND ml.STATUS = 'NORMAL'\n  AND NVL(ms.RESERVED_QTY, 0) = 0\n  AND ml.COMPANY = '40'\n  AND ml.PLANT_CD = '1000'\n  AND ml.INIT_QTY <= NVL((SELECT SUM(st.QTY) FROM STOCK_TRANSACTIONS st\n    WHERE st.MAT_UID = ml.MAT_UID AND st.TRANS_TYPE IN ('RECEIVE','LOT_SPLIT_IN','LOT_MERGE_IN') AND st.STATUS <> 'CANCELED'), 0)\nORDER BY ml.ITEM_CODE, ml.ORIGIN, ml.MAT_UID\nOFFSET :skip ROWS FETCH NEXT :limit ROWS ONLY`}/>
       </CardContent></Card>
 
       {/* 병합 확인 모달 */}

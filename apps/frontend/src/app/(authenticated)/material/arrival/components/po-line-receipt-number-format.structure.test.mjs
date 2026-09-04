@@ -12,6 +12,6 @@ test('receipt modal formats read-only quantity displays with thousand separators
   );
   assert.doesNotMatch(source, /String\(lotUnitQty\)/);
   assert.match(source, /\{receivedQty\.toLocaleString\(\)\}\s*÷\s*\{formatQuantity\(lotUnitQty\)\}\s*→/);
-  assert.match(source, /\{expectedCount\.toLocaleString\(\)\}개/);
+  assert.match(source, /t\('material\.arrival\.confirm\.serialCountUnit', '\{\{count\}\}개', \{ count: expectedCount \}\)/);
   assert.doesNotMatch(source, /\{lotUnitQty\s*\?\?\s*['"]-['"]\}/);
 });

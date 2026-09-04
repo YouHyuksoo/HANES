@@ -285,7 +285,7 @@ export default function IssueFromRequestModal({
     {
       id: 'matUidSelect',
       header: '출고 LOT',
-      size: 220,
+      size: 360,
       meta: { filterType: 'none' as const },
       cell: ({ row }) => {
         const item = row.original;
@@ -294,14 +294,23 @@ export default function IssueFromRequestModal({
           value: stock.matUid,
           label: `${i === 0 ? '⭐ ' : ''}${stock.matUid} · ${stock.warehouseName ?? stock.warehouseCode} · ${(stock.availableQty ?? stock.qty ?? 0).toLocaleString()}${stock.unit ? ` ${stock.unit}` : ''} · 📅${fmtRecvDate(stock.recvDate)}`,
         }));
+        // 가용 LOT가 없으면 비활성 셀렉트 대신 이유를 보여준다(창고재고 0 = 입고/IQC 합격 LOT 없음)
+        if (!isLoadingLots && options.length === 0) {
+          return (
+            <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              {t('material.issue.noAvailableLot', { defaultValue: '출고 가능 LOT 없음 (창고재고 0)' })}
+            </span>
+          );
+        }
         return (
           <Select
             options={options}
             value={selectedMatUids[item.rowKey] ?? ''}
             onChange={(value) => handleLotChange(item.rowKey, value)}
-            placeholder={isLoadingLots ? 'LOT 조회 중' : 'LOT 선택'}
+            placeholder={isLoadingLots ? t('material.issue.lotLoading', { defaultValue: 'LOT 조회 중' }) : t('material.issue.lotSelect', { defaultValue: 'LOT 선택' })}
             fullWidth
-            disabled={isLoadingLots || options.length === 0}
+            disabled={isLoadingLots}
           />
         );
       },
@@ -343,7 +352,7 @@ export default function IssueFromRequestModal({
   ], [t, availableStocksByItem, selectedMatUids, isLoadingLots, handleLotChange, handleQtyChange]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('material.issue.processAction')} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('material.issue.processAction')} size="full">
       <div className="space-y-4">
         {/* 요청 정보 */}
         {detail && (

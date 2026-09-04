@@ -204,5 +204,22 @@ describe('LotMergeService', () => {
       expect(result.total).toBe(1);
       expect(result.data[0]).toEqual(expect.objectContaining({ matUid: 'MAT-001', itemName: 'PART-A', qty: 30 }));
     });
+
+    it('병합 대상 조건(재고>0, NORMAL, 예약0, 입고완료)을 DB where 로 걸고 서버 페이징한다', async () => {
+      const qb = buildQb([]);
+      mockMatLotRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await target.findMergeableLots({ page: 3, limit: 50, search: 'MAT' }, 'C1', 'P1');
+
+      expect(qb.where).toHaveBeenCalledWith('stock.qty > 0');
+      expect(qb.andWhere).toHaveBeenCalledWith("lot.status = 'NORMAL'");
+      expect(qb.andWhere).toHaveBeenCalledWith('NVL(stock.reservedQty, 0) = 0');
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('lot.initQty <='));
+      expect(qb.andWhere).toHaveBeenCalledWith('lot.company = :company', { company: 'C1' });
+      expect(qb.andWhere).toHaveBeenCalledWith('lot.plant = :plant', { plant: 'P1' });
+      expect(qb.andWhere).toHaveBeenCalledWith('(lot.matUid LIKE :search OR lot.itemCode LIKE :search)', { search: '%MAT%' });
+      expect(qb.skip).toHaveBeenCalledWith(100);
+      expect(qb.take).toHaveBeenCalledWith(50);
+    });
   });
 });

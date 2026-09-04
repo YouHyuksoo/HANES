@@ -16,10 +16,13 @@ import { useTranslation } from "react-i18next";
 import {
   BadgeCheck, Search, RefreshCw, ShieldCheck, ShieldX, AlertTriangle, ScanLine,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Modal, StatCard } from "@/components/ui";
+import { CONCESSION_ACCEPTED_FILTER, CONCESSION_PENDING_FILTER } from "@harness/shared";
+import { Card, CardContent, Button, Input, Modal, StatCard, Select } from "@/components/ui";
 import { BarcodeScanInput, WorkerSelect } from "@/components/shared";
+import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
+import { getTodayLocal } from "@/utils/date";
 import { createConcessionGridColumns, type ConcessionTarget } from "./concessionColumns";
 
 interface WorkerQrResponse {
@@ -30,6 +33,9 @@ interface WorkerQrResponse {
 
 const formatQty = (value?: number | null) => (typeof value === "number" ? value.toLocaleString() : "0");
 
+/** 전체(미특채+특채완료) 조회용 status 값 — 이 경우 입하일 구간이 반드시 붙는다 */
+const CONCESSION_ALL_FILTER = "ALL";
+
 export default function ConcessionPage() {
   const { t } = useTranslation();
 
@@ -37,6 +43,12 @@ export default function ConcessionPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState("");
+  // 기본은 미특채 그룹만 조회 — 특채 처리된 그룹은 입고 후에도 FAIL 로 남아 계속 쌓이므로
+  // 특채완료/전체를 볼 때는 입하일 구간(기본 당일)이 항상 붙는다.
+  const [statusFilter, setStatusFilter] = useState<string>(CONCESSION_PENDING_FILTER);
+  const [fromDate, setFromDate] = useState(() => getTodayLocal());
+  const [toDate, setToDate] = useState(() => getTodayLocal());
+  const dateRangeApplies = statusFilter !== CONCESSION_PENDING_FILTER;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selected, setSelected] = useState<ConcessionTarget | null>(null);
   const [actionType, setActionType] = useState<"apply" | "cancel">("apply");
@@ -50,8 +62,12 @@ export default function ConcessionPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = {};
+      const params: Record<string, string> = { status: statusFilter };
       if (searchText) params.search = searchText;
+      if (dateRangeApplies) {
+        if (fromDate) params.fromDate = fromDate;
+        if (toDate) params.toDate = toDate;
+      }
       const res = await api.get("/material/concession/targets", { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -59,7 +75,13 @@ export default function ConcessionPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText]);
+  }, [searchText, statusFilter, dateRangeApplies, fromDate, toDate]);
+
+  const statusOptions = useMemo(() => [
+    { value: CONCESSION_PENDING_FILTER, label: t("material.concession.notAccepted") },
+    { value: CONCESSION_ACCEPTED_FILTER, label: t("material.concession.accepted") },
+    { value: CONCESSION_ALL_FILTER, label: t("common.allStatus") },
+  ], [t]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -163,6 +185,15 @@ export default function ConcessionPage() {
                   value={searchText} onChange={(e) => setSearchText(e.target.value)}
                   leftIcon={<Search className="w-4 h-4" />} fullWidth />
               </div>
+              <div className="w-40 flex-shrink-0">
+                <Select aria-label={t("material.concession.status")} options={statusOptions}
+                  value={statusFilter} onChange={setStatusFilter} fullWidth />
+              </div>
+              {/* 미특채 외(특채완료/전체)는 입하일 구간이 필수 — 기본 당일 */}
+              {dateRangeApplies && (
+                <DateRangeFilter from={fromDate} to={toDate}
+                  onFromChange={setFromDate} onToChange={setToDate} presets className="flex-shrink-0" />
+              )}
             </div>
           }
           sqlQuery={`SELECT ARRIVAL_NO, ITEM_CODE, VENDOR,\n       COUNT(*) AS SERIAL_COUNT, SUM(INIT_QTY) AS TOTAL_QTY,\n       SUM(CASE WHEN SPECIAL_ACCEPT_YN='Y' THEN 1 ELSE 0 END) AS SPECIAL_ACCEPT_COUNT,\n       MAX(SPECIAL_ACCEPT_WORKER_CODE) AS SPECIAL_ACCEPT_WORKER_CODE\nFROM MAT_LOTS\nWHERE COMPANY = '40' AND PLANT_CD = '1000'\n  AND IQC_STATUS = 'FAIL' AND ARRIVAL_NO IS NOT NULL\nGROUP BY ARRIVAL_NO, ITEM_CODE, VENDOR\nORDER BY MIN(CREATED_AT) DESC`} />

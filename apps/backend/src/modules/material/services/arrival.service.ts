@@ -41,10 +41,10 @@ import {
   PoLineQueryDto,
   ArrivalResultQueryDto,
 } from '../dto/arrival.dto';
-import { isIqcExempt } from '@harness/shared';
+import { isIqcExempt, PO_LINE_PENDING_FILTER, PO_LINE_PENDING_STATUSES } from '@harness/shared';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
-import { parseDateStart } from '../../../shared/date.util';
+import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
 export class ArrivalService {
@@ -1358,12 +1358,21 @@ export class ArrivalService {
         "NVL(pi.LINE_STATUS, 'OPEN') AS \"lineStatus\"",
       ]);
 
-    // 기본적으로 CLOSE 제외 — 입하 완료된 라인은 이 화면에서 볼 필요 없음
-    if (query.status) {
-      qb.where("NVL(pi.LINE_STATUS, 'OPEN') = :st", { st: query.status });
+    // 기본은 미완료(OPEN/PARTIAL)만 — 입하 완료된 라인은 이 화면에서 볼 필요 없음.
+    // status 미지정도 미완료로 해석한다(조건 없는 전량 조회 금지). 전 상태는 status='' 대신
+    // 프론트가 CLOSE 또는 전체(ALL)를 고를 때 발주일 구간(기본 당일)을 함께 보낸다.
+    if (!query.status || query.status === PO_LINE_PENDING_FILTER) {
+      qb.where("NVL(pi.LINE_STATUS, 'OPEN') IN (:...pendingStatuses)", { pendingStatuses: [...PO_LINE_PENDING_STATUSES] });
+    } else if (query.status === 'ALL') {
+      qb.where('1 = 1');
     } else {
-      qb.where("NVL(pi.LINE_STATUS, 'OPEN') != 'CLOSE'");
+      qb.where("NVL(pi.LINE_STATUS, 'OPEN') = :st", { st: query.status });
     }
+    // 발주일 구간(로컬 날짜, 종료일 당일 포함)
+    const orderDateFrom = parseDateStart(query.fromDate);
+    const orderDateTo = parseDateEnd(query.toDate);
+    if (orderDateFrom) qb.andWhere('po.ORDER_DATE >= :orderDateFrom', { orderDateFrom });
+    if (orderDateTo) qb.andWhere('po.ORDER_DATE <= :orderDateTo', { orderDateTo });
     if (query.itemCode) qb.andWhere('pi.ITEM_CODE = :ic', { ic: query.itemCode });
     if (query.poNo) qb.andWhere('pi.PO_ID LIKE :pno', { pno: `%${query.poNo}%` });
     if (company) qb.andWhere('pi.COMPANY = :co', { co: company });

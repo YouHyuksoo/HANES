@@ -165,6 +165,11 @@
       "thisMonth": "This Month",
       "presets": "Select Range",
       "openIncludedNotice": "{{count}} in-progress item(s) outside the date range are included."
+    },
+    "serverPager": {
+      "summary": "Page {{page}} / {{totalPages}} · {{total}} total",
+      "prev": "Previous page",
+      "next": "Next page"
     }
   },
   "help": {
@@ -2331,7 +2336,8 @@
         "done": "Done",
         "canceled": "Canceled",
         "arrived": "Arrived",
-        "iqcReady": "IQC Ready"
+        "iqcReady": "IQC Ready",
+        "pendingAll": "Pending (not received / partial)"
       },
       "col": {
         "transNo": "Transaction No.",
@@ -2644,7 +2650,8 @@
         "approved": "Approved",
         "partial": "Partial",
         "completed": "Completed",
-        "rejected": "Rejected"
+        "rejected": "Rejected",
+        "pendingAll": "Open (requested / approved / partial)"
       },
       "modalTitle": "Issue Request",
       "workOrderLabel": "Work Order",
@@ -2766,7 +2773,10 @@
         "cancelReason": "Cancel Reason",
         "cancelReasonPlaceholder": "Enter cancel reason...",
         "confirmCancel": "Confirm Cancel"
-      }
+      },
+      "noAvailableLot": "No LOT available to issue (warehouse stock 0)",
+      "lotLoading": "Loading LOTs",
+      "lotSelect": "Select LOT"
     },
     "stock": {
       "title": "Material Stock",
@@ -2825,7 +2835,8 @@
       "status": {
         "normal": "Normal",
         "hold": "Hold",
-        "depleted": "Depleted"
+        "depleted": "Depleted",
+        "activeOnly": "In-stock LOTs (qty>0, normal)"
       },
       "allIqc": "All IQC Status",
       "iqcStatus": {
@@ -3086,7 +3097,10 @@
       "extendDaysHint": "Auto by item",
       "viewDetail": "View Inspection Detail",
       "noInspectDetail": "No per-item measurements (manual judgment)",
-      "historySubtitle": "View re-inspection result history for shelf-life materials."
+      "historySubtitle": "View re-inspection result history for shelf-life materials.",
+      "activeScopeHint": "Default: lots with stock that are expired or near expiry",
+      "inspectDate": "Inspection date",
+      "reinspectScopeHint": "Default: pending re-inspection = lots with stock that are expired or near expiry"
     },
     "hold": {
       "title": "Material Stock Hold",
@@ -3263,7 +3277,9 @@
         "mismatch": "Mismatch",
         "matched": "Matched"
       },
-      "confirmMessage": "Apply {{count}} physical inventory count results?"
+      "confirmMessage": "Apply {{count}} physical inventory count results?",
+      "inStockOnly": "In stock only",
+      "includeZeroQty": "Include zero stock"
     },
     "physicalInvHistory": {
       "title": "Physical Inventory History",

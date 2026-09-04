@@ -9,9 +9,11 @@
  * 4. **stats**: 응답 데이터에서 상태별 건수를 계산
  * 5. **필터**: 상태, 검색어, 페이지네이션 지원
  */
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { ISSUE_REQUEST_PENDING_FILTER } from '@harness/shared';
 import { useApiQuery, useInvalidateQueries } from '@/hooks/useApi';
 import { api } from '@/services/api';
+import { getTodayLocal } from '@/utils/date';
 
 /** 출고요청 품목 아이템 */
 export interface IssueRequestItem {
@@ -73,9 +75,15 @@ interface UseIssueRequestsOptions {
  */
 export function useIssueRequests(options: UseIssueRequestsOptions = {}) {
   const { issueType, excludeIssueTypes = [] } = options;
-  const [statusFilter, setStatusFilter] = useState('');
+  // 기본은 미완료(요청·승인·부분출고)만 조회 — 조건 없는 전량 조회 금지.
+  // 전체/완료/반려처럼 종결 상태를 볼 때는 요청일 구간(기본 당일)이 항상 붙는다.
+  const [statusFilter, setStatusFilter] = useState<string>(ISSUE_REQUEST_PENDING_FILTER);
   const [searchText, setSearchText] = useState('');
+  const [fromDate, setFromDate] = useState(() => getTodayLocal());
+  const [toDate, setToDate] = useState(() => getTodayLocal());
   const [page, setPage] = useState(1);
+  const dateRangeApplies = statusFilter !== ISSUE_REQUEST_PENDING_FILTER;
+  useEffect(() => { setPage(1); }, [statusFilter, searchText, fromDate, toDate]);
   const invalidate = useInvalidateQueries();
   const excludeIssueTypeSet = useMemo(() => new Set(excludeIssueTypes), [excludeIssueTypes]);
 
@@ -83,14 +91,18 @@ export function useIssueRequests(options: UseIssueRequestsOptions = {}) {
   const queryParams = useMemo(() => {
     const params = new URLSearchParams({ page: String(page), limit: '20' });
     if (statusFilter) params.set('status', statusFilter);
+    if (dateRangeApplies) {
+      if (fromDate) params.set('fromDate', fromDate);
+      if (toDate) params.set('toDate', toDate);
+    }
     if (searchText) params.set('search', searchText);
     if (issueType) params.set('issueType', issueType);
     return params.toString();
-  }, [page, statusFilter, searchText, issueType]);
+  }, [page, statusFilter, searchText, issueType, dateRangeApplies, fromDate, toDate]);
 
   // 목록 조회
   const { data, isLoading, refetch } = useApiQuery<IssueRequestListResponse>(
-    ['issue-requests', String(page), statusFilter, searchText, issueType ?? '', excludeIssueTypes.join(',')],
+    ['issue-requests', String(page), statusFilter, searchText, issueType ?? '', excludeIssueTypes.join(','), dateRangeApplies ? `${fromDate}~${toDate}` : ''],
     `/material/issue-requests?${queryParams}`,
     { staleTime: 30_000 },
   );
@@ -132,6 +144,11 @@ export function useIssueRequests(options: UseIssueRequestsOptions = {}) {
     refetch,
     stats,
     statusFilter,
+    fromDate,
+    setFromDate,
+    toDate,
+    setToDate,
+    dateRangeApplies,
     setStatusFilter,
     searchText,
     setSearchText,

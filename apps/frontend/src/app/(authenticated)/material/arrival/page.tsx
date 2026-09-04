@@ -14,8 +14,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Truck, RefreshCw, Plus, Search } from 'lucide-react';
+import { PO_LINE_PENDING_FILTER } from '@harness/shared';
 import { Card, CardContent, Button, Input, Select } from '@/components/ui';
+import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import api from '@/services/api';
+import { getTodayLocal } from '@/utils/date';
 import PoLineGrid from './components/PoLineGrid';
 import PoLineReceiptModal from './components/PoLineReceiptModal';
 import SerialIssueConfirmModal from './components/SerialIssueConfirmModal';
@@ -38,6 +41,10 @@ interface TemplateInfo {
 }
 
 const DEFAULT_TEMPLATE_KEY = '__default__';
+/** 전 상태 조회용 status 값 — 이 경우 발주일 구간이 반드시 붙는다 */
+const PO_LINE_ALL_FILTER = 'ALL';
+/** 발주일 구간 필터가 붙는 상태(종결/전체) */
+const PO_LINE_DATE_RANGE_STATUSES = new Set([PO_LINE_ALL_FILTER, 'CLOSE']);
 
 export default function ArrivalPage() {
   const { t } = useTranslation();
@@ -47,6 +54,12 @@ export default function ArrivalPage() {
   const [loading, setLoading] = useState(false);
   const [itemCode, setItemCode] = useState('');
   const [poNo, setPoNo] = useState('');
+  // 기본은 미완료(미입하·일부입하)만 조회 — 조건 없는 전량 조회 금지.
+  // CLOSE/전체처럼 종결 상태를 볼 때는 발주일 구간(기본 당일)이 항상 붙는다.
+  const [statusFilter, setStatusFilter] = useState<string>(PO_LINE_PENDING_FILTER);
+  const [fromDate, setFromDate] = useState(() => getTodayLocal());
+  const [toDate, setToDate] = useState(() => getTodayLocal());
+  const dateRangeApplies = PO_LINE_DATE_RANGE_STATUSES.has(statusFilter);
 
 
   // 흐름 상태
@@ -65,6 +78,9 @@ export default function ArrivalPage() {
     try {
       const res = await api.get('/material/arrivals/po-lines', {
         params: {
+          status: statusFilter,
+          ...(dateRangeApplies && fromDate && { fromDate }),
+          ...(dateRangeApplies && toDate && { toDate }),
           ...(itemCode && { itemCode }),
           ...(poNo && { poNo }),
         },
@@ -72,7 +88,16 @@ export default function ArrivalPage() {
       setRows(res.data?.data ?? []);
     } catch { setRows([]); }
     setLoading(false);
-  }, [itemCode, poNo]);
+  }, [itemCode, poNo, statusFilter, dateRangeApplies, fromDate, toDate]);
+
+  // 상태 필터 옵션 — 상태 라벨은 comCode.PO_LINE_STATUS 단일 출처
+  const statusOptions = useMemo(() => [
+    { value: PO_LINE_PENDING_FILTER, label: t('material.arrival.status.pendingAll', '미완료 (미입하·일부입하)') },
+    { value: PO_LINE_ALL_FILTER, label: t('common.allStatus') },
+    { value: 'OPEN', label: t('comCode.PO_LINE_STATUS.OPEN') },
+    { value: 'PARTIAL', label: t('comCode.PO_LINE_STATUS.PARTIAL') },
+    { value: 'CLOSE', label: t('comCode.PO_LINE_STATUS.CLOSE') },
+  ], [t]);
 
   useEffect(() => { fetchLines(); }, [fetchLines]);
 
@@ -231,6 +256,26 @@ export default function ArrivalPage() {
                       fullWidth
                     />
                   </div>
+                  <div className="w-52 flex-shrink-0">
+                    <Select
+                      aria-label={t('common.status')}
+                      options={statusOptions}
+                      value={statusFilter}
+                      onChange={setStatusFilter}
+                      fullWidth
+                    />
+                  </div>
+                  {/* 미완료 외(CLOSE/전체)는 발주일 구간이 필수 — 기본 당일 */}
+                  {dateRangeApplies && (
+                    <DateRangeFilter
+                      from={fromDate}
+                      to={toDate}
+                      onFromChange={setFromDate}
+                      onToChange={setToDate}
+                      presets
+                      className="flex-shrink-0"
+                    />
+                  )}
                   <Button variant="secondary" size="sm" onClick={fetchLines}>
                     <Search className="w-4 h-4 mr-1" />{t('common.search')}
                   </Button>

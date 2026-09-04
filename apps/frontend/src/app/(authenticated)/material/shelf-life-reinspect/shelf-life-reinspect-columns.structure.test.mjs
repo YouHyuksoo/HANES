@@ -16,3 +16,12 @@ test('/material/shelf-life-reinspect page consumes the extracted column factory'
   // 인라인 컬럼 배열이 페이지에 남아있지 않아야 한다
   assert.doesNotMatch(page, /accessorKey: "matUid"/);
 });
+
+test('/material/shelf-life-reinspect queries pending targets from the server (no limit 5000 bulk fetch)', () => {
+  assert.doesNotMatch(page, /limit:\s*"5000"/);
+  assert.match(page, /page:\s*String\(page\)/);
+  assert.match(page, /params\.expiryStatus = expiryFilter/);
+  assert.match(page, /params\.search = searchText/);
+  assert.doesNotMatch(page, /const visibleTargets/);
+  assert.match(page, /<ServerPager /);
+});
