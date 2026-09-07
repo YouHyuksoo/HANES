@@ -38,6 +38,12 @@ export default function ProductDefectTransferPage() {
   const [transferRemark, setTransferRemark] = useState("");
   const [selectedTx, setSelectedTx] = useState<ProductDefectTransferTx | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const getErrorMessage = useCallback((error: unknown, fallback: string) => {
+    const response = (error as { response?: { data?: { message?: string; error?: string } } })?.response;
+    return response?.data?.message || response?.data?.error || (error instanceof Error ? error.message : fallback);
+  }, []);
 
   const fetchTargetStocks = useCallback(async () => {
     setTargetLoading(true);
@@ -67,12 +73,13 @@ export default function ProductDefectTransferPage() {
         ...(Array.isArray(fgList) ? fgList : []),
       ] as ProductDefectStock[];
       setTargetData(merged.filter((row) => row.availableQty > 0));
-    } catch {
+    } catch (error) {
       setTargetData([]);
+      setErrorMessage(getErrorMessage(error, "불량 WIP 재고를 조회하지 못했습니다. 다시 시도해 주세요."));
     } finally {
       setTargetLoading(false);
     }
-  }, []);
+  }, [getErrorMessage]);
 
   const fetchHistory = useCallback(async () => {
     setHistoryLoading(true);
@@ -86,14 +93,16 @@ export default function ProductDefectTransferPage() {
       const res = await api.get("/inventory/product/transactions", { params });
       const list = res.data?.data ?? res.data;
       setHistoryData(Array.isArray(list) ? list : []);
-    } catch {
+    } catch (error) {
       setHistoryData([]);
+      setErrorMessage(getErrorMessage(error, "불량창고 입고 이력을 조회하지 못했습니다. 다시 시도해 주세요."));
     } finally {
       setHistoryLoading(false);
     }
-  }, [fromDate, toDate]);
+  }, [fromDate, toDate, getErrorMessage]);
 
   const refreshAll = useCallback(() => {
+    setErrorMessage(null);
     fetchTargetStocks();
     fetchHistory();
   }, [fetchTargetStocks, fetchHistory]);
@@ -120,13 +129,15 @@ export default function ProductDefectTransferPage() {
       });
       setSelectedStock(null);
       setTransferRemark("");
+      setErrorMessage(null);
       refreshAll();
     } catch (e) {
       console.error("Defect transfer failed:", e);
+      setErrorMessage(getErrorMessage(e, "불량창고 입고 처리에 실패했습니다. 재고와 입력값을 확인해 주세요."));
     } finally {
       setSaving(false);
     }
-  }, [selectedStock, transferQty, transferRemark, refreshAll]);
+  }, [selectedStock, transferQty, transferRemark, refreshAll, getErrorMessage]);
 
   const handleCancel = useCallback(async () => {
     if (!selectedTx || !cancelReason) return;
@@ -139,13 +150,15 @@ export default function ProductDefectTransferPage() {
       });
       setSelectedTx(null);
       setCancelReason("");
+      setErrorMessage(null);
       refreshAll();
     } catch (e) {
       console.error("Cancel failed:", e);
+      setErrorMessage(getErrorMessage(e, "불량창고 입고 취소에 실패했습니다. 거래 상태를 확인해 주세요."));
     } finally {
       setSaving(false);
     }
-  }, [selectedTx, cancelReason, refreshAll]);
+  }, [selectedTx, cancelReason, refreshAll, getErrorMessage]);
 
   const targetRows = useMemo(() => {
     const q = targetSearch.trim().toLowerCase();
@@ -192,6 +205,15 @@ export default function ProductDefectTransferPage() {
           <RefreshCw className={`w-4 h-4 mr-1 ${targetLoading || historyLoading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
       </div>
+
+      {errorMessage && (
+        <div role="alert" aria-live="assertive" className="flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300">
+          <span>{errorMessage}</span>
+          <Button variant="ghost" size="sm" onClick={() => setErrorMessage(null)} aria-label={t("common.close", "닫기")}>
+            <XCircle className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4 flex-1 min-h-0">
         <Card className="min-h-0 overflow-hidden" padding="none">

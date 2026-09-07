@@ -36,6 +36,7 @@ export default function ProductIssuePage() {
   /* 우측 패널 */
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   /** 출고 이력 조회 */
   const fetchData = useCallback(async () => {
@@ -50,8 +51,9 @@ export default function ProductIssuePage() {
       const res = await api.get("/inventory/product/transactions", { params });
       const list = res.data?.data ?? res.data;
       setData(Array.isArray(list) ? list : []);
-    } catch {
+    } catch (error) {
       setData([]);
+      setErrorMessage((error as any)?.response?.data?.message || "제품 출고 이력을 조회하지 못했습니다. 다시 시도해 주세요.");
     } finally {
       setLoading(false);
     }
@@ -77,6 +79,7 @@ export default function ProductIssuePage() {
       fetchData();
     } catch (e) {
       console.error("Issue failed:", e);
+      setErrorMessage((e as any)?.response?.data?.message || "제품 출고 처리에 실패했습니다. 재고와 입력값을 확인해 주세요.");
     } finally {
       setSaving(false);
     }
@@ -122,6 +125,8 @@ export default function ProductIssuePage() {
             </Button>
           </div>
         </div>
+
+        {errorMessage && <p role="alert" aria-live="assertive" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300">{errorMessage}</p>}
 
         {/* StatCards */}
         <div className="grid grid-cols-4 gap-3 flex-shrink-0">

@@ -52,6 +52,7 @@ export default function ProductReceivePage() {
   const [searchText, setSearchText] = useState("");
   const [fromDate, setFromDate] = useState(() => getTodayLocal());
   const [toDate, setToDate] = useState(() => getTodayLocal());
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   /** 제품(FG) 입고 이력 조회 — 제품입고만, 선택 기간 내(기본 당일). 공정출고 WIP_OUT은 수불 화면에서 확인 */
   const fetchData = useCallback(async () => {
@@ -70,8 +71,9 @@ export default function ProductReceivePage() {
         extractTransactions(res),
         extractTransactions(boxRes).map(displayReceiveQty),
       ));
-    } catch {
+    } catch (error) {
       setData([]);
+      setErrorMessage((error as any)?.response?.data?.message || "제품 입고 이력을 조회하지 못했습니다. 다시 시도해 주세요.");
     } finally {
       setLoading(false);
     }
@@ -99,7 +101,9 @@ export default function ProductReceivePage() {
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
         </div>
-      </div>
+        </div>
+
+        {errorMessage && <p role="alert" aria-live="assertive" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300">{errorMessage}</p>}
 
       {/* 본문: 좌측 입고이력 + 우측 작업 패널 */}
       <div className="flex-1 min-h-0 flex gap-4">

@@ -56,6 +56,7 @@ export default function ProductReceiptCancelPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTx, setSelectedTx] = useState<ProductReceiptTx | null>(null);
   const [reason, setReason] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   /** 제품 입고 이력 조회 */
   const fetchData = useCallback(async () => {
@@ -74,8 +75,9 @@ export default function ProductReceiptCancelPage() {
         extractReceiptTransactions(receiptRes),
         extractReceiptTransactions(boxRes).map(displayReceiptQty),
       ));
-    } catch {
+    } catch (error) {
       setData([]);
+      setErrorMessage((error as any)?.response?.data?.message || "제품 입고 이력을 조회하지 못했습니다. 다시 시도해 주세요.");
     } finally {
       setLoading(false);
     }
@@ -99,6 +101,7 @@ export default function ProductReceiptCancelPage() {
       fetchData();
     } catch (e) {
       console.error("Cancel failed:", e);
+      setErrorMessage((e as any)?.response?.data?.message || "제품 입고 취소에 실패했습니다. 거래 상태를 확인해 주세요.");
     } finally {
       setSaving(false);
     }
@@ -125,7 +128,9 @@ export default function ProductReceiptCancelPage() {
         <Button variant="secondary" size="sm" onClick={fetchData}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
-      </div>
+        </div>
+
+        {errorMessage && <p role="alert" aria-live="assertive" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300">{errorMessage}</p>}
 
       {/* DataGrid */}
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
