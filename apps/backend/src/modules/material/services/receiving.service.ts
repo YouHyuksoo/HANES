@@ -408,6 +408,13 @@ export class ReceivingService {
         if (!lot) continue;
         this.assertSameTenant('입고 대상 LOT', lot, company, plant);
 
+        if (
+          await this.sysConfigService.isEnabled('MFG_DATE_REQUIRED', company, plant) &&
+          !item.manufactureDate
+        ) {
+          throw new BadRequestException(`제조일자를 입력해야 합니다. LOT: ${item.matUid}`);
+        }
+
         // 0. MAT_ARRIVALS에서 입하 창고 조회 (LOT의 arrivalNo FK 기준)
         let arrivalRecord: MatArrival | null = null;
         if (lot.arrivalNo) {

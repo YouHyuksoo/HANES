@@ -41,9 +41,10 @@ import { ProductHoldService } from './services/product-hold.service';
 import { WipMatStockService } from './services/wip-mat-stock.service';
 import { ProcMatStockService } from './services/proc-mat-stock.service';
 import { STOCK_MANAGER } from '../../common/interfaces/stock-manager.interface';
+import { SystemModule } from '../system/system.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MatStock, MatArrivalTransaction, StockTransaction, ProductStock, ProductTransaction, MatLot, Warehouse, ItemMaster, InvAdjLog, WarehouseLocation, FgLabel, PhysicalInvSession, PhysicalInvCountDetail, BoxMaster, WipMatStock, WipMatTransaction, ProcMatStock, ProcMatTransaction])],
+  imports: [SystemModule, TypeOrmModule.forFeature([MatStock, MatArrivalTransaction, StockTransaction, ProductStock, ProductTransaction, MatLot, Warehouse, ItemMaster, InvAdjLog, WarehouseLocation, FgLabel, PhysicalInvSession, PhysicalInvCountDetail, BoxMaster, WipMatStock, WipMatTransaction, ProcMatStock, ProcMatTransaction])],
   controllers: [InventoryController, ProductPhysicalInvController, WarehouseLocationController, ProductHoldController],
   providers: [
     InventoryService,

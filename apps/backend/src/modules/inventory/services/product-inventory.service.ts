@@ -34,6 +34,7 @@ import {
   ProductStockQueryDto,
 } from '../dto/product-inventory.dto';
 import { CancelTransactionDto } from '../dto/inventory.dto';
+import { SysConfigService } from '../../system/services/sys-config.service';
 
 function isOracleDuplicate(error: unknown): boolean {
   if ((typeof error !== 'object' && typeof error !== 'function') || error === null) return false;
@@ -61,6 +62,7 @@ export class ProductInventoryService {
     private readonly boxRepository: Repository<BoxMaster>,
     private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
+    private readonly sysConfig: SysConfigService,
   ) {}
 
   /**
@@ -381,7 +383,7 @@ export class ProductInventoryService {
       if (!stock || stock.availableQty < dto.qty) {
         throw new BadRequestException(`재고 부족: 가용 ${stock?.availableQty || 0}, 요청 ${dto.qty}`);
       }
-      if (isProductStockOnHold(stock.status)) {
+      if (isProductStockOnHold(stock.status) && await this.sysConfig.isEnabled('HOLD_ISSUE_BLOCK', dto.company, dto.plant)) {
         throw new BadRequestException(`HOLD stock cannot be issued: ${dto.itemCode}`);
       }
 
@@ -443,7 +445,7 @@ export class ProductInventoryService {
         `재고 부족으로 출고할 수 없습니다: ${dto.itemCode} (가용 ${stock?.availableQty || 0}, 요청 ${dto.qty})`,
       );
     }
-    if (isProductStockOnHold(stock.status)) {
+    if (isProductStockOnHold(stock.status) && await this.sysConfig.isEnabled('HOLD_ISSUE_BLOCK', dto.company, dto.plant)) {
       throw new BadRequestException(`HOLD stock cannot be issued: ${dto.itemCode}`);
     }
 

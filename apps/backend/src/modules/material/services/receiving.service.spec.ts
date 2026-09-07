@@ -67,6 +67,7 @@ describe('ReceivingService', () => {
     mockNumbering = createMock<NumberingService>();
     mockTx = createMock<TransactionService>();
     mockSysConfigService = createMock<SysConfigService>();
+    mockSysConfigService.isEnabled.mockResolvedValue(false);
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
