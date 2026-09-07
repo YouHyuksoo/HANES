@@ -26,6 +26,7 @@ describe('AqlService', () => {
   let modeHistoryRepo: ReturnType<typeof createRepoMock>;
   let defectCodeRepo: ReturnType<typeof createRepoMock>;
   let specItemRepo: ReturnType<typeof createRepoMock>;
+  const sysConfigService = { getValue: jest.fn().mockResolvedValue(null) };
   let service: AqlService;
 
   beforeEach(() => {
@@ -76,6 +77,7 @@ describe('AqlService', () => {
       modeHistoryRepo as any,
       defectCodeRepo as any,
       specItemRepo as any,
+      sysConfigService as any,
     );
   });
 
@@ -461,6 +463,23 @@ describe('AqlService', () => {
     expect(result.result).toBe('FAIL');
     expect(result.defectCritical).toBe(1);
     expect(result.itemResults?.find((r) => r.inspItemCode === 'FUNC')?.result).toBe('FAIL');
+  });
+
+  it('uses IQC_SAMPLE_RATIO only when no AQL or fixed sample rule exists', async () => {
+    specItemRepo.find.mockResolvedValue([
+      { seq: 1, inspItemCode: 'FUNC', defectGrade: 'CRITICAL', inspectionType: 'AQL', aql: null, useYn: 'Y' },
+    ]);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', iqcYn: 'Y', inspectMethod: null, iqcAqlPolicyCode: null });
+    partnerRepo.findOne.mockResolvedValue(null);
+    sysConfigService.getValue.mockResolvedValue('10');
+
+    const result = await service.resolveIqcPolicyByItem({
+      itemCode: 'PCB', lotQty: 25, itemDefectCounts: { 1: 0 }, company: '40', plant: '1000',
+    });
+
+    expect(result.sampleQty).toBe(3);
+    expect(result.sampleSource).toBe('RATIO_FALLBACK');
+    expect(result.judgeReason).toContain('IQC_SAMPLE_RATIO 3/25 fallback');
   });
 
   it('judges per inspection item — a major item exceeding its AQL Ac fails the lot', async () => {

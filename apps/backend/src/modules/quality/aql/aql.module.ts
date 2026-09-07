@@ -13,9 +13,10 @@ import { VendorInspectionModeHistory } from '../../../entities/vendor-inspection
 import { IqcPartSpecItem } from '../../../entities/iqc-part-spec-item.entity';
 import { AqlController } from './controllers/aql.controller';
 import { AqlService } from './services/aql.service';
+import { SystemModule } from '../../system/system.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([
+  imports: [SystemModule, TypeOrmModule.forFeature([
     AqlStandard,
     AqlCodeLetterRule,
     AqlCodeLetterSample,

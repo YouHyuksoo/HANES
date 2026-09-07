@@ -13,6 +13,7 @@ import { ItemMaster } from '../../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../../entities/partner-master.entity';
 import { VendorInspectionModeHistory } from '../../../../entities/vendor-inspection-mode-history.entity';
 import { IqcPartSpecItem } from '../../../../entities/iqc-part-spec-item.entity';
+import { SysConfigService } from '../../../system/services/sys-config.service';
 import {
   AqlQueryDto,
   AqlRuleDto,
@@ -70,6 +71,8 @@ export type IqcAqlPolicyResolution = {
   inspectionMode: string;
   result: 'PASS' | 'FAIL';
   sampleQty: number;
+  /** 샘플수량 산정 근거 */
+  sampleSource?: 'AQL' | 'ITEM_SPEC' | 'RATIO_FALLBACK' | 'NONE';
   defectCritical: number;
   defectMajor: number;
   defectMinor: number;
@@ -105,6 +108,7 @@ export class AqlService {
     private readonly defectCodeRepo: Repository<DefectCodeMaster>,
     @InjectRepository(IqcPartSpecItem)
     private readonly specItemRepo: Repository<IqcPartSpecItem>,
+    private readonly sysConfigService: SysConfigService,
   ) {}
 
   async findAll(query: AqlQueryDto, company?: string, plant?: string) {
@@ -387,6 +391,7 @@ export class AqlService {
       inspectionMode,
       result,
       sampleQty: Math.max(majorRule?.sampleSize ?? 0, minorRule?.sampleSize ?? 0),
+      sampleSource: majorRule || minorRule ? 'AQL' : 'NONE',
       defectCritical,
       defectMajor,
       defectMinor,
@@ -456,7 +461,15 @@ export class AqlService {
         })
       : null;
 
-    const policy = await this.resolvePartPolicy(part, input.company, input.plant);
+    const configuredRatio = Number(await this.sysConfigService.getValue('IQC_SAMPLE_RATIO', input.company, input.plant));
+    let policy: IqcAqlPolicy | null;
+    try {
+      policy = await this.resolvePartPolicy(part, input.company, input.plant);
+    } catch (error) {
+      // 품목 정책이 없는 레거시 품목은 양수 비율 fallback이 설정된 경우에만 허용한다.
+      if (!(!part.iqcAqlPolicyCode && Number.isFinite(configuredRatio) && configuredRatio > 0)) throw error;
+      policy = null;
+    }
     const partLevel = (policy?.inspectionLevel || 'II').trim().toUpperCase();
     const inspectionMode = this.normalizeInspectionMode(partner?.inspectionMode);
     const lotQty = Math.max(1, Number(input.lotQty) || 1);
@@ -494,6 +507,7 @@ export class AqlService {
         requiredQty = type === 'FULL' ? lotQty : this.toNonNegativeInt(item.sampleQty);
         const providedInspected = input.itemInspectedCounts?.[item.seq];
         inspectedQty = providedInspected != null ? this.toNonNegativeInt(providedInspected) : requiredQty;
+        sampleQty = Math.max(sampleQty, inspectedQty ?? requiredQty ?? 0);
         if (defectCount > 0) {
           itemResult = 'FAIL';
           reason = `${item.inspItemCode} ${type === 'FULL' ? '전수' : '파괴'}검사 불량 ${defectCount}건`;
@@ -541,6 +555,24 @@ export class AqlService {
       });
     }
 
+    let sampleSource: IqcAqlPolicyResolution['sampleSource'] = sampleQty > 0 ? 'AQL' : 'NONE';
+    if (sampleQty > 0 && activeItems.some((item) => {
+      const type = String(item.inspectionType ?? 'AQL').trim().toUpperCase();
+      const method = String(item.sampleMethod ?? 'AQL').trim().toUpperCase();
+      return type === 'DESTRUCTIVE' || type === 'FULL' || method === 'FIXED';
+    })) sampleSource = 'ITEM_SPEC';
+    if (sampleQty === 0) {
+      // AQL/고정·전수 검사항목이 없는 레거시 품목에만 비율을 fallback으로 적용한다.
+      // AQL 표준과 품목별 고정수량은 절대 덮어쓰지 않는다.
+      if (Number.isFinite(configuredRatio) && configuredRatio > 0) {
+        sampleQty = Math.min(lotQty, Math.max(1, Math.ceil(lotQty * configuredRatio / 100)));
+        sampleSource = 'RATIO_FALLBACK';
+      }
+    }
+    const judgeReasonWithSource = sampleSource === 'RATIO_FALLBACK'
+      ? `${result === 'PASS' ? '검사항목별 기본 판정' : failReasons.join('; ')} (IQC_SAMPLE_RATIO ${sampleQty}/${lotQty} fallback)`
+      : result === 'PASS' ? '검사항목별 AQL 기준 합격' : failReasons.join('; ');
+
     return {
       itemCode: input.itemCode,
       vendorCode,
@@ -550,12 +582,13 @@ export class AqlService {
       inspectionMode,
       result,
       sampleQty,
+      sampleSource,
       defectCritical,
       defectMajor,
       defectMinor,
       majorRule,
       minorRule,
-      judgeReason: result === 'PASS' ? '검사항목별 AQL 기준 합격' : failReasons.join('; '),
+      judgeReason: judgeReasonWithSource,
       itemResults,
     };
   }
