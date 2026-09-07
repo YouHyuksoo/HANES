@@ -5,20 +5,18 @@
  * @description OQC(출하검사) 관리 페이지 - 의뢰 생성, 검사 실행, 결과 조회
  *
  * 초보자 가이드:
- * 1. **StatCards**: 총의뢰/대기/합격/불합격 통계
- * 2. **DataGrid**: 의뢰 목록 (필터/검색/페이지네이션)
- * 3. **OqcRequestModal**: 새 OQC 의뢰 생성 (박스 선택)
- * 4. **OqcInspectModal**: 검사 실행 및 판정
- * 5. API: GET/POST /quality/oqc
+ * 1. **DataGrid**: 의뢰 목록 (필터/검색/페이지네이션)
+ * 2. **OqcRequestModal**: 새 OQC 의뢰 생성 (박스 선택)
+ * 3. **OqcInspectModal**: 검사 실행 및 판정
+ * 4. API: GET/POST /quality/oqc
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ClipboardCheck, Search, RefreshCw, Plus, Clock, CheckCircle,
-  XCircle, FileText, Calendar, X,
+  ClipboardCheck, Search, RefreshCw, Plus,
 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select, StatCard } from "@/components/ui";
+import { Card, CardContent, Button, Input } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -38,7 +36,6 @@ export default function OqcPage() {
   const [customerFilter, setCustomerFilter] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [stats, setStats] = useState({ total: 0, pending: 0, pass: 0, fail: 0 });
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isInspectModalOpen, setIsInspectModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<OqcRequest | null>(null);
@@ -52,12 +49,8 @@ export default function OqcPage() {
       if (customerFilter) params.customer = customerFilter;
       if (dateFrom) params.fromDate = dateFrom;
       if (dateTo) params.toDate = dateTo;
-      const [listRes, statsRes] = await Promise.all([
-        api.get("/quality/oqc", { params }),
-        api.get("/quality/oqc/stats"),
-      ]);
+      const listRes = await api.get("/quality/oqc", { params });
       setData(listRes.data?.data ?? []);
-      setStats(statsRes.data?.data ?? { total: 0, pending: 0, pass: 0, fail: 0 });
     } catch {
       setData([]);
     } finally {
@@ -99,13 +92,6 @@ export default function OqcPage() {
           OQC가 시스템 환경설정에서 비활성화되어 출하검사 의뢰·판정을 사용할 수 없습니다.
         </div>
       )}
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-shrink-0">
-        <StatCard label={t("quality.oqc.statTotal")} value={stats.total} icon={FileText} color="blue" />
-        <StatCard label={t("quality.oqc.statPending")} value={stats.pending} icon={Clock} color="yellow" />
-        <StatCard label={t("quality.oqc.statPass")} value={stats.pass} icon={CheckCircle} color="green" />
-        <StatCard label={t("quality.oqc.statFail")} value={stats.fail} icon={XCircle} color="red" />
-      </div>
 
       <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid
