@@ -461,6 +461,7 @@ describe('BoxService', () => {
   });
 
   it('closeBox creates an automatic OQC request and marks the box pending', async () => {
+    mockSysConfig.isEnabled.mockResolvedValue(true);
     mockPackableFgWip([
       { fgBarcode: 'FG-001' } as FgLabel,
       { fgBarcode: 'FG-002' } as FgLabel,
