@@ -700,10 +700,11 @@ export class BoxService {
     await this.assertSerialsArePackableFgWip(closingSerials, company, plant);
 
     await this.tx.run(async (queryRunner) => {
+      const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED', company, plant);
       await queryRunner.manager.update(
         BoxMaster,
         { boxNo: id, ...this.tenantWhere(company, plant) },
-        { status: 'CLOSED', closeAt: new Date(), oqcStatus: 'PENDING' },
+        { status: 'CLOSED', closeAt: new Date(), oqcStatus: oqcEnabled ? 'PENDING' : null },
       );
 
       if (box.serialList) {
@@ -725,34 +726,36 @@ export class BoxService {
         }
       }
 
-      const requestNo = await this.nextOqcRequestNo();
-      await queryRunner.manager.save(
-        OqcRequest,
-        queryRunner.manager.create(OqcRequest, {
-          requestNo,
-          itemCode: box.itemCode,
-          customer: null,
-          requestDate: new Date(),
-          totalBoxCount: 1,
-          totalQty: box.qty,
-          sampleSize: null,
-          status: 'PENDING',
-          company: box.company,
-          plant: box.plant,
-          remark: `AUTO_CREATED_FROM_BOX:${box.boxNo}`,
-        }),
-      );
-      await queryRunner.manager.save(
-        OqcRequestBox,
-        queryRunner.manager.create(OqcRequestBox, {
-          requestNo,
-          boxNo: box.boxNo,
-          qty: box.qty,
-          isSample: 'N',
-          company: box.company,
-          plant: box.plant,
-        }),
-      );
+      if (oqcEnabled) {
+        const requestNo = await this.nextOqcRequestNo();
+        await queryRunner.manager.save(
+          OqcRequest,
+          queryRunner.manager.create(OqcRequest, {
+            requestNo,
+            itemCode: box.itemCode,
+            customer: null,
+            requestDate: new Date(),
+            totalBoxCount: 1,
+            totalQty: box.qty,
+            sampleSize: null,
+            status: 'PENDING',
+            company: box.company,
+            plant: box.plant,
+            remark: `AUTO_CREATED_FROM_BOX:${box.boxNo}`,
+          }),
+        );
+        await queryRunner.manager.save(
+          OqcRequestBox,
+          queryRunner.manager.create(OqcRequestBox, {
+            requestNo,
+            boxNo: box.boxNo,
+            qty: box.qty,
+            isSample: 'N',
+            company: box.company,
+            plant: box.plant,
+          }),
+        );
+      }
     });
 
     return this.findById(id, company, plant);
@@ -844,7 +847,7 @@ export class BoxService {
     if (box.palletNo && box.palletNo !== dto.palletId) {
       throw new BadRequestException('이미 다른 팔레트에 할당된 박스입니다.');
     }
-    const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED');
+    const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED', company, plant);
     if (oqcEnabled && box.oqcStatus !== 'PASS') {
       throw new BadRequestException(`OQC 합격(PASS) 박스만 팔레트에 할당할 수 있습니다: ${id}`);
     }

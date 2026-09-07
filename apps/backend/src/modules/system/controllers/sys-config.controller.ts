@@ -48,8 +48,8 @@ export class SysConfigController {
 
   @Get('active')
   @ApiOperation({ summary: '활성 설정 맵 조회 (앱 로딩용)' })
-  async findAllActive() {
-    const result = await this.sysConfigService.findAllActive();
+  async findAllActive(@Company() company: string, @Plant() plant: string) {
+    const result = await this.sysConfigService.findAllActive(company, plant);
     return ResponseUtil.success(result);
   }
 

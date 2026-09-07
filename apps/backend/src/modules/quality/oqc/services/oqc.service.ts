@@ -19,6 +19,7 @@ import {
 import { TransactionService } from '../../../../shared/transaction.service';
 import { NumberingService } from '../../../../shared/numbering.service';
 import { parseDateStart } from '../../../../shared/date.util';
+import { SysConfigService } from '../../../system/services/sys-config.service';
 
 @Injectable()
 export class OqcService {
@@ -35,6 +36,7 @@ export class OqcService {
     private readonly partRepo: Repository<ItemMaster>,
     private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
+    private readonly sysConfig: SysConfigService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -46,6 +48,12 @@ export class OqcService {
 
   private withClientId(request: OqcRequest) {
     return { ...request, id: request.requestNo };
+  }
+
+  private async assertOqcEnabled(company?: string, plant?: string) {
+    if (!(await this.sysConfig.isEnabled('OQC_ENABLED', company, plant))) {
+      throw new BadRequestException('OQC가 시스템 환경설정에서 비활성화되어 있습니다.');
+    }
   }
 
   async findAll(query: OqcRequestQueryDto, company?: string, plant?: string) {
@@ -94,6 +102,7 @@ export class OqcService {
   }
 
   async createRequest(dto: CreateOqcRequestDto, company?: string, plant?: string, createdBy?: string) {
+    await this.assertOqcEnabled(company, plant);
     const { itemCode, boxIds, customer, requestDate, sampleSize } = dto;
 
     const boxes = await this.boxRepo.find({
@@ -170,6 +179,7 @@ export class OqcService {
   }
 
   async executeInspection(id: string, dto: ExecuteOqcInspectionDto, updatedBy?: string, company?: string, plant?: string) {
+    await this.assertOqcEnabled(company, plant);
     const tenantWhere = this.tenantWhere(company, plant);
     const oqcRequest = await this.oqcRequestRepo.findOne({
       where: { requestNo: id, ...tenantWhere },
@@ -231,6 +241,7 @@ export class OqcService {
   }
 
   async updateResult(id: string, dto: UpdateOqcResultDto, updatedBy?: string, company?: string, plant?: string) {
+    await this.assertOqcEnabled(company, plant);
     const tenantWhere = this.tenantWhere(company, plant);
     const oqcRequest = await this.oqcRequestRepo.findOne({
       where: { requestNo: id, ...tenantWhere },
@@ -310,5 +321,4 @@ export class OqcService {
     };
   }
 }
-
 

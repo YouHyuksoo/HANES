@@ -39,6 +39,7 @@ import {
 } from '../dto/pallet.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
 
 @Injectable()
 export class PalletService {
@@ -55,6 +56,7 @@ export class PalletService {
     private readonly partRepository: Repository<ItemMaster>,
     private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
+    private readonly sysConfig: SysConfigService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -276,13 +278,15 @@ export class PalletService {
       throw new BadRequestException(`CLOSED 상태가 아닌 박스가 있습니다: ${invalidBoxes.map(b => b.boxNo).join(', ')}`);
     }
 
-    // OQC 상태 검증: PASS가 아닌 박스는 적재 불가
-    const oqcBlockedBoxes = boxes.filter(b => b.oqcStatus !== 'PASS');
-    if (oqcBlockedBoxes.length > 0) {
-      const blockList = oqcBlockedBoxes.map(b => `${b.boxNo}(${b.oqcStatus})`).join(', ');
-      throw new BadRequestException(
-        `OQC 미완료/불합격 박스는 팔레트에 적재할 수 없습니다: ${blockList}`,
-      );
+    // OQC 사용 시에만 PASS 박스 적재를 강제한다.
+    if (await this.sysConfig.isEnabled('OQC_ENABLED', company, plant)) {
+      const oqcBlockedBoxes = boxes.filter(b => b.oqcStatus !== 'PASS');
+      if (oqcBlockedBoxes.length > 0) {
+        const blockList = oqcBlockedBoxes.map(b => `${b.boxNo}(${b.oqcStatus})`).join(', ');
+        throw new BadRequestException(
+          `OQC 미완료/불합격 박스는 팔레트에 적재할 수 없습니다: ${blockList}`,
+        );
+      }
     }
 
     // 이미 다른 팔레트에 할당된 박스 확인

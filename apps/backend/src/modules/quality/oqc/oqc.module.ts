@@ -22,9 +22,11 @@ import { OqcRequest } from '../../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../../entities/oqc-request-box.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
+import { SystemModule } from '../../system/system.module';
 
 @Module({
   imports: [
+    SystemModule,
     TypeOrmModule.forFeature([
       OqcRequest,
       OqcRequestBox,

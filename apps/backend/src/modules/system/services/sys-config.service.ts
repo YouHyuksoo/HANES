@@ -87,9 +87,9 @@ export class SysConfigService {
   }
 
   /** 활성 설정만 key-value 맵으로 반환 (앱 초기 로딩용) */
-  async findAllActive() {
+  async findAllActive(company?: string, plant?: string) {
     const configs = await this.sysConfigRepository.find({
-      where: { isActive: 'Y' },
+      where: { isActive: 'Y', ...this.tenantWhere(company, plant) },
       order: { configGroup: 'ASC', sortOrder: 'ASC' },
     });
 
@@ -102,16 +102,16 @@ export class SysConfigService {
   }
 
   /** 특정 키 값 조회 (다른 서비스에서 호출) */
-  async getValue(key: string): Promise<string | null> {
+  async getValue(key: string, company?: string, plant?: string): Promise<string | null> {
     const config = await this.sysConfigRepository.findOne({
-      where: { configKey: key, isActive: 'Y' },
+      where: { configKey: key, isActive: 'Y', ...this.tenantWhere(company, plant) },
     });
     return config?.configValue ?? null;
   }
 
   /** BOOLEAN 타입 설정 활성 여부 (다른 서비스에서 호출) */
-  async isEnabled(key: string): Promise<boolean> {
-    const value = await this.getValue(key);
+  async isEnabled(key: string, company?: string, plant?: string): Promise<boolean> {
+    const value = await this.getValue(key, company, plant);
     return value === 'Y';
   }
 

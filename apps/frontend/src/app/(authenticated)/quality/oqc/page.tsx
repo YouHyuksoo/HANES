@@ -26,9 +26,11 @@ import api from "@/services/api";
 import { createOqcGridColumns, type OqcRequest } from "./oqcColumns";
 import OqcRequestModal from "./components/OqcRequestModal";
 import OqcInspectModal from "./components/OqcInspectModal";
+import { useSysConfigStore } from "@/stores/sysConfigStore";
 
 export default function OqcPage() {
   const { t } = useTranslation();
+  const oqcEnabled = useSysConfigStore((state) => state.isEnabled("OQC_ENABLED"));
   const [data, setData] = useState<OqcRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -86,11 +88,17 @@ export default function OqcPage() {
           <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t('common.refresh')}
           </Button>
-          <Button size="sm" onClick={() => setIsRequestModalOpen(true)}>
+          {oqcEnabled && <Button size="sm" onClick={() => setIsRequestModalOpen(true)}>
             <Plus className="w-4 h-4 mr-1" /> {t("quality.oqc.createRequest")}
-          </Button>
+          </Button>}
         </div>
       </div>
+
+      {!oqcEnabled && (
+        <div role="status" className="rounded-md border border-border bg-surface-muted px-3 py-2 text-sm text-text-muted flex-shrink-0">
+          OQC가 시스템 환경설정에서 비활성화되어 출하검사 의뢰·판정을 사용할 수 없습니다.
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-shrink-0">
         <StatCard label={t("quality.oqc.statTotal")} value={stats.total} icon={FileText} color="blue" />

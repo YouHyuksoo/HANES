@@ -525,7 +525,7 @@ export class ShipOrderService {
       remainingQty: Math.max(0, item.orderQty - item.shippedQty),
     }));
     const itemCodes = [...new Set(lines.filter((line) => line.remainingQty > 0).map((line) => line.itemCode))];
-    const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED');
+    const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED', company, plant);
 
     const [candidateBoxes, pallets, shipments] = await Promise.all([
       itemCodes.length
@@ -649,7 +649,7 @@ export class ShipOrderService {
       throw new BadRequestException(`CLOSED 상태가 아닌 박스가 있습니다: ${invalidStatus.map((box) => box.boxNo).join(', ')}`);
     }
 
-    const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED');
+    const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED', company, plant);
     if (oqcEnabled) {
       const oqcBlocked = boxes.filter((box) => box.oqcStatus !== 'PASS');
       if (oqcBlocked.length > 0) {
@@ -789,7 +789,7 @@ export class ShipOrderService {
 
     const itemQtyMap = new Map<string, number>();
     const fgBarcodes: string[] = [];
-    const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED');
+    const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED', company, plant);
     for (const box of boxes) {
       if (!lineByItem.has(box.itemCode)) throw new BadRequestException(`출하지시에 없는 품목입니다: ${box.itemCode}`);
       if (box.status !== 'CLOSED') throw new BadRequestException(`CLOSED 상태가 아닌 박스가 있습니다: ${box.boxNo}`);
@@ -926,7 +926,7 @@ export class ShipOrderService {
       if (box.status === 'SHIPPED') throw new BadRequestException(`이미 출하된 박스입니다: ${dto.boxNo}`);
       if (box.status !== 'CLOSED') throw new BadRequestException(`마감(CLOSED)된 박스만 출하할 수 있습니다: ${dto.boxNo}`);
       // OQC 사용여부(OQC_ENABLED) 설정이 켜진 경우에만 합격(PASS) 박스만 출하 허용. 미사용이면 모든 마감 박스 출하 가능.
-      const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED');
+      const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED', company, plant);
       if (oqcEnabled && box.oqcStatus !== 'PASS') {
         throw new BadRequestException(`OQC 합격(PASS) 박스만 출하할 수 있습니다: ${dto.boxNo}`);
       }

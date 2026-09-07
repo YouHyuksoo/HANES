@@ -297,7 +297,7 @@ export class ShipmentService {
 
     // OQC 검증: OQC 사용여부(OQC_ENABLED) 설정이 켜진 경우에만 PASS 아닌 박스 적재 차단. 미사용이면 모두 적재 가능.
     const palletNos = pallets.map(p => p.palletNo);
-    if (palletNos.length > 0 && (await this.sysConfig.isEnabled('OQC_ENABLED'))) {
+    if (palletNos.length > 0 && (await this.sysConfig.isEnabled('OQC_ENABLED', company, plant))) {
       const oqcBlockedBoxes = await this.boxRepository
         .createQueryBuilder('box')
         .where('box.palletNo IN (:...palletNos)', { palletNos })
@@ -459,7 +459,7 @@ export class ShipmentService {
     });
 
     const palletIds = pallets.map(p => p.palletNo);
-    if (palletIds.length > 0 && (await this.sysConfig.isEnabled('OQC_ENABLED'))) {
+    if (palletIds.length > 0 && (await this.sysConfig.isEnabled('OQC_ENABLED', company, plant))) {
       const failedBoxes = await this.boxRepository
         .createQueryBuilder('box')
         .where('box.palletNo IN (:...palletIds)', { palletIds })

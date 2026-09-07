@@ -15,6 +15,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
 
 describe('PalletService', () => {
   let target: PalletService;
@@ -52,6 +53,7 @@ describe('PalletService', () => {
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
         { provide: NumberingService, useValue: { nextPalletNo: jest.fn().mockResolvedValue('PLT-TEST') } },
+        { provide: SysConfigService, useValue: { isEnabled: jest.fn().mockResolvedValue(true) } },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<PalletService>(PalletService);
