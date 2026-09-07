@@ -26,6 +26,11 @@
  * - /api/v1/production/wip-stock      : 반제품/제품재고 (조회 전용)
  */
 
+import { RepairTargetService } from './services/repair-target.service';
+import { RepairStockService } from './services/repair-stock.service';
+import { RepairWorkflowService } from './services/repair-workflow.service';
+import { RepairLookupService } from './services/repair-lookup.service';
+import { IssueModule } from '../material/issue/issue.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JobOrderController } from './controllers/job-order.controller';
@@ -112,6 +117,7 @@ import { KioskMaterialService } from './services/kiosk-material.service';
 
 @Module({
   imports: [
+    IssueModule,
     TypeOrmModule.forFeature([JobOrder, ProdResult, ItemMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, RoutingMaterial, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult, JobMaterialLot, ConsumableUsageMap, ConsumableStock, WorkerMaster, HarnessDrawingMaster, HarnessDrawingRevision, HarnessCircuitSpec, SgLabel, ProductGenealogy]),
     InventoryModule,
     SystemModule,
@@ -133,7 +139,7 @@ import { KioskMaterialService } from './services/kiosk-material.service';
     EquipMaterialController,
     KioskMaterialController,
   ],
-  providers: [
+  providers: [RepairTargetService, RepairStockService, RepairWorkflowService, RepairLookupService,
     JobOrderService,
     ProdResultService,
     ProductionViewsService,

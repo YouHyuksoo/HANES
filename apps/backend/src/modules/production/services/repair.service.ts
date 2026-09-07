@@ -16,7 +16,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In, FindOptionsWhere } from 'typeorm';
+import { Repository, Between, In, FindOptionsWhere, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { RepairOrder } from '../../../entities/repair-order.entity';
 import { RepairUsedPart } from '../../../entities/repair-used-part.entity';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -25,7 +25,9 @@ import {
   CreateRepairDto,
   UpdateRepairDto,
 } from '../dto/repair.dto';
-import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
+import { RepairTargetService } from './repair-target.service';
+import { repairStage } from '@harness/shared';
+import { repairDay, repairDateOnly } from './repair-date';
 
 @Injectable()
 export class RepairService {
@@ -35,6 +37,7 @@ export class RepairService {
     @InjectRepository(RepairUsedPart)
     private readonly repairUsedPartRepo: Repository<RepairUsedPart>,
     private readonly tx: TransactionService,
+    private readonly target: RepairTargetService,
   ) {}
 
   private buildRepairOrderUpdate(
@@ -77,6 +80,15 @@ export class RepairService {
     };
   }
 
+  private validateParts(parts?: CreateRepairDto['usedParts']) {
+    const seen = new Set<string>();
+    for (const part of parts ?? []) {
+      if (seen.has(part.itemCode)) throw new BadRequestException('같은 사용부품은 한 행에 합산하세요.');
+      seen.add(part.itemCode);
+      if (!Number.isInteger(part.qty ?? 1) || (part.qty ?? 1) < 1) throw new BadRequestException('사용부품 수량은 양의 정수여야 합니다.');
+    }
+  }
+
   /** 수리 목록 조회 */
   async findAll(query: RepairQueryDto, company: string, plant: string) {
     const {
@@ -96,9 +108,13 @@ export class RepairService {
     if (workerId) where.workerId = workerId;
     if (repairDateFrom && repairDateTo) {
       where.repairDate = Between(
-        parseDateStart(repairDateFrom)!,
-        parseDateEnd(repairDateTo)!,
+        repairDay(repairDateFrom).value[0],
+        repairDay(repairDateTo).value[1],
       );
+    } else if (repairDateFrom) {
+      where.repairDate = MoreThanOrEqual(repairDay(repairDateFrom).value[0]);
+    } else if (repairDateTo) {
+      where.repairDate = LessThanOrEqual(repairDay(repairDateTo).value[1]);
     }
 
     let qb = this.repairOrderRepo
@@ -128,7 +144,7 @@ export class RepairService {
     plant: string,
   ) {
     const order = await this.repairOrderRepo.findOne({
-      where: { repairDate: parseDateStart(repairDate)!, seq, company, plant },
+      where: { repairDate: repairDay(repairDate), seq, company, plant },
     });
     if (!order) {
       throw new NotFoundException(
@@ -136,7 +152,7 @@ export class RepairService {
       );
     }
     const usedParts = await this.repairUsedPartRepo.find({
-      where: { repairDate: parseDateStart(repairDate)!, seq, company, plant },
+      where: { repairDate: order.repairDate, seq, company, plant },
     });
     return { ...order, usedParts };
   }
@@ -144,10 +160,11 @@ export class RepairService {
   /** 수리 등록 */
   async create(dto: CreateRepairDto, company: string, plant: string) {
     return this.tx.run(async (queryRunner) => {
-      const repairDate = dto.repairDate
-        ? parseDateStart(dto.repairDate)!
-        : new Date();
+      const repairDate = repairDay(dto.repairDate || repairDateOnly()).value[0] as Date;
+      this.validateParts(dto.usedParts);
+      if (dto.repairResult || (dto.disposition && dto.disposition !== 'PENDING')) throw new BadRequestException('수리결과는 수리 시작 후 완료 처리에서 지정하세요.');
 
+      await this.target.validateDraftInTx(queryRunner,dto,company,plant);
       const seqResult = await queryRunner.manager.query(
         `SELECT SEQ_REPAIR_ORDERS.NEXTVAL AS "nextSeq" FROM DUAL`,
       );
@@ -161,7 +178,7 @@ export class RepairService {
         fgBarcode: dto.fgBarcode || null,
         itemCode: dto.itemCode,
         itemName: dto.itemName || null,
-        qty: dto.qty,
+        qty: dto.qty ?? 1,
         prdUid: dto.prdUid || null,
         sourceProcess: dto.sourceProcess || null,
         returnProcess: dto.returnProcess || null,
@@ -188,7 +205,7 @@ export class RepairService {
             itemCode: p.itemCode,
             itemName: p.itemName || null,
             prdUid: p.prdUid || null,
-            qty: p.qty,
+            qty: p.qty ?? 1,
             remark: p.remark || null,
             company,
             plant,
@@ -197,7 +214,7 @@ export class RepairService {
         await queryRunner.manager.save(RepairUsedPart, parts);
       }
 
-      return { repairDate, seq };
+      return { repairDate: repairDateOnly(repairDate), seq };
     });
   }
 
@@ -211,7 +228,8 @@ export class RepairService {
   ) {
     return this.tx.run(async (queryRunner) => {
       const existing = await queryRunner.manager.findOne(RepairOrder, {
-        where: { repairDate: parseDateStart(repairDate)!, seq, company, plant },
+        where: { repairDate: repairDay(repairDate), seq, company, plant },
+        lock: { mode: 'pessimistic_write' },
       });
       if (!existing) {
         throw new NotFoundException(
@@ -219,30 +237,30 @@ export class RepairService {
         );
       }
 
-      // 마스터 업데이트
+      if (!['received', 'repairing'].includes(repairStage(existing))) throw new BadRequestException('완료 또는 재검사 대기 중에는 수정할 수 없습니다.');
+      for (const field of ['repairResult', 'disposition'] as const) {
+        if (dto[field] !== undefined && (dto[field] || null) !== (existing[field] || null)) throw new BadRequestException('수리결과는 전용 완료 처리에서 지정하세요.');
+      }
+      if (existing.status !== 'RECEIVED') {
+        for (const field of ['itemCode','qty','fgBarcode','prdUid','sourceProcess'] as const) {
+          if (dto[field] !== undefined && (dto[field] || null) !== (existing[field] || null)) throw new BadRequestException('수리 시작 후 대상 품목·수량·바코드·발생공정은 변경할 수 없습니다.');
+        }
+      }
+      this.validateParts(dto.usedParts);
       const { usedParts, repairDate: _ignoredRepairDate, ...masterDto } = dto;
+      await this.target.validateDraftInTx(queryRunner,{...existing,...masterDto,usedParts},company,plant);
       const updateData = this.buildRepairOrderUpdate(masterDto);
 
-      // 수리후재처리 결정 시 완료 처리
-      if (
-        dto.disposition &&
-        dto.disposition !== 'PENDING' &&
-        existing.status !== 'COMPLETED'
-      ) {
-        updateData.completedAt = new Date();
-        updateData.status = 'COMPLETED';
-      }
-
-      await queryRunner.manager.update(
+      if (Object.keys(updateData).length) await queryRunner.manager.update(
         RepairOrder,
-        { repairDate: parseDateStart(repairDate)!, seq, company, plant },
+        { repairDate: existing.repairDate, seq, company, plant },
         updateData,
       );
 
       // 사용부품 전체 교체
       if (usedParts !== undefined) {
         await queryRunner.manager.delete(RepairUsedPart, {
-          repairDate: parseDateStart(repairDate)!,
+          repairDate: existing.repairDate,
           seq,
           company,
           plant,
@@ -250,12 +268,12 @@ export class RepairService {
         if (usedParts?.length) {
           const parts = usedParts.map((p) =>
             queryRunner.manager.create(RepairUsedPart, {
-              repairDate: parseDateStart(repairDate)!,
+              repairDate: existing.repairDate,
               seq,
               itemCode: p.itemCode,
               itemName: p.itemName || null,
               prdUid: p.prdUid || null,
-              qty: p.qty,
+              qty: p.qty ?? 1,
               remark: p.remark || null,
               company,
               plant,
@@ -278,7 +296,8 @@ export class RepairService {
   ) {
     await this.tx.run(async (queryRunner) => {
       const existing = await queryRunner.manager.findOne(RepairOrder, {
-        where: { repairDate: parseDateStart(repairDate)!, seq, company, plant },
+        where: { repairDate: repairDay(repairDate), seq, company, plant },
+        lock: { mode: 'pessimistic_write' },
       });
       if (!existing) {
         throw new NotFoundException(
@@ -292,13 +311,13 @@ export class RepairService {
       }
 
       await queryRunner.manager.delete(RepairUsedPart, {
-        repairDate: parseDateStart(repairDate)!,
+        repairDate: existing.repairDate,
         seq,
         company,
         plant,
       });
       await queryRunner.manager.delete(RepairOrder, {
-        repairDate: parseDateStart(repairDate)!,
+        repairDate: existing.repairDate,
         seq,
         company,
         plant,

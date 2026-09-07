@@ -16,6 +16,7 @@ import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
+import { ProdResult } from '../../../entities/prod-result.entity';
 
 describe('BoxService', () => {
   let target: BoxService;
@@ -30,6 +31,19 @@ describe('BoxService', () => {
   let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockSysConfig: DeepMocked<SysConfigService>;
+
+  function mockPackableFgWip(labels: FgLabel[]) {
+    const qb = {
+      innerJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue(labels),
+    };
+    mockFgLabelRepo.createQueryBuilder.mockReturnValue(qb as any);
+    return qb;
+  }
 
   beforeEach(async () => {
     mockBoxRepo = createMock<Repository<BoxMaster>>();
@@ -194,7 +208,45 @@ describe('BoxService', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
+  it('findPackableSerials requires assembly stock-in to the FG_WIP process warehouse', async () => {
+    const qb = mockPackableFgWip([{ fgBarcode: 'FG-001', itemCode: 'ITEM-001' } as FgLabel]);
+    mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Harness' } as ItemMaster]);
+
+    const result = await target.findPackableSerials('C1', 'P1', 'ITEM-001');
+
+    expect(result).toHaveLength(1);
+    expect(qb.innerJoin).toHaveBeenCalledWith(
+      ProductTransaction,
+      'wipIn',
+      expect.stringContaining('wipIn.toWarehouseId = :fgWip'),
+      expect.objectContaining({ fgWip: 'FG_WIP', assemblyRef: 'ASSEMBLY', goodQuality: 'GOOD' }),
+    );
+    expect(qb.innerJoin).toHaveBeenCalledWith(
+      ProdResult,
+      'pr',
+      expect.stringContaining('pr.status = :doneResult'),
+      { doneResult: 'DONE' },
+    );
+    expect(qb.andWhere).toHaveBeenCalledWith('fg.company = :company', { company: 'C1' });
+    expect(qb.andWhere).toHaveBeenCalledWith('fg.plant = :plant', { plant: 'P1' });
+  });
+
+  it('addSerial rejects a visual-pass FG without FG_WIP process-stock provenance', async () => {
+    mockPackableFgWip([]);
+    mockBoxRepo.findOne.mockResolvedValue({ boxNo: 'BOX-001', itemCode: 'ITEM-001', status: 'OPEN', serialList: null } as BoxMaster);
+    mockLotRepo.find.mockResolvedValue([]);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', boxQty: 10 } as ItemMaster);
+    mockFgLabelRepo.find.mockResolvedValue([
+      { fgBarcode: 'FG-001', itemCode: 'ITEM-001', inspectPassYn: 'Y', status: 'VISUAL_PASS' } as FgLabel,
+    ]);
+
+    await expect(target.addSerial('BOX-001', { serials: ['FG-001'] } as any, 'C1', 'P1'))
+      .rejects.toThrow('완제품 공정창고(FG_WIP)');
+    expect(mockBoxRepo.update).not.toHaveBeenCalled();
+  });
+
   it('closeBox stamps FG_LABELS with boxNo so box stock can find packed serials', async () => {
+    mockPackableFgWip([{ fgBarcode: 'FG-001' } as FgLabel]);
     mockBoxRepo.findOne
       .mockResolvedValueOnce({
         boxNo: 'BOX-001',
@@ -230,7 +282,25 @@ describe('BoxService', () => {
     );
   });
 
+  it('closeBox rejects a serial that is no longer eligible in FG_WIP', async () => {
+    mockPackableFgWip([]);
+    mockBoxRepo.findOne.mockResolvedValue({
+      boxNo: 'BOX-001',
+      itemCode: 'ITEM-001',
+      qty: 1,
+      status: 'OPEN',
+      serialList: JSON.stringify(['FG-001']),
+      company: 'C1',
+      plant: 'P1',
+    } as BoxMaster);
+
+    await expect(target.closeBox('BOX-001', 'C1', 'P1'))
+      .rejects.toThrow('완제품 공정창고(FG_WIP)');
+    expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+  });
+
   it('addSerial validates lots, part and fg labels within tenant only', async () => {
+    mockPackableFgWip([{ fgBarcode: 'FG-001' } as FgLabel]);
     mockBoxRepo.findOne
       .mockResolvedValueOnce({
         boxNo: 'BOX-001',
@@ -273,6 +343,7 @@ describe('BoxService', () => {
   });
 
   it('addSerial rejects serials already packed in another box', async () => {
+    mockPackableFgWip([{ fgBarcode: 'FG-001' } as FgLabel]);
     mockBoxRepo.findOne.mockResolvedValue({
       boxNo: 'BOX-001',
       itemCode: 'ITEM-001',
@@ -390,6 +461,10 @@ describe('BoxService', () => {
   });
 
   it('closeBox creates an automatic OQC request and marks the box pending', async () => {
+    mockPackableFgWip([
+      { fgBarcode: 'FG-001' } as FgLabel,
+      { fgBarcode: 'FG-002' } as FgLabel,
+    ]);
     mockBoxRepo.findOne
       .mockResolvedValueOnce({
         boxNo: 'BOX-001',

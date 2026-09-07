@@ -40,4 +40,5 @@ export interface FgLabelInfo {
   lineCode: string | null;
   issuedAt: string;
   status: string;
+  inspectPassYn?: string | null;
 }

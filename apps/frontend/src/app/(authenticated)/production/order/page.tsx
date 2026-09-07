@@ -19,8 +19,9 @@ import {
   Printer, Wrench,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Select, ComCodeBadge, ConfirmModal } from "@/components/ui";
-import { ComCodeSelect, EquipSelect } from "@/components/shared";
+import { ComCodeSelect, MultiSelectFilter } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
+import { useEquipOptions } from "@/hooks/useMasterOptions";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { createProductionOrderGridColumns } from "./productionOrderColumns";
 import api from "@/services/api";
@@ -35,6 +36,9 @@ import type { ProductionJobOrderRow } from "@harness/shared";
 
 type JobOrderItem = ProductionJobOrderRow;
 type AiJobOrderDraft = Partial<JobOrderFormData>;
+
+/** 설비 필터의 "미배정" 선택값 — 실제 EQUIP_CODE와 겹치지 않는 표시용 상수 */
+const EQUIP_UNASSIGNED = "__UNASSIGNED__";
 
 /** 트리 데이터를 평탄화 (들여쓰기 depth 포함) */
 function flattenTree(items: JobOrderItem[], depth = 0): (JobOrderItem & { _depth: number })[] {
@@ -73,7 +77,14 @@ export default function JobOrderPage() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [equipFilter, setEquipFilter] = useState("");
+  const [equipFilter, setEquipFilter] = useState<string[]>([]);
+  const { options: rawEquipOptions } = useEquipOptions(undefined, { includeInactive: true });
+  // 품목 단위 작업지시는 아직 설비가 안 정해진다 — "전체 선택"이 실제 전체와 같아지도록
+  // 미배정도 선택 가능한 값으로 옵션에 넣는다(필터 로직에서 EQUIP_UNASSIGNED 로 매칭).
+  const equipOptions = useMemo(
+    () => [{ value: EQUIP_UNASSIGNED, label: t("production.order.equipUnassigned", "미배정") }, ...rawEquipOptions],
+    [rawEquipOptions, t],
+  );
   const [itemTypeFilter, setItemTypeFilter] = useState("");
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
@@ -163,7 +174,7 @@ export default function JobOrderPage() {
 
   const displayData = useMemo(() => {
     let rows = viewMode === "tree" ? flattenTree(data) : data.map(d => ({ ...d, _depth: 0 }));
-    if (equipFilter) rows = rows.filter(r => (r.equipCode ?? "") === equipFilter);
+    if (equipFilter.length > 0) rows = rows.filter(r => equipFilter.includes(r.equipCode || EQUIP_UNASSIGNED));
     if (itemTypeFilter) rows = rows.filter(r => (r.part?.itemType ?? "") === itemTypeFilter);
     return rows;
   }, [viewMode, data, equipFilter, itemTypeFilter]);
@@ -342,9 +353,9 @@ export default function JobOrderPage() {
                   <ComCodeSelect groupCode="JOB_ORDER_STATUS" value={statusFilter}
                     onChange={setStatusFilter} labelPrefix={t("common.status", "상태")} fullWidth />
                 </div>
-                <div className="w-40 flex-shrink-0">
-                  <EquipSelect value={equipFilter} onChange={setEquipFilter}
-                    labelPrefix={t("production.order.equip")} includeInactive fullWidth />
+                <div className="w-48 flex-shrink-0">
+                  <MultiSelectFilter options={equipOptions} value={equipFilter} onChange={setEquipFilter}
+                    labelPrefix={t("production.order.equip")} fullWidth />
                 </div>
                 <div className="w-36 flex-shrink-0">
                   <Select

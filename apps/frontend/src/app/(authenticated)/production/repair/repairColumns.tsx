@@ -5,7 +5,7 @@ import { Trash2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
-import StatusBadge from "@/components/shared/StatusBadge";
+import RepairStatusCell from "./components/RepairStatusCell";
 
 /** 수리 목록 아이템 타입 */
 export interface RepairItem {
@@ -58,7 +58,7 @@ export function createRepairGridColumns({
       header: () => <StatusHeaderHelp label={t("production.repair.status")} codeType="REPAIR_STATUS" align="center" />,
       size: 90,
       meta: { filterType: "select" as const },
-      cell: ({ getValue }) => <StatusBadge codeType="REPAIR_STATUS" value={getValue() as string} />,
+      cell: ({ row }) => <RepairStatusCell order={row.original} />,
     },
     { accessorKey: "fgBarcode", header: t("production.repair.fgBarcode"), size: 130, meta: { filterType: "text" as const } },
     { accessorKey: "itemCode", header: t("production.repair.itemCode"), size: 120, meta: { filterType: "text" as const } },
@@ -115,7 +115,7 @@ export function createRepairGridColumns({
       id: "actions",
       header: "",
       size: 50,
-      cell: ({ row }) => (
+      cell: ({ row }) => row.original.status !== "RECEIVED" ? null : (
         <button
           onClick={(e) => {
             e.stopPropagation();

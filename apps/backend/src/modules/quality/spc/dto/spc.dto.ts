@@ -129,6 +129,12 @@ export class CreateSpcDataDto {
   @IsNumber({}, { each: true })
   values: number[];
 
+  @ApiPropertyOptional({ description: '측정 설비 코드', maxLength: 50 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  equipCode?: string;
+
   @ApiPropertyOptional({ description: '비고', maxLength: 500 })
   @IsOptional()
   @IsString()

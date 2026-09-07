@@ -239,6 +239,18 @@ describe('ProductInventoryService', () => {
   });
 
   describe('cancelTransaction', () => {
+    it('blocks repair custody and return ledger cancellation from the ordinary inventory API', async () => {
+      const original = {
+        transNo: 'PTX-REPAIR', refType: 'REPAIR', refId: '71', status: 'DONE',
+        transType: 'FG_OUT', company: 'C1', plant: 'P1',
+      } as ProductTransaction;
+      mockTransRepo.findOne.mockResolvedValue(original);
+      await expect(target.cancelTransaction({ transactionId: original.transNo }, 'C1', 'P1')).rejects.toThrow('수리');
+      expect(mockTx.run).not.toHaveBeenCalled();
+      await expect(target.cancelTransactionInTx(mockQueryRunner, { ...original, transType: 'FG_IN' }, { transactionId: original.transNo })).rejects.toThrow('수리');
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+    });
     it('should throw NotFoundException when original not found', async () => {
       mockTransRepo.findOne.mockResolvedValue(null);
       await expect(target.cancelTransaction({ transactionId: 'X' } as any)).rejects.toThrow(NotFoundException);

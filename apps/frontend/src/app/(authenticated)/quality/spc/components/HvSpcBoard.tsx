@@ -13,10 +13,14 @@
  */
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FileUp } from "lucide-react";
 import { useApiQuery } from "@/hooks/useApi";
+import { Button } from "@/components/ui";
 import { SPC_DAY_OPTIONS, SPC_K_OPTIONS, type SpcTargetData, type SpcTargetsResponse } from "../types";
 import HvSpcTargetList from "./HvSpcTargetList";
 import HvSpcDetail from "./HvSpcDetail";
+import SpcChartUploadModal from "./SpcChartUploadModal";
+import SpcDataUploadModal from "./SpcDataUploadModal";
 import "./hv-spc-theme.css";
 
 const REFRESH_MS = 60_000;
@@ -33,6 +37,8 @@ export default function HvSpcBoard() {
   const [processFilter, setProcessFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [chartUploadOpen, setChartUploadOpen] = useState(false);
+  const [dataUploadOpen, setDataUploadOpen] = useState(false);
 
   const listQuery = useApiQuery<SpcTargetsResponse>(
     ["quality", "spc", "hv", "targets", String(days), String(kLimit)],
@@ -134,6 +140,12 @@ export default function HvSpcBoard() {
           {list?.sourceKind === "MOCK" && (
             <span className="hv-banner">{t("quality.spc.hv.mockBanner", "목업 데이터 — 검사이력 연동 전")}</span>
           )}
+          <Button variant="secondary" size="sm" onClick={() => setChartUploadOpen(true)}>
+            <FileUp className="w-4 h-4 mr-1" />{t("quality.spc.hv.chartUpload", "관리항목 업로드")}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setDataUploadOpen(true)}>
+            <FileUp className="w-4 h-4 mr-1" />{t("quality.spc.hv.dataUpload", "측정데이터 업로드")}
+          </Button>
         </div>
       </div>
 
@@ -159,6 +171,17 @@ export default function HvSpcBoard() {
           />
         </section>
       </div>
+
+      <SpcChartUploadModal
+        isOpen={chartUploadOpen}
+        onClose={() => setChartUploadOpen(false)}
+        onComplete={() => { listQuery.refetch(); detailQuery.refetch(); }}
+      />
+      <SpcDataUploadModal
+        isOpen={dataUploadOpen}
+        onClose={() => setDataUploadOpen(false)}
+        onComplete={() => { listQuery.refetch(); detailQuery.refetch(); }}
+      />
     </div>
   );
 }

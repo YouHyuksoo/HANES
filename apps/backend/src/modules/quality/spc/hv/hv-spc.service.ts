@@ -28,6 +28,7 @@ export type SpcHvSourceSetting = 'MOCK' | 'DB';
 export interface HvSpcQuery {
   days: number;
   kLimit: number;
+  equipCode?: string;
 }
 
 @Injectable()
@@ -83,6 +84,7 @@ export class HvSpcService {
       throw new NotFoundException(`알 수 없는 관리대상입니다: ${targetId}`);
     }
     const raw = await source.fetchSubgroups(target, query.days);
-    return buildTargetData(target, raw, { kLimit: query.kLimit }, range, source.kind);
+    const filtered = query.equipCode ? raw.filter((r) => r.equipCode === query.equipCode) : raw;
+    return buildTargetData(target, filtered, { kLimit: query.kLimit }, range, source.kind);
   }
 }

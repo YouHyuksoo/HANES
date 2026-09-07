@@ -18,6 +18,8 @@ import { ProdResult } from '../../../../entities/prod-result.entity';
 import { ReworkOrder } from '../../../../entities/rework-order.entity';
 import { FgLabel } from '../../../../entities/fg-label.entity';
 import { DefectCodeMaster } from '../../../../entities/defect-code-master.entity';
+import { TransactionService } from '../../../../shared/transaction.service';
+import { ProdResultService } from '../../../production/services/prod-result.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('DefectLogService', () => {
@@ -28,6 +30,26 @@ describe('DefectLogService', () => {
   let mockReworkOrderRepo: DeepMocked<Repository<ReworkOrder>>;
   let mockFgLabelRepo: DeepMocked<Repository<FgLabel>>;
   let mockDefectCodeRepo: DeepMocked<Repository<DefectCodeMaster>>;
+  let mockProdResultService: DeepMocked<ProdResultService>;
+
+  /**
+   * tx.run(callback)이 실제 QueryRunner 대신, 엔티티별로 대응 repo에 위임하는 fake manager를 넘긴다.
+   * → create/update/delete 트랜잭션 리팩토링 후에도 기존 mockDefectLogRepo/mockProdResultRepo 단언이 그대로 유효하다.
+   */
+  const makeFakeQueryRunner = () => ({
+    manager: {
+      create: (entity: unknown, data: unknown) =>
+        entity === DefectLog ? mockDefectLogRepo.create(data as any) : mockProdResultRepo.create(data as any),
+      save: (entity: unknown, data: unknown) =>
+        entity === DefectLog ? mockDefectLogRepo.save(data as any) : mockProdResultRepo.save(data as any),
+      update: (entity: unknown, where: unknown, data: unknown) =>
+        entity === DefectLog ? mockDefectLogRepo.update(where as any, data as any) : mockProdResultRepo.update(where as any, data as any),
+      delete: (entity: unknown, where: unknown) =>
+        entity === DefectLog ? mockDefectLogRepo.delete(where as any) : mockProdResultRepo.delete(where as any),
+      findOne: (entity: unknown, opts: unknown) =>
+        entity === DefectLog ? mockDefectLogRepo.findOne(opts as any) : mockProdResultRepo.findOne(opts as any),
+    },
+  });
 
   /** 테스트용 불량로그 팩토리 */
   const createDefectLog = (overrides: Partial<DefectLog> = {}): DefectLog =>
@@ -84,6 +106,9 @@ describe('DefectLogService', () => {
     mockReworkOrderRepo = createMock<Repository<ReworkOrder>>();
     mockFgLabelRepo = createMock<Repository<FgLabel>>();
     mockDefectCodeRepo = createMock<Repository<DefectCodeMaster>>();
+    mockProdResultService = createMock<ProdResultService>();
+
+    const mockTx = { run: jest.fn((cb: any) => cb(makeFakeQueryRunner())) } as unknown as DeepMocked<TransactionService>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -94,6 +119,8 @@ describe('DefectLogService', () => {
         { provide: getRepositoryToken(ReworkOrder), useValue: mockReworkOrderRepo },
         { provide: getRepositoryToken(FgLabel), useValue: mockFgLabelRepo },
         { provide: getRepositoryToken(DefectCodeMaster), useValue: mockDefectCodeRepo },
+        { provide: TransactionService, useValue: mockTx },
+        { provide: ProdResultService, useValue: mockProdResultService },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -276,6 +303,29 @@ describe('DefectLogService', () => {
       );
     });
 
+    it('TXN-PROD-001: re-syncs the linked job order aggregate after registering a defect', async () => {
+      const prodResult = createProdResult({ defectQty: 3, orderNo: 'WO-1', company: 'HANES', plant: 'P01' } as any);
+      const savedDefect = createDefectLog({ defectCode: 'DEF002', defectName: '치수불량' });
+
+      mockProdResultRepo.findOne.mockResolvedValue(prodResult);
+      mockDefectLogRepo.create.mockReturnValue(savedDefect);
+      mockDefectLogRepo.save.mockResolvedValue(savedDefect);
+      mockProdResultRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.create(
+        { prodResultNo: 'PR260318-00001', defectCode: 'DEF002', defectName: '치수불량', qty: 2 } as any,
+        'HANES',
+        'P01',
+      );
+
+      expect(mockProdResultService.syncJobOrderFromResultsInTx).toHaveBeenCalledWith(
+        expect.anything(),
+        'WO-1',
+        'HANES',
+        'P01',
+      );
+    });
+
     it('resolves prodResultNo from workOrderNo (latest prod-result) when prodResultNo is omitted', async () => {
       const latest = createProdResult({ resultNo: 'PR-LATEST', defectQty: 1, company: 'HANES', plant: 'P01' } as any);
       // 1st findOne: workOrderNo→최신 생산실적, 2nd findOne: 존재 확인
@@ -434,6 +484,25 @@ describe('DefectLogService', () => {
       await expect(target.delete('1', 'HANES', 'P01')).rejects.toThrow(BadRequestException);
       expect(mockDefectLogRepo.delete).not.toHaveBeenCalled();
     });
+
+    it('TXN-PROD-001: re-syncs the linked job order aggregate after deleting a defect', async () => {
+      const defect = createDefectLog({ qty: 3 });
+      mockDefectLogRepo.findOne.mockResolvedValue(defect);
+      mockDefectLogRepo.delete.mockResolvedValue({ affected: 1 } as any);
+      mockProdResultRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockProdResultRepo.findOne.mockResolvedValue(
+        createProdResult({ orderNo: 'WO-1', company: 'HANES', plant: 'P01' } as any),
+      );
+
+      await target.delete('1', 'HANES', 'P01');
+
+      expect(mockProdResultService.syncJobOrderFromResultsInTx).toHaveBeenCalledWith(
+        expect.anything(),
+        'WO-1',
+        'HANES',
+        'P01',
+      );
+    });
   });
 
   describe('update', () => {
@@ -461,6 +530,44 @@ describe('DefectLogService', () => {
 
       await expect(target.update('1', { qty: 5 } as any, 'HANES', 'P01')).rejects.toThrow(BadRequestException);
       expect(mockDefectLogRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('TXN-PROD-001: re-syncs the linked job order aggregate when qty changes', async () => {
+      const defect = createDefectLog({ qty: 2 });
+      const updated = createDefectLog({ qty: 5 });
+
+      mockDefectLogRepo.findOne
+        .mockResolvedValueOnce(defect)
+        .mockResolvedValueOnce(updated);
+      mockDefectLogRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockProdResultRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockProdResultRepo.findOne.mockResolvedValue(
+        createProdResult({ orderNo: 'WO-1', company: 'HANES', plant: 'P01' } as any),
+      );
+
+      await target.update('1', { qty: 5 } as any, 'HANES', 'P01');
+
+      expect(mockProdResultService.syncJobOrderFromResultsInTx).toHaveBeenCalledWith(
+        expect.anything(),
+        'WO-1',
+        'HANES',
+        'P01',
+      );
+    });
+
+    it('does not touch the job order aggregate when qty is unchanged', async () => {
+      const defect = createDefectLog({ qty: 2 });
+      const updated = createDefectLog({ qty: 2, cause: '수정된 원인' });
+
+      mockDefectLogRepo.findOne
+        .mockResolvedValueOnce(defect)
+        .mockResolvedValueOnce(updated);
+      mockDefectLogRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.update('1', { qty: 2, cause: '수정된 원인' } as any, 'HANES', 'P01');
+
+      expect(mockProdResultRepo.update).not.toHaveBeenCalled();
+      expect(mockProdResultService.syncJobOrderFromResultsInTx).not.toHaveBeenCalled();
     });
   });
 

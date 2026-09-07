@@ -11,7 +11,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, RefreshCw, Cpu, Package } from 'lucide-react';
 import { Card, CardContent, Button, Input } from '@/components/ui';
-import EquipSelect from '@/components/shared/EquipSelect';
+import { MultiSelectFilter } from '@/components/shared';
+import { useEquipOptions } from '@/hooks/useMasterOptions';
 import DataGrid from '@/components/data-grid/DataGrid';
 import api from '@/services/api';
 import { createWipMaterialStockGridColumns, type WipMatStockRow } from './wipMaterialStockColumns';
@@ -21,6 +22,17 @@ interface LotRow {
   qty: number;
   availableQty: number;
   reservedQty: number;
+  /** 이 LOT이 공정재고로 들어온(WIP_MAT_STOCKS 행 생성) 시점 — 원자재 입하일이 아니라 공정 입고일 */
+  recvDate: string | null;
+}
+
+/** 날짜만 짧게(YYYY-MM-DD HH:mm) — 서버가 ISO 문자열/Date 문자열을 준다 */
+function formatRecvDate(v: string | null): string {
+  if (!v) return '-';
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return '-';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export default function WipMaterialStockPage() {
@@ -28,7 +40,8 @@ export default function WipMaterialStockPage() {
   const [data, setData] = useState<WipMatStockRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [equipCode, setEquipCode] = useState('');
+  const [equipFilter, setEquipFilter] = useState<string[]>([]);
+  const { options: equipOptions } = useEquipOptions(undefined, { includeInactive: true });
 
   const [selectedRow, setSelectedRow] = useState<WipMatStockRow | null>(null);
   const [lots, setLots] = useState<LotRow[]>([]);
@@ -39,7 +52,7 @@ export default function WipMaterialStockPage() {
     try {
       const params: Record<string, string> = {};
       if (searchText) params.search = searchText;
-      if (equipCode) params.equipCode = equipCode;
+      if (equipFilter.length > 0) params.equipCode = equipFilter.join(',');
       const res = await api.get('/inventory/wip-mat-stocks', { params });
       setData(res.data?.data ?? []);
       setSelectedRow(null);
@@ -49,7 +62,7 @@ export default function WipMaterialStockPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, equipCode]);
+  }, [searchText, equipFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -116,11 +129,11 @@ export default function WipMaterialStockPage() {
                     />
                   </div>
                   <div className="w-52 flex-shrink-0">
-                    <EquipSelect
-                      value={equipCode}
-                      onChange={setEquipCode}
+                    <MultiSelectFilter
+                      options={equipOptions}
+                      value={equipFilter}
+                      onChange={setEquipFilter}
                       labelPrefix={t('production.wipMaterialStock.equipName')}
-                      includeInactive
                       fullWidth
                     />
                   </div>
@@ -184,6 +197,7 @@ export default function WipMaterialStockPage() {
                           <th className="text-left px-2 py-2 font-medium text-text-muted text-xs">LOT No.</th>
                           <th className="text-right px-2 py-2 font-medium text-text-muted text-xs">재고</th>
                           <th className="text-right px-2 py-2 font-medium text-text-muted text-xs">가용</th>
+                          <th className="text-right px-2 py-2 font-medium text-text-muted text-xs">공정입고일</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -195,6 +209,9 @@ export default function WipMaterialStockPage() {
                             </td>
                             <td className="px-2 py-2 text-right text-green-600 dark:text-green-400">
                               {lot.availableQty.toLocaleString()}
+                            </td>
+                            <td className="px-2 py-2 text-right text-text-muted text-xs font-mono">
+                              {formatRecvDate(lot.recvDate)}
                             </td>
                           </tr>
                         ))}

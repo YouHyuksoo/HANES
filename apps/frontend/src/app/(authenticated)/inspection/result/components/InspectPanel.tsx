@@ -238,6 +238,9 @@ export default function InspectPanel({
               placeholder={t("inspection.result.scanCircuitLabel")}
               fullWidth
             />
+            <p className="mt-1 text-xs text-text-muted">
+              {t("inspection.result.circuitSourceHelp", "현장 회로라벨 바코드를 스캔하세요. 이미 사용한 라벨은 중복 등록되지 않습니다.")}
+            </p>
           </CardContent>
         </Card>
       )}

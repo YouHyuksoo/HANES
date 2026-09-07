@@ -442,6 +442,11 @@ export class MatIssueService {
     }
     this.assertSameTenant('자재출고 이력', rawIssue, company, plant);
 
+    // 수리 종결의 부품 소비만 보호한다. 일반 수리용 자재출고 취소는 기존 흐름을 유지한다.
+    if (rawIssue.issueType === 'REPAIR' && /^REPAIR:\d+$/.test(rawIssue.remark ?? '')) {
+      throw new BadRequestException('수리오더에서 소비한 사용부품은 일반 자재출고 취소로 복원할 수 없습니다.');
+    }
+
     if (rawIssue.status !== 'DONE') {
       throw new BadRequestException('이미 취소된 출고입니다.');
     }

@@ -268,6 +268,7 @@
     "monitoring.qualityBoard": "Quality Board",
     "monitoring.invBoard": "Inventory Board",
     "monitoring.jobBoard": "Job Order Board",
+    "monitoring.spcBoard": "SPC Chart Board",
     "master": "Master Data",
     "master.part": "Part Management",
     "master.part.iqc.header": "IQC",
@@ -370,7 +371,7 @@
     "material": "Material Mgmt",
     "materialMgmt": "Material Management",
     "productMgmt": "Product Mgmt",
-    "productMgmt.receive": "Product Receive",
+    "productMgmt.receive": "Product Receipt (Process Stock > Warehouse Stock)",
     "productMgmt.receiptCancel": "Product Receipt Cancel",
     "productMgmt.issue": "Product Issue",
     "productMgmt.issueCancel": "Product Issue Cancel",
@@ -431,8 +432,9 @@
     "production.wipStock": "WIP/Product Stock Inquiry",
     "production.wipSemiStock": "Semi-Product WIP Inquiry",
     "production.fgStock": "Product WIP Inquiry",
-    "production.wipMaterialStock": "WIP Material Stock",
+    "production.wipMaterialStock": "Raw Material WIP Inquiry",
     "production.wipMaterialTrans": "WIP Material Transactions",
+    "production.productTrans": "Semi/Finished Product Transaction Inquiry",
     "production.repair": "Repair Management",
     "inspection": "Inspection Management",
     "inspection.integrated": "Integrated Inspection",
@@ -3347,7 +3349,7 @@
   },
   "productMgmt": {
     "receive": {
-      "title": "Product Receiving",
+      "title": "Product Receipt (Process Stock > Warehouse Stock)",
       "subtitle": "Process finished goods (FG) receiving.",
       "tabWip": "WIP",
       "tabFg": "FG",
@@ -3756,11 +3758,15 @@
       "printError": "An error occurred while printing FG labels."
     },
     "inputAssembly": {
+      "continuous": "Keep scans (continuous)",
+      "resetScans": "Clear scans",
+      "continuousHelp": "Keep labels with remaining quantity after confirmation. Rescan only depleted labels.",
+      "incompleteSet": "Insufficient semi-finished stock for one assembly. Scan the required labels.",
       "title": "Assembly Input",
       "description": "Scan SFG labels to assemble finished goods.",
       "orderSection": "Job Order (Finished)",
       "bomSection": "Assembly Requirements",
-      "scanSection": "Semi-Product Scan (Set · Reset)",
+      "scanSection": "Semi-finished scans",
       "scanPlaceholder": "Scan or enter SFG barcode + Enter",
       "scannedList": "Scanned SFG Labels",
       "execute": "Execute Assembly",
@@ -3887,7 +3893,8 @@
       "warehouseConfirm": "Warehouse",
       "receivedBy": "Received By",
       "noRawMaterial": "No raw materials",
-      "exportFileName": "Work Order"
+      "exportFileName": "Work Order",
+      "equipUnassigned": "Unassigned"
     },
     "result": {
       "title": "Production Result",
@@ -3959,7 +3966,8 @@
       "searchPlaceholder": "Search order no, part name...",
       "planDateFrom": "Plan Date (From)",
       "planDateTo": "Plan Date (To)",
-      "shiftFilter": "Shift"
+      "shiftFilter": "Shift",
+      "equipUnassigned": "Not started"
     },
     "inputManual": {
       "selectJobOrder": "Select Job Order",
@@ -4188,8 +4196,8 @@
       "searchPlaceholder": "Search part code, part name..."
     },
     "wipMaterialStock": {
-      "title": "WIP Material Stock",
-      "description": "View WIP material stock (WIP_MAT_STOCKS) by equipment",
+      "title": "Raw Material WIP Inquiry",
+      "description": "View raw material WIP (WIP_MAT_STOCKS) by equipment",
       "equipCount": "Equipment",
       "itemCount": "Items",
       "totalQty": "Total Qty",
@@ -4219,6 +4227,42 @@
       "typeWipInCancel": "WIP In Cancel",
       "typeProdConsume": "Production Consume",
       "typeProdConsumeCancel": "Consume Cancel"
+    },
+    "productTrans": {
+      "title": "Semi/Finished Product Transaction Inquiry",
+      "description": "View semi/finished product (PRODUCT_TRANSACTIONS) in/out transaction history",
+      "transNo": "Trans No",
+      "transDate": "Trans Date",
+      "transType": "Type",
+      "itemCode": "Item Code",
+      "itemName": "Item Name",
+      "itemType": "Item Type",
+      "qualityStatus": "Quality Status",
+      "qty": "Qty",
+      "fromWarehouse": "From Warehouse",
+      "toWarehouse": "To Warehouse",
+      "orderNo": "Order No",
+      "processCode": "Process",
+      "refType": "Ref Type",
+      "refId": "Ref No",
+      "worker": "Worker",
+      "remark": "Remark",
+      "warehouse": "Warehouse",
+      "searchPlaceholder": "Search item code, item name, order no...",
+      "emptyMessage": "No transactions found.",
+      "itemTypeSemi": "Semi-Product",
+      "itemTypeFinished": "Finished Product",
+      "qualityGood": "Good",
+      "qualityDefect": "Defect",
+      "typeWipIn": "WIP In",
+      "typeWipInCancel": "WIP In Cancel",
+      "typeWipOut": "WIP Out",
+      "typeWipOutCancel": "WIP Out Cancel",
+      "typeFgIn": "FG In",
+      "typeFgInCancel": "FG In Cancel",
+      "typeFgOut": "FG Out",
+      "typeFgOutCancel": "FG Out Cancel",
+      "typeDefectIn": "Defect In"
     },
     "repair": {
       "title": "Repair Management",
@@ -4354,6 +4398,7 @@
       "pendingList": "Pending Barcodes",
       "circuitLabel": "Circuit Label",
       "scanCircuitLabel": "Scan Circuit Label",
+      "circuitSourceHelp": "Scan the circuit-label barcode used on site. Previously used labels are rejected as duplicates.",
       "circuitRequired": "Scan the circuit label to pass.",
       "consumablesTitle": "Consumable Equipment Parts",
       "consumableScanPlaceholder": "Scan consumable barcode (UID)",
@@ -4658,6 +4703,13 @@
       "scanPlaceholder": "Scan the FG barcode",
       "barcodeNotFound": "Barcode not found",
       "wrongOrder": "Label belongs to another work order ({{orderNo}})",
+      "continuityRequired": "Complete and pass continuity inspection before visual inspection.",
+      "lotTargets": "Continuity-passed targets",
+      "lotHelp": "Select the FG labels in this lot and judge them once. Each FG keeps its own trace record.",
+      "selectAll": "Select all",
+      "clearSelection": "Clear selection",
+      "selectedCount": "{{count}} selected",
+      "batchLimit": "You can select up to {{count}} items at a time.",
       "defectCode": "Defect Code",
       "inspectType": "Inspection Type"
     },
@@ -5124,7 +5176,16 @@
         "cpkTrend": "Cpk trend",
         "cpkTrendHint": "Rolling window of last {{n}} subgroups",
         "cpkGood": "Good",
-        "cpkMin": "Minimum"
+        "cpkMin": "Minimum",
+        "chartUpload": "Chart Upload",
+        "dataUpload": "Data Upload",
+        "chartUploadTitle": "Upload Charts (Excel)",
+        "dataUploadTitle": "Upload Measurement Data (Excel)",
+        "downloadTemplate": "Download Template",
+        "uploadWithCount": "Upload",
+        "analyzingFile": "Analyzing file...",
+        "xlsxOnlyHint": "Only .xlsx files are allowed. Item code / process code must already exist in master data.",
+        "dataXlsxHint": "Only .xlsx files are allowed. The chart number must already exist, and the value count must match the chart's subgroup size."
       }
     },
     "controlPlan": {

@@ -11,7 +11,7 @@
  */
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, MoreThan } from 'typeorm';
 import { TransactionService } from '../../../shared/transaction.service';
 import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
 import { ProcMatStockService } from '../../inventory/services/proc-mat-stock.service';
@@ -68,6 +68,28 @@ export class EquipMaterialService {
       // 2. 공정재고(장착 대기)에서 해당 LOT 조회
       const procLot = await this.procMatStockService.findLot(processCode, matUid, company, plant);
       if (!procLot || (procLot.availableQty ?? 0) <= 0) {
+        // 장착된 LOT는 공정재고에서 이미 이동되었다. 예약분도 포함한 실재고로 원인을 구분한다.
+        const mounted = await qr.manager.find(WipMatStock, {
+          where: { company, plant, matUid, qty: MoreThan(0) },
+          order: { equipCode: 'ASC' },
+        });
+        const otherCodes = [...new Set(mounted.map((row) => row.equipCode))]
+          .filter((code) => code !== equipCode);
+        if (otherCodes.length > 0) {
+          const otherEquips = await qr.manager.find(EquipMaster, {
+            where: { company, plant, equipCode: In(otherCodes) },
+          });
+          const names = otherCodes.map((code) => {
+            const name = otherEquips.find((row) => row.equipCode === code)?.equipName;
+            return name ? `${name} (${code})` : code;
+          });
+          throw new BadRequestException(
+            `다른 설비(${names.join(', ')})에 장착중입니다. 해제 후 장착하세요.`,
+          );
+        }
+        if (mounted.some((row) => row.equipCode === equipCode)) {
+          throw new BadRequestException(`이미 해당 설비에 장착된 자재 LOT입니다: ${matUid} (설비=${equipCode})`);
+        }
         throw new BadRequestException(
           `장착할 공정재고가 없습니다: matUid=${matUid} (공정=${processCode}). 자재 출고(공정 입고)가 먼저 필요합니다.`,
         );

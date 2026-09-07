@@ -235,7 +235,7 @@ export class JobOrderQueryDto extends PaginationQueryDto {
   @IsString()
   lineCode?: string;
 
-  @ApiPropertyOptional({ description: '설비 코드 필터 (생산실적 기준)' })
+  @ApiPropertyOptional({ description: '설비 코드 필터 (생산실적 기준, 쉼표 구분 복수 선택 가능). "__UNASSIGNED__" 는 아직 실적이 없는(미착수) 작업지시를 뜻한다' })
   @IsOptional()
   @IsString()
   equipCode?: string;

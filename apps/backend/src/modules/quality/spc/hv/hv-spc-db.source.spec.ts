@@ -60,6 +60,14 @@ describe('hv-spc-db.source 순수 매핑', () => {
     expect(out[1]).toMatchObject({ date: '2026-09-01', time: '14:00', dateLabel: '09/01(2)', lotNo: '', samples: [2, 3, 4, 5, 6] });
     expect(out[2]).toMatchObject({ date: '2026-09-03', dateLabel: '09/03', samples: [9] });
   });
+
+  it('mapDataRowsToSubgroups: EQUIP_CODE 컬럼값을 그대로 읽는다', () => {
+    const rows = [
+      { chartId: 'C', subgroupNo: 1, seq: 1, sampleDate: new Date(2026, 8, 1, 8, 30), values: '[1,2,3]', equipCode: 'EQ-CRMPF-01', remark: 'LOT-A' },
+    ] as unknown as SpcData[];
+    const out = mapDataRowsToSubgroups(rows);
+    expect(out[0].equipCode).toBe('EQ-CRMPF-01');
+  });
 });
 
 describe('DbSpcSource', () => {

@@ -6,6 +6,7 @@ import { DataSource, IsNull, QueryRunner, Repository } from 'typeorm';
 import { ContinuityInspectService } from './continuity-inspect.service';
 import { InspectResult } from '../../../../entities/inspect-result.entity';
 import { FgLabel } from '../../../../entities/fg-label.entity';
+import { RepairOrder } from '../../../../entities/repair-order.entity';
 import { JobOrder } from '../../../../entities/job-order.entity';
 import { EquipProtocol } from '../../../../entities/equip-protocol.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
@@ -89,7 +90,7 @@ describe('ContinuityInspectService', () => {
       findOne: jest
         .fn()
         .mockResolvedValueOnce({ orderNo: 'JO-001', company: 'C1', plant: 'P1' } as JobOrder)
-        .mockResolvedValueOnce({ fgBarcode: 'FG-1', status: 'ISSUED', company: 'C1', plant: 'P1' } as FgLabel),
+        .mockResolvedValueOnce({ fgBarcode: 'FG-1', orderNo: 'JO-001', status: 'ISSUED', company: 'C1', plant: 'P1' } as FgLabel),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
       increment: jest.fn().mockResolvedValue(undefined),
@@ -141,7 +142,7 @@ describe('ContinuityInspectService', () => {
       findOne: jest
         .fn()
         .mockResolvedValueOnce({ orderNo: 'JO-001', company: 'C1', plant: 'P1' } as JobOrder)
-        .mockResolvedValueOnce({ fgBarcode: 'FG-1', status: 'ISSUED', company: 'C1', plant: 'P1' } as FgLabel),
+        .mockResolvedValueOnce({ fgBarcode: 'FG-1', orderNo: 'JO-001', status: 'ISSUED', company: 'C1', plant: 'P1' } as FgLabel),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
       increment: jest.fn().mockResolvedValue(undefined),
@@ -191,6 +192,131 @@ describe('ContinuityInspectService', () => {
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
   });
 
+  describe('repair custody guards', () => {
+    const actions = [
+      { name: 'visualInspect', run: (s: ContinuityInspectService) => s.visualInspect('FG-REPAIR', { passYn: 'Y' }, 'C1', 'P1') },
+      { name: 'updateFgLabelStatus', run: (s: ContinuityInspectService) => s.updateFgLabelStatus('FG-REPAIR', 'VISUAL_PASS', 'C1', 'P1') },
+      { name: 'reInspect', run: (s: ContinuityInspectService) => s.reInspect('FG-REPAIR', { passYn: 'Y' }, 'C1', 'P1') },
+      { name: 'voidLabel', run: (s: ContinuityInspectService) => s.voidLabel('FG-REPAIR', 'mistake', 'C1', 'P1') },
+    ];
+    it.each(actions)('blocks $name after locking a label currently owned by a repair', async ({ run }) => {
+      const label = { fgBarcode: 'FG-REPAIR', status: 'VISUAL_FAIL', inspectPassYn: 'N', company: 'C1', plant: 'P1' } as FgLabel;
+      mockFgLabelRepo.findOne.mockResolvedValue(label);
+      mockSysConfigService.isEnabled.mockResolvedValue(false);
+      mockQueryRunner.manager.findOne.mockImplementation(async (entity: any) => {
+        if (entity === FgLabel) return label as any;
+        if (entity === RepairOrder) return { seq: 71, status: 'IN_REPAIR' } as any;
+        return null;
+      });
+      await expect(run(target)).rejects.toThrow('수리');
+      expect(mockQueryRunner.query).toHaveBeenCalledWith(expect.stringContaining('FOR UPDATE'), ['FG-REPAIR', 'C1', 'P1']);
+      expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(RepairOrder, { where: { fgBarcode: 'FG-REPAIR', status: 'IN_REPAIR', company: 'C1', plant: 'P1' } });
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+      expect(mockFgLabelRepo.save).not.toHaveBeenCalled();
+    });
+
+    it.each(actions)('preserves ordinary $name when no active repair exists', async ({ run }) => {
+      const label = { fgBarcode: 'FG-REPAIR', status: 'VISUAL_FAIL', inspectPassYn: run === actions[2].run ? 'N' : 'Y', company: 'C1', plant: 'P1' } as FgLabel;
+      mockFgLabelRepo.findOne.mockResolvedValue(label);
+      mockSysConfigService.isEnabled.mockResolvedValue(false);
+      mockQueryRunner.manager.findOne.mockImplementation(async (entity: any) => entity === FgLabel ? label as any : entity === InspectResult ? { passYn: 'Y' } as any : null);
+      mockQueryRunner.manager.create.mockImplementation((_entity: any, payload: any) => payload);
+      mockQueryRunner.manager.save.mockImplementation(async (_entity: any, payload: any) => payload);
+      mockSeqGen.getNo.mockResolvedValue('IR-NEW');
+      await expect(run(target)).resolves.toBeDefined();
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(FgLabel, expect.any(Object));
+    });
+  });
+
+  it.each([
+    { status: 'VISUAL_FAIL', orderNo: 'JO-001', message: 'ISSUED 상태' },
+    { status: 'ISSUED', orderNo: 'OTHER', message: '작업지시' },
+  ])('does not record a FAIL against invalid FG context: $status/$orderNo', async example => {
+    mockProdResultRepo.find.mockResolvedValue([]);
+    mockQueryRunner.manager.findOne.mockImplementation(async (entity: any) => {
+      if (entity === JobOrder) return { orderNo: 'JO-001', company: 'C1', plant: 'P1' } as any;
+      if (entity === FgLabel) return { fgBarcode: 'FG-1', company: 'C1', plant: 'P1', ...example } as any;
+      return null;
+    });
+    await expect(target.inspect({ orderNo: 'JO-001', itemCode: 'ITEM-001', passYn: 'N', fgBarcode: 'FG-1' } as any, 'C1', 'P1')).rejects.toThrow(example.message);
+    expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+  });
+
+  describe('continuity before visual', () => {
+    it.each([null, 'N'])('rejects visual inspection without continuity pass (%s)', async passYn => {
+      mockSysConfigService.isEnabled.mockResolvedValue(false);
+      mockQueryRunner.manager.findOne.mockImplementation(async (entity: any) => entity === FgLabel
+        ? { fgBarcode: 'FG-1', company: 'C1', plant: 'P1', status: 'ISSUED', inspectPassYn: passYn } as any : null);
+      await expect(target.visualInspect('FG-1', { passYn: 'Y' }, 'C1', 'P1')).rejects.toThrow('통전검사 합격 후');
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+    });
+
+    it.each([null, 'N'])('rejects missing/failed continuity history despite shared pass flag (%s)', async passYn => {
+      mockSysConfigService.isEnabled.mockResolvedValue(false);
+      mockQueryRunner.manager.findOne.mockImplementation(async (entity: any) => {
+        if (entity === FgLabel) return { fgBarcode: 'FG-1', company: 'C1', plant: 'P1', status: 'ISSUED', inspectPassYn: 'Y' } as any;
+        if (entity === InspectResult) return passYn ? { passYn } as any : null;
+        return null;
+      });
+      await expect(target.visualInspect('FG-1', { passYn: 'Y' }, 'C1', 'P1')).rejects.toThrow('통전검사 합격 후');
+      await expect(target.updateFgLabelStatus('FG-1', 'VISUAL_PASS', 'C1', 'P1')).rejects.toThrow('통전검사 합격 후');
+      expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(InspectResult, {
+        where: { fgBarcode: 'FG-1', inspectType: 'CONTINUITY', company: 'C1', plant: 'P1' },
+        order: { inspectAt: 'DESC', resultNo: 'DESC' },
+      });
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('visual LOT batch', () => {
+    it('rejects a public batch request without a work order', async () => {
+      await expect(target.visualInspectBatch({ fgBarcodes: ['FG-1'], passYn: 'Y' } as any, 'C1', 'P1'))
+        .rejects.toThrow('작업지시');
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
+    it.each(['PACKED', 'SHIPPED', 'VOIDED'])('never moves a downstream %s label back to visual status', async status => {
+      mockSysConfigService.isEnabled.mockResolvedValue(false);
+      mockQueryRunner.manager.findOne.mockImplementation(async (entity: any) => {
+        if (entity === FgLabel) return { fgBarcode: 'FG-1', status, inspectPassYn: 'Y', company: 'C1', plant: 'P1' } as any;
+        return null;
+      });
+      await expect(target.visualInspect('FG-1', { passYn: 'Y' }, 'C1', 'P1')).rejects.toThrow('현재 상태');
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+    });
+
+    it('locks in sorted order and records one trace row per selected FG', async () => {
+      mockSysConfigService.isEnabled.mockResolvedValue(false);
+      const labels: Record<string, FgLabel> = {
+        'FG-2': { fgBarcode: 'FG-2', orderNo: 'JO-1', status: 'ISSUED', inspectPassYn: 'Y', company: 'C1', plant: 'P1' } as FgLabel,
+        'FG-1': { fgBarcode: 'FG-1', orderNo: 'JO-1', status: 'ISSUED', inspectPassYn: 'Y', company: 'C1', plant: 'P1' } as FgLabel,
+      };
+      mockQueryRunner.manager.findOne.mockImplementation(async (entity: any, options: any) => {
+        if (entity === FgLabel) return labels[options.where.fgBarcode];
+        if (entity === InspectResult) return { passYn: 'Y' } as any;
+        return null;
+      });
+      mockQueryRunner.manager.create.mockImplementation((_entity: any, payload: any) => payload);
+      mockQueryRunner.manager.save.mockImplementation(async (_entity: any, payload: any) => payload);
+      mockSeqGen.getNo.mockResolvedValueOnce('IR-1').mockResolvedValueOnce('IR-2');
+
+      const result = await target.visualInspectBatch({ orderNo: 'JO-1', fgBarcodes: ['FG-2', 'FG-1'], passYn: 'Y' }, 'C1', 'P1');
+
+      expect(result.map((row) => row.fgLabel.fgBarcode)).toEqual(['FG-2', 'FG-1']);
+      expect(mockQueryRunner.query.mock.calls.map((call) => call[1]?.[0])).toEqual(['FG-1', 'FG-2']);
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledTimes(2);
+      expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(InspectResult, expect.objectContaining({ inspectType: 'VISUAL', inspectScope: 'FULL' }));
+    });
+
+    it('rejects duplicate targets before opening a transaction', async () => {
+      mockSysConfigService.isEnabled.mockResolvedValue(false);
+      await expect(target.visualInspectBatch({ orderNo: 'JO-1', fgBarcodes: ['FG-1', 'FG-1'], passYn: 'Y' }, 'C1', 'P1'))
+        .rejects.toThrow('중복된 FG');
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+  });
+
   it('getPendingLabels returns ISSUED + uninspected labels within tenant scope', async () => {
     mockFgLabelRepo.find.mockResolvedValue([] as FgLabel[]);
 
@@ -210,7 +336,7 @@ describe('ContinuityInspectService', () => {
   });
 
   it('reInspect keeps the original prod result linkage and restores ISSUED on pass', async () => {
-    mockFgLabelRepo.findOne.mockResolvedValue({
+    const label = {
       fgBarcode: 'FG-001',
       orderNo: 'JO-001',
       inspectPassYn: 'N',
@@ -218,10 +344,11 @@ describe('ContinuityInspectService', () => {
       status: 'VISUAL_FAIL',
       company: 'HANES',
       plant: 'P01',
-    } as FgLabel);
+    } as FgLabel;
 
     const manager = {
-      findOne: jest.fn().mockResolvedValue({ resultNo: 'IR-OLD', prodResultNo: 'PR-001' } as InspectResult),
+      findOne: jest.fn(async (entity) => entity === FgLabel ? label
+        : entity === InspectResult ? { resultNo: 'IR-OLD', prodResultNo: 'PR-001' } as InspectResult : null),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
     };
@@ -243,7 +370,7 @@ describe('ContinuityInspectService', () => {
   });
 
   it('reInspect blocks when request tenant differs from label tenant', async () => {
-    mockFgLabelRepo.findOne.mockResolvedValue({
+    mockQueryRunner.manager.findOne.mockResolvedValue({
       fgBarcode: 'FG-001',
       inspectPassYn: 'N',
       status: 'VISUAL_FAIL',
@@ -253,7 +380,8 @@ describe('ContinuityInspectService', () => {
 
     await expect(target.reInspect('FG-001', { passYn: 'Y' }, 'C1', 'P1')).rejects.toThrow(BadRequestException);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
-    expect(mockTx.run).not.toHaveBeenCalled();
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
   });
 
   it('createProtocol rejects body tenant that differs from request tenant', async () => {
@@ -266,12 +394,13 @@ describe('ContinuityInspectService', () => {
   });
 
   it('voidLabel blocks labels that already progressed downstream', async () => {
-    mockFgLabelRepo.findOne.mockResolvedValue({
+    mockQueryRunner.manager.findOne.mockImplementation(async (entity: any) => entity === FgLabel ? {
       fgBarcode: 'FG-999',
       status: 'PACKED',
-    } as FgLabel);
+      company: 'C1', plant: 'P1',
+    } as any : null);
 
-    await expect(target.voidLabel('FG-999', 'mistake')).rejects.toThrow(BadRequestException);
+    await expect(target.voidLabel('FG-999', 'mistake')).rejects.toThrow('후공정');
   });
 
   it('inspect requires a circuit label on PASS', async () => {
@@ -327,7 +456,7 @@ describe('ContinuityInspectService', () => {
       findOne: jest
         .fn()
         .mockResolvedValueOnce({ orderNo: 'JO-001', company: 'C1', plant: 'P1' } as JobOrder)
-        .mockResolvedValueOnce({ fgBarcode: 'FG-1', status: 'ISSUED', company: 'C1', plant: 'P1' } as FgLabel),
+        .mockResolvedValueOnce({ fgBarcode: 'FG-1', orderNo: 'JO-001', status: 'ISSUED', company: 'C1', plant: 'P1' } as FgLabel),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
       count: jest.fn().mockResolvedValue(0),
@@ -339,7 +468,7 @@ describe('ContinuityInspectService', () => {
     mockSeqGen.getNo.mockResolvedValue('IR-001');
 
     const result = await target.inspect(
-      { orderNo: 'JO-001', itemCode: 'ITEM-001', passYn: 'Y', fgBarcode: 'FG-1', circuitLabel: 'CL-1' } as any,
+      { orderNo: 'JO-001', itemCode: 'ITEM-001', passYn: 'Y', fgBarcode: 'FG-1', circuitLabel: '  CL-1  ' } as any,
       'C1',
       'P1',
     );

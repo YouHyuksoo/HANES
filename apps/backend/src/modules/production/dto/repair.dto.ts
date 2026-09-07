@@ -11,6 +11,8 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import {
   IsString,
+  IsIn,
+  IsNotEmpty,
   IsOptional,
   IsInt,
   IsArray,
@@ -183,3 +185,30 @@ export class CreateRepairDto {
 }
 
 export class UpdateRepairDto extends PartialType(CreateRepairDto) {}
+
+/** 상태를 직접 수정하지 않고 전용 액션만 허용한다. */
+export class StartRepairDto {
+  @IsString() @IsNotEmpty() @MaxLength(50) warehouseCode: string;
+}
+export class RepairMaterialAllocationDto {
+  @IsString() @IsNotEmpty() @MaxLength(50) itemCode: string;
+  @IsString() @IsNotEmpty() @MaxLength(50) matUid: string;
+  @IsString() @IsNotEmpty() @MaxLength(50) warehouseCode: string;
+  @Type(() => Number) @IsInt() @Min(1) qty: number;
+}
+export class CompleteRepairDto {
+  @IsIn(['COMPLETED','IMPOSSIBLE']) repairResult: string;
+  @IsIn(['REUSE','REINSPECT','SCRAP']) disposition: string;
+  @IsOptional() @IsString() @MaxLength(50) returnProcess?: string;
+  @IsOptional() @IsString() @MaxLength(50) returnWarehouseCode?: string;
+  @IsOptional() @IsArray() @ValidateNested({each:true}) @Type(() => RepairMaterialAllocationDto)
+  materialAllocations?: RepairMaterialAllocationDto[];
+}
+export class InspectRepairDto {
+  @IsIn(['PASS','FAIL']) result: string;
+  @IsString() @IsNotEmpty() @MaxLength(36) workerId: string;
+  @IsOptional() @IsString() @MaxLength(500) remark?: string;
+  @IsOptional() @IsString() @MaxLength(50) returnWarehouseCode?: string;
+  @IsOptional() @IsArray() @ValidateNested({each:true}) @Type(() => RepairMaterialAllocationDto)
+  materialAllocations?: RepairMaterialAllocationDto[];
+}

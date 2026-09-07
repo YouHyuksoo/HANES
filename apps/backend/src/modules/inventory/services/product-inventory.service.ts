@@ -114,6 +114,13 @@ export class ProductInventoryService {
     }
   }
 
+  /** 수리실 인수/복귀 원장은 수리 상태 및 사용부품 소비와 함께 유지한다. */
+  private assertNotRepairTransaction(transaction: ProductTransaction): void {
+    if (transaction.refType === 'REPAIR') {
+      throw new BadRequestException('수리오더에 연결된 제품수불은 일반 재고취소로 취소할 수 없습니다.');
+    }
+  }
+
   private normalizeQualityStatus(value?: string | null): 'GOOD' | 'DEFECT' {
     return normalizeProductQualityStatus(value);
   }
@@ -671,6 +678,7 @@ export class ProductInventoryService {
       throw new BadRequestException('이미 취소된 트랜잭션입니다.');
     }
     this.assertSameTenant('원본 제품거래', { company, plant }, originalTrans);
+    this.assertNotRepairTransaction(originalTrans);
 
     if (originalTrans.refType === 'BOX' && originalTrans.refId) {
       const box = await this.boxRepository.findOne({
@@ -701,6 +709,7 @@ export class ProductInventoryService {
     originalTrans: ProductTransaction,
     dto: CancelTransactionDto,
   ): Promise<ProductTransaction> {
+    this.assertNotRepairTransaction(originalTrans);
     const cancelTransType = this.getCancelTransType(originalTrans.transType);
     const transNo = await this.generateTransNo(qr);
     const tenantWhere = this.tenantWhere(originalTrans.company, originalTrans.plant);

@@ -30,11 +30,14 @@ interface Props {
 }
 
 export default function VisualInspectPanel({ order }: Props) {
+  const MAX_BATCH = 100;
   const { t } = useTranslation();
   const [history, setHistory] = useState<InspectHistoryRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [inspecting, setInspecting] = useState(false);
   const [failModalOpen, setFailModalOpen] = useState(false);
+  const [pending, setPending] = useState<FgLabelInfo[]>([]);
+  const [selectedBarcodes, setSelectedBarcodes] = useState<Set<string>>(new Set());
 
   /** 바코드 스캔 상태 */
   const [scannedBarcode, setScannedBarcode] = useState("");
@@ -42,17 +45,28 @@ export default function VisualInspectPanel({ order }: Props) {
   const [scanError, setScanError] = useState("");
   const [lastResult, setLastResult] = useState<{ fgBarcode: string; passYn: string } | null>(null);
   const scanInputRef = useRef<HTMLInputElement>(null);
+  const activeOrderRef = useRef(order.orderNo);
+  activeOrderRef.current = order.orderNo;
 
   /** 검사 이력 새로고침 (작업지시별, VISUAL 타입) */
   const refresh = useCallback(async () => {
+    const requestedOrder = order.orderNo;
     setLoading(true);
     try {
-      const res = await api.get(`/quality/continuity-inspect/inspect-history/${order.orderNo}`, {
-        params: { inspectType: "VISUAL" },
-      });
-      setHistory(res.data?.data ?? []);
-    } catch { /* 에러 무시 */ }
-    finally { setLoading(false); }
+      const [historyRes, pendingRes] = await Promise.all([
+        api.get(`/quality/continuity-inspect/inspect-history/${order.orderNo}`, { params: { inspectType: "VISUAL" } }),
+        api.get(`/quality/continuity-inspect/visual-pending/${order.orderNo}`),
+      ]);
+      const nextPending: FgLabelInfo[] = pendingRes.data?.data ?? [];
+      if (activeOrderRef.current !== requestedOrder) return;
+      setHistory(historyRes.data?.data ?? []);
+      setPending(nextPending);
+      const available = new Set(nextPending.map((label) => label.fgBarcode));
+      setSelectedBarcodes((previous) => new Set([...previous].filter((barcode) => available.has(barcode))));
+    } catch { /* API 인터셉터 처리 */ }
+    finally {
+      if (activeOrderRef.current === requestedOrder) setLoading(false);
+    }
   }, [order.orderNo]);
 
   useEffect(() => {
@@ -61,6 +75,7 @@ export default function VisualInspectPanel({ order }: Props) {
     setScannedLabel(null);
     setScanError("");
     setLastResult(null);
+    setSelectedBarcodes(new Set());
     scanInputRef.current?.focus();
   }, [refresh]);
 
@@ -69,6 +84,7 @@ export default function VisualInspectPanel({ order }: Props) {
 
   /** 바코드 스캔 → 라벨 조회 */
   const lookupLabel = useCallback(async (rawBarcode: string) => {
+    const requestedOrder = order.orderNo;
     const barcode = rawBarcode.replace(/\r?\n|\r/g, "").trim();
     if (!barcode) return;
     setScanError("");
@@ -76,6 +92,7 @@ export default function VisualInspectPanel({ order }: Props) {
     try {
       const res = await api.get(`/quality/continuity-inspect/fg-label/${barcode}`);
       const label: FgLabelInfo = res.data?.data;
+      if (activeOrderRef.current !== requestedOrder) return;
       if (!label) {
         setScanError(t("quality.inspect.barcodeNotFound"));
         return;
@@ -85,11 +102,22 @@ export default function VisualInspectPanel({ order }: Props) {
         setScanError(t("quality.inspect.wrongOrder", { orderNo: label.orderNo }));
         return;
       }
+      if (label.status !== "ISSUED" || label.inspectPassYn !== "Y") {
+        setScanError(t("quality.inspect.continuityRequired", "통전검사 합격 후 육안검사를 진행하세요."));
+        return;
+      }
+      if (!selectedBarcodes.has(label.fgBarcode) && selectedBarcodes.size >= MAX_BATCH) {
+        setScanError(t("quality.inspect.batchLimit", { count: MAX_BATCH, defaultValue: "한 번에 최대 {{count}}건까지 선택할 수 있습니다." }));
+        return;
+      }
       setScannedLabel(label);
+      setSelectedBarcodes((previous) => new Set(previous).add(label.fgBarcode));
     } catch {
-      setScanError(t("quality.inspect.barcodeNotFound"));
+      if (activeOrderRef.current === requestedOrder) {
+        setScanError(t("quality.inspect.barcodeNotFound"));
+      }
     }
-  }, [order.orderNo, t]);
+  }, [order.orderNo, selectedBarcodes, t]);
 
   /** 스캔 입력 초기화 + 재포커스 */
   const resetScan = useCallback(() => {
@@ -101,40 +129,40 @@ export default function VisualInspectPanel({ order }: Props) {
 
   /** PASS 검사 등록 */
   const handlePass = useCallback(async () => {
-    if (!scannedLabel) return;
+    const targets = selectedBarcodes.size > 0 ? [...selectedBarcodes] : scannedLabel ? [scannedLabel.fgBarcode] : [];
+    if (targets.length === 0) return;
     setInspecting(true);
     try {
-      await api.post(`/quality/continuity-inspect/visual-inspect/${scannedLabel.fgBarcode}`, {
-        passYn: "Y",
-        errorCode: null,
-        errorDetail: null,
-        inspectData: null,
+      await api.post("/quality/continuity-inspect/visual-inspect-batch", {
+        orderNo: order.orderNo, fgBarcodes: targets, passYn: "Y",
+        errorCode: null, errorDetail: null, inspectData: null,
       });
-      setLastResult({ fgBarcode: scannedLabel.fgBarcode, passYn: "Y" });
+      setLastResult({ fgBarcode: targets.length === 1 ? targets[0] : `${targets.length} LOT`, passYn: "Y" });
+      setSelectedBarcodes(new Set());
       resetScan();
       await refresh();
     } catch { /* API 인터셉터 처리 */ }
     finally { setInspecting(false); }
-  }, [scannedLabel, refresh, resetScan]);
+  }, [selectedBarcodes, scannedLabel, order.orderNo, refresh, resetScan]);
 
   /** FAIL 검사 등록 (모달에서 호출) */
   const handleFailSubmit = useCallback(async (errorCode: string, errorDetail: string) => {
-    if (!scannedLabel) return;
+    const targets = selectedBarcodes.size > 0 ? [...selectedBarcodes] : scannedLabel ? [scannedLabel.fgBarcode] : [];
+    if (targets.length === 0) return;
     setInspecting(true);
     try {
-      await api.post(`/quality/continuity-inspect/visual-inspect/${scannedLabel.fgBarcode}`, {
-        passYn: "N",
-        errorCode: errorCode || null,
-        errorDetail: errorDetail || null,
-        inspectData: null,
+      await api.post("/quality/continuity-inspect/visual-inspect-batch", {
+        orderNo: order.orderNo, fgBarcodes: targets, passYn: "N",
+        errorCode: errorCode || null, errorDetail: errorDetail || null, inspectData: null,
       });
-      setLastResult({ fgBarcode: scannedLabel.fgBarcode, passYn: "N" });
+      setLastResult({ fgBarcode: targets.length === 1 ? targets[0] : `${targets.length} LOT`, passYn: "N" });
+      setSelectedBarcodes(new Set());
       setFailModalOpen(false);
       resetScan();
       await refresh();
     } catch { /* API 인터셉터 처리 */ }
     finally { setInspecting(false); }
-  }, [scannedLabel, refresh, resetScan]);
+  }, [selectedBarcodes, scannedLabel, order.orderNo, refresh, resetScan]);
 
   const columns = useMemo<ColumnDef<InspectHistoryRow>[]>(() => [
     {
@@ -163,10 +191,40 @@ export default function VisualInspectPanel({ order }: Props) {
       cell: ({ getValue }) => <span className="text-xs">{(getValue() as string | null) ?? "-"}</span> },
   ], [t]);
 
-  const passDisabled = inspecting || !scannedLabel || alreadyInspected;
+  const passDisabled = inspecting || (selectedBarcodes.size === 0 && (!scannedLabel || alreadyInspected));
 
   return (
     <div className="flex flex-col gap-4 h-full overflow-auto">
+      <Card padding="sm" className="border-primary/30">
+        <CardContent>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div>
+              <p className="text-sm font-semibold text-text">{t("quality.inspect.lotTargets", "통전합격 검사대상")} ({pending.length})</p>
+              <p className="text-xs text-text-muted">{t("quality.inspect.lotHelp", "이번 LOT의 FG를 선택한 뒤 한 번에 판정합니다. 각 FG 이력은 개별 저장됩니다.")}</p>
+            </div>
+            <div className="flex gap-1">
+              <Button variant="secondary" size="sm" onClick={() => setSelectedBarcodes(new Set(pending.slice(0, MAX_BATCH).map((label) => label.fgBarcode)))} disabled={pending.length === 0}>
+                {t("quality.inspect.selectAll", "전체 선택")}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedBarcodes(new Set())} disabled={selectedBarcodes.size === 0}>
+                {t("quality.inspect.clearSelection", "선택 해제")}
+              </Button>
+            </div>
+          </div>
+          <div className="max-h-36 overflow-auto grid grid-cols-1 xl:grid-cols-2 gap-1">
+            {pending.map((label) => (
+              <label key={label.fgBarcode} className="flex items-center gap-2 rounded px-2 py-1 hover:bg-primary/5 cursor-pointer">
+                <input type="checkbox" checked={selectedBarcodes.has(label.fgBarcode)} disabled={!selectedBarcodes.has(label.fgBarcode) && selectedBarcodes.size >= MAX_BATCH} onChange={(event) => setSelectedBarcodes((previous) => {
+                  const next = new Set(previous); event.target.checked ? next.add(label.fgBarcode) : next.delete(label.fgBarcode); return next;
+                })} />
+                <span className="font-mono text-xs">{label.fgBarcode}</span>
+              </label>
+            ))}
+          </div>
+          <p className="mt-2 text-xs font-semibold text-primary">{t("quality.inspect.selectedCount", { count: selectedBarcodes.size, defaultValue: "선택 {{count}}건" })}</p>
+        </CardContent>
+      </Card>
+
       {/* 바코드 스캔 입력 */}
       <Card padding="sm" className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
         <CardContent>
@@ -227,7 +285,7 @@ export default function VisualInspectPanel({ order }: Props) {
         <button
           onClick={handlePass}
           disabled={passDisabled}
-          title={inspecting ? t("common.saving") : !scannedLabel ? t("inspection.result.scanRequired") : t("quality.inspect.pass")}
+          title={inspecting ? t("common.saving") : selectedBarcodes.size === 0 && !scannedLabel ? t("inspection.result.scanRequired") : t("quality.inspect.pass")}
           className="flex-1 flex items-center justify-center gap-3 py-5 rounded-xl
             bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700
             text-white font-bold text-lg transition-colors disabled:opacity-50">
@@ -236,7 +294,7 @@ export default function VisualInspectPanel({ order }: Props) {
         <button
           onClick={() => setFailModalOpen(true)}
           disabled={passDisabled}
-          title={inspecting ? t("common.saving") : !scannedLabel ? t("inspection.result.scanRequired") : t("quality.inspect.fail")}
+          title={inspecting ? t("common.saving") : selectedBarcodes.size === 0 && !scannedLabel ? t("inspection.result.scanRequired") : t("quality.inspect.fail")}
           className="flex-1 flex items-center justify-center gap-3 py-5 rounded-xl
             bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700
             text-white font-bold text-lg transition-colors disabled:opacity-50">

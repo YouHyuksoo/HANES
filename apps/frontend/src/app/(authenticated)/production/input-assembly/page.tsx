@@ -11,6 +11,7 @@ import { judgeRestoredJobOrder } from "@/components/production/jobOrderRestore";
 import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
 import EquipMaterialMountPanel from "./components/EquipMaterialMountPanel";
 import SgScanPanel from "./components/SgScanPanel";
+import { useAssemblyScanSession, type AssemblySgLabel } from "./hooks/useAssemblyScanSession";
 import AssemblyActionBar from "./components/AssemblyActionBar";
 import WorkInstructionView from "../input-kiosk/components/WorkInstructionView";
 import EquipSelectModal from "../input-kiosk/components/EquipSelectModal";
@@ -33,15 +34,7 @@ interface AssemblyRequirements {
   components: AssemblyComponent[];
 }
 
-interface SgLabelInfo {
-  sgBarcode: string;
-  itemCode: string;
-  remainQty: number;
-  status: string;
-  orderNo?: string | null;
-  /** 라벨 종류 — BUNDLE(묶음)/SFG(회로) */
-  labelType?: string;
-}
+type SgLabelInfo = AssemblySgLabel;
 
 /** 화면에서 보관하는 작업지시 최소 정보 — 공용 모달(JobOrder)·스캔 응답을 공통으로 담는다. */
 interface JobOrderPick {
@@ -83,10 +76,13 @@ export default function InputAssemblyPage() {
   const [equipModalOpen, setEquipModalOpen] = useState(false);
 
   const [requirements, setRequirements] = useState<AssemblyRequirements | null>(null);
-  const [sgList, setSgList] = useState<SgLabelInfo[]>([]);
+  const { sgList, setSgList, continuous, setContinuous, ready: sgReady, applyConfirmed, refreshAfterFailure } =
+    useAssemblyScanSession(requirements?.components ?? []);
   const [issuedFg, setIssuedFg] = useState<string | null>(null);
   const [issuing, setIssuing] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const actionPending = useRef(false);
+  const contextLocked = issuing || confirming || !!issuedFg;
 
   const orderScanRef = useRef<HTMLInputElement>(null);
   const restoredEquipRef = useRef<string | null>(null);
@@ -287,17 +283,19 @@ export default function InputAssemblyPage() {
   };
 
   const addSg = useCallback((data: SgLabelInfo) => {
-    setSgList((prev) => [...prev, data]);
-  }, []);
+    if (actionPending.current) return;
+    setSgList((prev) => prev.some((label) => label.sgBarcode === data.sgBarcode) ? prev : [...prev, data]);
+  }, [setSgList]);
 
   const removeSg = useCallback((sgBarcode: string) => {
     setSgList((prev) => prev.filter((item) => item.sgBarcode !== sgBarcode));
   }, []);
 
   const canIssue =
-    !!selectedOrder && !!processCode && !!equipCode && sgList.length > 0 && !issuedFg;
+    !!selectedOrder && !!processCode && !!equipCode && sgReady && !issuedFg && !issuing && !confirming;
 
   const onIssue = useCallback(async () => {
+    if (actionPending.current || issuedFg || !sgReady) return;
     if (!selectedOrder) {
       toast.error(t("production.inputAssembly.requireOrder", "작업지시를 선택하세요."));
       return;
@@ -315,6 +313,7 @@ export default function InputAssemblyPage() {
       return;
     }
 
+    actionPending.current = true;
     setIssuing(true);
     try {
       const res = await api.post("/production/subprocess-kitting/issue-label", {
@@ -332,18 +331,21 @@ export default function InputAssemblyPage() {
         t("production.inputAssembly.issueFailed", "FG 라벨 발행에 실패했습니다.");
       toast.error(message);
     } finally {
+      actionPending.current = false;
       setIssuing(false);
     }
-  }, [equipCode, processCode, selectedOrder, sgList.length, t]);
+  }, [equipCode, issuedFg, processCode, selectedOrder, sgList.length, sgReady, t]);
 
   const onConfirmScan = useCallback(
     async (scanned: string) => {
+      if (actionPending.current || !issuedFg || !sgReady) return;
       if (issuedFg && scanned !== issuedFg) {
         toast.error(t("production.inputAssembly.confirmMismatch", "발행된 라벨과 일치하지 않습니다."));
         return;
       }
       if (!selectedOrder) return;
 
+      actionPending.current = true;
       setConfirming(true);
       try {
         const res = await api.post("/production/subprocess-kitting/confirm", {
@@ -355,7 +357,7 @@ export default function InputAssemblyPage() {
         });
         toast.success(t("production.inputAssembly.confirmSuccess", "조립이 확정되었습니다."));
         // FG 라벨 데이터는 항상 발행되며, 인쇄 여부는 백엔드 printFg(라우팅 ISSUE_LABEL_TYPE='FG')로 제어한다.
-        const confirmData = res.data?.data as { fgBarcode?: string; printFg?: boolean } | undefined;
+        const confirmData = res.data?.data as { fgBarcode?: string; printFg?: boolean; sgLabels?: SgLabelInfo[] } | undefined;
         if (confirmData?.printFg) {
           void fgPrinterRef.current?.printByFgBarcodes([
             {
@@ -366,18 +368,20 @@ export default function InputAssemblyPage() {
             },
           ]);
         }
-        setSgList([]);
+        applyConfirmed(confirmData?.sgLabels);
         setIssuedFg(null);
       } catch (error: unknown) {
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           t("production.inputAssembly.confirmFailed", "조립 확정에 실패했습니다.");
         toast.error(message);
+        await refreshAfterFailure();
       } finally {
+        actionPending.current = false;
         setConfirming(false);
       }
     },
-    [equipCode, issuedFg, processCode, selectedOrder, sgList, t],
+    [equipCode, issuedFg, processCode, selectedOrder, sgList, sgReady, applyConfirmed, refreshAfterFailure, t],
   );
 
   const onResetIssued = useCallback(() => {
@@ -401,6 +405,7 @@ export default function InputAssemblyPage() {
           variant="secondary"
           size="sm"
           onClick={resetAll}
+          disabled={contextLocked}
           leftIcon={<RefreshCw className="w-4 h-4" />}
         >
           {t("common.reset")}
@@ -419,6 +424,7 @@ export default function InputAssemblyPage() {
               <button
                 type="button"
                 onClick={() => setEquipModalOpen(true)}
+                disabled={contextLocked}
                 className={`flex h-11 w-full items-center gap-2 rounded-lg border px-3 text-left transition-colors ${
                   equipCode
                     ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
@@ -459,7 +465,7 @@ export default function InputAssemblyPage() {
                       {selectedOrder.itemName ? ` · ${selectedOrder.itemName}` : ""}
                     </span>
                   </div>
-                  <Button variant="secondary" size="sm" onClick={clearOrder}>
+                  <Button variant="secondary" size="sm" onClick={clearOrder} disabled={contextLocked}>
                     {t("common.change", "변경")}
                   </Button>
                 </div>
@@ -516,11 +522,17 @@ export default function InputAssemblyPage() {
           />
         </div>
         <SgScanPanel
+          key={`${equipCode}:${selectedOrder?.orderNo ?? ""}`}
           orderNo={selectedOrder?.orderNo}
           sgList={sgList}
           components={requirements?.components ?? []}
           onAdd={addSg}
           onRemove={removeSg}
+          continuous={continuous}
+          onContinuousChange={setContinuous}
+          onReset={() => setSgList([])}
+          disabled={issuing || confirming}
+          ready={sgReady}
         />
       </div>
 
@@ -532,6 +544,7 @@ export default function InputAssemblyPage() {
           issuedFg={issuedFg}
           onIssue={onIssue}
           confirming={confirming}
+          canConfirm={sgReady}
           onConfirmScan={onConfirmScan}
           onResetIssued={onResetIssued}
         />

@@ -268,6 +268,7 @@
     "monitoring.qualityBoard": "质量看板",
     "monitoring.invBoard": "库存看板",
     "monitoring.jobBoard": "工单看板",
+    "monitoring.spcBoard": "SPC管理图看板",
     "master": "基础数据",
     "master.part": "零件管理",
     "master.part.iqc.header": "IQC",
@@ -370,7 +371,7 @@
     "material": "物料收发管理",
     "materialMgmt": "物料管理",
     "productMgmt": "产品收发管理",
-    "productMgmt.receive": "产品入库管理",
+    "productMgmt.receive": "产品入库(工序库存>仓库库存)",
     "productMgmt.receiptCancel": "产品入库取消",
     "productMgmt.issue": "产品出库管理",
     "productMgmt.issueCancel": "产品出库取消",
@@ -431,8 +432,9 @@
     "production.wipStock": "半成品/成品库存查询",
     "production.wipSemiStock": "半成品在制查询",
     "production.fgStock": "成品在制查询",
-    "production.wipMaterialStock": "工序物料库存",
+    "production.wipMaterialStock": "原材料在制查询",
     "production.wipMaterialTrans": "工序物料收发",
+    "production.productTrans": "半成品/成品收发查询",
     "production.repair": "修理管理",
     "inspection": "检验管理",
     "inspection.integrated": "综合检查",
@@ -3347,7 +3349,7 @@
   },
   "productMgmt": {
     "receive": {
-      "title": "产品入库管理",
+      "title": "产品入库(工序库存>仓库库存)",
       "subtitle": "处理成品入库。",
       "tabWip": "半成品(WIP)",
       "tabFg": "成品(FG)",
@@ -3756,11 +3758,15 @@
       "printError": "打印 FG 标签时发生错误。"
     },
     "inputAssembly": {
+      "continuous": "保留扫描（连续）",
+      "resetScans": "清空扫描",
+      "continuousHelp": "确认后保留有余量的标签，仅需重新扫描已耗尽的标签。",
+      "incompleteSet": "半成品数量不足以完成一次组装，请扫描所需标签。",
       "title": "组装实绩输入",
       "description": "扫描SFG标签进行成品组装。",
       "orderSection": "工单（成品）",
       "bomSection": "组装需求",
-      "scanSection": "半成品扫描（成套·重置）",
+      "scanSection": "半成品扫描",
       "scanPlaceholder": "扫描或输入SFG条码后按Enter",
       "scannedList": "已扫描SFG标签",
       "execute": "执行组装",
@@ -3887,7 +3893,8 @@
       "warehouseConfirm": "仓库确认",
       "receivedBy": "领取人",
       "noRawMaterial": "无原材料",
-      "exportFileName": "工单"
+      "exportFileName": "工单",
+      "equipUnassigned": "未分配"
     },
     "result": {
       "title": "生产实绩查询",
@@ -3959,7 +3966,8 @@
       "searchPlaceholder": "搜索指示编号、品名...",
       "planDateFrom": "计划日(开始)",
       "planDateTo": "计划日(结束)",
-      "shiftFilter": "班次"
+      "shiftFilter": "班次",
+      "equipUnassigned": "未开始"
     },
     "inputManual": {
       "selectJobOrder": "选择作业指示",
@@ -4188,8 +4196,8 @@
       "updatedAt": "更新日期"
     },
     "wipMaterialStock": {
-      "title": "工序物料库存",
-      "description": "按设备查询工序物料库存(WIP_MAT_STOCKS)",
+      "title": "原材料在制查询",
+      "description": "按设备查询原材料在制(WIP_MAT_STOCKS)",
       "equipCount": "设备数",
       "itemCount": "品目数",
       "totalQty": "总数量",
@@ -4219,6 +4227,42 @@
       "typeWipInCancel": "工序入库取消",
       "typeProdConsume": "生产消耗",
       "typeProdConsumeCancel": "生产消耗取消"
+    },
+    "productTrans": {
+      "title": "半成品/成品收发查询",
+      "description": "查询半成品/成品(PRODUCT_TRANSACTIONS)出入库交易记录",
+      "transNo": "交易编号",
+      "transDate": "交易时间",
+      "transType": "交易类型",
+      "itemCode": "品目代码",
+      "itemName": "品目名称",
+      "itemType": "品目类型",
+      "qualityStatus": "品质状态",
+      "qty": "数量",
+      "fromWarehouse": "出发仓库",
+      "toWarehouse": "到达仓库",
+      "orderNo": "作业指示编号",
+      "processCode": "工序代码",
+      "refType": "参照类型",
+      "refId": "参照编号",
+      "worker": "作业员",
+      "remark": "备注",
+      "warehouse": "仓库",
+      "searchPlaceholder": "搜索品目代码、品目名称、作业指示编号...",
+      "emptyMessage": "未查询到收发记录。",
+      "itemTypeSemi": "半成品",
+      "itemTypeFinished": "成品",
+      "qualityGood": "良品",
+      "qualityDefect": "不良",
+      "typeWipIn": "半成品入库",
+      "typeWipInCancel": "半成品入库取消",
+      "typeWipOut": "半成品出库",
+      "typeWipOutCancel": "半成品出库取消",
+      "typeFgIn": "成品入库",
+      "typeFgInCancel": "成品入库取消",
+      "typeFgOut": "成品出库",
+      "typeFgOutCancel": "成品出库取消",
+      "typeDefectIn": "不良入库"
     },
     "repair": {
       "title": "修理管理",
@@ -4354,6 +4398,7 @@
       "pendingList": "待检条码",
       "circuitLabel": "电路标签",
       "scanCircuitLabel": "扫描电路标签",
+      "circuitSourceHelp": "请扫描现场使用的电路标签条码，已使用的标签将按重复数据拒绝。",
       "circuitRequired": "合格需先扫描电路标签。",
       "consumablesTitle": "消耗性设备部件",
       "consumableScanPlaceholder": "请扫描耗材条码(UID)",
@@ -4658,6 +4703,13 @@
       "scanPlaceholder": "请扫描FG条码",
       "barcodeNotFound": "找不到条码",
       "wrongOrder": "该标签属于其他工单 ({{orderNo}})",
+      "continuityRequired": "导通检查合格后方可进行外观检查。",
+      "lotTargets": "导通合格待检对象",
+      "lotHelp": "选择本LOT的FG后一次判定，每个FG仍分别保存追溯记录。",
+      "selectAll": "全选",
+      "clearSelection": "取消选择",
+      "selectedCount": "已选 {{count}} 条",
+      "batchLimit": "每次最多可选择 {{count}} 条。",
       "defectCode": "不良代码",
       "inspectType": "检验类型"
     },
@@ -5124,7 +5176,16 @@
         "cpkTrend": "Cpk 趋势",
         "cpkTrendHint": "最近 {{n}} 个子组滑动窗口",
         "cpkGood": "良好",
-        "cpkMin": "最低"
+        "cpkMin": "最低",
+        "chartUpload": "管理项目上传",
+        "dataUpload": "测量数据上传",
+        "chartUploadTitle": "管理项目 Excel 上传",
+        "dataUploadTitle": "测量数据 Excel 上传",
+        "downloadTemplate": "下载模板",
+        "uploadWithCount": "上传",
+        "analyzingFile": "文件分析中...",
+        "xlsxOnlyHint": "仅支持 .xlsx 文件。品目代码/工序代码必须已在基础信息中登记。",
+        "dataXlsxHint": "仅支持 .xlsx 文件。管理图编号必须已存在，测量值数量必须与管理图的子组大小一致。"
       }
     },
     "controlPlan": {

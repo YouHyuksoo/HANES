@@ -21,6 +21,7 @@ import { Repository, QueryRunner, EntityManager } from 'typeorm';
 import { WipMatStock } from '../../../entities/wip-mat-stock.entity';
 import { WipMatTransaction } from '../../../entities/wip-mat-transaction.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { parseCsvList } from '../../../common/utils/csv-list.util';
 
 /** 공정재고 가산 파라미터 */
 export interface AddWipStockParams {
@@ -351,7 +352,10 @@ export class WipMatStockService {
 
   /**
    * 공정재고 조회 — EQUIP_MASTERS 조인으로 설비명 포함.
-   * - equipCode 미지정 시 전체(설비별). search는 품목/LOT/설비명 부분일치.
+   * - equipCode 미지정 시 전체(설비별). 쉼표로 여러 설비를 한 번에 줄 수 있다(복수선택 필터).
+   * - search는 품목/LOT/설비명 부분일치.
+   * - 잔량 있는 설비+품목 그룹만 낸다(HAVING SUM(QTY)>0) — 소진된 그룹(105건 중 89건)까지 다 내려주면
+   *   조건 없는 전량 조회가 되어 화면이 무의미하게 커진다.
    */
   async findByEquip(
     equipCode: string | undefined,
@@ -372,16 +376,22 @@ export class WipMatStockService {
       .addSelect('SUM(s.QTY)', 'qty')
       .addSelect('SUM(s.AVAILABLE_QTY)', 'availableQty')
       .addSelect('SUM(s.RESERVED_QTY)', 'reservedQty')
-      .addSelect('COUNT(DISTINCT s.MAT_UID)', 'lotCount')
+      // 소진된(QTY=0) LOT은 세지 않는다 — 우측 상세(findLotsByEquipItem)도 QTY>0만 보여주므로
+      // 여기서 전체 LOT을 세면(예: 2건 중 1건 소진) "LOT 수 2"인데 상세엔 1건만 뜨는 불일치가 생긴다.
+      .addSelect("COUNT(DISTINCT CASE WHEN s.QTY > 0 THEN s.MAT_UID END)", 'lotCount')
       .groupBy('s.EQUIP_CODE')
       .addGroupBy('e.EQUIP_NAME')
       .addGroupBy('s.ITEM_CODE')
       .addGroupBy('im.ITEM_NAME')
+      .having('SUM(s.QTY) > 0')
       .orderBy('s.EQUIP_CODE', 'ASC')
       .addOrderBy('s.ITEM_CODE', 'ASC');
 
-    if (equipCode) {
-      qb.andWhere('s.EQUIP_CODE = :equipCode', { equipCode });
+    const equipCodes = parseCsvList(equipCode);
+    if (equipCodes.length === 1) {
+      qb.andWhere('s.EQUIP_CODE = :equipCode', { equipCode: equipCodes[0] });
+    } else if (equipCodes.length > 1) {
+      qb.andWhere('s.EQUIP_CODE IN (:...equipCodes)', { equipCodes });
     }
     if (search) {
       qb.andWhere(
@@ -415,7 +425,7 @@ export class WipMatStockService {
     itemCode: string,
     company: string,
     plant: string,
-  ): Promise<{ matUid: string; qty: number; availableQty: number; reservedQty: number }[]> {
+  ): Promise<{ matUid: string; qty: number; availableQty: number; reservedQty: number; recvDate: Date | null }[]> {
     const raw = await this.wipStockRepo
       .createQueryBuilder('s')
       .where('s.COMPANY = :company', { company })
@@ -427,14 +437,17 @@ export class WipMatStockService {
       .addSelect('s.QTY', 'qty')
       .addSelect('s.AVAILABLE_QTY', 'availableQty')
       .addSelect('s.RESERVED_QTY', 'reservedQty')
+      // 이 LOT이 공정재고로 들어온(WIP_MAT_STOCKS 행 생성) 시점 — 원자재 입하일이 아니라 "공정 입고일"
+      .addSelect('s.CREATED_AT', 'recvDate')
       .orderBy('s.MAT_UID', 'ASC')
-      .getRawMany<{ matUid: string; qty: number; availableQty: number; reservedQty: number }>();
+      .getRawMany<{ matUid: string; qty: number; availableQty: number; reservedQty: number; recvDate: Date | string | null }>();
 
     return raw.map((r) => ({
       matUid: r.matUid,
       qty: Number(r.qty ?? 0),
       availableQty: Number(r.availableQty ?? 0),
       reservedQty: Number(r.reservedQty ?? 0),
+      recvDate: r.recvDate ? new Date(r.recvDate) : null,
     }));
   }
 

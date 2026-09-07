@@ -22,7 +22,7 @@ export class HvSpcController {
   constructor(private readonly hvSpcService: HvSpcService) {}
 
   private toQuery(dto: HvSpcQueryDto) {
-    return { days: dto.days ?? 30, kLimit: dto.k ?? 0 };
+    return { days: dto.days ?? 30, kLimit: dto.k ?? 0, equipCode: dto.equipCode };
   }
 
   @Get('targets')

@@ -118,6 +118,36 @@ export class ContinuityInspectController {
     return ResponseUtil.success(data, '외관검사가 등록되었습니다.');
   }
 
+  @Get('visual-pending/:orderNo')
+  @ApiOperation({ summary: '작업지시별 통전합격·육안검사 대기 FG 목록' })
+  async findVisualPending(
+    @Param('orderNo') orderNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.continuityInspectService.findVisualPendingLabels(orderNo, company, plant);
+    return ResponseUtil.success(data);
+  }
+
+  @Post('visual-inspect-batch')
+  @ApiOperation({ summary: '선택한 FG 묶음 육안검사 일괄 판정' })
+  async visualInspectBatch(
+    @Body() body: {
+      orderNo: string;
+      fgBarcodes: string[];
+      passYn: 'Y' | 'N';
+      errorCode?: string | null;
+      errorDetail?: string | null;
+      inspectData?: string | null;
+      inspectorId?: string | null;
+    },
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.continuityInspectService.visualInspectBatch(body, company, plant);
+    return ResponseUtil.success(data, `${data.length}건의 외관검사가 등록되었습니다.`);
+  }
+
   @Get('fg-labels')
   @ApiOperation({ summary: 'Search FG labels' })
   @ApiQuery({ name: 'search', required: false, description: '바코드/품목코드/지시번호 검색' })

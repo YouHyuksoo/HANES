@@ -5,7 +5,7 @@
  * @description 수리관리 페이지 - 수리등록/이력조회/수리실 재고 관리
  *
  * 초보자 가이드:
- * 1. 상단: 통계 카드 (입고/수리중/완료)
+ * 1. 상단: 새로고침 및 수리등록
  * 2. 필터: 수리일자, 상태, 발생공정, 수리자, 검색어
  * 3. DataGrid: 수리 목록 (행 클릭 → 수정 모달)
  * 4. API: GET /production/repairs (목록), POST/PUT/DELETE (CRUD)
@@ -16,16 +16,12 @@ import {
   Search,
   RefreshCw,
   Plus,
-  Wrench,
-  PackageCheck,
-  Clock,
 } from "lucide-react";
 import {
   Card,
   CardContent,
   Button,
   Input,
-  StatCard,
   ConfirmModal,
 } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -80,14 +76,6 @@ export default function RepairPage() {
     fetchData();
   }, [fetchData]);
 
-  /** 통계 */
-  const stats = useMemo(() => {
-    const received = data.filter((d) => d.status === "RECEIVED").length;
-    const inRepair = data.filter((d) => d.status === "IN_REPAIR").length;
-    const completed = data.filter((d) => d.status === "COMPLETED").length;
-    return { received, inRepair, completed };
-  }, [data]);
-
   /** 행 클릭 → 상세 조회 → 수정 모달 */
   const handleRowClick = useCallback(async (row: RepairItem) => {
     try {
@@ -133,7 +121,7 @@ export default function RepairPage() {
   );
 
   return (
-    <div className="flex flex-col h-full gap-4 p-4">
+    <div className="flex flex-col h-full min-h-0 gap-4 p-4">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
@@ -152,31 +140,9 @@ export default function RepairPage() {
         </div>
       </div>
 
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-3 gap-4">
-        <StatCard
-          label={t("production.repair.totalReceived")}
-          value={stats.received}
-          icon={PackageCheck}
-          color="blue"
-        />
-        <StatCard
-          label={t("production.repair.totalInRepair")}
-          value={stats.inRepair}
-          icon={Wrench}
-          color="orange"
-        />
-        <StatCard
-          label={t("production.repair.totalCompleted")}
-          value={stats.completed}
-          icon={Clock}
-          color="green"
-        />
-      </div>
-
       {/* 필터 + DataGrid */}
-      <Card className="flex-1 flex flex-col">
-        <CardContent className="flex-1 flex flex-col p-4">
+      <Card className="flex-1 flex flex-col min-h-0">
+        <CardContent className="flex-1 flex flex-col min-h-0 p-4">
           <DataGrid
             data={data}
             columns={columns}
@@ -185,7 +151,7 @@ export default function RepairPage() {
             enableColumnFilter
             enableExport
             exportFileName="repair-management"
-            maxHeight="calc(100vh - 340px)"
+            maxHeight="calc(100vh - 240px)"
             toolbarLeft={
               <div className="flex items-center gap-2 flex-wrap">
                 <Input
@@ -196,7 +162,7 @@ export default function RepairPage() {
                   className="w-64"
                 />
                 <ComCodeSelect
-                  groupCode="REPAIR_RESULT"
+                  groupCode="REPAIR_STATUS"
                   value={statusFilter}
                   onChange={setStatusFilter}
                   labelPrefix={t("production.repair.status")}

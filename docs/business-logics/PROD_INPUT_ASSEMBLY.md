@@ -1,140 +1,74 @@
 ---
 sources:
-  - apps/frontend/src/app/(authenticated)/production/input-assembly/components/EquipMaterialMountPanel.tsx
+  - apps/frontend/src/app/(authenticated)/production/input-assembly/page.tsx
   - apps/frontend/src/app/(authenticated)/production/input-assembly/components/SgScanPanel.tsx
-verifiedCommit: 8a7e96ea
+  - apps/frontend/src/app/(authenticated)/production/input-assembly/components/AssemblyActionBar.tsx
+  - apps/frontend/src/app/(authenticated)/production/input-assembly/hooks/useAssemblyScanSession.ts
+  - apps/backend/src/modules/production/services/subprocess-kitting.service.ts
+  - packages/shared/src/utils/assembly-sg-rules.ts
+verifiedCommit: e2b1fa8f
 ---
 
-# 실적입력(조립) — 비즈니스 로직 & 데이터 흐름 분석
+# 실적입력(조립) — 업무 흐름과 변경 영향
 
-> **Menu Code:** `PROD_INPUT_ASSEMBLY`
-> **Path:** `/production/input-assembly`
-> **Label:** `menu.production.inputAssembly`
-> **분석 기준 커밋:** `8a7e96ea`
-> **분석 일자:** `2026-07-04`
+- 메뉴: `PROD_INPUT_ASSEMBLY`, `/production/input-assembly`
+- 대조: 2026-09-07, 위 HEAD 위의 미커밋 작업본 포함.
 
-## 1. 화면 개요
+## 작업 흐름
 
-반제품 SFG 라벨을 스캔하여 완제품(FG)을 조립하는 현장 실적 입력 화면. 설비 선택 → 작업지시 선택 → SFG 스캔 → FG 발행 → 실물 스캔 확정 순서로 진행된다.
+설비 선택 → 설비의 현재 작업지시 복원 또는 완제품 작업지시 선택 → 원자재 공정재고 준비 → 반제품 SG 세트 스캔 → 조립 실행(FG 발행) → 실물 FG 스캔으로 확정 → 다음 제품 조립.
 
-## 2. 화면 구성
+사용자가 확인한 김천 마그나 검사 순서는 **조립 → 통전 → 육안 → 포장**이다. 조립 확정은 검사 합격을 의미하지 않는다. FG는 조립 후에도 `ISSUED`이며, 통전 합격 정보와 육안 합격 상태가 포장 조건이다.
 
-```mermaid
-%%{init: {'themeVariables': {'fontSize': '11px'}}}%%
-flowchart TD
-    subgraph Header["상단 고정 바"]
-        H1["설비 선택 (→공정 도출)"] --- H2["작업지시 검색/입력 (FINISHED)"]
-    end
-    subgraph Main["본문 3영역"]
-        M1["좌측: EquipMaterialMountPanel<br/>설비 자재 장착"] --- M2["중앙: WorkInstructionView<br/>작업지도서"] --- M3["우측: SgScanPanel<br/>SFG 스캔 목록"]
-    end
-    subgraph Footer["하단 액션 바"]
-        F1["FG 발행 → 실물 스캔 → 확정"]
-    end
-```
+## 화면 상태와 스캔 유지
 
-| 영역 | 컴포넌트 | 역할 |
+- 설비는 localStorage에서 복원한다. SG 세트는 현재 화면 세션에만 보관한다.
+- `useAssemblyScanSession`이 SG 목록과 기본값 ON인 지속 옵션을 관리한다.
+- 같은 품목의 여러 SG 잔량을 합산하여 완제품 1개분 BOM 수량이 준비됐는지 판단한다. 중복 라벨은 추가하지 않는다.
+- 서버 확정 응답의 `sgLabels`로 잔량·상태를 갱신한다. 클라이언트에서 임의로 1씩 차감하지 않는다.
+- 지속 ON: 잔량이 남고 상태가 `IN_STOCK`/`MOUNTED`인 라벨만 유지한다. 소진 라벨은 제거한다. 부족한 세트는 보충 스캔 전 다음 조립을 막는다.
+- 지속 OFF: 확정마다 목록을 비운다. 수동 초기화 및 설비·작업지시 변경도 목록을 비운다.
+- 확정 실패 시 실제 SG 조회 API로 잔량을 다시 읽는다. 구버전 확정 응답에 잔량이 없으면 목록을 비워 재스캔하게 한다.
+- 발행 중, 확정 중, 발행된 FG가 있을 때 설비·작업지시 변경을 막는다. 확정 전 SG 보충은 가능하다.
+- 요청 중 동기 ref 가드로 반복 발행·확정을 막고, 서버는 FG 행 잠금과 기존 실적·계보 조회로 중복 확정을 차단한다.
+
+## API와 책임
+
+| 동작 | API | 처리 |
 | --- | --- | --- |
-| 상단 | 설비선택 / JobOrder | 공정도출 + FINISHED 작업지시 선택 |
-| 좌측 | EquipMaterialMountPanel | 설비 자재 장착 (RAW_MATERIAL) |
-| 중앙 | WorkInstructionView | 작업지도서 |
-| 우측 | SgScanPanel | 이전 공정 SFG 스캔 + BOM 검증 |
-| 하단 | AssemblyActionBar | FG 발행 → 실물 스캔 확정 |
+| 요구량 조회 | `GET /production/subprocess-kitting/assembly-requirements/{orderNo}` | BOM 반제품/원자재 요구량 |
+| SG 스캔·재조회 | `GET /production/subprocess-kitting/sg-label/{barcode}` | 실제 잔량·상태·품목 |
+| FG 발행 | `POST /production/subprocess-kitting/issue-label` | FG 채번 및 `ISSUED` 라벨 저장 |
+| 확정 | `POST /production/subprocess-kitting/confirm` | 실적·SG·원자재·계보·제품 WIP를 한 트랜잭션에서 반영 |
 
-## 3. 상태 관리
+`confirmAssembly`는 tenant와 작업지시 상태, FG 소속 및 상태, 설비, 유효 BOM, SG 품목·잔량을 검증한다. SG 잠금은 바코드 정렬 순서로 획득하고 실제 소비 순서는 사용자가 스캔한 순서를 따른다. Oracle의 `FETCH FIRST + FOR UPDATE` 제약 때문에 FG/SG는 tenant 조건을 붙인 raw `SELECT ... FOR UPDATE` 후 엔티티를 읽는다.
 
-| 상태 | 용도 | 초기값 |
-| --- | --- | --- |
-| `selectedOrder` | 선택된 작업지시 (itemType=FINISHED) | `null` |
-| `processCode/equipCode` | 선택 설비 → 공정 | `""` |
-| `sgList[]` | 스캔된 SFG 목록 | `[]` |
-| `issuedFg` | 발행된 FG 바코드 | `null` |
-| `issuing/confirming` | API 호출 플래그 | `false` |
+공유 `planAssemblySgConsumption`이 동일 품목 BOM 요구량을 합산하고 필요한 양만 SG별로 배분한다. 프론트 준비 판정과 서버 소비량 계산이 이 규칙을 같이 사용한다. 원자재는 라우팅 ISSUE 자재 배정 필터 적용 후 설비 공정재고에서 BOM 소요량을 차감하며 부족하면 전체 확정을 롤백한다.
 
-## 4. API 호출 흐름
+## DB 영향
 
-| 시점 | API | 용도 |
-| --- | --- | --- |
-| 진입 | `GET /equipment/equips?limit=500` | 설비 목록 |
-| 설비 선택 | `GET /equipment/equips/{code}` | 설비 현재 작업지시 복원 |
-| | `PATCH /equipment/equips/{code}/job-order` | 설비에 작업지시 할당 |
-| 작업지시 검색 | `GET /production/job-orders?search=&statuses=WAITING,RUNNING&itemType=FINISHED&assignableEquipCode=` | 작업지시 검색 |
-| 작업지시 선택 | `GET /production/subprocess-kitting/assembly-requirements/{orderNo}` | BOM 요구사항 |
-| SFG 스캔 | `GET /sg-label/{barcode}` | SFG 정보 조회 |
-| FG 발행 | `POST /production/subprocess-kitting/issue-label` | FG 라벨 발행 (SEQ_FG_LABEL) |
-| 확정 | `POST /production/subprocess-kitting/confirm` | 조립 확정 (단일 TX) |
+| 테이블 | 발행·확정 효과 |
+| --- | --- |
+| `FG_LABELS` | 발행 INSERT. 조립 확정 후 `ISSUED` 유지 |
+| `SG_LABELS` | 실제 BOM 소비량 차감, 잔량 있으면 `MOUNTED`, 소진 시 `CONSUMED` |
+| `PRODUCT_GENEALOGY` | FG → SG 및 실제 소비 원자재 LOT, 실제 소비수량 기록 |
+| `PROD_RESULTS` | FG당 양품 1 실적 |
+| `JOB_ORDERS` | 실적 합계로 수량·상태 동기화 |
+| `WIP_MAT_STOCKS`, `WIP_MAT_TRANSACTIONS` | 설비 원자재 차감 및 수불 기록 |
+| `PRODUCT_STOCKS`, `PRODUCT_TRANSACTIONS` | FG_WIP 양품 1 적재 및 수불 기록 |
 
-```mermaid
-%%{init: {'sequence': {'actorFontSize': 10, 'noteFontSize': 10, 'messageFontSize': 10}}}%%
-sequenceDiagram
-    actor U as 작업자
-    participant F as 프론트
-    participant B as 백엔드
-    participant D as Oracle DB
+발행과 확정은 별도 요청이다. 확정 실패 시 이미 발행한 FG는 재시도 대상으로 남는다. 출력은 `printFg`와 기존 Print Agent 흐름을 따른다.
 
-    Note over U,D: SFG 스캔
-    U->>F: SFG 바코드 스캔
-    F->>B: GET /sg-label/{barcode}
-    B-->>F: {remainQty, status, itemCode}
+## 변경 영향 지도
 
-    Note over U,D: FG 발행
-    U->>F: "FG 발행" 버튼
-    F->>B: POST /production/subprocess-kitting/issue-label
-    B->>D: SEQ_FG_LABEL.NEXTVAL + FG_LABELS INSERT
-    D-->>B: OK
-    B-->>F: {fgBarcode}
+| 변경 종류 | 확인할 위치 |
+| --- | --- |
+| SG 요구량·소비 규칙 | shared `assembly-sg-rules.ts`, backend `confirmAssembly`/`getAssemblyRequirements`, 두 focused spec |
+| 지속 옵션·잔량 표시 | `useAssemblyScanSession`, `SgScanPanel`, page 확정 응답 처리, locales 4개 |
+| FG 발행·스캔 가드 | page, `AssemblyActionBar`, backend `issueLabel`/`confirmAssembly` |
+| 자재 장착 안내 | `EquipMaterialMountPanel`, `equip-material.service.ts` |
+| 검사 순서 | `continuity-inspect.service.ts`, 마그나 라우팅 migration, 포장 `box.service.ts` |
 
-    Note over U,D: 실물 스캔 확정
-    U->>F: 실물 FG 스캔
-    F->>B: POST /production/subprocess-kitting/confirm
-    B->>D: SG_LABELS 소비 + FG_LABELS 승격
-    B->>D: PROD_RESULTS INSERT + PRODUCT_GENEALOGY
-    B->>D: PRODUCT_STOCKS +1 (FG_WIP)
-    B->>D: WIP_MAT_STOCKS 차감
-    D-->>B: COMMIT
-    B-->>F: {fgBarcode, printFg}
-    opt printFg==true
-        F->>F: FgLabelPrintHost → Print Agent 출력
-    end
-```
+## 검증 범위
 
-## 5. 백엔드 처리
-
-**공유:** `subprocess-kitting.service.ts` (PROD_KITTING과 동일 서비스)
-
-- `issueLabel()` → `issueSgLabel()` 대칭 (FG_LABELS INSERT, status=ISSUED)
-- `confirm()` → `confirmSubKit()` 대칭 (FG 승격/재고적재)
-
-## 6. 처리 규칙
-
-- `itemType=FINISHED` 작업지시만 선택 가능
-- SFG → FG 승격 시 BOM 기준 자재 차감
-- `printFg` 응답 플래그로 FG 라벨 출력 여부 제어 (라우팅 `ISSUE_LABEL_TYPE`)
-- 설비 미선택 시 자재 차감 스킵
-
-## 7. DB 테이블 영향
-
-| 테이블 | 변경 | 설명 |
-| --- | --- | --- |
-| `FG_LABELS` | INSERT (발행) / UPDATE (승격) | FG 라벨 관리 |
-| `SG_LABELS` | UPDATE (소비) | 입력 SFG 소진 |
-| `PROD_RESULTS` | INSERT | 실적 기록 |
-| `PRODUCT_GENEALOGY` | INSERT | FG→SFG 계보 |
-| `PRODUCT_STOCKS` | INSERT/UPSERT | FG_WIP 재고 적재 |
-| `WIP_MAT_STOCKS` | 차감 | 설비 자재 차감 |
-| `JOB_ORDERS` | UPDATE | WAITING→RUNNING (최초 시) |
-
-## 8. 상태 전이
-
-```
-SG_LABELS: IN_STOCK → MOUNTED/CONSUMED
-FG_LABELS: ISSUED → IN_STOCK
-JOB_ORDERS: WAITING → RUNNING → DONE
-```
-
-## 9. 비고
-
-- `alert()/confirm()/prompt()` 사용 없음
-- 설비 선택은 localStorage에 저장 (재진입 시 복원)
-- input-kiosk와 설비/작업지시/자재 장착 컴포넌트 재사용
-- FG 라벨 출력은 Print Agent로 별도 모듈 처리
+2026-09-07 실제 로그인 브라우저에서 6 SG 스캔 전후 실행 버튼, 지속 옵션 전환, 초기화를 확인했다. 실제 JSHANES 서비스 호출에서는 한 트랜잭션 안에 시험 원자재 수량을 준비해 연속 2건 확정 및 SG 10→9→8, 중복 확정·SG 누락 차단을 확인하고 롤백했다. 현재 현장 설비 원자재 가용재고는 0이므로 실제 생산 커밋 또는 브라우저 연속 생산 완료를 주장하지 않는다.

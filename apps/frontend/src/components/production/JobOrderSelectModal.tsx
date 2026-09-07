@@ -318,7 +318,23 @@ export default function JobOrderSelectModal({
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={t('production.inputManual.selectJobOrder')} size="2xl">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={t('production.inputManual.selectJobOrder')}
+      size="2xl"
+      footer={
+        <>
+          <Button size="sm" variant="secondary" onClick={handleClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button size="sm" onClick={handleConfirm} disabled={!selectedJobOrder}>
+            <Check className="w-4 h-4 mr-1" />
+            {t('common.confirm')}
+          </Button>
+        </>
+      }
+    >
       <div className="space-y-3">
         {/* 검색 + 필터 토글 */}
         <div className="flex items-center gap-3">
@@ -396,16 +412,6 @@ export default function JobOrderSelectModal({
             </div>
           </div>
         )}
-
-        <div className="flex justify-end gap-2 pt-2 border-t border-border">
-          <Button size="sm" variant="secondary" onClick={handleClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button size="sm" onClick={handleConfirm} disabled={!selectedJobOrder}>
-            <Check className="w-4 h-4 mr-1" />
-            {t('common.confirm')}
-          </Button>
-        </div>
       </div>
     </Modal>
   );

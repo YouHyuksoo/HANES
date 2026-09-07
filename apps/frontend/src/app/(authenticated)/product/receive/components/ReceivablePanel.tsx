@@ -37,12 +37,14 @@ interface BoxStockRow {
 
 export default function ReceivablePanel({ onReceived }: ReceivablePanelProps) {
   const { t } = useTranslation();
-  const { options: whOptions } = useWarehouseOptions("FG");
+  const { options, defaultCode } = useWarehouseOptions("FG");
+  // 서버의 FG 입고는 기본창고로 처리되므로 실제 입고 가능한 창고만 표시한다.
+  const whOptions = useMemo(() => options.filter((option) => option.value === defaultCode), [options, defaultCode]);
+  const warehouseId = defaultCode;
 
   const [rows, setRows] = useState<BoxStockRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [boxNo, setBoxNo] = useState("");
-  const [warehouseId, setWarehouseId] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -167,7 +169,8 @@ export default function ReceivablePanel({ onReceived }: ReceivablePanelProps) {
           label={t("productMgmt.receive.modal.warehouseId")}
           options={whOptions}
           value={warehouseId}
-          onChange={setWarehouseId}
+          onChange={() => {}}
+          disabled
           fullWidth
         />
 

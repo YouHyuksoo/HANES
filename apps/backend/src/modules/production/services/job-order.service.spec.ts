@@ -260,28 +260,62 @@ describe('JobOrderService', () => {
       expect(result.page).toBe(1);
     });
 
-    it('filters job orders by production result equipment code', async () => {
-      // Arrange
-      const mockQb = {
-        leftJoinAndSelect: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        addOrderBy: jest.fn().mockReturnThis(),
-        skip: jest.fn().mockReturnThis(),
-        take: jest.fn().mockReturnThis(),
-        getCount: jest.fn().mockResolvedValue(0),
-        getMany: jest.fn().mockResolvedValue([]),
-      };
+    const makeFindAllQb = () => ({
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getCount: jest.fn().mockResolvedValue(0),
+      getMany: jest.fn().mockResolvedValue([]),
+    });
+
+    it('filters job orders by a single production result equipment code (IN clause, still tenant-scoped)', async () => {
+      const mockQb = makeFindAllQb();
       mockJobOrderRepo.createQueryBuilder.mockReturnValue(mockQb as any);
 
-      // Act
       await target.findAll({ page: 1, limit: 10, equipCode: 'EQ-CUT-01' } as any, '40', '1000');
 
-      // Assert
       expect(mockQb.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('pr.EQUIP_CODE = :equipCode'),
-        expect.objectContaining({ equipCode: 'EQ-CUT-01' }),
+        expect.stringContaining('pr.EQUIP_CODE IN (:...equipCodes)'),
+        expect.objectContaining({ equipCodes: ['EQ-CUT-01'], equipTenantCompany: '40', equipTenantPlant: '1000' }),
       );
+    });
+
+    it('filters job orders by multiple equipment codes sent as a comma-separated list', async () => {
+      const mockQb = makeFindAllQb();
+      mockJobOrderRepo.createQueryBuilder.mockReturnValue(mockQb as any);
+
+      await target.findAll({ page: 1, limit: 10, equipCode: 'EQ-CUT-01,EQ-CUT-02' } as any, '40', '1000');
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('pr.EQUIP_CODE IN (:...equipCodes)'),
+        expect.objectContaining({ equipCodes: ['EQ-CUT-01', 'EQ-CUT-02'] }),
+      );
+    });
+
+    it('"__UNASSIGNED__" 선택 시 아직 실적이 없는(미착수) 작업지시를 NOT EXISTS 로 포함한다', async () => {
+      const mockQb = makeFindAllQb();
+      mockJobOrderRepo.createQueryBuilder.mockReturnValue(mockQb as any);
+
+      await target.findAll({ page: 1, limit: 10, equipCode: '__UNASSIGNED__' } as any, '40', '1000');
+
+      const call = mockQb.andWhere.mock.calls.find((c) => String(c[0]).includes('NOT EXISTS'));
+      expect(call?.[0]).toContain('NOT EXISTS (SELECT 1 FROM PROD_RESULTS pr');
+      // 설비 코드를 고르지 않았으므로 EQUIP_CODE IN 조건은 없어야 한다(미착수만 단독 선택)
+      expect(call?.[0]).not.toContain('pr.EQUIP_CODE IN');
+    });
+
+    it('설비 코드와 "__UNASSIGNED__"를 함께 선택하면 두 조건을 OR로 묶는다(전체 선택 시 미착수 작업지시가 빠지지 않도록)', async () => {
+      const mockQb = makeFindAllQb();
+      mockJobOrderRepo.createQueryBuilder.mockReturnValue(mockQb as any);
+
+      await target.findAll({ page: 1, limit: 10, equipCode: 'EQ-CUT-01,__UNASSIGNED__' } as any, '40', '1000');
+
+      const call = mockQb.andWhere.mock.calls.find((c) => String(c[0]).includes(' OR '));
+      expect(call?.[0]).toMatch(/EXISTS \(SELECT 1 FROM PROD_RESULTS pr[\s\S]*IN \(:\.\.\.equipCodes\)[\s\S]*\) OR NOT EXISTS \(SELECT 1 FROM PROD_RESULTS pr/);
+      expect(call?.[1]).toEqual(expect.objectContaining({ equipCodes: ['EQ-CUT-01'] }));
     });
   });
 

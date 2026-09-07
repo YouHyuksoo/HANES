@@ -12,6 +12,7 @@ import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Repository, DataSource, QueryRunner } from 'typeorm';
+import { RepairTargetService } from './repair-target.service';
 import { RepairService } from './repair.service';
 import { RepairOrder } from '../../../entities/repair-order.entity';
 import { RepairUsedPart } from '../../../entities/repair-used-part.entity';
@@ -45,6 +46,7 @@ describe('RepairService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RepairService,
+        {provide:RepairTargetService,useValue:createMock<RepairTargetService>()},
         { provide: getRepositoryToken(RepairOrder), useValue: mockRepairOrderRepo },
         { provide: getRepositoryToken(RepairUsedPart), useValue: mockRepairUsedPartRepo },
         { provide: DataSource, useValue: mockDataSource },
@@ -59,6 +61,29 @@ describe('RepairService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('normalizes a new date and retains original timestamp keys for legacy detail parts', async () => {
+    mockQueryRunner.manager.create.mockImplementation((_:any,data:any)=>data);
+    await target.create({itemCode:'FG1'},'C','P');
+    const saved=mockQueryRunner.manager.create.mock.calls.find(call=>call[0]===RepairOrder)?.[1] as any;
+    expect(saved.repairDate.getHours()).toBe(0);
+    expect(saved.qty).toBe(1);
+    const date=new Date(2026,8,5,15,32);
+    mockRepairOrderRepo.findOne.mockResolvedValue({repairDate:date,seq:3} as any);
+    await target.findOne('2026-09-05',3,'C','P');
+    expect(mockRepairUsedPartRepo.find).toHaveBeenCalledWith({where:{repairDate:date,seq:3,company:'C',plant:'P'}});
+  });
+  it('clears the last used part with an empty array even without master changes',async()=>{
+    mockQueryRunner.manager.findOne.mockResolvedValue({repairDate:new Date(2026,8,5,14),seq:9,status:'IN_REPAIR'} as any);
+    await target.update('2026-09-05',9,{usedParts:[]},'C','P');
+    expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(RepairUsedPart,expect.objectContaining({seq:9}));
+    expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+  });
+  it('blocks editing a completed order',async()=>{
+    mockQueryRunner.manager.findOne.mockResolvedValue({status:'COMPLETED'} as any);
+    await expect(target.update('2026-09-05',9,{qty:2},'C','P')).rejects.toThrow();
+    expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
   });
 
   // ─────────────────────────────────────────────
@@ -231,29 +256,14 @@ describe('RepairService', () => {
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
-    it('should mark as COMPLETED when disposition is set', async () => {
+    it('should reject changing disposition through ordinary update', async () => {
       // Arrange
       const existing = { repairDate: new Date('2026-03-18'), seq: 1, status: 'IN_REPAIR' } as any;
       mockQueryRunner.manager.findOne.mockResolvedValue(existing);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
 
-      // Act
-      await target.update(
-        '2026-03-18', 1,
-        { disposition: 'SCRAP' } as any,
-        'C', 'P',
-      );
-
-      // Assert
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        RepairOrder,
-        expect.objectContaining({
-          seq: 1,
-          company: 'C',
-          plant: 'P',
-        }),
-        expect.objectContaining({ status: 'COMPLETED' }),
-      );
+      await expect(target.update('2026-03-18', 1, { disposition: 'SCRAP' }, 'C', 'P')).rejects.toThrow(BadRequestException);
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException when not found', async () => {

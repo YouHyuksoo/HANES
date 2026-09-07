@@ -31,6 +31,7 @@ import { BoxStatusBadge } from "@/components/shipping";
 import type { BoxStatus } from "@/components/shipping";
 import api from "@/services/api";
 import BoxLabelModal from "./components/BoxLabelModal";
+import PackedSerialList from "./components/PackedSerialList";
 import { createPackGridColumns, type Box } from "./packColumns";
 
 /** 포장 대기 FG 시리얼(검사합격·박스 미배정) */
@@ -640,19 +641,7 @@ export default function PackPage() {
             />
             <Button onClick={() => handleAddSerial()} disabled={atLimit || !serialInput.trim() || selectedBox?.status !== "OPEN" || isAddingSerial}><Plus className="w-4 h-4" /></Button>
           </div>
-          <div className="max-h-52 overflow-y-auto border border-border rounded-lg p-2">
-            {modalSerials.length === 0 && (
-              <p className="text-xs text-text-muted text-center py-4">{t("shipping.pack.noSerials")}</p>
-            )}
-            {modalSerials.map((serial, idx) => (
-              <div key={serial} className="flex items-center justify-between py-1 px-2 hover:bg-background rounded">
-                <span className="text-sm font-mono">{idx + 1}. {serial}</span>
-                <button title={t("shipping.pack.removeSerial")} onClick={() => setRemoveSerialTarget(serial)}>
-                  <XCircle className="w-4 h-4 text-text-muted cursor-pointer hover:text-red-500" />
-                </button>
-              </div>
-            ))}
-          </div>
+          <PackedSerialList serials={modalSerials} onRemove={setRemoveSerialTarget} />
           <div className="flex justify-between gap-2">
             <Button
               variant="primary"

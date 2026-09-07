@@ -20,6 +20,7 @@
  */
 
 import {
+  BadRequestException,
   Controller,
   Get,
   Post,
@@ -29,11 +30,17 @@ import {
   Query,
   Body,
   Req,
+  Res,
   HttpCode,
   HttpStatus,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
+import { memoryStorage } from 'multer';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
 import { JwtAuthGuard, AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
@@ -44,6 +51,15 @@ import {
   CreateSpcDataDto,
   SpcChartFilterDto,
 } from '../dto/spc.dto';
+
+const XLSX_FILE_INTERCEPTOR_OPTS = {
+  storage: memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req: unknown, file: Express.Multer.File, cb: (error: Error | null, accept: boolean) => void) => {
+    if (!file.originalname.match(/\.xlsx$/i)) return cb(new BadRequestException('.xlsx 파일만 업로드할 수 있습니다.'), false);
+    cb(null, true);
+  },
+};
 
 @ApiTags('SPC')
 @Controller('quality/spc')
@@ -164,6 +180,47 @@ export class SpcController {
     return ResponseUtil.success(data, 'SPC 관리도가 등록되었습니다.');
   }
 
+  @Get('charts/upload/template')
+  @ApiOperation({ summary: 'SPC 관리도 업로드 양식 다운로드' })
+  async downloadChartTemplate(@Res() res: Response) {
+    const buffer = this.spcService.downloadChartTemplate();
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename="SPC_CHARTS_template.xlsx"',
+      'Content-Length': buffer.length.toString(),
+    });
+    res.end(buffer);
+  }
+
+  @Post('charts/upload/preview')
+  @ApiOperation({ summary: 'SPC 관리도 엑셀 업로드 미리보기' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', XLSX_FILE_INTERCEPTOR_OPTS))
+  async previewChartUpload(
+    @UploadedFile() file: Express.Multer.File,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    if (!file) throw new BadRequestException('파일이 필요합니다.');
+    const result = await this.spcService.previewChartUpload(file.buffer, company, plant);
+    return ResponseUtil.success(result, `미리보기 완료 — 신규: ${result.newCount}, 중복: ${result.duplicateCount}, 오류: ${result.errorCount}`);
+  }
+
+  @Post('charts/upload')
+  @ApiOperation({ summary: 'SPC 관리도 엑셀 업로드' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', XLSX_FILE_INTERCEPTOR_OPTS))
+  async uploadCharts(
+    @UploadedFile() file: Express.Multer.File,
+    @Company() company: string,
+    @Plant() plant: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    if (!file) throw new BadRequestException('파일이 필요합니다.');
+    const result = await this.spcService.uploadChartsFromExcel(file.buffer, company, plant, req.user?.id ?? 'system');
+    return ResponseUtil.success(result, `등록: ${result.inserted}, 건너뜀: ${result.skipped}, 오류: ${result.errors.length}`);
+  }
+
   @Put('charts/:id')
   @ApiOperation({ summary: 'SPC 관리도 수정' })
   @ApiParam({ name: 'id', description: '관리도 chartNo' })
@@ -218,5 +275,46 @@ export class SpcController {
       req.user?.id ?? 'system',
     );
     return ResponseUtil.success(data, '측정 데이터가 입력되었습니다.');
+  }
+
+  @Get('data/upload/template')
+  @ApiOperation({ summary: 'SPC 측정데이터 업로드 양식 다운로드' })
+  async downloadDataTemplate(@Res() res: Response) {
+    const buffer = this.spcService.downloadDataTemplate();
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename="SPC_DATA_template.xlsx"',
+      'Content-Length': buffer.length.toString(),
+    });
+    res.end(buffer);
+  }
+
+  @Post('data/upload/preview')
+  @ApiOperation({ summary: 'SPC 측정데이터 엑셀 업로드 미리보기' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', XLSX_FILE_INTERCEPTOR_OPTS))
+  async previewDataUpload(
+    @UploadedFile() file: Express.Multer.File,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    if (!file) throw new BadRequestException('파일이 필요합니다.');
+    const result = await this.spcService.previewDataUpload(file.buffer, company, plant);
+    return ResponseUtil.success(result, `미리보기 완료 — 신규: ${result.newCount}, 오류: ${result.errorCount}`);
+  }
+
+  @Post('data/upload')
+  @ApiOperation({ summary: 'SPC 측정데이터 엑셀 업로드' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', XLSX_FILE_INTERCEPTOR_OPTS))
+  async uploadData(
+    @UploadedFile() file: Express.Multer.File,
+    @Company() company: string,
+    @Plant() plant: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    if (!file) throw new BadRequestException('파일이 필요합니다.');
+    const result = await this.spcService.uploadDataFromExcel(file.buffer, company, plant, req.user?.id ?? 'system');
+    return ResponseUtil.success(result, `등록: ${result.inserted}, 오류: ${result.errors.length}`);
   }
 }

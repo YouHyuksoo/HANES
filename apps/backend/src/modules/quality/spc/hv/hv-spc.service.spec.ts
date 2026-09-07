@@ -93,6 +93,14 @@ describe('HvSpcService', () => {
       expect(res.capability).not.toBeNull();
       await expect(service.getTarget('40', '1000', 'NOPE', { days: 30, kLimit: 0 })).rejects.toThrow(NotFoundException);
     });
+
+    it('getTarget: equipCode 로 필터링하면 해당 설비 서브그룹만 남는다', async () => {
+      const full = await service.getTarget('40', '1000', 'GCRMP-CRIMP-H', { days: 30, kLimit: 0 });
+      const someEquip = full.subgroups[0].equipCode;
+      const filtered = await service.getTarget('40', '1000', 'GCRMP-CRIMP-H', { days: 30, kLimit: 0, equipCode: someEquip });
+      expect(filtered.subgroups.length).toBeLessThan(full.subgroups.length);
+      expect(filtered.subgroups.every((s) => s.equipCode === someEquip)).toBe(true);
+    });
   });
 
   describe('DB 소스', () => {

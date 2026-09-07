@@ -130,7 +130,7 @@ export function mapDataRowsToSubgroups(rows: SpcData[], logger?: Logger): SpcSub
       date: dateKey,
       time: fmtTimeLocal(d),
       dateLabel: multi ? `${fmtLabel(d)}(${nth})` : fmtLabel(d),
-      equipCode: '',
+      equipCode: r.equipCode ?? '',
       lotNo: r.remark ?? '',
       samples,
     });

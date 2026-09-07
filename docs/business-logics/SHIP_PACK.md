@@ -1,14 +1,18 @@
 ---
 sources:
+  - apps/backend/src/modules/shipping/services/box.service.ts
+  - apps/backend/src/modules/production/services/assembly.service.ts
+  - apps/backend/src/modules/shipping/services/product-inventory.service.ts
+  - apps/frontend/src/app/(authenticated)/shipping/pack/page.tsx
   - apps/frontend/src/app/(authenticated)/shipping/pack/components/BoxLabelModal.tsx
   - apps/frontend/src/components/ui/Modal.tsx
-verifiedCommit: 8a7e96ea
+verifiedCommit: e2b1fa8f
 ---
 
 # 제품포장관리 — 비즈니스 로직 & 데이터 흐름 분석
 
-> **분석 기준 커밋:** `8a7e96ea`
-> **분석 일자:** `2026-07-04`
+> **분석 기준 커밋:** `e2b1fa8f` + 현재 작업트리
+> **분석 일자:** `2026-09-07`
 
 ---
 
@@ -19,7 +23,7 @@ verifiedCommit: 8a7e96ea
 | **메뉴 코드** | `SHIP_PACK` |
 | **URL** | `/shipping/pack` |
 | **메뉴 경로** | 출하관리 > 제품포장관리 |
-| **화면 목적** | FG라벨(검사합격) 시리얼을 박스 단위로 포장(구성)하고 박스 마감/라벨 출력 |
+| **화면 목적** | 공정창고(`FG_WIP`)에 생산입고된 외관합격 FG라벨을 박스 단위로 포장하고 박스 마감/라벨 출력 |
 | **주요 사용자** | 생산 포장 작업자 |
 | **Workflow 노드** | 해당 없음 |
 
@@ -125,7 +129,7 @@ sequenceDiagram
     Note over U,D: FG 시리얼 스캔 → 박스 구성
     U->>C: FG 바코드 스캔
     C->>S: POST /shipping/boxes/:boxNo/serials { serials: [fgBarcode] }
-    S->>S: 검증(품목일치/중복/boxQty초과)
+    S->>S: 검증(FG_WIP 적재/외관합격/품목일치/중복/boxQty초과)
     S->>D: INSERT FG_LABELS.boxNo 할당
     D-->>S: OK
     S-->>C: 응답
@@ -165,7 +169,7 @@ flowchart TB
     style Tx fill:#f0f4ff
 ```
 
-1. **검증** — 박스 OPEN 상태 확인, FG 바코드 품목일치/중복/boxQty 초과 확인
+1. **검증** — 박스 OPEN 상태와 조립실적 기반 `FG_WIP` 생산입고, 외관합격, 품목일치, 중복, boxQty 초과 확인
 2. **serialList 갱신** — `BOX_MASTERS.serialList` JSON 배열에 FG바코드 추가/제거
 3. **FgLabel 연결** — `FG_LABELS.boxNo` 할당, `status` → `PACKED`
 4. **박스 마감** — `BOX_MASTERS.status` → `CLOSED`, `OQC_REQUEST` 자동 생성
@@ -174,12 +178,16 @@ flowchart TB
 ## 6. 처리 규칙 및 검증
 
 ### 6.1 입력 검증
-- FG 바코드가 `FG_LABELS`에 존재하고 `status`가 `ISSUED`/`VISUAL_PASS`여야 함
+- FG 바코드가 `FG_LABELS`에 존재하고 `status=VISUAL_PASS`, `inspectPassYn=Y`여야 함
+- 같은 tenant·품목·작업지시의 완료된 `PROD_RESULTS` 조립실적과 양품 `PRODUCT_TRANSACTIONS`의 `ASSEMBLY/WIP_IN → FG_WIP` 이력이 있어야 함
+- 포장대기 조회, 박스 추가, 박스 마감에서 같은 공정창고 대상 규칙을 재검증함
 - 동일 박스 내 중복 FG 바코드 불가
 - `boxQty`(품목마스터 설정) 초과 불가 (미만은 허용)
 - 박스 마감은 OPEN 상태에서만 가능
 
 ### 6.2 비즈니스 규칙
+- 포장은 생산 공정에서 수행하며 별도 포장 부서 코드를 요구하지 않음
+- 장소/재고 기준은 공정창고 `FG_WIP`이고, 제품입고에서 공정재고를 완제품 창고재고로 이동함
 - 박스 생성 시 `qty=0`, `serialList=null`
 - 시리얼 추가 시 자동으로 `qty` 증가
 - `boxQty` 도달 시 자동 마감 + 라벨 자동 출력

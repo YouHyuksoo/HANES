@@ -264,21 +264,24 @@ describe('WipMatStockService', () => {
   });
 
   describe('findByEquip', () => {
-    it('설비명 조인 결과를 반환한다', async () => {
-      const qb: any = {
-        leftJoin: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        groupBy: jest.fn().mockReturnThis(),
-        addGroupBy: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        addOrderBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue([
-          { equipCode, equipName: '자동결선기1', itemCode: 'ITEM-A', matUid: 'RM-001', qty: 8 },
-        ]),
-      };
+    const makeFindByEquipQb = (rows: unknown[] = []): any => ({
+      leftJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
+      having: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue(rows),
+    });
+
+    it('설비명 조인 결과를 반환하고 잔량 0인 그룹은 HAVING 으로 제외한다', async () => {
+      const qb = makeFindByEquipQb([
+        { equipCode, equipName: '자동결선기1', itemCode: 'ITEM-A', matUid: 'RM-001', qty: 8 },
+      ]);
       mockStockRepo.createQueryBuilder.mockReturnValue(qb);
 
       const rows = await target.findByEquip(equipCode, company, plant);
@@ -286,6 +289,76 @@ describe('WipMatStockService', () => {
       expect(rows).toHaveLength(1);
       expect(rows[0]).toEqual(expect.objectContaining({ equipName: '자동결선기1' }));
       expect(qb.andWhere).toHaveBeenCalled();
+      expect(qb.having).toHaveBeenCalledWith('SUM(s.QTY) > 0');
+    });
+
+    it('LOT 수는 소진(QTY=0)된 LOT을 빼고 센다(우측 상세와 건수가 맞도록)', async () => {
+      const qb = makeFindByEquipQb([]);
+      mockStockRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await target.findByEquip(equipCode, company, plant);
+
+      expect(qb.addSelect).toHaveBeenCalledWith('COUNT(DISTINCT CASE WHEN s.QTY > 0 THEN s.MAT_UID END)', 'lotCount');
+      expect(qb.addSelect).not.toHaveBeenCalledWith('COUNT(DISTINCT s.MAT_UID)', 'lotCount');
+    });
+
+    it('설비코드를 쉼표로 여러 개 주면 IN 조건으로 조회한다', async () => {
+      const qb = makeFindByEquipQb([]);
+      mockStockRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await target.findByEquip('EQ-1,EQ-2', company, plant);
+
+      expect(qb.andWhere).toHaveBeenCalledWith('s.EQUIP_CODE IN (:...equipCodes)', { equipCodes: ['EQ-1', 'EQ-2'] });
+    });
+
+    it('설비코드 미지정 시 EQUIP_CODE 조건을 걸지 않는다(전체 조회)', async () => {
+      const qb = makeFindByEquipQb([]);
+      mockStockRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await target.findByEquip(undefined, company, plant);
+
+      const equipCondCalls = qb.andWhere.mock.calls.filter((c: unknown[]) => String(c[0]).includes('EQUIP_CODE =') || String(c[0]).includes('EQUIP_CODE IN'));
+      expect(equipCondCalls).toHaveLength(0);
+    });
+  });
+
+  describe('findLotsByEquipItem', () => {
+    it('LOT별 잔량과 공정 입고일자(WIP_MAT_STOCKS.CREATED_AT)를 반환한다', async () => {
+      const createdAt = new Date('2026-09-01T09:00:00.000Z');
+      const qb: any = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([
+          { matUid: 'RM-001', qty: 8, availableQty: 8, reservedQty: 0, recvDate: createdAt },
+        ]),
+      };
+      mockStockRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const rows = await target.findLotsByEquipItem(equipCode, 'ITEM-A', company, plant);
+
+      expect(qb.addSelect).toHaveBeenCalledWith('s.CREATED_AT', 'recvDate');
+      expect(rows[0]).toEqual(expect.objectContaining({ matUid: 'RM-001', recvDate: createdAt }));
+    });
+
+    it('공정 입고일자가 없으면 null을 반환한다', async () => {
+      const qb: any = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([
+          { matUid: 'RM-002', qty: 1, availableQty: 1, reservedQty: 0, recvDate: null },
+        ]),
+      };
+      mockStockRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const rows = await target.findLotsByEquipItem(equipCode, 'ITEM-A', company, plant);
+
+      expect(rows[0].recvDate).toBeNull();
     });
   });
 

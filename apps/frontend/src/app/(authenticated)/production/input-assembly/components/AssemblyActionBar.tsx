@@ -13,6 +13,7 @@ export default function AssemblyActionBar({
   issuedFg,
   onIssue,
   confirming,
+  canConfirm,
   onConfirmScan,
   onResetIssued,
 }: {
@@ -21,6 +22,7 @@ export default function AssemblyActionBar({
   issuedFg: string | null;
   onIssue: () => void;
   confirming: boolean;
+  canConfirm: boolean;
   onConfirmScan: (scannedBarcode: string) => void;
   onResetIssued: () => void;
 }): JSX.Element {
@@ -30,7 +32,7 @@ export default function AssemblyActionBar({
 
   const submitConfirm = (rawConfirmScan?: string) => {
     const trimmed = (rawConfirmScan ?? confirmScan).replace(/\r?\n|\r/g, "").trim();
-    if (!trimmed) return;
+    if (!trimmed || confirming || !canConfirm) return;
     onConfirmScan(trimmed);
     setConfirmScan("");
   };
@@ -69,13 +71,13 @@ export default function AssemblyActionBar({
                 onChange={setConfirmScan}
                 onScan={submitConfirm}
                 placeholder={t("production.inputAssembly.confirmScanPlaceholder", "실물 FG 라벨 스캔")}
-                disabled={confirming}
+                disabled={confirming || !canConfirm}
               />
               <Button
                 size="sm"
                 onClick={() => submitConfirm()}
                 isLoading={confirming}
-                disabled={confirming || !confirmScan.trim()}
+                disabled={confirming || !canConfirm || !confirmScan.trim()}
               >
                 {t("common.confirm")}
               </Button>

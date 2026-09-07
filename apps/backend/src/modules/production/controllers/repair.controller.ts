@@ -18,6 +18,7 @@ import {
   Delete,
   Query,
   Param,
+  ParseIntPipe,
   Body,
   HttpCode,
   HttpStatus,
@@ -30,8 +31,11 @@ import {
   ApiResponse,
   ApiParam,
 } from '@nestjs/swagger';
+import { RepairWorkflowService } from '../services/repair-workflow.service';
+import { RepairLookupService } from '../services/repair-lookup.service';
 import { RepairService } from '../services/repair.service';
 import {
+  StartRepairDto, CompleteRepairDto, InspectRepairDto,
   RepairQueryDto,
   CreateRepairDto,
   UpdateRepairDto,
@@ -42,7 +46,7 @@ import { ResponseUtil } from '../../../common/dto/response.dto';
 @ApiTags('생산관리 - 수리관리')
 @Controller('production/repairs')
 export class RepairController {
-  constructor(private readonly repairService: RepairService) {}
+  constructor(private readonly repairService: RepairService, private readonly workflow: RepairWorkflowService, private readonly lookup: RepairLookupService) {}
 
   @Get()
   @ApiOperation({
@@ -78,6 +82,35 @@ export class RepairController {
     return ResponseUtil.success(data);
   }
 
+  @Get('barcode')
+  async barcode(@Query('barcode') barcode: string, @Company() company: string, @Plant() plant: string) {
+    return ResponseUtil.success(await this.lookup.barcode(barcode, company, plant));
+  }
+  @Get('stock-options')
+  async stockOptions(@Query('itemCode') itemCode: string, @Company() company: string, @Plant() plant: string, @Query('barcode') barcode?: string) {
+    return ResponseUtil.success(await this.lookup.stock(itemCode, company, plant, barcode));
+  }
+  @Get('material-options')
+  async materialOptions(@Query('itemCode') itemCode: string, @Company() company: string, @Plant() plant: string) {
+    return ResponseUtil.success(await this.lookup.materials(itemCode, company, plant));
+  }
+  @Get(':date/:seq/inspections')
+  async inspections(@Param('date') date: string, @Param('seq', ParseIntPipe) seq: string, @Company() company: string, @Plant() plant: string) {
+    return ResponseUtil.success(await this.lookup.inspections(date, +seq, company, plant));
+  }
+  @Post(':date/:seq/start')
+  async start(@Param('date') date: string, @Param('seq', ParseIntPipe) seq: string, @Body() dto: StartRepairDto, @Company() company: string, @Plant() plant: string) {
+    return ResponseUtil.success(await this.workflow.start(date, +seq, dto, company, plant));
+  }
+  @Post(':date/:seq/complete')
+  async complete(@Param('date') date: string, @Param('seq', ParseIntPipe) seq: string, @Body() dto: CompleteRepairDto, @Company() company: string, @Plant() plant: string) {
+    return ResponseUtil.success(await this.workflow.complete(date, +seq, dto, company, plant));
+  }
+  @Post(':date/:seq/inspect')
+  async inspect(@Param('date') date: string, @Param('seq', ParseIntPipe) seq: string, @Body() dto: InspectRepairDto, @Company() company: string, @Plant() plant: string) {
+    return ResponseUtil.success(await this.workflow.inspect(date, +seq, dto, company, plant));
+  }
+
   @Get(':date/:seq')
   @ApiOperation({
     summary: '수리 상세 조회',
@@ -88,7 +121,7 @@ export class RepairController {
   @ApiResponse({ status: 200, description: '조회 성공' })
   async findOne(
     @Param('date') date: string,
-    @Param('seq') seq: number,
+    @Param('seq', ParseIntPipe) seq: number,
     @Company() company: string,
     @Plant() plant: string,
   ) {
@@ -122,7 +155,7 @@ export class RepairController {
   @ApiResponse({ status: 200, description: '수정 성공' })
   async update(
     @Param('date') date: string,
-    @Param('seq') seq: number,
+    @Param('seq', ParseIntPipe) seq: number,
     @Body() dto: UpdateRepairDto,
     @Company() company: string,
     @Plant() plant: string,
@@ -147,7 +180,7 @@ export class RepairController {
   @ApiResponse({ status: 200, description: '삭제 성공' })
   async remove(
     @Param('date') date: string,
-    @Param('seq') seq: number,
+    @Param('seq', ParseIntPipe) seq: number,
     @Company() company: string,
     @Plant() plant: string,
   ) {

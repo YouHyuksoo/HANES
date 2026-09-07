@@ -532,6 +532,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/monitoring/spc-board": {
+      const mod = await import("./page-registries/monitoring__spc-board.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/outsourcing/order": {
       const mod = await import("./page-registries/outsourcing__order.generated");
       component = mod.getPageComponent();
@@ -614,6 +619,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
     }
     case "/production/pack-result": {
       const mod = await import("./page-registries/production__pack-result.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/product-trans": {
+      const mod = await import("./page-registries/production__product-trans.generated");
       component = mod.getPageComponent();
       break;
     }

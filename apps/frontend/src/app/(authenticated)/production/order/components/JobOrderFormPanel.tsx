@@ -168,7 +168,8 @@ export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, o
         planDate: form.planDate,
         lineCode: form.lineCode || undefined,
         processCode: form.processCode || undefined,
-        equipCode: form.equipCode || undefined,
+        // 수정 시 공란도 전송해야 서버가 기존 설비 배정을 해제한다.
+        equipCode: isEdit ? form.equipCode : form.equipCode || undefined,
         custPoNo: form.custPoNo || undefined,
         priority: Number(form.priority),
         remark: form.remark || undefined,

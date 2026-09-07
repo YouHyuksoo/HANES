@@ -15,6 +15,7 @@ import { ProductInventoryService } from '../../inventory/services/product-invent
 import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
 import { AutoIssueService } from './auto-issue.service';
 import { ProductionSpecificationService } from './production-specification.service';
+import { ProdResultService } from './prod-result.service';
 import { SubprocessKittingService } from './subprocess-kitting.service';
 
 describe('SubprocessKittingService BOM effective date', () => {
@@ -41,6 +42,7 @@ describe('SubprocessKittingService BOM effective date', () => {
         { provide: WipMatStockService, useValue: createMock<WipMatStockService>() },
         { provide: AutoIssueService, useValue: createMock<AutoIssueService>() },
         { provide: ProductionSpecificationService, useValue: createMock<ProductionSpecificationService>() },
+        { provide: ProdResultService, useValue: createMock<ProdResultService>() },
       ],
     }).compile();
 

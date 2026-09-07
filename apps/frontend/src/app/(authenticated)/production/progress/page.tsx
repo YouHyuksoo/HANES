@@ -15,7 +15,8 @@ import { Search, RefreshCw, BarChart3 } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { useComCodeOptions } from '@/hooks/useComCode';
-import { EquipSelect } from '@/components/shared';
+import { MultiSelectFilter } from '@/components/shared';
+import { useEquipOptions } from '@/hooks/useMasterOptions';
 import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import api from '@/services/api';
 import { getTodayLocal } from '@/utils/date';
@@ -25,13 +26,25 @@ import type { ProgressItem } from './types';
 /** 오늘 날짜를 YYYY-MM-DD 형식으로 반환 */
 const getToday = () => getTodayLocal();
 
+/**
+ * 설비 필터의 "미착수" 선택값 — 백엔드 job-order.service.ts의 JOB_ORDER_UNASSIGNED_EQUIP와 동일 문자열.
+ * 이 화면의 설비 필터는 생산실적 기준(EXISTS PROD_RESULTS)이라, 실적이 아직 없는 작업지시는 실제 설비를
+ * 아무리 골라도 걸리지 않는다. "전체 선택"이 실제 전체가 되려면 미착수를 선택지로 둬야 한다.
+ */
+const EQUIP_UNASSIGNED = '__UNASSIGNED__';
+
 export default function ProgressPage() {
   const { t } = useTranslation();
   const [data, setData] = useState<ProgressItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [equipFilter, setEquipFilter] = useState('');
+  const [equipFilter, setEquipFilter] = useState<string[]>([]);
+  const { options: rawEquipOptions } = useEquipOptions(undefined, { includeInactive: true });
+  const equipOptions = useMemo(
+    () => [{ value: EQUIP_UNASSIGNED, label: t('production.progress.equipUnassigned', '미착수') }, ...rawEquipOptions],
+    [rawEquipOptions, t],
+  );
   const [shiftFilter, setShiftFilter] = useState('');
   const [shiftOptions, setShiftOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [planDateFrom, setPlanDateFrom] = useState(getToday());
@@ -59,7 +72,7 @@ export default function ProgressPage() {
       const params: Record<string, string> = { limit: '5000' };
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
-      if (equipFilter) params.equipCode = equipFilter;
+      if (equipFilter.length > 0) params.equipCode = equipFilter.join(',');
       if (shiftFilter) params.shift = shiftFilter;
       if (planDateFrom) params.planDateFrom = planDateFrom;
       if (planDateTo) params.planDateTo = planDateTo;
@@ -104,7 +117,8 @@ export default function ProgressPage() {
                 <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
               </div>
               <div className="w-48 flex-shrink-0">
-                <EquipSelect labelPrefix={t('production.order.equip', '설비')} value={equipFilter} onChange={setEquipFilter} includeInactive fullWidth />
+                <MultiSelectFilter options={equipOptions} value={equipFilter} onChange={setEquipFilter}
+                  labelPrefix={t('production.order.equip', '설비')} fullWidth />
               </div>
               <div className="w-44 flex-shrink-0">
                 <Select options={[{ value: '', label: t('common.all') }, ...shiftOptions]} value={shiftFilter} onChange={setShiftFilter} fullWidth />

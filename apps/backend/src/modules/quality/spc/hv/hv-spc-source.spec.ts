@@ -35,6 +35,22 @@ describe('buildTargetData', () => {
     expect(Object.keys(data)).toEqual(['target', 'dateFrom', 'dateTo', 'subgroups', 'stats', 'capability', 'violations', 'sourceKind']);
   });
 
+  it('equipCodes: 관리대상에 후보 설비가 있으면(MOCK) 그대로 쓴다', () => {
+    const data = buildTargetData(target, stable(3), { kLimit: 0 }, range, 'MOCK');
+    expect(data.target.equipCodes).toEqual(['E1']);
+  });
+
+  it('equipCodes: 관리대상에 후보 설비가 없으면(DB) 서브그룹에서 실측 설비코드를 모은다', () => {
+    const dbTarget: SpcTarget = { ...target, equipCodes: [] };
+    const rows: SpcSubgroupRaw[] = [
+      ...stable(2).map((r) => ({ ...r, equipCode: 'EQ-A' })),
+      { ...stable(1)[0], id: 3, equipCode: 'EQ-B' },
+      { ...stable(1)[0], id: 4, equipCode: '' },
+    ];
+    const data = buildTargetData(dbTarget, rows, { kLimit: 0 }, range, 'ORACLE');
+    expect(data.target.equipCodes.sort()).toEqual(['EQ-A', 'EQ-B']);
+  });
+
   it('서브그룹 2개 미만이면 stats/capability null, health STABLE', () => {
     const data = buildTargetData(target, stable(1), { kLimit: 0 }, range, 'ORACLE');
     expect(data.stats).toBeNull();

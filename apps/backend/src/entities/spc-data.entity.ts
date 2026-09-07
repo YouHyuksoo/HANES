@@ -60,6 +60,10 @@ export class SpcData {
   @Column({ name: 'OUT_OF_CONTROL', type: 'number', default: 0 })
   outOfControl: number;
 
+  /** 측정 설비 코드 — 나중에 실제 설비 연동 시 자동 채워짐 */
+  @Column({ type: 'varchar2', name: 'EQUIP_CODE', length: 50, nullable: true })
+  equipCode: string | null;
+
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string;
 

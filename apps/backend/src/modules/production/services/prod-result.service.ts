@@ -1567,7 +1567,7 @@ export class ProdResultService {
    * - RUNNING 진입 시 startAt, DONE 진입 시 endAt + 설비 현재작업지시 해제(다음 날 키오스크가 완료 지시를 복원하지 않게).
    * raw SQL 로 같은 트랜잭션의 미커밋 실적까지 포함한다.
    */
-  private async syncJobOrderFromResultsInTx(
+  async syncJobOrderFromResultsInTx(
     qr: import('typeorm').QueryRunner,
     orderNo: string,
     company?: string,

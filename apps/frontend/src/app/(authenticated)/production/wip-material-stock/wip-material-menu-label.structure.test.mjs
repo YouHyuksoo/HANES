@@ -10,11 +10,11 @@ const menuConfigPath = path.join(repoRoot, 'apps/frontend/src/config/menuConfig.
 test('원자재 공정재고/수불 메뉴와 화면 제목은 새 한국어 용어를 사용한다', () => {
   const ko = JSON.parse(fs.readFileSync(koLocalePath, 'utf8'));
 
-  assert.equal(ko.menu['production.wipMaterialStock'], '원자재공정재고');
+  assert.equal(ko.menu['production.wipMaterialStock'], '원자재재공조회');
   assert.equal(ko.menu['production.wipMaterialTrans'], '원자재공정수불');
-  assert.equal(ko.production.wipMaterialStock.title, '원자재공정재고');
+  assert.equal(ko.production.wipMaterialStock.title, '원자재재공조회');
   assert.equal(ko.production.wipMaterialTrans.title, '원자재공정수불');
-  assert.match(ko.production.wipMaterialStock.description, /원자재공정재고/);
+  assert.match(ko.production.wipMaterialStock.description, /원자재재공/);
   assert.match(ko.production.wipMaterialTrans.description, /원자재공정재고/);
 });
 

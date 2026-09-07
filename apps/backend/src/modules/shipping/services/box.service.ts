@@ -14,6 +14,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
+import { ProdResult } from '../../../entities/prod-result.entity';
 import { OqcRequest } from '../../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../../entities/oqc-request-box.entity';
 import {
@@ -57,6 +58,66 @@ export class BoxService {
       ...(company && { company }),
       ...(plant && { plant }),
     };
+  }
+
+  /** 조립실적이 FG_WIP 공정창고에 정상 적재된 외관합격 FG만 포장 대상으로 인정한다. */
+  private createPackableFgQuery(company?: string, plant?: string) {
+    const qb = this.fgLabelRepository
+      .createQueryBuilder('fg')
+      .innerJoin(
+        ProdResult,
+        'pr',
+        'pr.prdUid = fg.fgBarcode AND pr.company = fg.company AND pr.plant = fg.plant AND pr.status = :doneResult',
+        { doneResult: 'DONE' },
+      )
+      .innerJoin(
+        ProductTransaction,
+        'wipIn',
+        [
+          'wipIn.refType = :assemblyRef',
+          'wipIn.refId = pr.resultNo',
+          'wipIn.transType = :wipInType',
+          'wipIn.toWarehouseId = :fgWip',
+          'wipIn.status = :doneStatus',
+          'wipIn.itemCode = fg.itemCode',
+          'wipIn.orderNo = pr.orderNo',
+          'wipIn.qty > 0',
+          'wipIn.qualityStatus = :goodQuality',
+          'wipIn.company = fg.company',
+          'wipIn.plant = fg.plant',
+        ].join(' AND '),
+        {
+          assemblyRef: 'ASSEMBLY',
+          wipInType: 'WIP_IN',
+          fgWip: 'FG_WIP',
+          doneStatus: 'DONE',
+          goodQuality: 'GOOD',
+        },
+      )
+      .where('fg.status = :visualPass', { visualPass: 'VISUAL_PASS' })
+      .andWhere('fg.inspectPassYn = :inspectPass', { inspectPass: 'Y' })
+      .andWhere('fg.boxNo IS NULL');
+    if (company) qb.andWhere('fg.company = :company', { company });
+    if (plant) qb.andWhere('fg.plant = :plant', { plant });
+    return qb;
+  }
+
+  private async assertSerialsArePackableFgWip(
+    serials: string[],
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    if (serials.length === 0) return;
+    const labels = await this.createPackableFgQuery(company, plant)
+      .andWhere('fg.fgBarcode IN (:...serials)', { serials })
+      .getMany();
+    const valid = new Set(labels.map((label) => label.fgBarcode));
+    const invalid = serials.filter((serial) => !valid.has(serial));
+    if (invalid.length > 0) {
+      throw new BadRequestException(
+        `완제품 공정창고(FG_WIP)의 외관합격 포장대기품만 포장할 수 있습니다: ${invalid.join(', ')}`,
+      );
+    }
   }
 
   /**
@@ -228,17 +289,11 @@ export class BoxService {
     };
   }
 
-  /** 포장 대기 FG 시리얼: 검사합격(VISUAL_PASS)이고 박스 미배정(BOX_NO IS NULL) */
+  /** 포장 대기 FG 시리얼: FG_WIP 적재 + 외관합격 + 박스 미배정 */
   async findPackableSerials(company?: string, plant?: string, itemCode?: string) {
-    const labels = await this.fgLabelRepository.find({
-      where: {
-        status: 'VISUAL_PASS',
-        boxNo: IsNull(),
-        ...(itemCode ? { itemCode } : {}),
-        ...this.tenantWhere(company, plant),
-      },
-      order: { itemCode: 'ASC', issuedAt: 'ASC' },
-    });
+    const qb = this.createPackableFgQuery(company, plant);
+    if (itemCode) qb.andWhere('fg.itemCode = :itemCode', { itemCode });
+    const labels = await qb.orderBy('fg.itemCode', 'ASC').addOrderBy('fg.issuedAt', 'ASC').getMany();
     if (labels.length === 0) return [];
     const itemCodes = [...new Set(labels.map((l) => l.itemCode))];
     const parts = await this.partRepository.find({
@@ -586,6 +641,8 @@ export class BoxService {
       throw new BadRequestException(`외관검사 합격(VISUAL_PASS) FG만 포장할 수 있습니다: ${invalidLabels.join(', ')}`);
     }
 
+    await this.assertSerialsArePackableFgWip(dto.serials, company, plant);
+
     await this.assertSerialsNotPackedElsewhere(dto.serials, id, company, plant);
 
     const boxQty = part?.boxQty != null ? Number(part.boxQty) : 0;
@@ -638,6 +695,9 @@ export class BoxService {
     if (box.qty <= 0) {
       throw new BadRequestException('빈 박스는 닫을 수 없습니다.');
     }
+
+    const closingSerials: string[] = box.serialList ? JSON.parse(box.serialList) : [];
+    await this.assertSerialsArePackableFgWip(closingSerials, company, plant);
 
     await this.tx.run(async (queryRunner) => {
       await queryRunner.manager.update(

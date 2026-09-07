@@ -52,6 +52,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "MON_INV_BOARD", labelKey: "menu.monitoring.invBoard", path: "/monitoring/inventory-board" },
       { code: "MON_JOB_BOARD", labelKey: "menu.monitoring.jobBoard", path: "/monitoring/job-order-board" },
       { code: "MON_EQUIP_STATUS", labelKey: "menu.equipment.status", path: "/monitoring/equipment-board" },
+      { code: "MON_SPC_BOARD", labelKey: "menu.monitoring.spcBoard", path: "/monitoring/spc-board" },
     ],
   },
   {
@@ -169,6 +170,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "PROD_FG_STOCK", labelKey: "menu.production.fgStock", path: "/production/fg-stock" },
       { code: "PROD_WIP_MAT_STOCK", labelKey: "menu.production.wipMaterialStock", path: "/production/wip-material-stock" },
       { code: "PROD_WIP_MAT_TRANS", labelKey: "menu.production.wipMaterialTrans", path: "/production/wip-material-trans" },
+      { code: "PROD_PRODUCT_TRANS", labelKey: "menu.production.productTrans", path: "/production/product-trans" },
       { code: "QC_REWORK", labelKey: "menu.quality.rework", path: "/quality/rework" },
       { code: "QC_REWORK_HISTORY", labelKey: "menu.quality.reworkHistory", path: "/quality/rework-history" },
       { code: "PROD_REPAIR", labelKey: "menu.production.repair", path: "/production/repair" },

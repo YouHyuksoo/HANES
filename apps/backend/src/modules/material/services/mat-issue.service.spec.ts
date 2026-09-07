@@ -986,6 +986,31 @@ describe('MatIssueService', () => {
     );
   });
 
+  it('blocks cancellation of materials already consumed by a repair order', async () => {
+    mockMatIssueRepo.findOne.mockResolvedValue({
+      issueNo: 'ISS-REPAIR', seq: 1, status: 'DONE', issueType: 'REPAIR', remark: 'REPAIR:71',
+      company: 'HANES', plant: 'P01',
+    } as MatIssue);
+    await expect(target.cancel('ISS-REPAIR', 1, 'cancel', 'HANES', 'P01')).rejects.toThrow('수리');
+    expect(mockTx.run).not.toHaveBeenCalled();
+    expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { issueType: 'REPAIR', remark: '일반 수리용 자재 출고' },
+    { issueType: 'OTHER', remark: 'REPAIR:71' },
+  ])('keeps ordinary material issue cancellation available: %j', async (fields) => {
+    mockMatIssueRepo.findOne.mockResolvedValue({
+      issueNo: 'ISS-ORDINARY', seq: 1, status: 'DONE', company: 'HANES', plant: 'P01', ...fields,
+    } as MatIssue);
+    mockQueryRunner.manager.find.mockResolvedValue([]);
+    await target.cancel('ISS-ORDINARY', 1, 'cancel', 'HANES', 'P01');
+    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(MatIssue,
+      { issueNo: 'ISS-ORDINARY', seq: 1, company: 'HANES', plant: 'P01' },
+      { status: 'CANCELED', remark: 'cancel' });
+  });
+
   it('blocks cancel when linked production has already progressed', async () => {
     mockMatIssueRepo.findOne.mockResolvedValue({
       issueNo: 'ISS-002',

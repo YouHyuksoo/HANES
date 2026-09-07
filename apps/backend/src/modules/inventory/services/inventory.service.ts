@@ -368,6 +368,11 @@ export class InventoryService {
 
     this.assertSameTenant('원본 트랜잭션', { company, plant }, originalTrans);
 
+    // 자재출고 화면의 취소 가드를 우회하는 직접 재고취소도 같은 수리 소비 원장을 보호한다.
+    if (originalTrans.refType === 'MAT_ISSUE' && /^REPAIR:\d+$/.test(originalTrans.remark ?? '')) {
+      throw new BadRequestException('수리오더에서 소비한 사용부품은 일반 재고취소로 복원할 수 없습니다.');
+    }
+
     // 취소 트랜잭션 유형 결정
     const cancelTransType = this.getCancelTransType(originalTrans.transType);
     const txTenantWhere = {

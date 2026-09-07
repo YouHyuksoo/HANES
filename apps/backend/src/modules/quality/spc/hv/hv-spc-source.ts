@@ -223,7 +223,10 @@ export function buildTargetData(
     subgroupSize: target.subgroupSize,
     spec: target.spec,
     decimals: target.decimals,
-    equipCodes: target.equipCodes,
+    // DB 소스는 관리대상 자체에 설비후보 목록이 없다(SPC_CHARTS에 컬럼 없음) — 실제 측정된 설비코드로 대신한다.
+    equipCodes: target.equipCodes.length > 0
+      ? target.equipCodes
+      : Array.from(new Set(allRows.map((r) => r.equipCode).filter(Boolean))),
     cpk: capability?.cpk ?? null,
     health: healthOf(violations, capability?.cpk ?? null, last?.id ?? 0),
     oocCount: violations.filter((v) => v.rule === 'R1' || v.rule === 'RR1').length,

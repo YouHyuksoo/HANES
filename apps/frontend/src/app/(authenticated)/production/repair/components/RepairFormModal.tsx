@@ -14,7 +14,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Search } from "lucide-react";
-import { Modal, Button, Input, Select } from "@/components/ui";
+import { Modal, Button, Input } from "@/components/ui";
 import {
   BarcodeScanInput,
   ComCodeSelect,
@@ -24,6 +24,10 @@ import {
   QtyInput,
 } from "@/components/shared";
 import type { PartItem } from "@/components/shared/PartSearchModal";
+import { repairStage } from '@harness/shared';
+import { formatDateOnly } from '@/utils/date';
+import RepairWorkflowPanel from './RepairWorkflowPanel';
+import { useRepairText } from '../repairText';
 import api from "@/services/api";
 
 /** 사용부품 행 타입 */
@@ -69,9 +73,15 @@ export default function RepairFormModal({
   isOpen,
   onClose,
   onSaved,
-  editData,
+  editData: initialEditData,
 }: RepairFormModalProps) {
   const { t } = useTranslation();
+  const text = useRepairText();
+  const [editData,setEditData] = useState<RepairOrderData | null>(initialEditData ?? null);
+  const [error,setError] = useState('');
+  useEffect(()=>{if(isOpen){setEditData(initialEditData ?? null);setError('');}},[isOpen,initialEditData]);
+  const stage=editData?repairStage(editData):'received';
+  const readOnly=stage==='completed'||stage==='inspection'||stage==='unknown';
   const barcodeRef = useRef<HTMLInputElement>(null);
   const isEdit = !!editData;
 
@@ -83,12 +93,10 @@ export default function RepairFormModal({
   const [prdUid, setPrdUid] = useState("");
   const [sourceProcess, setSourceProcess] = useState("");
   const [returnProcess, setReturnProcess] = useState("");
-  const [repairResult, setRepairResult] = useState("");
   const [genuineType, setGenuineType] = useState("");
   const [defectType, setDefectType] = useState("");
   const [defectCause, setDefectCause] = useState("");
   const [defectPosition, setDefectPosition] = useState("");
-  const [disposition, setDisposition] = useState("");
   const [workerId, setWorkerId] = useState("");
   const [remark, setRemark] = useState("");
   const [saving, setSaving] = useState(false);
@@ -109,12 +117,10 @@ export default function RepairFormModal({
       setPrdUid(editData.prdUid || "");
       setSourceProcess(editData.sourceProcess || "");
       setReturnProcess(editData.returnProcess || "");
-      setRepairResult(editData.repairResult || "");
       setGenuineType(editData.genuineType || "");
       setDefectType(editData.defectType || "");
       setDefectCause(editData.defectCause || "");
       setDefectPosition(editData.defectPosition || "");
-      setDisposition(editData.disposition || "");
       setWorkerId(editData.workerId || "");
       setRemark(editData.remark || "");
       setUsedParts(editData.usedParts || []);
@@ -122,22 +128,29 @@ export default function RepairFormModal({
       setFgBarcode(""); setItemCode(""); setItemName("");
       setQty(1); setPrdUid("");
       setSourceProcess(""); setReturnProcess("");
-      setRepairResult(""); setGenuineType("");
+      setGenuineType("");
       setDefectType(""); setDefectCause("");
-      setDefectPosition(""); setDisposition("");
+      setDefectPosition("");
       setWorkerId(""); setRemark("");
       setUsedParts([]);
     }
   }, [isOpen, editData]);
 
-  /** 바코드 스캔 처리 */
-  const handleBarcodeScan = useCallback((rawFgBarcode?: string) => {
-    const scanned = (rawFgBarcode ?? fgBarcode).replace(/\r?\n|\r/g, "").trim();
-    if (!scanned) return;
-    setFgBarcode(scanned);
-    // 바코드로 품목 정보 조회 가능하면 여기서 처리
-    barcodeRef.current?.focus();
-  }, [fgBarcode]);
+  /** FG 스캔 시 서버에서 실제 라벨과 수리 대상 품목을 검증한다. */
+  const handleBarcodeScan = useCallback(async (rawFgBarcode?: string) => {
+    const scanned=(rawFgBarcode ?? fgBarcode).replace(/\r?\n|\r/g,'').trim();
+    if(!scanned || stage!=='received')return;
+    setError('');
+    try {
+      const response=await api.get('/production/repairs/barcode',{params:{barcode:scanned}});
+      const product=response.data.data;
+      setFgBarcode(product.fgBarcode);setPrdUid(product.prdUid);
+      setItemCode(product.itemCode);setItemName(product.itemName);setQty(product.qty);
+    } catch(err:unknown) {
+      setFgBarcode('');setPrdUid('');setItemCode('');setItemName('');
+      setError(String((err as {response?:{data?:{message?:string}}}).response?.data?.message??text.failed));
+    }
+  },[fgBarcode,stage,text.failed]);
 
   /** 품목 선택 (PartSearchModal) */
   const handlePartSelect = useCallback((part: PartItem) => {
@@ -147,10 +160,9 @@ export default function RepairFormModal({
 
   /** 사용부품 추가 */
   const handleAddUsedPart = useCallback((part: PartItem) => {
-    setUsedParts((prev) => [
-      ...prev,
-      { itemCode: part.itemCode, itemName: part.itemName, prdUid: "", qty: 1, remark: "" },
-    ]);
+    setUsedParts(prev=>prev.some(p=>p.itemCode===part.itemCode)
+      ?prev.map(p=>p.itemCode===part.itemCode?{...p,qty:p.qty+1}:p)
+      :[...prev,{itemCode:part.itemCode,itemName:part.itemName,prdUid:'',qty:1,remark:''}]);
   }, []);
 
   /** 사용부품 삭제 */
@@ -168,38 +180,46 @@ export default function RepairFormModal({
     []
   );
 
+  const reloadDetail = async (date=editData?.repairDate,seq=editData?.seq) => {
+    if(!date || seq==null)return;
+    const response=await api.get(`/production/repairs/${date}/${seq}`);
+    setEditData({...response.data.data,repairDate:date});
+    onSaved();
+  };
+  const currentFields={fgBarcode,itemCode,itemName,qty,prdUid,sourceProcess,returnProcess,genuineType,defectType,defectCause,defectPosition,workerId,remark};
+  const normalizeParts=(parts:UsedPartRow[])=>parts.map(p=>({itemCode:p.itemCode,itemName:p.itemName??'',prdUid:p.prdUid??'',qty:p.qty,remark:p.remark??''}));
+  const dirty=!editData || Object.entries(currentFields).some(([key,value])=>String(value??'')!==String(editData[key as keyof RepairOrderData]??''))
+    || JSON.stringify(normalizeParts(usedParts))!==JSON.stringify(normalizeParts(editData.usedParts??[]));
+
   /** 저장 */
   const handleSave = async () => {
-    if (!itemCode) return;
+    if (!itemCode || readOnly) return;
+    setError('');
     setSaving(true);
     try {
       const body = {
-        fgBarcode: fgBarcode || undefined,
+        fgBarcode: fgBarcode || '',
         itemCode,
-        itemName: itemName || undefined,
+        itemName: itemName || '',
         qty,
-        prdUid: prdUid || undefined,
-        sourceProcess: sourceProcess || undefined,
-        returnProcess: returnProcess || undefined,
-        repairResult: repairResult || undefined,
-        genuineType: genuineType || undefined,
-        defectType: defectType || undefined,
-        defectCause: defectCause || undefined,
-        defectPosition: defectPosition || undefined,
-        disposition: disposition || undefined,
-        workerId: workerId || undefined,
-        remark: remark || undefined,
-        usedParts: usedParts.length > 0 ? usedParts : undefined,
+        prdUid: prdUid || '',
+        sourceProcess: sourceProcess || '',
+        returnProcess: returnProcess || '',
+        genuineType: genuineType || '',
+        defectType: defectType || '',
+        defectCause: defectCause || '',
+        defectPosition: defectPosition || '',
+        workerId: workerId || '',
+        remark: remark || '',
+        usedParts,
       };
-      if (isEdit && editData) {
-        await api.put(`/production/repairs/${editData.repairDate}/${editData.seq}`, body);
-      } else {
-        await api.post("/production/repairs", body);
-      }
-      onSaved();
-      onClose();
-    } catch {
-      // 에러는 api interceptor에서 처리
+      const response = isEdit && editData
+        ? await api.put(`/production/repairs/${editData.repairDate}/${editData.seq}`, body)
+        : await api.post('/production/repairs', body);
+      const saved=response.data.data;
+      await reloadDetail(formatDateOnly(saved.repairDate),saved.seq);
+    } catch(err:unknown) {
+      setError(String((err as {response?:{data?:{message?:string}}}).response?.data?.message??text.failed));
     } finally {
       setSaving(false);
     }
@@ -214,6 +234,8 @@ export default function RepairFormModal({
         size="xl"
       >
         <div className="space-y-4">
+          {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+          <fieldset disabled={readOnly || saving} className="space-y-4">
           {/* FG 바코드 스캔 */}
           <div>
             <label className="block text-sm font-medium text-text-secondary dark:text-slate-400 mb-1">
@@ -223,11 +245,16 @@ export default function RepairFormModal({
               <BarcodeScanInput
                 ref={barcodeRef}
                 value={fgBarcode}
-                onChange={setFgBarcode}
+                onChange={value=>{setFgBarcode(value);if(!value)setPrdUid('');}}
                 onScan={handleBarcodeScan}
                 placeholder={t("production.repair.scanBarcode")}
                 className="h-12 text-lg"
                 fullWidth
+                disabled={stage!=='received'}
+                maintainFocus={false}
+                blinkIndicator
+                serialFocusedOnly
+                refocusAfterScan
               />
             </div>
           </div>
@@ -241,24 +268,22 @@ export default function RepairFormModal({
               </label>
               <div className="flex gap-2">
                 <Input value={itemCode} readOnly placeholder={t("production.repair.itemCode")} fullWidth />
-                <Button variant="outline" size="sm" onClick={() => setItemSearchOpen(true)}>
+                <Button variant="outline" size="sm" disabled={stage!=='received'||!!fgBarcode} onClick={() => setItemSearchOpen(true)}>
                   <Search className="w-4 h-4" />
                 </Button>
               </div>
               {itemName && <p className="text-xs text-text-muted mt-1">{itemName}</p>}
             </div>
 
-            <QtyInput label={t("production.repair.qty")} value={qty} onChange={(n) => setQty(n)} fullWidth />
-            <Input label={t("production.repair.prdUid")} value={prdUid} onChange={(e) => setPrdUid(e.target.value)} fullWidth />
-            <ProcessSelect label={t("production.repair.sourceProcess")} value={sourceProcess} onChange={setSourceProcess} fullWidth />
+            <QtyInput disabled={stage!=='received'||!!fgBarcode} label={t("production.repair.qty")} value={qty} onChange={(n) => setQty(n)} fullWidth />
+            <Input label={t("production.repair.prdUid")} value={prdUid} readOnly fullWidth />
+            <ProcessSelect disabled={stage!=='received'} label={t("production.repair.sourceProcess")} value={sourceProcess} onChange={setSourceProcess} fullWidth />
             <ProcessSelect label={t("production.repair.returnProcess")} value={returnProcess} onChange={setReturnProcess} fullWidth />
             <WorkerSelect label={t("production.repair.worker")} value={workerId} onChange={setWorkerId} fullWidth />
             <ComCodeSelect groupCode="DEFECT_GENUINE" label={t("production.repair.genuineType")} value={genuineType} onChange={setGenuineType} includeAll={false} fullWidth />
             <ComCodeSelect groupCode="DEFECT_TYPE" label={t("production.repair.defectType")} value={defectType} onChange={setDefectType} includeAll={false} fullWidth />
             <ComCodeSelect groupCode="DEFECT_CAUSE" label={t("production.repair.defectCause")} value={defectCause} onChange={setDefectCause} includeAll={false} fullWidth />
             <ComCodeSelect groupCode="DEFECT_POSITION" label={t("production.repair.defectPosition")} value={defectPosition} onChange={setDefectPosition} includeAll={false} fullWidth />
-            <ComCodeSelect groupCode="REPAIR_RESULT" label={t("production.repair.repairResult")} value={repairResult} onChange={setRepairResult} includeAll={false} fullWidth />
-            <ComCodeSelect groupCode="REPAIR_DISPOSITION" label={t("production.repair.disposition")} value={disposition} onChange={setDisposition} includeAll={false} fullWidth />
             <Input label={t("production.repair.remark")} value={remark} onChange={(e) => setRemark(e.target.value)} fullWidth />
           </div>
 
@@ -273,6 +298,7 @@ export default function RepairFormModal({
                 {t("production.repair.addPart")}
               </Button>
             </div>
+            <p className="text-xs text-text-muted mb-2">{text.partsHelp}</p>
             {usedParts.length > 0 ? (
               <div className="border border-border-default dark:border-slate-600 rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
@@ -280,7 +306,6 @@ export default function RepairFormModal({
                     <tr>
                       <th className="px-3 py-2 text-left">{t("production.repair.itemCode")}</th>
                       <th className="px-3 py-2 text-left">{t("production.repair.itemName")}</th>
-                      <th className="px-3 py-2 text-left">{t("production.repair.prdUid")}</th>
                       <th className="px-3 py-2 text-center w-20">{t("production.repair.qty")}</th>
                       <th className="px-3 py-2 text-left">{t("production.repair.remark")}</th>
                       <th className="px-3 py-2 w-10"></th>
@@ -291,14 +316,6 @@ export default function RepairFormModal({
                       <tr key={idx} className="border-t border-border-default dark:border-slate-600">
                         <td className="px-3 py-1.5 font-mono text-xs">{part.itemCode}</td>
                         <td className="px-3 py-1.5 text-xs">{part.itemName}</td>
-                        <td className="px-3 py-1.5">
-                          <input
-                            type="text"
-                            value={part.prdUid}
-                            onChange={(e) => handlePartFieldChange(idx, "prdUid", e.target.value)}
-                            className="w-full px-2 py-1 text-xs border border-border-default dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-text-primary dark:text-slate-200"
-                          />
-                        </td>
                         <td className="px-3 py-1.5">
                           <QtyInput
                             value={part.qty}
@@ -331,13 +348,15 @@ export default function RepairFormModal({
             )}
           </div>
 
+          </fieldset>
           {/* 버튼 */}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
-            <Button onClick={handleSave} disabled={saving || !itemCode}>
+            <Button onClick={handleSave} disabled={saving || !itemCode || readOnly || !dirty}>
               {saving ? t("common.saving") : t("common.save")}
             </Button>
           </div>
+          {editData && <RepairWorkflowPanel key={`${editData.seq}-${editData.status}-${editData.repairResult}-${editData.disposition}-${JSON.stringify(editData.usedParts)}`} order={editData} dirty={dirty} onDone={reloadDetail}/>}
         </div>
       </Modal>
 
@@ -346,6 +365,7 @@ export default function RepairFormModal({
         isOpen={itemSearchOpen}
         onClose={() => setItemSearchOpen(false)}
         onSelect={handlePartSelect}
+        allowedItemTypes={["FINISHED","SEMI_PRODUCT"]}
       />
 
       {/* 사용부품 선택 모달 */}
@@ -353,6 +373,7 @@ export default function RepairFormModal({
         isOpen={partModalOpen}
         onClose={() => setPartModalOpen(false)}
         onSelect={handleAddUsedPart}
+        allowedItemTypes={["RAW_MATERIAL"]}
       />
     </>
   );

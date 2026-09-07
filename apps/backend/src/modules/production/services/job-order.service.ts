@@ -39,8 +39,12 @@ import {
   UpdateErpSyncDto,
 } from '../dto/job-order.dto';
 import { parseDateStart } from '../../../shared/date.util';
+import { parseCsvList } from '../../../common/utils/csv-list.util';
 
 /** 작업지시 조회 시 공통으로 사용하는 select 필드 */
+/** 설비 필터의 "미착수"(실적 없음) 선택값 — 실제 EQUIP_CODE와 겹치지 않는 프론트 표시용 상수(프론트와 동일 문자열 공유) */
+export const JOB_ORDER_UNASSIGNED_EQUIP = '__UNASSIGNED__';
+
 const JOB_ORDER_SELECT: FindOptionsSelect<JobOrder> = {
   orderNo: true, planNo: true, itemCode: true, lineCode: true, routingCode: true,
   processCode: true, orderKind: true, routingSeq: true, equipCode: true,
@@ -343,15 +347,45 @@ export class JobOrderService {
     if (itemCode) qb.andWhere('jo.itemCode = :itemCode', { itemCode });
     if (lineCode) qb.andWhere('jo.lineCode = :lineCode', { lineCode });
     if (equipCode) {
-      const conditions = [
-        'EXISTS (SELECT 1 FROM PROD_RESULTS pr',
-        'WHERE pr.ORDER_NO = jo.ORDER_NO',
-        'AND pr.EQUIP_CODE = :equipCode',
-      ];
-      if (company) conditions.push('AND pr.COMPANY = :company');
-      if (plant) conditions.push('AND pr.PLANT_CD = :plant');
-      conditions.push(')');
-      qb.andWhere(conditions.join(' '), { equipCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) });
+      // 복수 선택(쉼표 구분) — "__UNASSIGNED__" 는 실적이 아예 없는(미착수) 작업지시를 뜻한다.
+      // 실적 기준 필터라 실적이 없는 지시는 어떤 설비를 골라도 안 걸리므로, 미착수를 명시적 선택지로 둬야
+      // "전체 선택"이 실제 전체와 같아진다(작업지시관리 화면과 같은 원칙).
+      const rawCodes = parseCsvList(equipCode);
+      const equipCodes = rawCodes.filter((c) => c !== JOB_ORDER_UNASSIGNED_EQUIP);
+      const includeUnstarted = rawCodes.includes(JOB_ORDER_UNASSIGNED_EQUIP);
+      const tenantConditions: string[] = [];
+      if (company) tenantConditions.push('AND pr.COMPANY = :equipTenantCompany');
+      if (plant) tenantConditions.push('AND pr.PLANT_CD = :equipTenantPlant');
+      const tenantParams = {
+        ...(company ? { equipTenantCompany: company } : {}),
+        ...(plant ? { equipTenantPlant: plant } : {}),
+      };
+
+      const branches: string[] = [];
+      if (equipCodes.length > 0) {
+        branches.push(
+          [
+            'EXISTS (SELECT 1 FROM PROD_RESULTS pr',
+            'WHERE pr.ORDER_NO = jo.ORDER_NO',
+            'AND pr.EQUIP_CODE IN (:...equipCodes)',
+            ...tenantConditions,
+            ')',
+          ].join(' '),
+        );
+      }
+      if (includeUnstarted) {
+        branches.push(
+          [
+            'NOT EXISTS (SELECT 1 FROM PROD_RESULTS pr',
+            'WHERE pr.ORDER_NO = jo.ORDER_NO',
+            ...tenantConditions,
+            ')',
+          ].join(' '),
+        );
+      }
+      if (branches.length > 0) {
+        qb.andWhere(`(${branches.join(' OR ')})`, { equipCodes, ...tenantParams });
+      }
     }
     if (assignableEquipCode) {
       qb.andWhere('(jo.equipCode IS NULL OR jo.equipCode = :assignableEquipCode)', { assignableEquipCode });

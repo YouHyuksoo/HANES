@@ -26,9 +26,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { In, Repository, DataSource } from 'typeorm';
+import * as XLSX from 'xlsx';
 import { SpcChart } from '../../../../entities/spc-chart.entity';
 import { SpcData } from '../../../../entities/spc-data.entity';
+import { ItemMaster } from '../../../../entities/item-master.entity';
+import { ProcessMaster } from '../../../../entities/process-master.entity';
 import { NumberingService } from '../../../../shared/numbering.service';
 import {
   CreateSpcChartDto,
@@ -36,6 +39,80 @@ import {
   CreateSpcDataDto,
   SpcChartFilterDto,
 } from '../dto/spc.dto';
+
+const SPC_DATA_SOURCE_VALUES = ['IQC', 'PROCESS', 'OQC', 'MANUAL'] as const;
+
+/** 관리도 엑셀 업로드 행 원본 (헤더는 한글 고정) */
+interface SpcChartExcelRow {
+  '품목코드'?: unknown;
+  '공정코드'?: unknown;
+  '특성명'?: unknown;
+  '서브그룹크기'?: unknown;
+  'LSL'?: unknown;
+  'TARGET'?: unknown;
+  'USL'?: unknown;
+  '데이터출처'?: unknown;
+  '소스검사항목명'?: unknown;
+}
+
+export interface SpcChartPreviewRow {
+  row: number;
+  itemCode: string;
+  processCode: string;
+  characteristicName: string;
+  subgroupSize: number | null;
+  lsl: number | null;
+  target: number | null;
+  usl: number | null;
+  dataSource: string;
+  status: 'new' | 'duplicate_file' | 'duplicate_db' | 'error';
+  message?: string;
+}
+
+export interface SpcChartPreviewResult {
+  rows: SpcChartPreviewRow[];
+  newCount: number;
+  duplicateCount: number;
+  errorCount: number;
+}
+
+export interface SpcChartUploadResult {
+  inserted: number;
+  skipped: number;
+  errors: { row: number; message: string }[];
+}
+
+/** 측정데이터 엑셀 업로드 행 원본 (헤더는 한글 고정) */
+interface SpcDataExcelRow {
+  '관리도번호'?: unknown;
+  '측정일시'?: unknown;
+  '서브그룹번호'?: unknown;
+  '측정값(쉼표구분)'?: unknown;
+  '설비코드'?: unknown;
+  '비고'?: unknown;
+}
+
+export interface SpcDataPreviewRow {
+  row: number;
+  chartId: string;
+  sampleDate: string;
+  subgroupNo: number | null;
+  values: number[];
+  equipCode: string;
+  status: 'new' | 'error';
+  message?: string;
+}
+
+export interface SpcDataPreviewResult {
+  rows: SpcDataPreviewRow[];
+  newCount: number;
+  errorCount: number;
+}
+
+export interface SpcDataUploadResult {
+  inserted: number;
+  errors: { row: number; message: string }[];
+}
 
 /** Xbar-R 관리도 상수 (A2, D3, D4) — 서브그룹 크기별 */
 const XBAR_R_CONSTANTS: Record<number, { A2: number; D3: number; D4: number }> = {
@@ -59,6 +136,10 @@ export class SpcService {
     private readonly chartRepo: Repository<SpcChart>,
     @InjectRepository(SpcData)
     private readonly dataRepo: Repository<SpcData>,
+    @InjectRepository(ItemMaster)
+    private readonly itemRepo: Repository<ItemMaster>,
+    @InjectRepository(ProcessMaster)
+    private readonly processRepo: Repository<ProcessMaster>,
     private readonly dataSource: DataSource,
     private readonly numbering: NumberingService,
   ) {}
@@ -249,6 +330,7 @@ export class SpcService {
       range: parseFloat(range.toFixed(4)),
       stdDev: parseFloat(stdDev.toFixed(4)),
       outOfControl,
+      equipCode: dto.equipCode,
       remark: dto.remark,
       company,
       plant,
@@ -258,6 +340,250 @@ export class SpcService {
     const saved = await this.dataRepo.save(entity);
     this.logger.log(`SPC 데이터 입력: chartId=${dto.chartId}, subgroupNo=${dto.subgroupNo}`);
     return saved;
+  }
+
+  // =============================================
+  // 관리도 엑셀 업로드 (미리보기 → 확정)
+  // =============================================
+
+  /** 업로드 양식용 빈 xlsx 템플릿 (헤더만) */
+  downloadChartTemplate(): Buffer {
+    const headers = ['품목코드', '공정코드', '특성명', '서브그룹크기', 'LSL', 'TARGET', 'USL', '데이터출처', '소스검사항목명'];
+    const ws = XLSX.utils.aoa_to_sheet([headers]);
+    ws['!cols'] = headers.map(() => ({ wch: 16 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'SPC_CHARTS');
+    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
+  }
+
+  private parseChartRow(r: SpcChartExcelRow, rowNum: number): Omit<SpcChartPreviewRow, 'status' | 'message'> & { valid: boolean; error?: string } {
+    const str = (v: unknown) => String(v ?? '').trim();
+    const num = (v: unknown): number | null => (v === '' || v === null || v === undefined || isNaN(Number(v)) ? null : Number(v));
+
+    const itemCode = str(r['품목코드']);
+    const processCode = str(r['공정코드']);
+    const characteristicName = str(r['특성명']);
+    const subgroupSize = num(r['서브그룹크기']);
+    const dataSource = str(r['데이터출처']) || 'MANUAL';
+
+    const base = {
+      row: rowNum, itemCode, processCode, characteristicName,
+      subgroupSize, lsl: num(r['LSL']), target: num(r['TARGET']), usl: num(r['USL']), dataSource,
+    };
+
+    if (!itemCode || !processCode || !characteristicName) {
+      return { ...base, valid: false, error: '품목코드, 공정코드, 특성명은 필수입니다.' };
+    }
+    if (subgroupSize !== null && (subgroupSize < 2 || subgroupSize > 25)) {
+      return { ...base, valid: false, error: '서브그룹크기는 2~25 사이여야 합니다.' };
+    }
+    if (!(SPC_DATA_SOURCE_VALUES as readonly string[]).includes(dataSource)) {
+      return { ...base, valid: false, error: `데이터출처는 ${SPC_DATA_SOURCE_VALUES.join('/')} 중 하나여야 합니다.` };
+    }
+    return { ...base, valid: true };
+  }
+
+  /** 관리도 업로드 미리보기 — 신규/중복(품목+공정+특성명)/오류 사전 확인 */
+  async previewChartUpload(buffer: Buffer, company?: string, plant?: string): Promise<SpcChartPreviewResult> {
+    const wb = XLSX.read(buffer, { type: 'buffer' });
+    const jsonRows = XLSX.utils.sheet_to_json<SpcChartExcelRow>(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+
+    const parsedList = jsonRows.map((r, i) => this.parseChartRow(r, i + 2));
+    const itemCodes = Array.from(new Set(parsedList.filter((p) => p.valid).map((p) => p.itemCode)));
+    const processCodes = Array.from(new Set(parsedList.filter((p) => p.valid).map((p) => p.processCode)));
+    const [items, processes] = await Promise.all([
+      itemCodes.length > 0
+        ? this.itemRepo.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) }, select: ['itemCode'] })
+        : Promise.resolve([]),
+      processCodes.length > 0
+        ? this.processRepo.find({ where: { processCode: In(processCodes), ...this.tenantWhere(company, plant) }, select: ['processCode'] })
+        : Promise.resolve([]),
+    ]);
+    const validItemCodes = new Set(items.map((i) => i.itemCode));
+    const validProcessCodes = new Set(processes.map((p) => p.processCode));
+
+    const rows: SpcChartPreviewRow[] = [];
+    const fileKeySet = new Set<string>();
+    const naturalKeys: { itemCode: string; processCode: string; characteristicName: string }[] = [];
+
+    for (const parsed of parsedList) {
+      if (!parsed.valid) {
+        rows.push({ ...parsed, status: 'error', message: parsed.error });
+        continue;
+      }
+      if (!validItemCodes.has(parsed.itemCode)) {
+        rows.push({ ...parsed, status: 'error', message: `품목코드 [${parsed.itemCode}]가 품목마스터에 없습니다.` });
+        continue;
+      }
+      if (!validProcessCodes.has(parsed.processCode)) {
+        rows.push({ ...parsed, status: 'error', message: `공정코드 [${parsed.processCode}]가 공정마스터에 없습니다.` });
+        continue;
+      }
+      const key = `${parsed.itemCode}::${parsed.processCode}::${parsed.characteristicName}`;
+      if (fileKeySet.has(key)) {
+        rows.push({ ...parsed, status: 'duplicate_file', message: '파일 내 중복 (동일 품목·공정·특성명)' });
+        continue;
+      }
+      fileKeySet.add(key);
+      naturalKeys.push({ itemCode: parsed.itemCode, processCode: parsed.processCode, characteristicName: parsed.characteristicName });
+      rows.push({ ...parsed, status: 'new' });
+    }
+
+    if (naturalKeys.length > 0) {
+      const existing = await this.chartRepo.find({
+        where: naturalKeys.map((k) => ({ ...k, chartType: 'XBAR_R', status: 'ACTIVE', ...this.tenantWhere(company, plant) })),
+        select: ['itemCode', 'processCode', 'characteristicName'],
+      });
+      const existingKeys = new Set(existing.map((c) => `${c.itemCode}::${c.processCode}::${c.characteristicName}`));
+      for (const row of rows) {
+        if (row.status !== 'new') continue;
+        if (existingKeys.has(`${row.itemCode}::${row.processCode}::${row.characteristicName}`)) {
+          row.status = 'duplicate_db';
+          row.message = 'DB에 동일 품목·공정·특성명의 활성 관리도가 이미 있습니다.';
+        }
+      }
+    }
+
+    return {
+      rows,
+      newCount: rows.filter((r) => r.status === 'new').length,
+      duplicateCount: rows.filter((r) => r.status === 'duplicate_file' || r.status === 'duplicate_db').length,
+      errorCount: rows.filter((r) => r.status === 'error').length,
+    };
+  }
+
+  /** 관리도 엑셀 일괄 등록 — 신규만 INSERT, 중복/오류는 건너뛰고 사유를 보고한다 */
+  async uploadChartsFromExcel(buffer: Buffer, company: string, plant: string, userId: string): Promise<SpcChartUploadResult> {
+    const preview = await this.previewChartUpload(buffer, company, plant);
+    const result: SpcChartUploadResult = { inserted: 0, skipped: 0, errors: [] };
+
+    for (const row of preview.rows) {
+      if (row.status === 'error') { result.errors.push({ row: row.row, message: row.message ?? '오류' }); continue; }
+      if (row.status !== 'new') { result.skipped++; continue; }
+
+      try {
+        await this.createChart(
+          {
+            itemCode: row.itemCode,
+            processCode: row.processCode,
+            characteristicName: row.characteristicName,
+            chartType: 'XBAR_R',
+            subgroupSize: row.subgroupSize ?? undefined,
+            lsl: row.lsl ?? undefined,
+            target: row.target ?? undefined,
+            usl: row.usl ?? undefined,
+            dataSource: row.dataSource,
+          },
+          company,
+          plant,
+          userId,
+        );
+        result.inserted++;
+      } catch (e) {
+        result.errors.push({ row: row.row, message: e instanceof Error ? e.message : '등록 실패' });
+      }
+    }
+    return result;
+  }
+
+  // =============================================
+  // 측정데이터 엑셀 업로드 (미리보기 → 확정)
+  // =============================================
+
+  /** 업로드 양식용 빈 xlsx 템플릿 (헤더만) */
+  downloadDataTemplate(): Buffer {
+    const headers = ['관리도번호', '측정일시', '서브그룹번호', '측정값(쉼표구분)', '설비코드', '비고'];
+    const ws = XLSX.utils.aoa_to_sheet([headers]);
+    ws['!cols'] = headers.map(() => ({ wch: 18 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'SPC_DATA');
+    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
+  }
+
+  private parseDataRow(r: SpcDataExcelRow, rowNum: number): Omit<SpcDataPreviewRow, 'status' | 'message'> & { valid: boolean; error?: string } {
+    const str = (v: unknown) => String(v ?? '').trim();
+    const chartId = str(r['관리도번호']);
+    const sampleDateRaw = r['측정일시'];
+    const subgroupNoRaw = r['서브그룹번호'];
+    const valuesRaw = str(r['측정값(쉼표구분)']);
+    const equipCode = str(r['설비코드']);
+
+    const base = { row: rowNum, chartId, equipCode };
+
+    if (!chartId) return { ...base, sampleDate: '', subgroupNo: null, values: [], valid: false, error: '관리도번호는 필수입니다.' };
+
+    let sampleDate: Date | null = null;
+    if (sampleDateRaw instanceof Date) sampleDate = sampleDateRaw;
+    else if (typeof sampleDateRaw === 'number') sampleDate = XLSX.SSF.parse_date_code(sampleDateRaw) ? new Date(XLSX.SSF.format('yyyy-mm-dd hh:mm:ss', sampleDateRaw)) : null;
+    else if (str(sampleDateRaw)) sampleDate = new Date(str(sampleDateRaw));
+    if (!sampleDate || isNaN(sampleDate.getTime())) {
+      return { ...base, sampleDate: '', subgroupNo: null, values: [], valid: false, error: '측정일시가 없거나 형식이 올바르지 않습니다.' };
+    }
+
+    const subgroupNo = subgroupNoRaw === '' || subgroupNoRaw === null || subgroupNoRaw === undefined || isNaN(Number(subgroupNoRaw)) ? null : Number(subgroupNoRaw);
+    if (subgroupNo === null) return { ...base, sampleDate: sampleDate.toISOString(), subgroupNo: null, values: [], valid: false, error: '서브그룹번호가 없거나 숫자가 아닙니다.' };
+
+    const values = valuesRaw.split(',').map((s) => Number(s.trim())).filter((n) => Number.isFinite(n));
+    if (values.length === 0) return { ...base, sampleDate: sampleDate.toISOString(), subgroupNo, values: [], valid: false, error: '측정값이 없습니다. (쉼표로 구분해 입력)' };
+
+    return { ...base, sampleDate: sampleDate.toISOString(), subgroupNo, values, valid: true };
+  }
+
+  /** 측정데이터 업로드 미리보기 — 관리도 존재/서브그룹크기 일치 확인 */
+  async previewDataUpload(buffer: Buffer, company?: string, plant?: string): Promise<SpcDataPreviewResult> {
+    const wb = XLSX.read(buffer, { type: 'buffer' });
+    const jsonRows = XLSX.utils.sheet_to_json<SpcDataExcelRow>(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+
+    const parsedRows = jsonRows.map((r, i) => this.parseDataRow(r, i + 2));
+    const chartIds = Array.from(new Set(parsedRows.filter((p) => p.valid).map((p) => p.chartId)));
+    const charts = chartIds.length > 0
+      ? await this.chartRepo.find({ where: { chartNo: In(chartIds), ...this.tenantWhere(company, plant) } })
+      : [];
+    const chartMap = new Map(charts.map((c) => [c.chartNo, c]));
+
+    const rows: SpcDataPreviewRow[] = parsedRows.map((p) => {
+      if (!p.valid) return { ...p, status: 'error', message: p.error };
+      const chart = chartMap.get(p.chartId);
+      if (!chart) return { ...p, status: 'error', message: `관리도번호 [${p.chartId}]를 찾을 수 없습니다.` };
+      if (p.values.length !== chart.subgroupSize) {
+        return { ...p, status: 'error', message: `서브그룹 크기가 일치하지 않습니다. (필요: ${chart.subgroupSize}, 입력: ${p.values.length})` };
+      }
+      return { ...p, status: 'new' };
+    });
+
+    return {
+      rows,
+      newCount: rows.filter((r) => r.status === 'new').length,
+      errorCount: rows.filter((r) => r.status === 'error').length,
+    };
+  }
+
+  /** 측정데이터 엑셀 일괄 등록 */
+  async uploadDataFromExcel(buffer: Buffer, company: string, plant: string, userId: string): Promise<SpcDataUploadResult> {
+    const preview = await this.previewDataUpload(buffer, company, plant);
+    const result: SpcDataUploadResult = { inserted: 0, errors: [] };
+
+    for (const row of preview.rows) {
+      if (row.status !== 'new') { result.errors.push({ row: row.row, message: row.message ?? '오류' }); continue; }
+      try {
+        await this.createData(
+          {
+            chartId: row.chartId,
+            sampleDate: row.sampleDate,
+            subgroupNo: row.subgroupNo as number,
+            values: row.values,
+            equipCode: row.equipCode || undefined,
+          },
+          company,
+          plant,
+          userId,
+        );
+        result.inserted++;
+      } catch (e) {
+        result.errors.push({ row: row.row, message: e instanceof Error ? e.message : '등록 실패' });
+      }
+    }
+    return result;
   }
 
   // =============================================

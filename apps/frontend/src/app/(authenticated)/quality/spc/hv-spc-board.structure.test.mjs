@@ -99,7 +99,33 @@ test('flagBySubgroup: R1/RR1 flag only the point, pattern rules flag all members
 
 test('no stray files in spc folder besides the board set', () => {
   const files = readdirSync(`${DIR}/components`).sort();
-  assert.deepEqual(files, ['HvSpcBoard.tsx', 'HvSpcCharts.tsx', 'HvSpcDetail.tsx', 'HvSpcTargetList.tsx', 'hv-spc-theme.css', 'spc-rules.ts']);
+  assert.deepEqual(files, [
+    'HvSpcBoard.tsx', 'HvSpcCharts.tsx', 'HvSpcDetail.tsx', 'HvSpcTargetList.tsx',
+    'SpcChartUploadModal.tsx', 'SpcDataUploadModal.tsx',
+    'hv-spc-theme.css', 'spc-rules.ts',
+  ]);
+});
+
+test('board offers Excel upload for management charts and measurement data, and refetches on completion', () => {
+  assert.match(board, /import SpcChartUploadModal from "\.\/SpcChartUploadModal"/);
+  assert.match(board, /import SpcDataUploadModal from "\.\/SpcDataUploadModal"/);
+  assert.match(board, /<SpcChartUploadModal/);
+  assert.match(board, /<SpcDataUploadModal/);
+  assert.match(board, /onComplete=\{\(\) => \{ listQuery\.refetch\(\); detailQuery\.refetch\(\); \}\}/);
+});
+
+test('upload modals call the excel upload API contract and download templates via the authenticated client', () => {
+  const chartModal = read(`${DIR}/components/SpcChartUploadModal.tsx`);
+  const dataModal = read(`${DIR}/components/SpcDataUploadModal.tsx`);
+  assert.match(chartModal, /api\.post\("\/quality\/spc\/charts\/upload\/preview"/);
+  assert.match(chartModal, /api\.post\("\/quality\/spc\/charts\/upload"/);
+  assert.match(chartModal, /api\.get\("\/quality\/spc\/charts\/upload\/template", \{ responseType: "blob" \}\)/);
+  assert.match(dataModal, /api\.post\("\/quality\/spc\/data\/upload\/preview"/);
+  assert.match(dataModal, /api\.post\("\/quality\/spc\/data\/upload"/);
+  assert.match(dataModal, /api\.get\("\/quality\/spc\/data\/upload\/template", \{ responseType: "blob" \}\)/);
+  // 인증이 필요한 다운로드라 plain <a href> 로 백엔드를 직접 가리키면 안 된다
+  assert.doesNotMatch(chartModal, /<a href="\/api/);
+  assert.doesNotMatch(dataModal, /<a href="\/api/);
 });
 
 test('detail charts include the process capability distribution and the Cpk trend', () => {

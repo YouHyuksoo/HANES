@@ -122,4 +122,22 @@ export const TXN_INVARIANT_RULES: ValidationRule[] = [
            WHERE m.COMPANY = :company AND m.PLANT_CD = :plantCd
              AND m.MENU_CODE NOT IN (${KNOWN_MENU_CODE_SQL_LIST})`,
   },
+  {
+    id: 'TXN-REPAIR-001', category: 'TXN_INVARIANT', severity: 'ERROR',
+    title: '수리 수량·상태와 제품 수불 불일치',
+    description: '수리 인수 출고 수량은 수리수량과 같아야 하고, 재사용 종결만 동량의 양품 복귀 원장이 있어야 합니다. 수리 전용 원장이 없는 과거 건은 대상에서 제외합니다.',
+    targetPath: '/production/repair',
+    sql: `SELECT x.SEQ AS REF_KEY, x.STATUS, x.DISPOSITION, x.QTY, x.OUT_QTY, x.RETURN_QTY
+            FROM (SELECT r.COMPANY, r.PLANT_CD, r.SEQ, r.STATUS, r.DISPOSITION, r.QTY,
+                         SUM(CASE WHEN t.STATUS = 'DONE' AND t.QTY < 0 THEN -t.QTY ELSE 0 END) AS OUT_QTY,
+                         SUM(CASE WHEN t.STATUS = 'DONE' AND t.QTY > 0 AND t.QUALITY_STATUS = 'GOOD' THEN t.QTY ELSE 0 END) AS RETURN_QTY
+                    FROM REPAIR_ORDERS r JOIN PRODUCT_TRANSACTIONS t
+                      ON t.COMPANY = r.COMPANY AND t.PLANT_CD = r.PLANT_CD
+                     AND t.REF_TYPE = 'REPAIR' AND t.REF_ID = TO_CHAR(r.SEQ)
+                   GROUP BY r.COMPANY, r.PLANT_CD, r.SEQ, r.STATUS, r.DISPOSITION, r.QTY) x
+           WHERE x.COMPANY = :company AND x.PLANT_CD = :plantCd
+             AND (x.OUT_QTY <> x.QTY OR x.STATUS = 'RECEIVED'
+               OR (x.STATUS = 'COMPLETED' AND x.DISPOSITION IN ('REUSE', 'REINSPECT') AND x.RETURN_QTY <> x.QTY)
+               OR ((x.STATUS <> 'COMPLETED' OR x.DISPOSITION = 'SCRAP') AND x.RETURN_QTY <> 0))`,
+  },
 ];

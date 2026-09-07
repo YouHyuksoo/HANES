@@ -268,6 +268,7 @@
     "monitoring.qualityBoard": "Bảng chất lượng",
     "monitoring.invBoard": "Bảng tồn kho",
     "monitoring.jobBoard": "Bảng lệnh sản xuất",
+    "monitoring.spcBoard": "Bảng biểu đồ SPC",
     "master": "Dữ liệu cơ sở",
     "master.part": "Quản lý vật tư",
     "master.part.iqc.header": "IQC",
@@ -370,7 +371,7 @@
     "material": "Quản lý xuất nhập vật tư",
     "materialMgmt": "Quản lý vật tư",
     "productMgmt": "Quản lý xuất nhập sản phẩm",
-    "productMgmt.receive": "Nhập kho sản phẩm",
+    "productMgmt.receive": "Nhập thành phẩm (Tồn công đoạn > Tồn kho)",
     "productMgmt.receiptCancel": "Hủy nhập kho sản phẩm",
     "productMgmt.issue": "Xuất kho sản phẩm",
     "productMgmt.issueCancel": "Hủy xuất kho sản phẩm",
@@ -431,8 +432,9 @@
     "production.wipStock": "Tra cứu tồn kho BTP/TP",
     "production.wipSemiStock": "Tra cứu WIP bán thành phẩm",
     "production.fgStock": "Tra cứu WIP thành phẩm",
-    "production.wipMaterialStock": "Tồn kho vật tư công đoạn",
+    "production.wipMaterialStock": "Tra cứu WIP nguyên vật liệu",
     "production.wipMaterialTrans": "Xuất nhập vật tư công đoạn",
+    "production.productTrans": "Tra cứu xuất nhập bán/thành phẩm",
     "production.repair": "Quản lý sửa chữa",
     "inspection": "Quản lý kiểm tra",
     "inspection.integrated": "Kiểm tra tích hợp",
@@ -3347,7 +3349,7 @@
   },
   "productMgmt": {
     "receive": {
-      "title": "Nhập kho sản phẩm",
+      "title": "Nhập thành phẩm (Tồn công đoạn > Tồn kho)",
       "subtitle": "Xử lý nhập kho thành phẩm.",
       "tabWip": "Bán thành phẩm (WIP)",
       "tabFg": "Thành phẩm (FG)",
@@ -3756,11 +3758,15 @@
       "printError": "Đã xảy ra lỗi khi in nhãn FG."
     },
     "inputAssembly": {
+      "continuous": "Giữ mã quét (liên tục)",
+      "resetScans": "Xóa mã quét",
+      "continuousHelp": "Giữ nhãn còn số lượng sau xác nhận. Chỉ quét lại nhãn đã hết.",
+      "incompleteSet": "Bán thành phẩm không đủ cho một lần lắp ráp. Quét nhãn cần thiết.",
       "title": "Nhập Thực Tích Lắp Ráp",
       "description": "Quét nhãn SFG để lắp ráp thành phẩm.",
       "orderSection": "Lệnh SX (Thành phẩm)",
       "bomSection": "Yêu cầu lắp ráp",
-      "scanSection": "Quét bán thành phẩm (Bộ · Đặt lại)",
+      "scanSection": "Quét bán thành phẩm",
       "scanPlaceholder": "Quét hoặc nhập mã SFG rồi Enter",
       "scannedList": "Nhãn SFG đã quét",
       "execute": "Thực hiện lắp ráp",
@@ -3887,7 +3893,8 @@
       "warehouseConfirm": "Kho xác nhận",
       "receivedBy": "Người nhận",
       "noRawMaterial": "Không có nguyên vật liệu",
-      "exportFileName": "Lệnh sản xuất"
+      "exportFileName": "Lệnh sản xuất",
+      "equipUnassigned": "Chưa phân công"
     },
     "result": {
       "title": "Kết quả sản xuất",
@@ -3959,7 +3966,8 @@
       "searchPlaceholder": "Tìm mã lệnh, tên sản phẩm...",
       "planDateFrom": "Ngày KH (Từ)",
       "planDateTo": "Ngày KH (Đến)",
-      "shiftFilter": "Ca làm việc"
+      "shiftFilter": "Ca làm việc",
+      "equipUnassigned": "Chưa bắt đầu"
     },
     "inputManual": {
       "selectJobOrder": "Chọn lệnh sản xuất",
@@ -4188,8 +4196,8 @@
       "updatedAt": "Ngày cập nhật"
     },
     "wipMaterialStock": {
-      "title": "Tồn kho vật tư công đoạn",
-      "description": "Tra cứu tồn kho vật tư công đoạn (WIP_MAT_STOCKS) theo thiết bị",
+      "title": "Tra cứu WIP nguyên vật liệu",
+      "description": "Tra cứu WIP nguyên vật liệu (WIP_MAT_STOCKS) theo thiết bị",
       "equipCount": "Số thiết bị",
       "itemCount": "Số mặt hàng",
       "totalQty": "Tổng số lượng",
@@ -4219,6 +4227,42 @@
       "typeWipInCancel": "Hủy nhập công đoạn",
       "typeProdConsume": "Tiêu hao sản xuất",
       "typeProdConsumeCancel": "Hủy tiêu hao sản xuất"
+    },
+    "productTrans": {
+      "title": "Tra cứu xuất nhập bán/thành phẩm",
+      "description": "Tra cứu lịch sử giao dịch xuất nhập bán thành phẩm/thành phẩm (PRODUCT_TRANSACTIONS)",
+      "transNo": "Số giao dịch",
+      "transDate": "Thời gian giao dịch",
+      "transType": "Loại giao dịch",
+      "itemCode": "Mã mặt hàng",
+      "itemName": "Tên mặt hàng",
+      "itemType": "Loại mặt hàng",
+      "qualityStatus": "Trạng thái chất lượng",
+      "qty": "Số lượng",
+      "fromWarehouse": "Kho xuất",
+      "toWarehouse": "Kho nhập",
+      "orderNo": "Số lệnh sản xuất",
+      "processCode": "Mã công đoạn",
+      "refType": "Loại tham chiếu",
+      "refId": "Số tham chiếu",
+      "worker": "Người thao tác",
+      "remark": "Ghi chú",
+      "warehouse": "Kho",
+      "searchPlaceholder": "Tìm mã mặt hàng, tên mặt hàng, số lệnh sản xuất...",
+      "emptyMessage": "Không có giao dịch nào.",
+      "itemTypeSemi": "Bán thành phẩm",
+      "itemTypeFinished": "Thành phẩm",
+      "qualityGood": "Tốt",
+      "qualityDefect": "Lỗi",
+      "typeWipIn": "Nhập bán thành phẩm",
+      "typeWipInCancel": "Hủy nhập bán thành phẩm",
+      "typeWipOut": "Xuất bán thành phẩm",
+      "typeWipOutCancel": "Hủy xuất bán thành phẩm",
+      "typeFgIn": "Nhập thành phẩm",
+      "typeFgInCancel": "Hủy nhập thành phẩm",
+      "typeFgOut": "Xuất thành phẩm",
+      "typeFgOutCancel": "Hủy xuất thành phẩm",
+      "typeDefectIn": "Nhập lỗi"
     },
     "repair": {
       "title": "Quản lý sửa chữa",
@@ -4354,6 +4398,7 @@
       "pendingList": "Mã vạch chờ kiểm",
       "circuitLabel": "Nhãn mạch",
       "scanCircuitLabel": "Quét nhãn mạch",
+      "circuitSourceHelp": "Quét mã vạch nhãn mạch đang dùng tại hiện trường. Nhãn đã dùng sẽ bị từ chối do trùng lặp.",
       "circuitRequired": "Quét nhãn mạch để đạt.",
       "consumablesTitle": "Phụ tùng thiết bị tiêu hao",
       "consumableScanPlaceholder": "Quét mã vạch vật tư tiêu hao (UID)",
@@ -4658,6 +4703,13 @@
       "scanPlaceholder": "Quét mã vạch FG",
       "barcodeNotFound": "Không tìm thấy mã vạch",
       "wrongOrder": "Nhãn thuộc lệnh sản xuất khác ({{orderNo}})",
+      "continuityRequired": "Chỉ kiểm tra ngoại quan sau khi kiểm tra thông mạch đạt.",
+      "lotTargets": "Đối tượng đã đạt kiểm tra thông mạch",
+      "lotHelp": "Chọn các nhãn FG của LOT này rồi phán định một lần. Mỗi FG vẫn lưu lịch sử riêng.",
+      "selectAll": "Chọn tất cả",
+      "clearSelection": "Bỏ chọn",
+      "selectedCount": "Đã chọn {{count}}",
+      "batchLimit": "Có thể chọn tối đa {{count}} mục mỗi lần.",
       "defectCode": "Mã lỗi",
       "inspectType": "Loại kiểm tra"
     },
@@ -5124,7 +5176,16 @@
         "cpkTrend": "Xu hướng Cpk",
         "cpkTrendHint": "Cửa sổ trượt {{n}} nhóm con gần nhất",
         "cpkGood": "Tốt",
-        "cpkMin": "Tối thiểu"
+        "cpkMin": "Tối thiểu",
+        "chartUpload": "Tải lên hạng mục quản lý",
+        "dataUpload": "Tải lên dữ liệu đo",
+        "chartUploadTitle": "Tải lên Excel hạng mục quản lý",
+        "dataUploadTitle": "Tải lên Excel dữ liệu đo",
+        "downloadTemplate": "Tải mẫu",
+        "uploadWithCount": "Tải lên",
+        "analyzingFile": "Đang phân tích tệp...",
+        "xlsxOnlyHint": "Chỉ chấp nhận tệp .xlsx. Mã mặt hàng/mã công đoạn phải đã có trong dữ liệu chuẩn.",
+        "dataXlsxHint": "Chỉ chấp nhận tệp .xlsx. Số quản lý đồ thị phải đã tồn tại, và số lượng giá trị đo phải khớp với kích thước nhóm con của quản lý đồ thị."
       }
     },
     "controlPlan": {

@@ -28,6 +28,8 @@ interface Props {
   decimals: number;
   flags: Map<number, SpcPointFlag>;
   capability: SpcCapability | null;
+  /** 모니터링 보드에서는 각 셀의 높이에 맞춰 SVG까지 확장한다. */
+  fillHeight?: boolean;
 }
 
 /** Cpk 추이 이동 창(서브그룹 수) — health 판정 창과 같은 25 */
@@ -67,7 +69,7 @@ interface DotProps {
 
 const HIST_BINS = 15;
 
-export default function HvSpcCharts({ subgroups, stats, spec, unit, decimals, flags, capability }: Props) {
+export default function HvSpcCharts({ subgroups, stats, spec, unit, decimals, flags, capability, fillHeight = false }: Props) {
   const { t } = useTranslation();
 
   const colors = useMemo(() => ({
@@ -175,7 +177,7 @@ export default function HvSpcCharts({ subgroups, stats, spec, unit, decimals, fl
             UCL {fmt(stats.xbarUCL)} · CL {fmt(stats.xbarCL)} · LCL {fmt(stats.xbarLCL)}
           </span>
         </div>
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={fillHeight ? "100%" : 240}>
           <ComposedChart data={data} margin={{ top: 8, right: 52, left: 0, bottom: 4 }}>
             <CartesianGrid stroke={colors.line} vertical={false} />
             <XAxis dataKey="label" tick={tick} interval="preserveStartEnd" minTickGap={24} />
@@ -209,7 +211,7 @@ export default function HvSpcCharts({ subgroups, stats, spec, unit, decimals, fl
             UCL {fmt(stats.rUCL)} · R̄ {fmt(stats.rCL)}
           </span>
         </div>
-        <ResponsiveContainer width="100%" height={160}>
+        <ResponsiveContainer width="100%" height={fillHeight ? "100%" : 160}>
           <LineChart data={data} margin={{ top: 8, right: 52, left: 0, bottom: 4 }}>
             <CartesianGrid stroke={colors.line} vertical={false} />
             <XAxis dataKey="label" tick={tick} interval="preserveStartEnd" minTickGap={24} />
@@ -240,7 +242,7 @@ export default function HvSpcCharts({ subgroups, stats, spec, unit, decimals, fl
               {` · X̿ ${fmt(stats.xbarBar)}`}
             </span>
           </div>
-          <ResponsiveContainer width="100%" height={190}>
+          <ResponsiveContainer width="100%" height={fillHeight ? "100%" : 190}>
             <ComposedChart data={capData} margin={{ top: 8, right: 52, left: 0, bottom: 4 }} barCategoryGap={1}>
               <CartesianGrid stroke={colors.line} vertical={false} />
               <XAxis dataKey="x" tick={tick} interval="preserveStartEnd" minTickGap={20} />
@@ -267,9 +269,9 @@ export default function HvSpcCharts({ subgroups, stats, spec, unit, decimals, fl
                   label={{ value: "X̿", position: "top", fill: colors.ink2, fontSize: 10, fontFamily: "var(--hv-mono)" }} />
               )}
               <Bar dataKey="count" isAnimationActive={false}>
-                {capData.map((b) => {
+                {capData.map((b, i) => {
                   const out = (spec.usl !== null && b.lo >= spec.usl) || (spec.lsl !== null && b.hi <= spec.lsl);
-                  return <Cell key={b.x} fill={out ? colors.stop : colors.ink2} fillOpacity={out ? 0.9 : 0.45} />;
+                  return <Cell key={i} fill={out ? colors.stop : colors.ink2} fillOpacity={out ? 0.9 : 0.45} />;
                 })}
               </Bar>
               <Line type="monotone" dataKey="curve" stroke={colors.ink} strokeWidth={1.5} dot={false} isAnimationActive={false} connectNulls />
@@ -287,7 +289,7 @@ export default function HvSpcCharts({ subgroups, stats, spec, unit, decimals, fl
               {t("quality.spc.hv.cpkTrendHint", "최근 {{n}} 서브그룹 이동 창", { n: CPK_WINDOW })} · {t("quality.spc.hv.cpkGood", "양호")} ≥ {CPK_GOOD} · {t("quality.spc.hv.cpkMin", "최소")} {CPK_MIN}
             </span>
           </div>
-          <ResponsiveContainer width="100%" height={150}>
+          <ResponsiveContainer width="100%" height={fillHeight ? "100%" : 150}>
             <LineChart data={cpkTrend} margin={{ top: 8, right: 52, left: 0, bottom: 4 }}>
               <CartesianGrid stroke={colors.line} vertical={false} />
               <XAxis dataKey="label" tick={tick} interval="preserveStartEnd" minTickGap={28} />

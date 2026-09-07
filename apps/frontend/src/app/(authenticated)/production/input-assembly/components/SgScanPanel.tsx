@@ -1,11 +1,12 @@
 "use client";
 
 import type { JSX } from "react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { Scan, Trash2 } from "lucide-react";
 import { BarcodeScanInput } from "@/components/shared";
+import { Button, ComCodeBadge } from "@/components/ui";
 import api from "@/services/api";
 
 interface SgLabelInfo {
@@ -32,12 +33,22 @@ export default function SgScanPanel({
   components,
   onAdd,
   onRemove,
+  continuous,
+  onContinuousChange,
+  onReset,
+  disabled,
+  ready,
 }: {
   orderNo: string | undefined;
   sgList: SgLabelInfo[];
   components: AssemblyComponent[];
   onAdd: (data: SgLabelInfo) => void;
   onRemove: (sgBarcode: string) => void;
+  continuous: boolean;
+  onContinuousChange: (value: boolean) => void;
+  onReset: () => void;
+  disabled: boolean;
+  ready: boolean;
 }): JSX.Element {
   const { t } = useTranslation();
 
@@ -45,11 +56,17 @@ export default function SgScanPanel({
   const [loading, setLoading] = useState(false);
 
   const scanRef = useRef<HTMLInputElement>(null);
+  const mounted = useRef(true);
+  const scanning = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   const handleScan = useCallback(
     async (raw: string) => {
       const trimmed = raw.trim();
-      if (!trimmed) return;
+      if (!trimmed || disabled || scanning.current) return;
 
       if (!orderNo) {
         toast.error(t("production.inputAssembly.requireOrder", "작업지시를 선택하세요."));
@@ -71,12 +88,14 @@ export default function SgScanPanel({
         return;
       }
 
+      scanning.current = true;
       setLoading(true);
       try {
         const res = await api.get(
           `/production/subprocess-kitting/sg-label/${encodeURIComponent(trimmed)}`,
         );
         const data = res.data?.data as SgLabelInfo;
+        if (!mounted.current) return;
 
         if (data.remainQty <= 0) {
           toast.error(t("production.kitting.warnZeroQty", "잔량이 없는 SFG 라벨입니다."));
@@ -113,11 +132,12 @@ export default function SgScanPanel({
         toast.error(message);
         setScanInput("");
       } finally {
+        scanning.current = false;
         setLoading(false);
         scanRef.current?.focus();
       }
     },
-    [components, onAdd, orderNo, sgList, t],
+    [components, disabled, onAdd, orderNo, sgList, t],
   );
 
   return (
@@ -127,13 +147,31 @@ export default function SgScanPanel({
           <Scan className="w-5 h-5 text-primary" />
           {t("production.inputAssembly.scanSection", "반제품 스캔 (세트·리셋)")}
         </h2>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={continuous} disabled={disabled}
+              onChange={(event) => onContinuousChange(event.target.checked)} />
+            {t("production.inputAssembly.continuous")}
+          </label>
+          <Button size="sm" variant="secondary" onClick={onReset} disabled={disabled || !sgList.length}>
+            {t("production.inputAssembly.resetScans")}
+          </Button>
+        </div>
+        <p className="text-xs text-text-muted mb-2">{t("production.inputAssembly.continuousHelp")}</p>
+        {!!orderNo && !ready && (
+          <p className="text-xs text-amber-600 mb-2">{t("production.inputAssembly.incompleteSet")}</p>
+        )}
         <BarcodeScanInput
           ref={scanRef}
           value={scanInput}
           onChange={setScanInput}
           onScan={handleScan}
           placeholder={t("production.inputAssembly.scanPlaceholder", "SFG 바코드 스캔 또는 입력 후 Enter")}
-          disabled={!orderNo || loading}
+          disabled={disabled || !orderNo || loading}
+          maintainFocus={false}
+          blinkIndicator
+          serialFocusedOnly
+          refocusAfterScan
           fullWidth
         />
       </div>
@@ -186,15 +224,14 @@ export default function SgScanPanel({
                       {item.remainQty != null ? item.remainQty.toLocaleString() : "-"}
                     </td>
                     <td className="px-3 py-2 text-center">
-                      <span className="px-2 py-0.5 rounded text-xs border border-border text-text-muted">
-                        {item.status}
-                      </span>
+                      <ComCodeBadge groupCode="SG_LABEL_STATUS" code={item.status} />
                     </td>
                     <td className="px-3 py-2 text-center">
                       <button
                         type="button"
                         className="p-1 rounded hover:bg-red-500/10 text-red-500"
                         onClick={() => onRemove(item.sgBarcode)}
+                        disabled={disabled}
                         title={t("common.delete")}
                       >
                         <Trash2 className="w-3.5 h-3.5" />

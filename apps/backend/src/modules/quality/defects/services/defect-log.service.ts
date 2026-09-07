@@ -41,6 +41,8 @@ import {
   DEFECT_LOG_OPEN_STATUSES,
   canTransitionDefectLogStatus,
 } from '@harness/shared';
+import { TransactionService } from '../../../../shared/transaction.service';
+import { ProdResultService } from '../../../production/services/prod-result.service';
 
 @Injectable()
 export class DefectLogService {
@@ -59,6 +61,8 @@ export class DefectLogService {
     private readonly fgLabelRepository: Repository<FgLabel>,
     @InjectRepository(DefectCodeMaster)
     private readonly defectCodeRepository: Repository<DefectCodeMaster>,
+    private readonly tx: TransactionService,
+    private readonly prodResultService: ProdResultService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -328,29 +332,35 @@ export class DefectLogService {
     }
     this.assertSameTenant('생산실적', prodResult, company, plant);
 
-    // 불량 등록 및 생산실적 불량수량 증가를 트랜잭션으로 처리
-    const defectLog = this.defectLogRepository.create({
-      prodResultNo,
-      defectCode: defectCodeMaster.defectCode,
-      defectName: defectCodeMaster.defectName,
-      qty: dto.qty ?? 1,
-      status: dto.status ?? DEFECT_LOG_STATUS.WAIT,
-      cause: dto.cause,
-      occurAt: dto.occurAt ? new Date(dto.occurAt) : new Date(),
-      imageUrl: dto.imageUrl,
-      company,
-      plant,
+    // 불량 등록 + 생산실적 불량수량 증가 + 작업지시 집계 동기화를 한 트랜잭션으로 처리
+    return this.tx.run(async (qr) => {
+      const defectLog = qr.manager.create(DefectLog, {
+        prodResultNo,
+        defectCode: defectCodeMaster.defectCode,
+        defectName: defectCodeMaster.defectName,
+        qty: dto.qty ?? 1,
+        status: dto.status ?? DEFECT_LOG_STATUS.WAIT,
+        cause: dto.cause,
+        occurAt: dto.occurAt ? new Date(dto.occurAt) : new Date(),
+        imageUrl: dto.imageUrl,
+        company,
+        plant,
+      });
+
+      const savedDefectLog = await qr.manager.save(DefectLog, defectLog);
+
+      // 생산실적의 불량수량 증가
+      await qr.manager.update(
+        ProdResult,
+        { resultNo: prodResultNo, ...this.tenantWhere(company, plant) },
+        { defectQty: prodResult.defectQty + (dto.qty ?? 1) },
+      );
+
+      // 작업지시 GOOD_QTY/DEFECT_QTY 집계를 실적 합계로 재동기화(TXN-PROD-001 불변식 유지)
+      await this.prodResultService.syncJobOrderFromResultsInTx(qr, prodResult.orderNo, company, plant);
+
+      return savedDefectLog;
     });
-
-    const savedDefectLog = await this.defectLogRepository.save(defectLog);
-
-    // 생산실적의 불량수량 증가
-    await this.prodResultRepository.update(
-      { resultNo: prodResultNo, ...this.tenantWhere(company, plant) },
-      { defectQty: prodResult.defectQty + (dto.qty ?? 1) }
-    );
-
-    return savedDefectLog;
   }
 
   /**
@@ -373,20 +383,32 @@ export class DefectLogService {
     const qtyDiff = (dto.qty ?? existing.qty) - existing.qty;
 
     if (qtyDiff !== 0) {
-      await this.defectLogRepository.update(
-        pk,
-        {
-          ...(defectCodeMaster && { defectCode: defectCodeMaster.defectCode, defectName: defectCodeMaster.defectName }),
-          ...(dto.qty !== undefined && { qty: dto.qty }),
-          ...(dto.cause !== undefined && { cause: dto.cause }),
-          ...(dto.imageUrl !== undefined && { imageUrl: dto.imageUrl }),
-        }
-      );
+      // 불량로그 수량 변경 + 생산실적 불량수량 반영 + 작업지시 집계 동기화를 한 트랜잭션으로 처리
+      await this.tx.run(async (qr) => {
+        await qr.manager.update(
+          DefectLog,
+          pk,
+          {
+            ...(defectCodeMaster && { defectCode: defectCodeMaster.defectCode, defectName: defectCodeMaster.defectName }),
+            ...(dto.qty !== undefined && { qty: dto.qty }),
+            ...(dto.cause !== undefined && { cause: dto.cause }),
+            ...(dto.imageUrl !== undefined && { imageUrl: dto.imageUrl }),
+          },
+        );
 
-      await this.prodResultRepository.update(
-        { resultNo: existing.prodResultNo, ...this.tenantWhere(company, plant) },
-        { defectQty: () => `DEFECT_QTY + ${qtyDiff}` }
-      );
+        await qr.manager.update(
+          ProdResult,
+          { resultNo: existing.prodResultNo, ...this.tenantWhere(company, plant) },
+          { defectQty: () => `DEFECT_QTY + ${qtyDiff}` },
+        );
+
+        const prodResult = await qr.manager.findOne(ProdResult, {
+          where: { resultNo: existing.prodResultNo, ...this.tenantWhere(company, plant) },
+        });
+        if (prodResult) {
+          await this.prodResultService.syncJobOrderFromResultsInTx(qr, prodResult.orderNo, company, plant);
+        }
+      });
     } else {
       await this.defectLogRepository.update(
         pk,
@@ -408,13 +430,23 @@ export class DefectLogService {
     const existing = await this.findById(id, company, plant);
     await this.ensureNoLinkedRework(existing);
 
-    // 불량 삭제 시 생산실적 불량수량 감소
-    await this.defectLogRepository.delete(this.defectPkWhere(existing, company, plant));
+    // 불량 삭제 + 생산실적 불량수량 감소 + 작업지시 집계 동기화를 한 트랜잭션으로 처리
+    await this.tx.run(async (qr) => {
+      await qr.manager.delete(DefectLog, this.defectPkWhere(existing, company, plant));
 
-    await this.prodResultRepository.update(
-      { resultNo: existing.prodResultNo, ...this.tenantWhere(company, plant) },
-      { defectQty: () => `DEFECT_QTY - ${existing.qty}` }
-    );
+      await qr.manager.update(
+        ProdResult,
+        { resultNo: existing.prodResultNo, ...this.tenantWhere(company, plant) },
+        { defectQty: () => `DEFECT_QTY - ${existing.qty}` },
+      );
+
+      const prodResult = await qr.manager.findOne(ProdResult, {
+        where: { resultNo: existing.prodResultNo, ...this.tenantWhere(company, plant) },
+      });
+      if (prodResult) {
+        await this.prodResultService.syncJobOrderFromResultsInTx(qr, prodResult.orderNo, company, plant);
+      }
+    });
 
     return { id, deleted: true };
   }

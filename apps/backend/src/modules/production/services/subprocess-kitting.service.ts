@@ -28,10 +28,11 @@ import { ProductGenealogy } from '../../../entities/product-genealogy.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { RoutingMaterial } from '../../../entities/routing-material.entity';
-import { resolveRoutingConsumeQty } from '@harness/shared';
+import { planAssemblySgConsumption, resolveRoutingConsumeQty } from '@harness/shared';
 import { ConfirmAssemblyDto, ConfirmSubKitDto } from '../dto/subprocess-kitting.dto';
 import { ProductionSpecificationService } from './production-specification.service';
 import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
+import { ProdResultService } from './prod-result.service';
 
 const FG_WIP_WAREHOUSE = 'FG_WIP';   // 완제품 공정창고
 const SFG_WIP_WAREHOUSE = 'SFG_WIP'; // 반제품 공정창고
@@ -55,6 +56,7 @@ export class SubprocessKittingService {
     private readonly wipMatStockService: WipMatStockService,
     private readonly autoIssueService: AutoIssueService,
     private readonly productionSpec: ProductionSpecificationService,
+    private readonly prodResultService: ProdResultService,
   ) {}
 
   /**
@@ -174,12 +176,21 @@ export class SubprocessKittingService {
     company: string,
     plant: string,
     workerId?: string,
-  ): Promise<{ resultNo: string; fgBarcode: string; printFg: boolean }> {
+  ): Promise<{ resultNo: string; fgBarcode: string; printFg: boolean; sgLabels: Array<{
+    sgBarcode: string; itemCode: string; remainQty: number; status: string;
+    orderNo: string | null; labelType: string;
+  }> }> {
     const tenantWhere = { company, plant };
     const { fgBarcode, orderNo, equipCode, processCode, circuitNo } = dto;
 
     return this.tx.run(async (qr) => {
       // 1. FgLabel 조회 — status='ISSUED' + orderNo 일치 확인
+      // Oracle findOne + lock은 FETCH FIRST/FOR UPDATE 조합으로 ORA-02014가 발생한다.
+      // PK 원본 행을 먼저 잠근 뒤 같은 트랜잭션에서 최신 엔티티를 조회한다.
+      await qr.manager.query(
+        'SELECT FG_BARCODE FROM FG_LABELS WHERE FG_BARCODE = :1 AND COMPANY = :2 AND PLANT_CD = :3 FOR UPDATE',
+        [fgBarcode, company, plant],
+      );
       const fgLabel = await qr.manager.findOne(FgLabel, {
         where: { fgBarcode, ...tenantWhere },
       });
@@ -236,6 +247,12 @@ export class SubprocessKittingService {
         throw new BadRequestException(`완제품 BOM이 없습니다: ${jobOrder.itemCode}`);
       }
 
+      // 원자재만 쓰는 BOM은 SG genealogy가 없을 수 있으므로 실적도 확인한다.
+      const existingResult = await qr.manager.findOne(ProdResult, {
+        where: { prdUid: fgBarcode, ...tenantWhere },
+      });
+      if (existingResult) throw new BadRequestException(`이미 확정된 FG 라벨입니다: ${fgBarcode}`);
+
       const childCodes = [...new Set(bomRows.map((b) => b.childItemCode))];
       const childParts = await qr.manager.find(ItemMaster, {
         where: { itemCode: In(childCodes), ...tenantWhere },
@@ -259,9 +276,11 @@ export class SubprocessKittingService {
 
       // 3. 스캔된 SG 검증 (오투입 포함)
       const sgBarcodes = [...new Set(dto.sgBarcodes)];
-      const sgLabels = await qr.manager.find(SgLabel, {
-        where: { sgBarcode: In(sgBarcodes), ...tenantWhere },
-      });
+      if (sgBarcodes.length !== dto.sgBarcodes.length) {
+        throw new BadRequestException('중복된 SFG 라벨이 있습니다.');
+      }
+      const lockedLabels = await this.lockSgLabels(qr, sgBarcodes, tenantWhere);
+      const sgLabels = sgBarcodes.flatMap(barcode => lockedLabels.get(barcode) ?? []);
       const foundSet = new Set(sgLabels.map((s) => s.sgBarcode));
       const missing = sgBarcodes.filter((b) => !foundSet.has(b));
       if (missing.length > 0) {
@@ -283,12 +302,22 @@ export class SubprocessKittingService {
         }
       }
 
-      // 4. SG 1씩 소비 + genealogy(FG→SG, qty:1).
-      //    genealogy ID는 N+1 회피를 위해 일괄 채번 후 인덱스로 분배.
-      const sgGenIds = await this.numbering.nextGenealogyIds(qr, sgLabels.length);
-      for (let i = 0; i < sgLabels.length; i++) {
-        const sg = sgLabels[i];
-        sg.remainQty -= 1;
+      const components = bomRows.filter(b => semiCodeSet.has(b.childItemCode))
+        .map(b => ({ itemCode: b.childItemCode, qtyPer: Number(b.qtyPer) }));
+      if (components.some(component => !Number.isFinite(component.qtyPer) || component.qtyPer <= 0)) {
+        throw new BadRequestException('반제품 BOM 소요량이 올바르지 않습니다.');
+      }
+      const plan = planAssemblySgConsumption(components, sgLabels);
+      if (plan.shortages.length) {
+        throw new BadRequestException(`반제품 수량이 부족합니다: ${plan.shortages.map(s => `${s.itemCode} (필요 ${s.requiredQty}, 잔량 ${s.availableQty})`).join(', ')}`);
+      }
+
+      // 4. 완제품 1개분 BOM 수량만 스캔 순서대로 소비하고 실제 소비량을 추적한다.
+      const sgGenIds = await this.numbering.nextGenealogyIds(qr, plan.allocations.length);
+      for (let i = 0; i < plan.allocations.length; i++) {
+        const allocation = plan.allocations[i];
+        const sg = lockedLabels.get(allocation.sgBarcode)!;
+        sg.remainQty -= allocation.qty;
         sg.status = sg.remainQty === 0 ? 'CONSUMED' : 'MOUNTED';
         sg.currentProcessCode = processCode;
         await qr.manager.save(SgLabel, sg);
@@ -300,7 +329,7 @@ export class SubprocessKittingService {
           childType: 'SG',
           childKey: sg.sgBarcode,
           itemCode: sg.itemCode,
-          qty: 1,
+          qty: allocation.qty,
           processCode,
           circuitNo: circuitNo ?? null,
           company,
@@ -367,14 +396,8 @@ export class SubprocessKittingService {
         plant,
       });
 
-      // 6-1. 실적이 최초 등록되면 작업지시를 RUNNING으로 승격(prod-result.service와 동일).
-      if (jobOrder.status === 'WAITING') {
-        await qr.manager.update(
-          JobOrder,
-          { orderNo, ...tenantWhere },
-          { status: 'RUNNING', startAt: now },
-        );
-      }
+      // 6-1. 작업지시 GOOD_QTY/DEFECT_QTY 집계와 상태를 실적 합계로 동기화(prod-result.service와 동일 경로).
+      await this.prodResultService.syncJobOrderFromResultsInTx(qr, orderNo, company, plant);
 
       // 7. FG WIP 재고 적재 (kit와 동일: productInventory.receiveStockInTx)
       await this.productInventory.receiveStockInTx(qr, {
@@ -398,7 +421,10 @@ export class SubprocessKittingService {
       );
 
       const printFg = await this.isFgPrintProcess(qr, jobOrder.routingCode, processCode, { company, plant });
-      return { resultNo: resultNoForRef, fgBarcode, printFg };
+      return { resultNo: resultNoForRef, fgBarcode, printFg, sgLabels: sgLabels.map(sg => ({
+        sgBarcode: sg.sgBarcode, itemCode: sg.itemCode, remainQty: sg.remainQty,
+        status: sg.status, orderNo: sg.orderNo, labelType: sg.labelType,
+      })) };
     });
   }
 
@@ -501,9 +527,16 @@ export class SubprocessKittingService {
 
     return this.tx.run(async (qr) => {
       // 1. 새 SgLabel 조회 — status='ISSUED' + orderNo 일치 확인
-      const newSg = await qr.manager.findOne(SgLabel, {
-        where: { sgBarcode: newSgBarcode, ...tenantWhere },
-      });
+      const sgBarcodes = [...new Set(dto.inputSgBarcodes)];
+      if (sgBarcodes.length !== dto.inputSgBarcodes.length) {
+        throw new BadRequestException('중복된 SFG 라벨이 있습니다.');
+      }
+      if (sgBarcodes.includes(newSgBarcode)) {
+        throw new BadRequestException('새 SFG 라벨을 입력 SFG로 사용할 수 없습니다.');
+      }
+      // 출력/입력 전체를 동일 순서로 잠가 다른 키팅·조립과 잔량 경쟁을 방지한다.
+      const lockedLabels = await this.lockSgLabels(qr, [newSgBarcode, ...sgBarcodes], tenantWhere);
+      const newSg = lockedLabels.get(newSgBarcode);
       if (!newSg) {
         throw new BadRequestException(`SFG 라벨을 찾을 수 없습니다: ${newSgBarcode}`);
       }
@@ -589,13 +622,7 @@ export class SubprocessKittingService {
       await this.filterRawByRoutingMaterials(qr, jobOrder.routingCode, processCode, { company, plant }, rawQtyPerByItem);
 
       // 3. 스캔된 입력 SFG 검증 (오투입 포함)
-      const sgBarcodes = [...new Set(dto.inputSgBarcodes)];
-      if (sgBarcodes.includes(newSgBarcode)) {
-        throw new BadRequestException('새 SFG 라벨을 입력 SFG로 사용할 수 없습니다.');
-      }
-      const sgLabels = await qr.manager.find(SgLabel, {
-        where: { sgBarcode: In(sgBarcodes), ...tenantWhere },
-      });
+      const sgLabels = sgBarcodes.flatMap(barcode => lockedLabels.get(barcode) ?? []);
       const foundSet = new Set(sgLabels.map((s) => s.sgBarcode));
       const missing = sgBarcodes.filter((b) => !foundSet.has(b));
       if (missing.length > 0) {
@@ -706,14 +733,8 @@ export class SubprocessKittingService {
         plant,
       });
 
-      // 7-1. 실적 최초 등록 시 작업지시 RUNNING 승격(prod-result.service와 동일).
-      if (jobOrder.status === 'WAITING') {
-        await qr.manager.update(
-          JobOrder,
-          { orderNo, ...tenantWhere },
-          { status: 'RUNNING', startAt: now },
-        );
-      }
+      // 7-1. 작업지시 GOOD_QTY/DEFECT_QTY 집계와 상태를 실적 합계로 동기화(prod-result.service와 동일 경로).
+      await this.prodResultService.syncJobOrderFromResultsInTx(qr, orderNo, company, plant);
 
       // 8. 반제품 WIP 재고 +1 (SFG_WIP). 품목+창고 단일행 집계 적재.
       await this.productInventory.receiveStockInTx(qr, {
@@ -846,6 +867,22 @@ export class SubprocessKittingService {
       planQty: Number(jobOrder.planQty),
       components,
     };
+  }
+
+  /** All consumers lock SG rows by barcode; allocation order remains the user's scan order. */
+  private async lockSgLabels(qr: QueryRunner, barcodes: string[], tenant: { company: string; plant: string }) {
+    const labels = new Map<string, SgLabel>();
+    for (const sgBarcode of [...new Set(barcodes)].sort()) {
+      await qr.manager.query(
+        'SELECT SG_BARCODE FROM SG_LABELS WHERE SG_BARCODE = :1 AND COMPANY = :2 AND PLANT_CD = :3 FOR UPDATE',
+        [sgBarcode, tenant.company, tenant.plant],
+      );
+      const label = await qr.manager.findOne(SgLabel, {
+        where: { sgBarcode, ...tenant },
+      });
+      if (label) labels.set(sgBarcode, label);
+    }
+    return labels;
   }
 
   private bomEffectiveWhere(jobOrder: JobOrder) {

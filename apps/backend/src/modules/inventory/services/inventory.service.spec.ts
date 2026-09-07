@@ -526,6 +526,17 @@ describe('InventoryService', () => {
   // cancelTransaction
   // ─────────────────────────────────────────────
   describe('cancelTransaction', () => {
+    it('blocks the direct inventory cancellation route for repair material consumption', async () => {
+      mockStockTransRepo.findOne.mockResolvedValue({
+        transNo: 'TX-REPAIR', transType: 'MAT_OUT', status: 'DONE',
+        refType: 'MAT_ISSUE', refId: 'ISS-REPAIR-1', remark: 'REPAIR:71',
+        company: 'HANES', plant: 'P01',
+      } as StockTransaction);
+      await expect(target.cancelTransaction({ transactionId: 'TX-REPAIR' }, 'HANES', 'P01')).rejects.toThrow('수리');
+      expect(mockTransactionService.run).not.toHaveBeenCalled();
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
+    });
+
     it('should cancel receive transaction and restore stock', async () => {
       // Arrange
       const originalTrans = {
