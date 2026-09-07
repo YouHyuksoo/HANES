@@ -91,11 +91,14 @@ export class ReceivingService {
 
   /** 입고 가능 LOT 목록 (IQC 합격 + 미입고/부분입고) */
   async findReceivable(company?: string, plant?: string) {
+    const iqcMandatory = await this.sysConfigService.isEnabled('IQC_MANDATORY', company, plant);
     // 입고 대상 LOT 조회 (initQty > 0 조건으로 유효 LOT 필터)
     // - IQC 합격(PASS) LOT
     // - IQC 불합격(FAIL)이지만 특채(SPECIAL_ACCEPT_YN='Y') 승인된 LOT → 양품입고 허용
     const qb = this.matLotRepository.createQueryBuilder('lot')
-      .where("(lot.iqcStatus = 'PASS' OR (lot.iqcStatus = 'FAIL' AND lot.specialAcceptYn = 'Y'))")
+      .where(iqcMandatory
+        ? "(lot.iqcStatus = 'PASS' OR (lot.iqcStatus = 'FAIL' AND lot.specialAcceptYn = 'Y'))"
+        : "(lot.iqcStatus IN ('PENDING', 'PASS') OR (lot.iqcStatus = 'FAIL' AND lot.specialAcceptYn = 'Y'))")
       .andWhere('lot.status IN (:...statuses)', { statuses: [...MAT_LOT_LIVE_STATUSES] })
       .andWhere('lot.initQty > 0');
 
@@ -363,7 +366,8 @@ export class ReceivingService {
       this.assertSameTenant('입고 대상 LOT', lot, company, plant);
       // 입고 가능: IQC 합격(PASS) 또는 특채(FAIL + SPECIAL_ACCEPT_YN='Y')
       const isConcession = lot.iqcStatus === 'FAIL' && lot.specialAcceptYn === 'Y';
-      if (lot.iqcStatus !== 'PASS' && !isConcession) {
+      const iqcMandatory = await this.sysConfigService.isEnabled('IQC_MANDATORY', company, plant);
+      if (iqcMandatory && lot.iqcStatus !== 'PASS' && !isConcession) {
         throw new BadRequestException(`IQC 합격 또는 특채 승인되지 않은 LOT입니다: ${lot.matUid}`);
       }
       // 기입고수량 확인
