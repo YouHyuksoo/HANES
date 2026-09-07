@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file src/modules/quality/rework/services/rework.service.ts
  * @description 재작업 관리 서비스 — 2단계 승인, 재작업 실적, 재검사 연동
  *
@@ -34,6 +34,7 @@ import { DefectLog } from '../../../../entities/defect-log.entity';
 import { ItemMaster } from '../../../../entities/item-master.entity';
 import { ProductInventoryService } from '../../../inventory/services/product-inventory.service';
 import { NumberingService } from '../../../../shared/numbering.service';
+import { TransactionService } from '../../../../shared/transaction.service';
 import { DEFECT_LOG_STATUS, deriveDefectLogStatusFromReworkInspect } from '@harness/shared';
 import {
   CreateReworkOrderDto,
@@ -61,6 +62,7 @@ export class ReworkService {
     private readonly itemMasterRepo: Repository<ItemMaster>,
     private readonly productInventoryService: ProductInventoryService,
     private readonly numbering: NumberingService,
+    private readonly tx: TransactionService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -467,13 +469,29 @@ export class ReworkService {
     if (order.status !== 'INSPECT_PENDING') {
       throw new BadRequestException('재검사대기 상태가 아닙니다.');
     }
+    const resultQty = Number(order.resultQty ?? 0);
+    const passQty = Number(dto.passQty);
+    const failQty = Number(dto.failQty);
+    if (!Number.isInteger(passQty) || !Number.isInteger(failQty) || passQty < 0 || failQty < 0) {
+      throw new BadRequestException('합격/불합격 수량은 0 이상의 정수여야 합니다.');
+    }
+    if (resultQty <= 0 || passQty + failQty !== resultQty) {
+      throw new BadRequestException(`검사 수량이 재작업 실적과 일치하지 않습니다. 대상=${resultQty}, 입력=${passQty + failQty}`);
+    }
+    if (dto.inspectResult === 'PASS' && (passQty !== resultQty || failQty !== 0)) {
+      throw new BadRequestException('PASS 판정은 전체 수량이 합격이어야 합니다.');
+    }
+    if (dto.inspectResult === 'FAIL' && (passQty !== 0 || failQty !== resultQty)) {
+      throw new BadRequestException('FAIL 판정은 전체 수량이 불합격이어야 합니다.');
+    }
 
-    const seqRows = await this.inspectRepo.query(
+    return this.tx.run(async (qr) => {
+    const seqRows = await qr.query(
       'SELECT SEQ_REWORK_INSPECT.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
     );
     const nextSeq = Number(seqRows[0]?.NEXT_SEQ ?? seqRows[0]?.next_seq);
 
-    const inspect = this.inspectRepo.create({
+    const inspect = qr.manager.create(ReworkInspect, {
       reworkOrderId: order.reworkNo,
       seq: nextSeq,
       inspectorCode: dto.inspectorCode,
@@ -489,10 +507,10 @@ export class ReworkService {
       createdBy: userId,
       updatedBy: userId,
     });
-    const saved = await this.inspectRepo.save(inspect);
+    const saved = await qr.manager.save(ReworkInspect, inspect);
 
     // ReworkOrder 상태 및 수량 업데이트
-    await this.reworkRepo.update({ reworkNo: dto.reworkNo, company, plant }, {
+      await qr.manager.update(ReworkOrder, { reworkNo: dto.reworkNo, company, plant }, {
       status: dto.inspectResult,
       passQty: dto.passQty,
       failQty: dto.failQty,
@@ -503,12 +521,12 @@ export class ReworkService {
     // 불량 이력 상태 연동 (복합 PK 기준 업데이트)
     if (order.defectLogId) {
       const defectStatus = deriveDefectLogStatusFromReworkInspect(dto.inspectResult);
-      const reworkOrder = await this.reworkRepo.findOne({
+      const reworkOrder = await qr.manager.findOne(ReworkOrder, {
         where: { reworkNo: dto.reworkNo, company, plant },
       });
       if (reworkOrder?.defectLogId) {
         const defectWhere = this.defectLogWhere(reworkOrder.defectLogId, company, plant);
-        if (defectWhere) await this.defectLogRepo.update(defectWhere, { status: defectStatus });
+        if (defectWhere) await qr.manager.update(DefectLog, defectWhere, { status: defectStatus });
       }
     }
 
@@ -519,7 +537,7 @@ export class ReworkService {
     // 격리 시점에 실적이 불량을 DEFECT창고에 적재해 두므로, 합격해도 양품이 새로 생기는 게 아니라
     // 불량재고가 정상재고로 '이동'한다(이중계상 방지).
     if (dto.inspectResult !== 'FAIL') {
-      const part = await this.itemMasterRepo.findOne({
+      const part = await qr.manager.findOne(ItemMaster, {
         where: { itemCode: order.itemCode, ...this.tenantWhere(company, plant) },
         select: ['itemCode', 'itemType'],
       });
@@ -527,7 +545,7 @@ export class ReworkService {
 
       const wipWarehouse = itemType === 'FINISHED' ? 'FG_WIP' : 'SFG_WIP';
       if ((dto.passQty ?? 0) > 0) {
-        const moved = await this.productInventoryService.transferStockByItem({
+        const moved = await this.productInventoryService.transferStockByItemInTx(qr, {
           fromWarehouseId: 'DEFECT',
           toWarehouseId: wipWarehouse,
           itemCode: order.itemCode,
@@ -542,7 +560,7 @@ export class ReworkService {
         });
         // 불량재고가 부족하면(불량재고 도입 전 데이터 등) 부족분만 신규 입고로 보충
         if (moved < dto.passQty) {
-          await this.productInventoryService.receiveStock({
+          await this.productInventoryService.receiveStockInTx(qr, {
             warehouseId: wipWarehouse,
             itemCode: order.itemCode,
             itemType,
@@ -559,7 +577,7 @@ export class ReworkService {
       }
 
       if ((dto.failQty ?? 0) > 0) {
-        await this.productInventoryService.transferStockByItem({
+        await this.productInventoryService.transferStockByItemInTx(qr, {
           fromWarehouseId: 'DEFECT',
           toWarehouseId: 'SCRAP',
           itemCode: order.itemCode,
@@ -579,7 +597,8 @@ export class ReworkService {
     this.logger.log(
       `재검사 등록: reworkNo=${dto.reworkNo}, result=${dto.inspectResult}`,
     );
-    return saved;
+      return saved;
+    });
   }
 
   /**

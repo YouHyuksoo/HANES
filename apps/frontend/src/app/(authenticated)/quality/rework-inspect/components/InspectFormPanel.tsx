@@ -15,6 +15,7 @@ import { X } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { WorkerSelect, ComCodeSelect, QtyInput } from "@/components/shared";
 import api from "@/services/api";
+import toast from "react-hot-toast";
 
 export interface InspectTarget {
   reworkNo: string;
@@ -52,7 +53,25 @@ export default function InspectFormPanel({ target, onClose, onSave, animate = tr
   ], [t]);
 
   const handleSubmit = useCallback(async () => {
-    if (!form.inspectorCode) return;
+    const passQty = Number(form.passQty);
+    const failQty = Number(form.failQty);
+    const resultQty = Number(target.resultQty ?? 0);
+    if (!form.inspectorCode) {
+      toast.error("검사자를 선택해 주세요.");
+      return;
+    }
+    if (!Number.isInteger(passQty) || !Number.isInteger(failQty) || passQty < 0 || failQty < 0 || passQty + failQty !== resultQty) {
+      toast.error(`합격/불합격 수량 합계가 재작업 실적(${resultQty})과 일치해야 합니다.`);
+      return;
+    }
+    if (form.inspectResult === "PASS" && (passQty !== resultQty || failQty !== 0)) {
+      toast.error("PASS 판정은 전체 수량을 합격으로 입력해야 합니다.");
+      return;
+    }
+    if (form.inspectResult === "FAIL" && (passQty !== 0 || failQty !== resultQty)) {
+      toast.error("FAIL 판정은 전체 수량을 불합격으로 입력해야 합니다.");
+      return;
+    }
     setSaving(true);
     try {
       await api.post("/quality/reworks/inspects", {

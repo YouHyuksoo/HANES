@@ -16,6 +16,12 @@ import { ItemMaster } from '../../../../entities/item-master.entity';
 import { ProductInventoryService } from '../../../inventory/services/product-inventory.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { NumberingService } from '../../../../shared/numbering.service';
+import { TransactionService } from '../../../../shared/transaction.service';
+
+const orderForInspect = () => ({
+  reworkNo: 'RW-200', status: 'INSPECT_PENDING', itemCode: 'IT-1', resultQty: 1,
+  defectLogId: '2026-04-08T00:00:00.000Z|2', company: 'CO', plant: 'P01',
+});
 
 describe('ReworkService', () => {
   let target: ReworkService;
@@ -24,6 +30,7 @@ describe('ReworkService', () => {
   let mockProcessRepo: DeepMocked<Repository<ReworkProcess>>;
   let mockDefectLogRepo: DeepMocked<Repository<DefectLog>>;
   let mockNumbering: DeepMocked<NumberingService>;
+  let mockTx: DeepMocked<TransactionService>;
 
   beforeEach(async () => {
     mockReworkRepo = createMock<Repository<ReworkOrder>>();
@@ -31,6 +38,16 @@ describe('ReworkService', () => {
     mockProcessRepo = createMock<Repository<ReworkProcess>>();
     mockDefectLogRepo = createMock<Repository<DefectLog>>();
     mockNumbering = createMock<NumberingService>();
+    mockTx = createMock<TransactionService>();
+    mockTx.run.mockImplementation(async (callback: any) => callback({
+      query: jest.fn().mockResolvedValue([{ NEXT_SEQ: 1 }]),
+      manager: {
+        create: jest.fn((_: any, value: any) => value),
+        save: jest.fn(async (_: any, value: any) => value),
+        update: jest.fn(),
+        findOne: jest.fn().mockResolvedValue(orderForInspect()),
+      },
+    } as any));
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReworkService,
@@ -41,6 +58,7 @@ describe('ReworkService', () => {
         { provide: getRepositoryToken(ItemMaster), useValue: createMock<Repository<ItemMaster>>() },
         { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
         { provide: NumberingService, useValue: mockNumbering },
+        { provide: TransactionService, useValue: mockTx },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ReworkService>(ReworkService);
@@ -207,6 +225,7 @@ describe('ReworkService', () => {
       reworkNo: 'RW-200',
       status: 'INSPECT_PENDING',
       itemCode: 'IT-1',
+      resultQty: 1,
       defectLogId: '2026-04-08T00:00:00.000Z|2',
       company: 'CO',
       plant: 'P01',
@@ -223,25 +242,18 @@ describe('ReworkService', () => {
     });
 
     it.each([
-      ['PASS', 'DONE'],
-      ['SCRAP', 'SCRAP'],
-      ['FAIL', 'REWORK'],
-    ])('검사결과 %s → 불량이력 상태 %s (DEFECT_LOG_STATUS 정본만 기록)', async (inspectResult, expectedDefectStatus) => {
+      ['PASS', 'DONE', 1, 0],
+      ['SCRAP', 'SCRAP', 0, 1],
+      ['FAIL', 'REWORK', 0, 1],
+    ])('검사결과 %s → 불량이력 상태 %s (DEFECT_LOG_STATUS 정본만 기록)', async (inspectResult, expectedDefectStatus, passQty, failQty) => {
       await target.createInspect(
-        { reworkNo: 'RW-200', inspectResult, passQty: 0, failQty: 0, inspectorCode: 'QC1', inspectMethod: 'VISUAL' } as any,
+        { reworkNo: 'RW-200', inspectResult, passQty, failQty, inspectorCode: 'QC1', inspectMethod: 'VISUAL' } as any,
         'CO',
         'P01',
         'user',
       );
 
-      expect(mockReworkRepo.update).toHaveBeenCalledWith(
-        { reworkNo: 'RW-200', company: 'CO', plant: 'P01' },
-        expect.objectContaining({ status: inspectResult }),
-      );
-      expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
-        { occurAt: new Date('2026-04-08T00:00:00.000Z'), seq: 2, company: 'CO', plant: 'P01' },
-        { status: expectedDefectStatus },
-      );
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -576,47 +576,32 @@ export class ProductInventoryService {
     plant?: string;
   }): Promise<number> {
     if (!dto.qty || dto.qty <= 0) return 0;
+    return this.tx.run((qr) => this.transferStockByItemInTx(qr, dto));
+  }
+
+  /** 외부 업무 트랜잭션에 참여하는 제품재고 이동 */
+  async transferStockByItemInTx(qr: QueryRunner, dto: {
+    fromWarehouseId: string; toWarehouseId: string; itemCode: string; itemType?: string;
+    qty: number; transType: string; qualityStatus?: string; refType?: string; refId?: string;
+    remark?: string; company?: string; plant?: string;
+  }): Promise<number> {
+    if (!dto.qty || dto.qty <= 0) return 0;
     const tenantWhere = this.tenantWhere(dto.company, dto.plant);
     const qualityStatus = this.normalizeQualityStatus(dto.qualityStatus);
-    return this.tx.run(async (qr) => {
-      // 품목+창고+품질상태에서 가용분만큼 1회 이동
-      const stock = await qr.manager.findOne(ProductStock, {
-        where: { warehouseCode: dto.fromWarehouseId, itemCode: dto.itemCode, qualityStatus, ...tenantWhere },
-      });
-      const moved = Math.min(dto.qty, stock?.availableQty ?? 0);
-      if (moved > 0 && stock) {
-        await this.issueStockInTx(qr, {
-          warehouseId: dto.fromWarehouseId,
-          toWarehouseId: dto.toWarehouseId,
-          itemCode: dto.itemCode,
-          itemType: dto.itemType ?? stock.itemType,
-          prdUid: stock.prdUid ?? undefined,
-          qualityStatus,
-          qty: moved,
-          transType: dto.transType,
-          refType: dto.refType,
-          refId: dto.refId,
-          remark: dto.remark,
-          company: dto.company,
-          plant: dto.plant,
-        });
-      }
-      // 소진된 from 창고 행(qty 0, 예약 0) 정리
-      await qr.manager
-        .createQueryBuilder()
-        .delete()
-        .from(ProductStock)
-        .where('WAREHOUSE_CODE = :wh AND ITEM_CODE = :item AND QUALITY_STATUS = :qualityStatus AND QTY <= 0 AND RESERVED_QTY = 0', {
-          wh: dto.fromWarehouseId,
-          item: dto.itemCode,
-          qualityStatus,
-        })
-        .andWhere(dto.company ? 'COMPANY = :company' : '1=1', dto.company ? { company: dto.company } : {})
-        .andWhere(dto.plant ? 'PLANT_CD = :plant' : '1=1', dto.plant ? { plant: dto.plant } : {})
-        .execute();
-      this.logger.log(`재고 이동: ${dto.itemCode} × ${moved} ${dto.fromWarehouseId} → ${dto.toWarehouseId} (${dto.transType})`);
-      return moved;
+    const stock = await qr.manager.findOne(ProductStock, {
+      where: { warehouseCode: dto.fromWarehouseId, itemCode: dto.itemCode, qualityStatus, ...tenantWhere },
     });
+    const moved = Math.min(dto.qty, stock?.availableQty ?? 0);
+    if (moved > 0 && stock) {
+      await this.issueStockInTx(qr, { warehouseId: dto.fromWarehouseId, toWarehouseId: dto.toWarehouseId, itemCode: dto.itemCode, transType: dto.transType, refType: dto.refType, refId: dto.refId, remark: dto.remark, company: dto.company, plant: dto.plant, itemType: dto.itemType ?? stock.itemType, prdUid: stock.prdUid ?? undefined, qualityStatus, qty: moved });
+    }
+    await qr.manager.createQueryBuilder().delete().from(ProductStock)
+      .where('WAREHOUSE_CODE = :wh AND ITEM_CODE = :item AND QUALITY_STATUS = :qualityStatus AND QTY <= 0 AND RESERVED_QTY = 0', { wh: dto.fromWarehouseId, item: dto.itemCode, qualityStatus })
+      .andWhere(dto.company ? 'COMPANY = :company' : '1=1', dto.company ? { company: dto.company } : {})
+      .andWhere(dto.plant ? 'PLANT_CD = :plant' : '1=1', dto.plant ? { plant: dto.plant } : {})
+      .execute();
+    this.logger.log(`재고 이동: ${dto.itemCode} × ${moved} ${dto.fromWarehouseId} → ${dto.toWarehouseId} (${dto.transType})`);
+    return moved;
   }
 
   async transferDefectStockToWarehouse(dto: ProductDefectTransferDto): Promise<ProductTransaction> {
