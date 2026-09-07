@@ -11,6 +11,8 @@ import { ReworkOrder } from '../../../../entities/rework-order.entity';
 import { FgLabel } from '../../../../entities/fg-label.entity';
 import { DefectCodeMaster } from '../../../../entities/defect-code-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { TransactionService } from '../../../../shared/transaction.service';
+import { ProdResultService } from '../../../production/services/prod-result.service';
 
 describe('DefectLogService policy', () => {
   let target: DefectLogService;
@@ -30,6 +32,8 @@ describe('DefectLogService policy', () => {
         { provide: getRepositoryToken(ReworkOrder), useValue: mockReworkOrderRepo },
         { provide: getRepositoryToken(FgLabel), useValue: createMock<Repository<FgLabel>>() },
         { provide: getRepositoryToken(DefectCodeMaster), useValue: createMock<Repository<DefectCodeMaster>>() },
+        { provide: TransactionService, useValue: createMock<TransactionService>() },
+        { provide: ProdResultService, useValue: createMock<ProdResultService>() },
       ],
     })
       .setLogger(new MockLoggerService())
