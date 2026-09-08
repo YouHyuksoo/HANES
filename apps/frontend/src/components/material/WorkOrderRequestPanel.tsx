@@ -10,6 +10,7 @@
  * 3. **신규 작성**: [신규 작성] 전환 시 BOM 기준 출고 예정 원자재 그리드에서 수량 입력 후 등록
  * 4. **미선택 시**: 우측에 최근 출고요청 목록을 표시
  */
+import { formatDateTimeKst } from '@/utils/dateTimeKst';
 import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, ClipboardList, AlertTriangle, Loader2, Plus, PackageCheck, X, ListChecks, FilePlus2, ChevronLeft, ChevronDown, ChevronRight, Info, CornerDownRight, CalendarDays } from 'lucide-react';
@@ -613,10 +614,11 @@ export default function WorkOrderRequestPanel({
                           <span className="font-mono text-xs font-semibold text-text">{req.requestNo}</span>
                           <IssueRequestStatusBadge status={req.status as IssueRequestStatus} />
                           {req.requestDate && (
-                            <span className="text-xs text-text-muted">{req.requestDate}</span>
+                            <span className="text-xs text-text-muted">{formatDateTimeKst(req.requestDate)}</span>
                           )}
                         </div>
                         <div className="flex items-center gap-3 text-xs text-text-muted shrink-0">
+                          <span>{t('material.issueAccount')}: {req.issueType || t('material.request.notSelected')}</span>
                           <span>{(req.items?.length ?? 0)}{t('material.request.items')}</span>
                           <span className="text-text">
                             {t('material.request.requestQtyLabel')} {toNum(req.totalRequestQty ?? req.totalQty).toLocaleString()}
@@ -651,6 +653,14 @@ export default function WorkOrderRequestPanel({
                       </table>
                     </div>
                   ))
+                )}
+                {!isLoadingWoRequests && woRequests.length > 0 && (
+                  <div className="sticky bottom-0 border-t border-border bg-surface p-3 flex justify-end gap-5 text-sm font-semibold" role="status">
+                    <span>{t('common.total', '합계')}</span>
+                    <span>{t('material.col.itemCount', '품목수')} {woRequests.reduce((sum, req) => sum + (req.items?.length ?? 0), 0).toLocaleString()}</span>
+                    <span>{t('material.request.requestQtyLabel')} {woRequests.reduce((sum, req) => sum + (req.items ?? []).reduce((qty, item) => qty + toNum(item.requestQty), 0), 0).toLocaleString()}</span>
+                    <span>{t('material.issue.issuedLabel')} {woRequests.reduce((sum, req) => sum + (req.items ?? []).reduce((qty, item) => qty + toNum(item.issuedQty), 0), 0).toLocaleString()}</span>
+                  </div>
                 )}
               </div>
             ) : (

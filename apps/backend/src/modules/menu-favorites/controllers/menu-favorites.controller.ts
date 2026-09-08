@@ -6,10 +6,10 @@
  * - GET /menu-favorites/me  내 즐겨찾기 메뉴 코드 목록 (순서 보존)
  * - PUT /menu-favorites/me  내 즐겨찾기 전체 교체 (menuCodes 배열 순서 = 표시 순서)
  */
-import { BadRequestException, Body, Controller, Get, Put, Req } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Put, Req, Post, Patch, Delete, Param, ParseIntPipe } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MenuFavoritesService, FavoriteScope } from '../services/menu-favorites.service';
-import { ReplaceMenuFavoritesDto } from '../dto/menu-favorite.dto';
+import { ReplaceMenuFavoritesDto, FavoriteFolderNameDto, AssignFavoriteFolderDto } from '../dto/menu-favorite.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { AuthenticatedRequest } from '../../../common/guards/jwt-auth.guard';
 
@@ -30,6 +30,31 @@ export class MenuFavoritesController {
   async replaceMine(@Body() dto: ReplaceMenuFavoritesDto, @Req() req: AuthenticatedRequest) {
     const data = await this.favorites.replaceMine(dto.menuCodes, this.scope(req));
     return ResponseUtil.success(data);
+  }
+
+  @Get('folders')
+  async findFolders(@Req() req: AuthenticatedRequest) {
+    return ResponseUtil.success(await this.favorites.findFolders(this.scope(req)));
+  }
+
+  @Post('folders')
+  async createFolder(@Body() dto: FavoriteFolderNameDto, @Req() req: AuthenticatedRequest) {
+    return ResponseUtil.success(await this.favorites.createFolder(dto.name, this.scope(req)));
+  }
+
+  @Patch('folders/:id')
+  async renameFolder(@Param('id', ParseIntPipe) id: number, @Body() dto: FavoriteFolderNameDto, @Req() req: AuthenticatedRequest) {
+    return ResponseUtil.success(await this.favorites.renameFolder(id, dto.name, this.scope(req)));
+  }
+
+  @Delete('folders/:id')
+  async deleteFolder(@Param('id', ParseIntPipe) id: number, @Req() req: AuthenticatedRequest) {
+    return ResponseUtil.success(await this.favorites.deleteFolder(id, this.scope(req)));
+  }
+
+  @Put('me/:menuCode/folder')
+  async assignFolder(@Param('menuCode') menuCode: string, @Body() dto: AssignFavoriteFolderDto, @Req() req: AuthenticatedRequest) {
+    return ResponseUtil.success(await this.favorites.assignFolder(menuCode, dto.folderId, this.scope(req)));
   }
 
   private scope(req: AuthenticatedRequest): FavoriteScope {

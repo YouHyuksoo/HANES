@@ -2793,7 +2793,9 @@
       "requester": "요청자",
       "requestQty": "요청수량",
       "issuedQty": "출고수량",
-      "actions": "처리"
+      "actions": "처리",
+      "lineNoExpanded": "L/N(라인번호)",
+      "revisionNoExpanded": "R/N(릴리즈번호)"
     },
     "badge": {
       "arrived": "입하완료",
@@ -2834,7 +2836,8 @@
         "canceled": "취소",
         "createdAt": "등록일자"
       },
-      "supplier": "공급사"
+      "supplier": "공급사",
+      "reprintHint": "재발행 가능: 입하 O · 전량 입고완료 X · 취소 X (부분 입고 시 가능)"
     },
     "arrival": {
       "title": "입하관리",
@@ -2879,7 +2882,7 @@
         "expectedSerialCount": "예상 발급 시리얼수",
         "receivedDate": "입하일"
       },
-      "iqc005Title": "자재 입하관리",
+      "iqc005Title": "입하관리",
       "iqc005Description": "PO를 조회하여 자재를 입하 등록합니다.",
       "action": {
         "receive": "자재입하"
@@ -2921,7 +2924,8 @@
       "cancelReasonPlaceholder": "취소 사유를 입력해주세요",
       "confirmCancel": "취소 확인",
       "defaultDesign": "기본 디자인",
-      "labelTemplate": "입하 라벨 템플릿"
+      "labelTemplate": "입하 라벨 템플릿",
+      "labelDesignSelection": "입하 라벨 디자인 선택"
     },
     "iqc": {
       "title": "수입검사(IQC)",
@@ -3034,7 +3038,8 @@
         "receivedQty": "기입고수량",
         "remainingQty": "잔량",
         "inputQty": "입고수량",
-        "receivedDate": "입고일"
+        "receivedDate": "입고일",
+        "vendorBarcode": "거래처 바코드"
       },
       "searchPlaceholder": "자재시리얼, 품목코드, 품목명, 공급처 검색...",
       "modalTitle": "입고확정",
@@ -3208,7 +3213,8 @@
       "noBomItems": "BOM 기준 출고 예정 원자재가 없습니다.",
       "bomLoadError": "작업지시 BOM 기준 출고 예정 품목을 불러오지 못했습니다.",
       "bomCalculating": "작업지시 BOM 기준 출고 예정 품목을 계산 중입니다.",
-      "items": "건"
+      "items": "건",
+      "notSelected": "선택안함"
     },
     "requestOther": {
       "title": "기타출고요청",
@@ -3216,7 +3222,7 @@
       "newRequest": "기타출고요청"
     },
     "issueOther": {
-      "title": "기타출고",
+      "title": "기타출고관리",
       "description": "양산 외 출고계정(불량/샘플/외주/폐기/반품/기타 등)을 선택하여 출고합니다."
     },
     "issue": {
@@ -3525,8 +3531,8 @@
       }
     },
     "lotSplit": {
-      "title": "자재분할",
-      "subtitle": "LOT 분할을 관리합니다.",
+      "title": "자재분할관리",
+      "subtitle": "분할 조건: ① 정상 상태이며 입고완료 ② 예약수량·유효 출고이력 없음 ③ 품목의 분할금지 설정 아님 ④ 현재수량이 1 초과이며 분할수량은 0 초과·현재수량 미만. 1회 분할 = 신규 시리얼 2조각, 같은 조건을 충족하면 N차 분할 가능합니다.",
       "partCode": "품목코드",
       "partName": "품목명",
       "currentQty": "현재수량",
@@ -3538,7 +3544,7 @@
       "newMatUidPlaceholder": "자동생성 또는 직접 입력",
       "remark": "비고",
       "remarkPlaceholder": "분할 사유 입력",
-      "searchPlaceholder": "LOT번호, 품목명 검색...",
+      "searchPlaceholder": "LOT번호, 품목코드, 품목명 검색...",
       "stats": {
         "total": "전체LOT",
         "totalQty": "총수량"
@@ -3547,8 +3553,8 @@
       "splitPreview": "{{a}} + {{b}} (으)로 분할됩니다."
     },
     "lotMerge": {
-      "title": "자재병합",
-      "subtitle": "바코드 스캔으로 같은 품목·최초시리얼의 LOT을 병합합니다.",
+      "title": "자재병합관리",
+      "subtitle": "같은 품목·같은 입하번호의 LOT 2개 이상을 병합합니다. 정상 상태·입고완료·재고 보유·예약수량 및 유효 출고이력 없음이 조건입니다. 원본은 병합완료 처리되고 신규 시리얼이 발급되며, 같은 조건을 충족하면 N차 병합 가능합니다.",
       "matUid": "자재시리얼",
       "vendor": "공급처",
       "expireDate": "유효기한",
@@ -3663,7 +3669,7 @@
       }
     },
     "scrap": {
-      "title": "폐기확정",
+      "title": "자재폐기확정관리",
       "subtitle": "폐기창고 격리 자재를 최종 소멸 처리합니다.",
       "transNo": "처리번호",
       "partCode": "품목코드",

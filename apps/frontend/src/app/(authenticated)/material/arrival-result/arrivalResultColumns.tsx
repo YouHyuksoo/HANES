@@ -71,8 +71,8 @@ export function createArrivalResultGridColumns({
       cell: ({ getValue }) => <span className="font-semibold text-slate-800 dark:text-slate-200">{getValue() as string}</span>,
     },
     { accessorKey: "poNo", header: t("material.arrival.col.poNo"), size: 115, meta: { filterType: "text" as const } },
-    { accessorKey: "lineNo", header: "L/N", size: 50, meta: { filterType: "number" as const }, cell: ({ getValue }) => <div className="text-center">{(getValue() as number) ?? "-"}</div> },
-    { accessorKey: "relNo", header: "R/N", size: 50, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number | null; return <div className="text-center">{v != null ? `R${v}` : "-"}</div>; } },
+    { accessorKey: "lineNo", header: t('material.col.lineNoExpanded', 'L/N(라인번호)'), size: 115, meta: { filterType: "number" as const }, cell: ({ getValue }) => <div className="text-center">{(getValue() as number) ?? "-"}</div> },
+    { accessorKey: "relNo", header: t('material.col.revisionNoExpanded', 'R/N(릴리즈번호)'), size: 135, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number | null; return <div className="text-center">{v != null ? `R${v}` : "-"}</div>; } },
     { accessorKey: "arrivalDate", header: t("material.arrivalResult.col.arrivalDate", "입하일"), size: 105, meta: { filterType: "date" as const }, cell: ({ getValue }) => <div className="text-center">{fmtDate(getValue() as string)}</div> },
     { accessorKey: "createdAt", header: t("material.arrivalResult.col.createdAt", "등록일자"), size: 110, meta: { filterType: "date" as const }, cell: ({ getValue }) => <div className="text-center">{fmtDate(getValue() as string)}</div> },
     {
@@ -98,7 +98,7 @@ export function createArrivalResultGridColumns({
       ),
     },
     { accessorKey: "itemName", header: t("common.partName"), size: 150, meta: { filterType: "text" as const } },
-    { accessorKey: "qty", header: t("material.arrivalResult.col.qty", "입하수량"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => <div className="text-right">{((getValue() as number) ?? 0).toLocaleString()}</div> },
+    { accessorKey: "qty", header: t("material.arrivalResult.col.qty", "입하수량"), size: 90, meta: { summary: "sum" as const, filterType: "number" as const }, cell: ({ getValue }) => <div className="text-right">{((getValue() as number) ?? 0).toLocaleString()}</div> },
     { accessorKey: "serialCount", header: t("material.arrivalResult.col.serialCount", "시리얼"), size: 70, meta: { filterType: "number" as const }, cell: ({ getValue }) => <div className="text-center font-semibold">{((getValue() as number) ?? 0).toLocaleString()}</div> },
     {
       accessorKey: "poType",

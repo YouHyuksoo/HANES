@@ -38,26 +38,26 @@ export default function ReceivableTable({ data, isLoading, toolbarLeft }: Receiv
       cell: ({ row }) => row.original.recvDate ? String(row.original.recvDate).slice(0, 10) : '-',
     },
     {
-      id: 'initQty',
+      accessorKey: 'initQty',
       header: t('material.receive.col.initQty'),
       size: 80,
-      meta: { filterType: "number" as const },
+      meta: { summary: "sum" as const, filterType: "number" as const },
       cell: ({ row }) => <span>{row.original.initQty.toLocaleString()}</span>,
     },
     {
-      id: 'receivedQty',
+      accessorKey: 'receivedQty',
       header: t('material.receive.col.receivedQty'),
       size: 80,
-      meta: { filterType: "number" as const },
+      meta: { summary: "sum" as const, filterType: "number" as const },
       cell: ({ row }) => (
         <span className="text-blue-600">{row.original.receivedQty.toLocaleString()}</span>
       ),
     },
     {
-      id: 'remainingQty',
+      accessorKey: 'remainingQty',
       header: t('material.receive.col.remainingQty'),
       size: 80,
-      meta: { filterType: "number" as const },
+      meta: { summary: "sum" as const, filterType: "number" as const },
       cell: ({ row }) => (
         <span className="text-orange-600 font-medium">{row.original.remainingQty.toLocaleString()}</span>
       ),

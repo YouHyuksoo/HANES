@@ -7,7 +7,7 @@
  * - menuCodes: menuConfig leaf 코드 배열 (빈 배열 = 전체 해제)
  */
 import { ApiProperty } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsString, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsString, MaxLength, IsInt, Min, Max, ValidateIf, Matches } from 'class-validator';
 
 /** 즐겨찾기 최대 개수 — 사이드바 표시 특성상 과도한 등록 방지 */
 export const MAX_FAVORITES = 30;
@@ -19,4 +19,21 @@ export class ReplaceMenuFavoritesDto {
   @IsString({ each: true })
   @MaxLength(100, { each: true })
   menuCodes!: string[];
+}
+
+export class FavoriteFolderNameDto {
+  @ApiProperty({ description: '폴더명', maxLength: 100 })
+  @IsString()
+  @MaxLength(100)
+  @Matches(/\S/, { message: '폴더명을 입력하세요.' })
+  name!: string;
+}
+
+export class AssignFavoriteFolderDto {
+  @ApiProperty({ description: '폴더 ID (null이면 폴더 밖으로 이동)', nullable: true })
+  @ValidateIf((_object, value) => value !== null)
+  @IsInt()
+  @Min(1)
+  @Max(999999999999999)
+  folderId!: number | null;
 }

@@ -4,6 +4,7 @@
  * @file src/components/material/IssueRequestDetailModal.tsx
  * @description 출고요청 상세 조회 모달
  */
+import { formatDateTimeKst } from '@/utils/dateTimeKst';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal, Button } from '@/components/ui';
@@ -24,13 +25,6 @@ function toNumber(value: number | string | null | undefined): number {
 
 function formatNumber(value: number | string | null | undefined): string {
   return toNumber(value).toLocaleString();
-}
-
-function formatDateTime(value: string | Date | null | undefined): string {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleString();
 }
 
 function DetailField({ label, value }: { label: string; value: React.ReactNode }) {
@@ -79,11 +73,11 @@ export default function IssueRequestDetailModal({ isOpen, onClose, request }: Is
             <DetailField label={t('material.col.requestNo')} value={request.requestNo} />
             <DetailField label={t('material.col.workOrder')} value={request.workOrderNo ?? request.orderNo ?? '-'} />
             <DetailField label={t('common.status')} value={<IssueRequestStatusBadge status={request.status as IssueRequestStatus} />} />
-            <DetailField label={t('material.issueAccount')} value={request.issueType ?? '-'} />
-            <DetailField label={t('material.col.requestDate')} value={formatDateTime(request.requestDate)} />
+            <DetailField label={t('material.issueAccount')} value={request.issueType || t('material.request.notSelected')} />
+            <DetailField label={t('material.col.requestDate')} value={formatDateTimeKst(request.requestDate)} />
             <DetailField label={t('material.col.requester')} value={request.requester ?? '-'} />
             <DetailField label="승인자" value={request.approver ?? '-'} />
-            <DetailField label="승인일시" value={formatDateTime(request.approvedAt)} />
+            <DetailField label="승인일시" value={formatDateTimeKst(request.approvedAt)} />
           </div>
 
           <div className="grid grid-cols-3 gap-3">

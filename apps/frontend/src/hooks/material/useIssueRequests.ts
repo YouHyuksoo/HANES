@@ -33,7 +33,8 @@ export interface IssueRequestRecord {
   workOrderNo: string;
   items: IssueRequestItem[];
   itemCount: number;
-  totalQty: number;
+  totalQty?: number;
+  totalRequestQty?: number;
   issueType?: string;
   status: string;
   requester: string;

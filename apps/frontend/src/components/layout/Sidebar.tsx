@@ -9,14 +9,15 @@
  * 3. __ROOT__ 카테고리의 자식은 평탄화하여 사이드바 최상위에 표시 (DASHBOARD/WORKFLOW)
  * 4. 권한 필터링 로직(allowedMenus + 부모-자식 합)은 그대로 유지
  */
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { BookOpen, Star } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { type MenuConfigItem } from "@/config/menuConfig";
 import { useMenuTree } from "@/hooks/useMenuTree";
 import { useMenuFavorites } from "@/hooks/useMenuFavorites";
 import SidebarMenu from "./SidebarMenu";
+import { FavoriteSidebar } from "./FavoriteSidebar";
 
 const HELP_MENU_PATH = "/help";
 const HELP_MENU_ITEM: MenuConfigItem = {
@@ -40,24 +41,6 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
   const { favorites, isFavorite, toggleFavorite } = useMenuFavorites();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["DASHBOARD", "FAVORITES"]);
 
-  /** 즐겨찾기 그룹 — 권한 필터를 통과한 leaf만 표시 (없으면 그룹 자체 숨김) */
-  const favoritesGroup: MenuConfigItem[] = useMemo(() => {
-    const leafByCode = new Map<string, MenuConfigItem>();
-    const walk = (arr: MenuConfigItem[]) => {
-      for (const x of arr) {
-        if (x.path && !x.children) leafByCode.set(x.code, x);
-        if (x.children) walk(x.children);
-      }
-    };
-    walk(items);
-
-    const children = favorites
-      .map((code) => leafByCode.get(code))
-      .filter((x): x is MenuConfigItem => !!x && !isMenuDisabled(x));
-    if (children.length === 0) return [];
-    return [{ code: "FAVORITES", labelKey: "menu.favorites", icon: Star, children }];
-  }, [items, favorites, isMenuDisabled]);
-
   const toggleMenu = (menuCode: string) => {
     if (collapsed) return;
     setExpandedMenus((prev) =>
@@ -80,23 +63,8 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
         style={{ width: sidebarWidth }}
       >
         <nav className="min-h-0 flex-1 overflow-y-auto p-3">
-          {favoritesGroup.length > 0 && (
-            <div className="mb-2 border-b border-border pb-2">
-              <SidebarMenu
-                items={favoritesGroup}
-                collapsed={collapsed}
-                pathname={pathname}
-                expandedMenus={expandedMenus}
-                onToggleMenu={toggleMenu}
-                isMenuActive={isMenuActive}
-                isMenuDisabled={() => false}
-                onClose={onClose}
-                t={t}
-                isFavorite={isFavorite}
-                onToggleFavorite={toggleFavorite}
-              />
-            </div>
-          )}
+          <FavoriteSidebar items={items} favorites={favorites} collapsed={collapsed} pathname={pathname}
+            isMenuDisabled={isMenuDisabled} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} onClose={onClose} />
           <SidebarMenu
             items={items}
             collapsed={collapsed}

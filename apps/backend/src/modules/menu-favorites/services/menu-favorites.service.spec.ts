@@ -8,6 +8,8 @@ const scope: FavoriteScope = { company: 'C1', plantCd: 'P1', userEmail: 'tester@
 
 describe('MenuFavoritesService', () => {
   const buildTxRepo = () => ({
+    find: jest.fn().mockResolvedValue([]),
+    update: jest.fn().mockResolvedValue({ affected: 1 }),
     delete: jest.fn().mockResolvedValue(undefined),
     create: jest.fn((v: Partial<UserMenuFavorite>) => v),
     save: jest.fn().mockResolvedValue(undefined),
@@ -41,11 +43,7 @@ describe('MenuFavoritesService', () => {
 
     const result = await service.replaceMine(['PROD_ORDER', 'MST_PART'], scope);
 
-    expect(txRepo.delete).toHaveBeenCalledWith({
-      company: 'C1',
-      plantCd: 'P1',
-      userEmail: 'tester@test.com',
-    });
+    expect(txRepo.find).toHaveBeenCalledWith({ where: scope });
     expect(txRepo.save).toHaveBeenCalledWith([
       expect.objectContaining({ menuCode: 'PROD_ORDER', sortOrder: 10, userEmail: 'tester@test.com' }),
       expect.objectContaining({ menuCode: 'MST_PART', sortOrder: 20 }),
@@ -66,6 +64,7 @@ describe('MenuFavoritesService', () => {
     const txRepo = buildTxRepo();
     const service = buildService(txRepo);
 
+    txRepo.find.mockResolvedValue([{ ...scope, menuCode: 'MST_PART', folderId: 7 }] as never);
     await expect(service.replaceMine([], scope)).resolves.toEqual([]);
     expect(txRepo.delete).toHaveBeenCalled();
     expect(txRepo.save).not.toHaveBeenCalled();

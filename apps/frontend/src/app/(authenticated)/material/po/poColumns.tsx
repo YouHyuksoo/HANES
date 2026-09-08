@@ -57,19 +57,10 @@ export function createPoGridColumns({
       meta: { filterType: "date" as const },
     },
     {
-      id: "itemCount", header: t("material.po.itemCount", "품목수"), size: 70,
-      meta: { align: "center" as const, filterType: "none" as const },
+      id: "itemCount", accessorFn: (row) => row.items?.length ?? 0, header: t("material.po.itemCount", "품목수"), size: 70,
+      meta: { summary: "sum" as const, align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <span className="font-semibold">{row.original.items?.length ?? 0}</span>
-      ),
-    },
-    {
-      accessorKey: "totalAmount", header: t("material.po.totalAmount"), size: 120,
-      meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => (
-        <span className="font-semibold">
-          {(getValue() as number | null)?.toLocaleString() ?? "-"}
-        </span>
       ),
     },
     {

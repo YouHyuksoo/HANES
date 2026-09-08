@@ -137,7 +137,15 @@ describe('LotSplitService', () => {
       expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('lot.initQty <='));
       expect(qb.andWhere).toHaveBeenCalledWith('lot.company = :company', { company: 'C1' });
       expect(qb.andWhere).toHaveBeenCalledWith('lot.plant = :plant', { plant: 'P1' });
-      expect(qb.andWhere).toHaveBeenCalledWith('lot.matUid LIKE :search', { search: '%MAT%' });
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('UPPER(lot.matUid) LIKE :search OR UPPER(lot.itemCode) LIKE :search'),
+        { search: '%MAT%' },
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('item.COMPANY = lot.company AND item.PLANT_CD = lot.plant'),
+        { search: '%MAT%' },
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('UPPER(item.ITEM_NAME) LIKE :search'), { search: '%MAT%' });
       expect(qb.skip).toHaveBeenCalledWith(50);
       expect(qb.take).toHaveBeenCalledWith(50);
     });

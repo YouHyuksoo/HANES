@@ -11,6 +11,7 @@
  */
 import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatDateTimeKst } from '@/utils/dateTimeKst';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ColumnDef } from '@tanstack/react-table';
 import { Eye } from 'lucide-react';
@@ -47,7 +48,7 @@ export default function RequestTable({ data, toolbarLeft, isLoading, onViewDetai
   const { t } = useTranslation();
   const columns = useMemo<ColumnDef<IssueRequest>[]>(() => [
     { accessorKey: 'requestNo', header: t('material.col.requestNo'), size: 160, meta: { filterType: 'text' as const } },
-    { accessorKey: 'requestDate', header: t('material.col.requestDate'), size: 100, meta: { filterType: 'date' as const } },
+    { accessorKey: 'requestDate', header: t('material.col.requestDate'), size: 155, cell: ({ getValue }) => formatDateTimeKst(getValue() as string), meta: { filterType: 'date' as const } },
     {
       accessorKey: 'issueType',
       header: t('material.issueAccount'),
@@ -80,12 +81,12 @@ export default function RequestTable({ data, toolbarLeft, isLoading, onViewDetai
       cell: ({ row }) => <span className="text-text">{itemSummary(row.original)}</span>,
     },
     {
-      id: 'itemCount', header: t('material.col.itemCount'), size: 70, meta: { filterType: 'none' as const },
+      id: 'itemCount', accessorFn: (row) => row.items?.length ?? 0, header: t('material.col.itemCount'), size: 70, meta: { summary: "sum" as const, filterType: 'none' as const },
       cell: ({ row }) => <span>{row.original.items?.length ?? 0}{t('material.request.items')}</span>,
     },
     {
-      accessorKey: 'totalQty', header: t('common.totalQty'), size: 100,
-      meta: { filterType: 'number' as const },
+      id: 'totalQty', accessorFn: totalRequestQty, header: t('common.totalQty'), size: 100,
+      meta: { summary: "sum" as const, filterType: 'number' as const },
       cell: ({ row }) => (
         <span className="font-medium">{totalRequestQty(row.original).toLocaleString()}</span>
       ),

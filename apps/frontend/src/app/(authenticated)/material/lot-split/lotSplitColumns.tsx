@@ -51,7 +51,7 @@ export function createLotSplitGridColumns({
     },
     {
       accessorKey: "qty", header: t("material.lotSplit.currentQty"), size: 120,
-      meta: { filterType: "number" as const, align: "right" as const },
+      meta: { summary: "sum" as const, filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => <span className="font-semibold">{row.original.qty.toLocaleString()} {row.original.unit || ""}</span>,
     },
     {

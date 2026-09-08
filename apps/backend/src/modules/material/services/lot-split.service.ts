@@ -86,7 +86,15 @@ export class LotSplitService {
 
     if (company) qb.andWhere('lot.company = :company', { company });
     if (plant) qb.andWhere('lot.plant = :plant', { plant });
-    if (search) qb.andWhere('lot.matUid LIKE :search', { search: `%${search}%` });
+    if (search?.trim()) {
+      qb.andWhere(
+        `(UPPER(lot.matUid) LIKE :search OR UPPER(lot.itemCode) LIKE :search OR EXISTS (` +
+        `SELECT 1 FROM ITEM_MASTERS item WHERE item.ITEM_CODE = lot.itemCode ` +
+        `AND item.COMPANY = lot.company AND item.PLANT_CD = lot.plant ` +
+        `AND UPPER(item.ITEM_NAME) LIKE :search))`,
+        { search: `%${search.trim().toUpperCase()}%` },
+      );
+    }
 
     const [data, total] = await Promise.all([
       qb.orderBy('lot.createdAt', 'DESC')

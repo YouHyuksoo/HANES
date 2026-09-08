@@ -213,6 +213,7 @@ export default function ArrivalPage() {
           <p className="text-text-muted mt-1">{t('material.arrival.iqc005Description')}</p>
         </div>
         <div className="flex items-center gap-2">
+          <span className="text-sm text-text-muted whitespace-nowrap">{t('material.arrival.labelDesignSelection')}</span>
           <div className="w-72">
             <Select
               aria-label={t('material.arrival.labelTemplate', '입하 라벨 템플릿')}

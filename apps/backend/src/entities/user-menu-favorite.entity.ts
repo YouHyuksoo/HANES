@@ -32,6 +32,9 @@ export class UserMenuFavorite {
   @Column({ name: 'SORT_ORDER', type: 'decimal', precision: 10, scale: 0, default: 0 })
   sortOrder!: number;
 
+  @Column({ name: 'FOLDER_ID', type: 'number', precision: 15, scale: 0, nullable: true })
+  folderId!: number | null;
+
   @CreateDateColumn({ name: 'CREATED_AT', type: 'timestamp' })
   createdAt!: Date;
 

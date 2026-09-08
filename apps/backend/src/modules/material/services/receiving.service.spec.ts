@@ -111,6 +111,7 @@ describe('ReceivingService', () => {
       getMany: jest.fn().mockResolvedValue([
         {
           receiveNo: 'RCV-001',
+          vendorBarcode: 'VENDOR-SCANNED-001',
           seq: 1,
           itemCode: 'ITEM-001',
           matUid: 'MAT-001',
@@ -150,6 +151,7 @@ describe('ReceivingService', () => {
       where: expect.objectContaining({ company: 'C1', plant: 'P1' }),
     });
     expect(result.data[0]).toEqual(expect.objectContaining({
+      vendorBarcode: 'VENDOR-SCANNED-001',
       isConcession: true,
       specialAcceptYn: 'Y',
     }));

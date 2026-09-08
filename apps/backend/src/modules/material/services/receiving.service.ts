@@ -631,6 +631,7 @@ export class ReceivingService {
 
       return {
         receiveNo: item.receiveNo,
+        vendorBarcode: item.vendorBarcode ?? null,
         seq: item.seq,
         transNo: item.receiveNo,
         transDate: item.receiveDate,

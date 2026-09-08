@@ -338,6 +338,7 @@ export default function ArrivalResultPage() {
               toolbarLeft={
                 <div className="flex gap-2 flex-1 min-w-0 flex-wrap">
                   <DateRangeFilter
+                    label={t("material.arrivalResult.col.arrivalDate", "입하일")}
                     from={fromDate}
                     to={toDate}
                     onFromChange={setFromDate}
@@ -411,6 +412,7 @@ export default function ArrivalResultPage() {
             )}
 
             {/* 시리얼 목록 */}
+            {selected && <p className="text-xs text-text-muted">{t("material.arrivalResult.reprintHint")}</p>}
             <div className="flex-1 min-h-0 overflow-auto border border-border rounded-lg">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-surface-secondary dark:bg-slate-800 text-text-muted">

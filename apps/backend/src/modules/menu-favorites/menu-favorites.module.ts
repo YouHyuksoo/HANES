@@ -5,11 +5,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserMenuFavorite } from '../../entities/user-menu-favorite.entity';
+import { UserMenuFavoriteFolder } from '../../entities/user-menu-favorite-folder.entity';
 import { MenuFavoritesService } from './services/menu-favorites.service';
 import { MenuFavoritesController } from './controllers/menu-favorites.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserMenuFavorite])],
+  imports: [TypeOrmModule.forFeature([UserMenuFavorite, UserMenuFavoriteFolder])],
   controllers: [MenuFavoritesController],
   providers: [MenuFavoritesService],
   exports: [MenuFavoritesService],

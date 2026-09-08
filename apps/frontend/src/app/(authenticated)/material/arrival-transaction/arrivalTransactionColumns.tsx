@@ -141,10 +141,10 @@ export function createArrivalTransactionGridColumns({
       ),
     },
     {
-      accessorKey: "qty",
+      id: "qty", accessorFn: getSignedQty,
       header: t("common.quantity"),
       size: 100,
-      meta: { filterType: "number" as const, align: "right" as const },
+      meta: { summary: "sum" as const, filterType: "number" as const, align: "right" as const },
       cell: ({ row }) => {
         const signedQty = getSignedQty(row.original);
         const unit = row.original.part?.unit || row.original.unit || "";

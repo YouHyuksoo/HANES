@@ -43,6 +43,7 @@ import { detectAlignment, getAlignmentClass, getPinnedStyle } from './utils';
 import { numberRangeFilterFn } from './numberFilterFn';
 import { dateRangeFilterFn } from './dateFilterFn';
 import { textInFilterFn } from './textFilterFn';
+import { GridSummaryFooter } from './GridSummaryFooter';
 
 const EXPORT_FORMATS: { format: ExportFormat; label: string; ext: string; colorClass: string }[] = [
   { format: 'xlsx', label: 'Excel',    ext: '.xlsx', colorClass: 'text-green-600 dark:text-green-400' },
@@ -61,6 +62,8 @@ declare module '@tanstack/react-table' {
     textIn: typeof import('./textFilterFn').textInFilterFn;
   }
   interface ColumnMeta<TData, TValue> {
+    /** 조회된 데이터 중 컬럼 필터를 통과한 전체 행 합계(페이지 무관). */
+    summary?: 'sum';
     align?: 'left' | 'center' | 'right';
     /** 컬럼 필터 타입: text(기본), select(드롭다운), number(숫자 범위), none(필터 없음) */
     filterType?: 'text' | 'select' | 'multi' | 'number' | 'date' | 'none';
@@ -620,6 +623,7 @@ function DataGrid<T>({
               })
             )}
           </tbody>
+          <GridSummaryFooter table={table} isLoading={isLoading} />
         </table>
         </div>
       </div>

@@ -74,8 +74,8 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
       meta: { filterType: 'text' as const },
       cell: ({ getValue }) => <span className="font-semibold text-slate-800 dark:text-slate-200">{getValue() as string}</span>,
     },
-    { accessorKey: 'lineNo', header: 'L/N', size: 50, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <div className="text-center">{getValue() as number}</div> },
-    { accessorKey: 'revNo', header: 'R/N', size: 50, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <div className="text-center">R{getValue() as number}</div> },
+    { accessorKey: 'lineNo', header: t('material.col.lineNoExpanded', 'L/N(라인번호)'), size: 115, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <div className="text-center">{getValue() as number}</div> },
+    { accessorKey: 'revNo', header: t('material.col.revisionNoExpanded', 'R/N(릴리즈번호)'), size: 135, meta: { filterType: 'number' as const }, cell: ({ getValue }) => <div className="text-center">R{getValue() as number}</div> },
     {
       accessorKey: 'itemCode',
       header: t('common.partCode'),

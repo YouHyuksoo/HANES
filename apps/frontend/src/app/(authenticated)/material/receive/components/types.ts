@@ -51,6 +51,7 @@ export interface ReceivableLot {
 
 /** 입고 이력 레코드 */
 export interface ReceivingRecord {
+  vendorBarcode?: string | null;
   id: string;
   receiveNo?: string;
   transNo: string;

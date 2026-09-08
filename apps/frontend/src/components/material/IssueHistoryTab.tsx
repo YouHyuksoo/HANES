@@ -132,7 +132,7 @@ export default function IssueHistoryTab() {
       accessorKey: 'issueQty',
       header: t('common.quantity'),
       size: 100,
-      meta: { filterType: 'number' as const },
+      meta: { summary: "sum" as const, filterType: 'number' as const },
       cell: ({ row }) => {
         const { issueQty, unit } = row.original;
         return (
@@ -173,8 +173,8 @@ export default function IssueHistoryTab() {
     },
     {
       id: 'actions',
-      header: '',
-      size: 70,
+      header: t('material.issue.history.cancelAction'),
+      size: 100,
       meta: { filterType: 'none' as const },
       cell: ({ row }) => {
         const record = row.original;

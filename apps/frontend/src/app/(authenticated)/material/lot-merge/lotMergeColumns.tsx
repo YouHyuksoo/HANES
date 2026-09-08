@@ -48,7 +48,7 @@ export function createLotMergeGridColumns({
     { accessorKey: "itemCode", header: t("common.partCode"), size: 110, meta: { filterType: "text" as const } },
     { accessorKey: "itemName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },
     { accessorKey: "qty", header: t("common.quantity"), size: 90,
-      meta: { filterType: "number" as const, align: "right" as const },
+      meta: { summary: "sum" as const, filterType: "number" as const, align: "right" as const },
       cell: ({ getValue, row }) => (
         <span className="font-semibold">{((getValue() as number) ?? 0).toLocaleString()} {row.original.unit || "EA"}</span>
       ),

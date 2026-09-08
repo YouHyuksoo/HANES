@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import { Card, CardContent, Button, Input, Select, Modal, ConfirmModal } from '@/components/ui';
+import { formatDateTimeKst } from '@/utils/dateTimeKst';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { IssueRequestStatusBadge } from '@/components/material';
 import IssueFromRequestModal from '@/components/material/IssueFromRequestModal';
@@ -90,9 +91,9 @@ export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: I
   }, [rejectTarget, rejectReason, handleReject]);
 
   // DataGrid 컬럼 정의
-  const columns = useMemo<ColumnDef<IssueRequestRecord>[]>(() => [
+  const columns = useMemo<ColumnDef<IssueRequestRecord>[]>(() => ([
     { accessorKey: 'requestNo', header: t('material.col.requestNo'), size: 160, meta: { filterType: 'text' as const } },
-    { accessorKey: 'requestDate', header: t('material.col.requestDate'), size: 100, meta: { filterType: 'date' as const } },
+    { accessorKey: 'requestDate', header: t('material.col.requestDate'), size: 155, cell: ({ getValue }) => formatDateTimeKst(getValue() as string), meta: { filterType: 'date' as const } },
     {
       accessorKey: 'orderNo',
       header: t('material.col.workOrder'),
@@ -103,19 +104,20 @@ export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: I
       ),
     },
     {
-      id: 'itemCount',
+      id: 'itemCount', accessorFn: (row) => row.itemCount ?? row.items?.length ?? 0,
       header: t('material.col.itemCount'),
       size: 70,
-      meta: { filterType: 'none' as const },
+      meta: { summary: "sum" as const, filterType: 'none' as const },
       cell: ({ row }) => (
         <span>{row.original.itemCount ?? row.original.items?.length ?? 0}{t('material.request.items')}</span>
       ),
     },
     {
-      accessorKey: 'totalQty',
+      id: 'totalQty',
+      accessorFn: (row) => Number(row.totalRequestQty ?? row.totalQty ?? row.items?.reduce((sum, item) => sum + Number(item.requestQty), 0) ?? 0),
       header: t('common.totalQty'),
       size: 100,
-      meta: { filterType: 'number' as const },
+      meta: { summary: "sum" as const, filterType: 'number' as const },
       cell: ({ getValue }) => (
         <span className="font-medium">{(getValue() as number)?.toLocaleString()}</span>
       ),
@@ -181,7 +183,7 @@ export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: I
         );
       },
     },
-  ], [t]);
+  ] as ColumnDef<IssueRequestRecord>[]).filter((column) => issueType !== 'MANUAL' || !('accessorKey' in column) || column.accessorKey !== 'orderNo'), [t, issueType]);
 
   return (
     <>

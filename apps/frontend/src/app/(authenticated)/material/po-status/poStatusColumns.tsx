@@ -144,23 +144,15 @@ export function createPoStatusDetailGridColumns({
       cell: ({ getValue }) => <span>{(getValue() as string) || "-"}</span>,
     },
     {
-      accessorKey: "relNo", header: t("material.poStatus.relNo"), size: 90,
-      meta: { filterType: "number" as const, align: "right" as const },
-      cell: ({ getValue }) => {
-        const v = getValue() as number | null;
-        return <span className="font-mono text-sm">{v ?? "-"}</span>;
-      },
-    },
-    {
       accessorKey: "orderQty", header: t("material.poStatus.orderQty"), size: 100,
-      meta: { filterType: "number" as const, align: "right" as const },
+      meta: { summary: "sum" as const, filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => (
         <span className="font-semibold">{((getValue() as number) ?? 0).toLocaleString()}</span>
       ),
     },
     {
       accessorKey: "receivedQty", header: t("material.poStatus.receivedQty"), size: 100,
-      meta: { filterType: "number" as const, align: "right" as const },
+      meta: { summary: "sum" as const, filterType: "number" as const, align: "right" as const },
       cell: ({ getValue }) => <span>{((getValue() as number) ?? 0).toLocaleString()}</span>,
     },
     {
