@@ -11,7 +11,8 @@
  * 4. 클릭 시 선택된 품목을 부모에게 전달 → 우측 패널에서 상세 표시
  */
 
-import { useMemo } from "react";
+import HelpTooltip from "@/components/shared/HelpTooltip";
+import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Package } from "lucide-react";
 import { Card, CardHeader, CardContent, Input } from "@/components/ui";
@@ -36,6 +37,10 @@ interface ItemListPanelProps {
   onSearchChange: (value: string) => void;
   /** 로딩 상태 */
   loading: boolean;
+  filters?: ReactNode;
+  footer?: ReactNode;
+  serverFiltered?: boolean;
+  searchPlaceholder?: string;
 }
 
 export default function ItemListPanel({
@@ -46,18 +51,22 @@ export default function ItemListPanel({
   searchText,
   onSearchChange,
   loading,
+  filters,
+  footer,
+  serverFiltered = false,
+  searchPlaceholder,
 }: ItemListPanelProps) {
   const { t } = useTranslation();
 
   const filtered = useMemo(() => {
-    if (!searchText) return parts;
+    if (serverFiltered || !searchText) return parts;
     const s = searchText.toLowerCase();
     return parts.filter(
       (p) =>
         p.itemCode.toLowerCase().includes(s) ||
         p.itemName.toLowerCase().includes(s)
     );
-  }, [parts, searchText]);
+  }, [parts, searchText, serverFiltered]);
 
   return (
     <Card padding="none" className="flex flex-col h-full">
@@ -71,13 +80,16 @@ export default function ItemListPanel({
         className="px-4 pt-4 pb-2 mb-0"
       />
       <div className="px-4 pb-3">
+        {filters}
+        <HelpTooltip description={`품목코드 또는 품목명 일부를 입력하면 해당 원자재를 찾습니다.${filters ? " 사용여부와 검사항목 유무 조건이 함께 적용되므로 결과가 없으면 필터도 확인하세요." : ""}`} className="w-full">
         <Input
-          placeholder={t("master.iqcItem.searchPlaceholder", "품목코드, 검사항목 검색...")}
+          placeholder={searchPlaceholder ?? t("master.iqcItem.searchPlaceholder", "품목코드, 검사항목 검색...")}
           value={searchText}
           onChange={(e) => onSearchChange(e.target.value)}
           leftIcon={<Search className="w-4 h-4" />}
           fullWidth
         />
+        </HelpTooltip>
       </div>
       <CardContent className="flex-1 min-h-0 overflow-y-auto px-0">
         {loading ? (
@@ -94,8 +106,8 @@ export default function ItemListPanel({
               const isSelected = selectedItemCode === part.itemCode;
               const linkCount = linkCountMap.get(part.itemCode) ?? 0;
               return (
+                <HelpTooltip key={part.itemCode} description={`${part.itemCode} · ${part.itemName}\n배정된 검사항목 ${linkCount}개입니다. 클릭하면 이 품목의 기준을 오른쪽에서 조회·편집합니다. ${linkCount === 0 ? "항목 추가 또는 템플릿 불러오기로 기준을 작성한 뒤 저장하세요." : "숫자는 검사 수량이 아닌 배정 항목 수입니다."}`} className="w-full">
                 <button
-                  key={part.itemCode}
                   type="button"
                   onClick={() => onSelect(part.itemCode)}
                   className={`w-full text-left px-4 py-2 transition-colors ${
@@ -134,14 +146,17 @@ export default function ItemListPanel({
                     )}
                   </div>
                 </button>
+                </HelpTooltip>
               );
             })}
           </div>
         )}
       </CardContent>
       <div className="px-4 py-2 border-t border-border text-xs text-text-muted text-right">
+        {footer ?? <>
         {t("common.total", "합계")}: {filtered.length}
         {t("common.件", "건")}
+        </>}
       </div>
     </Card>
   );

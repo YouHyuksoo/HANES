@@ -633,10 +633,12 @@ describe('AqlService', () => {
     expect(res.result).toBe('FAIL');
     const pull = res.itemResults!.find((r) => r.inspItemCode === 'IQC-PULL')!;
     expect(pull.inspectionType).toBe('DESTRUCTIVE');
+    expect(pull.sampleMethod).toBe('FIXED');
     expect(pull.requiredQty).toBe(5);
     expect(pull.inspectedQty).toBe(5);
     expect(pull.result).toBe('FAIL');
     const visual = res.itemResults!.find((r) => r.inspItemCode === 'IQC-VISUAL')!;
+    expect(visual.sampleMethod).toBe('AQL');
     expect(visual.result).toBe('PASS');   // 외관 0건은 PASS
   });
 

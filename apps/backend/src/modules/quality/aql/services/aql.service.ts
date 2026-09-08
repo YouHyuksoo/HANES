@@ -56,6 +56,7 @@ export type IqcItemJudgeResult = {
   acceptQty: number | null;
   rejectQty: number | null;
   inspectionType: string;
+  sampleMethod: string;
   requiredQty: number | null;
   inspectedQty: number | null;
   result: 'PASS' | 'FAIL';
@@ -548,6 +549,7 @@ export class AqlService {
         acceptQty: rule?.acceptQty ?? null,
         rejectQty: rule?.rejectQty ?? null,
         inspectionType: type,
+        sampleMethod: method,
         requiredQty,
         inspectedQty,
         result: itemResult,

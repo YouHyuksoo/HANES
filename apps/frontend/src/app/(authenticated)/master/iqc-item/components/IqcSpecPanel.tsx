@@ -17,11 +17,13 @@ import { useComCodeOptions } from "@/hooks/useComCode";
 import type { IqcPoolItem, IqcPartSpec, IqcSpecRow } from "../types";
 import IqcTemplatePickerModal from "./IqcTemplatePickerModal";
 import api from "@/services/api";
+import { IqcSpecHelp } from "./iqcSpecHelp";
 
 interface Props {
   itemCode: string | null;
   itemName: string;
   poolItems: IqcPoolItem[];
+  onSaved?: () => void | Promise<void>;
 }
 
 interface AqlStandardOption {
@@ -39,7 +41,7 @@ const EMPTY_SPEC: IqcPartSpec = {
   items: [],
 };
 
-export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
+export default function IqcSpecPanel({ itemCode, itemName, poolItems, onSaved }: Props) {
   const { t } = useTranslation();
   const [spec, setSpec] = useState<IqcPartSpec>(EMPTY_SPEC);
   const [loading, setLoading] = useState(false);
@@ -275,6 +277,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
       });
       setDirty(false);
       await loadSpec(itemCode);
+      await onSaved?.();
     } catch (err) {
       console.error('IQC 기준 저장 실패:', err);
     } finally {
@@ -309,21 +312,21 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
       {/* 검사항목 DataGrid (헤더 컨트롤을 툴바에 통합) */}
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden border border-border rounded-lg bg-bg">
         <div className="flex items-center gap-x-4 gap-y-2 flex-wrap px-4 py-2 border-b border-border">
-          <span className="text-sm font-medium text-text">{t("master.iqcItem.inspItem", "검사항목")}</span>
+          <IqcSpecHelp field="item"><span className="text-sm font-medium text-text">{t("master.iqcItem.inspItem", "검사항목")}</span></IqcSpecHelp>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-text-muted whitespace-nowrap">{t("master.iqcItem.defaultSampleQty", "기본 시료수")}</label>
-            <input
+            <IqcSpecHelp field="defaultSample"><label className="text-sm text-text-muted whitespace-nowrap">{t("master.iqcItem.defaultSampleQty", "기본 시료수")}</label></IqcSpecHelp>
+            <IqcSpecHelp field="defaultSample"><input
               type="number"
               min={1}
               value={spec.sampleQty}
               onChange={(e) => updateHeader('sampleQty', Number(e.target.value))}
               className="w-16 border border-border rounded px-2 py-1 text-sm bg-bg text-text"
-            />
+            /></IqcSpecHelp>
             <span className="text-sm text-text-muted">{t("master.iqcTemplate.itemsUnit", "개")}</span>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-text-muted whitespace-nowrap">{t("master.iqcItem.destInspection", "파괴검사")}</label>
-            <button
+            <IqcSpecHelp field="destructive"><label className="text-sm text-text-muted whitespace-nowrap">{t("master.iqcItem.destInspection", "파괴검사")}</label></IqcSpecHelp>
+            <IqcSpecHelp field="destructive"><button
               onClick={() => updateHeader('isDest', spec.isDest === 'Y' ? 'N' : 'Y')}
               className={`px-3 py-1 rounded text-sm font-medium border transition-colors ${
                 spec.isDest === 'Y'
@@ -332,26 +335,26 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
               }`}
             >
               {spec.isDest === 'Y' ? t("master.iqcItem.destructive", "파괴") : t("master.iqcItem.nonDestructive", "비파괴")}
-            </button>
+            </button></IqcSpecHelp>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => setTemplateOpen(true)} className="flex items-center gap-1">
+            <IqcSpecHelp field="openTemplates"><Button size="sm" variant="outline" onClick={() => setTemplateOpen(true)} className="flex items-center gap-1">
               <ClipboardList className="w-3.5 h-3.5" />
               {t("master.iqcItem.templateManage", "템플릿 불러오기/관리")}
-            </Button>
-            <Button size="sm" variant="outline" onClick={addRow} className="flex items-center gap-1">
+            </Button></IqcSpecHelp>
+            <IqcSpecHelp field="add"><Button size="sm" variant="outline" onClick={addRow} className="flex items-center gap-1">
               <Plus className="w-3.5 h-3.5" />
               {t("master.iqcItem.addItem", "항목 추가")}
-            </Button>
-            <Button
+            </Button></IqcSpecHelp>
+            <IqcSpecHelp field="save"><Button
               size="sm"
               onClick={handleSave}
               disabled={saving || !dirty}
-              className="flex items-center gap-1"
+              className="disabled:pointer-events-none flex items-center gap-1"
             >
               <Save className="w-4 h-4" />
               {saving ? t("common.saving", "저장 중…") : t("common.save", "저장")}
-            </Button>
+            </Button></IqcSpecHelp>
           </div>
         </div>
 
@@ -364,19 +367,19 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
             <table className="w-full text-xs [&_th]:border-r [&_td]:border-r [&_th]:border-border/60 [&_td]:border-border/60 [&_tr>*:last-child]:border-r-0">
               <thead className="sticky top-0 bg-primary/10 border-b border-primary/30">
                 <tr>
-                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-10">{t("master.iqcItem.seq", "순서")}</th>
-                  <th className="px-2 py-1.5 text-left text-text-muted font-medium">{t("master.iqcItem.inspItem", "검사항목")}</th>
-                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-20">{t("master.iqcItem.type", "종류")}</th>
-                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-24">{t("master.iqcItem.inspectionType", "검사유형")}</th>
-                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-20">{t("master.iqcItem.sampleQtyCol", "샘플수")}</th>
-                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-24">{t("master.iqcItem.defectGrade", "불량등급")}</th>
-                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-20">{t("master.iqcItem.inspectionLevel", "검사수준")}</th>
-                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-20">AQL</th>
-                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-24">{t("master.iqcItem.lsl", "하한(LSL)")}</th>
-                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-24">{t("master.iqcItem.usl", "상한(USL)")}</th>
-                  <th className="px-2 py-1.5 text-left text-text-muted font-medium">{t("master.iqcItem.judgeCriteria", "판정기준")}</th>
-                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-14">{t("common.unit", "단위")}</th>
-                  <th className="px-2 py-1.5 w-20"></th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-10"><IqcSpecHelp field="seq" className="w-full">{t("master.iqcItem.seq", "순서")}</IqcSpecHelp></th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium"><IqcSpecHelp field="item" className="w-full">{t("master.iqcItem.inspItem", "검사항목")}</IqcSpecHelp></th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-20"><IqcSpecHelp field="kind" className="w-full">{t("master.iqcItem.type", "종류")}</IqcSpecHelp></th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-24"><IqcSpecHelp field="inspectionType" className="w-full">{t("master.iqcItem.inspectionType", "검사유형")}</IqcSpecHelp></th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-20"><IqcSpecHelp field="sample" className="w-full">{t("master.iqcItem.sampleQtyCol", "샘플수")}</IqcSpecHelp></th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-24"><IqcSpecHelp field="grade" className="w-full">{t("master.iqcItem.defectGrade", "불량등급")}</IqcSpecHelp></th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-20"><IqcSpecHelp field="level" className="w-full">{t("master.iqcItem.inspectionLevel", "검사수준")}</IqcSpecHelp></th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-20"><IqcSpecHelp field="aql" className="w-full">AQL</IqcSpecHelp></th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-24"><IqcSpecHelp field="lsl" className="w-full">{t("master.iqcItem.lsl", "하한(LSL)")}</IqcSpecHelp></th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-24"><IqcSpecHelp field="usl" className="w-full">{t("master.iqcItem.usl", "상한(USL)")}</IqcSpecHelp></th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium"><IqcSpecHelp field="criteria" className="w-full">{t("master.iqcItem.judgeCriteria", "판정기준")}</IqcSpecHelp></th>
+                  <th className="px-2 py-1.5 text-left text-text-muted font-medium w-14"><IqcSpecHelp field="unit" className="w-full">{t("common.unit", "단위")}</IqcSpecHelp></th>
+                  <th className="px-2 py-1.5 w-20"><IqcSpecHelp field="actions" className="w-full">{t("common.actions", "작업")}</IqcSpecHelp></th>
                 </tr>
               </thead>
               <tbody>
@@ -397,8 +400,8 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                   if (isEditing) {
                     return (
                       <tr key={idx} className="border-b border-primary/30 bg-primary/5">
-                        <td className="px-2 py-1.5 text-text-muted text-center">{row.seq}</td>
-                        <td className="px-2 py-1.5">
+                        <td className="px-2 py-1.5 text-text-muted text-center"><IqcSpecHelp field="seq" className="w-full justify-center">{row.seq}</IqcSpecHelp></td>
+                        <td className="px-2 py-1.5"><IqcSpecHelp field="item" className="w-full">
                           <select
                             value={draft.inspItemCode}
                             onChange={(e) => updateDraft('inspItemCode', e.target.value)}
@@ -411,8 +414,8 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               </option>
                             ))}
                           </select>
-                        </td>
-                        <td className="px-2 py-1.5">
+                        </IqcSpecHelp></td>
+                        <td className="px-2 py-1.5"><IqcSpecHelp field="kind" className="w-full">
                           {draft.judgeMethod ? (
                             <span className={`text-xs px-1.5 py-0.5 rounded ${
                               isMeasure
@@ -422,8 +425,8 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               {isMeasure ? t("master.iqcItem.typeMeasure", "측정형") : t("master.iqcItem.typeVisual", "판정형")}
                             </span>
                           ) : <span className="text-text-muted text-xs">-</span>}
-                        </td>
-                        <td className="px-2 py-1.5">
+                        </IqcSpecHelp></td>
+                        <td className="px-2 py-1.5"><IqcSpecHelp field="inspectionType" className="w-full">
                           <select
                             value={draft.inspectionType ?? 'AQL'}
                             onChange={(e) => updateDraft('inspectionType', e.target.value)}
@@ -433,8 +436,8 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               <option key={o.value} value={o.value}>{o.label}</option>
                             ))}
                           </select>
-                        </td>
-                        <td className="px-2 py-1.5">
+                        </IqcSpecHelp></td>
+                        <td className="px-2 py-1.5"><IqcSpecHelp field="sample" className="w-full">
                           {(draft.inspectionType === 'DESTRUCTIVE' || draft.inspectionType === 'FULL' || draft.sampleMethod === 'FIXED') ? (
                             <input
                               type="number"
@@ -445,8 +448,8 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               placeholder={t("master.iqcItem.fixedQtyPlaceholder", "고정수")}
                             />
                           ) : <span className="text-text-muted text-xs">{t("master.iqcItem.auto", "자동")}</span>}
-                        </td>
-                        <td className="px-2 py-1.5">
+                        </IqcSpecHelp></td>
+                        <td className="px-2 py-1.5"><IqcSpecHelp field="grade" className="w-full">
                           <select
                             value={draft.defectGrade ?? ''}
                             onChange={(e) => updateDraft('defectGrade', e.target.value || null)}
@@ -457,8 +460,8 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               <option key={o.value} value={o.value}>{o.label}</option>
                             ))}
                           </select>
-                        </td>
-                        <td className="px-2 py-1.5">
+                        </IqcSpecHelp></td>
+                        <td className="px-2 py-1.5"><IqcSpecHelp field="level" className="w-full">
                           <select
                             value={draft.inspectionLevel ?? ''}
                             onChange={(e) => updateDraft('inspectionLevel', e.target.value || null)}
@@ -469,8 +472,8 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               <option key={o.value} value={o.value}>{o.label}</option>
                             ))}
                           </select>
-                        </td>
-                        <td className="px-2 py-1.5">
+                        </IqcSpecHelp></td>
+                        <td className="px-2 py-1.5"><IqcSpecHelp field="aql" className="w-full">
                           <select
                             value={draft.aql == null ? '' : String(draft.aql)}
                             onChange={(e) => updateDraft('aql', e.target.value === '' ? null : Number(e.target.value))}
@@ -491,8 +494,8 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               {t("master.iqcItem.registerAqlStandardFirst", "AQL 기준관리에서 먼저 등록하세요")}
                             </div>
                           )}
-                        </td>
-                        <td className="px-2 py-1.5">
+                        </IqcSpecHelp></td>
+                        <td className="px-2 py-1.5"><IqcSpecHelp field="lsl" className="w-full">
                           {isMeasure ? (
                             <input
                               type="number"
@@ -502,8 +505,8 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               placeholder={t("master.iqcItem.lslPlaceholder", "하한")}
                             />
                           ) : <span className="text-text-muted text-xs">-</span>}
-                        </td>
-                        <td className="px-2 py-1.5">
+                        </IqcSpecHelp></td>
+                        <td className="px-2 py-1.5"><IqcSpecHelp field="usl" className="w-full">
                           {isMeasure ? (
                             <input
                               type="number"
@@ -513,8 +516,8 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                               placeholder={t("master.iqcItem.uslPlaceholder", "상한")}
                             />
                           ) : <span className="text-text-muted text-xs">-</span>}
-                        </td>
-                        <td className="px-2 py-1.5">
+                        </IqcSpecHelp></td>
+                        <td className="px-2 py-1.5"><IqcSpecHelp field="criteria" className="w-full" detail={draft.judgeCriteria}>
                           <input
                             type="text"
                             value={draft.judgeCriteria ?? ''}
@@ -522,27 +525,27 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             placeholder={t("master.iqcItem.judgeCriteriaPlaceholder", "판정기준 입력")}
                             className="w-full border border-border rounded px-2 py-1 text-sm bg-surface text-text focus:border-primary focus:outline-none"
                           />
-                        </td>
-                        <td className="px-2 py-1.5 text-text-muted text-xs">{draft.unit ?? '-'}</td>
+                        </IqcSpecHelp></td>
+                        <td className="px-2 py-1.5 text-text-muted text-xs"><IqcSpecHelp field="unit" className="w-full">{draft.unit ?? '-'}</IqcSpecHelp></td>
                         <td className="px-2 py-1.5">
                           <div className="flex items-center gap-1">
-                            <button
+                            <IqcSpecHelp field="confirm"><button
                               onClick={confirmEdit}
                               disabled={!canConfirmDraft}
-                              className="flex items-center gap-0.5 rounded bg-primary px-2 py-1 text-xs font-semibold text-white hover:bg-primary/90 transition-colors"
-                              title={t("master.iqcItem.confirm", "확인")}
+                              className="disabled:pointer-events-none flex items-center gap-0.5 rounded bg-primary px-2 py-1 text-xs font-semibold text-white hover:bg-primary/90 transition-colors"
+
                             >
                               <Check className="w-3.5 h-3.5" />
                               {t("master.iqcItem.confirm", "확인")}
-                            </button>
-                            <button
+                            </button></IqcSpecHelp>
+                            <IqcSpecHelp field="cancel"><button
                               onClick={cancelEdit}
                               className="flex items-center gap-0.5 rounded border border-border px-2 py-1 text-xs text-text-muted hover:text-text transition-colors"
-                              title={t("common.cancel", "취소")}
+
                             >
                               <X className="w-3.5 h-3.5" />
                               {t("common.cancel", "취소")}
-                            </button>
+                            </button></IqcSpecHelp>
                           </div>
                         </td>
                       </tr>
@@ -551,14 +554,14 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
 
                   return (
                     <tr key={idx} className="border-b border-border hover:bg-bg-elevated transition-colors">
-                      <td className="px-2 py-1.5 text-text-muted text-center">{row.seq}</td>
-                      <td className="px-2 py-1.5 font-medium text-text">
+                      <td className="px-2 py-1.5 text-text-muted text-center"><IqcSpecHelp field="seq" className="w-full justify-center">{row.seq}</IqcSpecHelp></td>
+                      <td className="px-2 py-1.5 font-medium text-text"><IqcSpecHelp field="item" className="w-full">
                         {row.inspItemName || row.inspItemCode || <span className="text-text-muted italic">{t("master.iqcItem.notSelected", "미선택")}</span>}
                         {row.inspItemCode && (
                           <span className="ml-1.5 text-xs text-text-muted">({row.inspItemCode})</span>
                         )}
-                      </td>
-                      <td className="px-2 py-1.5">
+                      </IqcSpecHelp></td>
+                      <td className="px-2 py-1.5"><IqcSpecHelp field="kind" className="w-full">
                         {row.judgeMethod ? (
                           <span className={`text-xs px-1.5 py-0.5 rounded ${
                             row.judgeMethod === 'MEASURE'
@@ -568,59 +571,59 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems }: Props) {
                             {row.judgeMethod === 'MEASURE' ? t("master.iqcItem.typeMeasure", "측정형") : t("master.iqcItem.typeVisual", "판정형")}
                           </span>
                         ) : <span className="text-text-muted text-xs">-</span>}
-                      </td>
-                      <td className="px-2 py-1.5">
+                      </IqcSpecHelp></td>
+                      <td className="px-2 py-1.5"><IqcSpecHelp field="inspectionType" className="w-full">
                         {row.inspectionType && row.inspectionType !== 'AQL'
                           ? <ComCodeBadge groupCode="IQC_ITEM_INSP_TYPE" code={row.inspectionType} />
                           : <span className="text-text-muted text-xs">AQL</span>}
-                      </td>
-                      <td className="px-2 py-1.5 text-right tabular-nums text-text">
+                      </IqcSpecHelp></td>
+                      <td className="px-2 py-1.5 text-right tabular-nums text-text"><IqcSpecHelp field="sample" className="w-full justify-end">
                         {(row.inspectionType === 'DESTRUCTIVE' || row.inspectionType === 'FULL')
                           ? (row.sampleQty ?? <span className="text-text-muted text-xs">-</span>)
                           : <span className="text-text-muted text-xs">{t("master.iqcItem.auto", "자동")}</span>}
-                      </td>
-                      <td className="px-2 py-1.5">
+                      </IqcSpecHelp></td>
+                      <td className="px-2 py-1.5"><IqcSpecHelp field="grade" className="w-full">
                         {row.defectGrade
                           ? <ComCodeBadge groupCode="DEFECT_GRADE" code={row.defectGrade} className="!rounded px-2.5 py-1" />
                           : <span className="text-text-muted text-xs">-</span>}
-                      </td>
-                      <td className="px-2 py-1.5 text-text font-medium">
+                      </IqcSpecHelp></td>
+                      <td className="px-2 py-1.5 text-text font-medium"><IqcSpecHelp field="level" className="w-full">
                         {row.inspectionLevel || <span className="text-text-muted text-xs">-</span>}
-                      </td>
-                      <td className="px-2 py-1.5 text-right tabular-nums text-text">
+                      </IqcSpecHelp></td>
+                      <td className="px-2 py-1.5 text-right tabular-nums text-text"><IqcSpecHelp field="aql" className="w-full justify-end">
                         {row.aql != null ? row.aql : <span className="text-text-muted text-xs">-</span>}
-                      </td>
-                      <td className="px-2 py-1.5 text-right tabular-nums text-text">
+                      </IqcSpecHelp></td>
+                      <td className="px-2 py-1.5 text-right tabular-nums text-text"><IqcSpecHelp field="lsl" className="w-full justify-end">
                         {row.lsl !== null ? row.lsl : <span className="text-text-muted text-xs">-</span>}
-                      </td>
-                      <td className="px-2 py-1.5 text-right tabular-nums text-text">
+                      </IqcSpecHelp></td>
+                      <td className="px-2 py-1.5 text-right tabular-nums text-text"><IqcSpecHelp field="usl" className="w-full justify-end">
                         {row.usl !== null ? row.usl : <span className="text-text-muted text-xs">-</span>}
-                      </td>
-                      <td className="px-2 py-1.5 text-text max-w-[200px]">
-                        <span className="block truncate" title={row.judgeCriteria ?? undefined}>
+                      </IqcSpecHelp></td>
+                      <td className="px-2 py-1.5 text-text max-w-[200px]"><IqcSpecHelp field="criteria" className="w-full" detail={draft.judgeCriteria}>
+                        <span className="block truncate" >
                           {row.judgeCriteria || <span className="text-text-muted text-xs">-</span>}
                         </span>
-                      </td>
-                      <td className="px-2 py-1.5 text-text-muted text-xs">{row.unit ?? '-'}</td>
+                      </IqcSpecHelp></td>
+                      <td className="px-2 py-1.5 text-text-muted text-xs"><IqcSpecHelp field="unit" className="w-full">{row.unit ?? '-'}</IqcSpecHelp></td>
                       <td className="px-2 py-1.5">
                         <div className="flex items-center gap-1">
-                          <button
+                          <IqcSpecHelp field="edit"><button
                             onClick={() => startEdit(idx)}
                             disabled={editingIdx !== -1}
-                            className="flex items-center gap-0.5 rounded border border-border px-2 py-1 text-xs text-text-muted hover:border-primary hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                            title={t("common.edit", "수정")}
+                            className="disabled:pointer-events-none flex items-center gap-0.5 rounded border border-border px-2 py-1 text-xs text-text-muted hover:border-primary hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+
                           >
                             <Pencil className="w-3 h-3" />
                             {t("common.edit", "수정")}
-                          </button>
-                          <button
+                          </button></IqcSpecHelp>
+                          <IqcSpecHelp field="remove"><button
                             onClick={() => removeRow(idx)}
                             disabled={editingIdx !== -1}
-                            className="text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors px-1"
+                            className="disabled:pointer-events-none text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors px-1"
                             aria-label={t("master.iqcItem.deleteRow", "행 삭제")}
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </button></IqcSpecHelp>
                         </div>
                       </td>
                     </tr>
