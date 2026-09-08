@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { AlertTriangle, Plus, RefreshCw, Save } from "lucide-react";
 import { Button, Card, CardContent, Input } from "@/components/ui";
+import UseYnSelect from "@/components/shared/UseYnSelect";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { FieldInput, FieldSelect, FieldComCodeSelect } from "./components/DefectCodeFieldHelp";
@@ -63,6 +64,7 @@ export default function DefectCodeMasterPage() {
   const [selectedLevel2, setSelectedLevel2] = useState("");
   const [selectedLevel3, setSelectedLevel3] = useState("");
   const [search, setSearch] = useState("");
+  const [useYnFilter, setUseYnFilter] = useState("Y");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -181,12 +183,13 @@ export default function DefectCodeMasterPage() {
     try {
       const params: Record<string, string> = { limit: "5000" };
       if (search.trim()) params.search = search.trim();
+      if (useYnFilter) params.useYn = useYnFilter;
       const res = await api.get("/quality/defect-codes", { params });
       setCodes(res.data?.data ?? []);
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [search, useYnFilter]);
 
   useEffect(() => {
     fetchCategories();
@@ -317,6 +320,7 @@ export default function DefectCodeMasterPage() {
                         fullWidth
                       />
                     </div>
+                    <UseYnSelect value={useYnFilter} onChange={setUseYnFilter} aria-label={t("common.useYn", "사용여부")} />
                     <Button variant="secondary" onClick={fetchCodes}>
                       {t("common.search", "검색")}
                     </Button>
