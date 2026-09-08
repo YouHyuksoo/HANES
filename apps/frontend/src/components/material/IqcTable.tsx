@@ -8,6 +8,7 @@ import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ClipboardCheck } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
+import HelpTooltip from '@/components/shared/HelpTooltip';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { IqcStatusBadge } from '@/components/material';
 import type { IqcItem } from '@/hooks/material/useIqcData';
@@ -48,9 +49,9 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading, sqlQ
         cell: ({ row }) => {
           const item = row.original;
           const canInspect = item.status === 'PENDING' || item.status === 'IQC_IN_PROGRESS';
-          return (
-            <button
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors ${
+          const action = (
+          <button
+              className={`disabled:pointer-events-none inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors ${
                 canInspect
                   ? 'text-primary border-primary hover:bg-primary hover:text-white'
                   : 'text-text-muted border-border opacity-50 cursor-not-allowed'
@@ -59,10 +60,11 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading, sqlQ
               disabled={!canInspect}
               onClick={() => onInspect(item)}
             >
-              <ClipboardCheck className="w-4 h-4" />
+              <ClipboardCheck className=" w-4 h-4" />
               {t('material.iqc.iqcInspect')}
             </button>
-          );
+        );
+          return (canInspect) ? action : <HelpTooltip description={t('material.disabledHelp.iqcStatus', '검사대기 또는 검사 중인 입하 건만 검사할 수 있습니다.')} focusable>{action}</HelpTooltip>;
         },
       },
       { accessorKey: 'arrivalNo', header: t('material.col.arrivalNo'), size: 160, meta: { filterType: 'text' as const } },

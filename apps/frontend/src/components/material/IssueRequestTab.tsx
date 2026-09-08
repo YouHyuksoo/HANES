@@ -273,7 +273,7 @@ export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: I
             <Button
               variant="danger"
               onClick={confirmReject}
-              disabled={!rejectReason.trim()}
+              disabled={!rejectReason.trim()} disabledReason={t('material.disabledHelp.rejectReason', '출고요청 반려 사유를 입력하세요.')}
               isLoading={isProcessing}
             >
               <XCircle className="w-4 h-4 mr-1" />

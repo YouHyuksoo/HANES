@@ -77,7 +77,7 @@ export default function ArrivalCancelModal({ isOpen, record, onClose, onSuccess 
           <Button
             variant="danger"
             onClick={handleConfirm}
-            disabled={!reason.trim() || submitting}
+            disabled={!reason.trim() || submitting} disabledReason={submitting ? t('material.disabledHelp.arrivalCancelBusy', '입하취소를 처리하고 있습니다.') : t('material.disabledHelp.cancelReason', '취소 사유를 입력하세요.')}
           >
             {submitting ? t('common.processing') : t('material.arrival.confirmCancel')}
           </Button>

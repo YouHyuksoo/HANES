@@ -4,6 +4,7 @@ import type { TFunction } from "i18next";
 import { Ban } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import ComCodeBadge from "@/components/ui/ComCodeBadge";
+import HelpTooltip from "@/components/shared/HelpTooltip";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 
 export interface ArrivalResultRow {
@@ -42,6 +43,13 @@ export function createArrivalResultGridColumns({
 }: CreateArrivalResultGridColumnsOptions): ColumnDef<ArrivalResultRow>[] {
   return [
     {
+      accessorKey: "status",
+      header: () => <StatusHeaderHelp label={t("common.status")} codeType="ARRIVAL_RESULT_STATUS" align="center" />,
+      size: 95,
+      meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => <ComCodeBadge groupCode="ARRIVAL_RESULT_STATUS" code={getValue() as string} />,
+    },
+    {
       id: "cancel",
       header: "",
       size: 90,
@@ -49,17 +57,19 @@ export function createArrivalResultGridColumns({
       cell: ({ row }) => {
         const r = row.original;
         return (
+          <HelpTooltip description={r.status === "CANCELED" ? "이미 취소된 입하입니다." : !r.cancelable ? "입고 이력이 있는 입하는 취소할 수 없습니다." : t("material.arrivalResult.cancel", "입하취소")} focusable={!r.cancelable}>
           <button
             type="button"
             disabled={!r.cancelable}
             onClick={(e) => { e.stopPropagation(); if (r.cancelable) onCancelArrival(r); }}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold text-white ${
+            className={`disabled:pointer-events-none inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold text-white ${
               r.cancelable ? "bg-red-600 hover:bg-red-700" : "bg-gray-300 dark:bg-gray-600 cursor-not-allowed"
             }`}
           >
             <Ban className="w-3.5 h-3.5" />
             {t("material.arrivalResult.cancel", "입하취소")}
           </button>
+          </HelpTooltip>
         );
       },
     },
@@ -107,12 +117,6 @@ export function createArrivalResultGridColumns({
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => <ComCodeBadge groupCode="ARRIVAL_PO_TYPE" code={getValue() as string} />,
     },
-    {
-      accessorKey: "status",
-      header: () => <StatusHeaderHelp label={t("common.status")} codeType="ARRIVAL_RESULT_STATUS" align="center" />,
-      size: 95,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => <ComCodeBadge groupCode="ARRIVAL_RESULT_STATUS" code={getValue() as string} />,
-    },
+
   ];
 }

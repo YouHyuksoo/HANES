@@ -244,7 +244,7 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
             hint={phaseHint}
             fullWidth
           />
-          <Button onClick={() => handleScan()} disabled={!input.trim()}>
+          <Button onClick={() => handleScan()} disabled={!input.trim()} disabledReason={t('material.disabledHelp.scanBarcode', '자재 바코드를 입력하거나 스캔하세요.')}>
             <ScanLine className="w-4 h-4 mr-1" />
             {t('material.receive.scan.scanRegister', '스캔등록')}
           </Button>
@@ -332,7 +332,7 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
               <X className="w-4 h-4 mr-1" />
               {t('common.close')}
             </Button>
-            <Button onClick={handleReceive} disabled={pairs.length === 0 || !warehouseCode} isLoading={saving}>
+            <Button onClick={handleReceive} disabled={pairs.length === 0 || !warehouseCode} disabledReason={saving ? t('material.disabledHelp.receiveSaving', '자재 입고를 처리하고 있습니다.') : !warehouseCode ? t('material.disabledHelp.receiveWarehouse', '자재를 입고할 창고를 선택하세요.') : t('material.disabledHelp.scanPair', '거래처 바코드와 자재시리얼을 짝으로 스캔하여 입고 목록에 추가하세요.')} isLoading={saving}>
               <PackageCheck className="w-4 h-4 mr-1" />
               {t('material.receive.scanReceive', '입고처리')} ({pairs.length})
             </Button>

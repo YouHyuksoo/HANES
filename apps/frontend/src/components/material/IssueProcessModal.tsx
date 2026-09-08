@@ -79,7 +79,7 @@ export default function IssueProcessModal({ isOpen, onClose, record }: IssueProc
           <Button variant="secondary" onClick={handleClose}>{t('common.cancel')}</Button>
           <Button
             onClick={handleSubmit}
-            disabled={!issueQty || Number(issueQty) <= 0 || Number(issueQty) > remaining}
+            disabled={!issueQty || Number(issueQty) <= 0 || Number(issueQty) > remaining} disabledReason={t('material.disabledHelp.issueQtyRemaining', '출고수량은 0보다 크고 요청 잔량 이하여야 합니다.')}
           >
             <CheckCircle className="w-4 h-4 mr-1" /> {t('material.issue.issueAction')}
           </Button>

@@ -311,27 +311,27 @@ export default function JobOrderPage() {
             <span className="text-xs text-text-muted">{t("production.order.selectRowForAction")}</span>
           )}
           <div className="flex-1" />
-          <Button size="sm" variant="secondary" disabled={!selectedRow}
+          <Button size="sm" variant="secondary" disabled={!selectedRow} disabledReason={t("production.order.selectRowForAction")}
             onClick={() => selectedRow && setPrintOrderNo(selectedRow.orderNo)}>
             <Printer className="w-3.5 h-3.5 mr-1" />{t("production.order.printBtn", "작업지시서 출력")}
           </Button>
-          <Button size="sm" variant="secondary" disabled={!canStart}
+          <Button size="sm" variant="secondary" disabled={!canStart} disabledReason={!selectedRow ? t("production.order.selectRowForAction") : t("production.order.help.canStart", "대기 상태의 작업지시만 시작할 수 있습니다.")}
             onClick={() => setPendingAction("start")}>
             <Play className="w-3.5 h-3.5 mr-1" />{t("production.order.actionStart")}
           </Button>
-          <Button size="sm" variant="secondary" disabled={!canComplete}
+          <Button size="sm" variant="secondary" disabled={!canComplete} disabledReason={!selectedRow ? t("production.order.selectRowForAction") : t("production.order.help.canComplete", "진행 중인 작업지시만 완료할 수 있습니다.")}
             onClick={() => setPendingAction("complete")}>
             <CheckCircle2 className="w-3.5 h-3.5 mr-1" />{t("production.order.actionComplete")}
           </Button>
-          <Button size="sm" variant="secondary" disabled={!canHold}
+          <Button size="sm" variant="secondary" disabled={!canHold} disabledReason={!selectedRow ? t("production.order.selectRowForAction") : t("production.order.help.canHold", "대기 또는 진행 중인 작업지시만 보류할 수 있습니다.")}
             onClick={() => setPendingAction("hold")}>
             <PauseCircle className="w-3.5 h-3.5 mr-1" />{t("production.order.actionHold")}
           </Button>
-          <Button size="sm" variant="secondary" disabled={!canHoldRelease}
+          <Button size="sm" variant="secondary" disabled={!canHoldRelease} disabledReason={!selectedRow ? t("production.order.selectRowForAction") : t("production.order.help.canHoldRelease", "보류 상태의 작업지시만 보류 해제할 수 있습니다.")}
             onClick={() => setPendingAction("holdRelease")}>
             <PlayCircle className="w-3.5 h-3.5 mr-1" />{t("production.order.actionHoldRelease")}
           </Button>
-          <Button size="sm" variant="secondary" disabled={!canCancel}
+          <Button size="sm" variant="secondary" disabled={!canCancel} disabledReason={!selectedRow ? t("production.order.selectRowForAction") : t("production.order.help.canCancel", "대기 또는 보류 상태의 작업지시만 취소할 수 있습니다.")}
             onClick={() => setPendingAction("cancel")}
             className={canCancel ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30" : ""}>
             <XCircle className="w-3.5 h-3.5 mr-1" />{t("production.order.actionCancel")}

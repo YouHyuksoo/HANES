@@ -997,7 +997,7 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                     ? <span className="text-red-600 dark:text-red-400">FAIL {failCount} / PASS {passCount}</span>
                     : <span className="text-green-600 dark:text-green-400">PASS {passCount}</span>}
             </span>
-            <Button size="sm" variant={(anyFail || anyDestructFail) ? "danger" : "primary"} onClick={handleSerialSubmit} disabled={!canSubmit}>
+            <Button size="sm" variant={(anyFail || anyDestructFail) ? "danger" : "primary"} onClick={handleSerialSubmit} disabled={!canSubmit} disabledReason={loadingItems ? t('material.disabledHelp.inspectionLoading', '검사항목을 불러오고 있습니다.') : scannedSerials.length === 0 && !(aqlItems.length === 0 && destructItems.length > 0) ? t('material.disabledHelp.iqcScan', '검사할 자재시리얼을 스캔하세요.') : isIncomplete ? t('material.disabledHelp.iqcIncomplete', '판정이 끝나지 않은 자재시리얼의 검사 판정을 완료하세요.') : needsDefectCode ? t('material.disabledHelp.iqcDefect', '불합격 항목의 불량코드와 불량수량을 입력하세요.') : t('material.disabledHelp.iqcConflict', '합격 판정에는 불량코드와 불량수량을 등록할 수 없습니다.')}>
               {(anyFail || anyDestructFail) ? <XCircle className="w-4 h-4 mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}
               {t("material.iqc.serialSubmit", "검사결과 등록")} ({scannedSerials.length})
             </Button>

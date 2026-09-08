@@ -176,7 +176,7 @@ export default function AdjustmentPage() {
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="secondary" onClick={() => setShowRegister(false)}>{t("common.cancel")}</Button>
           <Button onClick={handleRegister}
-            disabled={saving || !form.warehouseCode || !form.itemCode || !form.afterQty || !form.reason}>
+            disabled={saving || !form.warehouseCode || !form.itemCode || !form.afterQty || !form.reason} disabledReason={saving ? t('material.disabledHelp.adjustSaving', '재고조정을 저장하고 있습니다.') : t('material.disabledHelp.adjustRequired', '창고와 품목을 선택하고 조정 후 수량과 조정 사유를 입력하세요.')}>
             {saving ? t("common.saving") : t("material.adjustment.register")}
           </Button>
         </div>

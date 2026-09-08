@@ -114,7 +114,7 @@ test('/material/request 작업지시 출고요청 화면은 수동 출고요청 
   assert.match(manualPanel, /px-5 py-3 border-b border-border flex items-center justify-between flex-shrink-0/, '수동요청 패널 버튼은 다른 우측 패널처럼 헤더 오른쪽에 있어야 한다');
   assert.match(manualPanel, /<h2 className="text-sm font-bold text-text">/, '수동요청 패널 제목 스타일은 다른 우측 패널과 같아야 한다');
   assert.match(manualPanel, /<Button size="sm" variant="secondary" onClick=\{handleClose\}>/, '취소 버튼은 헤더 액션 영역에 있어야 한다');
-  assert.match(manualPanel, /<Button size="sm" onClick=\{handleSubmit\} disabled=\{!canSubmit\}>/, '등록 버튼은 헤더 액션 영역에 있어야 한다');
+  assert.match(manualPanel, /<Button size="sm" onClick=\{handleSubmit\} disabled=\{!canSubmit\}[^>]*>/, '등록 버튼은 헤더 액션 영역에 있어야 한다');
   assert.match(manualPanel, /flex-1 overflow-y-auto px-5 py-3 space-y-4/, '본문은 헤더 아래 스크롤 영역이어야 한다');
   assert.doesNotMatch(manualPanel, /border-t border-border p-3 flex justify-end gap-2/, '취소/등록 버튼을 패널 바닥 footer에 두면 안 된다');
   assert.match(manualPanel, /PartSearchModal/, '수동요청 패널은 공통 품목 선택창을 사용해야 한다');

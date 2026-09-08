@@ -14,6 +14,7 @@ import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Truck } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
+import HelpTooltip from '@/components/shared/HelpTooltip';
 import DataGrid from '@/components/data-grid/DataGrid';
 import ComCodeBadge from '@/components/ui/ComCodeBadge';
 import StatusHeaderHelp from '@/components/shared/StatusHeaderHelp';
@@ -52,19 +53,20 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
       cell: ({ row }) => {
         const r = row.original;
         const disabled = r.lineStatus === 'CLOSE' || r.remainingQty === 0;
-        return (
+        const action = (
           <button
             type="button"
             disabled={disabled}
             onClick={(e) => { e.stopPropagation(); if (!disabled) onSelectLine(r); }}
-            className={`inline-flex items-center gap-1 px-3 py-1 rounded text-xs font-semibold text-white ${
+            className={`disabled:pointer-events-none inline-flex items-center gap-1 px-3 py-1 rounded text-xs font-semibold text-white ${
               disabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-pink-600 hover:bg-pink-700'
             }`}
           >
-            <Truck className="w-3.5 h-3.5" />
+            <Truck className=" w-3.5 h-3.5" />
             {t('material.arrival.action.receive')}
           </button>
         );
+          return (!disabled) ? action : <HelpTooltip description={r.lineStatus === 'CLOSE' ? t('material.disabledHelp.poClosed', '마감된 PO 라인은 입하할 수 없습니다.') : t('material.disabledHelp.poNoRemaining', 'PO 라인의 입하 잔량이 0이어서 추가 입하할 수 없습니다.')} focusable>{action}</HelpTooltip>;
       },
     },
     {

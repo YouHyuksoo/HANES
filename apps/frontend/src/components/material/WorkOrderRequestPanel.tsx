@@ -11,6 +11,7 @@
  * 4. **미선택 시**: 우측에 최근 출고요청 목록을 표시
  */
 import { formatDateTimeKst } from '@/utils/dateTimeKst';
+import HelpTooltip from '@/components/shared/HelpTooltip';
 import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, ClipboardList, AlertTriangle, Loader2, Plus, PackageCheck, X, ListChecks, FilePlus2, ChevronLeft, ChevronDown, ChevronRight, Info, CornerDownRight, CalendarDays } from 'lucide-react';
@@ -560,7 +561,7 @@ export default function WorkOrderRequestPanel({
                   <div className="w-40">
                     <Select options={reasonOptions} value={reason} onChange={setReason} fullWidth />
                   </div>
-                  <Button size="sm" onClick={handleSubmit} disabled={!canSubmit}>
+                  <Button size="sm" onClick={handleSubmit} disabled={!canSubmit} disabledReason={isSubmitting ? t('material.disabledHelp.requestSaving', '출고요청을 저장하고 있습니다.') : isLoadingBom ? t('material.disabledHelp.bomLoading', '작업지시의 BOM 품목을 불러오고 있습니다.') : !selectedOrderNo ? t('material.disabledHelp.selectOrder', '작업지시를 선택하세요.') : !selectedProcessCode ? t('material.disabledHelp.selectProcess', '출고 대상 공정을 선택하세요.') : t('material.disabledHelp.positiveRequest', '요청수량이 0보다 큰 품목을 한 건 이상 입력하세요.')}>
                     {isSubmitting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Plus className="w-4 h-4 mr-1" />}
                     {t('material.request.registerRequest')}
                   </Button>
@@ -688,14 +689,14 @@ export default function WorkOrderRequestPanel({
                         <div key={item.itemCode} className="flex items-center gap-2 px-3 py-1.5 text-sm border-t border-border first:border-t-0">
                           <span className="font-mono text-xs">{item.itemCode}</span>
                           <span className="flex-1 truncate">{item.itemName}</span>
-                          <button
+                          <HelpTooltip description={t(added ? 'material.request.alreadyAdded' : 'material.request.addToRequest')} focusable={added}><button
                             onClick={() => addManualItem(item)}
                             disabled={added}
-                            className={`p-1 rounded ${added ? 'text-text-muted opacity-50' : 'text-primary hover:bg-primary/10'}`}
+                            className={`disabled:pointer-events-none p-1 rounded ${added ? 'text-text-muted opacity-50' : 'text-primary hover:bg-primary/10'}`}
                             title={added ? t('material.request.alreadyAdded') : t('material.request.addToRequest')}
                           >
                             <Plus className="w-4 h-4" />
-                          </button>
+                          </button></HelpTooltip>
                         </div>
                       );
                     })}

@@ -65,7 +65,7 @@ export default function RepairWorkflowPanel({order,dirty,onDone}:Props) {
         {needsDestination&&<WarehouseSelect label={text.returnWarehouse} value={destination} onChange={setDestination} fullWidth/>}
       </fieldset>
       {terminal&&<RepairMaterialAllocation parts={order.usedParts??[]} value={allocations} onChange={setAllocations} disabled={disabled}/>}
-      <div className="flex justify-end"><Button disabled={disabled||(stage==='received'&&!source)||(needsDestination&&!destination)||(stage==='inspection'&&!inspector)} onClick={()=>setConfirm(true)}>
+      <div className="flex justify-end"><Button disabled={disabled||(stage==='received'&&!source)||(needsDestination&&!destination)||(stage==='inspection'&&!inspector)} disabledReason={saving ? "처리 중입니다. 완료될 때까지 기다려 주세요." : dirty ? text.saveFirst : stage==='unknown' ? "현재 수리 상태를 확인할 수 없습니다. 다시 조회하세요." : stage==='received'&&!source ? "수리품을 가져올 출발창고를 선택하세요." : needsDestination&&!destination ? "수리 후 재고를 돌려보낼 복귀창고를 선택하세요." : "검사자를 선택하세요."} onClick={()=>setConfirm(true)}>
         {stage==='received'?text.start:stage==='inspection'?text.inspect:text.finish}
       </Button></div>
     </>}

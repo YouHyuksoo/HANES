@@ -112,7 +112,7 @@ export default function GaugeFormPanel({ editData, onClose, onSave }: Props) {
         </h2>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button size="sm" onClick={handleSave} disabled={saving || !form.gaugeCode || !form.gaugeName}>
+          <Button size="sm" onClick={handleSave} disabled={saving || !form.gaugeCode || !form.gaugeName} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : !form.gaugeCode ? t('quality.disabled.gaugeCode', '계측기 코드를 입력하세요.') : t('quality.disabled.gaugeName', '계측기명을 입력하세요.')}>
             {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>

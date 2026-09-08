@@ -188,7 +188,7 @@ export default function ReceivablePanel({ onReceived }: ReceivablePanelProps) {
           </span>
           <Button
             onClick={handleReceive}
-            disabled={saving || selectedRows.length === 0 || !warehouseId}
+            disabled={saving || selectedRows.length === 0 || !warehouseId} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : selectedRows.length === 0 ? t('product.receive.selectFirst', '입고할 제품을 선택하세요.') : t('product.receive.warehouseFirst', '입고 창고를 선택하세요.')}
           >
             <PackageCheck className="w-4 h-4 mr-1" />
             {saving

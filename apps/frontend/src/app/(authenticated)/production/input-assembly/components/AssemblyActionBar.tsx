@@ -9,6 +9,7 @@ import { Button } from "@/components/ui";
 
 export default function AssemblyActionBar({
   canIssue,
+  issueDisabledReason,
   issuing,
   issuedFg,
   onIssue,
@@ -18,6 +19,7 @@ export default function AssemblyActionBar({
   onResetIssued,
 }: {
   canIssue: boolean;
+  issueDisabledReason: string;
   issuing: boolean;
   issuedFg: string | null;
   onIssue: () => void;
@@ -49,6 +51,7 @@ export default function AssemblyActionBar({
           size="lg"
           onClick={onIssue}
           disabled={!canIssue || issuing || !!issuedFg}
+          disabledReason={issueDisabledReason}
           isLoading={issuing}
           leftIcon={<Play className="w-5 h-5" />}
         >
@@ -78,6 +81,7 @@ export default function AssemblyActionBar({
                 onClick={() => submitConfirm()}
                 isLoading={confirming}
                 disabled={confirming || !canConfirm || !confirmScan.trim()}
+                disabledReason={!canConfirm ? t('production.inputAssembly.sgNotReadyHelp', '필요한 반제품을 스캔하고 잔량을 확인하세요.') : t('production.inputAssembly.confirmScanPlaceholder', '실물 FG 라벨 스캔')}
               >
                 {t("common.confirm")}
               </Button>
@@ -86,6 +90,7 @@ export default function AssemblyActionBar({
                 size="sm"
                 onClick={handleReset}
                 disabled={confirming}
+                disabledReason={t('common.actionProcessingHelp', '처리 중입니다. 완료될 때까지 기다려 주세요.')}
                 leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
               >
                 {t("production.inputAssembly.cancelIssue", "발행 취소")}

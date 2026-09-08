@@ -306,7 +306,7 @@ export default function IssueHistoryTab() {
             <Button
               variant="danger"
               onClick={handleCancel}
-              disabled={!cancelReason.trim() || cancelling}
+              disabled={!cancelReason.trim() || cancelling} disabledReason={cancelling ? t('material.disabledHelp.issueCancelBusy', '출고취소를 처리하고 있습니다.') : t('material.disabledHelp.cancelReason', '취소 사유를 입력하세요.')}
             >
               {cancelling ? t('common.processing') : t('material.issue.history.confirmCancel')}
             </Button>

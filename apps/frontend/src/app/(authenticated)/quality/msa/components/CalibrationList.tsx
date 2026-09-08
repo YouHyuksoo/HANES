@@ -155,7 +155,7 @@ export default function CalibrationList({ gaugeId, onCalibrationAdded }: Props) 
               onChange={e => setField("uncertainty", e.target.value)} fullWidth />
           </div>
           <div className="flex justify-end">
-            <Button size="sm" onClick={handleAdd} disabled={saving || !form.calibrationDate || !form.result}>
+            <Button size="sm" onClick={handleAdd} disabled={saving || !form.calibrationDate || !form.result} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : !form.calibrationDate ? t('quality.disabled.calibrationDate', '교정일을 입력하세요.') : t('quality.disabled.calibrationResult', '교정 결과를 선택하세요.')}>
               {saving ? t("common.saving") : t("common.add")}
             </Button>
           </div>

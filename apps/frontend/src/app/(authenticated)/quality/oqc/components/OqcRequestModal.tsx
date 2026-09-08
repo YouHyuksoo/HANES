@@ -185,7 +185,7 @@ export default function OqcRequestModal({ isOpen, onClose, onSuccess }: Props) {
           </div>
           <div className="flex gap-2">
             <Button variant="secondary" onClick={handleClose}>{t("common.cancel")}</Button>
-            <Button onClick={handleSubmit} disabled={saving || selectedBoxIds.size === 0}>
+            <Button onClick={handleSubmit} disabled={saving || selectedBoxIds.size === 0} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : t('quality.oqc.selectBoxesFirst', '출하검사를 의뢰할 박스를 선택하세요.')}>
               {saving ? t("common.saving") : t("common.save", "저장")}
             </Button>
           </div>

@@ -129,7 +129,7 @@ export default function PrintActionBar({
       )}
 
       {/* 발행 버튼 */}
-      <Button size="sm" onClick={handlePrint} disabled={isPrintDisabled}>
+      <Button size="sm" onClick={handlePrint} disabled={isPrintDisabled} disabledReason={printing || zplPrinting ? t('material.disabledHelp.printing', '라벨을 출력하고 있습니다.') : selectedCount === 0 ? t('material.disabledHelp.selectLabels', '출력할 자재 라벨을 선택하세요.') : !isAgentAvailable ? t('material.disabledHelp.printAgent', 'ZPL USB 인쇄를 위해 프린트 에이전트를 연결하세요.') : t('material.disabledHelp.printer', '라벨 프린터를 선택하세요.')}>
         <Printer className="w-4 h-4 mr-1" />
         {isProcessing ? '...' : t('material.receiveLabel.printLabel')}
         {selectedQty > 0 && ` (${selectedQty.toLocaleString()}${t('material.receiveLabel.sheets')})`}

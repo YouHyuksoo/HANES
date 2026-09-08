@@ -54,19 +54,19 @@ export function createPalletGridColumns({
         const isOpen = pallet.status === "OPEN";
         return (
           <div className="flex gap-1">
-            <Button variant="ghost" size="sm" title={t("shipping.pallet.assignBox")} disabled={!isOpen || !pallet.shipOrderNo} onClick={() => { selectPallet(pallet); setIsAssignModalOpen(true); fetchAvailableBoxes(); }}>
+            <Button variant="ghost" size="sm" title={t("shipping.pallet.assignBox")} disabled={!isOpen || !pallet.shipOrderNo} disabledReason={!isOpen ? t('shipping.disabled.openPallet', '열린 팔레트만 처리할 수 있습니다. 팔레트 상태를 확인하세요.') : t('shipping.disabled.palletOrder', '출하지시가 연결된 팔레트만 처리할 수 있습니다.')} onClick={() => { selectPallet(pallet); setIsAssignModalOpen(true); fetchAvailableBoxes(); }}>
               <Plus className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="sm" title={t("shipping.pallet.closePallet")} disabled={!isOpen || !pallet.shipOrderNo} onClick={() => handleClosePallet(pallet)}>
+            <Button variant="ghost" size="sm" title={t("shipping.pallet.closePallet")} disabled={!isOpen || !pallet.shipOrderNo} disabledReason={!isOpen ? t('shipping.disabled.openPallet', '열린 팔레트만 처리할 수 있습니다. 팔레트 상태를 확인하세요.') : t('shipping.disabled.palletOrder', '출하지시가 연결된 팔레트만 처리할 수 있습니다.')} onClick={() => handleClosePallet(pallet)}>
               <Lock className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="sm" title={t("shipping.pallet.reopenPallet")} disabled={pallet.status !== "CLOSED"} onClick={() => handleReopenPallet(pallet)}>
+            <Button variant="ghost" size="sm" title={t("shipping.pallet.reopenPallet")} disabled={pallet.status !== "CLOSED"} disabledReason={t('shipping.disabled.closedPallet', '닫힌 팔레트만 다시 열 수 있습니다.')} onClick={() => handleReopenPallet(pallet)}>
               <LockOpen className="w-4 h-4" />
             </Button>
             <Button variant="ghost" size="sm" title={t("shipping.pallet.printLabel", "라벨 출력")} onClick={() => handleOpenLabel(pallet)}>
               <Printer className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="sm" title={t("shipping.pallet.deleteEmptyPallet", "빈 팔레트 삭제")} disabled={!canDeleteEmptyPallet(pallet) || saving} onClick={() => setDeletePalletTarget(pallet)}>
+            <Button variant="ghost" size="sm" title={t("shipping.pallet.deleteEmptyPallet", "빈 팔레트 삭제")} disabled={!canDeleteEmptyPallet(pallet) || saving} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : t('shipping.disabled.deleteEmptyPallet', '열린 상태이며 박스와 출하 연결이 없는 팔레트만 삭제할 수 있습니다. 적재·출하 상태를 확인하세요.')} onClick={() => setDeletePalletTarget(pallet)}>
               <Trash2 className="w-4 h-4 text-danger" />
             </Button>
           </div>

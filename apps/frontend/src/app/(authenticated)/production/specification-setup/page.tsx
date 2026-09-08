@@ -353,9 +353,9 @@ export default function ProductionSpecificationSetupPage() {
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" onClick={saveDrawing} isLoading={saving} leftIcon={<Save className="w-4 h-4" />}>{t("common.save")}</Button>
-                  <Button size="sm" variant="secondary" onClick={approveRevision} disabled={!selectedRevisionId || isApproved} leftIcon={<CheckCircle2 className="w-4 h-4" />}>{t("production.specSetup.approve", "승인")}</Button>
-                  <Button size="sm" variant="secondary" onClick={openReviseModal} disabled={!selectedRevisionId} leftIcon={<CopyPlus className="w-4 h-4" />}>{t("production.specSetup.createRev", "Rev 생성")}</Button>
-                  <Button size="sm" variant="danger" onClick={deleteDrawing} disabled={!selected?.drawingId} leftIcon={<Trash2 className="w-4 h-4" />}>{t("common.delete")}</Button>
+                  <Button size="sm" variant="secondary" onClick={approveRevision} disabled={!selectedRevisionId || isApproved} disabledReason={!selectedRevisionId ? "승인할 개정판을 선택하세요." : "이미 승인된 개정판입니다."} leftIcon={<CheckCircle2 className="w-4 h-4" />}>{t("production.specSetup.approve", "승인")}</Button>
+                  <Button size="sm" variant="secondary" onClick={openReviseModal} disabled={!selectedRevisionId} disabledReason="새 개정판의 기준이 될 개정판을 선택하세요." leftIcon={<CopyPlus className="w-4 h-4" />}>{t("production.specSetup.createRev", "Rev 생성")}</Button>
+                  <Button size="sm" variant="danger" onClick={deleteDrawing} disabled={!selected?.drawingId} disabledReason="삭제할 도면을 선택하세요." leftIcon={<Trash2 className="w-4 h-4" />}>{t("common.delete")}</Button>
                 </div>
               </div>
 
@@ -396,7 +396,7 @@ export default function ProductionSpecificationSetupPage() {
                   <Button size="sm" variant="ghost" onClick={() => setExpandOpen(true)} leftIcon={<Maximize2 className="w-4 h-4" />}>
                     {t("production.specSetup.expandView", "크게 보기")}
                   </Button>
-                  <Button size="sm" variant="secondary" onClick={addCircuit} disabled={isApproved} leftIcon={<Plus className="w-4 h-4" />}>
+                  <Button size="sm" variant="secondary" onClick={addCircuit} disabled={isApproved} disabledReason="승인된 개정판은 수정할 수 없습니다. Rev 생성 후 회로를 추가하세요." leftIcon={<Plus className="w-4 h-4" />}>
                     {t("production.specSetup.addCircuit", "회로 추가")}
                   </Button>
                 </div>
@@ -431,7 +431,7 @@ export default function ProductionSpecificationSetupPage() {
                 Rev {selectedRevision.revisionCode} / {selectedRevision.status}
               </span>
             )}
-            <Button size="sm" variant="secondary" onClick={addCircuit} disabled={isApproved} leftIcon={<Plus className="w-4 h-4" />} className="ml-auto">
+            <Button size="sm" variant="secondary" onClick={addCircuit} disabled={isApproved} disabledReason="승인된 개정판은 수정할 수 없습니다. Rev 생성 후 회로를 추가하세요." leftIcon={<Plus className="w-4 h-4" />} className="ml-auto">
               {t("production.specSetup.addCircuit", "회로 추가")}
             </Button>
           </div>

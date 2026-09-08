@@ -28,6 +28,8 @@ import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import { getTodayLocal } from "@/utils/date";
 import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
+import { getReprintHintKey } from "./reprintHint";
+import HelpTooltip from "@/components/shared/HelpTooltip";
 import type { PoLineReceiptResponse } from "../arrival/components/types";
 import {
   LabelDesign,
@@ -206,6 +208,7 @@ export default function ArrivalResultPage() {
   };
 
   const checkableSerials = useMemo(() => serials.filter((s) => s.checkable), [serials]);
+  const reprintHint = t(getReprintHintKey(serials, serialLoading, checked.size));
   const allChecked = checkableSerials.length > 0 && checkableSerials.every((s) => checked.has(s.matUid));
   const toggleAll = () => {
     setChecked(allChecked ? new Set() : new Set(checkableSerials.map((s) => s.matUid)));
@@ -378,7 +381,7 @@ export default function ArrivalResultPage() {
                       {t("material.arrivalResult.manufacturer", "제조사")}: {selected.mfgPartnerName ?? "-"}
                     </div>
                   </div>
-                  <Button size="sm" variant="secondary" onClick={openMfg} disabled={selected.status === "CANCELED"}>
+                  <Button size="sm" variant="secondary" onClick={openMfg} disabled={selected.status === "CANCELED"} disabledReason="취소된 입하는 제조사를 변경할 수 없습니다.">
                     <Pencil className="w-3.5 h-3.5 mr-1" />{t("material.arrivalResult.changeMfg", "제조사 변경")}
                   </Button>
                 </div>
@@ -404,15 +407,19 @@ export default function ArrivalResultPage() {
                       fullWidth
                     />
                   </div>
-                  <Button size="sm" onClick={handleReprint} disabled={checked.size === 0}>
+                  <HelpTooltip description={reprintHint} focusable={serialLoading || checked.size === 0}>
+                  <Button size="sm" onClick={handleReprint} disabled={serialLoading || checked.size === 0}
+                    className="disabled:pointer-events-none" aria-describedby="arrival-reprint-hint"
+                    aria-label={t("material.arrivalResult.reprint", "라벨 재발행")}>
                     <Printer className="w-4 h-4 mr-1" />{t("material.arrivalResult.reprint", "라벨 재발행")}
                   </Button>
+                  </HelpTooltip>
                 </div>
               </div>
             )}
 
             {/* 시리얼 목록 */}
-            {selected && <p className="text-xs text-text-muted">{t("material.arrivalResult.reprintHint")}</p>}
+            {selected && <p id="arrival-reprint-hint" className="text-xs text-text-muted" role="status">{reprintHint}</p>}
             <div className="flex-1 min-h-0 overflow-auto border border-border rounded-lg">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-surface-secondary dark:bg-slate-800 text-text-muted">
@@ -433,7 +440,9 @@ export default function ArrivalResultPage() {
                     serials.map((s) => (
                       <tr key={s.matUid} className="border-t border-border">
                         <td className="p-2 text-center">
-                          <input type="checkbox" checked={checked.has(s.matUid)} disabled={!s.checkable} onChange={() => toggleCheck(s.matUid)} />
+                          <HelpTooltip description={t(getReprintHintKey([s], false, checked.has(s.matUid) ? 1 : 0))} focusable={!s.checkable}>
+                            <input type="checkbox" className="disabled:pointer-events-none" checked={checked.has(s.matUid)} disabled={!s.checkable} onChange={() => toggleCheck(s.matUid)} />
+                          </HelpTooltip>
                         </td>
                         <td className="p-2 font-mono text-xs text-slate-800 dark:text-slate-200">{s.matUid}</td>
                         <td className="p-2 text-right">{s.qty.toLocaleString()}</td>

@@ -323,7 +323,7 @@ export default function ReinspectModal({ isOpen, onClose, target, onSubmitted }:
                 ? <span className="text-red-600 dark:text-red-400">{t("material.shelfLife.overallResult", "종합판정")}: {t("material.shelfLife.fail", "불합격")}{hasInspectItems ? ` (FAIL ${failCount} / PASS ${passCount})` : ""}</span>
                 : <span className="text-green-600 dark:text-green-400">{t("material.shelfLife.overallResult", "종합판정")}: {t("material.shelfLife.pass", "합격")}{hasInspectItems ? ` (PASS ${passCount})` : ""}</span>}
           </span>
-          <Button variant={overallResult === "FAIL" ? "danger" : "primary"} onClick={handleSubmit} disabled={!canSubmit}>
+          <Button variant={overallResult === "FAIL" ? "danger" : "primary"} onClick={handleSubmit} disabled={!canSubmit} disabledReason={loadingItems ? t('material.disabledHelp.inspectionLoading', '검사항목을 불러오고 있습니다.') : submitting ? t('material.disabledHelp.inspectionSaving', '검사결과를 저장하고 있습니다.') : t('material.disabledHelp.inspectionResult', '검사 판정을 입력하세요.')}>
             <FlaskConical className="mr-1 h-4 w-4" />
             {submitting ? t("common.saving") : t("material.shelfLife.submitReinspect", "재검사 결과 등록")}
           </Button>

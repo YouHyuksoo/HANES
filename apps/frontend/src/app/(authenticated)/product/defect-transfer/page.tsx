@@ -327,7 +327,7 @@ export default function ProductDefectTransferPage() {
             />
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="secondary" onClick={() => setSelectedStock(null)}>{t("common.cancel")}</Button>
-              <Button onClick={handleTransfer} disabled={saving || transferQty < 1 || transferQty > selectedStock.availableQty}>
+              <Button onClick={handleTransfer} disabled={saving || transferQty < 1 || transferQty > selectedStock.availableQty} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : transferQty < 1 ? t('common.disabled.qtyPositive', '수량을 1 이상 입력하세요.') : t('product.defectTransfer.exceedsAvailable', '가용수량을 초과했습니다. 수량을 줄여 주세요.')}>
                 {saving ? t("common.saving") : t("productMgmt.defectTransfer.modal.confirm")}
               </Button>
             </div>
@@ -374,7 +374,7 @@ export default function ProductDefectTransferPage() {
             />
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="secondary" onClick={() => setSelectedTx(null)}>{t("common.cancel")}</Button>
-              <Button onClick={handleCancel} disabled={saving || !cancelReason}>
+              <Button onClick={handleCancel} disabled={saving || !cancelReason} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : t('common.disabled.cancelReason', '취소 사유를 입력하세요.')}>
                 {saving ? t("common.saving") : (
                   <><XCircle className="w-4 h-4 mr-1" />{t("productMgmt.defectTransfer.confirmCancel")}</>
                 )}

@@ -147,7 +147,7 @@ export default function IssueScanPanel() {
           </div>
           <Button
             onClick={() => handleScan()}
-            disabled={!scanInput.trim() || isScanning}
+            disabled={!scanInput.trim() || isScanning} disabledReason={isScanning ? t('material.disabledHelp.stockScanning', '스캔한 자재 정보를 조회하고 있습니다.') : t('material.disabledHelp.scanBarcode', '자재 바코드를 입력하거나 스캔하세요.')}
             size="sm"
             className="flex-shrink-0 h-9"
           >
@@ -203,7 +203,7 @@ export default function IssueScanPanel() {
                 <XCircle className="w-3.5 h-3.5 mr-1" />
                 {t('common.cancel')}
               </Button>
-              <Button size="sm" onClick={handleIssueAndFocus} disabled={!processCode} className="flex-1 h-8 text-xs">
+              <Button size="sm" onClick={handleIssueAndFocus} disabled={!processCode} disabledReason={t('material.disabledHelp.selectProcess', '출고 대상 공정을 선택하세요.')} className="flex-1 h-8 text-xs">
                 <Package className="w-3.5 h-3.5 mr-1" />
                 {t('material.issue.fullIssue', { defaultValue: '전량출고' })}
               </Button>

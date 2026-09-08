@@ -129,7 +129,7 @@ export default function ReceiptCancelPage() {
               value={reason} onChange={e => setReason(e.target.value)} fullWidth />
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={handleCancel} disabled={saving || !reason}>
+              <Button onClick={handleCancel} disabled={saving || !reason} disabledReason={saving ? t('material.disabledHelp.receiveCancelBusy', '입고취소를 처리하고 있습니다.') : t('material.disabledHelp.cancelReason', '취소 사유를 입력하세요.')}>
                 {saving ? t("common.saving") : <><XCircle className="w-4 h-4 mr-1" />{t("material.receiptCancel.confirm")}</>}
               </Button>
             </div>

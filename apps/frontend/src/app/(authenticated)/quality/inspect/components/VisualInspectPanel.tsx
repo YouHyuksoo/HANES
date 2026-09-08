@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, Button } from "@/components/ui";
 import { BarcodeScanInput } from "@/components/shared";
+import HelpTooltip from "@/components/shared/HelpTooltip";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import type { JobOrderRow, InspectHistoryRow, FgLabelInfo } from "../types";
@@ -192,6 +193,11 @@ export default function VisualInspectPanel({ order }: Props) {
   ], [t]);
 
   const passDisabled = inspecting || (selectedBarcodes.size === 0 && (!scannedLabel || alreadyInspected));
+  const judgmentDisabledReason = inspecting
+    ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.')
+    : alreadyInspected && selectedBarcodes.size === 0
+      ? t('quality.disabled.alreadyInspected', '이미 검사한 제품입니다. 다음 검사 대상을 스캔하거나 목록에서 선택하세요.')
+      : t('quality.disabled.inspectTarget', '검사할 제품을 스캔하거나 대기 목록에서 선택하세요.');
 
   return (
     <div className="flex flex-col gap-4 h-full overflow-auto">
@@ -203,10 +209,10 @@ export default function VisualInspectPanel({ order }: Props) {
               <p className="text-xs text-text-muted">{t("quality.inspect.lotHelp", "이번 LOT의 FG를 선택한 뒤 한 번에 판정합니다. 각 FG 이력은 개별 저장됩니다.")}</p>
             </div>
             <div className="flex gap-1">
-              <Button variant="secondary" size="sm" onClick={() => setSelectedBarcodes(new Set(pending.slice(0, MAX_BATCH).map((label) => label.fgBarcode)))} disabled={pending.length === 0}>
+              <Button variant="secondary" size="sm" onClick={() => setSelectedBarcodes(new Set(pending.slice(0, MAX_BATCH).map((label) => label.fgBarcode)))} disabled={pending.length === 0} disabledReason={t('quality.disabled.noPending', '선택한 조건에 검사 대기 제품이 없습니다.')}>
                 {t("quality.inspect.selectAll", "전체 선택")}
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedBarcodes(new Set())} disabled={selectedBarcodes.size === 0}>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedBarcodes(new Set())} disabled={selectedBarcodes.size === 0} disabledReason={t('quality.disabled.noSelection', '선택한 검사 대상이 없습니다.')}>
                 {t("quality.inspect.clearSelection", "선택 해제")}
               </Button>
             </div>
@@ -282,24 +288,26 @@ export default function VisualInspectPanel({ order }: Props) {
 
       {/* 검사 버튼 */}
       <div className="flex gap-4">
+        <HelpTooltip description={passDisabled ? judgmentDisabledReason : t("quality.inspect.pass")} focusable={passDisabled} className="flex-1">
         <button
           onClick={handlePass}
           disabled={passDisabled}
-          title={inspecting ? t("common.saving") : selectedBarcodes.size === 0 && !scannedLabel ? t("inspection.result.scanRequired") : t("quality.inspect.pass")}
           className="flex-1 flex items-center justify-center gap-3 py-5 rounded-xl
             bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700
-            text-white font-bold text-lg transition-colors disabled:opacity-50">
+            text-white font-bold text-lg transition-colors disabled:opacity-50 disabled:pointer-events-none">
           <CheckCircle className="w-7 h-7" />{t("quality.inspect.pass")}
         </button>
+        </HelpTooltip>
+        <HelpTooltip description={passDisabled ? judgmentDisabledReason : t("quality.inspect.fail")} focusable={passDisabled} className="flex-1">
         <button
           onClick={() => setFailModalOpen(true)}
           disabled={passDisabled}
-          title={inspecting ? t("common.saving") : selectedBarcodes.size === 0 && !scannedLabel ? t("inspection.result.scanRequired") : t("quality.inspect.fail")}
           className="flex-1 flex items-center justify-center gap-3 py-5 rounded-xl
             bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700
-            text-white font-bold text-lg transition-colors disabled:opacity-50">
+            text-white font-bold text-lg transition-colors disabled:opacity-50 disabled:pointer-events-none">
           <XCircle className="w-7 h-7" />{t("quality.inspect.fail")}
         </button>
+        </HelpTooltip>
       </div>
 
       {/* 최근 검사 결과 */}

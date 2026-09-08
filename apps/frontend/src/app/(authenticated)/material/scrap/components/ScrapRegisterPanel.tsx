@@ -176,7 +176,7 @@ export default function ScrapRegisterPanel({ onCreated }: ScrapRegisterPanelProp
             size="sm"
             variant="danger"
             onClick={handleSubmit}
-            disabled={!canSubmit}
+            disabled={!canSubmit} disabledReason={saving ? t('material.disabledHelp.scrapSaving', '폐기요청을 저장하고 있습니다.') : !scannedStock ? t('material.disabledHelp.scrapScan', '폐기할 자재를 스캔하세요.') : !reason ? t('material.disabledHelp.scrapReason', '폐기 사유를 선택하세요.') : t('material.disabledHelp.scrapQty', '폐기수량은 0보다 크고 가용수량 이하여야 합니다.')}
             isLoading={saving}
           >
             {t("material.scrap.register")}

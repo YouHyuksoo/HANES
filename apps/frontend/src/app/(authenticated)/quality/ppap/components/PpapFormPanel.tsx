@@ -98,7 +98,7 @@ export default function PpapFormPanel({ isOpen, editData, onClose, onSave }: Pro
         <div className="flex justify-end gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           {!isReadonly && (
-            <Button size="sm" onClick={handleSave} disabled={saving || !form.itemCode || !form.reason}>
+            <Button size="sm" onClick={handleSave} disabled={saving || !form.itemCode || !form.reason} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : !form.itemCode ? t('common.disabled.item', '품목을 선택하세요.') : t('quality.disabled.ppapReason', '제출 사유를 선택하세요.')}>
               {saving ? t("common.saving") : t("common.save")}
             </Button>
           )}

@@ -485,7 +485,8 @@ export default function JobOrderCreateModal({ isOpen, draftOrder, onClose, onSav
             <Button variant="ghost" onClick={onClose} disabled={saving}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleSubmit} disabled={!canSave} isLoading={saving}>
+            <Button onClick={handleSubmit} disabled={!canSave} isLoading={saving}
+              disabledReason={generatedRoutingLoading ? "라우팅 정보를 불러오는 중입니다." : !form.itemCode ? "품목을 선택하세요." : !form.planQty ? "계획수량을 입력하세요." : !form.planDate ? "계획일을 선택하세요." : "선택 품목의 라우팅 공정을 먼저 등록하세요."}>
               {t("production.order.create", "작업지시 생성")}
             </Button>
           </>

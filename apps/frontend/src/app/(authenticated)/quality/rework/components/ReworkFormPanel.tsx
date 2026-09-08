@@ -183,7 +183,7 @@ export default function ReworkFormPanel({ editData, onClose, onSave, animate = t
         </h2>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button size="sm" onClick={handleSave} disabled={saving || !form.itemCode || !form.reworkQty}>
+          <Button size="sm" onClick={handleSave} disabled={saving || !form.itemCode || !form.reworkQty} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : !form.itemCode ? t('common.disabled.item', '품목을 선택하세요.') : t('quality.disabled.reworkQty', '재작업 수량을 입력하세요.')}>
             {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>

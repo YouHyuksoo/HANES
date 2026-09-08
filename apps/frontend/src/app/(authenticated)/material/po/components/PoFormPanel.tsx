@@ -236,7 +236,7 @@ export default function PoFormPanel({ editData, onClose, onSave }: Props) {
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           <Button size="sm" onClick={handleSave}
-            disabled={saving || !form.poNo || !form.partnerCode || items.length === 0 || hasInvalidQty}>
+            disabled={saving || !form.poNo || !form.partnerCode || items.length === 0 || hasInvalidQty} disabledReason={saving ? t('material.disabledHelp.poSaving', '발주를 저장하고 있습니다.') : !form.poNo ? t('material.disabledHelp.poNo', '발주번호를 입력하세요.') : !form.partnerCode ? t('material.disabledHelp.poPartner', '발주 거래처를 선택하세요.') : items.length === 0 ? t('material.disabledHelp.poItems', '발주 품목을 한 건 이상 추가하세요.') : t('material.disabledHelp.poQty', '모든 발주 품목의 수량을 1 이상의 정수로 입력하세요.')}>
             {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
         </div>

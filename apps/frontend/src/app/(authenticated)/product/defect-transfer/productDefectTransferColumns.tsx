@@ -62,7 +62,7 @@ export function createProductDefectTargetGridColumns({
       size: 90,
       meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
-        <Button size="sm" onClick={() => onTransferStock(row.original)} disabled={row.original.availableQty <= 0}>
+        <Button size="sm" onClick={() => onTransferStock(row.original)} disabled={row.original.availableQty <= 0} disabledReason={t('product.defectTransfer.noAvailable', '불량 입고할 가용수량이 없습니다. 재고와 예약수량을 확인하세요.')}>
           <ArchiveRestore className="w-4 h-4 mr-1" />{t("productMgmt.defectTransfer.register")}
         </Button>
       ),

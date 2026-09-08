@@ -130,7 +130,7 @@ export default function DefectFormPanel({
           <Button size="sm" variant="secondary" onClick={() => { setForm(INITIAL_FORM); setScannedInfo(null); setTimeout(() => barcodeRef.current?.focus(), 0); }} disabled={saving}>
             {t("common.cancel", "취소")}
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving || !canSave}>
+          <Button size="sm" onClick={handleSave} disabled={saving || !canSave} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : !form.prdUid.trim() ? t('quality.disabled.productScan', '불량 대상 바코드를 스캔하거나 입력하세요.') : t('quality.disabled.defectCode', '불량코드를 선택하세요.')}>
             {saving ? t("common.saving") : t("common.save")}
           </Button>
           <button onClick={onClose} className="p-1 rounded hover:bg-surface text-text-muted hover:text-text" title={t("common.close")}>

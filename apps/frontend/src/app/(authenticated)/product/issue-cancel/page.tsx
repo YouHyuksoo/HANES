@@ -185,7 +185,7 @@ export default function ProductIssueCancelPage() {
               value={reason} onChange={(e) => setReason(e.target.value)} fullWidth />
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={handleCancel} disabled={saving || !reason}>
+              <Button onClick={handleCancel} disabled={saving || !reason} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : t('common.disabled.cancelReason', '취소 사유를 입력하세요.')}>
                 {saving ? t("common.saving") : (
                   <><XCircle className="w-4 h-4 mr-1" />{t("productMgmt.issueCancel.confirm")}</>
                 )}

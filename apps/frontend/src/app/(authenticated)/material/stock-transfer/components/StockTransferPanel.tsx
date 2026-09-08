@@ -217,7 +217,7 @@ export default function StockTransferPanel({ onCreated }: StockTransferPanelProp
               <Button
                 size="sm"
                 onClick={handleSubmit}
-                disabled={!canSubmit}
+                disabled={!canSubmit} disabledReason={saving ? t('material.disabledHelp.transferSaving', '창고 이동을 처리하고 있습니다.') : !scannedStock ? t('material.disabledHelp.scanStock', '이동할 자재를 스캔하세요.') : !toWarehouseCode ? t('material.disabledHelp.destinationWarehouse', '이동할 목적지 창고를 선택하세요.') : t('material.disabledHelp.transferQty', '이동수량은 0보다 크고 가용수량 이하여야 합니다.')}
                 isLoading={saving}
                 className="w-full"
               >

@@ -158,7 +158,7 @@ export default function BarcodeScanTab({ fixedIssueType, excludeIssueTypes }: Ba
             </div>
             <Button
               onClick={() => handleScan()}
-              disabled={!scanInput.trim() || isScanning}
+              disabled={!scanInput.trim() || isScanning} disabledReason={isScanning ? t('material.disabledHelp.stockScanning', '스캔한 자재 정보를 조회하고 있습니다.') : t('material.disabledHelp.scanBarcode', '자재 바코드를 입력하거나 스캔하세요.')}
               className="h-14 px-6 flex-shrink-0"
             >
               {isScanning ? (
@@ -229,7 +229,7 @@ export default function BarcodeScanTab({ fixedIssueType, excludeIssueTypes }: Ba
                 <XCircle className="w-4 h-4 mr-1" />
                 {t('common.cancel')}
               </Button>
-              <Button onClick={handleIssueAndFocus} disabled={!issueType}>
+              <Button onClick={handleIssueAndFocus} disabled={!issueType} disabledReason={t('material.disabledHelp.issueAccount', '출고계정을 선택하세요.')}>
                 <Package className="w-4 h-4 mr-1" />
                 {t('material.issue.fullIssue', { defaultValue: '전량출고' })}
               </Button>

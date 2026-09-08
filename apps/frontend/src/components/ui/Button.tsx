@@ -11,6 +11,8 @@
  */
 import { forwardRef, ButtonHTMLAttributes } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import HelpTooltip from '@/components/shared/HelpTooltip';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
@@ -38,6 +40,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
+    const { t } = useTranslation();
     // 기본 스타일
     const baseStyles = `
       inline-flex items-center justify-center gap-2
@@ -86,7 +89,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const isActionDisabled = disabled || isLoading;
-    const buttonTitle = title ?? (isActionDisabled ? disabledReason : undefined);
+    const disabledHelp = isActionDisabled
+      ? (isLoading ? t('common.actionProcessingHelp', '처리 중입니다. 완료될 때까지 기다려 주세요.') : disabledReason || title)
+      : undefined;
     const buttonNode = (
       <button
         ref={ref}
@@ -96,10 +101,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           ${variantStyles[variant]}
           ${sizeStyles[size]}
           ${className}
+          ${disabledHelp ? 'pointer-events-none' : ''}
         `}
         disabled={isActionDisabled}
-        title={buttonTitle}
-        aria-label={buttonTitle ?? undefined}
+        title={disabledHelp ? undefined : title}
+        aria-label={title ?? undefined}
         {...props}
       >
         {isLoading ? (
@@ -112,11 +118,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       </button>
     );
 
-    if (isActionDisabled && buttonTitle) {
+    if (disabledHelp) {
       return (
-        <span title={buttonTitle} className="inline-flex">
+        <HelpTooltip description={disabledHelp} focusable
+          className={className.split(/\s+/).filter(token => /^(?:(?:sm|md|lg|xl):)?(?:w-|min-w-|max-w-|flex-1$|grow$|shrink-0$)/.test(token)).join(' ')}>
           {buttonNode}
-        </span>
+        </HelpTooltip>
       );
     }
 

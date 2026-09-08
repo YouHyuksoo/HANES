@@ -148,7 +148,7 @@ export default function BoxShipPage() {
           <Button variant="secondary" size="sm" onClick={handleShipped}>
             <RefreshCw className={`w-4 h-4 mr-1 ${ordersLoading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
-          <Button size="sm" disabled={!selectedOrderNo} onClick={() => setScanOpen(true)}>
+          <Button size="sm" disabled={!selectedOrderNo} disabledReason={t('shipping.disabled.selectOrder', '출하할 작업의 출하지시를 선택하세요.')} onClick={() => setScanOpen(true)}>
             <ScanLine className="w-4 h-4 mr-1" />{t("shipping.confirm.boxScanShip", "박스출하 스캔")}
           </Button>
         </div>

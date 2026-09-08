@@ -194,7 +194,7 @@ export default function LotSplitPage() {
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
               <Button onClick={handleSplit}
-                disabled={saving || !splitForm.splitQty || Number(splitForm.splitQty) <= 0 || Number(splitForm.splitQty) >= selectedLot.qty}>
+                disabled={saving || !splitForm.splitQty || Number(splitForm.splitQty) <= 0 || Number(splitForm.splitQty) >= selectedLot.qty} disabledReason={saving ? t('material.disabledHelp.splitSaving', 'LOT 분할을 처리하고 있습니다.') : t('material.disabledHelp.splitQty', '분할수량은 0보다 크고 선택한 LOT의 현재수량보다 작아야 합니다.')}>
                 {saving ? t("common.saving") : <><Scissors className="w-4 h-4 mr-1" />{t("material.lotSplit.split")}</>}
               </Button>
             </div>

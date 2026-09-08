@@ -191,7 +191,7 @@ export default function LotMergePage() {
               autoFocus
             />
           </div>
-          <Button onClick={() => addByBarcode(scanInput)} disabled={!scanInput.trim()}>
+          <Button onClick={() => addByBarcode(scanInput)} disabled={!scanInput.trim()} disabledReason={t('material.disabledHelp.scanMerge', '병합할 자재시리얼을 입력하거나 스캔하세요.')}>
             <Plus className="w-4 h-4 mr-1" />{t("material.lotMerge.addScan")}
           </Button>
         </div>
@@ -225,7 +225,7 @@ export default function LotMergePage() {
               <Button variant="secondary" onClick={() => { setScanned([]); setScanError(null); }}>
                 {t("material.lotMerge.clearSelection")}
               </Button>
-              <Button onClick={() => { setMergeError(null); setShowConfirm(true); }} disabled={!canMerge}>
+              <Button onClick={() => { setMergeError(null); setShowConfirm(true); }} disabled={!canMerge} disabledReason={t('material.disabledHelp.mergeCount', '병합할 LOT을 두 개 이상 추가하세요.')}>
                 <Merge className="w-4 h-4 mr-1" />{t("material.lotMerge.mergeSelected")} ({scanned.length})
               </Button>
             </div>

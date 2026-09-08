@@ -1,4 +1,5 @@
 "use client";
+import HelpTooltip from "@/components/shared/HelpTooltip";
 
 import type { TFunction } from "i18next";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -66,24 +67,26 @@ export function createProductionResultGridColumns({
           : t('production.result.downstreamLocked', '이미 포장/출하까지 진행되어 수정·삭제할 수 없습니다.');
         return (
           <div className="flex gap-1">
+            <HelpTooltip description={locked ? lockedTitle : t('common.edit')} focusable={locked}>
             <button
               onClick={(e) => { e.stopPropagation(); if (!locked) onEditResult(row.original); }}
               disabled={locked}
-              className="p-1 hover:bg-surface rounded disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-              title={locked ? lockedTitle : t('common.edit')}
+              className="disabled:pointer-events-none p-1 hover:bg-surface rounded disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               aria-label={t('common.edit')}
             >
               <Edit2 className="w-4 h-4 text-primary" />
             </button>
+            </HelpTooltip>
+            <HelpTooltip description={locked ? lockedTitle : t('common.delete')} focusable={locked}>
             <button
               onClick={(e) => { e.stopPropagation(); if (!locked) onDeleteResult(row.original); }}
               disabled={locked}
-              className="p-1 hover:bg-surface rounded disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-              title={locked ? lockedTitle : t('common.delete')}
+              className="disabled:pointer-events-none p-1 hover:bg-surface rounded disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               aria-label={t('common.delete')}
             >
               <Trash2 className="w-4 h-4 text-red-500" />
             </button>
+            </HelpTooltip>
           </div>
         );
       },

@@ -181,6 +181,7 @@ export default function InputEquipPage() {
   }, [selectedEquip, selectedJobOrder, selectedWorker]);
 
   const allSelected = !!(selectedLine && selectedProcess && selectedEquip && selectedJobOrder && selectedWorker);
+  const selectionHelp = !selectedLine ? "라인을 선택하세요." : !selectedProcess ? "공정을 선택하세요." : !selectedEquip ? "설비를 선택하세요." : !selectedJobOrder ? "작업지시를 선택하세요." : "작업자를 선택하세요.";
   const hasAnySelection = !!(selectedLine || selectedProcess || selectedEquip || selectedJobOrder || selectedWorker);
 
   const columns = useMemo(() => createInputEquipGridColumns({ t }), [t]);
@@ -202,7 +203,7 @@ export default function InputEquipPage() {
               <Trash2 className="w-4 h-4 mr-1" />{t('common.clear')}
             </Button>
           )}
-          <Button size="sm" onClick={handleOpenInputModal} disabled={!allSelected}>
+          <Button size="sm" onClick={handleOpenInputModal} disabled={!allSelected} disabledReason={selectionHelp}>
             <Save className="w-4 h-4 mr-1" />{t('production.inputEquip.inputInspect')}
           </Button>
         </div>
@@ -396,7 +397,7 @@ export default function InputEquipPage() {
           <Input label={t('production.inputEquip.remark')} value={form.remark} onChange={e => setForm(p => ({ ...p, remark: e.target.value }))} fullWidth />
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t('common.cancel')}</Button>
-            <Button onClick={handleSubmit} disabled={saving || !allSelected}>
+            <Button onClick={handleSubmit} disabled={saving || !allSelected} disabledReason={saving ? "저장 중입니다. 완료될 때까지 기다려 주세요." : selectionHelp}>
               <Save className="w-4 h-4 mr-1" />{saving ? t('common.saving') : t('common.save')}
             </Button>
           </div>

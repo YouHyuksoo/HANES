@@ -139,7 +139,7 @@ export default function ShipmentScanModal({ isOpen, onClose, shipmentId, shipmen
             fullWidth
           />
         </div>
-        <Button onClick={() => handleScan()} disabled={!scanInput.trim()}>
+        <Button onClick={() => handleScan()} disabled={!scanInput.trim()} disabledReason={t('shipping.disabled.scanPallet', '확인할 팔레트 바코드를 입력하거나 스캔하세요.')}>
           {t("shipping.scan.verify", "검증")}
         </Button>
       </div>
@@ -223,7 +223,7 @@ export default function ShipmentScanModal({ isOpen, onClose, shipmentId, shipmen
       {/* 하단 버튼 */}
       <div className="flex justify-end gap-2 pt-6">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-        <Button onClick={handleConfirmShipped} disabled={!allVerified || confirming}>
+        <Button onClick={handleConfirmShipped} disabled={!allVerified || confirming} disabledReason={confirming ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : t('shipping.disabled.verifyAll', '대상 팔레트를 모두 스캔하여 검증한 후 출하를 확정하세요.')}>
           {confirming ? t("common.saving") : t("shipping.scan.confirmShip", "출하 확정")}
         </Button>
       </div>

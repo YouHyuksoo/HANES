@@ -329,7 +329,7 @@ export default function ShipOrderPage() {
             variant="secondary"
             size="sm"
             onClick={handleTopPrintShipOrder}
-            disabled={!selectedOrder}
+            disabled={!selectedOrder} disabledReason={t('shipping.disabled.selectOrder', '출하지시를 먼저 선택하세요.')}
             title={t("shipping.shipOrder.printOrder", "출하지시서 출력")}
           >
             <Printer className="w-4 h-4 mr-1" />{t("common.print", "출력")}
@@ -339,7 +339,7 @@ export default function ShipOrderPage() {
             size="sm"
             className="border-green-500 text-green-600 dark:text-green-400"
             onClick={handleTopConfirmOrder}
-            disabled={!selectedOrder || selectedOrder.status !== "DRAFT" || (selectedOrder.itemCount ?? 0) === 0 || confirming}
+            disabled={!selectedOrder || selectedOrder.status !== "DRAFT" || (selectedOrder.itemCount ?? 0) === 0 || confirming} disabledReason={confirming ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : !selectedOrder ? t('shipping.disabled.selectOrder', '출하지시를 먼저 선택하세요.') : selectedOrder.status !== 'DRAFT' ? t('shipping.disabled.confirmDraft', '작성 상태의 출하지시만 확정할 수 있습니다.') : t('shipping.disabled.orderItems', '출하 품목을 먼저 추가하세요.')}
             title={t("shipping.shipOrder.confirmOrder", "출하지시 확정")}
           >
             <CheckCircle className="w-4 h-4 mr-1" />{t("shipping.shipOrder.confirm", "확정")}
@@ -349,7 +349,7 @@ export default function ShipOrderPage() {
             size="sm"
             className="border-amber-500 text-amber-600 dark:text-amber-400"
             onClick={handleTopUnconfirmOrder}
-            disabled={!selectedOrder || selectedOrder.status !== "CONFIRMED" || unconfirming}
+            disabled={!selectedOrder || selectedOrder.status !== "CONFIRMED" || unconfirming} disabledReason={unconfirming ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : !selectedOrder ? t('shipping.disabled.selectOrder', '출하지시를 먼저 선택하세요.') : t('shipping.disabled.unconfirmConfirmed', '확정 상태의 출하지시만 확정취소할 수 있습니다.')}
             title={t("shipping.shipOrder.unconfirmOrder", "확정취소")}
           >
             <RotateCcw className="w-4 h-4 mr-1" />{t("shipping.shipOrder.unconfirmOrder", "확정취소")}
@@ -358,7 +358,7 @@ export default function ShipOrderPage() {
             variant="danger"
             size="sm"
             onClick={handleTopDeleteOrder}
-            disabled={!selectedOrder || selectedOrder.status !== "DRAFT"}
+            disabled={!selectedOrder || selectedOrder.status !== "DRAFT"} disabledReason={!selectedOrder ? t('shipping.disabled.selectOrder', '출하지시를 먼저 선택하세요.') : t('shipping.disabled.draftOnly', '작성 상태에서만 처리할 수 있습니다. 출하지시 상태를 확인하세요.')}
             title={t("common.delete")}
           >
             <Trash2 className="w-4 h-4 mr-1" />{t("common.delete")}
@@ -453,7 +453,7 @@ ORDER BY so.CREATED_AT DESC`}/>
                 variant="secondary"
                 className="border-green-500 text-green-600 dark:text-green-400"
                 onClick={handleSaveAndConfirm}
-                disabled={!canSave || saving || confirming}
+                disabled={!canSave || saving || confirming} disabledReason={saving || confirming ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : t('shipping.disabled.orderSave', '출하예정일과 1개 이상의 품목을 입력하고, 모든 발주수량을 양의 정수로 입력하세요.')}
                 title={orderItems.length === 0 ? t("shipping.shipOrder.confirmNeedItems", "품목이 있어야 확정할 수 있습니다.") : undefined}
               >
                 <CheckCircle className="w-4 h-4 mr-1" />
@@ -471,7 +471,7 @@ ORDER BY so.CREATED_AT DESC`}/>
                 {t("shipping.shipOrder.unconfirmOrder", "확정취소")}
               </Button>
             )}
-            <Button onClick={handleSave} disabled={!canEditCurrentOrder || !canSave || saving}>
+            <Button onClick={handleSave} disabled={!canEditCurrentOrder || !canSave || saving} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : !canEditCurrentOrder ? t('shipping.disabled.orderReadonly', '작성 상태만 수정할 수 있습니다. 확정 상태라면 확정취소 후 수정하세요.') : t('shipping.disabled.orderSave', '출하예정일과 1개 이상의 품목을 입력하고, 모든 발주수량을 양의 정수로 입력하세요.')}>
               {saving ? t("common.saving") : t("common.save", "저장")}
             </Button>
           </div>

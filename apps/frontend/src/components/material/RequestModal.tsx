@@ -10,6 +10,7 @@
  * 3. **현재고 초과 경고**: 요청수량이 현재고를 넘으면 경고 표시
  * 4. **handleSubmit**: POST /material/issue-requests API 호출로 출고요청 생성
  */
+import HelpTooltip from '@/components/shared/HelpTooltip';
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Plus, X, AlertTriangle, Loader2 } from 'lucide-react';
@@ -266,10 +267,10 @@ export default function RequestModal({
                         </td>
                         <td className="px-3 py-1.5 text-center text-text-muted">{item.unit}</td>
                         <td className="px-3 py-1.5 text-center">
-                          <button
+                          <HelpTooltip description={t(alreadyAdded ? 'material.request.alreadyAdded' : 'material.request.addToRequest')} focusable={alreadyAdded}><button
                             onClick={() => addItem(item)}
                             disabled={alreadyAdded}
-                            className={`p-1 rounded ${
+                            className={`disabled:pointer-events-none p-1 rounded ${
                               alreadyAdded
                                 ? 'text-text-muted opacity-50'
                                 : 'text-primary hover:bg-primary/10'
@@ -281,7 +282,7 @@ export default function RequestModal({
                             }
                           >
                             <Plus className="w-4 h-4" />
-                          </button>
+                          </button></HelpTooltip>
                         </td>
                       </tr>
                     );
@@ -369,7 +370,7 @@ export default function RequestModal({
           <Button variant="secondary" onClick={handleClose}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit}>
+          <Button onClick={handleSubmit} disabled={!canSubmit} disabledReason={isSubmitting ? t('material.disabledHelp.requestSaving', '출고요청을 저장하고 있습니다.') : isLoadingBom ? t('material.disabledHelp.bomLoading', '작업지시의 BOM 품목을 불러오고 있습니다.') : t('material.disabledHelp.requestQty', '요청 품목을 추가하고 모든 품목의 요청수량을 0보다 크게 입력하세요.')}>
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 mr-1 animate-spin" />
             ) : (

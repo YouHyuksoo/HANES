@@ -153,7 +153,7 @@ export default function ScrapRegisterModal({ isOpen, onClose, onCreated }: Props
       <div className="flex justify-end gap-2 pt-6">
         <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
         <Button onClick={handleSubmit}
-          disabled={saving || !form.stockId || !form.qty || Number(form.qty) <= 0 || Number(form.qty) > maxQty || !form.reason}>
+          disabled={saving || !form.stockId || !form.qty || Number(form.qty) <= 0 || Number(form.qty) > maxQty || !form.reason} disabledReason={saving ? t('material.disabledHelp.scrapSaving', '폐기요청을 저장하고 있습니다.') : !form.stockId ? t('material.disabledHelp.scrapStock', '폐기할 재고를 선택하세요.') : !form.reason ? t('material.disabledHelp.scrapReason', '폐기 사유를 선택하세요.') : t('material.disabledHelp.scrapQty', '폐기수량은 0보다 크고 가용수량 이하여야 합니다.')}>
           {saving ? t("common.saving") : t("material.scrap.register")}
         </Button>
       </div>

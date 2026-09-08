@@ -83,7 +83,7 @@ export default function ReceivingConfirmModal({
           <Button variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={onSubmit} disabled={!form.warehouse}>
+          <Button onClick={onSubmit} disabled={!form.warehouse} disabledReason={t('material.disabledHelp.receiveWarehouse', '자재를 입고할 창고를 선택하세요.')}>
             <CheckCircle className="w-4 h-4 mr-1" /> {t('material.receive.confirmReceiving')}
           </Button>
         </div>

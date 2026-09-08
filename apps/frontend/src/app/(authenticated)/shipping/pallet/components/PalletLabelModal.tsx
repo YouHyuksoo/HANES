@@ -155,7 +155,7 @@ export default function PalletLabelModal({ isOpen, pallet, autoPrint = false, on
         <div className="w-60">
           <Select options={templateOptions} value={selectedTemplateKey} onChange={handleTemplateChange} fullWidth />
         </div>
-        <Button onClick={() => window.print()} disabled={!pallet}>
+        <Button onClick={() => window.print()} disabled={!pallet} disabledReason={t('shipping.disabled.selectPallet', '라벨을 출력할 팔레트를 선택하세요.')}>
           <Printer className="w-4 h-4 mr-1" />{t("shipping.pallet.printLabel", "라벨 출력")}
         </Button>
       </div>

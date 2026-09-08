@@ -97,7 +97,7 @@ export default function ManualArrivalPanel({ onClose, onSuccess }: ManualArrival
           <Button variant="secondary" size="sm" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={!isValid || submitting}>
+          <Button size="sm" onClick={handleSubmit} disabled={!isValid || submitting} disabledReason={submitting ? t('material.disabledHelp.arrivalSaving', '입하를 저장하고 있습니다.') : t('material.disabledHelp.arrivalRequired', '품목과 입하창고를 선택하고 입하수량을 0보다 크게 입력하세요.')}>
             {submitting ? t("common.processing") : t("common.save", "저장")}
           </Button>
         </div>

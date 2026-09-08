@@ -211,7 +211,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
         <span className="text-xs text-slate-500">{t('common.requiredMark')}</span>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button onClick={handleSave} disabled={!canSave}>{t('common.save')}</Button>
+          <Button onClick={handleSave} disabled={!canSave} disabledReason={!line ? t('material.disabledHelp.selectPoLine', '입하할 PO 라인을 선택하세요.') : receivedQty <= 0 || receivedQty > (line?.remainingQty ?? 0) ? t('material.disabledHelp.arrivalQty', '입하수량은 0보다 크고 PO 라인 잔량 이하여야 합니다.') : !mfgPartnerCode ? t('material.disabledHelp.manufacturer', '제조사를 선택하세요.') : !warehouseCode ? t('material.disabledHelp.arrivalWarehouse', '입하창고를 선택하세요.') : t('material.disabledHelp.arrivalDate', '입하일은 오늘 이후로 지정할 수 없습니다.')}>{t('common.save')}</Button>
         </div>
       </div>
     </Modal>

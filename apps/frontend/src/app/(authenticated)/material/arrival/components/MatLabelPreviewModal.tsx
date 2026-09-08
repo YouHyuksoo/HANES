@@ -201,7 +201,7 @@ export default function MatLabelPreviewModal({
             fullWidth
           />
         </div>
-        <Button onClick={handlePrint} disabled={printing || labelItems.length === 0}>
+        <Button onClick={handlePrint} disabled={printing || labelItems.length === 0} disabledReason={printing ? t('material.disabledHelp.printing', '라벨을 출력하고 있습니다.') : t('material.disabledHelp.noLabels', '출력할 자재 LOT 라벨이 없습니다.')}>
           <Printer className="w-4 h-4 mr-1" />
           {printing ? t('material.arrival.label.printing', '출력중') : t('material.arrival.label.print')}
         </Button>

@@ -421,7 +421,7 @@ export default function ReworkPage() {
         footer={
           <>
             <Button variant="secondary" size="sm" onClick={() => setInspectTarget(null)} disabled={submittingInspect}>{t("common.cancel")}</Button>
-            <Button size="sm" onClick={handleInspectSubmit} disabled={submittingInspect || !inspectForm.inspectorCode.trim()}>
+            <Button size="sm" onClick={handleInspectSubmit} disabled={submittingInspect || !inspectForm.inspectorCode.trim()} disabledReason={submittingInspect ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : t('quality.disabled.inspector', '검사자를 선택하세요.')}>
               {submittingInspect ? t("common.saving") : t("common.save")}
             </Button>
           </>

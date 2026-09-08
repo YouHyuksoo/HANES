@@ -35,7 +35,7 @@ export function createLotMergeGridColumns({
     {
       id: "add", header: "", size: 60, meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
-        <Button size="sm" variant="secondary" disabled={scanned.some((s) => s.matUid === row.original.matUid)}
+        <Button size="sm" variant="secondary" disabled={scanned.some((s) => s.matUid === row.original.matUid)} disabledReason={t('material.disabledHelp.mergeDuplicate', '이미 병합 대상 목록에 추가한 LOT입니다.')}
           onClick={() => addByBarcode(row.original.matUid)}>
           <Plus className="w-4 h-4" />
         </Button>

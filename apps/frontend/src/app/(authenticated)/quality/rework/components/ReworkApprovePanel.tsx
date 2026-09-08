@@ -52,7 +52,7 @@ export default function ReworkApprovePanel({ type, onClose, onSubmit, animate = 
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           <Button size="sm" onClick={handleSubmit}
-            disabled={submitting || (action === "REJECT" && !reason.trim())}
+            disabled={submitting || (action === "REJECT" && !reason.trim())} disabledReason={submitting ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : t('quality.disabled.rejectReason', '반려 사유를 입력하세요.')}
             variant={action === "REJECT" ? "danger" : "primary"}>
             {submitting ? t("common.saving") : action === "APPROVE" ? t("quality.rework.approve") : t("quality.rework.reject")}
           </Button>

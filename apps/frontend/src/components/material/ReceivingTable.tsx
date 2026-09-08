@@ -8,6 +8,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PackagePlus } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
+import HelpTooltip from '@/components/shared/HelpTooltip';
 import DataGrid from '@/components/data-grid/DataGrid';
 import { ReceivingStatusBadge } from '@/components/material';
 import type { ReceivingItem } from '@/hooks/material/useReceivingData';
@@ -67,18 +68,19 @@ export default function ReceivingTable({ data, onConfirm }: ReceivingTableProps)
         cell: ({ row }) => {
           const item = row.original;
           const canConfirm = item.status === 'PASSED';
-          return (
-            <button
-              className="p-1 hover:bg-surface rounded"
+          const action = (
+          <button
+              className="disabled:pointer-events-none p-1 hover:bg-surface rounded"
               title={t('material.receive.confirmTitle')}
               disabled={!canConfirm}
               onClick={() => onConfirm(item)}
             >
               <PackagePlus
-                className={`w-4 h-4 ${canConfirm ? 'text-primary' : 'text-text-muted opacity-50'}`}
+                className={`disabled:pointer-events-none w-4 h-4 ${canConfirm ? 'text-primary' : 'text-text-muted opacity-50'}`}
               />
             </button>
-          );
+        );
+          return (canConfirm) ? action : <HelpTooltip description={t('material.disabledHelp.receivePassed', '검사 합격 상태의 자재만 입고확정할 수 있습니다.')} focusable>{action}</HelpTooltip>;
         },
       },
     ],

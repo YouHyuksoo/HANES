@@ -81,7 +81,7 @@ export default function MiscReceiptRegisterPanel({ onClose, onSuccess }: MiscRec
           <Button size="sm" variant="secondary" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button size="sm" onClick={handleRegister} disabled={saving || !isValid}>
+          <Button size="sm" onClick={handleRegister} disabled={saving || !isValid} disabledReason={saving ? t('material.disabledHelp.receiveSaving', '자재 입고를 처리하고 있습니다.') : t('material.disabledHelp.miscRequired', '입고창고와 품목을 선택하고 입고수량을 0보다 크게 입력하세요.')}>
             {saving ? t("common.saving") : t("material.miscReceipt.register")}
           </Button>
         </div>

@@ -194,7 +194,7 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
           <Button
             size="sm"
             onClick={handleReceive}
-            disabled={pairs.length === 0 || !warehouseCode || saving}
+            disabled={pairs.length === 0 || !warehouseCode || saving} disabledReason={saving ? t('material.disabledHelp.receiveSaving', '자재 입고를 처리하고 있습니다.') : !warehouseCode ? t('material.disabledHelp.receiveWarehouse', '자재를 입고할 창고를 선택하세요.') : t('material.disabledHelp.scanPair', '거래처 바코드와 자재시리얼을 짝으로 스캔하여 입고 목록에 추가하세요.')}
             isLoading={saving}
           >
             <PackageCheck className="w-3.5 h-3.5 mr-1" />
@@ -271,7 +271,7 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
                 fullWidth
               />
             </div>
-            <Button size="sm" onClick={() => handleScan()} disabled={!input.trim()} className="h-9 flex-shrink-0">
+            <Button size="sm" onClick={() => handleScan()} disabled={!input.trim()} disabledReason={t('material.disabledHelp.scanBarcode', '자재 바코드를 입력하거나 스캔하세요.')} className="h-9 flex-shrink-0">
               {t("material.receive.scan.scanRegister", "스캔")}
             </Button>
           </div>

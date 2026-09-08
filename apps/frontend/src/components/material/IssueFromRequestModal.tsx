@@ -437,7 +437,7 @@ export default function IssueFromRequestModal({
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={totalIssueQty <= 0 || isLoadingLots || processMissing}
+              disabled={totalIssueQty <= 0 || isLoadingLots || processMissing} disabledReason={isLoadingLots ? t('material.disabledHelp.lotLoading', '출고 가능한 자재 LOT을 조회하고 있습니다.') : processMissing ? t('material.disabledHelp.selectProcess', '출고 대상 공정을 선택하세요.') : t('material.disabledHelp.selectIssueQty', '출고할 LOT을 선택하고 출고수량을 0보다 크게 입력하세요.')}
               isLoading={isSubmitting}
             >
               <Package className="w-4 h-4 mr-1" />

@@ -619,7 +619,7 @@ export default function PalletPage() {
             <p className="text-sm text-text-muted">{t("shipping.pallet.autoNumberHint", "팔레트번호는 자동으로 채번됩니다.")}</p>
             <div className="flex justify-end gap-2 pt-4 border-t border-border">
               <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={handleCreate} disabled={saving || (!selectedShipOrderNo && !shipOrderScanText.trim())}>
+              <Button onClick={handleCreate} disabled={saving || (!selectedShipOrderNo && !shipOrderScanText.trim())} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : t('shipping.disabled.orderScan', '출하지시를 선택하거나 바코드를 스캔하세요.')}>
                 {saving ? t("common.saving") : t("common.create")}
               </Button>
             </div>
@@ -661,7 +661,7 @@ export default function PalletPage() {
             <span className="text-sm text-text-muted">{t("common.selected")}: {selectedBoxes.length}{t("common.count")}</span>
             <div className="flex gap-2">
               <Button variant="secondary" onClick={() => setIsAssignModalOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={handleAssignBoxes} disabled={selectedBoxes.length === 0 || saving}>
+              <Button onClick={handleAssignBoxes} disabled={selectedBoxes.length === 0 || saving} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : t('shipping.disabled.selectBoxes', '팔레트에 적재할 박스를 선택하세요.')}>
                 {saving ? t("common.saving") : <><ArrowRight className="w-4 h-4 mr-1" /> {t("shipping.pallet.assign")}</>}
               </Button>
             </div>

@@ -381,11 +381,11 @@ export default function PackPage() {
                 {selectedBox ? <>{t("shipping.pack.selectedBox", "선택")}: <span className="font-mono text-text">{selectedBox.boxNo}</span></> : t("shipping.pack.selectRowHint", "행을 선택하세요")}
               </span>
               <div className="flex gap-1 ml-auto flex-wrap">
-                <Button size="sm" variant="secondary" disabled={!selectedBox || selectedBox.status !== "OPEN"} onClick={() => selectedBox && openSerialModal(selectedBox)}><Plus className="w-4 h-4 mr-1" />{t("shipping.pack.packProducts", "제품 담기")}</Button>
-                <Button size="sm" variant="secondary" disabled={!selectedBox || selectedBox.status !== "OPEN"} onClick={() => selectedBox && handleCloseBox(selectedBox)}><Lock className="w-4 h-4 mr-1" />{t("shipping.pack.closeBox")}</Button>
-                <Button size="sm" variant="secondary" disabled={!selectedBox || selectedBox.status !== "CLOSED" || !!selectedBox.palletNo} onClick={() => selectedBox && handleReopenBox(selectedBox)}><LockOpen className="w-4 h-4 mr-1" />{t("shipping.pack.reopenBox")}</Button>
-                <Button size="sm" variant="secondary" disabled={!selectedBox || (selectedBox.qty ?? 0) <= 0} onClick={() => selectedBox && openLabel(selectedBox)}><Printer className="w-4 h-4 mr-1" />{t("shipping.pack.reprintLabel", "라벨 재발행")}</Button>
-                <Button size="sm" variant="danger" disabled={!selectedBox || !canDeleteEmptyBox(selectedBox)} onClick={() => selectedBox && setDeleteBoxTarget(selectedBox)}><Trash2 className="w-4 h-4 mr-1" />{t("shipping.pack.deleteEmptyBox", "빈 박스 삭제")}</Button>
+                <Button size="sm" variant="secondary" disabled={!selectedBox || selectedBox.status !== "OPEN"} disabledReason={!selectedBox ? t('shipping.disabled.selectBox', '박스를 먼저 선택하세요.') : t('shipping.disabled.openBox', '열린 박스만 처리할 수 있습니다. 박스 상태를 확인하세요.')} onClick={() => selectedBox && openSerialModal(selectedBox)}><Plus className="w-4 h-4 mr-1" />{t("shipping.pack.packProducts", "제품 담기")}</Button>
+                <Button size="sm" variant="secondary" disabled={!selectedBox || selectedBox.status !== "OPEN"} disabledReason={!selectedBox ? t('shipping.disabled.selectBox', '박스를 먼저 선택하세요.') : t('shipping.disabled.openBox', '열린 박스만 처리할 수 있습니다. 박스 상태를 확인하세요.')} onClick={() => selectedBox && handleCloseBox(selectedBox)}><Lock className="w-4 h-4 mr-1" />{t("shipping.pack.closeBox")}</Button>
+                <Button size="sm" variant="secondary" disabled={!selectedBox || selectedBox.status !== "CLOSED" || !!selectedBox.palletNo} disabledReason={!selectedBox ? t('shipping.disabled.selectBox', '박스를 먼저 선택하세요.') : selectedBox.palletNo ? t('shipping.disabled.palletAssigned', '팔레트에 적재된 박스입니다. 팔레트에서 먼저 해제하세요.') : t('shipping.disabled.closedBox', '닫힌 박스만 다시 열 수 있습니다.')} onClick={() => selectedBox && handleReopenBox(selectedBox)}><LockOpen className="w-4 h-4 mr-1" />{t("shipping.pack.reopenBox")}</Button>
+                <Button size="sm" variant="secondary" disabled={!selectedBox || (selectedBox.qty ?? 0) <= 0} disabledReason={!selectedBox ? t('shipping.disabled.selectBox', '박스를 먼저 선택하세요.') : t('shipping.disabled.emptyLabel', '제품이 담긴 박스만 라벨을 재발행할 수 있습니다.')} onClick={() => selectedBox && openLabel(selectedBox)}><Printer className="w-4 h-4 mr-1" />{t("shipping.pack.reprintLabel", "라벨 재발행")}</Button>
+                <Button size="sm" variant="danger" disabled={!selectedBox || !canDeleteEmptyBox(selectedBox)} disabledReason={!selectedBox ? t('shipping.disabled.selectBox', '박스를 먼저 선택하세요.') : t('shipping.disabled.deleteEmptyBox', '열린 빈 박스만 삭제할 수 있습니다. 담긴 제품·팔레트 배정·OQC 상태를 확인하세요.')} onClick={() => selectedBox && setDeleteBoxTarget(selectedBox)}><Trash2 className="w-4 h-4 mr-1" />{t("shipping.pack.deleteEmptyBox", "빈 박스 삭제")}</Button>
               </div>
             </div>
             <div className="flex-1 min-h-0">
@@ -579,7 +579,7 @@ export default function PackPage() {
           <p className="text-xs text-text-muted">{t("shipping.pack.createHint")}</p>
           <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button onClick={handleCreate} disabled={saving || !createItemCode}>
+            <Button onClick={handleCreate} disabled={saving || !createItemCode} disabledReason={saving ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : t('common.disabled.item', '품목을 선택하세요.')}>
               {saving ? t("common.saving") : t("shipping.pack.createBox")}
             </Button>
           </div>
@@ -639,14 +639,14 @@ export default function PackPage() {
               disabled={atLimit || selectedBox?.status !== "OPEN" || isAddingSerial}
               fullWidth
             />
-            <Button onClick={() => handleAddSerial()} disabled={atLimit || !serialInput.trim() || selectedBox?.status !== "OPEN" || isAddingSerial}><Plus className="w-4 h-4" /></Button>
+            <Button onClick={() => handleAddSerial()} disabled={atLimit || !serialInput.trim() || selectedBox?.status !== "OPEN" || isAddingSerial} disabledReason={isAddingSerial ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : selectedBox?.status !== 'OPEN' ? t('shipping.disabled.openBox', '열린 박스만 처리할 수 있습니다. 박스 상태를 확인하세요.') : atLimit ? t('shipping.disabled.boxLimit', '박스 포장수량 한도에 도달했습니다. 다른 박스를 사용하세요.') : t('shipping.disabled.serial', '담을 제품 바코드를 스캔하세요.')}><Plus className="w-4 h-4" /></Button>
           </div>
           <PackedSerialList serials={modalSerials} onRemove={setRemoveSerialTarget} />
           <div className="flex justify-between gap-2">
             <Button
               variant="primary"
               onClick={() => selectedBox && triggerPackComplete(selectedBox)}
-              disabled={!selectedBox || selectedBox.status !== "OPEN" || modalSerials.length === 0}
+              disabled={!selectedBox || selectedBox.status !== "OPEN" || modalSerials.length === 0} disabledReason={!selectedBox ? t('shipping.disabled.selectBox', '박스를 먼저 선택하세요.') : selectedBox.status !== 'OPEN' ? t('shipping.disabled.openBox', '열린 박스만 처리할 수 있습니다. 박스 상태를 확인하세요.') : t('shipping.disabled.emptyBox', '박스에 제품을 먼저 담으세요.')}
             >
               <Printer className="w-4 h-4 mr-1" />{t("shipping.pack.completeAndPrint", "포장 완료 · 라벨 출력")}
             </Button>

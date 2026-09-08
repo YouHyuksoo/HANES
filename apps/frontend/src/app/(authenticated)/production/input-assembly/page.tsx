@@ -293,6 +293,12 @@ export default function InputAssemblyPage() {
 
   const canIssue =
     !!selectedOrder && !!processCode && !!equipCode && sgReady && !issuedFg && !issuing && !confirming;
+  const issueDisabledReason = issuing || confirming ? t('common.actionProcessingHelp', '처리 중입니다. 완료될 때까지 기다려 주세요.')
+    : issuedFg ? t('production.inputAssembly.finishIssuedHelp', '발행된 FG 라벨을 스캔하여 확정하거나 발행을 취소하세요.')
+    : !selectedOrder ? t('production.inputAssembly.requireOrder', '작업지시를 선택하세요.')
+    : !processCode ? t('production.subprocess.requireProcess', '공정을 선택하세요.')
+    : !equipCode ? t('production.inputAssembly.requireEquip', '설비를 선택하세요.')
+    : t('production.inputAssembly.sgNotReadyHelp', '필요한 반제품을 스캔하고 잔량을 확인하세요.');
 
   const onIssue = useCallback(async () => {
     if (actionPending.current || issuedFg || !sgReady) return;
@@ -540,6 +546,7 @@ export default function InputAssemblyPage() {
       <div className="flex-shrink-0">
         <AssemblyActionBar
           canIssue={canIssue}
+          issueDisabledReason={issueDisabledReason}
           issuing={issuing}
           issuedFg={issuedFg}
           onIssue={onIssue}

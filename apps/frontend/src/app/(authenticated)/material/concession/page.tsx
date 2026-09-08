@@ -245,7 +245,7 @@ export default function ConcessionPage() {
                     type="button"
                     variant="secondary"
                     onClick={() => handleWorkerQrLookup()}
-                    disabled={workerQrLoading || !workerQrText.trim()}
+                    disabled={workerQrLoading || !workerQrText.trim()} disabledReason={workerQrLoading ? t('material.disabledHelp.workerLoading', '작업자를 조회하고 있습니다.') : t('material.disabledHelp.workerQr', '특채 처리자의 작업자 QR을 입력하거나 스캔하세요.')}
                   >
                     {workerQrLoading ? t("common.loading") : t("common.search")}
                   </Button>
@@ -262,7 +262,7 @@ export default function ConcessionPage() {
               value={reason} onChange={(e) => setReason(e.target.value)} fullWidth />
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="secondary" onClick={() => setIsModalOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={handleAction} disabled={saving || (actionType === "apply" && !specialAcceptWorkerCode)}>
+              <Button onClick={handleAction} disabled={saving || (actionType === "apply" && !specialAcceptWorkerCode)} disabledReason={saving ? t('material.disabledHelp.concessionSaving', '특채 처리를 저장하고 있습니다.') : t('material.disabledHelp.concessionWorker', '특채 처리자를 작업자 QR로 조회하여 지정하세요.')}>
                 {saving ? t("common.saving") : actionType === "apply" ? t("material.concession.apply") : t("material.concession.cancel")}
               </Button>
             </div>

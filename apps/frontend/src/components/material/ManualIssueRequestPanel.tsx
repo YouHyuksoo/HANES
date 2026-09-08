@@ -128,7 +128,7 @@ export default function ManualIssueRequestPanel({
           <Button size="sm" variant="secondary" onClick={handleClose}>
             {t('common.cancel')}
           </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={!canSubmit}>
+          <Button size="sm" onClick={handleSubmit} disabled={!canSubmit} disabledReason={isSubmitting ? t('material.disabledHelp.requestSaving', '출고요청을 저장하고 있습니다.') : t('material.disabledHelp.requestQty', '요청 품목을 추가하고 모든 품목의 요청수량을 0보다 크게 입력하세요.')}>
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 mr-1 animate-spin" />
             ) : (

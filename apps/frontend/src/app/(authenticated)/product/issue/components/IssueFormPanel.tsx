@@ -141,7 +141,7 @@ export default function IssueFormPanel({ onClose, onSubmit, loading }: Props) {
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           <Button size="sm" onClick={handleSubmit}
-            disabled={loading || !form.itemCode || !form.warehouseCode || !form.issueType}>
+            disabled={loading || !form.itemCode || !form.warehouseCode || !form.issueType} disabledReason={loading ? t('common.disabled.processing', '처리 중입니다. 완료될 때까지 기다려 주세요.') : !form.itemCode ? t('common.disabled.item', '품목을 선택하세요.') : !form.warehouseCode ? t('common.disabled.warehouse', '출고 창고를 선택하세요.') : t('common.disabled.issueType', '출고계정을 선택하세요.')}>
             {loading ? t("common.saving") : t("productMgmt.issue.modal.confirm")}
           </Button>
         </div>

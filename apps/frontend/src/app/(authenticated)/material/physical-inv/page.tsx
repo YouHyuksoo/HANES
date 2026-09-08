@@ -140,7 +140,7 @@ export default function PhysicalInvPage() {
           <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
           </Button>
-          <Button size="sm" onClick={() => setShowConfirm(true)} disabled={countedItems.length === 0}>
+          <Button size="sm" onClick={() => setShowConfirm(true)} disabled={countedItems.length === 0} disabledReason={t('material.disabledHelp.countedRows', '실사수량을 입력한 품목이 있어야 재고에 반영할 수 있습니다.')}>
             <CheckSquare className="w-4 h-4 mr-1" />
             {t("material.physicalInv.applyCount")} ({countedItems.length})
           </Button>
