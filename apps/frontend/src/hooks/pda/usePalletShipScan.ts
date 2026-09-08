@@ -50,7 +50,7 @@ const extractErrMsg = (err: unknown, fallback: string): string =>
 
 /** fulfillment 응답에서 진행 중(미출하) 팔레트 1개 선택 */
 function pickActivePallet(pallets: FulfillmentPallet[]): CurrentPallet | null {
-  const active = pallets.find((p) => p.status === "OPEN" || p.status === "CLOSED");
+  const active = pallets.find((p) => p.status === "OPEN") ?? pallets.find((p) => p.status === "CLOSED");
   if (!active) return null;
   const boxes: PalletLoadedBox[] = (active.boxes ?? []).map((b) => ({
     boxNo: b.boxNo,

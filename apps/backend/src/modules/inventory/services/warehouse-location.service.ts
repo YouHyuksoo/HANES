@@ -33,10 +33,18 @@ export class WarehouseLocationService {
     };
   }
 
-  async findAll(warehouseCode?: string, company?: string, plant?: string) {
+  async findAll(warehouseCode?: string, company?: string, plant?: string, warehouseUseYn?: string) {
     const tenantWhere = this.tenantWhere(company, plant);
     const where: FindOptionsWhere<WarehouseLocation> = { ...tenantWhere };
     if (warehouseCode) where.warehouseCode = warehouseCode;
+    if (warehouseUseYn) {
+      const eligible = await this.warehouseRepo.find({
+        where: { ...tenantWhere, useYn: warehouseUseYn, ...(warehouseCode && { warehouseCode }) },
+        select: ['warehouseCode'],
+      });
+      if (!eligible.length) return { success: true, data: [] };
+      where.warehouseCode = In(eligible.map(wh => wh.warehouseCode));
+    }
 
     const locations = await this.locationRepo.find({
       where,

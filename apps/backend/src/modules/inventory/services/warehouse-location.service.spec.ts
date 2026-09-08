@@ -6,7 +6,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, ConflictException } from '@nestjs/common';
-import { Repository, getMetadataArgsStorage } from 'typeorm';
+import { Repository, getMetadataArgsStorage, In } from 'typeorm';
 import { WarehouseLocationService } from './warehouse-location.service';
 import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
@@ -41,6 +41,29 @@ describe('WarehouseLocationService', () => {
   });
 
   describe('findAll', () => {
+    it.each(['Y', 'N'])('filters by parent warehouse useYn=%s within tenant, not location useYn', async (useYn) => {
+      mockWhRepo.find.mockResolvedValue([{ warehouseCode: 'WH-001' } as Warehouse]);
+      mockLocRepo.find.mockResolvedValue([{ warehouseCode: 'WH-001', locationCode: 'A', useYn: 'N' } as WarehouseLocation]);
+      const result = await target.findAll(undefined, 'C1', 'P1', useYn);
+      expect(mockWhRepo.find).toHaveBeenNthCalledWith(1, {
+        where: { company: 'C1', plant: 'P1', useYn }, select: ['warehouseCode'],
+      });
+      expect(mockLocRepo.find).toHaveBeenCalledWith({
+        where: { company: 'C1', plant: 'P1', warehouseCode: In(['WH-001']) },
+        order: { locationCode: 'ASC' },
+      });
+      expect(result.data).toHaveLength(1);
+    });
+
+    it('returns no locations when selected warehouse does not match its use filter', async () => {
+      mockWhRepo.find.mockResolvedValue([]);
+      expect(await target.findAll('WH-INACTIVE', 'C1', 'P1', 'Y')).toEqual({ success: true, data: [] });
+      expect(mockWhRepo.find).toHaveBeenCalledWith({
+        where: { company: 'C1', plant: 'P1', warehouseCode: 'WH-INACTIVE', useYn: 'Y' }, select: ['warehouseCode'],
+      });
+      expect(mockLocRepo.find).not.toHaveBeenCalled();
+    });
+
     it('should preserve location WAREHOUSE_CODE even when warehouse master is missing', async () => {
       mockLocRepo.find.mockResolvedValue([
         { warehouseCode: 'WH-MISSING', locationCode: 'A-01', locationName: 'A-01' } as WarehouseLocation,

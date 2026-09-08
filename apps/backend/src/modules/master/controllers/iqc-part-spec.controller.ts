@@ -16,7 +16,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AuthenticatedRequest, JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { IqcPartSpecService } from '../services/iqc-part-spec.service';
-import { UpsertIqcPartSpecDto } from '../dto/iqc-part-spec.dto';
+import { IqcPartChoicesQueryDto, UpsertIqcPartSpecDto } from '../dto/iqc-part-spec.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
@@ -33,6 +33,13 @@ export class IqcPartSpecController {
     @Plant() plant: string,
   ) {
     const result = await this.service.findAll(company, plant, query.page, query.limit);
+    return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
+  }
+
+  @Get('parts')
+  @ApiOperation({ summary: '품목별 IQC 기준 대상 품목 조회 (사용여부·유효 검사항목 유무)' })
+  async findPartChoices(@Query() query: IqcPartChoicesQueryDto, @Company() company: string, @Plant() plant: string) {
+    const result = await this.service.findPartChoices(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 

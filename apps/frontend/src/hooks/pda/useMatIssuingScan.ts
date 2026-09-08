@@ -40,6 +40,7 @@ export interface JobOrderSummary {
   orderNo: string;
   itemCode: string;
   itemName: string;
+  processCode: string;
 }
 
 /** 출고 완료 이력 항목 */
@@ -62,6 +63,7 @@ export type ScanMaterialResult =
 interface JobOrderApiData {
   orderNo: string;
   itemCode: string;
+  processCode: string;
   part?: { itemCode: string; itemName: string } | null;
 }
 
@@ -155,6 +157,7 @@ export function useMatIssuingScan(): UseMatIssuingScanReturn {
         orderNo: jo.orderNo,
         itemCode: jo.itemCode,
         itemName: jo.part?.itemName ?? jo.itemCode,
+        processCode: jo.processCode,
       });
 
       // BOM 항목 초기화 (스캔 이력 포함 확장형)
@@ -271,6 +274,18 @@ export function useMatIssuingScan(): UseMatIssuingScanReturn {
   const handleConfirmIssue = useCallback(async (): Promise<boolean> => {
     if (!jobOrder) return false;
 
+    // 모든 BOM 항목이 요청수량을 충족해야 하며 초과 출고를 허용하지 않는다.
+    const incomplete = bomItems.filter((item) => item.scannedQty < item.requiredQty);
+    const over = bomItems.filter((item) => item.scannedQty > item.requiredQty);
+    if (incomplete.length > 0) {
+      setError(`BOM 수량이 부족합니다: ${incomplete.map((item) => item.itemCode).join(", ")}`);
+      return false;
+    }
+    if (over.length > 0) {
+      setError(`BOM 수량을 초과했습니다: ${over.map((item) => item.itemCode).join(", ")}`);
+      return false;
+    }
+
     // 모든 scannedLots 수집
     const lots = bomItems.flatMap((b) => b.scannedLots);
     if (lots.length === 0) {
@@ -288,6 +303,7 @@ export function useMatIssuingScan(): UseMatIssuingScanReturn {
         await api.post("/material/issues/scan", {
           matUid: lot.matUid,
           issueType,
+          processCode: jobOrder.processCode,
           orderNo: jobOrder.orderNo,
           remark: `PDA 작업지시 출고: ${jobOrder.orderNo}`,
         });

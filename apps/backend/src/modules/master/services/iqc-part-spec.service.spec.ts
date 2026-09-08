@@ -48,6 +48,35 @@ describe('IqcPartSpecService', () => {
     }));
   });
 
+  it('filters assigned items and usage before pagination with the same tenant and search in total', async () => {
+    const query = jest.fn()
+      .mockResolvedValueOnce([{ itemCode: 'RAW-20', inspectItemCount: 2 }])
+      .mockResolvedValueOnce([{ total: 61 }]);
+    (mockSpecRepo.manager as any).query = query;
+    const result = await target.findPartChoices({ page: 2, limit: 50, useYn: 'Y', hasInspectItems: 'Y', search: 'wire' }, 'C1', 'P1');
+    expect(result).toEqual({ data: [{ itemCode: 'RAW-20', inspectItemCount: 2 }], total: 61, page: 2, limit: 50 });
+    for (const [sql, params] of query.mock.calls) {
+      expect(sql).toContain("p.COMPANY = :1 AND p.PLANT_CD = :2");
+      expect(sql).toContain("i.USE_YN = 'Y') > 0");
+      expect(sql).toContain('pool.COMPANY = i.COMPANY AND pool.PLANT_CD = i.PLANT_CD');
+      expect(sql).toContain('p.USE_YN = :3');
+      expect(sql).toContain('UPPER(p.ITEM_CODE) LIKE :4 OR UPPER(p.ITEM_NAME) LIKE :5');
+      expect(params.slice(0, 5)).toEqual(['C1', 'P1', 'Y', '%WIRE%', '%WIRE%']);
+    }
+    expect(query.mock.calls[0][1].slice(-2)).toEqual([50, 50]);
+  });
+
+  it.each([['N', '= 0'], [undefined, undefined]])('supports unassigned or all items (%s)', async (hasInspectItems, predicate) => {
+    const query = jest.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([{ total: 0 }]);
+    (mockSpecRepo.manager as any).query = query;
+    await target.findPartChoices({ page: 1, limit: 50, hasInspectItems }, 'C2', 'P2');
+    const countSql = query.mock.calls[1][0];
+    expect(countSql).not.toContain('p.USE_YN =');
+    if (predicate) expect(countSql).toContain(`i.USE_YN = 'Y') ${predicate}`);
+    else expect(countSql).not.toContain('IQC_PART_SPEC_ITEMS');
+    expect(query.mock.calls[1][1]).toEqual(['C2', 'P2']);
+  });
+
   it('upserts and refreshes an item spec within the tenant context', async () => {
     const em = {
       findOne: jest.fn()

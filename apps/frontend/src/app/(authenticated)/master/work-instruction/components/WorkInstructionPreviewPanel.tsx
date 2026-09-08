@@ -17,11 +17,10 @@ import { X, Edit2, Trash2, FileText, Download, ExternalLink } from "lucide-react
 import { Button } from "@/components/ui";
 import api from "@/services/api";
 import { resolveBackendFileUrl } from "@/utils/file-url";
+import { formatDateTimeKst } from "@/utils/dateTimeKst";
 import { getWorkInstructionKey, type WorkInstruction } from "./WorkInstructionFormPanel";
 
-interface WorkInstructionDetail extends WorkInstruction {
-  content?: string;
-}
+type WorkInstructionDetail = WorkInstruction;
 
 interface Props {
   item: WorkInstruction;
@@ -113,8 +112,8 @@ export default function WorkInstructionPreviewPanel({ item, onClose, onEdit, onD
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-3">
                 <InfoRow label={t("common.partCode")} value={detail.itemCode} />
                 <InfoRow label={t("common.partName")} value={detail.itemName || "-"} />
-                <InfoRow label={t("master.workInstruction.processCode")} value={detail.processCode || "-"} />
-                <InfoRow label={t("master.workInstruction.updatedAt")} value={detail.updatedAt} />
+                <InfoRow label={t("master.workInstruction.processCode")} value={detail.processName ? `${detail.processCode} (${detail.processName})` : detail.processCode || "-"} />
+                <InfoRow label={t("master.workInstruction.updatedAt")} value={formatDateTimeKst(detail.updatedAt)} />
               </div>
             </div>
 

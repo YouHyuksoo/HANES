@@ -1,4 +1,6 @@
 "use client";
+import { formatDateTimeKst } from "@/utils/dateTimeKst";
+
 
 /**
  * @file src/app/(authenticated)/interface/dashboard/page.tsx
@@ -177,7 +179,7 @@ export default function InterfaceDashboardPage() {
                     <span className={`text-sm font-medium ${statusColors[log.status] || ""}`}>
                       {log.status === "SUCCESS" ? t("interface.dashboard.success") : log.status === "FAIL" ? t("interface.dashboard.failed") : log.status}
                     </span>
-                    <p className="text-xs text-text-muted">{log.createdAt?.split(" ")[1] || ""}</p>
+                    <p className="text-xs text-text-muted">{formatDateTimeKst(log.createdAt)}</p>
                   </div>
                 </div>
               ))}

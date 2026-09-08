@@ -1,3 +1,4 @@
+import { formatDateTimeKst } from "@/utils/dateTimeKst";
 import type { TFunction } from 'i18next';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Eye, RotateCcw, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
@@ -89,7 +90,8 @@ export function createInterfaceLogGridColumns({
     {
       accessorKey: 'createdAt',
       header: t('common.createdAt'),
-      size: 140,
+      size: 155,
+      cell: ({ getValue }) => formatDateTimeKst(getValue<string>()),
       meta: { filterType: 'date' as const },
     },
     {

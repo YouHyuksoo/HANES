@@ -9,6 +9,22 @@ import {
 import { Type } from 'class-transformer';
 
 import { USE_YN_VALUES } from '@harness/shared';
+import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
+
+export class IqcPartChoicesQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsIn(['Y', 'N'])
+  useYn?: string;
+
+  @IsOptional()
+  @IsIn(['Y', 'N'])
+  hasInspectItems?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+}
+
 export class IqcPartSpecItemDto {
   @IsNumber()
   seq: number;

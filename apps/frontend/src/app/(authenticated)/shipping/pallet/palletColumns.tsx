@@ -1,4 +1,6 @@
 "use client";
+import { formatDateTimeKst } from "@/utils/dateTimeKst";
+
 
 import type { TFunction } from "i18next";
 import { Plus, Lock, LockOpen, Printer, Trash2 } from "lucide-react";
@@ -79,6 +81,6 @@ export function createPalletGridColumns({
     { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="PALLET_STATUS" align="center" />, size: 100, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <PalletStatusBadge status={getValue() as PalletStatus} /> },
     { accessorKey: "shipmentId", header: t("shipping.confirm.shipmentNo"), size: 150, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || <span className="text-text-muted">-</span> },
-    { accessorKey: "createdAt", header: t("common.createdAt"), size: 140, meta: { filterType: "date" as const } },
+    { accessorKey: "createdAt", header: t("common.createdAt"), size: 155, meta: { filterType: "date" as const }, cell: ({ getValue }) => formatDateTimeKst(getValue<string>()) },
   ];
 }

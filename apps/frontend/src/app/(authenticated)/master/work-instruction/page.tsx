@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { Plus, Search, RefreshCw, FileText, Eye } from "lucide-react";
 import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
+import { UseYnSelect } from "@/components/shared";
 import api from "@/services/api";
 import WorkInstructionFormPanel, { getWorkInstructionKey, type WorkInstruction } from "./components/WorkInstructionFormPanel";
 import { createWorkInstructionGridColumns } from "./workInstructionColumns";
@@ -30,6 +31,7 @@ export default function WorkInstructionPage() {
   const [data, setData] = useState<WorkInstruction[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [useYn, setUseYn] = useState("Y");
 
   const [panelMode, setPanelMode] = useState<PanelMode>("none");
   const [selectedItem, setSelectedItem] = useState<WorkInstruction | null>(null);
@@ -44,6 +46,7 @@ export default function WorkInstructionPage() {
     try {
       const params: Record<string, string> = { limit: "5000" };
       if (searchText) params.search = searchText;
+      if (useYn) params.useYn = useYn;
       const res = await api.get("/master/work-instructions", { params });
       setData(res.data?.data ?? []);
     } catch {
@@ -51,7 +54,7 @@ export default function WorkInstructionPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchText]);
+  }, [searchText, useYn]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -158,6 +161,7 @@ export default function WorkInstructionPage() {
             onRowClick={handleRowClick}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
+                <div className="w-40 shrink-0"><UseYnSelect value={useYn} onChange={setUseYn} fullWidth /></div>
                 <div className="flex-1 min-w-0">
                   <Input placeholder={t("master.workInstruction.searchPlaceholder")} value={searchText}
                     onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />

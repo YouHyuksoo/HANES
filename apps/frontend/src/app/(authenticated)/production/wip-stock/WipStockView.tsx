@@ -1,4 +1,6 @@
 "use client";
+import { formatDateTimeKst } from "@/utils/dateTimeKst";
+
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -131,7 +133,7 @@ export default function WipStockView({ itemType, titleKey, descriptionKey, enabl
     { accessorKey: "whName", header: t("production.wipStock.warehouse"), size: 110, meta: { filterType: "text" as const } },
     { accessorKey: "qty", header: t("production.wipStock.stockQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "unit", header: t("production.wipStock.unit"), size: 60, meta: { filterType: "text" as const } },
-    { accessorKey: "updatedAt", header: t("production.wipStock.updatedAt"), size: 110, meta: { filterType: "date" as const } },
+    { accessorKey: "updatedAt", header: t("production.wipStock.updatedAt"), size: 155, meta: { filterType: "date" as const }, cell: ({ getValue }) => formatDateTimeKst(getValue<string>()) },
   ], [t]);
 
   const labelColumns = useMemo<ColumnDef<LabelDetailRow>[]>(() => [

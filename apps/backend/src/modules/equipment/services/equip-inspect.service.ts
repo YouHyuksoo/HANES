@@ -306,6 +306,17 @@ export class EquipInspectService {
       ? inspectAt
       : dto.inspectDate ? parseDateStart(dto.inspectDate) : inspectAt;
 
+    // PDA 상세 결과에서 FAIL 항목은 원인 추적을 위해 사유코드를 필수로 받는다.
+    const detailItems = dto.details && Array.isArray((dto.details as { items?: unknown }).items)
+      ? (dto.details as { items: Array<{ result?: string; reasonCode?: string }> }).items
+      : [];
+    const missingFailReasons = detailItems.filter(
+      (item) => item.result === 'FAIL' && !item.reasonCode?.trim(),
+    );
+    if (missingFailReasons.length > 0) {
+      throw new BadRequestException('FAIL 점검 항목에는 불량 사유코드가 필요합니다.');
+    }
+
     const logData = {
       equipCode: dto.equipCode,
       inspectType,

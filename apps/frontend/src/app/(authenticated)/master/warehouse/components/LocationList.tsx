@@ -51,10 +51,11 @@ const INITIAL_FORM: FormState = {
 };
 
 interface Props {
+  useYn: string;
   onHeaderActions?: (actions: ReactNode) => void;
 }
 
-export default function LocationList({ onHeaderActions }: Props) {
+export default function LocationList({ onHeaderActions, useYn }: Props) {
   const { t } = useTranslation();
   const [data, setData] = useState<WarehouseLocation[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,18 +72,20 @@ export default function LocationList({ onHeaderActions }: Props) {
 
   const fetchWarehouses = useCallback(async () => {
     try {
-      const res = await api.get("/inventory/warehouses", { params: { useYn: "Y" } });
+      const res = await api.get("/inventory/warehouses", { params: { useYn: useYn || undefined } });
       const raw = res.data?.data;
       const list = Array.isArray(raw) ? raw : raw?.data ?? [];
       setWhOptions(list.map((w: any) => ({ value: w.warehouseCode, label: `${w.warehouseCode} - ${w.warehouseName}` })));
+      setWhFilter(current => current && !list.some((w: { warehouseCode: string }) => w.warehouseCode === current) ? "" : current);
     } catch { /* ignore */ }
-  }, []);
+  }, [useYn]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const params: Record<string, string> = {};
       if (whFilter) params.warehouseCode = whFilter;
+      if (useYn) params.warehouseUseYn = useYn;
       const res = await api.get("/inventory/warehouse-locations", { params });
       const raw = res.data?.data;
       setData(Array.isArray(raw) ? raw : raw?.data ?? []);
@@ -91,7 +94,7 @@ export default function LocationList({ onHeaderActions }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [whFilter]);
+  }, [whFilter, useYn]);
 
   useEffect(() => { fetchWarehouses(); }, [fetchWarehouses]);
   useEffect(() => { fetchData(); }, [fetchData]);

@@ -3,10 +3,12 @@
  * @description 작업지도서 비즈니스 로직 서비스 - TypeORM
  */
 
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WorkInstruction } from '../../../entities/work-instruction.entity';
+import { ItemMaster } from '../../../entities/item-master.entity';
+import { ProcessMaster } from '../../../entities/process-master.entity';
 import { CreateWorkInstructionDto, UpdateWorkInstructionDto, WorkInstructionQueryDto } from '../dto/work-instruction.dto';
 import { parseWorkInstructionKey } from '@harness/shared';
 
@@ -24,11 +26,24 @@ export class WorkInstructionService {
     };
   }
 
+  private masterQuery() {
+    return this.workInstructionRepository.createQueryBuilder('wi')
+      .leftJoinAndMapOne('wi.item', ItemMaster, 'item',
+        'item.itemCode = wi.itemCode AND item.company = wi.company AND item.plant = wi.plant')
+      .leftJoinAndMapOne('wi.process', ProcessMaster, 'process',
+        'process.processCode = wi.processCode AND process.company = wi.company AND process.plant = wi.plant');
+  }
+
+  private withMasterNames(row: WorkInstruction) {
+    const { item, process, ...instruction } = row as WorkInstruction & { item?: ItemMaster; process?: ProcessMaster };
+    return { ...instruction, itemName: item?.itemName ?? null, processName: process?.processName ?? null };
+  }
+
   async findAll(query: WorkInstructionQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, search, itemCode, processCode, useYn } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.workInstructionRepository.createQueryBuilder('wi')
+    const queryBuilder = this.masterQuery();
 
     if (company) {
       queryBuilder.andWhere('wi.company = :company', { company });
@@ -52,7 +67,7 @@ export class WorkInstructionService {
     if (search) {
       const upper = search.toUpperCase();
       queryBuilder.andWhere(
-        '(wi.itemCode LIKE :searchCode OR wi.title LIKE :searchRaw OR wi.processCode LIKE :searchCode)',
+        '(UPPER(wi.itemCode) LIKE :searchCode OR wi.title LIKE :searchRaw OR UPPER(wi.processCode) LIKE :searchCode OR UPPER(item.itemName) LIKE :searchCode)',
         { searchCode: `%${upper}%`, searchRaw: `%${search}%` }
       );
     }
@@ -68,7 +83,7 @@ export class WorkInstructionService {
       queryBuilder.getCount(),
     ]);
 
-    return { data, total, page, limit };
+    return { data: data.map(row => this.withMasterNames(row)), total, page, limit };
   }
 
   /**
@@ -82,11 +97,9 @@ export class WorkInstructionService {
 
   async findById(id: string, company?: string, plant?: string) {
     const key = this.parseCompositeId(id);
-    const workInstruction = await this.workInstructionRepository.findOne({
-      where: { ...key, ...this.tenantWhere(company, plant) },
-    });
+    const workInstruction = await this.masterQuery().where({ ...key, ...this.tenantWhere(company, plant) }).getOne();
     if (!workInstruction) throw new NotFoundException(`작업지도서를 찾을 수 없습니다: ${id}`);
-    return workInstruction;
+    return this.withMasterNames(workInstruction);
   }
 
   async create(dto: CreateWorkInstructionDto, company?: string, plant?: string) {
@@ -101,6 +114,11 @@ export class WorkInstructionService {
     if (existing) {
       throw new ConflictException(`이미 등록된 작업지도서입니다: ${key.itemCode}/${key.processCode}/${key.revision}`);
     }
+
+    const process = await this.workInstructionRepository.manager.getRepository(ProcessMaster).findOne({
+      where: { processCode: key.processCode, ...this.tenantWhere(company, plant), useYn: 'Y' },
+    });
+    if (!process) throw new BadRequestException('사용 중인 공정을 선택하세요. 공정 기준정보를 확인하세요.');
 
     const workInstruction = this.workInstructionRepository.create({
       itemCode: key.itemCode,

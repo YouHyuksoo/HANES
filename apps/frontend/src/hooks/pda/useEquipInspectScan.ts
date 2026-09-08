@@ -134,7 +134,8 @@ export function useEquipInspectScan(): UseEquipInspectScanReturn {
 
   /** 모든 항목 결과 입력 여부 */
   const isAllCompleted =
-    inspectItems.length > 0 && completedCount === inspectItems.length;
+    inspectItems.length > 0 && completedCount === inspectItems.length &&
+    Array.from(results.values()).every((result) => result.result !== "FAIL" || !!result.reasonCode?.trim());
 
   /** 설비 바코드 스캔 → 설비 정보 + 점검항목 2단계 조회 */
   const handleScan = useCallback(async (equipCode: string) => {

@@ -1,4 +1,6 @@
 "use client";
+import { formatDateTimeKst } from "@/utils/dateTimeKst";
+
 
 /**
  * @file src/app/(authenticated)/interface/log/page.tsx
@@ -163,7 +165,7 @@ export default function InterfaceLogPage() {
               <div><p className="text-sm text-text-muted">{t("interface.log.messageType")}</p><p className="font-medium text-text">{messageTypeLabels[selectedLog.messageType]}</p></div>
               <div><p className="text-sm text-text-muted">{t("interface.log.interfaceId")}</p><p className="font-medium text-text">{selectedLog.interfaceId}</p></div>
               <div><p className="text-sm text-text-muted">{t("common.status")}</p><span className={`px-2 py-1 text-xs rounded-full ${statusColors[selectedLog.status]}`}>{statusLabels[selectedLog.status]}</span></div>
-              <div><p className="text-sm text-text-muted">{t("common.createdAt")}</p><p className="font-medium text-text">{selectedLog.createdAt}</p></div>
+              <div><p className="text-sm text-text-muted">{t("common.createdAt")}</p><p className="font-medium text-text">{formatDateTimeKst(selectedLog.createdAt)}</p></div>
               <div><p className="text-sm text-text-muted">{t("interface.log.recvTime")}</p><p className="font-medium text-text">{selectedLog.recvAt || "-"}</p></div>
               <div><p className="text-sm text-text-muted">{t("interface.log.retryCount")}</p><p className="font-medium text-text">{selectedLog.retryCount}{t("common.count")}</p></div>
             </div>

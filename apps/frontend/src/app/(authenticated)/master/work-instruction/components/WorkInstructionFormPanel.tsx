@@ -13,17 +13,19 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Upload, FileImage, FileText, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui";
-import { HelpTooltip } from "@/components/shared";
+import { Button, Input } from "@/components/ui";
+import { HelpTooltip, ProcessSelect } from "@/components/shared";
 import api from "@/services/api";
 import { buildWorkInstructionKey } from "@harness/shared";
-import { WORK_INSTRUCTION_FIELD_HELP, FieldInput } from "./WorkInstructionFieldHelp";
+import { WORK_INSTRUCTION_FIELD_HELP, Field, FieldInput } from "./WorkInstructionFieldHelp";
 
 interface WorkInstruction {
   itemCode: string;
   itemName: string;
   processCode?: string;
+  processName?: string | null;
   title: string;
+  content?: string | null;
   revision: string;
   imageUrl?: string;
   useYn: string;
@@ -52,7 +54,7 @@ const buildForm = (editingItem: WorkInstruction | null) => ({
   title: editingItem?.title || "",
   revision: editingItem?.revision || "",
   imageUrl: editingItem?.imageUrl || "",
-  content: "",
+  content: editingItem?.content ?? "",
 });
 
 /** 파일 확장자 판별 */
@@ -173,9 +175,10 @@ export default function WorkInstructionFormPanel({ editingItem, onClose, onSave,
             <FieldInput field="itemCode" label={t("common.partCode")} required
               value={form.itemCode} onChange={e => setField("itemCode", e.target.value)}
               readOnly={isEdit} disabled={isEdit} />
-            <FieldInput field="processCode" label={t("master.workInstruction.processCode")} required
-              value={form.processCode} onChange={e => setField("processCode", e.target.value)}
-              readOnly={isEdit} disabled={isEdit} />
+            <Field field="processCode" label={t("master.workInstruction.processCode")} required>
+              {isEdit ? <Input value={`${form.processCode} (${editingItem?.processName ?? "-"})`} readOnly fullWidth />
+                : <ProcessSelect value={form.processCode} onChange={value => setField("processCode", value)} required fullWidth />}
+            </Field>
             <FieldInput field="title" label={t("master.workInstruction.docTitle")} required
               wrapperClassName="col-span-2"
               value={form.title} onChange={e => setField("title", e.target.value)} />

@@ -1,4 +1,6 @@
 "use client";
+import { formatDateTimeKst } from "@/utils/dateTimeKst";
+
 
 import type { TFunction } from "i18next";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -33,6 +35,6 @@ export function createShippingHistoryGridColumns({
     { accessorKey: "itemCount", header: t("shipping.history.itemCount"), size: 70, meta: { filterType: "number" as const } },
     { accessorKey: "totalQty", header: t("common.totalQty"), size: 100, meta: { filterType: "number" as const }, cell: ({ getValue }) => <span className="font-medium">{((getValue() as number) ?? 0).toLocaleString()}</span> },
     { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="SHIP_ORDER_STATUS" align="center" />, size: 90, meta: { filterType: "multi" as const }, cell: ({ getValue }) => <StatusBadge codeType="SHIP_ORDER_STATUS" value={getValue() as string} /> },
-    { accessorKey: "createdAt", header: t("common.createdAt"), size: 100, meta: { filterType: "date" as const } },
+    { accessorKey: "createdAt", header: t("common.createdAt"), size: 155, meta: { filterType: "date" as const }, cell: ({ getValue }) => formatDateTimeKst(getValue<string>()) },
   ];
 }

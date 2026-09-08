@@ -416,8 +416,7 @@ export class ProductPhysicalInvService {
     };
     let detail = await this.countDetailRepository.findOne({ where: detailKey });
     if (detail) {
-      detail.countedQty += 1;
-      detail.countedBy = countedBy ?? detail.countedBy;
+      throw new BadRequestException(`이미 실사한 제품 바코드입니다: ${barcode}`);
     } else {
       detail = this.countDetailRepository.create({
         ...detailKey,

@@ -1,4 +1,5 @@
 "use client";
+import UseYnSelect from "@/components/shared/UseYnSelect";
 
 /**
  * @file components/EquipMasterTab.tsx
@@ -80,6 +81,7 @@ export default function EquipMasterTab() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [useYnFilter, setUseYnFilter] = useState("Y");
   const [lineFilter, setLineFilter] = useState("");
   const [commFilter, setCommFilter] = useState("");
   const [panelOpen, setPanelOpen] = useState(false);
@@ -105,6 +107,7 @@ export default function EquipMasterTab() {
       if (typeFilter) params.equipType = typeFilter;
       if (lineFilter) params.lineCode = lineFilter;
       if (commFilter) params.commType = commFilter;
+      if (useYnFilter) params.useYn = useYnFilter;
       
       const res = await api.get("/equipment/equips", { params });
       if (res.data.success) {
@@ -116,7 +119,7 @@ export default function EquipMasterTab() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, typeFilter, lineFilter, commFilter]);
+  }, [searchText, typeFilter, lineFilter, commFilter, useYnFilter]);
 
   useEffect(() => {
     fetchEquipments();
@@ -391,6 +394,7 @@ export default function EquipMasterTab() {
                       fullWidth
                     />
                   </div>
+                  <UseYnSelect value={useYnFilter} onChange={setUseYnFilter} aria-label={t("common.useYn", "사용여부")} />
                   <ComCodeSelect groupCode="EQUIP_TYPE" value={typeFilter} onChange={setTypeFilter} labelPrefix={t("master.equip.type", "유형")} />
                   <LineSelect value={lineFilter} onChange={setLineFilter} placeholder={t("master.equip.line", "라인")} />
                   <ComCodeSelect groupCode="COMM_TYPE" value={commFilter} onChange={setCommFilter} labelPrefix={t("master.equip.commTypeShort", "통신")} />

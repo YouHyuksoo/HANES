@@ -30,8 +30,9 @@ export class WarehouseLocationController {
   constructor(private readonly service: WarehouseLocationService) {}
 
   @Get()
-  findAll(@Query('warehouseId') warehouseId?: string, @Company() company?: string, @Plant() plant?: string) {
-    return this.service.findAll(warehouseId, company, plant);
+  findAll(@Query('warehouseId') warehouseId?: string, @Company() company?: string, @Plant() plant?: string,
+    @Query('warehouseCode') warehouseCode?: string, @Query('warehouseUseYn') warehouseUseYn?: string) {
+    return this.service.findAll(warehouseCode || warehouseId, company, plant, warehouseUseYn);
   }
 
   @Post()

@@ -26,10 +26,11 @@ const EMPTY_WAREHOUSE_FORM = {
 };
 
 interface Props {
+  useYn: string;
   onHeaderActions?: (actions: ReactNode) => void;
 }
 
-export default function WarehouseList({ onHeaderActions }: Props) {
+export default function WarehouseList({ onHeaderActions, useYn }: Props) {
   const { t } = useTranslation();
   const [warehouses, setWarehouses] = useState<WarehouseData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,6 +59,7 @@ export default function WarehouseList({ onHeaderActions }: Props) {
     try {
       const params: Record<string, string> = {};
       if (filterType) params.warehouseType = filterType;
+      if (useYn) params.useYn = useYn;
       const res = await api.get("/inventory/warehouses", { params });
       const raw = res.data?.data;
       const list = Array.isArray(raw) ? raw : raw?.data ?? [];
@@ -67,7 +69,7 @@ export default function WarehouseList({ onHeaderActions }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [filterType]);
+  }, [filterType, useYn]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

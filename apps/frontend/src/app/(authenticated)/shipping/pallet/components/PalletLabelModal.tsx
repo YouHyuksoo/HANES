@@ -1,4 +1,6 @@
 "use client";
+import { formatDateTimeKst } from "@/utils/dateTimeKst";
+
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -130,7 +132,7 @@ export default function PalletLabelModal({ isOpen, pallet, autoPrint = false, on
       shipOrderNo: pallet.shipOrderNo ?? "",
       itemCode: pallet.itemCode ?? "",
       itemName: pallet.itemName ?? "",
-      createdAt: pallet.createdAt ? String(pallet.createdAt).replace("T", " ").slice(0, 16) : "",
+      createdAt: pallet.createdAt ? formatDateTimeKst(pallet.createdAt) : "",
     };
   }, [pallet]);
 
@@ -195,7 +197,7 @@ export default function PalletLabelModal({ isOpen, pallet, autoPrint = false, on
                   <tr>
                     <th className="border border-black bg-gray-100 px-2 py-1 text-left">{t("common.createdAt", "생성일시")}</th>
                     <td className="border border-black px-2 py-1" colSpan={3}>
-                      {String(pallet.createdAt).replace("T", " ").slice(0, 16)}
+                      {formatDateTimeKst(pallet.createdAt)}
                     </td>
                   </tr>
                 </tbody>

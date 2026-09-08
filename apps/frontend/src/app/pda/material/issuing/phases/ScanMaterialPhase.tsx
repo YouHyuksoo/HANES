@@ -42,9 +42,15 @@ export function ScanMaterialPhase({
 }: Props) {
   const { t } = useTranslation();
   const allUnchecked = useMemo(() => bomItems.length > 0 && bomItems.every((b) => !b.checked), [bomItems]);
+  const incomplete = useMemo(() => bomItems.filter((b) => b.scannedQty < b.requiredQty), [bomItems]);
+  const over = useMemo(() => bomItems.filter((b) => b.scannedQty > b.requiredQty), [bomItems]);
   const confirmIssueDisabledReason = allUnchecked
-    ? "BOM 항목이 있으면 최소 1개 이상 스캔해 주세요."
-    : undefined;
+    ? "BOM 항목을 모두 요청수량만큼 스캔해 주세요."
+    : incomplete.length > 0
+      ? `BOM 수량 부족: ${incomplete.map((b) => b.itemCode).join(", ")}`
+      : over.length > 0
+        ? `BOM 수량 초과: ${over.map((b) => b.itemCode).join(", ")}`
+        : undefined;
 
   return (
     <>
@@ -97,7 +103,7 @@ export function ScanMaterialPhase({
             label: t("pda.issuing.confirmIssue"),
             onClick: onConfirm,
             variant: "primary",
-            disabled: allUnchecked,
+            disabled: allUnchecked || incomplete.length > 0 || over.length > 0,
             disabledReason: confirmIssueDisabledReason,
           },
           { label: t("common.cancel"), onClick: onCancel, variant: "secondary" },
