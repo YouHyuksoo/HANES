@@ -2979,7 +2979,16 @@
         "toastSent": "{{count}}개 입하 라벨을 agent로 전송했습니다.",
         "toastError": "agent 출력 중 오류가 발생했습니다.",
         "agentUnavailable": "라벨 프린트 에이전트에 연결할 수 없습니다. PC에 HANES Print Agent가 설치·실행 중인지 확인한 뒤 다시 시도하세요.",
-        "errorPrepareScreen": "라벨 출력 화면을 준비하지 못했습니다."
+        "errorPrepareScreen": "라벨 출력 화면을 준비하지 못했습니다.",
+        "printMethod": "출력 방식",
+        "printMethodBrowser": "브라우저 인쇄",
+        "printMethodAgent": "Print Agent 출력",
+        "browserPopupBlocked": "인쇄 창이 팝업 차단에 막혔습니다. 이 사이트의 팝업을 허용한 뒤 다시 시도하세요.",
+        "browserPreparing": "라벨을 준비하고 있습니다…",
+        "browserWindowClosed": "인쇄 창이 닫혀 출력을 진행할 수 없습니다. 다시 시도하세요.",
+        "toastBrowserPreparing": "{{count}}개 입하 라벨 인쇄 화면을 준비 중입니다.",
+        "toastBrowserOpened": "{{count}}개 입하 라벨 인쇄 창을 열었습니다. 프린터를 선택해 인쇄하세요.",
+        "agentUnavailableHint": "라벨 프린트 에이전트에 연결할 수 없습니다. 출력 방식을 '브라우저 인쇄'로 바꾸면 에이전트 없이 출력할 수 있습니다."
       },
       "selectPoDesc": "입하 가능한 PO를 선택해주세요.",
       "selectWarehouse": "창고 선택",

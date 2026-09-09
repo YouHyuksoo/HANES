@@ -2450,7 +2450,16 @@
         "toastSent": "Sent {{count}} arrival labels to the agent.",
         "toastError": "An error occurred during agent printing.",
         "agentUnavailable": "Cannot connect to the label print agent. Make sure HANES Print Agent is installed and running on this PC, then try again.",
-        "errorPrepareScreen": "Failed to prepare the label print view."
+        "errorPrepareScreen": "Failed to prepare the label print view.",
+        "printMethod": "Print method",
+        "printMethodBrowser": "Browser print",
+        "printMethodAgent": "Print Agent",
+        "browserPopupBlocked": "The print window was blocked by the popup blocker. Allow popups for this site and try again.",
+        "browserPreparing": "Preparing labels…",
+        "browserWindowClosed": "The print window was closed. Please try again.",
+        "toastBrowserPreparing": "Preparing the print view for {{count}} arrival label(s).",
+        "toastBrowserOpened": "Opened the print window for {{count}} arrival label(s). Choose a printer and print.",
+        "agentUnavailableHint": "Cannot connect to the label print agent. Switch the print method to 'Browser print' to print without the agent."
       },
       "selectPoDesc": "Select a PO available for arrival.",
       "selectWarehouse": "Select warehouse",

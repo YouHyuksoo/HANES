@@ -22,11 +22,29 @@ test('arrival label modal prints selected mat_lot template through local print-a
   assert.match(source, /data-label-barcode-pending/);
   assert.match(source, /jobId:\s*`MAT-ARRIVAL-\$\{item\.key\}`/);
 
-  // 과거 브라우저 인쇄 경로는 PDF 프린터 출력에서 바코드가 깨질 수 있어 사용하지 않는다.
+  // 과거 innerHTML 복사식 브라우저 인쇄는 PDF 프린터에서 바코드가 깨졌다. 지금의 브라우저 인쇄는
+  // 에이전트와 같은 PNG 파이프라인(renderLabelNodeToPngBase64)을 거친 이미지만 새 창에 넣는다.
   assert.doesNotMatch(source, /createElement\('iframe'\)/);
   assert.doesNotMatch(source, /contentWindow/);
-  assert.doesNotMatch(source, /window\.open\(/);
-  assert.doesNotMatch(source, /window\.print\(/);
+  assert.doesNotMatch(source, /innerHTML/);
   assert.doesNotMatch(source, /@media print/);
   assert.doesNotMatch(source, /api\.get\("\/master\/label-templates"/);
+});
+
+test('arrival label modal offers browser print (no agent) using the same PNG pipeline', () => {
+  // 출력 방식 선택: BROWSER(기본, PC 별 기억) / AGENT
+  assert.match(source, /type MatLabelPrintMethod = "BROWSER" \| "AGENT"/);
+  assert.match(source, /MAT_LABEL_PRINT_METHOD_STORAGE_KEY = "hanes\.matLabel\.printMethod"/);
+  assert.match(source, /material\.arrival\.label\.printMethodBrowser/);
+  assert.match(source, /material\.arrival\.label\.printMethodAgent/);
+  // 팝업 차단 회피: 클릭 핸들러에서 동기적으로 창을 연 뒤 PNG 를 채운다
+  assert.match(source, /browserWindow = window\.open\("", "_blank"\)/);
+  assert.match(source, /buildBrowserPrintDocument\(/);
+  assert.match(source, /data:image\/png;base64,/);
+  assert.match(source, /@page\{size:\$\{widthMm\}mm \$\{heightMm\}mm;margin:0\}/);
+  assert.match(source, /win\.print\(\)/);
+  assert.match(source, /afterprint/);
+  // 에이전트 실패 시 브라우저 인쇄로 안내
+  assert.match(source, /material\.arrival\.label\.agentUnavailableHint/);
+  assert.doesNotMatch(source, /alert\(|confirm\(/);
 });
