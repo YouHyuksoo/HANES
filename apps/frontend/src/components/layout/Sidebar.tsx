@@ -54,6 +54,8 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
   };
 
   const sidebarWidth = collapsed ? "var(--sidebar-collapsed-width)" : "var(--sidebar-width)";
+  const workflowItems = items.filter(item => item.code === "WORKFLOW");
+  const regularItems = items.filter(item => item.code !== "WORKFLOW");
 
   return (
     <>
@@ -66,7 +68,23 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
           <FavoriteSidebar items={items} favorites={favorites} collapsed={collapsed} pathname={pathname}
             isMenuDisabled={isMenuDisabled} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} onClose={onClose} />
           <SidebarMenu
-            items={items}
+            items={regularItems}
+            collapsed={collapsed}
+            pathname={pathname}
+            expandedMenus={expandedMenus}
+            onToggleMenu={toggleMenu}
+            isMenuActive={isMenuActive}
+            isMenuDisabled={isMenuDisabled}
+            onClose={onClose}
+            t={t}
+            isFavorite={isFavorite}
+            onToggleFavorite={toggleFavorite}
+            onMenuDragStart={(code) => { if (!isFavorite(code)) toggleFavorite(code); }}
+          />
+        </nav>
+        <nav className="flex-shrink-0 border-t border-border bg-surface px-3 py-2" aria-label={t("menu.workflow")}>
+          <SidebarMenu
+            items={workflowItems}
             collapsed={collapsed}
             pathname={pathname}
             expandedMenus={expandedMenus}
