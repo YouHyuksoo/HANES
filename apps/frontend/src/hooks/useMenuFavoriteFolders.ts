@@ -22,7 +22,12 @@ export function useMenuFavoriteFolders() {
   const client = useQueryClient();
   const query = useApiQuery<FolderData>(
     ['menu-favorite-folders', user?.email ?? '', selectedCompany, selectedPlant],
-    '/menu-favorites/folders', { enabled: isAuthenticated, retry: false },
+    '/menu-favorites/folders', {
+      // 인증 플래그가 먼저 복원되면 회사·사업장 없는 빈 조회가 캐시될 수 있다.
+      // 테넌트 컨텍스트까지 준비된 뒤 첫 조회를 시작해 초기 폴더 누락을 막는다.
+      enabled: isAuthenticated && !!user?.email && selectedCompany != null && selectedPlant != null,
+      retry: false,
+    },
   );
   const mutation = useMutation({
     mutationFn: async (action: FolderAction) => {
