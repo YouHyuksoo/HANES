@@ -77,6 +77,7 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
             t={t}
             isFavorite={isFavorite}
             onToggleFavorite={toggleFavorite}
+            onMenuDragStart={(code) => { if (!isFavorite(code)) toggleFavorite(code); }}
           />
         </nav>
         <nav className="flex-shrink-0 border-t border-border bg-surface p-3">

@@ -18,6 +18,16 @@ export function FavoriteSidebar({ items, favorites, collapsed, pathname, isMenuD
   const [managerOpen, setManagerOpen] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const [closedFolders, setClosedFolders] = useState<Set<number>>(new Set());
+  const [dragOverFolder, setDragOverFolder] = useState<number | null>(null);
+  const ensureFavorite = (menuCode: string) => { if (!isFavorite(menuCode)) onToggleFavorite(menuCode); };
+  const dropIntoFolder = (event: React.DragEvent, folderId: number) => {
+    event.preventDefault();
+    const menuCode = event.dataTransfer.getData('text/hanes-menu-code');
+    setDragOverFolder(null);
+    if (!menuCode) return;
+    ensureFavorite(menuCode);
+    void state.save({ type: 'move', menuCode, folderId }).catch(() => {});
+  };
   const menus = useMemo(() => {
     const leaves = new Map<string, MenuConfigItem>();
     const collect = (list: MenuConfigItem[]) => list.forEach(item => {
@@ -30,7 +40,8 @@ export function FavoriteSidebar({ items, favorites, collapsed, pathname, isMenuD
   const folderIds = new Set(state.folders.map(folder => folder.id));
   const renderMenus = (list: MenuConfigItem[]) => <SidebarMenu items={list} collapsed={false} pathname={pathname}
     expandedMenus={[]} onToggleMenu={() => {}} isMenuActive={item => item.path === pathname}
-    isMenuDisabled={isMenuDisabled} onClose={onClose} t={t} isFavorite={isFavorite} onToggleFavorite={onToggleFavorite} />;
+    isMenuDisabled={isMenuDisabled} onClose={onClose} t={t} isFavorite={isFavorite} onToggleFavorite={onToggleFavorite}
+    onMenuDragStart={ensureFavorite} />;
 
   return <div className="mb-2 border-b border-border pb-2">
     <div className="flex items-center">
@@ -42,7 +53,7 @@ export function FavoriteSidebar({ items, favorites, collapsed, pathname, isMenuD
     </div>
     {!collapsed && expanded && <div className="ml-2">
       {state.folders.map(folder => <div key={folder.id}>
-        <button type="button" className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-background rounded" aria-expanded={!closedFolders.has(folder.id)}
+        <button type="button" onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; setDragOverFolder(folder.id); }} onDragLeave={() => setDragOverFolder(null)} onDrop={(event) => dropIntoFolder(event, folder.id)} className={`flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-background rounded ${dragOverFolder === folder.id ? 'ring-2 ring-primary bg-primary/10' : ''}`} aria-expanded={!closedFolders.has(folder.id)}
           onClick={() => setClosedFolders(prev => { const next = new Set(prev); if (next.has(folder.id)) next.delete(folder.id); else next.add(folder.id); return next; })}>
           {closedFolders.has(folder.id) ? <ChevronRight className="w-3 h-3 shrink-0" /> : <ChevronDown className="w-3 h-3 shrink-0" />}<Folder className="w-4 h-4 shrink-0" /><span className="truncate" title={folder.name}>{folder.name}</span>
         </button>
