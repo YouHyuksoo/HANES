@@ -30,6 +30,8 @@ jobs:
           pm2 stop hanes-backend 2>nul || echo "hanes-backend not running"
           pm2 delete hanes-frontend 2>nul || echo "hanes-frontend not registered"
           pm2 delete hanes-backend 2>nul || echo "hanes-backend not registered"
+          pm2 stop hanes-proxy 2>nul || echo "hanes-proxy not running"
+          pm2 delete hanes-proxy 2>nul || echo "hanes-proxy not registered"
         shell: cmd
         continue-on-error: true
 
@@ -68,6 +70,35 @@ jobs:
           node tools\generate-work-instruction-seed-images.mjs
         shell: cmd
 
+      # HTTPS 리버스 프록시(443 → 3002) 준비: caddy.exe 다운로드(없을 때만), 인증서 폴더, 방화벽 443, 포트 점유 확인.
+      # tools/proxy/README.md 참조. 443 을 다른 프로그램이 쓰면 여기서 실패시켜 원인을 드러낸다.
+      - name: Prepare HTTPS proxy (Caddy)
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $proxyDir = "C:\Project\HANES\tools\proxy"
+          $exe = Join-Path $proxyDir "caddy.exe"
+          if (!(Test-Path $exe)) {
+            Write-Host "Downloading caddy.exe ..."
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            Invoke-WebRequest -Uri "https://caddyserver.com/api/download?os=windows&arch=amd64" -OutFile $exe -UseBasicParsing
+          }
+          & $exe version
+          & $exe validate --config (Join-Path $proxyDir "Caddyfile") --adapter caddyfile
+          $dataDir = "C:\ProgramData\HANES\caddy"
+          if (!(Test-Path $dataDir)) { New-Item -ItemType Directory -Path $dataDir -Force | Out-Null }
+          if (-not (Get-NetFirewallRule -DisplayName "HANES HTTPS 443" -ErrorAction SilentlyContinue)) {
+            New-NetFirewallRule -DisplayName "HANES HTTPS 443" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow -Profile Any | Out-Null
+            Write-Host "Firewall rule added: HANES HTTPS 443"
+          }
+          $listener = Get-NetTCPConnection -LocalPort 443 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($listener) {
+            $proc = Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue
+            if ($proc -and $proc.ProcessName -ne "caddy") {
+              throw "Port 443 is already in use by $($proc.ProcessName) (PID $($proc.Id)). Change https_port in tools/proxy/Caddyfile or free the port."
+            }
+          }
+        shell: powershell
+
       - name: Start HANES PM2 processes
         run: |
           $env:PM2_HOME = "C:\Users\Administrator\.pm2"
@@ -75,11 +106,15 @@ jobs:
           $ErrorActionPreference = 'SilentlyContinue'
           pm2 delete hanes-frontend 2>&1 | Out-Null
           pm2 delete hanes-backend 2>&1 | Out-Null
+          pm2 delete hanes-proxy 2>&1 | Out-Null
           $ErrorActionPreference = 'Stop'
           Set-Location C:\Project\HANES
           $env:RUNNER_TRACKING_ID = ""
           pm2 start ecosystem.config.js --update-env
           pm2 save
-          Start-Sleep 5
+          Start-Sleep 8
           pm2 list
+          # 프록시 기동 확인(443 리스너). 인증서 발급은 백그라운드로 진행되며 pm2 logs hanes-proxy 로 확인.
+          $proxyUp = Get-NetTCPConnection -LocalPort 443 -State Listen -ErrorAction SilentlyContinue
+          if ($proxyUp) { Write-Host "hanes-proxy is listening on 443" } else { Write-Warning "hanes-proxy is NOT listening on 443 - check pm2 logs hanes-proxy" }
         shell: powershell

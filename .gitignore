@@ -85,3 +85,6 @@ CProjectHANESscripts
 
 # Isolated implementation worktrees
 .worktrees/
+
+# HTTPS 프록시 실행파일 — 배포 워크플로가 내려받음(tools/proxy/README.md)
+tools/proxy/caddy.exe

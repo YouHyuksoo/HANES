@@ -31,6 +31,8 @@ func Default() Config {
 		AllowedOrigins: []string{
 			"http://localhost:3002",
 			"http://127.0.0.1:3002",
+			// 배포 서버(https 전환, 2026-09-09). http 공인 주소는 브라우저가 loopback 요청을 막으므로 넣지 않는다.
+			"https://hswbs.haengsung.com",
 		},
 		MaxPayloadBytes: defaultMaxPayload,
 	}

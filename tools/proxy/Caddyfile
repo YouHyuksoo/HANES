@@ -1,0 +1,29 @@
+# HANES MES HTTPS 리버스 프록시 (배포 서버, PM2 프로세스 hanes-proxy)
+#
+# 목적: hswbs.haengsung.com 을 https(443)로 서비스해 브라우저가 로컬 Print Agent(127.0.0.1)로
+#       요청을 보낼 수 있게 한다(http 공인 주소에서는 Chrome 이 loopback 요청을 차단).
+# 인증서: Let's Encrypt 자동 발급·갱신. 외부에 443 만 열려 있으므로 TLS-ALPN-01 검증을 쓴다.
+#         (80 은 닫혀 있어 HTTP-01 은 실패해도 무방 — Caddy 가 두 방식을 모두 시도한다)
+# 데이터: 인증서·계정은 XDG_DATA_HOME(ecosystem.config.js 에서 C:\ProgramData\HANES\caddy)에 저장 → 재배포에도 유지.
+# 기존 http://hswbs.haengsung.com:3002 는 Next 가 그대로 서비스한다(전환 기간 병행).
+
+{
+	# 서버의 80 은 다른 용도일 수 있어 Caddy 의 HTTP 리스너를 비표준 포트로 옮긴다(충돌 방지).
+	http_port 3080
+	https_port 443
+	admin off
+	email hsyou@jisheng.co.kr
+}
+
+hswbs.haengsung.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:3002 {
+		header_up X-Forwarded-Proto https
+	}
+	log {
+		output file C:\Project\HANES\logs\proxy-access.log {
+			roll_size 20mb
+			roll_keep 5
+		}
+	}
+}
