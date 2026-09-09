@@ -39,7 +39,7 @@ describe('continuous assembly transaction (unit)', () => {
       { run: async callback => callback({ manager }) } as any,
       { nextGenealogyIds: async (_qr, count) => Array.from({ length: count }, (_, i) => i + 1), nextProdResultNo: async () => 'PR1' } as any,
       { receiveStockInTx: jest.fn() } as any, {} as any, {} as any, {} as any,
-      { syncJobOrderFromResultsInTx: jest.fn() } as any);
+      { syncJobOrderFromResultsInTx: jest.fn(), assertEquipInspectGate: jest.fn(async () => undefined) } as any);
   });
   it('locks SGs in sorted order but consumes BOM quantity in scan order and returns actual balances', async () => {
     const result = await service.confirmAssembly(dto, 'C', 'P');

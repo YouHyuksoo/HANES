@@ -224,6 +224,19 @@ export class CreateEquipProtocolDto {
   @IsInt()
   errorIndex?: number;
 
+  @ApiPropertyOptional({ description: '측정 수치 위치 index (0-based, null: 수치 미수신)', nullable: true })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  valueIndex?: number | null;
+
+  @ApiPropertyOptional({ description: '측정 수치 단위 (kgf, N, mm 등)', nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  valueUnit?: string | null;
+
   @ApiPropertyOptional({ description: '데이터 시작 문자' })
   @IsOptional()
   @IsString()

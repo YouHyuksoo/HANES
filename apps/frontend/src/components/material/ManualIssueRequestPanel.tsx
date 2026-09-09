@@ -10,6 +10,7 @@ import { AlertTriangle, Loader2, Plus, Search, X } from 'lucide-react';
 import { Button, Input, Select } from '@/components/ui';
 import PartSearchModal, { type PartItem } from '@/components/shared/PartSearchModal';
 import { api } from '@/services/api';
+import { notifyIssueWarnings } from '@/components/material/issue-warnings';
 import { useInvalidateQueries } from '@/hooks/useApi';
 import type { RequestItem } from '@/hooks/material/useIssueRequestData';
 
@@ -101,7 +102,9 @@ export default function ManualIssueRequestPanel({
         })),
         remark: remark || undefined,
       };
-      await api.post('/material/issue-requests', body);
+      const res = await api.post('/material/issue-requests', body);
+      // IQC 미검사 재고만 있는 품목 안내(생성은 차단하지 않음)
+      notifyIssueWarnings(res.data);
       invalidate(['issue-request-data']);
       invalidate(['issue-requests']);
       await onSubmitted?.();

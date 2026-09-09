@@ -20,6 +20,8 @@ import { ProductInventoryService } from '../../inventory/services/product-invent
 import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
+import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
+import { EquipInspectService } from '../../equipment/services/equip-inspect.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 
@@ -57,6 +59,8 @@ describe('ProdResultService delete policy', () => {
         { provide: WipMatStockService, useValue: createMock<WipMatStockService>() },
         { provide: NumberingService, useValue: createMock<NumberingService>() },
         { provide: SysConfigService, useValue: createMock<SysConfigService>() },
+        { provide: getRepositoryToken(EquipInspectItemPool), useValue: createMock<Repository<EquipInspectItemPool>>({ find: jest.fn().mockResolvedValue([]) }) },
+        { provide: EquipInspectService, useValue: createMock<EquipInspectService>() },
         { provide: TransactionService, useValue: mockTx },
       ],
     }).setLogger(new MockLoggerService()).compile();

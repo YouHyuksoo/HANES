@@ -56,6 +56,8 @@ import { SimulationDataService } from './services/simulation-data.service';
 import { SelfInspectService } from './services/self-inspect.service';
 import { InventoryModule } from '../inventory/inventory.module';
 import { SystemModule } from '../system/system.module';
+import { EquipmentModule } from '../equipment/equipment.module';
+import { EquipInspectItemPool } from '../../entities/equip-inspect-item-pool.entity';
 
 // Entities
 import { JobOrder } from '../../entities/job-order.entity';
@@ -118,9 +120,10 @@ import { KioskMaterialService } from './services/kiosk-material.service';
 @Module({
   imports: [
     IssueModule,
-    TypeOrmModule.forFeature([JobOrder, ProdResult, ItemMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, RoutingMaterial, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult, JobMaterialLot, ConsumableUsageMap, ConsumableStock, WorkerMaster, HarnessDrawingMaster, HarnessDrawingRevision, HarnessCircuitSpec, SgLabel, ProductGenealogy]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, ItemMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, RoutingMaterial, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult, JobMaterialLot, ConsumableUsageMap, ConsumableStock, WorkerMaster, HarnessDrawingMaster, HarnessDrawingRevision, HarnessCircuitSpec, SgLabel, ProductGenealogy, EquipInspectItemPool]),
     InventoryModule,
     SystemModule,
+    EquipmentModule,
   ],
   controllers: [
     JobOrderController,

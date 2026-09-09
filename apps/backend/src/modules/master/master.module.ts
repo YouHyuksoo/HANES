@@ -32,6 +32,10 @@ import { EquipInspectController } from './controllers/equip-inspect.controller';
 import { EquipInspectService } from './services/equip-inspect.service';
 import { EquipInspectItemPoolController } from './controllers/equip-inspect-item-pool.controller';
 import { EquipInspectItemPoolService } from './services/equip-inspect-item-pool.service';
+import { TerminalCrimpSpecController } from './controllers/terminal-crimp-spec.controller';
+import { TerminalCrimpSpecService } from './services/terminal-crimp-spec.service';
+import { InspectAidController } from './controllers/inspect-aid.controller';
+import { InspectAidService } from './services/inspect-aid.service';
 import { EquipBomController } from './controllers/equip-bom.controller';
 import { EquipBomService } from './services/equip-bom.service';
 import { WorkInstructionController } from './controllers/work-instruction.controller';
@@ -94,6 +98,8 @@ import { VendorBarcodeMapping } from '../../entities/vendor-barcode-mapping.enti
 import { IqcItemPool } from '../../entities/iqc-item-pool.entity';
 import { IqcPartSpec } from '../../entities/iqc-part-spec.entity';
 import { IqcPartSpecItem } from '../../entities/iqc-part-spec-item.entity';
+import { TerminalCrimpSpec } from '../../entities/terminal-crimp-spec.entity';
+import { InspectAid } from '../../entities/inspect-aid.entity';
 import { AqlStandard } from '../../entities/aql-standard.entity';
 import { AqlSamplingRule } from '../../entities/aql-sampling-rule.entity';
 import { IqcAqlPolicy } from '../../entities/iqc-aql-policy.entity';
@@ -138,6 +144,8 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
       IqcItemPool,
       IqcPartSpec,
       IqcPartSpecItem,
+      TerminalCrimpSpec,
+      InspectAid,
       AqlStandard,
       AqlSamplingRule,
       IqcAqlPolicy,
@@ -166,6 +174,8 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     IqcItemController,
     EquipInspectController,
     EquipInspectItemPoolController,
+    TerminalCrimpSpecController,
+    InspectAidController,
     EquipBomController,
     WorkInstructionController,
     TransferRuleController,
@@ -196,6 +206,8 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     IqcItemService,
     EquipInspectService,
     EquipInspectItemPoolService,
+    TerminalCrimpSpecService,
+    InspectAidService,
     EquipBomService,
     WorkInstructionService,
     TransferRuleService,
@@ -226,6 +238,8 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     IqcItemService,
     EquipInspectService,
     EquipInspectItemPoolService,
+    TerminalCrimpSpecService,
+    InspectAidService,
     EquipBomService,
     WorkInstructionService,
     TransferRuleService,

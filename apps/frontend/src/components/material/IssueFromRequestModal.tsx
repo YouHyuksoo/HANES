@@ -21,6 +21,7 @@ import ProcessSelect from '@/components/shared/ProcessSelect';
 import { useApiQuery, useInvalidateQueries } from '@/hooks/useApi';
 import { api } from '@/services/api';
 import { useComCodeOptions } from '@/hooks/useComCode';
+import { notifyIssueWarnings } from '@/components/material/issue-warnings';
 
 interface IssueFromRequestModalProps {
   isOpen: boolean;
@@ -39,6 +40,10 @@ interface RequestDetailItem {
   issuedQty: number;
   /** 포장단위(최소 출고 단위) */
   minPackQty?: number;
+  /** 출고 가능 재고(IQC 합격 또는 특채, 백엔드 집계) */
+  issuableQty?: number;
+  /** IQC 미검사(PENDING/HOLD) 재고(백엔드 집계) */
+  pendingIqcQty?: number;
 }
 
 /** 실출고수량 = ceil(잔여/포장단위)*포장단위. 포장단위<=0이면 잔여 그대로 */
@@ -225,7 +230,7 @@ export default function IssueFromRequestModal({
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
-      await api.post(`/material/issue-requests/${requestId}/issue`, {
+      const res = await api.post(`/material/issue-requests/${requestId}/issue`, {
         items: validRows.map((r) => ({
           requestItemId: String(r.seq),
           matUid: selectedMatUids[r.rowKey],
@@ -234,6 +239,8 @@ export default function IssueFromRequestModal({
         issueType,
         processCode: processCode || undefined,
       });
+      // 출고 정책 경고(FIFO_ACTION=WARN 등) — 출고는 완료됐으므로 닫되 toast 로 안내(BLOCK 은 400 으로 위 catch)
+      notifyIssueWarnings(res.data);
       invalidate(['issue-requests']);
       invalidate(['issue-request-detail']);
       onClose();
@@ -280,6 +287,28 @@ export default function IssueFromRequestModal({
       cell: ({ getValue }) => {
         const v = (getValue() as number) ?? 0;
         return <span className="text-text-muted">{v > 0 ? v.toLocaleString() : '-'}</span>;
+      },
+    },
+    {
+      accessorKey: 'issuableQty',
+      header: t('material.issue.issuableQty', { defaultValue: '가용(IQC합격)' }),
+      size: 100,
+      meta: { filterType: 'number' as const },
+      cell: ({ row }) => {
+        const v = Number(row.original.issuableQty ?? 0);
+        // 잔여보다 출고가능 재고가 적으면 강조(승인 단계 정책이 WARN 이었거나 그 뒤 재고가 줄어든 경우)
+        const short = v < row.original.remainQty;
+        return <span className={short ? 'font-medium text-red-600 dark:text-red-400' : ''}>{v.toLocaleString()}</span>;
+      },
+    },
+    {
+      accessorKey: 'pendingIqcQty',
+      header: t('material.issue.pendingIqcQty', { defaultValue: '미검사' }),
+      size: 80,
+      meta: { filterType: 'number' as const },
+      cell: ({ getValue }) => {
+        const v = Number((getValue() as number) ?? 0);
+        return <span className={v > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-text-muted'}>{v > 0 ? v.toLocaleString() : '-'}</span>;
       },
     },
     {

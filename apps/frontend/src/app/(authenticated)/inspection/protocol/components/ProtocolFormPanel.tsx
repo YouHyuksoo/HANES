@@ -6,6 +6,7 @@
  * 1. **슬라이드 패널**: 오른쪽에서 슬라이드 인/아웃되는 폼 패널
  * 2. **API**: POST (생성), PUT (수정) /quality/continuity-inspect/protocols
  * 3. **2컬럼 그리드**: 기본 필드는 2열, sampleData/description은 전체 폭
+ * 4. **수치 인덱스/단위**: 계측기(압착고·인장력 게이지) 수치 토큰 위치와 단위. 비우면 PASS/FAIL 만 파싱
  */
 
 "use client";
@@ -26,6 +27,8 @@ export interface Protocol {
   passValue: string;
   failValue: string;
   errorIndex: number | null;
+  valueIndex: number | null;
+  valueUnit: string | null;
   dataStartChar: string | null;
   dataEndChar: string | null;
   sampleData: string | null;
@@ -78,6 +81,8 @@ export default function ProtocolFormPanel({ editingProtocol, onClose, onSave, an
     passValue: p?.passValue || "PASS",
     failValue: p?.failValue || "FAIL",
     errorIndex: p?.errorIndex ?? "",
+    valueIndex: p?.valueIndex ?? "",
+    valueUnit: p?.valueUnit || "",
     dataStartChar: p?.dataStartChar || "",
     dataEndChar: p?.dataEndChar || "",
     sampleData: p?.sampleData || "",
@@ -106,6 +111,8 @@ export default function ProtocolFormPanel({ editingProtocol, onClose, onSave, an
         passValue: form.passValue,
         failValue: form.failValue,
         errorIndex: form.errorIndex !== "" ? Number(form.errorIndex) : null,
+        valueIndex: form.valueIndex !== "" ? Number(form.valueIndex) : null,
+        valueUnit: form.valueUnit.trim() || null,
         dataStartChar: form.dataStartChar || null,
         dataEndChar: form.dataEndChar || null,
         sampleData: form.sampleData || null,
@@ -158,6 +165,12 @@ export default function ProtocolFormPanel({ editingProtocol, onClose, onSave, an
             onChange={e => setField("failValue", e.target.value)} fullWidth />
           <Input label={t("inspection.protocol.errorIndex")} type="number" value={String(form.errorIndex)}
             onChange={e => setField("errorIndex", e.target.value === "" ? "" : Number(e.target.value))} fullWidth />
+          <Input label={t("inspection.protocol.valueIndex")} type="number" min={0} value={String(form.valueIndex)}
+            placeholder={t("inspection.protocol.valueIndexPlaceholder")}
+            onChange={e => setField("valueIndex", e.target.value === "" ? "" : Number(e.target.value))} fullWidth />
+          <Input label={t("inspection.protocol.valueUnit")} value={form.valueUnit} maxLength={20}
+            placeholder={t("inspection.protocol.valueUnitPlaceholder")}
+            onChange={e => setField("valueUnit", e.target.value)} fullWidth />
           <Input label={t("inspection.protocol.startChar")} value={form.dataStartChar}
             onChange={e => setField("dataStartChar", e.target.value)} fullWidth />
           <Input label={t("inspection.protocol.endChar")} value={form.dataEndChar}

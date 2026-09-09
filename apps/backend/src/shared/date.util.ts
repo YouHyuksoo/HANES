@@ -23,3 +23,11 @@ export function parseDateEnd(value?: string | null): Date | null {
   if (!m) return new Date(value);
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 23, 59, 59, 999);
 }
+
+/** Date를 서버 로컬 기준 'YYYY-MM-DD' 문자열로 만든다. (toISOString은 UTC라 KST 오전엔 전날이 된다) */
+export function formatYmdLocal(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}

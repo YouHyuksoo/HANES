@@ -29,6 +29,10 @@ export interface RequestItem {
   floorStockQty?: number;
   /** 포장단위(최소 출고/불출 단위). 실출고 = ceil(요청/minPackQty)*minPackQty */
   minPackQty?: number;
+  /** 출고 가능 재고(IQC 합격 또는 FAIL+특채, LOT 정상). 백엔드 MAT_STOCKS JOIN MAT_LOTS 집계 */
+  issuableQty?: number;
+  /** IQC 미검사(PENDING/HOLD) 재고. 승인 단계 검증 안내용 */
+  pendingIqcQty?: number;
   remark?: string | null;
 }
 

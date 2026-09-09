@@ -14,6 +14,7 @@
 import { useState, useCallback } from 'react';
 import { api } from '@/services/api';
 import { useInvalidateQueries } from '@/hooks/useApi';
+import { notifyIssueWarnings } from '@/components/material/issue-warnings';
 
 /** 스캔된 LOT 정보 */
 export interface ScannedLot {
@@ -112,6 +113,8 @@ export function useBarcodeScan() {
       });
       const issueData = res.data?.data ?? res.data;
       const allocation = (issueData?.allocation ?? null) as ScanIssueAllocation | null;
+      // 출고 정책 경고(FIFO WARN 등) — 차단은 아니므로 이력은 남기고 toast 로만 안내
+      notifyIssueWarnings(issueData);
 
       // 이력 추가 (최신순)
       setScanHistory((prev) => [

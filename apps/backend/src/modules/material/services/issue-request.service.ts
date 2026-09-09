@@ -13,7 +13,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, FindOptionsWhere, LessThanOrEqual, MoreThanOrEqual, Between } from 'typeorm';
-import { isProductionIssueType, ISSUE_REQUEST_PENDING_STATUSES, ISSUE_REQUEST_PENDING_FILTER, deriveIssueRequestStatusFromItems } from '@harness/shared';
+import { isProductionIssueType, ISSUE_REQUEST_PENDING_STATUSES, ISSUE_REQUEST_PENDING_FILTER, deriveIssueRequestStatusFromItems, MAT_LOT_STATUS } from '@harness/shared';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
@@ -28,6 +28,19 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatIssueService } from './mat-issue.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
+
+/** 품목별 창고 가용재고를 IQC 관점으로 나눈 값(MAT_STOCKS JOIN MAT_LOTS, 1쿼리) */
+export interface ItemStockAvailability {
+  /** 창고 가용재고 합(IQC 무관) */
+  availableQty: number;
+  /** 출고 가능 재고 합 — IQC PASS 또는 FAIL+특채, LOT 상태 issuable */
+  issuableQty: number;
+  /** IQC 미검사(PENDING/HOLD) 재고 합 */
+  pendingIqcQty: number;
+}
+
+const EMPTY_AVAILABILITY: ItemStockAvailability = { availableQty: 0, issuableQty: 0, pendingIqcQty: 0 };
 import {
   CreateIssueRequestDto,
   IssueRequestQueryDto,
@@ -57,6 +70,7 @@ export class IssueRequestService {
     private readonly matIssueService: MatIssueService,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
+    private readonly sysConfigService: SysConfigService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -138,19 +152,44 @@ export class IssueRequestService {
     return new Map(rows.map((row) => [row.itemCode, this.toNumber(row.qty)]));
   }
 
+  /**
+   * 품목별 가용재고를 IQC 관점으로 분해(1쿼리, CASE WHEN SUM).
+   * - availableQty: 창고 가용재고 합(기존 currentStock)
+   * - issuableQty: IQC PASS 또는 FAIL+특채 이면서 LOT 상태 issuable(NORMAL)
+   * - pendingIqcQty: IQC PENDING/HOLD
+   */
   private async getAvailableStockQtyMap(itemCodes: string[], company?: string | null, plant?: string | null) {
-    if (itemCodes.length === 0) return new Map<string, number>();
+    if (itemCodes.length === 0) return new Map<string, ItemStockAvailability>();
 
     const qb = this.matStockRepository.createQueryBuilder('s')
       .select('s.itemCode', 'itemCode')
       .addSelect('SUM(s.availableQty)', 'qty')
-      .where('s.itemCode IN (:...itemCodes)', { itemCodes });
+      .addSelect(
+        `SUM(CASE WHEN (l.iqcStatus = 'PASS' OR (l.iqcStatus = 'FAIL' AND l.specialAcceptYn = 'Y')) AND l.status = :issuableStatus THEN s.availableQty ELSE 0 END)`,
+        'issuableQty',
+      )
+      .addSelect(`SUM(CASE WHEN l.iqcStatus IN ('PENDING', 'HOLD') THEN s.availableQty ELSE 0 END)`, 'pendingIqcQty')
+      .leftJoin(MatLot, 'l', 'l.matUid = s.matUid AND l.company = s.company AND l.plant = s.plant')
+      .where('s.itemCode IN (:...itemCodes)', { itemCodes })
+      .setParameter('issuableStatus', MAT_LOT_STATUS.NORMAL);
 
     if (company) qb.andWhere('s.company = :company', { company });
     if (plant) qb.andWhere('s.plant = :plant', { plant });
 
-    const rows = await qb.groupBy('s.itemCode').getRawMany<{ itemCode: string; qty: string | number }>();
-    return new Map(rows.map((row) => [row.itemCode, this.toNumber(row.qty)]));
+    const rows = await qb.groupBy('s.itemCode').getRawMany<{
+      itemCode: string; qty: string | number; issuableQty?: string | number; pendingIqcQty?: string | number;
+    }>();
+    return new Map<string, ItemStockAvailability>(rows.map((row) => [row.itemCode, {
+      availableQty: this.toNumber(row.qty),
+      issuableQty: this.toNumber(row.issuableQty),
+      pendingIqcQty: this.toNumber(row.pendingIqcQty),
+    }]));
+  }
+
+  /** 승인 단계 재고 검증 정책 MAT_ISSUE_STOCK_CHECK (null→BLOCK) */
+  private async loadStockCheckPolicy(company?: string | null, plant?: string | null): Promise<'BLOCK' | 'WARN'> {
+    const value = await this.sysConfigService.getValue('MAT_ISSUE_STOCK_CHECK', company ?? undefined, plant ?? undefined);
+    return (value ?? 'BLOCK').trim().toUpperCase() === 'WARN' ? 'WARN' : 'BLOCK';
   }
 
   private assertSameTenant(
@@ -175,23 +214,48 @@ export class IssueRequestService {
     return this.numbering.next('MAT_REQ', qr);
   }
 
-  /** 품목 목록에 itemCode/itemName 평탄화 */
+  /** 품목 목록에 itemCode/itemName + 현재 가용재고(IQC합격/미검사) 평탄화 */
   private async flattenItems(items: MatIssueRequestItem[], company?: string | null, plant?: string | null) {
-    const itemCodes = items.map((i) => i.itemCode).filter(Boolean);
-    const parts = itemCodes.length > 0
-      ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } }) : [];
+    const itemCodes = [...new Set(items.map((i) => i.itemCode).filter(Boolean))];
+    const [parts, stockMap] = await Promise.all([
+      itemCodes.length > 0
+        ? this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
+        : Promise.resolve([] as ItemMaster[]),
+      this.getAvailableStockQtyMap(itemCodes, company, plant),
+    ]);
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
     return items.map((item) => {
       const part = partMap.get(item.itemCode);
+      const stock = stockMap.get(item.itemCode) ?? EMPTY_AVAILABILITY;
       return {
         ...item,
         itemCode: item.itemCode,
         itemName: part?.itemName ?? null,
         unit: item.unit ?? part?.unit ?? null,
         minPackQty: this.toNumber(part?.minPackQty),
+        currentStock: stock.availableQty,
+        issuableQty: stock.issuableQty,
+        pendingIqcQty: stock.pendingIqcQty,
       };
     });
+  }
+
+  /**
+   * 승인 단계 IQC 가용재고 검증: 품목별 (요청 - 기출고) > 출고가능(IQC합격) 이면 부족.
+   * BLOCK 이면 품목·부족·미검사 수량을 나열해 차단, WARN 이면 경고 문자열을 돌려준다.
+   */
+  private buildStockShortageWarnings(
+    items: Array<Pick<MatIssueRequestItem, 'itemCode' | 'requestQty' | 'issuedQty'> & Pick<ItemStockAvailability, 'issuableQty' | 'pendingIqcQty'>>,
+  ): string[] {
+    return items
+      .map((item) => {
+        const remainQty = this.toNumber(item.requestQty) - this.toNumber(item.issuedQty);
+        const shortage = remainQty - this.toNumber(item.issuableQty);
+        if (shortage <= 0) return null;
+        return `${item.itemCode}: 출고가능(IQC합격) 재고 부족 ${shortage} (요청잔여 ${remainQty}, 가용 ${this.toNumber(item.issuableQty)}, 미검사 ${this.toNumber(item.pendingIqcQty)})`;
+      })
+      .filter((message): message is string => message !== null);
   }
 
   /**
@@ -278,11 +342,14 @@ export class IssueRequestService {
         const prevIssueQty = prevIssueMap.get(bom.childItemCode) ?? 0;
         const floorStockQty = floorStockMap.get(bom.childItemCode) ?? 0;
         const requestQty = Math.max(Math.ceil(bomReqQty - prevIssueQty - floorStockQty), 0);
+        const stock = availableStockMap.get(bom.childItemCode) ?? EMPTY_AVAILABILITY;
         return {
           itemCode: bom.childItemCode,
           itemName: part?.itemName ?? bom.childItemCode,
           unit: part?.unit ?? 'EA',
-          currentStock: availableStockMap.get(bom.childItemCode) ?? 0,
+          currentStock: stock.availableQty,
+          issuableQty: stock.issuableQty,
+          pendingIqcQty: stock.pendingIqcQty,
           requestQty,
           bomReqQty,
           prevIssueQty,
@@ -374,7 +441,12 @@ export class IssueRequestService {
       return saved.requestNo;
     });
 
-    return this.findByRequestNo(requestNo, company, plant);
+    // 요청 생성은 차단하지 않는다(입고 후 IQC 전 요청은 정상 업무). IQC 미검사 재고만 있는 품목은 안내한다.
+    const detail = await this.findByRequestNo(requestNo, company, plant);
+    const warnings = detail.items
+      .filter((item) => this.toNumber(item.issuableQty) <= 0 && this.toNumber(item.pendingIqcQty) > 0)
+      .map((item) => `${item.itemCode}: 출고가능(IQC합격) 재고가 없고 IQC 미검사 재고만 ${this.toNumber(item.pendingIqcQty)} 있습니다. 검사 완료 후 출고할 수 있습니다.`);
+    return { ...detail, warnings };
   }
 
   /** 출고요청 목록 조회 (페이지네이션 + 필터) */
@@ -526,8 +598,23 @@ export class IssueRequestService {
     const effectiveCompany = request.company ?? company;
     const effectivePlant = request.plant ?? plant;
     const requestTenantWhere = this.tenantWhere(effectiveCompany, effectivePlant);
+
+    // 승인 단계 IQC 가용재고 검증 — 정책 MAT_ISSUE_STOCK_CHECK(BLOCK|WARN, 기본 BLOCK)
+    const items = await this.requestItemRepository.find({ where: { requestId: requestNo, ...requestTenantWhere } });
+    const flatItems = await this.flattenItems(items, effectiveCompany, effectivePlant);
+    const warnings = this.buildStockShortageWarnings(flatItems);
+    if (warnings.length > 0) {
+      const policy = await this.loadStockCheckPolicy(effectiveCompany, effectivePlant);
+      if (policy === 'BLOCK') {
+        throw new BadRequestException(
+          `출고가능(IQC합격) 재고가 부족해 승인할 수 없습니다: ${requestNo}. ${warnings.join(' / ')}`,
+        );
+      }
+    }
+
     await this.requestRepository.update({ requestNo, ...requestTenantWhere }, { status: 'APPROVED', approvedAt: new Date() });
-    return this.findByRequestNo(requestNo, effectiveCompany ?? undefined, effectivePlant ?? undefined);
+    const detail = await this.findByRequestNo(requestNo, effectiveCompany ?? undefined, effectivePlant ?? undefined);
+    return { ...detail, warnings };
   }
 
   /** 출고요청 반려 (REQUESTED -> REJECTED) */
@@ -653,7 +740,9 @@ export class IssueRequestService {
         status: deriveIssueRequestStatusFromItems(allItems),
       });
 
-      return { request: await this.findByRequestNo(requestNo, effectiveCompany ?? undefined, effectivePlant ?? undefined), issueResult };
+      // 출고 정책 경고(FIFO WARN 등)는 항목별 warnings 를 모아 응답 최상위에도 싣는다(기존 request/issueResult 형태 유지)
+      const warnings = issueResult.flatMap((row) => row.warnings ?? []);
+      return { request: await this.findByRequestNo(requestNo, effectiveCompany ?? undefined, effectivePlant ?? undefined), issueResult, warnings };
     });
   }
 }

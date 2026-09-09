@@ -18,6 +18,20 @@ import { MatIssueService } from './mat-issue.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
+
+/** 품목별 가용재고 raw row 를 돌려주는 QueryBuilder mock (select/leftJoin/setParameter 체인) */
+const createStockQueryBuilder = (rows: Array<Record<string, unknown>>) => ({
+  select: jest.fn().mockReturnThis(),
+  addSelect: jest.fn().mockReturnThis(),
+  innerJoin: jest.fn().mockReturnThis(),
+  leftJoin: jest.fn().mockReturnThis(),
+  where: jest.fn().mockReturnThis(),
+  andWhere: jest.fn().mockReturnThis(),
+  setParameter: jest.fn().mockReturnThis(),
+  groupBy: jest.fn().mockReturnThis(),
+  getRawMany: jest.fn().mockResolvedValue(rows),
+});
 
 describe('IssueRequestService', () => {
   let service: IssueRequestService;
@@ -35,6 +49,7 @@ describe('IssueRequestService', () => {
   let dataSource: DeepMocked<DataSource>;
   let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
+  let sysConfigService: DeepMocked<SysConfigService>;
 
   beforeEach(async () => {
     requestRepo = createMock<Repository<MatIssueRequest>>();
@@ -51,6 +66,11 @@ describe('IssueRequestService', () => {
     dataSource = createMock<DataSource>();
     tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
+    sysConfigService = createMock<SysConfigService>();
+    // 정책 키 미설정(null) = 기본값(MAT_ISSUE_STOCK_CHECK=BLOCK)
+    sysConfigService.getValue.mockResolvedValue(null);
+    // 품목별 가용재고 집계 기본값: 재고 없음(테스트별로 덮어쓴다)
+    matStockRepo.createQueryBuilder.mockReturnValue(createStockQueryBuilder([]) as any);
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
     tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
@@ -79,6 +99,7 @@ describe('IssueRequestService', () => {
         { provide: NumberingService, useValue: numbering },
         { provide: DataSource, useValue: dataSource },
         { provide: TransactionService, useValue: tx },
+        { provide: SysConfigService, useValue: sysConfigService },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -426,8 +447,10 @@ describe('IssueRequestService', () => {
         select: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
         innerJoin: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
+        setParameter: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue(rows),
       };
@@ -543,6 +566,116 @@ describe('IssueRequestService', () => {
 
       expect(requestRepo.update).not.toHaveBeenCalled();
       expect(requestItemRepo.find).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('approve 승인 단계 IQC 가용재고 검증', () => {
+    const requestedHeader = { requestNo: 'REQ-001', status: 'REQUESTED', company: 'C1', plant: 'P1' } as MatIssueRequest;
+    const items = [
+      { requestId: 'REQ-001', seq: 1, itemCode: 'RM-001', requestQty: 10, issuedQty: 0, company: 'C1', plant: 'P1' },
+      { requestId: 'REQ-001', seq: 2, itemCode: 'RM-002', requestQty: 5, issuedQty: 0, company: 'C1', plant: 'P1' },
+    ] as unknown as MatIssueRequestItem[];
+
+    beforeEach(() => {
+      requestRepo.findOne.mockResolvedValue(requestedHeader);
+      requestItemRepo.find.mockResolvedValue(items);
+      itemMasterRepo.find.mockResolvedValue([]);
+    });
+
+    it('상세 항목에 issuableQty(IQC합격 가용)·pendingIqcQty(미검사)를 노출한다', async () => {
+      matStockRepo.createQueryBuilder.mockReturnValue(createStockQueryBuilder([
+        { itemCode: 'RM-001', qty: '12', issuableQty: '4', pendingIqcQty: '8' },
+      ]) as any);
+
+      const result = await service.findByRequestNo('REQ-001', 'C1', 'P1');
+
+      expect(result.items[0]).toEqual(expect.objectContaining({ itemCode: 'RM-001', currentStock: 12, issuableQty: 4, pendingIqcQty: 8 }));
+      expect(result.items[1]).toEqual(expect.objectContaining({ itemCode: 'RM-002', currentStock: 0, issuableQty: 0, pendingIqcQty: 0 }));
+      // 품목별 가용재고 집계는 1쿼리(MAT_STOCKS LEFT JOIN MAT_LOTS)
+      expect(matStockRepo.createQueryBuilder).toHaveBeenCalledTimes(1);
+    });
+
+    it('정책 BLOCK(기본): 품목별 (요청-기출고) > IQC합격 가용이면 품목·부족·미검사 수량을 나열해 승인을 차단한다', async () => {
+      matStockRepo.createQueryBuilder.mockReturnValue(createStockQueryBuilder([
+        { itemCode: 'RM-001', qty: '12', issuableQty: '4', pendingIqcQty: '8' },
+        { itemCode: 'RM-002', qty: '9', issuableQty: '9', pendingIqcQty: '0' },
+      ]) as any);
+
+      await expect(service.approve('REQ-001', 'C1', 'P1')).rejects.toThrow(/RM-001.*부족 6.*요청잔여 10.*가용 4.*미검사 8/);
+      expect(requestRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('정책 WARN: 부족해도 승인하고 warnings 를 돌려준다', async () => {
+      sysConfigService.getValue.mockImplementation(async (key: string) => (key === 'MAT_ISSUE_STOCK_CHECK' ? 'WARN' : null));
+      matStockRepo.createQueryBuilder.mockReturnValue(createStockQueryBuilder([
+        { itemCode: 'RM-001', qty: '12', issuableQty: '4', pendingIqcQty: '8' },
+        { itemCode: 'RM-002', qty: '9', issuableQty: '9', pendingIqcQty: '0' },
+      ]) as any);
+
+      const result = await service.approve('REQ-001', 'C1', 'P1');
+
+      expect(requestRepo.update).toHaveBeenCalledWith(
+        { requestNo: 'REQ-001', company: 'C1', plant: 'P1' },
+        expect.objectContaining({ status: 'APPROVED' }),
+      );
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0]).toMatch(/RM-001/);
+      expect(sysConfigService.getValue).toHaveBeenCalledWith('MAT_ISSUE_STOCK_CHECK', 'C1', 'P1');
+    });
+
+    it('IQC합격 가용이 충분하면 정책과 무관하게 경고 없이 승인한다', async () => {
+      matStockRepo.createQueryBuilder.mockReturnValue(createStockQueryBuilder([
+        { itemCode: 'RM-001', qty: '10', issuableQty: '10', pendingIqcQty: '0' },
+        { itemCode: 'RM-002', qty: '5', issuableQty: '5', pendingIqcQty: '0' },
+      ]) as any);
+
+      const result = await service.approve('REQ-001', 'C1', 'P1');
+
+      expect(result.warnings).toEqual([]);
+      expect(requestRepo.update).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ status: 'APPROVED' }));
+      // 부족이 없으면 정책 키를 읽지 않는다
+      expect(sysConfigService.getValue).not.toHaveBeenCalledWith('MAT_ISSUE_STOCK_CHECK', expect.anything(), expect.anything());
+    });
+
+    it('기출고분은 요청잔여에서 뺀 뒤 비교한다', async () => {
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-001', seq: 1, itemCode: 'RM-001', requestQty: 10, issuedQty: 7, company: 'C1', plant: 'P1' },
+      ] as unknown as MatIssueRequestItem[]);
+      matStockRepo.createQueryBuilder.mockReturnValue(createStockQueryBuilder([
+        { itemCode: 'RM-001', qty: '3', issuableQty: '3', pendingIqcQty: '0' },
+      ]) as any);
+
+      const result = await service.approve('REQ-001', 'C1', 'P1');
+
+      expect(result.warnings).toEqual([]);
+    });
+  });
+
+  describe('create 미검사 재고 안내', () => {
+    it('생성은 차단하지 않고 IQC 미검사 재고만 있는 품목을 warnings 로 안내한다', async () => {
+      requestRepo.find.mockResolvedValue([]);
+      numbering.next.mockResolvedValue('REQ-NEW');
+      queryRunner.manager.create.mockImplementation((_entity: unknown, payload: unknown) => payload as any);
+      queryRunner.manager.save.mockImplementation(async (entity: unknown) => entity as any);
+      requestRepo.findOne.mockResolvedValue({ requestNo: 'REQ-NEW', status: 'REQUESTED', company: 'C1', plant: 'P1' } as MatIssueRequest);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-NEW', seq: 1, itemCode: 'RM-001', requestQty: 10, issuedQty: 0, company: 'C1', plant: 'P1' },
+        { requestId: 'REQ-NEW', seq: 2, itemCode: 'RM-002', requestQty: 5, issuedQty: 0, company: 'C1', plant: 'P1' },
+      ] as unknown as MatIssueRequestItem[]);
+      itemMasterRepo.find.mockResolvedValue([]);
+      matStockRepo.createQueryBuilder.mockReturnValue(createStockQueryBuilder([
+        { itemCode: 'RM-001', qty: '8', issuableQty: '0', pendingIqcQty: '8' },
+        { itemCode: 'RM-002', qty: '1', issuableQty: '1', pendingIqcQty: '20' },
+      ]) as any);
+
+      const result = await service.create({
+        orderNo: 'WO-001',
+        items: [{ itemCode: 'RM-001', requestQty: 10 }, { itemCode: 'RM-002', requestQty: 5 }],
+      } as any, 'C1', 'P1');
+
+      expect(result.requestNo).toBe('REQ-NEW');
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0]).toMatch(/RM-001.*미검사 재고만 8/);
     });
   });
 

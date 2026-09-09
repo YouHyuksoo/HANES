@@ -361,6 +361,16 @@
           "path": "/master/iqc-part-spec"
         },
         {
+          "menuCode": "QC_TERMINAL_CRIMP_SPEC",
+          "title": "단자별 압착 규격",
+          "path": "/master/terminal-crimp-spec"
+        },
+        {
+          "menuCode": "QC_INSPECT_AID",
+          "title": "검사보조구 관리",
+          "path": "/master/inspect-aid"
+        },
+        {
           "menuCode": "QC_AQL",
           "title": "AQL 기준관리",
           "path": "/quality/aql"

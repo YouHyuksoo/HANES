@@ -337,6 +337,8 @@
     "master.worker.emptyMessage": "No workers registered.",
     "master.iqcItem": "Inspection Item Master",
     "master.iqcPartSpec": "IQC Items by Part",
+    "master.inspectAid": "Inspection Aids",
+    "master.terminalCrimpSpec": "Terminal Crimp Specs",
     "master.iqcItem.itemCode": "Item Code",
     "master.iqcItem.judgeMethod": "Judge Method",
     "master.iqcItem.visual": "Visual",
@@ -549,7 +551,9 @@
     "switchToDark": "Switch to dark mode",
     "colorTheme": "Toggle color theme",
     "collapseSidebar": "Collapse sidebar",
-    "expandSidebar": "Expand sidebar"
+    "expandSidebar": "Expand sidebar",
+    "tourMode": "Tour mode",
+    "tourModeHelp": "Shows explanations for fields, columns, and buttons on the screen."
   },
   "auth": {
     "login": "Login",
@@ -1239,7 +1243,8 @@
     "guide": "To print labels, Print Agent must be running on this PC. Download and run it below, then click [Re-check status].",
     "step1": "Download the installer",
     "step2": "Run the downloaded file (stays in tray)",
-    "step3": "Click [Re-check status]"
+    "step3": "Click [Re-check status]",
+    "installerUnavailable": "The installer has not been deployed to the server. Please contact your system administrator."
   },
   "serialTest": {
     "title": "Serial Port Test",
@@ -2255,6 +2260,62 @@
       "inspItemCriteria": "Inspection Item Criteria",
       "destFixed": "Destructive/Fixed",
       "countCases": "{{count}}"
+    },
+    "terminalCrimpSpec": {
+      "title": "Terminal Crimp Specifications",
+      "subtitle": "Register crimp height/width, pull force and strip length limits per terminal item and wire size. Used by self-inspection and measurement judgment.",
+      "searchPlaceholder": "Search terminal, wire size, applicator",
+      "sectionBasic": "Basic",
+      "sectionSpec": "Crimp specification (mm / N)",
+      "specHint": "Leave unknown values empty; empty limits are not used for judgment. LSL cannot exceed USL.",
+      "terminalItemCode": "Terminal item",
+      "terminalType": "Terminal type",
+      "wireSize": "Wire size",
+      "wireItemCode": "Wire item",
+      "crimpHeight": "Crimp height",
+      "crimpHeightLsl": "Crimp height LSL",
+      "crimpHeightUsl": "Crimp height USL",
+      "crimpWidth": "Crimp width",
+      "crimpWidthLsl": "Crimp width LSL",
+      "crimpWidthUsl": "Crimp width USL",
+      "insCrimpHeight": "Insulation crimp height",
+      "insCrimpHeightLsl": "Ins. crimp height LSL",
+      "insCrimpHeightUsl": "Ins. crimp height USL",
+      "pullForceMin": "Min pull force (N)",
+      "stripLength": "Strip length",
+      "stripLengthMin": "Strip length min",
+      "stripLengthMax": "Strip length max",
+      "applicatorCode": "Applicator"
+    },
+    "inspectAid": {
+      "title": "Inspection Aids",
+      "subtitle": "Register OK/NG limit samples and inspection holders/jigs; manage validity, approval and photos.",
+      "searchPlaceholder": "Search code, name, item, location",
+      "sectionBasic": "Basic",
+      "sectionValidity": "Validity · Approval",
+      "aidCode": "Aid code",
+      "aidType": "Type",
+      "aidName": "Aid name",
+      "itemCode": "Item",
+      "processCode": "Process",
+      "defectCode": "Defect code",
+      "defectCodeHint": "Defect code applies only to NG limit samples (LIMIT_NG).",
+      "image": "Photo",
+      "imageUploadHint": "Click to select a photo (JPG/PNG/GIF/WebP, up to 5MB)",
+      "imageChange": "Change photo",
+      "imageLoadFailed": "Failed to load image",
+      "imageDeleteConfirm": "Delete this photo? Applied on save.",
+      "location": "Storage location",
+      "validFrom": "Valid from",
+      "validTo": "Valid to",
+      "approvedBy": "Approved by",
+      "approvedAt": "Approved at",
+      "expiry": "Validity",
+      "expired": "Expired",
+      "expiring": "Expiring",
+      "valid": "Valid",
+      "daysAgoSuffix": "d ago",
+      "expiringWithin": "Expiring within {{days}}d"
     }
   },
   "material": {
@@ -2778,7 +2839,9 @@
       },
       "noAvailableLot": "No LOT available to issue (warehouse stock 0)",
       "lotLoading": "Loading LOTs",
-      "lotSelect": "Select LOT"
+      "lotSelect": "Select LOT",
+      "issuableQty": "Issuable (IQC pass)",
+      "pendingIqcQty": "Pending IQC"
     },
     "stock": {
       "title": "Material Stock",
@@ -3006,6 +3069,25 @@
         "selectSerial": "Please select a serial.",
         "scanSerial": "Scanned Serial",
         "noData": "No detailed inspection data."
+      },
+      "report": {
+        "modalTitle": "Print IQC Report",
+        "title": "Incoming Inspection Report",
+        "printButton": "Print Report",
+        "printTooltip": "Print IQC report",
+        "printedAt": "Printed At",
+        "vendor": "Vendor",
+        "lotQty": "Lot Qty",
+        "inspectClass": "Inspection Class",
+        "retestRound": "Retest #{{round}}",
+        "aqlSummary": "AQL Summary",
+        "sampleQty": "Sample Qty",
+        "defectCounts": "Defects (C/Ma/Mi)",
+        "judgeReason": "Judgment Basis",
+        "noAql": "No AQL sampling data (manual judgment).",
+        "serialItems": "Measured Values by Serial",
+        "reviewer": "Reviewer",
+        "approver": "Approver"
       }
     },
     "lotSplit": {
@@ -4444,7 +4526,11 @@
       "startChar": "Start Char",
       "endChar": "End Char",
       "sampleData": "Sample Data",
-      "searchPlaceholder": "Search protocol ID, name"
+      "searchPlaceholder": "Search protocol ID, name",
+      "valueIndex": "Value Index",
+      "valueIndexPlaceholder": "0-based, blank = no numeric value",
+      "valueUnit": "Unit",
+      "valueUnitPlaceholder": "kgf, N, mm"
     },
     "equip": {
       "title": "Equipment Link",
@@ -7151,6 +7237,23 @@
       "DRAFT": "Draft usage report, not yet submitted",
       "REPORTED": "Usage report submitted, awaiting confirmation",
       "CONFIRMED": "Usage report confirmed and finalized"
+    },
+    "TERMINAL_TYPE": {
+      "DISK": "Disk-shaped terminal",
+      "RING": "Ring terminal for bolt fastening",
+      "FASTON": "Faston tab terminal",
+      "PIN": "Pin (male) terminal",
+      "SOCKET": "Socket (female) terminal"
+    },
+    "INSPECT_AID_TYPE": {
+      "LIMIT_OK": "Boundary sample still accepted as OK",
+      "LIMIT_NG": "Boundary sample judged as NG",
+      "HOLDER": "Holder or jig that fixes/aligns product for inspection"
+    },
+    "INSPECT_AID_STATUS": {
+      "ACTIVE": "Aid in use within its validity period",
+      "EXPIRED": "Validity expired; re-approval required",
+      "RETIRED": "Withdrawn or scrapped aid"
     }
   },
   "comCode": {
@@ -8041,6 +8144,23 @@
       "MOUNTED": "Mounted",
       "CONSUMED": "Consumed",
       "DEFECT": "Defect"
+    },
+    "TERMINAL_TYPE": {
+      "DISK": "Disk",
+      "RING": "Ring",
+      "FASTON": "Faston",
+      "PIN": "Pin",
+      "SOCKET": "Socket"
+    },
+    "INSPECT_AID_TYPE": {
+      "LIMIT_OK": "OK limit sample",
+      "LIMIT_NG": "NG limit sample",
+      "HOLDER": "Inspection holder/jig"
+    },
+    "INSPECT_AID_STATUS": {
+      "ACTIVE": "Active",
+      "EXPIRED": "Expired",
+      "RETIRED": "Retired"
     }
   },
   "comCodeGroup": {

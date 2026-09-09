@@ -21,7 +21,39 @@ import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { ProcMatStockService } from '../../inventory/services/proc-mat-stock.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
 import { IssueRequestAllocationService } from './issue-request-allocation.service';
+import {
+  FifoCriteria,
+  findOlderIssuableLot,
+  getFifoDateKey,
+  isFifoApplicableToIssueType,
+  isLotExpired,
+  normalizeFifoCriteria,
+  toDayKey,
+} from '../rules/fifo.rules';
+
+/** 출고 정책 설정(sys-config) — 출고 1건당 1회만 읽어 항목 루프에 재사용한다 */
+export interface IssuePolicyConfig {
+  /** FIFO_ENABLED (null→Y) */
+  fifoEnabled: boolean;
+  /** FIFO_CRITERIA (null/RCV_DATE/RECEIVE_DATE→입고일, MFG_DATE→제조일) */
+  fifoCriteria: FifoCriteria;
+  /** FIFO_APPLY_REPAIR (null→N) — 수리 부품 소비(issueType REPAIR)에도 FIFO 를 적용할지 */
+  fifoApplyRepair: boolean;
+  /** FIFO_ACTION (null→BLOCK) */
+  fifoAction: 'BLOCK' | 'WARN';
+  /** EXPIRED_ISSUE_BLOCK (null→Y) */
+  expiredIssueBlock: boolean;
+}
+
+/** FIFO 후보 LOT 조회 결과(MAT_STOCKS JOIN MAT_LOTS raw row) */
+interface FifoCandidateRow {
+  matUid: string;
+  recvDate: Date | string | null;
+  manufactureDate: Date | string | null;
+  lotStatus: string | null;
+}
 
 @Injectable()
 export class MatIssueService {
@@ -43,7 +75,99 @@ export class MatIssueService {
     private readonly tx: TransactionService,
     private readonly procMatStockService: ProcMatStockService,
     private readonly issueRequestAllocation: IssueRequestAllocationService,
+    private readonly sysConfigService: SysConfigService,
   ) {}
+
+  /** 출고 정책 설정 읽기 — 키 없음(null)은 각 기본값으로. 출고 1건당 1회 호출 */
+  async loadIssuePolicyConfig(company?: string | null, plant?: string | null): Promise<IssuePolicyConfig> {
+    const c = company ?? undefined;
+    const p = plant ?? undefined;
+    const [fifoEnabled, fifoCriteria, fifoAction, expiredIssueBlock, fifoApplyRepair] = await Promise.all([
+      this.sysConfigService.getValue('FIFO_ENABLED', c, p),
+      this.sysConfigService.getValue('FIFO_CRITERIA', c, p),
+      this.sysConfigService.getValue('FIFO_ACTION', c, p),
+      this.sysConfigService.getValue('EXPIRED_ISSUE_BLOCK', c, p),
+      this.sysConfigService.getValue('FIFO_APPLY_REPAIR', c, p),
+    ]);
+    return {
+      fifoEnabled: (fifoEnabled ?? 'Y').trim().toUpperCase() !== 'N',
+      fifoCriteria: normalizeFifoCriteria(fifoCriteria),
+      fifoApplyRepair: (fifoApplyRepair ?? 'N').trim().toUpperCase() === 'Y',
+      fifoAction: (fifoAction ?? 'BLOCK').trim().toUpperCase() === 'WARN' ? 'WARN' : 'BLOCK',
+      expiredIssueBlock: (expiredIssueBlock ?? 'Y').trim().toUpperCase() !== 'N',
+    };
+  }
+
+  /**
+   * FIFO 후보 LOT 1쿼리: 같은 품목(+지정 창고)의 재고>0 이면서 출고 가능한(IQC PASS 또는 FAIL+특채, 상태 issuable) 다른 LOT.
+   * 기준일이 null 인 LOT 는 순서를 만들지 않으므로 DB 에서 제외한다.
+   */
+  private async findFifoCandidateLots(
+    lot: Pick<MatLot, 'matUid' | 'itemCode'>,
+    warehouseCode: string | undefined,
+    criteria: FifoCriteria,
+    company?: string | null,
+    plant?: string | null,
+  ): Promise<FifoCandidateRow[]> {
+    const dateColumn = criteria === 'MFG_DATE' ? 'l.manufactureDate' : 'l.recvDate';
+    const qb = this.matStockRepository.createQueryBuilder('s')
+      .select('l.matUid', 'matUid')
+      .addSelect('l.recvDate', 'recvDate')
+      .addSelect('l.manufactureDate', 'manufactureDate')
+      .addSelect('l.status', 'lotStatus')
+      .innerJoin(MatLot, 'l', 'l.matUid = s.matUid AND l.company = s.company AND l.plant = s.plant')
+      .where('s.itemCode = :itemCode', { itemCode: lot.itemCode })
+      .andWhere('s.matUid <> :matUid', { matUid: lot.matUid })
+      .andWhere('s.qty > 0')
+      .andWhere(`${dateColumn} IS NOT NULL`)
+      .andWhere("(l.iqcStatus = 'PASS' OR (l.iqcStatus = 'FAIL' AND l.specialAcceptYn = 'Y'))")
+      .andWhere('l.status = :issuableStatus', { issuableStatus: MAT_LOT_STATUS.NORMAL });
+    if (warehouseCode) qb.andWhere('s.warehouseCode = :warehouseCode', { warehouseCode });
+    if (company) qb.andWhere('s.company = :company', { company });
+    if (plant) qb.andWhere('s.plant = :plant', { plant });
+    const rows = await qb.getRawMany<FifoCandidateRow>();
+    // shared 규칙으로 한 번 더 거른다(SQL 상태 조건과 규칙 정의가 어긋나도 규칙이 이긴다)
+    return rows.filter((row) => isMatLotIssuable(row.lotStatus));
+  }
+
+  /**
+   * 출고 정책 평가(IQC·HOLD 검사 다음 단계).
+   * - 만료 LOT + EXPIRED_ISSUE_BLOCK=Y → 항상 차단
+   * - FIFO 위반 + FIFO_ACTION=BLOCK → 차단(먼저 낼 LOT matUid·기준일 포함)
+   * - FIFO 위반 + WARN → 경고 문자열 반환
+   * @returns warnings (차단이 아닌 경고만)
+   */
+  async evaluateIssuePolicy(
+    lot: Pick<MatLot, 'matUid' | 'itemCode' | 'recvDate' | 'manufactureDate' | 'expireDate'>,
+    warehouseCode: string | undefined,
+    policy: IssuePolicyConfig,
+    company?: string | null,
+    plant?: string | null,
+  ): Promise<string[]> {
+    const warnings: string[] = [];
+
+    if (policy.expiredIssueBlock && isLotExpired(lot, new Date())) {
+      throw new BadRequestException(
+        `유효기간이 만료된 LOT는 출고할 수 없습니다: ${lot.matUid} (유효기한 ${toDayKey(lot.expireDate) ?? '-'})`,
+      );
+    }
+
+    if (!policy.fifoEnabled) return warnings;
+
+    const candidates = await this.findFifoCandidateLots(lot, warehouseCode, policy.fifoCriteria, company, plant);
+    const older = findOlderIssuableLot(lot, candidates, policy.fifoCriteria);
+    if (!older) return warnings;
+
+    const criteriaLabel = policy.fifoCriteria === 'MFG_DATE' ? '제조일' : '입고일';
+    const message =
+      `FIFO(선입선출) 위반: ${lot.matUid}(${criteriaLabel} ${getFifoDateKey(lot, policy.fifoCriteria)})보다 ` +
+      `먼저 출고해야 할 LOT가 있습니다 → ${older.matUid}(${criteriaLabel} ${getFifoDateKey(older, policy.fifoCriteria)})`;
+    if (policy.fifoAction === 'BLOCK') {
+      throw new BadRequestException(message);
+    }
+    warnings.push(message);
+    return warnings;
+  }
 
   private sortStocksForIssue(stocks: MatStock[], warehouseCode?: string) {
     return [...stocks].sort((a, b) => {
@@ -195,6 +319,12 @@ export class MatIssueService {
     const issueNo = await this.numbering.nextInTx(queryRunner, 'MAT_ISSUE');
     let seqCounter = 1;
     const tenantWhere = this.tenantWhere(company, plant);
+    // 출고 정책(FIFO/유효기간) 설정은 출고 1건당 1회만 읽는다(항목 루프 안에서 매번 DB 조회 금지)
+    const loadedPolicy = await this.loadIssuePolicyConfig(company, plant);
+    // 수리 부품 소비(REPAIR)는 FIFO_APPLY_REPAIR=Y 일 때만 FIFO 대상. 유효기간 만료 차단은 유형과 무관하게 유지한다.
+    const issuePolicy: IssuePolicyConfig = isFifoApplicableToIssueType(issueType, loadedPolicy.fifoApplyRepair)
+      ? loadedPolicy
+      : { ...loadedPolicy, fifoEnabled: false };
 
     // 출고 시 processCode가 지정되면 원자재창고 → 공정재고(PROC_MAT_STOCKS=장착 대기)로 이동한다(ADR 0002).
     // 설비는 출고 시점에 정하지 않는다(설비 장착은 별도 단계).
@@ -229,6 +359,9 @@ export class MatIssueService {
       if (!isMatLotIssuable(lot.status)) {
         throw new BadRequestException(`출고할 수 없는 상태의 LOT입니다: ${lot.matUid} (상태: ${lot.status})`);
       }
+
+      // 유효기간 만료 차단 + FIFO(BLOCK 차단 / WARN 경고 수집) — IQC·HOLD 검사 다음 단계
+      const policyWarnings = await this.evaluateIssuePolicy(lot, warehouseCode, issuePolicy, lot.company ?? company, lot.plant ?? plant);
 
       const stockRows = await queryRunner.manager.find(MatStock, {
         where: warehouseCode
@@ -348,7 +481,8 @@ export class MatIssueService {
         await queryRunner.manager.update(MatLot, { matUid: lot.matUid, ...tenantWhere }, { status: MAT_LOT_STATUS.DEPLETED });
       }
 
-      results.push(await this.flattenIssue(savedIssue, company, plant));
+      // 기존 응답 형태(평탄화된 출고 행 배열)는 유지하고 행마다 warnings 만 덧붙인다
+      results.push({ ...(await this.flattenIssue(savedIssue, company, plant)), warnings: policyWarnings });
     }
 
     return results;
@@ -430,6 +564,8 @@ export class MatIssueService {
         itemName: part?.itemName ?? null,
         unit: part?.unit ?? null,
         allocation,
+        // 출고 정책 경고(FIFO WARN 등) — createInTx 가 항목별로 돌려준 것을 그대로 노출
+        warnings: issued?.warnings ?? [],
       };
     });
   }

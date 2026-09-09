@@ -27,6 +27,7 @@ import { FgLabel } from '../../../../entities/fg-label.entity';
 import { RepairOrder } from '../../../../entities/repair-order.entity';
 import { JobOrder } from '../../../../entities/job-order.entity';
 import { EquipProtocol } from '../../../../entities/equip-protocol.entity';
+import { parseProtocolData, ParsedProtocolData } from './protocol-parser';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
 import { TransactionService } from '../../../../shared/transaction.service';
@@ -986,6 +987,8 @@ export class ContinuityInspectService {
       passValue: data.passValue ?? 'PASS',
       failValue: data.failValue ?? 'FAIL',
       errorIndex: data.errorIndex ?? null,
+      valueIndex: data.valueIndex ?? null,
+      valueUnit: data.valueUnit ?? null,
       dataStartChar: data.dataStartChar ?? null,
       dataEndChar: data.dataEndChar ?? null,
       sampleData: data.sampleData ?? null,
@@ -1017,6 +1020,8 @@ export class ContinuityInspectService {
       ...(data.passValue !== undefined ? { passValue: data.passValue } : {}),
       ...(data.failValue !== undefined ? { failValue: data.failValue } : {}),
       ...(data.errorIndex !== undefined ? { errorIndex: data.errorIndex } : {}),
+      ...(data.valueIndex !== undefined ? { valueIndex: data.valueIndex } : {}),
+      ...(data.valueUnit !== undefined ? { valueUnit: data.valueUnit } : {}),
       ...(data.dataStartChar !== undefined ? { dataStartChar: data.dataStartChar } : {}),
       ...(data.dataEndChar !== undefined ? { dataEndChar: data.dataEndChar } : {}),
       ...(data.sampleData !== undefined ? { sampleData: data.sampleData } : {}),
@@ -1151,43 +1156,14 @@ export class ContinuityInspectService {
 
   /**
    * raw 데이터를 프로토콜 설정에 따라 파싱
+   * 실제 토큰 분해/판정은 순수 함수 parseProtocolData()에 위임한다(계측기 수신 API와 공유).
    */
-  private parseRawData(
-    rawData: string,
-    protocol: EquipProtocol,
-  ): { passYn: string; errorCode: string | null } {
-    let data = rawData.trim();
-
-    if (protocol.dataStartChar && data.startsWith(protocol.dataStartChar)) {
-      data = data.substring(protocol.dataStartChar.length);
-    }
-    if (protocol.dataEndChar) {
-      const endIdx = data.indexOf(protocol.dataEndChar);
-      if (endIdx >= 0) data = data.substring(0, endIdx);
-    }
-
-    const parts = data.split(protocol.delimiter).map((s) => s.trim());
-
-    const resultValue = parts[protocol.resultIndex] ?? '';
-    const passYn =
-      resultValue.toUpperCase() === protocol.passValue.toUpperCase()
-        ? 'Y'
-        : 'N';
-
-    let errorCode: string | null = null;
-    if (
-      passYn === 'N' &&
-      protocol.errorIndex != null &&
-      parts[protocol.errorIndex]
-    ) {
-      errorCode = parts[protocol.errorIndex];
-    }
-
+  private parseRawData(rawData: string, protocol: EquipProtocol): ParsedProtocolData {
+    const parsed = parseProtocolData(rawData, protocol);
     this.logger.log(
-      `파싱 결과: raw="${rawData}" → passYn=${passYn}, errorCode=${errorCode}`,
+      `파싱 결과: raw="${rawData}" → passYn=${parsed.passYn}, errorCode=${parsed.errorCode}, measuredValue=${parsed.measuredValue}`,
     );
-
-    return { passYn, errorCode };
+    return parsed;
   }
 
   /**

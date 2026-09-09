@@ -153,3 +153,85 @@ describe('SubprocessKittingService BOM effective date', () => {
     expect(map.has('OTHER-001')).toBe(false); // 이 공정 미배정 → 제외
   });
 });
+
+describe('SubprocessKittingService 설비점검 인터록 게이트', () => {
+  let service: SubprocessKittingService;
+  let tx: DeepMocked<TransactionService>;
+  let prodResultService: DeepMocked<ProdResultService>;
+
+  beforeEach(async () => {
+    tx = createMock<TransactionService>();
+    prodResultService = createMock<ProdResultService>();
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        SubprocessKittingService,
+        { provide: getRepositoryToken(SgLabel), useValue: createMock<Repository<SgLabel>>() },
+        { provide: getRepositoryToken(JobOrder), useValue: createMock<Repository<JobOrder>>() },
+        { provide: getRepositoryToken(ItemMaster), useValue: createMock<Repository<ItemMaster>>() },
+        { provide: getRepositoryToken(BomMaster), useValue: createMock<Repository<BomMaster>>() },
+        { provide: TransactionService, useValue: tx },
+        { provide: NumberingService, useValue: createMock<NumberingService>() },
+        { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
+        { provide: WipMatStockService, useValue: createMock<WipMatStockService>() },
+        { provide: AutoIssueService, useValue: createMock<AutoIssueService>() },
+        { provide: ProductionSpecificationService, useValue: createMock<ProductionSpecificationService>() },
+        { provide: ProdResultService, useValue: prodResultService },
+      ],
+    }).compile();
+
+    service = module.get(SubprocessKittingService);
+  });
+
+  it('조립 확정은 설비점검 게이트가 거부하면 트랜잭션에 들어가지 않는다', async () => {
+    prodResultService.assertEquipInspectGate.mockRejectedValueOnce(
+      new BadRequestException('설비 일상점검을 완료해야 실적을 등록할 수 있습니다: EQ-1'),
+    );
+
+    await expect(
+      service.confirmAssembly(
+        { fgBarcode: 'FG-001', orderNo: 'JO-001', equipCode: 'EQ-1', processCode: 'CONAS', sgBarcodes: ['SG-001'] },
+        'C1',
+        'P1',
+      ),
+    ).rejects.toThrow('설비 일상점검을 완료해야');
+    expect(prodResultService.assertEquipInspectGate).toHaveBeenCalledWith(
+      { equipCode: 'EQ-1', orderNo: 'JO-001' },
+      'C1',
+      'P1',
+    );
+    expect(tx.run).not.toHaveBeenCalled();
+  });
+
+  it('서브 키팅 확정은 설비점검 게이트가 거부하면 트랜잭션에 들어가지 않는다', async () => {
+    prodResultService.assertEquipInspectGate.mockRejectedValueOnce(
+      new BadRequestException('작업자 설비점검을 완료해야 실적을 등록할 수 있습니다: EQ-2 (작업지시 JO-002)'),
+    );
+
+    await expect(
+      service.confirmSubKit(
+        { newSgBarcode: 'SG-NEW', orderNo: 'JO-002', equipCode: 'EQ-2', processCode: 'SUBK', inputSgBarcodes: ['SG-001'] },
+        'C1',
+        'P1',
+      ),
+    ).rejects.toThrow('작업자 설비점검을 완료해야');
+    expect(prodResultService.assertEquipInspectGate).toHaveBeenCalledWith(
+      { equipCode: 'EQ-2', orderNo: 'JO-002' },
+      'C1',
+      'P1',
+    );
+    expect(tx.run).not.toHaveBeenCalled();
+  });
+
+  it('게이트가 통과하면 조립 확정은 트랜잭션으로 진행한다', async () => {
+    prodResultService.assertEquipInspectGate.mockResolvedValueOnce(undefined);
+    tx.run.mockResolvedValueOnce({ resultNo: 'R1', fgBarcode: 'FG-001', printFg: false, sgLabels: [] });
+
+    await service.confirmAssembly(
+      { fgBarcode: 'FG-001', orderNo: 'JO-001', equipCode: 'EQ-1', processCode: 'CONAS', sgBarcodes: ['SG-001'] },
+      'C1',
+      'P1',
+    );
+    expect(tx.run).toHaveBeenCalledTimes(1);
+  });
+});

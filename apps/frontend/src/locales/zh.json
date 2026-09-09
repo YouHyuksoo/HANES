@@ -337,6 +337,8 @@
     "master.worker.emptyMessage": "暂无员工信息。",
     "master.iqcItem": "检查项目主数据",
     "master.iqcPartSpec": "按品目IQC项目管理",
+    "master.inspectAid": "检验辅助工具",
+    "master.terminalCrimpSpec": "端子压接规格",
     "master.iqcItem.itemCode": "项目编号",
     "master.iqcItem.judgeMethod": "判定方法",
     "master.iqcItem.visual": "目视",
@@ -1239,7 +1241,8 @@
     "guide": "要打印标签，本机需运行 Print Agent。请在下方下载并运行后，点击[重新检查状态]。",
     "step1": "下载安装文件",
     "step2": "运行下载的文件（驻留于托盘）",
-    "step3": "点击[重新检查状态]"
+    "step3": "点击[重新检查状态]",
+    "installerUnavailable": "服务器上尚未部署安装文件，请联系系统管理员。"
   },
   "serialTest": {
     "title": "串口通信测试",
@@ -2255,6 +2258,62 @@
       "inspItemCriteria": "检查项目基准",
       "destFixed": "破坏/固定",
       "countCases": "{{count}}件"
+    },
+    "terminalCrimpSpec": {
+      "title": "端子压接规格",
+      "subtitle": "按端子物料和电线规格登记压接高度/宽度、拉力、剥线长度上下限，作为自主检查和测量判定的基准。",
+      "searchPlaceholder": "搜索端子/电线规格/应用器",
+      "sectionBasic": "基本信息",
+      "sectionSpec": "压接规格 (mm / N)",
+      "specHint": "未知值请留空；空值不参与判定。下限不能大于上限。",
+      "terminalItemCode": "端子物料",
+      "terminalType": "端子类型",
+      "wireSize": "电线规格",
+      "wireItemCode": "电线物料",
+      "crimpHeight": "压接高度",
+      "crimpHeightLsl": "压接高度下限",
+      "crimpHeightUsl": "压接高度上限",
+      "crimpWidth": "压接宽度",
+      "crimpWidthLsl": "压接宽度下限",
+      "crimpWidthUsl": "压接宽度上限",
+      "insCrimpHeight": "绝缘压接高度",
+      "insCrimpHeightLsl": "绝缘压接高度下限",
+      "insCrimpHeightUsl": "绝缘压接高度上限",
+      "pullForceMin": "最小拉力(N)",
+      "stripLength": "剥线长度",
+      "stripLengthMin": "剥线长度最小",
+      "stripLengthMax": "剥线长度最大",
+      "applicatorCode": "应用器"
+    },
+    "inspectAid": {
+      "title": "检验辅助工具管理",
+      "subtitle": "登记良品/不良限度样品和检验夹具，管理有效期、批准和照片。",
+      "searchPlaceholder": "搜索编码/名称/物料/位置",
+      "sectionBasic": "基本信息",
+      "sectionValidity": "有效期 · 批准",
+      "aidCode": "工具编码",
+      "aidType": "类型",
+      "aidName": "工具名称",
+      "itemCode": "对象物料",
+      "processCode": "适用工序",
+      "defectCode": "代表不良代码",
+      "defectCodeHint": "代表不良代码仅适用于不良限度样品(LIMIT_NG)。",
+      "image": "照片",
+      "imageUploadHint": "点击选择照片 (JPG/PNG/GIF/WebP, 5MB以内)",
+      "imageChange": "更换照片",
+      "imageLoadFailed": "无法加载图片",
+      "imageDeleteConfirm": "确定删除照片吗？保存时生效。",
+      "location": "保管位置",
+      "validFrom": "有效开始日",
+      "validTo": "有效截止日",
+      "approvedBy": "批准人",
+      "approvedAt": "批准日",
+      "expiry": "有效期状态",
+      "expired": "已过期",
+      "expiring": "即将过期",
+      "valid": "有效",
+      "daysAgoSuffix": "天前",
+      "expiringWithin": "{{days}}天内到期"
     }
   },
   "material": {
@@ -2778,7 +2837,9 @@
       },
       "noAvailableLot": "无可出库LOT（仓库库存为0）",
       "lotLoading": "LOT查询中",
-      "lotSelect": "选择LOT"
+      "lotSelect": "选择LOT",
+      "issuableQty": "可用(IQC合格)",
+      "pendingIqcQty": "未检"
     },
     "stock": {
       "title": "物料库存",
@@ -3006,6 +3067,25 @@
         "selectSerial": "请选择序列号。",
         "scanSerial": "扫描序列号",
         "noData": "无详细检验数据。"
+      },
+      "report": {
+        "modalTitle": "打印IQC检验报告",
+        "title": "进货检验报告",
+        "printButton": "打印报告",
+        "printTooltip": "打印IQC检验报告",
+        "printedAt": "打印时间",
+        "vendor": "供应商",
+        "lotQty": "批次数量",
+        "inspectClass": "检验类别",
+        "retestRound": "复检第{{round}}次",
+        "aqlSummary": "AQL 汇总",
+        "sampleQty": "样本数",
+        "defectCounts": "不良数 (C/Ma/Mi)",
+        "judgeReason": "判定依据",
+        "noAql": "无AQL抽样信息（手动判定）。",
+        "serialItems": "各序列号检验项目测量值",
+        "reviewer": "审核人",
+        "approver": "批准人"
       }
     },
     "lotSplit": {
@@ -4444,7 +4524,11 @@
       "startChar": "起始字符",
       "endChar": "结束字符",
       "sampleData": "示例数据",
-      "searchPlaceholder": "搜索协议ID、名称"
+      "searchPlaceholder": "搜索协议ID、名称",
+      "valueIndex": "数值位置",
+      "valueIndexPlaceholder": "从0开始，留空则不接收数值",
+      "valueUnit": "单位",
+      "valueUnitPlaceholder": "kgf, N, mm"
     },
     "equip": {
       "title": "检测设备联动",
@@ -7151,6 +7235,23 @@
       "DRAFT": "尚未提交的使用量报告草稿",
       "REPORTED": "使用量报告已提交、等待确认",
       "CONFIRMED": "使用量报告已最终确认"
+    },
+    "TERMINAL_TYPE": {
+      "DISK": "圆盘形端子",
+      "RING": "螺栓紧固用环形端子",
+      "FASTON": "插片式端子",
+      "PIN": "针形公端子",
+      "SOCKET": "插座形母端子"
+    },
+    "INSPECT_AID_TYPE": {
+      "LIMIT_OK": "可判定合格的界限良品样品",
+      "LIMIT_NG": "判定为不合格的界限不良样品",
+      "HOLDER": "检验时固定/定位产品的夹具"
+    },
+    "INSPECT_AID_STATUS": {
+      "ACTIVE": "有效期内使用中的辅助工具",
+      "EXPIRED": "有效期已过，需要重新批准",
+      "RETIRED": "已停用/报废的辅助工具"
     }
   },
   "comCode": {
@@ -8041,6 +8142,23 @@
       "MOUNTED": "装配中",
       "CONSUMED": "已消耗",
       "DEFECT": "不良"
+    },
+    "TERMINAL_TYPE": {
+      "DISK": "圆盘",
+      "RING": "环形",
+      "FASTON": "插簧",
+      "PIN": "针形",
+      "SOCKET": "插座"
+    },
+    "INSPECT_AID_TYPE": {
+      "LIMIT_OK": "良品限度样品",
+      "LIMIT_NG": "不良限度样品",
+      "HOLDER": "检验夹具"
+    },
+    "INSPECT_AID_STATUS": {
+      "ACTIVE": "使用中",
+      "EXPIRED": "已过期",
+      "RETIRED": "报废"
     }
   },
   "comCodeGroup": {

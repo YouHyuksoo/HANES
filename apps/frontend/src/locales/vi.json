@@ -337,6 +337,8 @@
     "master.worker.emptyMessage": "Chưa có nhân viên nào.",
     "master.iqcItem": "Danh mục kiểm tra",
     "master.iqcPartSpec": "Hạng mục IQC theo phẩm mục",
+    "master.inspectAid": "Dụng cụ hỗ trợ kiểm tra",
+    "master.terminalCrimpSpec": "Tiêu chuẩn ép đầu cốt",
     "master.iqcItem.itemCode": "Mã hạng mục",
     "master.iqcItem.judgeMethod": "Phương pháp",
     "master.iqcItem.visual": "Bằng mắt",
@@ -1239,7 +1241,8 @@
     "guide": "Để in nhãn, Print Agent phải đang chạy trên máy này. Hãy tải và chạy bên dưới, rồi nhấn [Kiểm tra lại trạng thái].",
     "step1": "Tải tệp cài đặt",
     "step2": "Chạy tệp đã tải (thường trú ở khay hệ thống)",
-    "step3": "Nhấn [Kiểm tra lại trạng thái]"
+    "step3": "Nhấn [Kiểm tra lại trạng thái]",
+    "installerUnavailable": "Tệp cài đặt chưa được triển khai trên máy chủ. Vui lòng liên hệ quản trị viên hệ thống."
   },
   "serialTest": {
     "title": "Kiểm tra cổng Serial",
@@ -2255,6 +2258,62 @@
       "inspItemCriteria": "Tiêu chuẩn hạng mục kiểm tra",
       "destFixed": "Phá hủy/Cố định",
       "countCases": "{{count}}"
+    },
+    "terminalCrimpSpec": {
+      "title": "Tiêu chuẩn ép đầu cốt theo đầu cốt",
+      "subtitle": "Đăng ký giới hạn chiều cao/độ rộng ép, lực kéo, chiều dài tuốt vỏ theo đầu cốt và cỡ dây. Là cơ sở cho tự kiểm và phán định đo lường.",
+      "searchPlaceholder": "Tìm đầu cốt, cỡ dây, applicator",
+      "sectionBasic": "Thông tin cơ bản",
+      "sectionSpec": "Tiêu chuẩn ép (mm / N)",
+      "specHint": "Để trống giá trị chưa có; giá trị trống không dùng để phán định. LSL không được lớn hơn USL.",
+      "terminalItemCode": "Mã đầu cốt",
+      "terminalType": "Loại đầu cốt",
+      "wireSize": "Cỡ dây",
+      "wireItemCode": "Mã dây điện",
+      "crimpHeight": "Chiều cao ép",
+      "crimpHeightLsl": "Chiều cao ép LSL",
+      "crimpHeightUsl": "Chiều cao ép USL",
+      "crimpWidth": "Độ rộng ép",
+      "crimpWidthLsl": "Độ rộng ép LSL",
+      "crimpWidthUsl": "Độ rộng ép USL",
+      "insCrimpHeight": "Chiều cao ép vỏ cách điện",
+      "insCrimpHeightLsl": "Ép vỏ cách điện LSL",
+      "insCrimpHeightUsl": "Ép vỏ cách điện USL",
+      "pullForceMin": "Lực kéo tối thiểu (N)",
+      "stripLength": "Chiều dài tuốt vỏ",
+      "stripLengthMin": "Tuốt vỏ tối thiểu",
+      "stripLengthMax": "Tuốt vỏ tối đa",
+      "applicatorCode": "Applicator"
+    },
+    "inspectAid": {
+      "title": "Quản lý dụng cụ hỗ trợ kiểm tra",
+      "subtitle": "Đăng ký mẫu giới hạn OK/NG và đồ gá kiểm tra; quản lý hiệu lực, phê duyệt và ảnh.",
+      "searchPlaceholder": "Tìm mã, tên, vật tư, vị trí",
+      "sectionBasic": "Thông tin cơ bản",
+      "sectionValidity": "Hiệu lực · Phê duyệt",
+      "aidCode": "Mã dụng cụ",
+      "aidType": "Loại",
+      "aidName": "Tên dụng cụ",
+      "itemCode": "Vật tư áp dụng",
+      "processCode": "Công đoạn áp dụng",
+      "defectCode": "Mã lỗi đại diện",
+      "defectCodeHint": "Mã lỗi chỉ nhập cho mẫu giới hạn NG (LIMIT_NG).",
+      "image": "Ảnh",
+      "imageUploadHint": "Nhấn để chọn ảnh (JPG/PNG/GIF/WebP, tối đa 5MB)",
+      "imageChange": "Đổi ảnh",
+      "imageLoadFailed": "Không tải được ảnh",
+      "imageDeleteConfirm": "Xóa ảnh này? Áp dụng khi lưu.",
+      "location": "Vị trí lưu giữ",
+      "validFrom": "Hiệu lực từ",
+      "validTo": "Hiệu lực đến",
+      "approvedBy": "Người phê duyệt",
+      "approvedAt": "Ngày phê duyệt",
+      "expiry": "Trạng thái hiệu lực",
+      "expired": "Hết hạn",
+      "expiring": "Sắp hết hạn",
+      "valid": "Còn hiệu lực",
+      "daysAgoSuffix": " ngày trước",
+      "expiringWithin": "Hết hạn trong {{days}} ngày"
     }
   },
   "material": {
@@ -2778,7 +2837,9 @@
       },
       "noAvailableLot": "Không có LOT khả dụng để xuất (tồn kho 0)",
       "lotLoading": "Đang tải LOT",
-      "lotSelect": "Chọn LOT"
+      "lotSelect": "Chọn LOT",
+      "issuableQty": "Có thể xuất (IQC đạt)",
+      "pendingIqcQty": "Chưa kiểm IQC"
     },
     "stock": {
       "title": "Tồn kho vật tư",
@@ -3006,6 +3067,25 @@
         "selectSerial": "Vui lòng chọn số serial.",
         "scanSerial": "Serial đã quét",
         "noData": "Không có dữ liệu kiểm tra chi tiết."
+      },
+      "report": {
+        "modalTitle": "In phiếu kiểm tra IQC",
+        "title": "Phiếu kiểm tra đầu vào",
+        "printButton": "In phiếu kiểm tra",
+        "printTooltip": "In phiếu kiểm tra IQC",
+        "printedAt": "Thời gian in",
+        "vendor": "Nhà cung cấp",
+        "lotQty": "Số lượng lô",
+        "inspectClass": "Phân loại kiểm tra",
+        "retestRound": "Kiểm tra lại lần {{round}}",
+        "aqlSummary": "Tóm tắt AQL",
+        "sampleQty": "Số lượng mẫu",
+        "defectCounts": "Số lỗi (C/Ma/Mi)",
+        "judgeReason": "Căn cứ phán định",
+        "noAql": "Không có thông tin lấy mẫu AQL (phán định thủ công).",
+        "serialItems": "Giá trị đo theo từng serial",
+        "reviewer": "Người xem xét",
+        "approver": "Người phê duyệt"
       }
     },
     "lotSplit": {
@@ -4444,7 +4524,11 @@
       "startChar": "Ký tự bắt đầu",
       "endChar": "Ký tự kết thúc",
       "sampleData": "Dữ liệu mẫu",
-      "searchPlaceholder": "Tìm ID, tên giao thức"
+      "searchPlaceholder": "Tìm ID, tên giao thức",
+      "valueIndex": "Vị trí giá trị",
+      "valueIndexPlaceholder": "Bắt đầu từ 0, để trống nếu không nhận giá trị",
+      "valueUnit": "Đơn vị",
+      "valueUnitPlaceholder": "kgf, N, mm"
     },
     "equip": {
       "title": "Liên kết thiết bị",
@@ -7151,6 +7235,23 @@
       "DRAFT": "Báo cáo sử dụng dạng nháp, chưa nộp",
       "REPORTED": "Đã nộp báo cáo sử dụng, chờ xác nhận",
       "CONFIRMED": "Báo cáo sử dụng đã được xác nhận"
+    },
+    "TERMINAL_TYPE": {
+      "DISK": "Đầu cốt dạng đĩa",
+      "RING": "Đầu cốt vòng bắt bu lông",
+      "FASTON": "Đầu cốt Faston cắm tab",
+      "PIN": "Đầu cốt pin (đực)",
+      "SOCKET": "Đầu cốt socket (cái)"
+    },
+    "INSPECT_AID_TYPE": {
+      "LIMIT_OK": "Mẫu biên còn được chấp nhận là OK",
+      "LIMIT_NG": "Mẫu biên bị phán định NG",
+      "HOLDER": "Đồ gá cố định/định vị sản phẩm khi kiểm tra"
+    },
+    "INSPECT_AID_STATUS": {
+      "ACTIVE": "Dụng cụ đang dùng trong thời hạn hiệu lực",
+      "EXPIRED": "Hết hiệu lực; cần phê duyệt lại",
+      "RETIRED": "Dụng cụ đã ngừng dùng/loại bỏ"
     }
   },
   "comCode": {
@@ -8041,6 +8142,23 @@
       "MOUNTED": "Đang lắp ráp",
       "CONSUMED": "Đã tiêu thụ",
       "DEFECT": "Lỗi"
+    },
+    "TERMINAL_TYPE": {
+      "DISK": "Đĩa",
+      "RING": "Vòng",
+      "FASTON": "Faston",
+      "PIN": "Pin",
+      "SOCKET": "Socket"
+    },
+    "INSPECT_AID_TYPE": {
+      "LIMIT_OK": "Mẫu giới hạn OK",
+      "LIMIT_NG": "Mẫu giới hạn NG",
+      "HOLDER": "Đồ gá kiểm tra"
+    },
+    "INSPECT_AID_STATUS": {
+      "ACTIVE": "Đang dùng",
+      "EXPIRED": "Hết hạn",
+      "RETIRED": "Loại bỏ"
     }
   },
   "comCodeGroup": {

@@ -8,6 +8,7 @@
  * 2. DELIMITER: 데이터 구분자 (쉼표, 탭 등)
  * 3. RESULT_INDEX: 구분자로 분리한 후 합격/불합격 값의 위치 (0-based)
  * 4. PASS_VALUE/FAIL_VALUE: 합격/불합격 판정 문자열 매핑
+ * 5. VALUE_INDEX/VALUE_UNIT: 측정 수치 토큰 위치(0-based)와 단위. NULL이면 수치를 받지 않는 프로토콜
  */
 import {
   Entity,
@@ -45,6 +46,12 @@ export class EquipProtocol {
 
   @Column({ name: 'ERROR_INDEX', type: 'int', nullable: true })
   errorIndex: number | null;
+
+  @Column({ type: 'number', name: 'VALUE_INDEX', nullable: true })
+  valueIndex: number | null;
+
+  @Column({ type: 'varchar2', name: 'VALUE_UNIT', length: 20, nullable: true })
+  valueUnit: string | null;
 
   @Column({ type: 'varchar2', name: 'DATA_START_CHAR', length: 5, nullable: true })
   dataStartChar: string | null;

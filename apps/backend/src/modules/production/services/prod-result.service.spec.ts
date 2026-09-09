@@ -30,6 +30,8 @@ import { SysConfigService } from '../../system/services/sys-config.service';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
+import { EquipInspectService } from '../../equipment/services/equip-inspect.service';
 
 describe('ProdResultService', () => {
   let service: ProdResultService;
@@ -51,6 +53,8 @@ describe('ProdResultService', () => {
   let sysConfigService: DeepMocked<SysConfigService>;
   let shiftPatternRepo: DeepMocked<Repository<ShiftPattern>>;
   let tx: DeepMocked<TransactionService>;
+  let equipInspectItemPoolRepo: DeepMocked<Repository<EquipInspectItemPool>>;
+  let equipInspectService: DeepMocked<EquipInspectService>;
   let queryRunner: DeepMocked<QueryRunner>;
   let stockUpdateQb: any;
 
@@ -73,6 +77,9 @@ describe('ProdResultService', () => {
     sysConfigService = createMock<SysConfigService>();
     shiftPatternRepo = createMock<Repository<ShiftPattern>>();
     tx = createMock<TransactionService>();
+    equipInspectItemPoolRepo = createMock<Repository<EquipInspectItemPool>>();
+    equipInspectItemPoolRepo.find.mockResolvedValue([]);
+    equipInspectService = createMock<EquipInspectService>();
     queryRunner = createMock<QueryRunner>();
     stockUpdateQb = {
       update: jest.fn().mockReturnThis(),
@@ -112,6 +119,8 @@ describe('ProdResultService', () => {
         { provide: SysConfigService, useValue: sysConfigService },
         { provide: getRepositoryToken(ShiftPattern), useValue: shiftPatternRepo },
         { provide: TransactionService, useValue: tx },
+        { provide: getRepositoryToken(EquipInspectItemPool), useValue: equipInspectItemPoolRepo },
+        { provide: EquipInspectService, useValue: equipInspectService },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -1300,5 +1309,122 @@ describe('ProdResultService', () => {
       expect.objectContaining({ sgBarcode: 'SG-IN-1' }),
       expect.objectContaining({ remainQty: 1, status: 'IN_STOCK' }),
     );
+  });
+
+  describe('create — 설비점검 인터록 서버 게이트 (EQUIP_INSPECT_INTERLOCK)', () => {
+    const setupCreateBase = () => {
+      jobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-1', status: 'RUNNING', planQty: 100, company: 'C1', plant: 'P1' } as any);
+      const qb = {
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ totalGood: '0', totalDefect: '0' }),
+      } as any;
+      prodResultRepo.createQueryBuilder.mockReturnValue(qb);
+      equipMasterRepo.findOne.mockResolvedValue({ equipCode: 'EQ-1', company: 'C1', plant: 'P1' } as any);
+      equipBomRelRepo.find.mockResolvedValue([]);
+      numbering.next.mockResolvedValue('PR-1');
+      queryRunner.manager.create.mockReturnValue({ resultNo: 'PR-1' } as any);
+      queryRunner.manager.save.mockResolvedValue({ resultNo: 'PR-1' } as any);
+      autoIssueService.execute.mockResolvedValue({ issued: [], warnings: [], skipped: false } as any);
+      prodResultRepo.findOne.mockResolvedValue({ resultNo: 'PR-1' } as any);
+    };
+    const dto = { orderNo: 'JO-1', equipCode: 'EQ-1', goodQty: 1, defectQty: 0 } as any;
+    const dailyPool = [{ equipCode: 'EQ-1', inspectType: 'DAILY', useYn: 'Y' }] as any;
+    const workerPool = [{ equipCode: 'EQ-1', inspectType: 'WORKER', useYn: 'Y' }] as any;
+
+    it('설정값 N이면 점검 여부를 조회하지 않고 통과한다', async () => {
+      setupCreateBase();
+      sysConfigService.getValue.mockImplementation(async (key: string) => (key === 'EQUIP_INSPECT_INTERLOCK' ? 'N' : 'OFF'));
+      equipInspectItemPoolRepo.find.mockResolvedValue(dailyPool);
+      equipInspectService.checkAlreadyInspected.mockResolvedValue(false);
+
+      await expect(service.create(dto, 'C1', 'P1')).resolves.toBeDefined();
+      expect(equipInspectItemPoolRepo.find).not.toHaveBeenCalled();
+      expect(equipInspectService.checkAlreadyInspected).not.toHaveBeenCalled();
+    });
+
+    it('설정값이 없으면(null) 기본 켜짐으로 보고 점검 풀을 tenant 스코프로 조회한다', async () => {
+      setupCreateBase();
+      sysConfigService.getValue.mockImplementation(async (key: string) => (key === 'EQUIP_INSPECT_INTERLOCK' ? null : 'OFF'));
+      equipInspectItemPoolRepo.find.mockResolvedValue([]);
+
+      await expect(service.create(dto, 'C1', 'P1')).resolves.toBeDefined();
+      expect(equipInspectItemPoolRepo.find).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ equipCode: 'EQ-1', useYn: 'Y', company: 'C1', plant: 'P1' }),
+      }));
+      expect(equipInspectService.checkAlreadyInspected).not.toHaveBeenCalled();
+    });
+
+    it('점검 풀에 DAILY/WORKER 항목이 없으면 점검 대상이 아니므로 통과한다', async () => {
+      setupCreateBase();
+      sysConfigService.getValue.mockResolvedValue(null);
+      equipInspectItemPoolRepo.find.mockResolvedValue([]);
+      equipInspectService.checkAlreadyInspected.mockResolvedValue(false);
+
+      await expect(service.create(dto, 'C1', 'P1')).resolves.toBeDefined();
+      expect(equipInspectService.checkAlreadyInspected).not.toHaveBeenCalled();
+      expect(equipInspectService.getInspectionStatus).not.toHaveBeenCalled();
+    });
+
+    it('DAILY 항목이 있고 오늘 일상점검이 없으면 BadRequestException으로 차단한다', async () => {
+      setupCreateBase();
+      sysConfigService.getValue.mockResolvedValue(null);
+      equipInspectItemPoolRepo.find.mockResolvedValue(dailyPool);
+      equipInspectService.checkAlreadyInspected.mockResolvedValue(false);
+
+      await expect(service.create(dto, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+      await expect(service.create(dto, 'C1', 'P1')).rejects.toThrow('설비 일상점검을 완료해야');
+      expect(equipInspectService.checkAlreadyInspected).toHaveBeenCalledWith(
+        'EQ-1', expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), 'DAILY', 'C1', 'P1',
+      );
+      expect(tx.run).not.toHaveBeenCalled();
+    });
+
+    it('DAILY 점검이 완료돼 있으면 통과한다', async () => {
+      setupCreateBase();
+      sysConfigService.getValue.mockResolvedValue(null);
+      equipInspectItemPoolRepo.find.mockResolvedValue(dailyPool);
+      equipInspectService.checkAlreadyInspected.mockResolvedValue(true);
+
+      await expect(service.create(dto, 'C1', 'P1')).resolves.toBeDefined();
+      expect(tx.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('WORKER 항목이 있고 작업지시 기준 작업자점검이 없으면 차단한다', async () => {
+      setupCreateBase();
+      sysConfigService.getValue.mockResolvedValue(null);
+      equipInspectItemPoolRepo.find.mockResolvedValue(workerPool);
+      equipInspectService.getInspectionStatus.mockResolvedValue({ alreadyInspected: false } as any);
+
+      await expect(service.create(dto, 'C1', 'P1')).rejects.toThrow('작업자 설비점검을 완료해야');
+      expect(equipInspectService.checkAlreadyInspected).not.toHaveBeenCalled();
+      expect(equipInspectService.getInspectionStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ equipCode: 'EQ-1', inspectType: 'WORKER', orderNo: 'JO-1' }),
+        { company: 'C1', plant: 'P1' },
+      );
+      expect(tx.run).not.toHaveBeenCalled();
+    });
+
+    it('WORKER 점검이 완료돼 있으면 통과한다', async () => {
+      setupCreateBase();
+      sysConfigService.getValue.mockResolvedValue(null);
+      equipInspectItemPoolRepo.find.mockResolvedValue(workerPool);
+      equipInspectService.getInspectionStatus.mockResolvedValue({ alreadyInspected: true } as any);
+
+      await expect(service.create(dto, 'C1', 'P1')).resolves.toBeDefined();
+      expect(tx.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('equipCode가 없으면 게이트를 건너뛴다', async () => {
+      setupCreateBase();
+      sysConfigService.getValue.mockResolvedValue(null);
+      equipInspectItemPoolRepo.find.mockResolvedValue(dailyPool);
+      equipInspectService.checkAlreadyInspected.mockResolvedValue(false);
+
+      await expect(service.create({ orderNo: 'JO-1', goodQty: 1, defectQty: 0 } as any, 'C1', 'P1')).resolves.toBeDefined();
+      expect(equipInspectItemPoolRepo.find).not.toHaveBeenCalled();
+    });
   });
 });

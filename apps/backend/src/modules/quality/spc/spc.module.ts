@@ -11,6 +11,7 @@
  * - CalibrationLog: 교정 이력
  * - ControlPlan/ControlPlanItem: 관리계획서
  * - ProcessMaster: 공정 마스터
+ * - Measurement: 계측기 수치 수신(POST /quality/measurements) → SPC_DATA 적재
  *
  * @dependencies
  * - TypeOrmModule: SpcChart, SpcData, GaugeMaster, CalibrationLog, ControlPlan, ControlPlanItem, ProcessMaster 엔티티
@@ -25,12 +26,14 @@ import { SpcController } from './controllers/spc.controller';
 import { MsaController } from './controllers/msa.controller';
 import { ControlPlanController } from './controllers/control-plan.controller';
 import { HvSpcController } from './hv/hv-spc.controller';
+import { MeasurementController } from './controllers/measurement.controller';
 
 // Services
 import { SpcService } from './services/spc.service';
 import { MsaService } from './services/msa.service';
 import { ControlPlanService } from './services/control-plan.service';
 import { HvSpcService } from './hv/hv-spc.service';
+import { MeasurementService } from './services/measurement.service';
 
 // Entities
 import { SpcChart } from '../../../entities/spc-chart.entity';
@@ -41,6 +44,7 @@ import { GaugeMaster } from '../../../entities/gauge-master.entity';
 import { CalibrationLog } from '../../../entities/calibration-log.entity';
 import { ControlPlan } from '../../../entities/control-plan.entity';
 import { ControlPlanItem } from '../../../entities/control-plan-item.entity';
+import { EquipProtocol } from '../../../entities/equip-protocol.entity';
 
 @Module({
   imports: [
@@ -53,8 +57,10 @@ import { ControlPlanItem } from '../../../entities/control-plan-item.entity';
       CalibrationLog,
       ControlPlan,
       ControlPlanItem,
+      // 계측기 수신 rawData 파싱용 프로토콜 조회
+      EquipProtocol,
     ]),
-    // HV SPC 소스 전환 설정(SPC_HV_SOURCE) 조회용 SysConfigService
+    // HV SPC 소스 전환 설정(SPC_HV_SOURCE), 계측기 수신 허용(MEASURE_RECEIVE_ENABLED) 조회용 SysConfigService
     SystemModule,
   ],
   controllers: [
@@ -62,12 +68,14 @@ import { ControlPlanItem } from '../../../entities/control-plan-item.entity';
     MsaController,
     ControlPlanController,
     HvSpcController,
+    MeasurementController,
   ],
   providers: [
     SpcService,
     MsaService,
     ControlPlanService,
     HvSpcService,
+    MeasurementService,
   ],
   exports: [
     SpcService,

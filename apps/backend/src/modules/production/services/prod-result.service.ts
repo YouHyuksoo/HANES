@@ -65,8 +65,13 @@ import { ProductGenealogy } from '../../../entities/product-genealogy.entity';
 import { ShiftResolver } from '../../../utils/shift-resolver';
 import { parseCsvList } from '../../../common/utils/csv-list.util';
 import { resolveConsumableLifeStatus } from '@harness/shared';
+import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
+import { EquipInspectService } from '../../equipment/services/equip-inspect.service';
+import { formatYmdLocal } from '../../../shared/date.util';
 
 const SELF_INSPECT_BATCH_WINDOW_MS = 10_000;
+/** 설비점검 인터록 sys-config 키. 값이 없으면(null) 켜진 것으로 본다(기본 Y). 'N'일 때만 끈다. */
+const EQUIP_INSPECT_INTERLOCK_KEY = 'EQUIP_INSPECT_INTERLOCK';
 
 @Injectable()
 export class ProdResultService {
@@ -103,6 +108,9 @@ export class ProdResultService {
     @InjectRepository(ShiftPattern)
     private readonly shiftPatternRepo: Repository<ShiftPattern>,
     private readonly tx: TransactionService,
+    @InjectRepository(EquipInspectItemPool)
+    private readonly equipInspectItemPoolRepository: Repository<EquipInspectItemPool>,
+    private readonly equipInspectService: EquipInspectService,
   ) {
     this.shiftResolver = new ShiftResolver(this.shiftPatternRepo);
   }
@@ -725,6 +733,69 @@ export class ProdResultService {
   }
 
   /**
+   * 설비점검 인터록 서버 게이트 (감사 10P).
+   * 키오스크 프론트의 dailyInspectDone/workerInspectDone 차단을 서버에서도 강제해 다른 실적 화면·API 직접 호출 우회를 막는다.
+   * - dto.equipCode 없음 또는 EQUIP_INSPECT_INTERLOCK='N' → 통과
+   * - EQUIP_INSPECT_ITEM_POOL에 해당 설비의 DAILY/WORKER(USE_YN='Y') 항목이 없으면 통과(점검 대상 아님)
+   * - DAILY 항목이 있으면 오늘(조업일 window는 EquipInspectService가 판정) 일상점검 완료 필수
+   * - WORKER 항목이 있으면 작업지시(orderNo) 기준 작업자설비점검 완료 필수
+   * ProdResult를 create() 밖에서 저장하는 경로(서브공정 키팅 confirmAssembly/confirmSubKit)도 이 게이트를 호출한다.
+   */
+  async assertEquipInspectGate(
+    dto: Pick<CreateProdResultDto, 'equipCode' | 'orderNo'>,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    const equipCode = dto.equipCode?.trim();
+    if (!equipCode) return;
+
+    const configValue = await this.sysConfigService.getValue(EQUIP_INSPECT_INTERLOCK_KEY, company, plant);
+    if (typeof configValue === 'string' && configValue.trim().toUpperCase() === 'N') return;
+
+    const poolItems = await this.equipInspectItemPoolRepository.find({
+      where: {
+        equipCode,
+        useYn: 'Y',
+        inspectType: In(['DAILY', 'WORKER']),
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+    const hasDaily = poolItems.some((item) => item.inspectType === 'DAILY');
+    const hasWorker = poolItems.some((item) => item.inspectType === 'WORKER');
+    if (!hasDaily && !hasWorker) return;
+
+    const today = formatYmdLocal(new Date());
+    if (hasDaily) {
+      const inspected = await this.equipInspectService.checkAlreadyInspected(
+        equipCode,
+        today,
+        'DAILY',
+        company,
+        plant,
+      );
+      if (!inspected) {
+        throw new BadRequestException(`설비 일상점검을 완료해야 실적을 등록할 수 있습니다: ${equipCode}`);
+      }
+    }
+
+    if (hasWorker) {
+      if (!dto.orderNo) {
+        throw new BadRequestException(`작업자 설비점검 확인에는 작업지시번호가 필요합니다: ${equipCode}`);
+      }
+      const status = await this.equipInspectService.getInspectionStatus(
+        { equipCode, inspectType: 'WORKER', inspectDate: today, orderNo: dto.orderNo },
+        { company, plant },
+      );
+      if (!status.alreadyInspected) {
+        throw new BadRequestException(
+          `작업자 설비점검을 완료해야 실적을 등록할 수 있습니다: ${equipCode} (작업지시 ${dto.orderNo})`,
+        );
+      }
+    }
+  }
+
+  /**
    * 생산실적 생성
    */
   async create(dto: CreateProdResultDto, company?: string, plant?: string) {
@@ -776,6 +847,9 @@ export class ProdResultService {
       company,
       plant,
     );
+
+    // 설비점검 인터록 서버 게이트 (일상점검/작업자설비점검 미완료 시 차단)
+    await this.assertEquipInspectGate(dto, company, plant);
 
     // 설비부품 인터락 체크
     await this.checkEquipBomInterlock(dto.equipCode, dto.orderNo, company, plant);

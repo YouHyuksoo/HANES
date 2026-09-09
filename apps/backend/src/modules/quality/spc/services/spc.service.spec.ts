@@ -105,6 +105,77 @@ describe('SpcService', () => {
       mockChartRepo.findOne.mockResolvedValue({ chartNo: 'SPC-001', usl: null, lsl: null } as any);
       await expect(target.calculateCpk('SPC-001')).rejects.toThrow(BadRequestException);
     });
+
+    // 군내 산포는 작고(각 서브그룹 R=0.1) 서브그룹 평균은 드리프트하는 데이터셋 — Cpk(군내) > Ppk(전체)가 나와야 한다.
+    const GROUPS = [
+      [9.8, 9.9, 9.8, 9.9, 9.8],
+      [9.9, 10.0, 9.9, 10.0, 9.9],
+      [10.0, 10.1, 10.0, 10.1, 10.0],
+      [10.1, 10.2, 10.1, 10.2, 10.1],
+      [10.2, 10.3, 10.2, 10.3, 10.2],
+    ];
+    const chart = { chartNo: 'SPC-001', subgroupSize: 5, usl: 10.5, lsl: 9.5, company: 'C1', plant: 'P1' };
+    const toRows = (withRange: boolean) => GROUPS.map((vals, i) => ({
+      chartId: 'SPC-001',
+      subgroupNo: i + 1,
+      values: JSON.stringify(vals),
+      mean: vals.reduce((a, b) => a + b, 0) / vals.length,
+      range: withRange ? Math.max(...vals) - Math.min(...vals) : null,
+    }));
+
+    it('Cpk는 R̄/d2 군내 σ, Ppk는 전체 개별값 표본 σ로 따로 계산한다 (n=5, d2=2.326)', async () => {
+      mockChartRepo.findOne.mockResolvedValue(chart as any);
+      mockDataRepo.find.mockResolvedValue(toRows(true) as any);
+
+      const result = await target.calculateCpk('SPC-001', 'C1', 'P1');
+
+      // 수기 검산: mean=10.04, R̄=0.1 → σ_within=0.1/2.326=0.0430, σ_overall=stdev(25개)=0.1528
+      expect(result.mean).toBeCloseTo(10.04, 4);
+      expect(result.sigmaWithin).toBeCloseTo(0.1 / 2.326, 3);
+      expect(result.sigmaOverall).toBeCloseTo(0.1528, 3);
+      expect(result.sigma).toBe(result.sigmaOverall);
+      expect(result.cpk).toBeCloseTo(3.5665, 2);
+      expect(result.cp).toBeCloseTo(3.8767, 2);
+      expect(result.ppk).toBeCloseTo(1.0038, 2);
+      expect(result.pp).toBeCloseTo(1.0911, 2);
+      expect(result.cpk).not.toBe(result.ppk);
+      expect(result.cpk as number).toBeGreaterThan(result.ppk as number);
+      // 정의 검증: Cpk = min((USL-mean)/(3σw), (mean-LSL)/(3σw)), Ppk 는 σo
+      const sw = result.sigmaWithin;
+      const so = result.sigmaOverall;
+      expect(result.cpk).toBeCloseTo(Math.min((10.5 - 10.04) / (3 * sw), (10.04 - 9.5) / (3 * sw)), 2);
+      expect(result.ppk).toBeCloseTo(Math.min((10.5 - 10.04) / (3 * so), (10.04 - 9.5) / (3 * so)), 2);
+    });
+
+    it('RANGE_VAL이 비어 있으면 VALUES에서 범위를 계산해 같은 Cpk를 낸다', async () => {
+      mockChartRepo.findOne.mockResolvedValue(chart as any);
+      mockDataRepo.find.mockResolvedValue(toRows(false) as any);
+
+      const result = await target.calculateCpk('SPC-001', 'C1', 'P1');
+      expect(result.sigmaWithin).toBeCloseTo(0.1 / 2.326, 3);
+      expect(result.cpk).toBeCloseTo(3.5665, 2);
+    });
+
+    it('서브그룹 크기가 d2 표 밖(2~10)이면 BadRequestException', async () => {
+      mockChartRepo.findOne.mockResolvedValue({ ...chart, subgroupSize: 12 } as any);
+      mockDataRepo.find.mockResolvedValue(toRows(true) as any);
+      await expect(target.calculateCpk('SPC-001', 'C1', 'P1')).rejects.toThrow(BadRequestException);
+    });
+
+    it('군내 산포가 0이면 Cpk/Cp는 null, Ppk는 전체 산포로 계산한다', async () => {
+      mockChartRepo.findOne.mockResolvedValue(chart as any);
+      const rows = GROUPS.map((vals, i) => {
+        const m = vals.reduce((a, b) => a + b, 0) / vals.length;
+        return { chartId: 'SPC-001', subgroupNo: i + 1, values: JSON.stringify(vals.map(() => m)), mean: m, range: 0 };
+      });
+      mockDataRepo.find.mockResolvedValue(rows as any);
+
+      const result = await target.calculateCpk('SPC-001', 'C1', 'P1');
+      expect(result.sigmaWithin).toBe(0);
+      expect(result.cpk).toBeNull();
+      expect(result.cp).toBeNull();
+      expect(result.ppk).not.toBeNull();
+    });
   });
 
   // ─── 관리도 엑셀 업로드 ───

@@ -196,6 +196,8 @@ export const menuConfig: MenuConfigItem[] = [
     children: [
       { code: "QC_IQC_ITEM", labelKey: "menu.master.iqcItem", path: "/master/iqc-item" },
       { code: "QC_IQC_PART_SPEC", labelKey: "menu.master.iqcPartSpec", path: "/master/iqc-part-spec" },
+      { code: "QC_TERMINAL_CRIMP_SPEC", labelKey: "menu.master.terminalCrimpSpec", path: "/master/terminal-crimp-spec" },
+      { code: "QC_INSPECT_AID", labelKey: "menu.master.inspectAid", path: "/master/inspect-aid" },
       { code: "QC_AQL", labelKey: "menu.quality.aql", path: "/quality/aql" },
       { code: "QC_IQC", labelKey: "menu.material.iqc", path: "/material/iqc" },
       { code: "QC_IQC_HISTORY", labelKey: "menu.material.iqcHistory", path: "/material/iqc-history" },

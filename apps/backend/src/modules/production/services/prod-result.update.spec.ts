@@ -21,6 +21,8 @@ import { WipMatStockService } from '../../inventory/services/wip-mat-stock.servi
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
+import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
+import { EquipInspectService } from '../../equipment/services/equip-inspect.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('ProdResultService update policy', () => {
@@ -56,6 +58,8 @@ describe('ProdResultService update policy', () => {
         { provide: NumberingService, useValue: createMock<NumberingService>() },
         { provide: TransactionService, useValue: mockTx },
         { provide: SysConfigService, useValue: createMock<SysConfigService>() },
+        { provide: getRepositoryToken(EquipInspectItemPool), useValue: createMock<Repository<EquipInspectItemPool>>({ find: jest.fn().mockResolvedValue([]) }) },
+        { provide: EquipInspectService, useValue: createMock<EquipInspectService>() },
       ],
     })
       .setLogger(new MockLoggerService())

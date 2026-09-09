@@ -1,23 +1,23 @@
 ---
 sources: []
-verifiedCommit: 848af61b
+verifiedCommit: e5566a35
 generated: true
 ---
 
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-09-08 20:31:16
+- 작성일: 2026-09-09 13:41:08
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
 
 ## 1. 요약
 
-- 테이블 수: 174
-- 컬럼 수: 2879
-- PK 보유 테이블: 170
+- 테이블 수: 176
+- 컬럼 수: 2925
+- PK 보유 테이블: 172
 - DB FK 수: 52
-- COM_CODES 그룹 수: 161
+- COM_CODES 그룹 수: 164
 
 ## 2. 모듈별 테이블
 
@@ -141,6 +141,7 @@ generated: true
 - `SUBCON_DELIVERIES`: 외주 사급(자재 납품) / PK: `DELIVERY_NO`
 - `SUBCON_ORDERS`: 외주 발주 / PK: `ORDER_NO`
 - `SUBCON_RECEIVES`: 외주 수입(완성품 입고) / PK: `RECEIVE_NO`
+- `TERMINAL_CRIMP_SPECS`: 단자별 압착 규격 마스터 (단자 품목 × 전선 사이즈별 압착고/폭/인장력/탈피길이 상하한) / PK: `SPEC_ID`
 - `USER_AUTHS`: 사용자별 메뉴 권한 / PK: `USER_EMAIL, MENU_CODE`
 - `USER_MENU_FAVORITES`: 사용자별 사이드바 메뉴 즐겨찾기 / PK: `COMPANY, PLANT_CD, USER_EMAIL, MENU_CODE`
 - `USER_MENU_FAVORITE_FOLDERS`: 사용자별 메뉴 즐겨찾기 폴더 (1단계) / PK: `ID`
@@ -177,6 +178,7 @@ generated: true
 - `FAI_ITEMS`: 초도품검사(FAI) 측정 항목 / PK: `FAI_ID, SEQ`
 - `FAI_REQUESTS`: 초도품검사(FAI) 요청 / PK: `FAI_NO`
 - `GAUGE_MASTERS`: 게이지(측정기) 마스터 / PK: `GAUGE_CODE`
+- `INSPECT_AIDS`: 검사보조구 마스터 (양품/불량 한도견본, 검사홀더/지그) ― 유효기간·승인·사진 관리 / PK: `COMPANY, PLANT_CD, AID_CODE`
 - `INSPECT_RESULTS`: 검사 결과 (공정검사/AOI 등) / PK: `RESULT_NO`
 - `IQC_AQL_POLICIES`: IQC AQL 정책 기준정보 / PK: `COMPANY, PLANT_CD, POLICY_CODE`
 - `IQC_ITEM_MASTERS`: IQC 검사항목 마스터 (품목별) / PK: `COMPANY, PLANT_CD, ITEM_CODE, SEQ`
@@ -1018,6 +1020,21 @@ erDiagram
     VARCHAR2_10 COMPANY NOT_NULL
     VARCHAR2_10 PLANT_CD NOT_NULL
     TIMESTAMP_6 CREATED_AT NOT_NULL
+    string more_columns
+  }
+  INSPECT_AIDS {
+    VARCHAR2_50 COMPANY PK NOT_NULL
+    VARCHAR2_50 PLANT_CD PK NOT_NULL
+    VARCHAR2_50 AID_CODE PK NOT_NULL
+    VARCHAR2_30 AID_TYPE NOT_NULL
+    VARCHAR2_200 AID_NAME NOT_NULL
+    VARCHAR2_50 ITEM_CODE
+    VARCHAR2_50 PROCESS_CODE
+    VARCHAR2_50 DEFECT_CODE
+    VARCHAR2_500 IMAGE_URL
+    VARCHAR2_200 LOCATION
+    DATE VALID_FROM
+    DATE VALID_TO
     string more_columns
   }
   INSPECT_RESULTS {
@@ -2488,6 +2505,21 @@ erDiagram
     VARCHAR2_50 CREATED_BY
     string more_columns
   }
+  TERMINAL_CRIMP_SPECS {
+    NUMBER_15 SPEC_ID PK NOT_NULL
+    VARCHAR2_50 COMPANY NOT_NULL
+    VARCHAR2_50 PLANT_CD NOT_NULL
+    VARCHAR2_50 TERMINAL_ITEM_CODE NOT_NULL
+    VARCHAR2_30 TERMINAL_TYPE
+    VARCHAR2_50 WIRE_SIZE NOT_NULL
+    VARCHAR2_50 WIRE_ITEM_CODE
+    NUMBER_10_3 CRIMP_HEIGHT_LSL
+    NUMBER_10_3 CRIMP_HEIGHT_USL
+    NUMBER_10_3 CRIMP_WIDTH_LSL
+    NUMBER_10_3 CRIMP_WIDTH_USL
+    NUMBER_10_3 INS_CRIMP_HEIGHT_LSL
+    string more_columns
+  }
   TRACE_LOGS {
     TIMESTAMP_6 TRACE_TIME PK NOT_NULL
     VARCHAR2_255 PALLET_ID
@@ -2939,6 +2971,9 @@ erDiagram
 | `FG_LABELS` | `WORKER_CODE` | `WORKER_MASTERS` |
 | `FG_LABELS` | `INSPECT_RESULT_ID` | `INSPECT_RESULTS` |
 | `HARNESS_DRAWING_MASTERS` | `ITEM_CODE` | `ITEM_MASTERS` |
+| `INSPECT_AIDS` | `ITEM_CODE` | `ITEM_MASTERS` |
+| `INSPECT_AIDS` | `PROCESS_CODE` | `PROCESS_CAPAS` |
+| `INSPECT_AIDS` | `DEFECT_CODE` | `DEFECT_CATEGORY_MASTERS` |
 | `INSPECT_RESULTS` | `PROD_RESULT_ID` | `PROD_RESULTS` |
 | `INSPECT_RESULTS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `INV_ADJ_LOGS` | `WAREHOUSE_CODE` | `WAREHOUSES` |
@@ -3079,9 +3114,6 @@ erDiagram
 | `SPC_CHARTS` | `PROCESS_CODE` | `PROCESS_CAPAS` |
 | `SPC_DATA` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `STOCK_TRANSACTIONS` | `ITEM_CODE` | `ITEM_MASTERS` |
-| `STOCK_TRANSACTIONS` | `WORKER_CODE` | `WORKER_MASTERS` |
-| `STOCK_TRANSACTIONS_BAK_20260616` | `ITEM_CODE` | `ITEM_MASTERS` |
-| `STOCK_TRANSACTIONS_BAK_20260616` | `WORKER_CODE` | `WORKER_MASTERS` |
 
 ## 5. 모듈별 ERD
 
@@ -4742,6 +4774,21 @@ erDiagram
     VARCHAR2_50 PLANT_CD NOT_NULL
     string more_columns
   }
+  TERMINAL_CRIMP_SPECS {
+    NUMBER_15 SPEC_ID PK NOT_NULL
+    VARCHAR2_50 COMPANY NOT_NULL
+    VARCHAR2_50 PLANT_CD NOT_NULL
+    VARCHAR2_50 TERMINAL_ITEM_CODE NOT_NULL
+    VARCHAR2_30 TERMINAL_TYPE
+    VARCHAR2_50 WIRE_SIZE NOT_NULL
+    VARCHAR2_50 WIRE_ITEM_CODE
+    NUMBER_10_3 CRIMP_HEIGHT_LSL
+    NUMBER_10_3 CRIMP_HEIGHT_USL
+    NUMBER_10_3 CRIMP_WIDTH_LSL
+    NUMBER_10_3 CRIMP_WIDTH_USL
+    NUMBER_10_3 INS_CRIMP_HEIGHT_LSL
+    string more_columns
+  }
   USER_AUTHS {
     VARCHAR2_255 USER_EMAIL PK NOT_NULL
     VARCHAR2_100 MENU_CODE PK NOT_NULL
@@ -5176,6 +5223,21 @@ erDiagram
     TIMESTAMP_6 LAST_CALIBRATION_DATE
     TIMESTAMP_6 NEXT_CALIBRATION_DATE
     VARCHAR2_20 STATUS NOT_NULL
+    string more_columns
+  }
+  INSPECT_AIDS {
+    VARCHAR2_50 COMPANY PK NOT_NULL
+    VARCHAR2_50 PLANT_CD PK NOT_NULL
+    VARCHAR2_50 AID_CODE PK NOT_NULL
+    VARCHAR2_30 AID_TYPE NOT_NULL
+    VARCHAR2_200 AID_NAME NOT_NULL
+    VARCHAR2_50 ITEM_CODE
+    VARCHAR2_50 PROCESS_CODE
+    VARCHAR2_50 DEFECT_CODE
+    VARCHAR2_500 IMAGE_URL
+    VARCHAR2_200 LOCATION
+    DATE VALID_FROM
+    DATE VALID_TO
     string more_columns
   }
   INSPECT_RESULTS {
@@ -6832,6 +6894,8 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 기본값 `'1000'`<br>테넌트 범위 컬럼 |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` |  |
+| `VALUE_INDEX` | `NUMBER` | `Y` |  |  | 측정 수치 토큰 위치 (0-based, NULL: 수치 미수신) |
+| `VALUE_UNIT` | `VARCHAR2(20)` | `Y` |  |  | 측정 수치 단위 (예: kgf, N, mm) |
 
 ### `FAI_ITEMS`
 
@@ -7043,6 +7107,35 @@ erDiagram
 | `FIX_TEST` | `VARCHAR2(500)` | `Y` |  |  | 테스트 근거 ― spec 파일 경로 또는 실행 결과 요약 (DONE 필수) |
 | `DEPLOY_SHA` | `VARCHAR2(40)` | `Y` |  |  | 배포된 빌드 커밋 SHA (DONE 필수) |
 | `DONE_AT` | `TIMESTAMP(6)` | `Y` |  |  | DONE 전이 시각 |
+
+### `INSPECT_AIDS`
+
+- 설명: 검사보조구 마스터 (양품/불량 한도견본, 검사홀더/지그) ― 유효기간·승인·사진 관리
+- PK: `COMPANY, PLANT_CD, AID_CODE`
+
+| 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
+|---|---|---|---|---|---|
+| `COMPANY` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 회사 코드 |
+| `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 사업장 코드 |
+| `AID_CODE` | `VARCHAR2(50)` | `N` | PK |  | 보조구 코드 (사용자 입력) |
+| `AID_TYPE` | `VARCHAR2(30)` | `N` |  |  | 보조구 유형 (COM_CODES INSPECT_AID_TYPE: LIMIT_OK 양품한도견본 / LIMIT_NG 불량한도견본 / HOLDER 검사홀더·지그) |
+| `AID_NAME` | `VARCHAR2(200)` | `N` |  |  | 보조구 명칭 |
+| `ITEM_CODE` | `VARCHAR2(50)` | `Y` |  |  | 대상 품목코드 (ITEM_MASTERS.ITEM_CODE, 선택) |
+| `PROCESS_CODE` | `VARCHAR2(50)` | `Y` |  |  | 적용 공정코드 (PROCESS_MASTERS.PROCESS_CODE, 선택) |
+| `DEFECT_CODE` | `VARCHAR2(50)` | `Y` |  |  | 불량 한도견본의 대표 불량코드 (DEFECT_CODE_MASTERS.DEFECT_CODE, 선택) |
+| `IMAGE_URL` | `VARCHAR2(500)` | `Y` |  |  | 사진 경로 (/uploads/inspect-aids/...) |
+| `LOCATION` | `VARCHAR2(200)` | `Y` |  |  | 보관 위치 |
+| `VALID_FROM` | `DATE` | `Y` |  |  | 유효기간 시작일 |
+| `VALID_TO` | `DATE` | `Y` |  |  | 유효기간 종료일 (만료/임박 판정 기준) |
+| `APPROVED_BY` | `VARCHAR2(50)` | `Y` |  |  | 승인자 |
+| `APPROVED_AT` | `TIMESTAMP(6)` | `Y` |  |  | 승인일시 |
+| `STATUS` | `VARCHAR2(20)` | `N` |  | 기본값 `'ACTIVE'`<br>CHECK `STATUS IN ('ACTIVE','EXPIRED','RETIRED')` | 상태 (ACTIVE 사용중 / EXPIRED 만료 / RETIRED 폐기) |
+| `REMARK` | `VARCHAR2(500)` | `Y` |  |  | 비고 |
+| `USE_YN` | `CHAR(1)` | `N` |  | 기본값 `'Y'`<br>CHECK `USE_YN IN ('Y','N')`<br>COM_CODES.USE_YN: Y=사용, N=미사용<br>관례값 Y/N | 사용여부 (Y/N) |
+| `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 생성자 |
+| `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` | 생성일시 |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` | 수정일시 |
 
 ### `INSPECT_RESULTS`
 
@@ -9551,6 +9644,38 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+
+### `TERMINAL_CRIMP_SPECS`
+
+- 설명: 단자별 압착 규격 마스터 (단자 품목 × 전선 사이즈별 압착고/폭/인장력/탈피길이 상하한)
+- PK: `SPEC_ID`
+- UK: `COMPANY, PLANT_CD, TERMINAL_ITEM_CODE, WIRE_SIZE`
+
+| 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
+|---|---|---|---|---|---|
+| `SPEC_ID` | `NUMBER(15)` | `N` | PK |  | 규격 ID (SEQ_TERMINAL_CRIMP_SPEC) |
+| `COMPANY` | `VARCHAR2(50)` | `N` | UK | 테넌트 범위 컬럼 | 회사 코드 |
+| `PLANT_CD` | `VARCHAR2(50)` | `N` | UK | 테넌트 범위 컬럼 | 사업장 코드 |
+| `TERMINAL_ITEM_CODE` | `VARCHAR2(50)` | `N` | UK |  | 단자 품목코드 (ITEM_MASTERS.ITEM_CODE) |
+| `TERMINAL_TYPE` | `VARCHAR2(30)` | `Y` |  | COM_CODES.TERMINAL_TYPE: DISK=디스크, RING=링, FASTON=파스톤, PIN=핀, SOCKET=소켓 | 단자 종류 (COM_CODES TERMINAL_TYPE: DISK/RING/FASTON/PIN/SOCKET) |
+| `WIRE_SIZE` | `VARCHAR2(50)` | `N` | UK |  | 전선 사이즈 (예: 0.5SQ, AWG20) |
+| `WIRE_ITEM_CODE` | `VARCHAR2(50)` | `Y` |  |  | 전선 품목코드 (ITEM_MASTERS.ITEM_CODE, 선택) |
+| `CRIMP_HEIGHT_LSL` | `NUMBER(10,3)` | `Y` |  |  | 압착 높이 하한 (mm) |
+| `CRIMP_HEIGHT_USL` | `NUMBER(10,3)` | `Y` |  |  | 압착 높이 상한 (mm) |
+| `CRIMP_WIDTH_LSL` | `NUMBER(10,3)` | `Y` |  |  | 압착 폭 하한 (mm) |
+| `CRIMP_WIDTH_USL` | `NUMBER(10,3)` | `Y` |  |  | 압착 폭 상한 (mm) |
+| `INS_CRIMP_HEIGHT_LSL` | `NUMBER(10,3)` | `Y` |  |  | 절연부 압착 높이 하한 (mm) |
+| `INS_CRIMP_HEIGHT_USL` | `NUMBER(10,3)` | `Y` |  |  | 절연부 압착 높이 상한 (mm) |
+| `PULL_FORCE_MIN` | `NUMBER(10,3)` | `Y` |  |  | 인장력 최소값 (N) |
+| `STRIP_LENGTH_MIN` | `NUMBER(10,3)` | `Y` |  |  | 탈피 길이 최소 (mm) |
+| `STRIP_LENGTH_MAX` | `NUMBER(10,3)` | `Y` |  |  | 탈피 길이 최대 (mm) |
+| `APPLICATOR_CODE` | `VARCHAR2(50)` | `Y` |  |  | 어플리케이터 코드 |
+| `REMARK` | `VARCHAR2(500)` | `Y` |  |  | 비고 |
+| `USE_YN` | `CHAR(1)` | `N` |  | 기본값 `'Y'`<br>CHECK `USE_YN IN ('Y','N')`<br>COM_CODES.USE_YN: Y=사용, N=미사용<br>관례값 Y/N | 사용여부 (Y/N) |
+| `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 생성자 |
+| `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` | 생성일시 |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` | 수정일시 |
 
 ### `TRACE_LOGS`
 

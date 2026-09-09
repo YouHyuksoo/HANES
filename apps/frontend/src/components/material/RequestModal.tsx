@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { Search, Plus, X, AlertTriangle, Loader2 } from 'lucide-react';
 import { Modal, Button, Input, Select } from '@/components/ui';
 import { api } from '@/services/api';
+import { notifyIssueWarnings } from '@/components/material/issue-warnings';
 import { useInvalidateQueries } from '@/hooks/useApi';
 import type { StockItem, RequestItem } from '@/hooks/material/useIssueRequestData';
 
@@ -141,7 +142,9 @@ export default function RequestModal({
         })),
         remark: remark || undefined,
       };
-      await api.post('/material/issue-requests', body);
+      const res = await api.post('/material/issue-requests', body);
+      // IQC 미검사 재고만 있는 품목 안내(생성은 차단하지 않음)
+      notifyIssueWarnings(res.data);
       invalidate(['issue-request-data']);
       invalidate(['issue-requests']);
       handleClose();

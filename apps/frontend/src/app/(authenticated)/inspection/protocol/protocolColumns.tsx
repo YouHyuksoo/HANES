@@ -39,6 +39,11 @@ export function createProtocolGridColumns({
     { accessorKey: "delimiter", header: t("inspection.protocol.delimiter"), size: 70 },
     { accessorKey: "passValue", header: t("inspection.protocol.passValue"), size: 80 },
     { accessorKey: "failValue", header: t("inspection.protocol.failValue"), size: 80 },
+    { accessorKey: "valueIndex", header: t("inspection.protocol.valueIndex"), size: 90, meta: { align: "center" as const }, cell: ({ row }) => {
+      const idx = row.original.valueIndex;
+      if (idx === null || idx === undefined) return <span className="text-text-muted">-</span>;
+      return <span>{idx}{row.original.valueUnit ? ` (${row.original.valueUnit})` : ""}</span>;
+    }},
     { accessorKey: "sampleData", header: t("inspection.protocol.sampleData"), size: 200, cell: ({ getValue }) => {
       const v = getValue() as string | null;
       return <span className="text-xs text-text-muted truncate">{v || "-"}</span>;

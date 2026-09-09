@@ -14,7 +14,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ClipboardCheck, Search, RefreshCw } from "lucide-react";
-import IqcDetailModal, { type IqcDetailRecord } from "./IqcDetailModal";
+import IqcDetailModal from "./IqcDetailModal";
+import IqcReportPrintModal from "./IqcReportPrintModal";
+import type { IqcDetailRecord } from "./iqcDetailTypes";
 import { Card, CardContent, Button, Input, Modal } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
@@ -43,6 +45,8 @@ export default function IqcHistoryPage() {
 
   /** 상세 모달 상태 */
   const [detailRecord, setDetailRecord] = useState<IqcDetailRecord | null>(null);
+  /** 성적서 인쇄 모달 상태 */
+  const [printRecord, setPrintRecord] = useState<IqcDetailRecord | null>(null);
 
   /** 취소 모달 상태 */
   const [cancelTarget, setCancelTarget] = useState<IqcHistoryItem | null>(null);
@@ -121,6 +125,7 @@ export default function IqcHistoryPage() {
     t,
     uploadingKey,
     onViewDetail: setDetailRecord,
+    onPrintReport: setPrintRecord,
     onCancel: setCancelTarget,
     onCertUpload: handleCertUpload,
   }), [t, handleCertUpload, uploadingKey]);
@@ -170,7 +175,10 @@ export default function IqcHistoryPage() {
       </CardContent></Card>
 
       {/* 검사 상세 모달 */}
-      <IqcDetailModal record={detailRecord} onClose={() => setDetailRecord(null)} />
+      <IqcDetailModal record={detailRecord} onClose={() => setDetailRecord(null)} onPrint={setPrintRecord} />
+
+      {/* 성적서 인쇄 모달 */}
+      <IqcReportPrintModal record={printRecord} onClose={() => setPrintRecord(null)} />
 
       {/* 판정 취소 모달  */}
       <Modal

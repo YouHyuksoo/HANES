@@ -272,6 +272,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/master/inspect-aid": {
+      const mod = await import("./page-registries/master__inspect-aid.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/master/iqc-item": {
       const mod = await import("./page-registries/master__iqc-item.generated");
       component = mod.getPageComponent();
@@ -314,6 +319,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
     }
     case "/master/routing": {
       const mod = await import("./page-registries/master__routing.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/master/terminal-crimp-spec": {
+      const mod = await import("./page-registries/master__terminal-crimp-spec.generated");
       component = mod.getPageComponent();
       break;
     }

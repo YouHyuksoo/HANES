@@ -337,6 +337,8 @@
     "master.worker.emptyMessage": "등록된 작업자가 없습니다.",
     "master.iqcItem": "검사항목마스터(IQC전용)",
     "master.iqcPartSpec": "품목별 IQC 항목관리",
+    "master.inspectAid": "검사보조구 관리",
+    "master.terminalCrimpSpec": "단자별 압착 규격",
     "master.iqcItem.itemCode": "항목코드",
     "master.iqcItem.judgeMethod": "판정방법",
     "master.iqcItem.visual": "육안",
@@ -549,7 +551,9 @@
     "switchToDark": "다크 모드로 전환",
     "colorTheme": "컬러 테마 전환",
     "collapseSidebar": "사이드바 접기",
-    "expandSidebar": "사이드바 펼치기"
+    "expandSidebar": "사이드바 펼치기",
+    "tourMode": "투어 모드",
+    "tourModeHelp": "화면의 필드·컬럼·버튼 설명을 표시합니다."
   },
   "auth": {
     "login": "로그인",
@@ -1239,7 +1243,8 @@
     "guide": "라벨을 출력하려면 이 PC에서 Print Agent가 실행 중이어야 합니다. 아래에서 내려받아 실행한 뒤 [상태 다시 확인]을 누르세요.",
     "step1": "설치 파일 다운로드",
     "step2": "받은 파일 실행 (트레이에 상주)",
-    "step3": "[상태 다시 확인] 클릭"
+    "step3": "[상태 다시 확인] 클릭",
+    "installerUnavailable": "설치 파일이 서버에 배포되지 않았습니다. 시스템 관리자에게 문의하세요."
   },
   "serialTest": {
     "title": "시리얼 통신 테스트",
@@ -2771,6 +2776,62 @@
       "inspItemCriteria": "검사항목 기준",
       "destFixed": "파괴/고정",
       "countCases": "{{count}}건"
+    },
+    "terminalCrimpSpec": {
+      "title": "단자별 압착 규격",
+      "subtitle": "단자 품목과 전선 사이즈별 압착 높이·폭·인장력·탈피길이 상하한을 등록합니다. 자주검사·계측 판정의 기준입니다.",
+      "searchPlaceholder": "단자품목·전선사이즈·어플리케이터 검색",
+      "sectionBasic": "기본정보",
+      "sectionSpec": "압착 규격 (mm / N)",
+      "specHint": "값이 없는 항목은 비워 두세요. 빈 항목은 판정에 사용하지 않습니다. 하한은 상한보다 클 수 없습니다.",
+      "terminalItemCode": "단자 품목",
+      "terminalType": "단자 종류",
+      "wireSize": "전선 사이즈",
+      "wireItemCode": "전선 품목",
+      "crimpHeight": "압착고(CH)",
+      "crimpHeightLsl": "압착고 하한",
+      "crimpHeightUsl": "압착고 상한",
+      "crimpWidth": "압착폭(CW)",
+      "crimpWidthLsl": "압착폭 하한",
+      "crimpWidthUsl": "압착폭 상한",
+      "insCrimpHeight": "절연부 압착고",
+      "insCrimpHeightLsl": "절연부 압착고 하한",
+      "insCrimpHeightUsl": "절연부 압착고 상한",
+      "pullForceMin": "인장력 최소(N)",
+      "stripLength": "탈피길이",
+      "stripLengthMin": "탈피길이 최소",
+      "stripLengthMax": "탈피길이 최대",
+      "applicatorCode": "어플리케이터"
+    },
+    "inspectAid": {
+      "title": "검사보조구 관리",
+      "subtitle": "양품·불량 한도견본과 검사홀더/지그를 등록하고 유효기간·승인·사진을 관리합니다.",
+      "searchPlaceholder": "코드·명칭·품목·보관위치 검색",
+      "sectionBasic": "기본정보",
+      "sectionValidity": "유효기간 · 승인",
+      "aidCode": "보조구 코드",
+      "aidType": "유형",
+      "aidName": "보조구 명칭",
+      "itemCode": "대상 품목",
+      "processCode": "적용 공정",
+      "defectCode": "대표 불량코드",
+      "defectCodeHint": "대표 불량코드는 불량 한도견본(LIMIT_NG)에만 입력합니다.",
+      "image": "사진",
+      "imageUploadHint": "클릭하여 보조구 사진 선택 (JPG/PNG/GIF/WebP, 5MB 이하)",
+      "imageChange": "사진 변경",
+      "imageLoadFailed": "이미지를 불러올 수 없습니다",
+      "imageDeleteConfirm": "보조구 사진을 삭제하시겠습니까? 저장 시 반영됩니다.",
+      "location": "보관 위치",
+      "validFrom": "유효 시작일",
+      "validTo": "유효 종료일",
+      "approvedBy": "승인자",
+      "approvedAt": "승인일",
+      "expiry": "유효기간 상태",
+      "expired": "만료",
+      "expiring": "만료임박",
+      "valid": "유효",
+      "daysAgoSuffix": "일 경과",
+      "expiringWithin": "{{days}}일 내 만료"
     }
   },
   "material": {
@@ -3310,7 +3371,9 @@
       },
       "noAvailableLot": "출고 가능 LOT 없음 (창고재고 0)",
       "lotLoading": "LOT 조회 중",
-      "lotSelect": "LOT 선택"
+      "lotSelect": "LOT 선택",
+      "issuableQty": "가용(IQC합격)",
+      "pendingIqcQty": "미검사"
     },
     "stock": {
       "title": "자재재고현황",
@@ -3538,6 +3601,25 @@
         "selectSerial": "시리얼을 선택하세요.",
         "scanSerial": "스캔 시리얼",
         "noData": "상세 검사 데이터가 없습니다."
+      },
+      "report": {
+        "modalTitle": "IQC 성적서 출력",
+        "title": "수입검사 성적서",
+        "printButton": "성적서 인쇄",
+        "printTooltip": "IQC 성적서 인쇄",
+        "printedAt": "출력일시",
+        "vendor": "거래처",
+        "lotQty": "LOT 수량",
+        "inspectClass": "검사구분",
+        "retestRound": "재검 {{round}}차",
+        "aqlSummary": "AQL 요약",
+        "sampleQty": "시료수",
+        "defectCounts": "불량수 (C/Ma/Mi)",
+        "judgeReason": "판정 근거",
+        "noAql": "AQL 샘플링 정보가 없습니다 (수동 판정).",
+        "serialItems": "시리얼별 검사항목 측정값",
+        "reviewer": "검토자",
+        "approver": "승인자"
       }
     },
     "lotSplit": {
@@ -4976,7 +5058,11 @@
       "startChar": "시작문자",
       "endChar": "종료문자",
       "sampleData": "샘플 데이터",
-      "searchPlaceholder": "프로토콜 ID, 이름 검색"
+      "searchPlaceholder": "프로토콜 ID, 이름 검색",
+      "valueIndex": "수치 위치",
+      "valueIndexPlaceholder": "0부터, 비우면 수치 미수신",
+      "valueUnit": "단위",
+      "valueUnitPlaceholder": "kgf, N, mm"
     },
     "equip": {
       "title": "검사기연동",
@@ -7173,6 +7259,23 @@
       "DRAFT": "아직 보고 전인 사용량 보고서 초안 상태",
       "REPORTED": "사용량 보고서가 제출되어 확인을 기다리는 상태",
       "CONFIRMED": "사용량 보고가 최종 확인 처리된 상태"
+    },
+    "TERMINAL_TYPE": {
+      "DISK": "원판형 단자",
+      "RING": "볼트 체결용 링 단자",
+      "FASTON": "탭 삽입형 파스톤 단자",
+      "PIN": "핀형 수 단자",
+      "SOCKET": "소켓형 암 단자"
+    },
+    "INSPECT_AID_TYPE": {
+      "LIMIT_OK": "합격으로 인정하는 한계 수준의 양품 견본",
+      "LIMIT_NG": "불합격으로 판정하는 한계 수준의 불량 견본",
+      "HOLDER": "검사 시 제품을 고정·정렬하는 홀더나 지그"
+    },
+    "INSPECT_AID_STATUS": {
+      "ACTIVE": "유효기간 내로 검사에 사용 중인 보조구",
+      "EXPIRED": "유효기간이 지나 재승인이 필요한 보조구",
+      "RETIRED": "사용 중지·폐기된 보조구"
     }
   },
   "comCode": {
@@ -8064,6 +8167,23 @@
       "MOUNTED": "장착중",
       "CONSUMED": "소비완료",
       "DEFECT": "불량"
+    },
+    "TERMINAL_TYPE": {
+      "DISK": "디스크",
+      "RING": "링",
+      "FASTON": "파스톤",
+      "PIN": "핀",
+      "SOCKET": "소켓"
+    },
+    "INSPECT_AID_TYPE": {
+      "LIMIT_OK": "양품 한도견본",
+      "LIMIT_NG": "불량 한도견본",
+      "HOLDER": "검사홀더/지그"
+    },
+    "INSPECT_AID_STATUS": {
+      "ACTIVE": "사용중",
+      "EXPIRED": "만료",
+      "RETIRED": "폐기"
     }
   },
   "comCodeGroup": {

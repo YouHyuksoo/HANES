@@ -33,6 +33,7 @@ import { SpcData } from '../../../../entities/spc-data.entity';
 import { ItemMaster } from '../../../../entities/item-master.entity';
 import { ProcessMaster } from '../../../../entities/process-master.entity';
 import { NumberingService } from '../../../../shared/numbering.service';
+import { xbarRConstants } from '../hv/hv-spc-math';
 import {
   CreateSpcChartDto,
   UpdateSpcChartDto,
@@ -565,12 +566,14 @@ export class SpcService {
 
     for (const row of preview.rows) {
       if (row.status !== 'new') { result.errors.push({ row: row.row, message: row.message ?? '오류' }); continue; }
+      // previewDataUpload가 'new'로 분류한 행은 서브그룹번호가 있지만, 타입은 number|null이라 캐스트 대신 명시 가드로 좁힌다.
+      if (row.subgroupNo === null) { result.errors.push({ row: row.row, message: '서브그룹번호가 없거나 숫자가 아닙니다.' }); continue; }
       try {
         await this.createData(
           {
             chartId: row.chartId,
             sampleDate: row.sampleDate,
-            subgroupNo: row.subgroupNo as number,
+            subgroupNo: row.subgroupNo,
             values: row.values,
             equipCode: row.equipCode || undefined,
           },
@@ -638,7 +641,14 @@ export class SpcService {
   // =============================================
 
   /**
-   * Cpk/Ppk 계산 — 최근 데이터 기반
+   * Cpk/Ppk 계산 — 관리도의 서브그룹 데이터 전체 기준 (감사 14P).
+   *
+   * - Cpk/Cp: 군내 산포 σ_within = R̄ / d2(n). n = chart.subgroupSize, R̄ = SPC_DATA.RANGE_VAL 평균
+   *   (RANGE_VAL이 비어 있으면 VALUES에서 max-min으로 보완). hv-spc-math의 d2 상수를 재사용한다.
+   * - Ppk/Pp: 전체 개별값 표본표준편차 σ_overall (n-1).
+   * - 중심은 두 지수 모두 전체 개별값 평균(서브그룹 크기가 같으므로 X̿와 동일).
+   * - σ가 0이면 지수는 정의되지 않으므로 null (0이나 Infinity로 돌려주지 않는다).
+   * - `sigma`는 하위호환용으로 `sigmaOverall`과 같은 값이다.
    */
   async calculateCpk(chartNo: string, company?: string, plant?: string) {
     const chart = await this.findChartById(chartNo, company, plant);
@@ -660,28 +670,62 @@ export class SpcService {
       );
     }
 
-    // 전체 개별값으로 Ppk 계산
+    let constants: ReturnType<typeof xbarRConstants>;
+    try {
+      constants = xbarRConstants(Number(chart.subgroupSize));
+    } catch (error: unknown) {
+      throw new BadRequestException(
+        `서브그룹 크기 ${chart.subgroupSize}에 대한 관리도 상수가 정의되지 않았습니다. (2~10 지원)`,
+      );
+    }
+
+    // 전체 개별값(Ppk용)과 서브그룹별 범위(Cpk용)를 같은 순회에서 모은다.
     const allValues: number[] = [];
+    const ranges: number[] = [];
     for (const d of dataList) {
       const parsed = JSON.parse(d.values) as number[];
       allValues.push(...parsed);
+      const storedRange = d.range == null ? Number.NaN : Number(d.range);
+      ranges.push(
+        Number.isFinite(storedRange)
+          ? storedRange
+          : Math.max(...parsed) - Math.min(...parsed),
+      );
     }
 
     const overallMean = allValues.reduce((a, b) => a + b, 0) / allValues.length;
     const overallVariance =
       allValues.reduce((sum, v) => sum + (v - overallMean) ** 2, 0) / (allValues.length - 1);
-    const overallSigma = Math.sqrt(overallVariance);
+    const sigmaOverall = Math.sqrt(overallVariance);
+
+    const rBar = ranges.reduce((a, b) => a + b, 0) / ranges.length;
+    const sigmaWithin = rBar / constants.d2;
 
     const usl = Number(chart.usl);
     const lsl = Number(chart.lsl);
 
-    const cpupper = (usl - overallMean) / (3 * overallSigma);
-    const cplower = (overallMean - lsl) / (3 * overallSigma);
-    const cpk = parseFloat(Math.min(cpupper, cplower).toFixed(4));
-    const ppk = cpk; // Ppk 근사 (전체 데이터 기준)
+    const round4 = (v: number | null): number | null => (v === null ? null : parseFloat(v.toFixed(4)));
+    const indexK = (sigma: number): number | null =>
+      sigma > 0 ? Math.min((usl - overallMean) / (3 * sigma), (overallMean - lsl) / (3 * sigma)) : null;
+    const indexP = (sigma: number): number | null => (sigma > 0 ? (usl - lsl) / (6 * sigma) : null);
 
-    this.logger.log(`Cpk 계산 완료: chartNo=${chartNo}, Cpk=${cpk}`);
-    return { chartNo, cpk, ppk, mean: parseFloat(overallMean.toFixed(4)), sigma: parseFloat(overallSigma.toFixed(4)) };
+    const cpk = round4(indexK(sigmaWithin));
+    const cp = round4(indexP(sigmaWithin));
+    const ppk = round4(indexK(sigmaOverall));
+    const pp = round4(indexP(sigmaOverall));
+
+    this.logger.log(`Cpk 계산 완료: chartNo=${chartNo}, Cpk=${cpk}, Ppk=${ppk}`);
+    return {
+      chartNo,
+      cpk,
+      ppk,
+      cp,
+      pp,
+      mean: parseFloat(overallMean.toFixed(4)),
+      sigma: parseFloat(sigmaOverall.toFixed(4)),
+      sigmaWithin: parseFloat(sigmaWithin.toFixed(4)),
+      sigmaOverall: parseFloat(sigmaOverall.toFixed(4)),
+    };
   }
 
   // =============================================

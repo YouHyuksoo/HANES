@@ -14,6 +14,7 @@ import { ISSUE_REQUEST_PENDING_FILTER } from '@harness/shared';
 import { useApiQuery, useInvalidateQueries } from '@/hooks/useApi';
 import { api } from '@/services/api';
 import { getTodayLocal } from '@/utils/date';
+import { notifyIssueWarnings } from '@/components/material/issue-warnings';
 
 /** 출고요청 품목 아이템 */
 export interface IssueRequestItem {
@@ -127,7 +128,9 @@ export function useIssueRequests(options: UseIssueRequestsOptions = {}) {
 
   // 승인 처리
   const handleApprove = useCallback(async (requestNo: string) => {
-    await api.patch(`/material/issue-requests/${requestNo}/approve`);
+    const res = await api.patch(`/material/issue-requests/${requestNo}/approve`);
+    // 승인 정책 MAT_ISSUE_STOCK_CHECK=WARN 이면 IQC합격 가용재고 부족 품목이 warnings 로 온다(BLOCK 은 400 으로 차단)
+    notifyIssueWarnings(res.data);
     invalidate(['issue-requests']);
     refetch();
   }, [invalidate, refetch]);

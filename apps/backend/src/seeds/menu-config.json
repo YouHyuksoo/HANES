@@ -131,6 +131,8 @@
     "QUALITY": [
       "QC_IQC_ITEM",
       "QC_IQC_PART_SPEC",
+      "QC_TERMINAL_CRIMP_SPEC",
+      "QC_INSPECT_AID",
       "QC_AQL",
       "QC_IQC",
       "QC_IQC_HISTORY",

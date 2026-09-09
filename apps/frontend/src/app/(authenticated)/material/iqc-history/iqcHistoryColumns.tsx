@@ -1,12 +1,12 @@
 "use client";
 
 import type { TFunction } from "i18next";
-import { Upload, ExternalLink, Eye, XCircle } from "lucide-react";
+import { Upload, ExternalLink, Eye, XCircle, Printer } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui";
 import StatusBadge from "@/components/shared/StatusBadge";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
-import type { IqcDetailRecord } from "./IqcDetailModal";
+import type { IqcDetailRecord } from "./iqcDetailTypes";
 
 export interface IqcHistoryItem {
   id: string;
@@ -28,6 +28,24 @@ export interface IqcHistoryItem {
   certFilePath?: string | null;
   sampleBarcode?: string | null;
   details?: string | null;
+  itemResults?: string | null;
+  /** AQL 샘플링 요약 (IQC_LOGS) — 성적서 인쇄용 */
+  inspectClass?: string | null;
+  lotQty?: number | null;
+  aqlInspectionLevel?: string | null;
+  aqlInspectionMode?: string | null;
+  aqlSampleQty?: number | null;
+  aqlMajorCode?: string | null;
+  aqlMajorAc?: number | null;
+  aqlMajorRe?: number | null;
+  aqlMinorCode?: string | null;
+  aqlMinorAc?: number | null;
+  aqlMinorRe?: number | null;
+  defectCritical?: number | null;
+  defectMajor?: number | null;
+  defectMinor?: number | null;
+  aqlJudgeReason?: string | null;
+  retestRound?: number | null;
 }
 
 export function getCertFileUrl(certFilePath: string | null | undefined): string | null {
@@ -50,6 +68,7 @@ interface CreateIqcHistoryGridColumnsOptions {
   t: TFunction;
   uploadingKey: string | null;
   onViewDetail: (record: IqcDetailRecord) => void;
+  onPrintReport: (record: IqcDetailRecord) => void;
   onCancel: (record: IqcHistoryItem) => void;
   onCertUpload: (record: IqcHistoryItem, file: File | null) => void;
 }
@@ -58,6 +77,7 @@ export function createIqcHistoryGridColumns({
   t,
   uploadingKey,
   onViewDetail,
+  onPrintReport,
   onCancel,
   onCertUpload,
 }: CreateIqcHistoryGridColumnsOptions): ColumnDef<IqcHistoryItem>[] {
@@ -65,7 +85,7 @@ export function createIqcHistoryGridColumns({
     {
       id: "actions",
       header: t("common.actions"),
-      size: 140,
+      size: 170,
       meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const record = row.original;
@@ -80,6 +100,14 @@ export function createIqcHistoryGridColumns({
               onClick={(e) => { e.stopPropagation(); onViewDetail(record as IqcDetailRecord); }}
             >
               <Eye className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded text-text-muted hover:bg-surface hover:text-primary"
+              title={t("material.iqcHistory.report.printTooltip", "IQC 성적서 인쇄")}
+              onClick={(e) => { e.stopPropagation(); onPrintReport(record as IqcDetailRecord); }}
+            >
+              <Printer className="w-4 h-4" />
             </button>
             {certUrl && (
               <a

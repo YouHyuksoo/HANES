@@ -5,67 +5,24 @@
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle, XCircle } from "lucide-react";
-import { Modal, ComCodeBadge } from "@/components/ui";
+import { CheckCircle, XCircle, Printer } from "lucide-react";
+import { Modal, ComCodeBadge, Button } from "@/components/ui";
+import {
+  parseIqcDetails,
+  parseIqcItemResults,
+  parseSampleBarcodes,
+  type IqcDetailRecord,
+  type ItemJudgeEntry,
+  type SerialEntry,
+} from "./iqcDetailTypes";
 
-interface ItemJudgeEntry {
-  seq?: number;
-  inspItemCode?: string;
-  defectGrade?: string | null;
-  inspectionLevel?: string | null;
-  aql?: number | null;
-  defectCount?: number;
-  acceptQty?: number | null;
-  rejectQty?: number | null;
-  result?: string;
-  reason?: string;
-  inspectionType?: string;
-  requiredQty?: number | null;
-  inspectedQty?: number | null;
-}
-
-interface InspectionItem {
-  itemId?: string;
-  inspectItem: string;
-  spec?: string | null;
-  lsl?: number | null;
-  usl?: number | null;
-  unit?: string | null;
-  measuredValue?: string;
-  judge?: string;
-}
-
-interface SerialEntry {
-  matUid: string;
-  qty?: number | null;
-  result?: string;
-  items?: InspectionItem[];
-}
-
-interface DetailsPayload {
-  type?: string;
-  serials?: SerialEntry[];
-}
-
-export interface IqcDetailRecord {
-  inspectDate: string;
-  seq?: number;
-  matUid?: string | null;
-  arrivalNo?: string | null;
-  itemCode?: string;
-  itemName?: string | null;
-  inspectType?: string;
-  result?: string;
-  inspectorName?: string | null;
-  sampleBarcode?: string | null;
-  remark?: string | null;
-  details?: string | null;
-  itemResults?: string | null;
-}
+export type { IqcDetailRecord } from "./iqcDetailTypes";
 
 interface Props {
   record: IqcDetailRecord | null;
   onClose: () => void;
+  /** 성적서 인쇄 버튼 클릭 — 미지정 시 버튼을 렌더하지 않는다 */
+  onPrint?: (record: IqcDetailRecord) => void;
 }
 
 const formatDate = (val: string) => {
@@ -83,34 +40,20 @@ const resultBadge = (result?: string) => {
   return <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${color}`}>{result}</span>;
 };
 
-export default function IqcDetailModal({ record, onClose }: Props) {
+export default function IqcDetailModal({ record, onClose, onPrint }: Props) {
   const { t } = useTranslation();
   const [selectedSerial, setSelectedSerial] = useState<string>("");
 
-  const details: DetailsPayload | null = (() => {
-    if (!record?.details) return null;
-    try { return JSON.parse(record.details); }
-    catch { return null; }
-  })();
-
+  const details = parseIqcDetails(record?.details);
   const serials: SerialEntry[] = details?.serials ?? [];
-
-  const itemResults: ItemJudgeEntry[] = (() => {
-    if (!record?.itemResults) return [];
-    try {
-      const parsed = JSON.parse(record.itemResults);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch { return []; }
-  })();
+  const itemResults: ItemJudgeEntry[] = parseIqcItemResults(record?.itemResults);
 
   // 모달 열릴 때 첫 시리얼 자동 선택
   const activeSerial = selectedSerial || serials[0]?.matUid || "";
   const activeEntry = serials.find((s) => s.matUid === activeSerial);
 
   // sampleBarcode 콤마 파싱 (details가 없을 때 fallback)
-  const barcodes = record?.sampleBarcode
-    ? record.sampleBarcode.split(",").map((b) => b.trim()).filter(Boolean)
-    : [];
+  const barcodes = parseSampleBarcodes(record?.sampleBarcode);
 
   const title = t("material.iqcHistory.detail.title", "IQC 검사 상세 — {{name}} ({{date}})", {
     name: record?.itemName ?? record?.itemCode ?? "",
@@ -130,6 +73,14 @@ export default function IqcDetailModal({ record, onClose }: Props) {
             <div className="flex gap-2"><span className="text-text-muted min-w-[60px]">{t("material.iqcHistory.inspector", "검사자")}</span><span className="text-text">{record.inspectorName || "-"}</span></div>
             <div className="flex gap-2"><span className="text-text-muted min-w-[60px]">{t("common.remark")}</span><span className="text-text">{record.remark || "-"}</span></div>
           </div>
+
+          {onPrint && (
+            <div className="flex justify-end px-1">
+              <Button variant="secondary" size="sm" onClick={() => onPrint(record)}>
+                <Printer className="w-4 h-4 mr-1" />{t("material.iqcHistory.report.printButton", "성적서 인쇄")}
+              </Button>
+            </div>
+          )}
 
           <div className="border-t border-border" />
 
