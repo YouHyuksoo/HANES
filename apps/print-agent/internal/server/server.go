@@ -9,6 +9,7 @@ import (
 	"image/color"
 	"image/png"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"hanes/print-agent/internal/browserpolicy"
 	"hanes/print-agent/internal/config"
 	"hanes/print-agent/internal/jobs"
 	"hanes/print-agent/internal/printer"
@@ -150,6 +152,10 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 		}
 		s.cfg = next
 		s.logger = jobs.NewLogger(next.LogDir)
+		// 허용 Origin 변경 → 브라우저 로컬 네트워크 접근 정책도 같이 갱신(https origin 만)
+		if err := browserpolicy.Sync(browserpolicy.PolicyOrigins(next.AllowedOrigins)); err != nil {
+			log.Printf("browser policy sync failed: %v", err)
+		}
 		writeJSON(w, http.StatusOK, s.publicConfig())
 	default:
 		writeError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -268,6 +274,7 @@ func (s *Server) publicConfig() map[string]any {
 		"listenAddress":          s.cfg.ListenAddress,
 		"effectiveListenAddress": s.effectiveListenAddress,
 		"allowedOrigins":         s.cfg.AllowedOrigins,
+		"browserPolicyOrigins":   browserpolicy.PolicyOrigins(s.cfg.AllowedOrigins),
 		"tokenRequired":          s.cfg.Token != "",
 		"defaultPrinter":         s.cfg.DefaultPrinter,
 		"maxPayloadBytes":        s.cfg.MaxPayloadBytes,

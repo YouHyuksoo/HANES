@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"hanes/print-agent/internal/autostart"
+	"hanes/print-agent/internal/browserpolicy"
 	"hanes/print-agent/internal/config"
 	"hanes/print-agent/internal/install"
 	"hanes/print-agent/internal/printer"
@@ -23,6 +24,7 @@ func main() {
 	}
 
 	ensureAutoStart(&cfg, configPath)
+	syncBrowserPolicy(cfg)
 
 	backend := printer.New()
 	srv := server.NewWithConfigPath(&cfg, configPath, backend)
@@ -54,5 +56,18 @@ func ensureAutoStart(cfg *config.Config, configPath string) {
 				log.Printf("auto-start re-register failed: %v", err)
 			}
 		}
+	}
+}
+
+// syncBrowserPolicy 는 허용 Origin 의 https 주소를 Chrome/Edge "로컬 네트워크 접근 허용" 정책(HKCU)에 등록한다.
+// https MES 페이지가 이 에이전트(127.0.0.1)에 확인창 없이 연결되게 하는 자동 설정 — 실패해도 기동은 계속한다.
+func syncBrowserPolicy(cfg config.Config) {
+	origins := browserpolicy.PolicyOrigins(cfg.AllowedOrigins)
+	if err := browserpolicy.Sync(origins); err != nil {
+		log.Printf("browser policy sync failed: %v", err)
+		return
+	}
+	if len(origins) > 0 {
+		log.Printf("browser local-network policy registered for %v", origins)
 	}
 }

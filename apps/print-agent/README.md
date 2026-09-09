@@ -68,3 +68,18 @@ node tools/print-agent.structure.test.mjs
 cd apps/print-agent
 go test ./...
 ```
+
+## 브라우저 로컬 네트워크 접근 정책 자동 등록 (2026-09-09)
+
+https 로 서비스되는 MES(예: `https://hswbs.haengsung.com`)에서 브라우저가 이 에이전트(127.0.0.1)에 접근하려면
+Chrome/Edge 가 "로컬 네트워크 접근 허용" 을 사용자에게 묻는다. 에이전트는 기동 시와 설정 저장 시 허용 Origin 중
+**https origin** 을 아래 정책 키(HKCU, 관리자 권한 불필요)에 자동 등록해 확인창 없이 허용되게 한다.
+
+- `HKCU\SOFTWARE\Policies\Google\Chrome\LocalNetworkAccessAllowedForUrls`
+- `HKCU\SOFTWARE\Policies\Microsoft\Edge\LocalNetworkAccessAllowedForUrls`
+
+브라우저는 재시작(또는 `chrome://policy` 새로고침) 후 반영한다. http 공인 주소 페이지는 브라우저가 "비보안 컨텍스트"
+사유로 loopback 요청을 정책과 무관하게 차단하므로(Chrome 153 실측) 반드시 https 로 접속해야 한다.
+
+빌드(창 없는 트레이 앱): `go build -ldflags "-H=windowsgui" -o dist/hanes-print-agent.exe ./cmd/hanes-print-agent`
+배포본은 `apps/print-agent/release/hanes-print-agent.exe` 로 git 에 포함한다(MES 백엔드가 이 경로를 우선 탐색).
