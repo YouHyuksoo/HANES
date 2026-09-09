@@ -54,8 +54,8 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
   };
 
   const sidebarWidth = collapsed ? "var(--sidebar-collapsed-width)" : "var(--sidebar-width)";
-  const workflowItems = items.filter(item => item.code === "WORKFLOW");
-  const regularItems = items.filter(item => item.code !== "WORKFLOW");
+  const workflowItems = items.filter(item => item.code === "WORKFLOW" || item.code === "MONITORING");
+  const regularItems = items.filter(item => item.code !== "WORKFLOW" && item.code !== "MONITORING");
 
   return (
     <>
@@ -82,7 +82,7 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
             onMenuDragStart={(code) => { if (!isFavorite(code)) toggleFavorite(code); }}
           />
         </nav>
-        <nav className="flex-shrink-0 border-t border-border bg-surface px-3 py-2" aria-label={t("menu.workflow")}>
+        <nav className="flex-shrink-0 border-t border-border bg-surface px-3 py-2" aria-label={`${t("menu.workflow")} · ${t("menu.monitoring")}`}>
           <SidebarMenu
             items={workflowItems}
             collapsed={collapsed}
