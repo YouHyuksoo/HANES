@@ -112,9 +112,14 @@ func (c *Config) Normalize() {
 	// 재설정 없이 현재 배포 서버에서 출력할 수 있도록 알려진 origin을 보완한다.
 	defaults := Default().AllowedOrigins
 	seen := make(map[string]bool, len(c.AllowedOrigins))
-	for _, origin := range c.AllowedOrigins { seen[strings.TrimRight(strings.TrimSpace(origin), "/")] = true }
+	for _, origin := range c.AllowedOrigins {
+		seen[strings.TrimRight(strings.TrimSpace(origin), "/")] = true
+	}
 	for _, origin := range defaults {
-		if !seen[origin] { c.AllowedOrigins = append(c.AllowedOrigins, origin); seen[origin] = true }
+		if !seen[origin] {
+			c.AllowedOrigins = append(c.AllowedOrigins, origin)
+			seen[origin] = true
+		}
 	}
 	for i := range c.AllowedOrigins {
 		c.AllowedOrigins[i] = strings.TrimRight(strings.TrimSpace(c.AllowedOrigins[i]), "/")
