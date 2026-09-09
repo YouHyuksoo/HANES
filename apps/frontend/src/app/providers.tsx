@@ -21,6 +21,7 @@ import { useComCodes } from "@/hooks/useComCode";
 import { useThemeStore, listenSystemThemeChange } from "@/stores/themeStore";
 import { useSysConfigStore } from "@/stores/sysConfigStore";
 import "@/lib/i18n";
+import TourModeProvider from "@/components/tour/TourModeProvider";
 
 // React Query 클라이언트 설정
 const queryClient = new QueryClient({
@@ -177,7 +178,7 @@ export function Providers({ children }: ProvidersProps) {
         }}
       />
       <ApiFeedbackModal />
-      {children}
+      <TourModeProvider>{children}</TourModeProvider>
     </QueryClientProvider>
   );
 }

@@ -6,6 +6,7 @@
  */
 import { forwardRef, SelectHTMLAttributes } from 'react';
 import { ChevronDown } from 'lucide-react';
+import HelpTarget from '@/components/tour/HelpTarget';
 
 export interface SelectOption {
   value: string;
@@ -27,7 +28,9 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
     const effectivePlaceholder = placeholder || label || '전체';
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
+    const tourLabel = label || placeholder || '선택';
     return (
+      <HelpTarget helpKey={`common.fields.${tourLabel}`} label={tourLabel}>
       <div className={fullWidth ? 'w-full' : ''}>
         {label && (
           <label htmlFor={inputId} className="block text-sm font-medium text-text mb-1.5">
@@ -72,6 +75,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
 
         {error && <p className="mt-1.5 text-sm text-red-500">{error}</p>}
       </div>
+      </HelpTarget>
     );
   }
 );

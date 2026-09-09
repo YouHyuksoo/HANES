@@ -44,6 +44,7 @@ import { numberRangeFilterFn } from './numberFilterFn';
 import { dateRangeFilterFn } from './dateFilterFn';
 import { textInFilterFn } from './textFilterFn';
 import { GridSummaryFooter } from './GridSummaryFooter';
+import HelpTarget from '@/components/tour/HelpTarget';
 
 const EXPORT_FORMATS: { format: ExportFormat; label: string; ext: string; colorClass: string }[] = [
   { format: 'xlsx', label: 'Excel',    ext: '.xlsx', colorClass: 'text-green-600 dark:text-green-400' },
@@ -71,6 +72,8 @@ declare module '@tanstack/react-table' {
     filterOptions?: { value: string; label: string }[];
     /** 필터 placeholder */
     filterPlaceholder?: string;
+    /** 투어 모드 설명 키 */
+    helpKey?: string;
   }
 }
 
@@ -530,7 +533,12 @@ function DataGrid<T>({
                             className={`flex items-center gap-2 ${header.column.getCanSort() ? 'cursor-pointer select-none hover:text-primary' : ''}`}
                             onClick={header.column.getToggleSortingHandler()}
                           >
-                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            <HelpTarget
+                              helpKey={header.column.columnDef.meta?.helpKey ?? `common.fields.${header.column.id}`}
+                              label={String(flexRender(header.column.columnDef.header, header.getContext()) ?? header.id)}
+                            >
+                              {flexRender(header.column.columnDef.header, header.getContext())}
+                            </HelpTarget>
                             {header.column.getCanSort() && <SortIcon isSorted={header.column.getIsSorted()} />}
                           </div>
                           {enableColumnResizing && (

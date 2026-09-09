@@ -25,6 +25,7 @@ import SerialIndicator from "./SerialIndicator";
 import PrintAgentIndicator from "./PrintAgentIndicator";
 import HelpButton from "@/components/help/HelpButton";
 import HeaderMenuSearch from "./HeaderMenuSearch";
+import { useTourMode } from "@/hooks/useTourMode";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -44,6 +45,7 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
   const { t } = useTranslation();
   const { isDark, toggleTheme } = useTheme();
   const { colorTheme, setColorTheme } = useThemeStore();
+  const { enabled: tourModeEnabled, toggle: toggleTourMode } = useTourMode();
   const { user, logout, selectedCompany, selectedPlant } = useAuthStore();
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -190,6 +192,13 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
 
         {/* 도움말 */}
         <HelpButton />
+
+        <button type="button" onClick={toggleTourMode} aria-pressed={tourModeEnabled}
+          aria-label={t('header.tourMode', '투어 모드')}
+          title={t('header.tourModeHelp', '화면의 필드·컬럼·버튼 설명을 표시합니다.')}
+          className={`inline-flex items-center rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${tourModeEnabled ? 'bg-primary text-white' : 'text-text-muted hover:bg-background'}`}>
+          {t('header.tourMode', '투어 모드')}
+        </button>
 
         {/* 현재 회사 + 사업장 표시 */}
         {selectedCompany && (

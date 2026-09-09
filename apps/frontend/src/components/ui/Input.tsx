@@ -11,6 +11,7 @@
  * 4. **leftIcon/rightIcon**: 아이콘 삽입
  */
 import { forwardRef, InputHTMLAttributes } from 'react';
+import HelpTarget from '@/components/tour/HelpTarget';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -19,6 +20,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   fullWidth?: boolean;
+  tourHelpKey?: string;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -31,6 +33,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       leftIcon,
       rightIcon,
       fullWidth = false,
+      tourHelpKey,
       disabled,
       required,
       id,
@@ -58,7 +61,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     const iconPaddingLeft = leftIcon ? 'pl-10' : '';
     const iconPaddingRight = rightIcon ? 'pr-10' : '';
 
+    const tourLabel = label ?? props.placeholder ?? '입력';
     return (
+      <HelpTarget helpKey={tourHelpKey ?? `common.fields.${tourLabel}`} label={tourLabel}>
       <div className={`${fullWidth ? 'w-full' : ''}`}>
         {/* Label */}
         {label && (
@@ -115,6 +120,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <p className="mt-1.5 text-sm text-text-muted">{hint}</p>
         )}
       </div>
+      </HelpTarget>
     );
   }
 );

@@ -13,6 +13,7 @@ import { forwardRef, ButtonHTMLAttributes } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HelpTooltip from '@/components/shared/HelpTooltip';
+import HelpTarget from '@/components/tour/HelpTarget';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
@@ -21,6 +22,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   disabledReason?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  tourHelpKey?: string;
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -33,6 +35,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabledReason,
       leftIcon,
       rightIcon,
+      tourHelpKey,
       disabled,
       children,
       title,
@@ -118,16 +121,22 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       </button>
     );
 
+    const tourLabel = title ?? (typeof children === 'string' ? children : '버튼');
+    const tourKey = tourHelpKey ?? `common.actions.${tourLabel}`;
+    const tourNode = <HelpTarget helpKey={tourKey} label={tourLabel}>
+      {buttonNode}
+    </HelpTarget>;
+
     if (disabledHelp) {
       return (
         <HelpTooltip description={disabledHelp} focusable
           className={className.split(/\s+/).filter(token => /^(?:(?:sm|md|lg|xl):)?(?:w-|min-w-|max-w-|flex-1$|grow$|shrink-0$)/.test(token)).join(' ')}>
-          {buttonNode}
+          {tourNode}
         </HelpTooltip>
       );
     }
 
-    return buttonNode;
+    return tourNode;
   }
 );
 
