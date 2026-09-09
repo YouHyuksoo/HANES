@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+// @ts-expect-error Node's strip-types test runner resolves the explicit extension.
 import { resolveTourHelp } from './registry.ts';
 
 test('resolves current language before Korean per field', () => {
@@ -11,6 +12,8 @@ test('resolves current language before Korean per field', () => {
   assert.equal(result.description, '설명');
 });
 
-test('uses label when key is missing', () => {
-  assert.deepEqual(resolveTourHelp('missing', 'en', {}, '라벨'), { title: '라벨', description: '라벨' });
+test('uses an operational fallback when key is missing', () => {
+  const result = resolveTourHelp('missing', 'en', {}, '라벨');
+  assert.equal(result.title, '라벨');
+  assert.equal(result.description, '라벨 항목의 현재 값을 표시합니다.');
 });

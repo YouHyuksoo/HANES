@@ -12,10 +12,10 @@ import vi from '@/tour-help/locales/vi.json';
 
 const resources = { ko, en, zh, vi };
 
-export default function HelpTarget({ helpKey, label, children }: { helpKey: string; label: string; children: React.ReactNode }) {
+export default function HelpTarget({ helpKey, label, fallbackDescription, children }: { helpKey: string; label: string; fallbackDescription?: string; children: React.ReactNode }) {
   const { enabled } = useTourMode();
   const { i18n } = useTranslation();
-  const help = resolveTourHelp(helpKey, i18n.language, resources, label);
+  const help = resolveTourHelp(helpKey, i18n.language, resources, label, fallbackDescription);
   if (!enabled || !helpKey) return <>{children}</>;
   const description = [help.title, help.description, help.usage, help.warning, help.related?.length ? `관련 항목: ${help.related.join(', ')}` : ''].filter(Boolean).join('\n');
   return <span className="relative inline-flex items-center">

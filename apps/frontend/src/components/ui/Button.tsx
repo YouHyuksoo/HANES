@@ -123,7 +123,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const tourLabel = title ?? (typeof children === 'string' ? children : '버튼');
     const tourKey = tourHelpKey ?? `common.actions.${tourLabel}`;
-    const tourNode = <HelpTarget helpKey={tourKey} label={tourLabel}>
+    const tourNode = <HelpTarget helpKey={tourKey} label={tourLabel}
+      fallbackDescription={`${tourLabel} 작업을 실행합니다. 처리 결과는 화면의 목록과 안내 메시지에서 확인하세요.`}>
       {buttonNode}
     </HelpTarget>;
 
