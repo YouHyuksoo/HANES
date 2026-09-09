@@ -53,7 +53,7 @@ export function FavoriteSidebar({ items, favorites, collapsed, pathname, isMenuD
     </div>
     {!collapsed && expanded && <div className="ml-2">
       {state.folders.map(folder => <div key={folder.id}>
-        <button type="button" onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; setDragOverFolder(folder.id); }} onDragLeave={() => setDragOverFolder(null)} onDrop={(event) => dropIntoFolder(event, folder.id)} className={`flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-background rounded ${dragOverFolder === folder.id ? 'ring-2 ring-primary bg-primary/10' : ''}`} aria-expanded={!closedFolders.has(folder.id)}
+        <button type="button" onDragEnter={(event) => { event.preventDefault(); setDragOverFolder(folder.id); }} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; setDragOverFolder(folder.id); }} onDragLeave={() => setDragOverFolder(null)} onDrop={(event) => dropIntoFolder(event, folder.id)} className={`flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-background rounded ${dragOverFolder === folder.id ? 'ring-2 ring-primary bg-primary/10' : ''}`} aria-expanded={!closedFolders.has(folder.id)}
           onClick={() => setClosedFolders(prev => { const next = new Set(prev); if (next.has(folder.id)) next.delete(folder.id); else next.add(folder.id); return next; })}>
           {closedFolders.has(folder.id) ? <ChevronRight className="w-3 h-3 shrink-0" /> : <ChevronDown className="w-3 h-3 shrink-0" />}<Folder className="w-4 h-4 shrink-0" /><span className="truncate" title={folder.name}>{folder.name}</span>
         </button>

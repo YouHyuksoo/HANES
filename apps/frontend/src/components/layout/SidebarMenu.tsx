@@ -104,7 +104,7 @@ export default function SidebarMenu({
                 <button
                   type="button"
                   draggable={!!onMenuDragStart}
-                  onDragStart={(e) => { e.dataTransfer.setData('text/hanes-menu-code', item.code); e.dataTransfer.effectAllowed = 'copy'; onMenuDragStart?.(item.code); }}
+                  onDragStart={(e) => { e.dataTransfer.setData('text/hanes-menu-code', item.code); e.dataTransfer.effectAllowed = 'move'; onMenuDragStart?.(item.code); }}
                   onClick={(e) => handleMenuClick(e, item as { code: string; path: string; labelKey: string }, item.code)}
                   title={collapsed ? t(item.labelKey) : undefined}
                   className={`
@@ -161,7 +161,7 @@ export default function SidebarMenu({
                             <button
                               type="button"
                               draggable={!!onMenuDragStart}
-                              onDragStart={(e) => { e.dataTransfer.setData('text/hanes-menu-code', child.code); e.dataTransfer.effectAllowed = 'copy'; onMenuDragStart?.(child.code); }}
+                              onDragStart={(e) => { e.dataTransfer.setData('text/hanes-menu-code', child.code); e.dataTransfer.effectAllowed = 'move'; onMenuDragStart?.(child.code); }}
                               onClick={(e) => handleMenuClick(e, child as { code: string; path: string; labelKey: string }, item.code)}
                               className={`
                                 group flex w-full items-center gap-2 px-3 py-2 rounded-[var(--radius)] text-left text-sm transition-colors duration-200
