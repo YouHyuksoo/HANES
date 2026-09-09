@@ -154,12 +154,17 @@ export function printPngLabelsInBrowser(
     iframe.setAttribute("data-label-print-frame", "true");
     iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none";
 
-    let finished = false;
-    const finish = () => {
-      if (finished) return;
-      finished = true;
-      window.setTimeout(() => iframe.remove(), 0);
+    let settled = false;
+    let cleaned = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true;
       resolve();
+    };
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      window.setTimeout(() => iframe.remove(), 0);
     };
 
     iframe.onload = () => {
@@ -177,11 +182,19 @@ export function printPngLabelsInBrowser(
           img.addEventListener("error", () => done(), { once: true });
         })
       ))).then(() => {
-        win.addEventListener("afterprint", finish, { once: true });
-        win.focus();
-        win.print();
-        // afterprint 가 오지 않는 브라우저 대비 — 일정 시간 뒤 정리
-        window.setTimeout(finish, BROWSER_PRINT_CLEANUP_MS);
+        win.addEventListener("afterprint", cleanup, { once: true });
+        try {
+          win.focus();
+          win.print();
+          // 인쇄 대화상자가 열린 뒤 afterprint를 기다리면 화면이 60초 동안 잠긴다.
+          // 인쇄 호출이 브라우저에 전달된 즉시 호출자 UI를 해제하고 iframe만 나중에 정리한다.
+          settle();
+        } catch (error) {
+          iframe.remove();
+          if (!settled) reject(error instanceof Error ? error : new Error("브라우저 인쇄를 시작하지 못했습니다."));
+        }
+        // afterprint가 오지 않는 브라우저 대비 — 일정 시간 뒤 iframe만 정리
+        window.setTimeout(cleanup, BROWSER_PRINT_CLEANUP_MS);
       });
     };
 

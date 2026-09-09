@@ -270,9 +270,17 @@ export class ProductTraceabilityService {
     }
 
     // TRACE_LOGS 없음 → PROD_RESULTS + INSPECT_RESULTS(시리얼 격리) fallback
-    const prodResults = orderNo
+    const orderResults = orderNo
       ? await this.prodResultRepo.find({ where: { orderNo, company, plant }, order: { startAt: 'ASC' } })
       : [];
+    // FG/SG 바코드가 PRD_UID로 기록된 경우 작업지시 전체가 아니라 해당 제품의 실적만 표시한다.
+    // 구형 데이터처럼 PRD_UID가 없는 단일 실적은 기존 fallback을 유지한다.
+    const matchedResults = orderResults.filter((result) => result.prdUid === serial);
+    const prodResults = matchedResults.length > 0
+      ? matchedResults
+      : orderResults.length <= 1
+        ? orderResults
+        : [];
     const procCodes = new Set<string>();
     const equipCodes = new Set<string>();
     const workerIds = new Set<string>();
@@ -867,9 +875,15 @@ export class ProductTraceabilityService {
     const productionDate = this.fmtDate(jobOrder?.planDate ?? null) ?? this.fmtDate(fg.issuedAt);
 
     // 제품 생산에 사용된 작업지시 + 설비 코드 수집
-    const prodResults = fg.orderNo
+    const orderResults = fg.orderNo
       ? await this.prodResultRepo.find({ where: { orderNo: fg.orderNo, company, plant } })
       : [];
+    const matchedResults = orderResults.filter((result) => result.prdUid === serial);
+    const prodResults = matchedResults.length > 0
+      ? matchedResults
+      : orderResults.length <= 1
+        ? orderResults
+        : [];
     const prdUid = prodResults.find((p) => p.prdUid)?.prdUid ?? '';
     const prodOrderNos = [...new Set([fg.orderNo, ...prodResults.map((p) => p.orderNo)].filter((v): v is string => !!v))];
     const prodEquipCodes = [...new Set([fg.equipCode, ...prodResults.map((p) => p.equipCode)].filter((v): v is string => !!v))];
