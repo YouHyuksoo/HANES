@@ -81,7 +81,8 @@ const settingsPageHTML = `<!doctype html>
     <section>
       <div class="grid">
         <label>허용 Origin 목록
-          <textarea id="allowedOrigins" placeholder="http://localhost:3002&#10;http://127.0.0.1:3002"></textarea>
+          <textarea id="allowedOrigins" placeholder="http://localhost:3002&#10;http://127.0.0.1:3002&#10;http://hswbs.haengsung.com:3002&#10;https://hswbs.haengsung.com"></textarea>
+          <span class="muted">MES를 접속한 주소와 같은 scheme·host·port를 한 줄씩 입력합니다.</span>
         </label>
         <label>토큰 설정
           <input id="token" type="password" placeholder="새 토큰 입력 시 변경, 비워두면 기존 토큰 유지" />

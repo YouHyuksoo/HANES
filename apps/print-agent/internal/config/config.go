@@ -31,7 +31,8 @@ func Default() Config {
 		AllowedOrigins: []string{
 			"http://localhost:3002",
 			"http://127.0.0.1:3002",
-			// 배포 서버(https 전환, 2026-09-09). http 공인 주소는 브라우저가 loopback 요청을 막으므로 넣지 않는다.
+			// 배포 서버 주소(HTTP/HTTPS 모두 등록: 실제 접속 scheme과 일치해야 CORS 통과)
+			"http://hswbs.haengsung.com:3002",
 			"https://hswbs.haengsung.com",
 		},
 		MaxPayloadBytes: defaultMaxPayload,
@@ -106,6 +107,14 @@ func (c *Config) Normalize() {
 	}
 	if len(c.AllowedOrigins) == 0 {
 		c.AllowedOrigins = Default().AllowedOrigins
+	}
+	// 구버전 설치본의 기본 목록(localhost만)을 사용하는 기존 사용자도
+	// 재설정 없이 현재 배포 서버에서 출력할 수 있도록 알려진 origin을 보완한다.
+	defaults := Default().AllowedOrigins
+	seen := make(map[string]bool, len(c.AllowedOrigins))
+	for _, origin := range c.AllowedOrigins { seen[strings.TrimRight(strings.TrimSpace(origin), "/")] = true }
+	for _, origin := range defaults {
+		if !seen[origin] { c.AllowedOrigins = append(c.AllowedOrigins, origin); seen[origin] = true }
 	}
 	for i := range c.AllowedOrigins {
 		c.AllowedOrigins[i] = strings.TrimRight(strings.TrimSpace(c.AllowedOrigins[i]), "/")
