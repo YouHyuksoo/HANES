@@ -19,18 +19,18 @@ status: approved-design
 
 # 콘텐츠와 키
 
-투어 콘텐츠는 화면 코드와 분리된 다국어 리소스(`tour-help/ko.json`, `en.json`, `zh.json`, `vi.json`)로 관리한다. 항목은 `title`, `description`을 필수로 하고 `usage`, `warning`, `related`를 선택으로 둔다. 공통 버튼·컬럼은 공통 키를 재사용하며, 업무 의미가 다른 값은 화면별 키를 사용한다. 해석 우선순위는 현재 언어 → 한국어 → 화면 라벨이다.
+투어 콘텐츠는 화면 코드와 분리된 i18next `tour-help` namespace(`tour-help/ko.json`, `en.json`, `zh.json`, `vi.json`)로 관리한다. 항목은 `title`, `description`을 필수로 하고 `usage`, `warning`, `related`를 선택으로 둔다. 카드에는 `title` → `description` → `usage` → `warning` → `related` 순서로 표시하며 `related`는 링크 없이 관련 제목 목록으로 표시한다. 공통 버튼·컬럼은 공통 키를 재사용하며, 업무 의미가 다른 값은 화면별 키를 사용한다. `title`과 `description`은 각각 현재 언어 → 한국어 → 화면 라벨 순서로 fallback하며 빈 문자열도 누락으로 간주한다. 언어 전환 시 열린 카드도 갱신한다.
 
-화면은 React `HelpTarget` 래퍼의 `helpKey` 또는 DataGrid 컬럼 `meta.helpKey`만 연결한다. `MutationObserver`가 React 트리에 아이콘을 삽입하지 않으며, 동적 등록은 래퍼의 mount/unmount와 DataGrid 헤더 렌더러가 담당한다. 설명 문장은 화면 JSX에 작성하지 않는다.
+화면은 React `HelpTarget` 래퍼의 `helpKey` 또는 DataGrid 컬럼 `meta.helpKey`만 연결한다. 키 표기는 `common.actions.save`, `master.iqcPartSpec.columns.sampleQty`처럼 점 표기법을 사용한다. `MutationObserver`가 React 트리에 아이콘을 삽입하지 않으며, 동적 등록은 래퍼의 mount/unmount와 DataGrid 헤더 렌더러가 담당한다. 설명 문장은 화면 JSX에 작성하지 않는다.
 
 # 공통 구성
 
 - `TourModeProvider`: 토글 상태와 사용자 설정 저장
 - `TourHelpRegistry`: 키·언어별 콘텐츠 조회와 fallback
-- `HelpTarget`: DOM 대상 식별 및 투어 모드에서만 44×44px 도움말 아이콘 노출. 버튼·입력과 중첩하지 않고 형제 위치에 둔다.
+- `HelpTarget`: DOM 대상 식별 및 투어 모드에서만 44×44px 도움말 아이콘 노출. 아이콘은 overlay hit area로 배치해 기존 버튼·입력·컬럼 폭과 행 높이를 변경하지 않으며, interactive 컨트롤과 중첩하지 않는다.
 - 기존 `HelpTooltip`: 호버·포커스 카드 렌더러로 재사용
 - `ColumnMeta.helpKey`: 공통 DataGrid 헤더 렌더러가 키가 있는 컬럼에 아이콘 추가
-- 동적 영역: React mount/unmount와 viewport 계산으로 표시 대상에 대응
+- 동적 영역: React mount/unmount와 `IntersectionObserver`로 표시 대상에 대응. observer root는 현재 스크롤 컨테이너로 하고 페이지·탭·모달·스크롤·리사이즈 때 가시성을 갱신한다.
 - 키 검증 스크립트: 연결 키·번역 누락·미사용 키를 CI에서 검사
 
 # 적용 순서
@@ -44,4 +44,5 @@ status: approved-design
 - 기준정보 화면의 표시된 대상마다 아이콘과 현재 언어 설명이 나온다.
 - 모달·탭을 연 뒤 새 대상도 설명된다.
 - 키 또는 번역 누락이 CI 검사에서 검출된다. `data-help-key`·`meta.helpKey` 존재성, 한국어 필수값, 지원 언어 누락, 중복·미사용 키, 네임스페이스 위반을 검사한다.
+- 테스트는 provider 저장 격리, registry fallback, HelpTarget ON/OFF·포커스·hit area, DataGrid meta 렌더링, 동적 mount/unmount, IntersectionObserver viewport 제외, 기준정보 대표 5개 화면, PDA dialog를 각각 검증한다.
 - 투어 모드 OFF에서는 기존 화면 레이아웃과 호버 동작이 유지된다.
