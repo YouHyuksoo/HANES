@@ -4,7 +4,7 @@ import { CircleHelp } from 'lucide-react';
 import HelpTooltip from '@/components/shared/HelpTooltip';
 import { useTourMode } from '@/hooks/useTourMode';
 import { useTranslation } from 'react-i18next';
-import { resolveTourHelp } from '@/tour-help/registry';
+import { operationalFallback, resolveTourHelp } from '@/tour-help/registry';
 import ko from '@/tour-help/locales/ko.json';
 import en from '@/tour-help/locales/en.json';
 import zh from '@/tour-help/locales/zh.json';
@@ -15,7 +15,7 @@ const resources = { ko, en, zh, vi };
 export default function HelpTarget({ helpKey, label, fallbackDescription, children }: { helpKey: string; label: string; fallbackDescription?: string; children: React.ReactNode }) {
   const { enabled } = useTourMode();
   const { i18n } = useTranslation();
-  const help = resolveTourHelp(helpKey, i18n.language, resources, label, fallbackDescription);
+  const help = resolveTourHelp(helpKey, i18n.language, resources, label, operationalFallback(helpKey, label, fallbackDescription));
   if (!enabled || !helpKey) return <>{children}</>;
   const description = [help.title, help.description, help.usage, help.warning, help.related?.length ? `관련 항목: ${help.related.join(', ')}` : ''].filter(Boolean).join('\n');
   return <span className="relative inline-flex items-center">

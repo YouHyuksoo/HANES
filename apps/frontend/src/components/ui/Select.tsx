@@ -30,8 +30,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
 
     const tourLabel = label || placeholder || '선택';
     return (
-      <HelpTarget helpKey={`common.fields.${tourLabel}`} label={tourLabel}
-        fallbackDescription="목록에서 업무에 적용할 기준을 선택합니다. 선택을 바꾸면 관련 목록이나 판정 기준이 다시 적용될 수 있습니다.">
+      <HelpTarget helpKey={`common.fields.${tourLabel}`} label={tourLabel}>
       <div className={fullWidth ? 'w-full' : ''}>
         {label && (
           <label htmlFor={inputId} className="block text-sm font-medium text-text mb-1.5">

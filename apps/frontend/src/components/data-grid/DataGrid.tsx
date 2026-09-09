@@ -536,7 +536,6 @@ function DataGrid<T>({
                             <HelpTarget
                               helpKey={header.column.columnDef.meta?.helpKey ?? `common.fields.${header.column.id}`}
                               label={String(flexRender(header.column.columnDef.header, header.getContext()) ?? header.id)}
-                              fallbackDescription="목록에서 이 컬럼의 값을 확인합니다. 헤더를 클릭하면 정렬할 수 있고, 컬럼 필터가 제공되면 조건을 좁힐 수 있습니다."
                             >
                               {flexRender(header.column.columnDef.header, header.getContext())}
                             </HelpTarget>

@@ -9,6 +9,7 @@ import { Edit2, Trash2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import HelpTarget from "@/components/tour/HelpTarget";
 
 /** 단자별 압착 규격 행 (API /master/terminal-crimp-specs) */
 export interface TerminalCrimpSpecRow {
@@ -63,27 +64,31 @@ export function createTerminalCrimpSpecGridColumns({
       meta: { align: "center" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
-          <button type="button" onClick={() => onEditSpec(row.original)} className="p-1 hover:bg-surface rounded"
-            title={t("common.edit")}>
-            <Edit2 className="w-4 h-4 text-primary" />
-          </button>
-          <button type="button" onClick={() => onDeleteSpec(row.original)} className="p-1 hover:bg-surface rounded"
-            title={t("common.delete")}>
-            <Trash2 className="w-4 h-4 text-red-500" />
-          </button>
+          <HelpTarget helpKey="master.terminalCrimpSpec.actions.edit" label={t("common.edit")}
+            fallbackDescription="선택한 단자·전선 조합의 압착 규격을 수정합니다. 저장 전에는 변경 내용이 서버에 반영되지 않습니다.">
+            <button type="button" onClick={() => onEditSpec(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.edit")}>
+              <Edit2 className="w-4 h-4 text-primary" />
+            </button>
+          </HelpTarget>
+          <HelpTarget helpKey="master.terminalCrimpSpec.actions.delete" label={t("common.delete")}
+            fallbackDescription="선택한 압착 규격을 삭제합니다. 이후 해당 단자·전선 조합을 압착 기준 조회에서 사용할 수 없습니다.">
+            <button type="button" onClick={() => onDeleteSpec(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.delete")}>
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </button>
+          </HelpTarget>
         </div>
       ),
     },
     {
       accessorKey: "terminalItemCode", header: t("master.terminalCrimpSpec.terminalItemCode"), size: 140,
-      meta: { filterType: "text" as const },
+      meta: { filterType: "text" as const, helpKey: "master.terminalCrimpSpec.columns.terminalItemCode" },
       cell: ({ getValue }) => <span className="text-primary font-medium">{getValue() as string}</span>,
     },
     {
       accessorKey: "terminalType",
       header: () => <StatusHeaderHelp label={t("master.terminalCrimpSpec.terminalType")} codeType="TERMINAL_TYPE" align="center" />,
       size: 110,
-      meta: { filterType: "multi" as const },
+      meta: { filterType: "multi" as const, helpKey: "master.terminalCrimpSpec.columns.terminalType" },
       cell: ({ getValue }) => {
         const v = getValue() as string | null;
         return v ? <ComCodeBadge groupCode="TERMINAL_TYPE" code={v} /> : <span className="text-text-muted">-</span>;
@@ -91,31 +96,31 @@ export function createTerminalCrimpSpecGridColumns({
     },
     {
       accessorKey: "wireSize", header: t("master.terminalCrimpSpec.wireSize"), size: 100,
-      meta: { filterType: "text" as const },
+      meta: { filterType: "text" as const, helpKey: "master.terminalCrimpSpec.columns.wireSize" },
     },
     {
       accessorKey: "wireItemCode", header: t("master.terminalCrimpSpec.wireItemCode"), size: 130,
-      meta: { filterType: "text" as const },
+      meta: { filterType: "text" as const, helpKey: "master.terminalCrimpSpec.columns.wireItemCode" },
       cell: ({ getValue }) => (getValue() as string | null) ?? "-",
     },
     {
       id: "crimpHeight", header: t("master.terminalCrimpSpec.crimpHeight"), size: 130,
-      meta: { align: "right" as const },
+      meta: { align: "right" as const, helpKey: "master.terminalCrimpSpec.columns.crimpHeight" },
       cell: rangeCell("crimpHeightLsl", "crimpHeightUsl"),
     },
     {
       id: "crimpWidth", header: t("master.terminalCrimpSpec.crimpWidth"), size: 130,
-      meta: { align: "right" as const },
+      meta: { align: "right" as const, helpKey: "master.terminalCrimpSpec.columns.crimpWidth" },
       cell: rangeCell("crimpWidthLsl", "crimpWidthUsl"),
     },
     {
       id: "insCrimpHeight", header: t("master.terminalCrimpSpec.insCrimpHeight"), size: 140,
-      meta: { align: "right" as const },
+      meta: { align: "right" as const, helpKey: "master.terminalCrimpSpec.columns.insCrimpHeight" },
       cell: rangeCell("insCrimpHeightLsl", "insCrimpHeightUsl"),
     },
     {
       accessorKey: "pullForceMin", header: t("master.terminalCrimpSpec.pullForceMin"), size: 110,
-      meta: { align: "right" as const },
+      meta: { align: "right" as const, helpKey: "master.terminalCrimpSpec.columns.pullForceMin" },
       cell: ({ getValue }) => {
         const v = getValue() as number | null;
         return <span className="font-mono text-right block">{v == null ? "-" : Number(v).toString()}</span>;
@@ -123,17 +128,17 @@ export function createTerminalCrimpSpecGridColumns({
     },
     {
       id: "stripLength", header: t("master.terminalCrimpSpec.stripLength"), size: 120,
-      meta: { align: "right" as const },
+      meta: { align: "right" as const, helpKey: "master.terminalCrimpSpec.columns.stripLength" },
       cell: rangeCell("stripLengthMin", "stripLengthMax"),
     },
     {
       accessorKey: "applicatorCode", header: t("master.terminalCrimpSpec.applicatorCode"), size: 120,
-      meta: { filterType: "text" as const },
+      meta: { filterType: "text" as const, helpKey: "master.terminalCrimpSpec.columns.applicatorCode" },
       cell: ({ getValue }) => (getValue() as string | null) ?? "-",
     },
     {
       accessorKey: "useYn", header: t("common.useYn"), size: 70,
-      meta: { align: "center" as const, filterType: "multi" as const },
+      meta: { align: "center" as const, filterType: "multi" as const, helpKey: "master.terminalCrimpSpec.columns.useYn" },
       cell: ({ getValue }) => (
         <span className={(getValue() as string) === "Y" ? "text-text" : "text-text-muted"}>
           {(getValue() as string) === "Y" ? t("common.useY") : t("common.useN")}

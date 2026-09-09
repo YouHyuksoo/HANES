@@ -63,8 +63,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const tourLabel = label ?? props.placeholder ?? '입력';
     return (
-      <HelpTarget helpKey={tourHelpKey ?? `common.fields.${tourLabel}`} label={tourLabel}
-        fallbackDescription="조회하거나 저장할 값을 입력합니다. 화면에 표시된 형식과 단위를 지켜 입력하세요.">
+      <HelpTarget helpKey={tourHelpKey ?? `common.fields.${tourLabel}`} label={tourLabel}>
       <div className={`${fullWidth ? 'w-full' : ''}`}>
         {/* Label */}
         {label && (
