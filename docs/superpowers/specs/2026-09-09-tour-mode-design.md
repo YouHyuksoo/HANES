@@ -10,10 +10,10 @@ status: approved-design
 
 # 사용자 경험
 
-- 최초 상태는 OFF이며 사용자별 설정을 유지한다.
+- 최초 상태는 OFF이며 `사용자 이메일 + 회사 + 사업장` 조합의 localStorage 키로 사용자별 설정을 유지한다. 예: `hanes:tour-mode:admin@hanes.com:40:1000`. 로그아웃·테넌트 전환 시 다른 키를 사용하며 SSR 초기값은 OFF로 둔 뒤 hydration 후 복원한다.
 - 헤더 우측에 토글을 고정한다.
 - ON일 때만 설명 대상에 작은 도움말 아이콘을 표시한다.
-- 현재 DOM에 표시된 대상만 안내한다. 탭·모달·드롭다운은 열린 뒤 동적으로 등록한다.
+- 현재 viewport에 실제 표시된 대상만 안내한다. `display:none`, `visibility:hidden`, `aria-hidden=true`, 페이지 밖 행은 제외한다. 탭·모달·드롭다운은 열린 뒤 동적으로 등록한다.
 - PC는 호버·키보드 포커스 툴팁을 사용한다. PDA는 동일 콘텐츠를 탭·포커스 패널로 표시한다.
 - 설명 키가 없으면 현재 언어의 화면 라벨을 fallback으로 사용한다.
 
@@ -21,20 +21,21 @@ status: approved-design
 
 투어 콘텐츠는 화면 코드와 분리된 다국어 리소스(`tour-help/ko.json`, `en.json`, `zh.json`, `vi.json`)로 관리한다. 항목은 `title`, `description`을 필수로 하고 `usage`, `warning`, `related`를 선택으로 둔다. 공통 버튼·컬럼은 공통 키를 재사용하며, 업무 의미가 다른 값은 화면별 키를 사용한다. 해석 우선순위는 현재 언어 → 한국어 → 화면 라벨이다.
 
-화면은 `data-help-key` 또는 DataGrid 컬럼 `meta.helpKey`만 연결한다. 설명 문장은 화면 JSX에 작성하지 않는다.
+화면은 React `HelpTarget` 래퍼의 `helpKey` 또는 DataGrid 컬럼 `meta.helpKey`만 연결한다. `MutationObserver`가 React 트리에 아이콘을 삽입하지 않으며, 동적 등록은 래퍼의 mount/unmount와 DataGrid 헤더 렌더러가 담당한다. 설명 문장은 화면 JSX에 작성하지 않는다.
 
 # 공통 구성
 
 - `TourModeProvider`: 토글 상태와 사용자 설정 저장
 - `TourHelpRegistry`: 키·언어별 콘텐츠 조회와 fallback
-- `HelpTarget`: DOM 대상 식별 및 투어 모드에서만 아이콘 노출
+- `HelpTarget`: DOM 대상 식별 및 투어 모드에서만 44×44px 도움말 아이콘 노출. 버튼·입력과 중첩하지 않고 형제 위치에 둔다.
 - 기존 `HelpTooltip`: 호버·포커스 카드 렌더러로 재사용
-- 동적 영역 감시: 표시된 DOM과 탭·모달 변화에 대응
+- `ColumnMeta.helpKey`: 공통 DataGrid 헤더 렌더러가 키가 있는 컬럼에 아이콘 추가
+- 동적 영역: React mount/unmount와 viewport 계산으로 표시 대상에 대응
 - 키 검증 스크립트: 연결 키·번역 누락·미사용 키를 CI에서 검사
 
 # 적용 순서
 
-공통 버튼·상태·수량·일자·검색 키를 먼저 등록한 뒤 `/master` 하위 기준정보 화면의 컬럼과 업무별 필드를 연결한다. 이후 다른 카테고리는 같은 키 체계로 확장한다. 설명 변경은 Git 리뷰와 일반 배포로 반영한다.
+공통 버튼·상태·수량·일자·검색 키를 먼저 등록한 뒤 `/master` 하위 기준정보 화면의 컬럼과 업무별 필드를 연결한다. 이후 다른 카테고리는 같은 키 체계로 확장한다. 설명 변경은 Git 리뷰와 일반 배포로 반영한다. PDA는 같은 리소스를 탭·포커스 패널(`role=dialog`)로 표시한다.
 
 # 검증 기준
 
@@ -42,5 +43,5 @@ status: approved-design
 - 새로고침·재로그인 후 사용자별 설정이 유지된다.
 - 기준정보 화면의 표시된 대상마다 아이콘과 현재 언어 설명이 나온다.
 - 모달·탭을 연 뒤 새 대상도 설명된다.
-- 키 또는 번역 누락이 CI 검사에서 검출된다.
+- 키 또는 번역 누락이 CI 검사에서 검출된다. `data-help-key`·`meta.helpKey` 존재성, 한국어 필수값, 지원 언어 누락, 중복·미사용 키, 네임스페이스 위반을 검사한다.
 - 투어 모드 OFF에서는 기존 화면 레이아웃과 호버 동작이 유지된다.
