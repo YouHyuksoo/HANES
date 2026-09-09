@@ -2448,16 +2448,7 @@
         "toastSent": "Đã gửi {{count}} nhãn nhập kho đến agent.",
         "toastError": "Đã xảy ra lỗi khi in qua agent.",
         "agentUnavailable": "Không thể kết nối tới agent in nhãn. Hãy kiểm tra HANES Print Agent đã được cài đặt và đang chạy trên máy này, rồi thử lại.",
-        "errorPrepareScreen": "Không thể chuẩn bị màn hình in nhãn.",
-        "printMethod": "Phương thức in",
-        "printMethodBrowser": "In bằng trình duyệt",
-        "printMethodAgent": "In qua Print Agent",
-        "browserPopupBlocked": "Cửa sổ in bị trình chặn popup chặn. Hãy cho phép popup của trang này rồi thử lại.",
-        "browserPreparing": "Đang chuẩn bị nhãn…",
-        "browserWindowClosed": "Cửa sổ in đã đóng nên không thể tiếp tục. Vui lòng thử lại.",
-        "toastBrowserPreparing": "Đang chuẩn bị màn hình in cho {{count}} nhãn nhập hàng.",
-        "toastBrowserOpened": "Đã mở cửa sổ in cho {{count}} nhãn nhập hàng. Hãy chọn máy in và in.",
-        "agentUnavailableHint": "Không kết nối được với Print Agent. Đổi phương thức in sang 'In bằng trình duyệt' để in mà không cần agent."
+        "errorPrepareScreen": "Không thể chuẩn bị màn hình in nhãn."
       },
       "selectPoDesc": "Chọn PO có thể nhập hàng.",
       "selectWarehouse": "Chọn kho",
@@ -3844,7 +3835,8 @@
       "prepareFailed": "Không thể chuẩn bị màn hình in nhãn FG.",
       "printSent": "Đã gửi {{count}} nhãn FG đến máy in.",
       "agentUnavailable": "Không thể kết nối tới agent in nhãn. Hãy kiểm tra HANES Print Agent đã được cài đặt và đang chạy trên máy này, rồi thử lại.",
-      "printError": "Đã xảy ra lỗi khi in nhãn FG."
+      "printError": "Đã xảy ra lỗi khi in nhãn FG.",
+      "printTitle": "Nhãn FG"
     },
     "inputAssembly": {
       "continuous": "Giữ mã quét (liên tục)",
@@ -9138,7 +9130,8 @@
       "printError": "Đã xảy ra lỗi khi in nhãn SFG.",
       "agentUnavailable": "Không thể kết nối tới agent in nhãn. Hãy kiểm tra HANES Print Agent đã được cài đặt và đang chạy trên máy này, rồi thử lại.",
       "typeBundle": "Bó",
-      "typeCircuit": "Mạch"
+      "typeCircuit": "Mạch",
+      "printTitle": "Nhãn SFG"
     },
     "instruction": {
       "title": "Hướng dẫn sản xuất",
@@ -9717,5 +9710,14 @@
         "description": "Dùng ô tìm kiếm phía trên để chọn nghiệp vụ, màn hình hoặc bảng trong danh mục hiện tại. Hệ thống không tự đổi nút trung tâm."
       }
     }
+  },
+  "labelPrint": {
+    "method": "Phương thức in nhãn",
+    "methodBrowser": "In bằng trình duyệt",
+    "methodAgent": "In qua Print Agent",
+    "methodHint": "In bằng trình duyệt mở hộp thoại in mà không cần agent. In tự động ở kiosk cũng theo cài đặt này.",
+    "browserOpened": "Đã mở hộp thoại in cho {{count}} nhãn. Hãy chọn máy in và in.",
+    "agentUnavailableHint": "Không kết nối được với Print Agent. Đổi phương thức in sang 'In bằng trình duyệt' để in mà không cần agent.",
+    "browserPreparing": "Đang chuẩn bị màn hình in cho {{count}} nhãn."
   }
 }

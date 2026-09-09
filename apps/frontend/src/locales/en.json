@@ -2450,16 +2450,7 @@
         "toastSent": "Sent {{count}} arrival labels to the agent.",
         "toastError": "An error occurred during agent printing.",
         "agentUnavailable": "Cannot connect to the label print agent. Make sure HANES Print Agent is installed and running on this PC, then try again.",
-        "errorPrepareScreen": "Failed to prepare the label print view.",
-        "printMethod": "Print method",
-        "printMethodBrowser": "Browser print",
-        "printMethodAgent": "Print Agent",
-        "browserPopupBlocked": "The print window was blocked by the popup blocker. Allow popups for this site and try again.",
-        "browserPreparing": "Preparing labels…",
-        "browserWindowClosed": "The print window was closed. Please try again.",
-        "toastBrowserPreparing": "Preparing the print view for {{count}} arrival label(s).",
-        "toastBrowserOpened": "Opened the print window for {{count}} arrival label(s). Choose a printer and print.",
-        "agentUnavailableHint": "Cannot connect to the label print agent. Switch the print method to 'Browser print' to print without the agent."
+        "errorPrepareScreen": "Failed to prepare the label print view."
       },
       "selectPoDesc": "Select a PO available for arrival.",
       "selectWarehouse": "Select warehouse",
@@ -3846,7 +3837,8 @@
       "prepareFailed": "Failed to prepare the FG label print view.",
       "printSent": "Sent {{count}} FG labels to the printer.",
       "agentUnavailable": "Cannot connect to the label print agent. Make sure HANES Print Agent is installed and running on this PC, then try again.",
-      "printError": "An error occurred while printing FG labels."
+      "printError": "An error occurred while printing FG labels.",
+      "printTitle": "FG label"
     },
     "inputAssembly": {
       "continuous": "Keep scans (continuous)",
@@ -9140,7 +9132,8 @@
       "printError": "An error occurred while printing SFG labels.",
       "agentUnavailable": "Cannot connect to the label print agent. Make sure HANES Print Agent is installed and running on this PC, then try again.",
       "typeBundle": "Bundle",
-      "typeCircuit": "Circuit"
+      "typeCircuit": "Circuit",
+      "printTitle": "SFG label"
     },
     "instruction": {
       "title": "Work Instruction",
@@ -9719,5 +9712,14 @@
         "description": "Use the search above to select a workflow, screen, or table from the current catalog. The center was not changed automatically."
       }
     }
+  },
+  "labelPrint": {
+    "method": "Label print method",
+    "methodBrowser": "Browser print",
+    "methodAgent": "Print Agent",
+    "methodHint": "Browser print opens the print dialog without the agent. Kiosk auto-print follows this setting too.",
+    "browserOpened": "Opened the print dialog for {{count}} label(s). Choose a printer and print.",
+    "agentUnavailableHint": "Cannot connect to the label print agent. Switch the print method to 'Browser print' to print without the agent.",
+    "browserPreparing": "Preparing the print view for {{count}} label(s)."
   }
 }

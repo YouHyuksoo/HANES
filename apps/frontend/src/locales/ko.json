@@ -2979,16 +2979,7 @@
         "toastSent": "{{count}}개 입하 라벨을 agent로 전송했습니다.",
         "toastError": "agent 출력 중 오류가 발생했습니다.",
         "agentUnavailable": "라벨 프린트 에이전트에 연결할 수 없습니다. PC에 HANES Print Agent가 설치·실행 중인지 확인한 뒤 다시 시도하세요.",
-        "errorPrepareScreen": "라벨 출력 화면을 준비하지 못했습니다.",
-        "printMethod": "출력 방식",
-        "printMethodBrowser": "브라우저 인쇄",
-        "printMethodAgent": "Print Agent 출력",
-        "browserPopupBlocked": "인쇄 창이 팝업 차단에 막혔습니다. 이 사이트의 팝업을 허용한 뒤 다시 시도하세요.",
-        "browserPreparing": "라벨을 준비하고 있습니다…",
-        "browserWindowClosed": "인쇄 창이 닫혀 출력을 진행할 수 없습니다. 다시 시도하세요.",
-        "toastBrowserPreparing": "{{count}}개 입하 라벨 인쇄 화면을 준비 중입니다.",
-        "toastBrowserOpened": "{{count}}개 입하 라벨 인쇄 창을 열었습니다. 프린터를 선택해 인쇄하세요.",
-        "agentUnavailableHint": "라벨 프린트 에이전트에 연결할 수 없습니다. 출력 방식을 '브라우저 인쇄'로 바꾸면 에이전트 없이 출력할 수 있습니다."
+        "errorPrepareScreen": "라벨 출력 화면을 준비하지 못했습니다."
       },
       "selectPoDesc": "입하 가능한 PO를 선택해주세요.",
       "selectWarehouse": "창고 선택",
@@ -4378,7 +4369,8 @@
       "prepareFailed": "FG 라벨 출력 화면을 준비하지 못했습니다.",
       "printSent": "FG 라벨 {{count}}건을 프린터로 전송했습니다.",
       "agentUnavailable": "라벨 프린트 에이전트에 연결할 수 없습니다. PC에 HANES Print Agent가 설치·실행 중인지 확인한 뒤 다시 시도하세요.",
-      "printError": "FG 라벨 출력 중 오류가 발생했습니다."
+      "printError": "FG 라벨 출력 중 오류가 발생했습니다.",
+      "printTitle": "FG 라벨"
     },
     "inputAssembly": {
       "continuous": "스캔 유지 (지속)",
@@ -9163,7 +9155,8 @@
       "printError": "SFG 라벨 출력 중 오류가 발생했습니다.",
       "agentUnavailable": "라벨 프린트 에이전트에 연결할 수 없습니다. PC에 HANES Print Agent가 설치·실행 중인지 확인한 뒤 다시 시도하세요.",
       "typeBundle": "묶음",
-      "typeCircuit": "회로"
+      "typeCircuit": "회로",
+      "printTitle": "SFG 라벨"
     },
     "instruction": {
       "title": "작업지도서",
@@ -9742,5 +9735,14 @@
         "description": "상단 검색에서 현재 카탈로그의 업무·화면·테이블을 선택해 복구하세요. 자동으로 다른 중심점으로 바꾸지 않았습니다."
       }
     }
+  },
+  "labelPrint": {
+    "method": "라벨 출력 방식",
+    "methodBrowser": "브라우저 인쇄",
+    "methodAgent": "Print Agent 출력",
+    "methodHint": "브라우저 인쇄는 에이전트 없이 인쇄 대화상자로 출력합니다. 키오스크 자동 출력도 이 설정을 따릅니다.",
+    "browserOpened": "{{count}}개 라벨 인쇄 대화상자를 열었습니다. 프린터를 선택해 인쇄하세요.",
+    "agentUnavailableHint": "라벨 프린트 에이전트에 연결할 수 없습니다. 출력 방식을 '브라우저 인쇄'로 바꾸면 에이전트 없이 출력할 수 있습니다.",
+    "browserPreparing": "{{count}}개 라벨 인쇄 화면을 준비 중입니다."
   }
 }

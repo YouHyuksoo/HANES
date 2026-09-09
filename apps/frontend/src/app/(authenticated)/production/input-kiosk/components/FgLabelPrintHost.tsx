@@ -7,7 +7,8 @@
  * 동작:
  * - 마운트 시 /master/label-templates?category=fg 의 기본 템플릿(없으면 기본 디자인)을 로드.
  * - printByFgBarcodes(rows): 조립(kit/confirmAssembly)에서 발행된 FG 바코드를 바코드+컨텍스트로 직접
- *   오프스크린 LabelPrintRenderer로 렌더 → PNG 변환 → HANES Print Agent(printAgentPng)로 모달 없이 출력.
+ *   오프스크린 LabelPrintRenderer로 렌더 → PNG 변환 → 출력 방식(PC 설정)에 따라 Print Agent 전송 또는
+ *   브라우저 인쇄(iframe) — services/label-print 참조.
  * - FG 데이터(FgLabel)는 조립 시 항상 발행되며, 인쇄 여부는 호출 측에서 백엔드 응답의 printFg(라우팅
  *   ISSUE_LABEL_TYPE='FG')로 판정해 true일 때만 이 호스트를 호출한다(여기서는 라우팅을 보지 않음).
  * - FgLabel 엔티티에 resultNo가 없으므로 resultNo 역조회는 하지 않는다.
@@ -23,7 +24,11 @@ import {
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import api from "@/services/api";
-import { printLabelNodesViaAgent } from "@/services/label-print";
+import {
+  printLabelNodesViaAgent,
+  printLabelNodesViaBrowser,
+  readStoredLabelPrintMethod,
+} from "@/services/label-print";
 import { PrintAgentUnavailableError } from "@/services/print-agent";
 import {
   LabelDesign,
@@ -95,6 +100,12 @@ const FgLabelPrintHost = forwardRef<FgLabelPrintHandle>(function FgLabelPrintHos
         if (nodes.length !== printItems.length) {
           throw new Error(t("production.fgLabel.prepareFailed", "FG 라벨 출력 화면을 준비하지 못했습니다."));
         }
+        // 출력 방식은 PC 공통 설정(헤더 에이전트 메뉴). BROWSER 면 에이전트 없이 인쇄 대화상자로 출력.
+        if (readStoredLabelPrintMethod() === "BROWSER") {
+          await printLabelNodesViaBrowser(nodes, t("production.fgLabel.printTitle", "FG 라벨"), design.labelWidth, design.labelHeight);
+          toast.success(t("labelPrint.browserOpened", "{{count}}개 라벨 인쇄 대화상자를 열었습니다. 프린터를 선택해 인쇄하세요.", { count: printItems.length }));
+          return;
+        }
         await printLabelNodesViaAgent(
           nodes.map((node, index) => ({ node, jobId: `FG-${printItems[index].key}` })),
           design.labelWidth,
@@ -103,7 +114,7 @@ const FgLabelPrintHost = forwardRef<FgLabelPrintHandle>(function FgLabelPrintHos
         toast.success(t("production.fgLabel.printSent", "FG 라벨 {{count}}건을 프린터로 전송했습니다.", { count: printItems.length }));
       } catch (error: unknown) {
         const message = error instanceof PrintAgentUnavailableError
-          ? t("production.fgLabel.agentUnavailable", "라벨 프린트 에이전트에 연결할 수 없습니다. PC에 HANES Print Agent가 설치·실행 중인지 확인한 뒤 다시 시도하세요.")
+          ? t("labelPrint.agentUnavailableHint", "라벨 프린트 에이전트에 연결할 수 없습니다. 출력 방식을 '브라우저 인쇄'로 바꾸면 에이전트 없이 출력할 수 있습니다.")
           : error instanceof Error && error.message
             ? error.message
             : t("production.fgLabel.printError", "FG 라벨 출력 중 오류가 발생했습니다.");

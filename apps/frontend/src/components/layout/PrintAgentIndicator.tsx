@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Printer, Download, RefreshCw, Settings, AlertTriangle } from "lucide-react";
+import LabelPrintMethodSelect from "@/components/shared/LabelPrintMethodSelect";
 import {
   checkPrintAgent,
   fetchPrintAgentInstallerInfo,
@@ -116,6 +117,15 @@ export default function PrintAgentIndicator() {
                 <span className="text-sm font-medium text-text">{statusLabel}</span>
               </div>
               <p className="text-xs text-text-muted mt-1 font-mono">{PRINT_AGENT_BASE_URL}</p>
+            </div>
+
+            {/* 라벨 출력 방식(이 PC 공통) — 에이전트 없이도 브라우저 인쇄로 출력 가능 */}
+            <div className="px-4 py-3 border-b border-border">
+              <p className="text-xs text-text-muted mb-1">{t("labelPrint.method", "라벨 출력 방식")}</p>
+              <LabelPrintMethodSelect />
+              <p className="text-xs text-text-muted mt-1">
+                {t("labelPrint.methodHint", "브라우저 인쇄는 에이전트 없이 인쇄 대화상자로 출력합니다. 키오스크 자동 출력도 이 설정을 따릅니다.")}
+              </p>
             </div>
 
             {connected ? (

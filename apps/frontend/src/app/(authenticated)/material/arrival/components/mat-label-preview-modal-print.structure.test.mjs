@@ -17,9 +17,9 @@ test('arrival label modal prints selected mat_lot template through local print-a
 
   assert.match(source, /LabelDesignRenderer/);
   assert.match(source, /printAgentPng/);
-  assert.match(source, /renderLabelNodeToPngBase64/);
-  assert.match(source, /waitForLabelRenderReady/);
-  assert.match(source, /data-label-barcode-pending/);
+  // PNG 변환(바코드 준비 대기 포함)은 공유 서비스 한 곳 — 화면에 복제하지 않는다
+  assert.match(source, /import \{[^}]*renderLabelNodeToPngBase64[^}]*\} from "@\/services\/label-print"/);
+  assert.doesNotMatch(source, /function renderLabelNodeToPngBase64/);
   assert.match(source, /jobId:\s*`MAT-ARRIVAL-\$\{item\.key\}`/);
 
   // 과거 innerHTML 복사식 브라우저 인쇄는 PDF 프린터에서 바코드가 깨졌다. 지금의 브라우저 인쇄는
@@ -31,20 +31,16 @@ test('arrival label modal prints selected mat_lot template through local print-a
   assert.doesNotMatch(source, /api\.get\("\/master\/label-templates"/);
 });
 
-test('arrival label modal offers browser print (no agent) using the same PNG pipeline', () => {
-  // 출력 방식 선택: BROWSER(기본, PC 별 기억) / AGENT
-  assert.match(source, /type MatLabelPrintMethod = "BROWSER" \| "AGENT"/);
-  assert.match(source, /MAT_LABEL_PRINT_METHOD_STORAGE_KEY = "hanes\.matLabel\.printMethod"/);
-  assert.match(source, /material\.arrival\.label\.printMethodBrowser/);
-  assert.match(source, /material\.arrival\.label\.printMethodAgent/);
-  // 팝업 차단 회피: 클릭 핸들러에서 동기적으로 창을 연 뒤 PNG 를 채운다
-  assert.match(source, /browserWindow = window\.open\("", "_blank"\)/);
-  assert.match(source, /buildBrowserPrintDocument\(/);
-  assert.match(source, /data:image\/png;base64,/);
-  assert.match(source, /@page\{size:\$\{widthMm\}mm \$\{heightMm\}mm;margin:0\}/);
-  assert.match(source, /win\.print\(\)/);
-  assert.match(source, /afterprint/);
-  // 에이전트 실패 시 브라우저 인쇄로 안내
-  assert.match(source, /material\.arrival\.label\.agentUnavailableHint/);
+test('arrival label modal offers browser print (no agent) through the shared PNG pipeline', () => {
+  // 출력 방식 선택은 공유 컴포넌트(PC 별 localStorage) — 화면별 사전을 새로 만들지 않는다
+  assert.match(source, /LabelPrintMethodSelect/);
+  assert.match(source, /useLabelPrintMethod\(\)/);
+  assert.match(source, /printPngLabelsInBrowser\(/);
+  assert.match(source, /printMethod === "BROWSER"/);
+  // 에이전트 실패 시 브라우저 인쇄로 안내(공통 키)
+  assert.match(source, /labelPrint\.agentUnavailableHint/);
+  // 창 열기/DOM 복사 방식은 쓰지 않는다(공유 유틸의 iframe+PNG 경로만)
+  assert.doesNotMatch(source, /window\.open\(/);
+  assert.doesNotMatch(source, /window\.print\(/);
   assert.doesNotMatch(source, /alert\(|confirm\(/);
 });

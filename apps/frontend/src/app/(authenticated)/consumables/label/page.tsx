@@ -19,6 +19,7 @@ import { Card, CardContent, Button, Input, Select, Modal } from "@/components/ui
 import DataGrid from "@/components/data-grid/DataGrid";
 import { api } from "@/services/api";
 import { printAgentPng, PrintAgentUnavailableError } from "@/services/print-agent";
+import { printPngLabelsInBrowser, readStoredLabelPrintMethod } from "@/services/label-print";
 import { LabelableMaster, useConLabelColumns } from "./components/ConLabelColumns";
 import { useConLabelIssue } from "./components/useConLabelIssue";
 import ConLabelDetailPanel, { InstanceItem } from "./components/ConLabelDetailPanel";
@@ -462,17 +463,25 @@ function ConsumableLabelPage() {
 
       try {
         const contentBase64 = await renderLabelNodeToPngBase64(labelNode, labelDesign.labelWidth, labelDesign.labelHeight);
-        await printAgentPng({
-          jobId: `CON-REPRINT-${instance.conUid}`,
-          widthMm: labelDesign.labelWidth,
-          heightMm: labelDesign.labelHeight,
-          copies: 1,
-          contentBase64,
-        });
+        // 출력 방식은 PC 공통 설정 — BROWSER 면 에이전트 없이 인쇄 대화상자(iframe+PNG)로 출력
+        const viaBrowser = readStoredLabelPrintMethod() === "BROWSER";
+        if (viaBrowser) {
+          await printPngLabelsInBrowser(t("consumables.label.printTitle"), [contentBase64], labelDesign.labelWidth, labelDesign.labelHeight);
+        } else {
+          await printAgentPng({
+            jobId: `CON-REPRINT-${instance.conUid}`,
+            widthMm: labelDesign.labelWidth,
+            heightMm: labelDesign.labelHeight,
+            copies: 1,
+            contentBase64,
+          });
+        }
         await logBrowserPrint([instance.conUid]);
         setPrinting(false);
         setActivePrintItems([]);
-        const sentMsg = t("consumables.label.sentToAgent", "{{conUid}} 라벨을 agent로 전송했습니다.", { conUid: instance.conUid });
+        const sentMsg = viaBrowser
+          ? t("labelPrint.browserOpened", "{{count}}개 라벨 인쇄 대화상자를 열었습니다. 프린터를 선택해 인쇄하세요.", { count: 1 })
+          : t("consumables.label.sentToAgent", "{{conUid}} 라벨을 agent로 전송했습니다.", { conUid: instance.conUid });
         toast.success(sentMsg, { id: loadingToast });
         setIssueStatus({
           type: "success",
@@ -480,7 +489,7 @@ function ConsumableLabelPage() {
         });
       } catch (err: unknown) {
         const message = err instanceof PrintAgentUnavailableError
-          ? t("consumables.label.agentUnavailable", "라벨 프린트 에이전트에 연결할 수 없습니다. PC에 HANES Print Agent가 설치·실행 중인지 확인한 뒤 다시 시도하세요.")
+          ? t("labelPrint.agentUnavailableHint", "라벨 프린트 에이전트에 연결할 수 없습니다. 출력 방식을 '브라우저 인쇄'로 바꾸면 에이전트 없이 출력할 수 있습니다.")
           : err instanceof Error && err.message
             ? err.message
             : t("consumables.label.agentPrintError", "agent 출력 중 오류가 발생했습니다.");

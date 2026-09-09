@@ -2448,16 +2448,7 @@
         "toastSent": "已向 agent 发送 {{count}} 个入库标签。",
         "toastError": "agent 打印时发生错误。",
         "agentUnavailable": "无法连接到标签打印代理。请确认本机已安装并运行 HANES Print Agent 后重试。",
-        "errorPrepareScreen": "无法准备标签打印画面。",
-        "printMethod": "打印方式",
-        "printMethodBrowser": "浏览器打印",
-        "printMethodAgent": "Print Agent 打印",
-        "browserPopupBlocked": "打印窗口被弹出窗口拦截器阻止。请允许此网站的弹出窗口后重试。",
-        "browserPreparing": "正在准备标签…",
-        "browserWindowClosed": "打印窗口已关闭，无法继续打印。请重试。",
-        "toastBrowserPreparing": "正在准备 {{count}} 张入库标签的打印画面。",
-        "toastBrowserOpened": "已打开 {{count}} 张入库标签的打印窗口。请选择打印机进行打印。",
-        "agentUnavailableHint": "无法连接标签打印代理。将打印方式改为“浏览器打印”即可在没有代理的情况下打印。"
+        "errorPrepareScreen": "无法准备标签打印画面。"
       },
       "selectPoDesc": "请选择可到货的PO。",
       "selectWarehouse": "选择仓库",
@@ -3844,7 +3835,8 @@
       "prepareFailed": "无法准备 FG 标签打印画面。",
       "printSent": "已向打印机发送 {{count}} 个 FG 标签。",
       "agentUnavailable": "无法连接到标签打印代理。请确认本机已安装并运行 HANES Print Agent 后重试。",
-      "printError": "打印 FG 标签时发生错误。"
+      "printError": "打印 FG 标签时发生错误。",
+      "printTitle": "FG 标签"
     },
     "inputAssembly": {
       "continuous": "保留扫描（连续）",
@@ -9138,7 +9130,8 @@
       "printError": "打印 SFG 标签时发生错误。",
       "agentUnavailable": "无法连接到标签打印代理。请确认本机已安装并运行 HANES Print Agent 后重试。",
       "typeBundle": "捆扎",
-      "typeCircuit": "回路"
+      "typeCircuit": "回路",
+      "printTitle": "SFG 标签"
     },
     "instruction": {
       "title": "作业指导书",
@@ -9717,5 +9710,14 @@
         "description": "请通过上方搜索，从当前目录中选择业务、画面或表进行恢复。系统未自动切换到其他中心点。"
       }
     }
+  },
+  "labelPrint": {
+    "method": "标签打印方式",
+    "methodBrowser": "浏览器打印",
+    "methodAgent": "Print Agent 打印",
+    "methodHint": "浏览器打印无需代理，直接打开打印对话框。看板自动打印也遵循此设置。",
+    "browserOpened": "已打开 {{count}} 张标签的打印对话框。请选择打印机进行打印。",
+    "agentUnavailableHint": "无法连接标签打印代理。将打印方式改为“浏览器打印”即可在没有代理的情况下打印。",
+    "browserPreparing": "正在准备 {{count}} 张标签的打印画面。"
   }
 }
