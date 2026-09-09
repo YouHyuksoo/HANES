@@ -82,3 +82,6 @@ nul
 CUsers*
 Ctemp*
 CProjectHANESscripts
+
+# Isolated implementation worktrees
+.worktrees/
