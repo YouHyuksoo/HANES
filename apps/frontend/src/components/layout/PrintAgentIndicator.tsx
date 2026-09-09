@@ -7,15 +7,18 @@
  * 2. 마운트 시 1회 + 드롭다운 열 때마다 /health로 연결 상태 확인(폴링 없음 → 콘솔 노이즈 최소화)
  * 3. 미연결: 다운로드 버튼 + 실행 3단계 안내 + [상태 다시 확인]
  *    (브라우저는 exe 자동 실행이 불가하므로 사용자가 1회 직접 실행해야 한다)
+ *    다운로드 버튼은 /print-agent/info 로 서버에 설치 파일이 있을 때만 링크를 그린다.
+ *    파일이 없으면 <a download> 가 404 JSON 을 download.json 으로 저장하므로 안내 문구로 대체한다.
  * 4. 연결: 에이전트 설정 화면 열기 + [상태 다시 확인]
  */
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Printer, Download, RefreshCw, Settings } from "lucide-react";
+import { Printer, Download, RefreshCw, Settings, AlertTriangle } from "lucide-react";
 import {
   checkPrintAgent,
+  fetchPrintAgentInstallerInfo,
   PRINT_AGENT_BASE_URL,
   PRINT_AGENT_DOWNLOAD_URL,
 } from "@/services/print-agent";
@@ -26,15 +29,29 @@ export default function PrintAgentIndicator() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<AgentStatus>("checking");
+  /** 서버 설치 파일 배포 여부: null=미확인, true=다운로드 가능, false=서버에 파일 없음 */
+  const [installerAvailable, setInstallerAvailable] = useState<boolean | null>(null);
   const checkedOnce = useRef(false);
 
   const check = useCallback(async () => {
     setStatus("checking");
+    let disconnected = false;
     try {
       const health = await checkPrintAgent();
+      disconnected = !health?.ok;
       setStatus(health?.ok ? "connected" : "disconnected");
     } catch {
+      disconnected = true;
       setStatus("disconnected");
+    }
+    if (!disconnected) return;
+    // 미연결일 때만 다운로드 안내가 보이므로 그때 서버 설치 파일 유무를 확인한다.
+    try {
+      const info = await fetchPrintAgentInstallerInfo();
+      setInstallerAvailable(info.available);
+    } catch {
+      // info 조회 자체가 실패하면 링크를 막지 않는다(백엔드 구버전 호환). 404 JSON 저장은 서버 배포로 막는다.
+      setInstallerAvailable(null);
     }
   }, []);
 
@@ -138,14 +155,30 @@ export default function PrintAgentIndicator() {
                   </ol>
                 </div>
                 <div className="py-1">
-                  <a
-                    href={PRINT_AGENT_DOWNLOAD_URL}
-                    download
-                    className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-background flex items-center gap-2 font-medium"
-                  >
-                    <Download className="w-4 h-4" />
-                    {t("printAgent.download", "Print Agent 다운로드")}
-                  </a>
+                  {installerAvailable === false ? (
+                    /* 서버에 설치 파일이 없음 — 링크를 그리면 404 JSON 이 download.json 으로 저장되므로 안내로 대체 */
+                    <div
+                      role="status"
+                      className="w-full px-4 py-2 text-left text-sm text-amber-600 dark:text-amber-400 flex items-start gap-2"
+                    >
+                      <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                      <span>
+                        {t(
+                          "printAgent.installerUnavailable",
+                          "설치 파일이 서버에 배포되지 않았습니다. 시스템 관리자에게 문의하세요.",
+                        )}
+                      </span>
+                    </div>
+                  ) : (
+                    <a
+                      href={PRINT_AGENT_DOWNLOAD_URL}
+                      download
+                      className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-background flex items-center gap-2 font-medium"
+                    >
+                      <Download className="w-4 h-4" />
+                      {t("printAgent.download", "Print Agent 다운로드")}
+                    </a>
+                  )}
                   <button
                     onClick={check}
                     className="w-full px-4 py-2 text-left text-sm text-text hover:bg-background flex items-center gap-2"

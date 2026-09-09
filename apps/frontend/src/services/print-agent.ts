@@ -5,6 +5,32 @@ export const PRINT_AGENT_BASE_URL = process.env.NEXT_PUBLIC_PRINT_AGENT_URL ?? "
  * `<a href>` 직접 링크로 사용한다.
  */
 export const PRINT_AGENT_DOWNLOAD_URL = "/api/print-agent/download";
+/** 설치 파일 배포 가능 여부(백엔드 @Public GET /print-agent/info). 파일이 없으면 다운로드 링크 대신 안내를 보여준다. */
+export const PRINT_AGENT_INFO_URL = "/api/print-agent/info";
+
+export interface PrintAgentInstallerInfo {
+  available: boolean;
+  fileName: string;
+  sizeBytes: number | null;
+}
+
+/**
+ * 서버에 설치 파일이 배포돼 있는지 확인한다.
+ * 배포 서버에 exe 가 없으면 /download 가 404 JSON 을 내려 브라우저가 download.json 을 저장하므로(2026-09-09 결함),
+ * 링크를 그리기 전에 이 값을 보고 안내로 대체한다. 응답이 { success, data } 래핑이든 평문이든 모두 받는다.
+ */
+export async function fetchPrintAgentInstallerInfo(): Promise<PrintAgentInstallerInfo> {
+  const res = await fetch(PRINT_AGENT_INFO_URL, { method: "GET", cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Print Agent info 조회 실패: HTTP ${res.status}`);
+  }
+  const payload = (await res.json()) as PrintAgentInstallerInfo | { data?: PrintAgentInstallerInfo };
+  const info = "available" in payload ? payload : payload.data;
+  if (!info || typeof info.available !== "boolean") {
+    throw new Error("Print Agent info 응답 형식이 올바르지 않습니다.");
+  }
+  return info;
+}
 
 const PRINT_AGENT_TOKEN = process.env.NEXT_PUBLIC_PRINT_AGENT_TOKEN ?? "";
 

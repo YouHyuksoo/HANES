@@ -29,16 +29,27 @@ const BINARY_FILENAME = 'hanes-print-agent.exe';
 /**
  * 환경마다 실행 위치(cwd)가 달라질 수 있어 후보 경로를 순서대로 탐색한다.
  * 배포 환경에서는 PRINT_AGENT_BINARY_PATH 환경변수로 명시하는 것을 우선한다.
+ *
+ * `apps/print-agent/release/`는 git에 추적되는 배포본(2026-09-09). `dist/`는 Go 빌드 산출물이라
+ * .gitignore 대상이며 배포 서버(GitHub Actions pull)에는 존재하지 않는다 — 배포 서버가 404 JSON을
+ * 내려 브라우저가 download.json 을 저장하던 결함의 원인. release/ 를 dist/ 보다 먼저 본다.
  */
-function resolveBinaryPath(): string | null {
+export function resolveBinaryPath(
+  env: NodeJS.ProcessEnv = process.env,
+  cwd: string = process.cwd(),
+  fileExists: (path: string) => boolean = existsSync,
+): string | null {
   const candidates = [
-    process.env.PRINT_AGENT_BINARY_PATH,
-    join(process.cwd(), '..', 'print-agent', 'dist', BINARY_FILENAME),
-    join(process.cwd(), 'apps', 'print-agent', 'dist', BINARY_FILENAME),
+    env.PRINT_AGENT_BINARY_PATH,
+    join(cwd, '..', 'print-agent', 'release', BINARY_FILENAME),
+    join(cwd, 'apps', 'print-agent', 'release', BINARY_FILENAME),
+    join(__dirname, '..', '..', '..', '..', 'print-agent', 'release', BINARY_FILENAME),
+    join(cwd, '..', 'print-agent', 'dist', BINARY_FILENAME),
+    join(cwd, 'apps', 'print-agent', 'dist', BINARY_FILENAME),
     join(__dirname, '..', '..', '..', '..', 'print-agent', 'dist', BINARY_FILENAME),
   ].filter((candidate): candidate is string => Boolean(candidate));
 
-  return candidates.find((candidate) => existsSync(candidate)) ?? null;
+  return candidates.find((candidate) => fileExists(candidate)) ?? null;
 }
 
 @Public()
