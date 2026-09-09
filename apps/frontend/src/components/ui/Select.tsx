@@ -45,7 +45,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             id={inputId}
             disabled={disabled}
             required={required}
-            value={value}
+            value={value ?? ''}
             onChange={(e) => onChange?.(e.target.value)}
             className={`
               h-10 px-3 pr-10 bg-surface border border-border rounded-lg
