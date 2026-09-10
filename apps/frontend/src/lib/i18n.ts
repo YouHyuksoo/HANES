@@ -22,10 +22,6 @@ import ko from "@/locales/ko.json";
 import en from "@/locales/en.json";
 import zh from "@/locales/zh.json";
 import vi from "@/locales/vi.json";
-import tourHelpKo from "@/tour-help/locales/ko.json";
-import tourHelpEn from "@/tour-help/locales/en.json";
-import tourHelpZh from "@/tour-help/locales/zh.json";
-import tourHelpVi from "@/tour-help/locales/vi.json";
 
 export const I18N_LANGUAGE_STORAGE_KEY = "i18nextLng";
 export const DEFAULT_LANGUAGE_CODE = "ko";
@@ -52,10 +48,10 @@ export function normalizeLanguageCode(value: string | null | undefined): Languag
 
 /** i18next 리소스 */
 const resources = {
-  ko: { translation: ko, "tour-help": tourHelpKo },
-  en: { translation: en, "tour-help": tourHelpEn },
-  zh: { translation: zh, "tour-help": tourHelpZh },
-  vi: { translation: vi, "tour-help": tourHelpVi },
+  ko: { translation: ko },
+  en: { translation: en },
+  zh: { translation: zh },
+  vi: { translation: vi },
 };
 
 i18n

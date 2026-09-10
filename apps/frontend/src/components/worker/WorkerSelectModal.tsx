@@ -121,29 +121,29 @@ function WorkerSelectModal({ isOpen, onClose, onConfirm }: WorkerSelectModalProp
     >
       {!tempWorker ? (
         /* ── Step 1: 검색/스캔 ── */
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* 모드 전환 탭 */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex gap-1 border-b border-border">
             <button
               onClick={() => setMode("search")}
-              className={`flex items-center justify-center gap-2 py-4 rounded-xl text-base font-semibold transition-all
+              className={`flex flex-1 items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 transition-colors
                 ${mode === "search"
-                  ? "bg-primary text-white shadow-md"
-                  : "bg-background text-text-muted border border-border active:bg-surface"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-text-muted hover:text-text"
                 }`}
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-3.5 h-3.5" />
               {t("production.result.workerSelect")}
             </button>
             <button
               onClick={() => setMode("qr")}
-              className={`flex items-center justify-center gap-2 py-4 rounded-xl text-base font-semibold transition-all
+              className={`flex flex-1 items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold border-b-2 transition-colors
                 ${mode === "qr"
-                  ? "bg-primary text-white shadow-md"
-                  : "bg-background text-text-muted border border-border active:bg-surface"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-text-muted hover:text-text"
                 }`}
             >
-              <ScanLine className="w-5 h-5" />
+              <ScanLine className="w-3.5 h-3.5" />
               {t("production.result.qrScan")}
             </button>
           </div>
@@ -152,48 +152,48 @@ function WorkerSelectModal({ isOpen, onClose, onConfirm }: WorkerSelectModalProp
             <>
               {/* 검색 입력 */}
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                 <input
                   type="text"
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
                   placeholder={t("production.result.workerSearchPlaceholder")}
-                  className="w-full pl-12 pr-10 py-4 text-base border-2 border-border rounded-xl bg-surface text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  className="w-full pl-9 pr-9 py-2 text-sm border border-border rounded-lg bg-surface text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
                 {searchText && (
                   <button
                     onClick={() => setSearchText("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-background active:bg-border"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-background active:bg-border"
                   >
-                    <X className="w-5 h-5 text-text-muted" />
+                    <X className="w-4 h-4 text-text-muted" />
                   </button>
                 )}
               </div>
 
               {/* 작업자 리스트 */}
-              <div className="max-h-[40vh] overflow-y-auto -mx-1 px-1 space-y-1.5">
+              <div className="max-h-[52vh] overflow-y-auto -mx-1 px-1 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                 {filteredWorkers.length > 0 ? (
                   filteredWorkers.map((worker) => (
                     <button
                       key={worker.id}
                       onClick={() => setTempWorker(worker)}
-                      className="w-full flex items-center gap-4 px-4 py-4 rounded-xl border border-border bg-surface hover:bg-background active:bg-primary/10 active:border-primary/30 transition-colors text-left"
+                      className="w-full min-h-14 flex items-center gap-2 px-2.5 py-2 rounded-lg border border-border bg-surface hover:bg-background active:bg-primary/10 active:border-primary/30 transition-colors text-left"
                     >
                       <WorkerPhoto
                         src={worker.photoUrl}
                         alt={worker.workerName}
-                        className="w-12 h-12 rounded-full object-cover shrink-0"
+                        className="w-9 h-9 rounded-full object-cover shrink-0"
                         fallback={
-                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                            <span className="text-lg font-bold text-primary">{worker.workerName.charAt(0)}</span>
+                          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <span className="text-sm font-bold text-primary">{worker.workerName.charAt(0)}</span>
                           </div>
                         }
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="text-base font-semibold text-text">{worker.workerName}</div>
-                        <div className="text-sm text-text-muted mt-0.5">{worker.workerCode}</div>
+                        <div className="text-sm font-semibold text-text truncate">{worker.workerName}</div>
+                        <div className="text-[11px] text-text-muted mt-0.5 truncate">{worker.workerCode}</div>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium shrink-0 ${getDeptBadgeColor(worker.dept)}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${getDeptBadgeColor(worker.dept)}`}>
                         {worker.dept || '-'}
                       </span>
                     </button>

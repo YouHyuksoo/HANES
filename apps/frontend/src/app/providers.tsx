@@ -14,6 +14,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 import ApiFeedbackModal from "@/components/shared/ApiFeedbackModal";
+import JobOrderHud from "@/components/production/JobOrderHud";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/authStore";
 import { I18N_LANGUAGE_STORAGE_KEY, normalizeLanguageCode } from "@/lib/i18n";
@@ -21,7 +22,6 @@ import { useComCodes } from "@/hooks/useComCode";
 import { useThemeStore, listenSystemThemeChange } from "@/stores/themeStore";
 import { useSysConfigStore } from "@/stores/sysConfigStore";
 import "@/lib/i18n";
-import TourModeProvider from "@/components/tour/TourModeProvider";
 
 // React Query 클라이언트 설정
 const queryClient = new QueryClient({
@@ -178,7 +178,8 @@ export function Providers({ children }: ProvidersProps) {
         }}
       />
       <ApiFeedbackModal />
-      <TourModeProvider>{children}</TourModeProvider>
+      <JobOrderHud />
+      {children}
     </QueryClientProvider>
   );
 }

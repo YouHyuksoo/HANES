@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { Cpu, ChevronDown, Package, RefreshCw, Scan, Search } from "lucide-react";
+import { Cpu, ChevronDown, Package, RefreshCw, Scan, Search, UserRound } from "lucide-react";
 import { BarcodeScanInput } from "@/components/shared";
 import { Button, Card, CardContent, Select } from "@/components/ui";
 import api from "@/services/api";
@@ -24,6 +24,13 @@ import SgLabelPrintHost, { type SgLabelPrintHandle } from "../input-kiosk/compon
 import WorkInstructionView from "../input-kiosk/components/WorkInstructionView";
 import EquipSelectModal from "../input-kiosk/components/EquipSelectModal";
 import { normalizeEquipOptions, type EquipOption } from "../input-kiosk/utils/equipOptions";
+import { useKioskStore } from "@/stores/kioskStore";
+import { useSysConfigStore } from "@/stores/sysConfigStore";
+import WorkerSelectModal from "@/components/worker/WorkerSelectModal";
+import type { Worker } from "@/components/worker/WorkerSelector";
+import DailyInspectModal from "../input-kiosk/components/DailyInspectModal";
+import WorkerInspectModal from "../input-kiosk/components/WorkerInspectModal";
+import HeaderCheckItem from "../input-kiosk/components/HeaderCheckItem";
 
 interface AssemblyComponent {
   itemCode: string;
@@ -113,6 +120,12 @@ const isSubkitSelectableOrder = (order: JobOrderPick, currentProcessCode: string
 
 export default function SubprocessKittingPage() {
   const { t } = useTranslation();
+  const { selectedWorkers, interlock, setSelectedEquip: setKioskEquip, setSelectedJobOrder: setKioskOrder, setSelectedWorkers, setInterlock } = useKioskStore();
+  const sysConfigLoaded = useSysConfigStore((state) => state.isLoaded);
+  const sysConfigRequired = useSysConfigStore((state) => state.isEnabled);
+  const fetchSysConfigs = useSysConfigStore((state) => state.fetchConfigs);
+  const dailyInspectRequired = !sysConfigLoaded || sysConfigRequired("SUBASSEMBLY_DAILY_INSPECT_REQUIRED");
+  const workerInspectRequired = !sysConfigLoaded || sysConfigRequired("SUBASSEMBLY_WORKER_INSPECT_REQUIRED");
 
   const [selectedOrder, setSelectedOrder] = useState<JobOrderPick | null>(null);
   const [orderScan, setOrderScan] = useState("");
@@ -125,6 +138,9 @@ export default function SubprocessKittingPage() {
   const [processName, setProcessName] = useState("");
   const [equips, setEquips] = useState<EquipOption[]>([]);
   const [equipModalOpen, setEquipModalOpen] = useState(false);
+  const [workerModalOpen, setWorkerModalOpen] = useState(false);
+  const [dailyInspectOpen, setDailyInspectOpen] = useState(false);
+  const [workerInspectOpen, setWorkerInspectOpen] = useState(false);
   const [circuitNo, setCircuitNo] = useState("");
   const [circuits, setCircuits] = useState<CircuitInfo[]>([]);
 
@@ -213,6 +229,7 @@ export default function SubprocessKittingPage() {
     setIssuedSg(null);
     setResultQuality("GOOD");
     setCircuitNo("");
+    setKioskOrder(order as unknown as import('@/components/production/JobOrderSelectModal').JobOrder);
     if (options?.persist !== false) {
       void persistCurrentJobOrder(order.orderNo).catch((error: unknown) => {
         const message =
@@ -221,7 +238,7 @@ export default function SubprocessKittingPage() {
         toast.error(message);
       });
     }
-  }, [persistCurrentJobOrder, t]);
+  }, [persistCurrentJobOrder, setKioskOrder, t]);
 
   const restoreEquipmentCurrentState = useCallback(async (equip: EquipOption) => {
     restoredEquipRef.current = equip.equipCode;
@@ -229,6 +246,7 @@ export default function SubprocessKittingPage() {
     setEquipName(equip.equipName);
     setProcessCode(equip.processCode ?? "");
     setProcessName(equip.processName ?? "");
+    setKioskEquip({ equipCode: equip.equipCode, equipName: equip.equipName, processCode: equip.processCode, processName: equip.processName });
     setSelectedOrder(null);
     setOrderScan("");
     setCircuitNo("");
@@ -281,7 +299,7 @@ export default function SubprocessKittingPage() {
       toast.error(t("production.subprocess.restoreError", "설비 현재 작업 상태를 불러오지 못했습니다."));
       setTimeout(() => orderScanRef.current?.focus(), 80);
     }
-  }, [persistCurrentJobOrder, selectOrder, t]);
+  }, [persistCurrentJobOrder, selectOrder, setKioskEquip, t]);
 
   useEffect(() => {
     if (initialRestoreDoneRef.current || equips.length === 0) return;
@@ -296,6 +314,28 @@ export default function SubprocessKittingPage() {
   const handleEquipSelect = useCallback((equip: EquipOption) => {
     void restoreEquipmentCurrentState(equip);
   }, [restoreEquipmentCurrentState]);
+
+  const handleWorkerSelect = useCallback((worker: Worker) => {
+    setSelectedWorkers([...selectedWorkers, worker].filter((item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index));
+    setWorkerModalOpen(false);
+  }, [selectedWorkers, setSelectedWorkers]);
+
+  const refreshInspectStatus = useCallback(async () => {
+    if (!equipCode) {
+      setInterlock('dailyInspectDone', !dailyInspectRequired);
+      setInterlock('workerInspectDone', !workerInspectRequired);
+      return;
+    }
+    const checks = await Promise.allSettled([
+      dailyInspectRequired ? api.get('/equipment/daily-inspect/check', { params: { equipCode, inspectType: 'DAILY' } }) : Promise.resolve(null),
+      workerInspectRequired && selectedOrder?.orderNo ? api.get('/equipment/daily-inspect/check', { params: { equipCode, inspectType: 'WORKER', orderNo: selectedOrder.orderNo } }) : Promise.resolve(null),
+    ]);
+    setInterlock('dailyInspectDone', !dailyInspectRequired || (checks[0].status === 'fulfilled' && Boolean(checks[0].value?.data?.data?.alreadyInspected)));
+    setInterlock('workerInspectDone', !workerInspectRequired || (checks[1].status === 'fulfilled' && Boolean(checks[1].value?.data?.data?.alreadyInspected)));
+  }, [dailyInspectRequired, equipCode, selectedOrder?.orderNo, setInterlock, workerInspectRequired]);
+
+  useEffect(() => { void refreshInspectStatus(); }, [refreshInspectStatus]);
+  useEffect(() => { if (!sysConfigLoaded) void fetchSysConfigs(); }, [fetchSysConfigs, sysConfigLoaded]);
 
   const fetchOrderByNo = useCallback(
     async (no: string) => {
@@ -345,6 +385,7 @@ export default function SubprocessKittingPage() {
     setSgList([]);
     setIssuedSg(null);
     setResultQuality("GOOD");
+    setKioskOrder(null);
     void persistCurrentJobOrder(null).catch(() => {
       toast.error(t("production.subprocess.clearOrderFailed", "설비 현재 작업지시 해제에 실패했습니다."));
     });
@@ -365,6 +406,8 @@ export default function SubprocessKittingPage() {
     setSgList([]);
     setIssuedSg(null);
     setResultQuality("GOOD");
+    setKioskEquip(null);
+    setSelectedWorkers([]);
     window.localStorage.removeItem(SUBKIT_SELECTED_EQUIP_KEY);
     if (prevEquipCode) {
       void persistCurrentJobOrder(null, prevEquipCode).catch(() => {
@@ -383,7 +426,9 @@ export default function SubprocessKittingPage() {
   }, []);
 
   const canIssue =
-    !!selectedOrder && !!processCode && !!equipCode && sgList.length > 0 && !issuedSg;
+    !!selectedOrder && !!processCode && !!equipCode && sgList.length > 0 && !issuedSg
+    && (!dailyInspectRequired || interlock.dailyInspectDone)
+    && (!workerInspectRequired || interlock.workerInspectDone);
 
   const onIssue = useCallback(async () => {
     if (!selectedOrder) {
@@ -514,18 +559,18 @@ export default function SubprocessKittingPage() {
       </div>
 
       {/* 상단 고정 바: 설비(=공정) + 작업지시 + 회로 */}
-      <Card padding="none" className="flex-shrink-0">
-        <CardContent className="p-3">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+      <Card padding="none" className="min-w-0 flex-shrink-0 overflow-x-auto">
+        <CardContent className="!p-0">
+          <div className="flex h-14 min-w-[980px] flex-nowrap items-center gap-3 whitespace-nowrap bg-surface/50 px-4">
             {/* 1) 설비 — 가장 먼저 선택. 설비가 공정을 결정(설비→공정)하고 작업지시 조회조건이 된다. */}
-            <div className="w-full lg:w-56">
-              <label className="block text-sm font-medium text-text mb-1">
+            <div className="w-52 shrink-0">
+              <label className="sr-only">
                 {t("production.inputAssembly.equip", "설비")}
               </label>
               <button
                 type="button"
                 onClick={() => setEquipModalOpen(true)}
-                className={`flex h-11 w-full items-center gap-2 rounded-lg border px-3 text-left transition-colors ${
+                className={`flex h-11 w-full items-center gap-2 rounded-lg border-2 px-3 text-left transition-colors ${
                   equipCode
                     ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
                     : "border-dashed border-border hover:border-primary"
@@ -535,7 +580,7 @@ export default function SubprocessKittingPage() {
                 <div className="min-w-0 flex-1">
                   {equipCode ? (
                     <>
-                      <div className="truncate text-sm font-semibold text-text">{equipName}</div>
+                      <div className="truncate text-sm font-extrabold text-text">{equipName}</div>
                       <div className="truncate text-[11px] text-text-muted">
                         {equipCode}
                         {processName && (
@@ -554,16 +599,16 @@ export default function SubprocessKittingPage() {
             </div>
 
             {/* 2) 작업지시 — 설비 선택 후 활성화. 선택 설비의 공정에 내려진 작업지시만 조회. */}
-            <div className="flex-1 min-w-0">
+            <div className="min-w-[200px] flex-1">
               {selectedOrder ? (
-                <div className="flex items-center justify-between gap-3 rounded border border-primary/40 bg-primary/5 px-3 py-2">
-                  <div className="flex min-w-0 items-center gap-2 text-sm">
+                <div className="flex h-11 min-w-0 items-center justify-between gap-2 rounded-lg border border-border bg-card px-3">
+                  <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
                     <span className={`shrink-0 rounded border px-2 py-1 text-xs font-semibold ${getOrderKindMeta(selectedOrder.orderKind).className}`}>
                       {getOrderKindMeta(selectedOrder.orderKind).label}
                     </span>
-                    <div className="min-w-0">
-                      <span className="font-mono text-text">{selectedOrder.orderNo}</span>
-                      <span className="text-text-muted">
+                    <div className="min-w-0 flex-1 truncate">
+                      <span className="font-mono text-sm font-bold text-text">{selectedOrder.orderNo}</span>
+                      <span className="text-xs text-text-muted">
                         {" · "}
                         {selectedOrder.itemCode}
                         {selectedOrder.itemName ? ` · ${selectedOrder.itemName}` : ""}
@@ -572,16 +617,17 @@ export default function SubprocessKittingPage() {
                       </span>
                     </div>
                   </div>
-                  <Button variant="secondary" size="sm" onClick={clearOrder}>
+                  <Button className="!h-7 shrink-0 !rounded !px-2.5 !text-xs" size="sm" onClick={clearOrder}>
                     {t("common.change", "변경")}
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
+                <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-border bg-card px-2">
+                  <div className="min-w-0 flex-1">
                     <BarcodeScanInput
                       ref={orderScanRef}
-                      label={t("production.subprocess.orderScanLabel", "작업지시번호 스캔 또는 입력 후 Enter")}
+                      aria-label={t("production.subprocess.orderScanLabel", "작업지시번호 스캔 또는 입력 후 Enter")}
+                      className="!h-8 !text-xs"
                       value={orderScan}
                       onChange={setOrderScan}
                       onScan={fetchOrderByNo}
@@ -600,7 +646,7 @@ export default function SubprocessKittingPage() {
                     onClick={() => setOrderSearchOpen(true)}
                     leftIcon={<Search className="w-4 h-4" />}
                     disabled={!equipCode}
-                    className="mb-0.5"
+                    className="!h-7 shrink-0 !rounded !px-2.5 !text-xs"
                   >
                     {t("common.search")}
                   </Button>
@@ -608,10 +654,34 @@ export default function SubprocessKittingPage() {
               )}
             </div>
 
+            <div className="flex shrink-0 items-center gap-2">
+              <div className="flex h-11 max-w-52 shrink-0 items-center rounded-lg border border-border bg-card px-3">
+              <Button className="!h-7 min-w-0 !rounded !px-2.5 !text-xs [&>span]:truncate" size="sm" onClick={() => setWorkerModalOpen(true)} disabled={!equipCode} leftIcon={<UserRound className="h-4 w-4" />}>
+                <span className="truncate">{selectedWorkers.length > 0 ? `${selectedWorkers[0].workerName}${selectedWorkers.length > 1 ? ` 외 ${selectedWorkers.length - 1}` : ''}` : '작업자 선택'}</span>
+              </Button>
+              </div>
+              <HeaderCheckItem
+                label="설비 일상점검"
+                done={!dailyInspectRequired || interlock.dailyInspectDone}
+                disabled={!dailyInspectRequired || !equipCode}
+                disabledReason={!dailyInspectRequired ? '환경설정에서 필수 점검이 아닙니다.' : '설비를 먼저 선택하세요.'}
+                onInput={() => setDailyInspectOpen(true)}
+              />
+              <HeaderCheckItem
+                label="작업자설비점검"
+                done={!workerInspectRequired || interlock.workerInspectDone}
+                disabled={!workerInspectRequired || (dailyInspectRequired && !interlock.dailyInspectDone) || !selectedOrder || selectedWorkers.length === 0}
+                disabledReason={!workerInspectRequired ? '환경설정에서 필수 점검이 아닙니다.' : dailyInspectRequired && !interlock.dailyInspectDone ? '설비 일상점검을 먼저 완료하세요.' : !selectedOrder ? '작업지시를 먼저 선택하세요.' : '작업자를 먼저 선택하세요.'}
+                onInput={() => setWorkerInspectOpen(true)}
+                wide
+              />
+            </div>
+
             {/* 3) 회로 */}
-            <div className="w-full lg:w-52">
+            <div className="w-36 shrink-0">
               <Select
-                label={t("production.subprocess.circuit", "회로")}
+                aria-label={t("production.subprocess.circuit", "회로")}
+                className="!h-11 !text-xs"
                 options={circuitOptions}
                 value={circuitNo}
                 onChange={setCircuitNo}
@@ -685,6 +755,21 @@ export default function SubprocessKittingPage() {
         onClose={() => setEquipModalOpen(false)}
         equips={equips}
         onSelect={handleEquipSelect}
+      />
+      <WorkerSelectModal
+        isOpen={workerModalOpen}
+        onClose={() => setWorkerModalOpen(false)}
+        onConfirm={handleWorkerSelect}
+      />
+      <DailyInspectModal
+        isOpen={dailyInspectOpen}
+        onClose={() => setDailyInspectOpen(false)}
+        onDone={() => { setDailyInspectOpen(false); void refreshInspectStatus(); }}
+      />
+      <WorkerInspectModal
+        isOpen={workerInspectOpen}
+        onClose={() => setWorkerInspectOpen(false)}
+        onDone={() => { setWorkerInspectOpen(false); void refreshInspectStatus(); }}
       />
 
       {/* SFG(반제품) 라벨 자동 출력 호스트 — 키오스크와 동일, 오프스크린 렌더 후 Print Agent 전송 */}

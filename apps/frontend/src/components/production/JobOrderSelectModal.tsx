@@ -17,6 +17,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { ComCodeBadge } from '@/components/ui';
 import api from '@/services/api';
 import type { JobOrderSelectItem } from '@harness/shared';
+import { showJobOrderHud } from '@/components/production/JobOrderHud';
 
 export type JobOrder = JobOrderSelectItem;
 
@@ -159,6 +160,12 @@ export default function JobOrderSelectModal({
   const handleConfirm = () => {
     if (selectedJobOrder) {
       onConfirm(selectedJobOrder);
+      showJobOrderHud({
+        orderNo: selectedJobOrder.orderNo,
+        itemCode: selectedJobOrder.itemCode,
+        itemName: selectedJobOrder.itemName,
+        processCode: selectedJobOrder.processCode,
+      });
       setSelectedJobOrder(null);
       setSearchText('');
     }

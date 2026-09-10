@@ -551,9 +551,7 @@
     "switchToDark": "Switch to dark mode",
     "colorTheme": "Toggle color theme",
     "collapseSidebar": "Collapse sidebar",
-    "expandSidebar": "Expand sidebar",
-    "tourMode": "Tour mode",
-    "tourModeHelp": "Shows explanations for fields, columns, and buttons on the screen."
+    "expandSidebar": "Expand sidebar"
   },
   "auth": {
     "login": "Login",

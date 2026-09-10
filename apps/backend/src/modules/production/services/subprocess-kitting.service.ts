@@ -184,7 +184,7 @@ export class SubprocessKittingService {
     const { fgBarcode, orderNo, equipCode, processCode, circuitNo } = dto;
 
     // 설비점검 인터록 서버 게이트 — 키팅 실적은 ProdResult를 직접 저장하므로 create()와 같은 게이트를 트랜잭션 전에 통과해야 한다.
-    await this.prodResultService.assertEquipInspectGate({ equipCode, orderNo }, company, plant);
+    await this.prodResultService.assertEquipInspectGate({ equipCode, orderNo }, company, plant, 'ASSEMBLY');
 
     return this.tx.run(async (qr) => {
       // 1. FgLabel 조회 — status='ISSUED' + orderNo 일치 확인
@@ -529,7 +529,7 @@ export class SubprocessKittingService {
     const qualityStatus = defectQty > 0 ? 'DEFECT' : 'GOOD';
 
     // 설비점검 인터록 서버 게이트 — 조립 확정과 동일하게 트랜잭션 전에 검사한다.
-    await this.prodResultService.assertEquipInspectGate({ equipCode, orderNo }, company, plant);
+    await this.prodResultService.assertEquipInspectGate({ equipCode, orderNo }, company, plant, 'SUBASSEMBLY');
 
     return this.tx.run(async (qr) => {
       // 1. 새 SgLabel 조회 — status='ISSUED' + orderNo 일치 확인

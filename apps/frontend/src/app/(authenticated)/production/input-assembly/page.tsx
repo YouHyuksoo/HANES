@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { Boxes, Cpu, ChevronDown, RefreshCw, Scan, Search } from "lucide-react";
+import { Boxes, Cpu, ChevronDown, RefreshCw, Scan, Search, UserRound } from "lucide-react";
 import { BarcodeScanInput } from "@/components/shared";
 import { Button, Card, CardContent } from "@/components/ui";
 import api from "@/services/api";
@@ -17,6 +17,13 @@ import WorkInstructionView from "../input-kiosk/components/WorkInstructionView";
 import EquipSelectModal from "../input-kiosk/components/EquipSelectModal";
 import FgLabelPrintHost, { type FgLabelPrintHandle } from "../input-kiosk/components/FgLabelPrintHost";
 import { normalizeEquipOptions, type EquipOption } from "../input-kiosk/utils/equipOptions";
+import { useKioskStore } from "@/stores/kioskStore";
+import { useSysConfigStore } from "@/stores/sysConfigStore";
+import WorkerSelectModal from "@/components/worker/WorkerSelectModal";
+import type { Worker } from "@/components/worker/WorkerSelector";
+import DailyInspectModal from "../input-kiosk/components/DailyInspectModal";
+import WorkerInspectModal from "../input-kiosk/components/WorkerInspectModal";
+import HeaderCheckItem from "../input-kiosk/components/HeaderCheckItem";
 
 interface AssemblyComponent {
   itemCode: string;
@@ -60,6 +67,12 @@ const ASSEMBLY_SELECTED_EQUIP_KEY = "hanes:production:input-assembly:selected-eq
 
 export default function InputAssemblyPage() {
   const { t } = useTranslation();
+  const { selectedWorkers, interlock, setSelectedEquip: setKioskEquip, setSelectedJobOrder: setKioskOrder, setSelectedWorkers, setInterlock } = useKioskStore();
+  const sysConfigLoaded = useSysConfigStore((state) => state.isLoaded);
+  const sysConfigRequired = useSysConfigStore((state) => state.isEnabled);
+  const fetchSysConfigs = useSysConfigStore((state) => state.fetchConfigs);
+  const dailyInspectRequired = !sysConfigLoaded || sysConfigRequired("ASSEMBLY_DAILY_INSPECT_REQUIRED");
+  const workerInspectRequired = !sysConfigLoaded || sysConfigRequired("ASSEMBLY_WORKER_INSPECT_REQUIRED");
 
   const fgPrinterRef = useRef<FgLabelPrintHandle>(null);
 
@@ -74,6 +87,9 @@ export default function InputAssemblyPage() {
   const [processName, setProcessName] = useState("");
   const [equips, setEquips] = useState<EquipOption[]>([]);
   const [equipModalOpen, setEquipModalOpen] = useState(false);
+  const [workerModalOpen, setWorkerModalOpen] = useState(false);
+  const [dailyInspectOpen, setDailyInspectOpen] = useState(false);
+  const [workerInspectOpen, setWorkerInspectOpen] = useState(false);
 
   const [requirements, setRequirements] = useState<AssemblyRequirements | null>(null);
   const { sgList, setSgList, continuous, setContinuous, ready: sgReady, applyConfirmed, refreshAfterFailure } =
@@ -110,6 +126,7 @@ export default function InputAssemblyPage() {
     setOrderScan("");
     setSgList([]);
     setIssuedFg(null);
+    setKioskOrder(order as unknown as import('@/components/production/JobOrderSelectModal').JobOrder);
     if (options?.persist !== false) {
       void persistCurrentJobOrder(order.orderNo).catch((error: unknown) => {
         const message =
@@ -118,7 +135,7 @@ export default function InputAssemblyPage() {
         toast.error(message);
       });
     }
-  }, [persistCurrentJobOrder, t]);
+  }, [persistCurrentJobOrder, setKioskOrder, t]);
 
   const restoreEquipmentCurrentState = useCallback(async (equip: EquipOption) => {
     restoredEquipRef.current = equip.equipCode;
@@ -126,6 +143,7 @@ export default function InputAssemblyPage() {
     setEquipName(equip.equipName);
     setProcessCode(equip.processCode ?? "");
     setProcessName(equip.processName ?? "");
+    setKioskEquip({ equipCode: equip.equipCode, equipName: equip.equipName, processCode: equip.processCode, processName: equip.processName });
     setSelectedOrder(null);
     setOrderScan("");
     setRequirements(null);
@@ -169,7 +187,7 @@ export default function InputAssemblyPage() {
       toast.error(t("production.subprocess.restoreError", "설비 현재 작업 상태를 불러오지 못했습니다."));
       setTimeout(() => orderScanRef.current?.focus(), 80);
     }
-  }, [persistCurrentJobOrder, selectOrder, t]);
+  }, [persistCurrentJobOrder, selectOrder, setKioskEquip, t]);
 
   useEffect(() => {
     if (initialRestoreDoneRef.current || equips.length === 0) return;
@@ -211,6 +229,30 @@ export default function InputAssemblyPage() {
   const handleEquipSelect = useCallback((equip: EquipOption) => {
     void restoreEquipmentCurrentState(equip);
   }, [restoreEquipmentCurrentState]);
+
+  const handleWorkerSelect = useCallback((worker: Worker) => {
+    setSelectedWorkers([...selectedWorkers, worker].filter((item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index));
+    setWorkerModalOpen(false);
+  }, [selectedWorkers, setSelectedWorkers]);
+
+  const refreshInspectStatus = useCallback(async () => {
+    if (!equipCode) {
+      setInterlock('dailyInspectDone', !dailyInspectRequired);
+      setInterlock('workerInspectDone', !workerInspectRequired);
+      return;
+    }
+    const checks = await Promise.allSettled([
+      dailyInspectRequired ? api.get('/equipment/daily-inspect/check', { params: { equipCode, inspectType: 'DAILY' } }) : Promise.resolve(null),
+      workerInspectRequired && selectedOrder?.orderNo ? api.get('/equipment/daily-inspect/check', { params: { equipCode, inspectType: 'WORKER', orderNo: selectedOrder.orderNo } }) : Promise.resolve(null),
+    ]);
+    const daily = checks[0].status === 'fulfilled' && checks[0].value?.data?.data?.alreadyInspected;
+    const worker = checks[1].status === 'fulfilled' && checks[1].value?.data?.data?.alreadyInspected;
+    setInterlock('dailyInspectDone', !dailyInspectRequired || Boolean(daily));
+    setInterlock('workerInspectDone', !workerInspectRequired || Boolean(worker));
+  }, [dailyInspectRequired, equipCode, selectedOrder?.orderNo, setInterlock, workerInspectRequired]);
+
+  useEffect(() => { void refreshInspectStatus(); }, [refreshInspectStatus]);
+  useEffect(() => { if (!sysConfigLoaded) void fetchSysConfigs(); }, [fetchSysConfigs, sysConfigLoaded]);
 
   const fetchOrderByNo = useCallback(
     async (no: string) => {
@@ -256,6 +298,7 @@ export default function InputAssemblyPage() {
     setRequirements(null);
     setSgList([]);
     setIssuedFg(null);
+    setKioskOrder(null);
     void persistCurrentJobOrder(null).catch(() => {
       toast.error(t("production.subprocess.clearOrderFailed", "설비 현재 작업지시 해제에 실패했습니다."));
     });
@@ -273,6 +316,8 @@ export default function InputAssemblyPage() {
     setRequirements(null);
     setSgList([]);
     setIssuedFg(null);
+    setKioskEquip(null);
+    setSelectedWorkers([]);
     window.localStorage.removeItem(ASSEMBLY_SELECTED_EQUIP_KEY);
     if (prevEquipCode) {
       void persistCurrentJobOrder(null, prevEquipCode).catch(() => {
@@ -292,12 +337,16 @@ export default function InputAssemblyPage() {
   }, []);
 
   const canIssue =
-    !!selectedOrder && !!processCode && !!equipCode && sgReady && !issuedFg && !issuing && !confirming;
+    !!selectedOrder && !!processCode && !!equipCode && sgReady && !issuedFg && !issuing && !confirming
+    && (!dailyInspectRequired || interlock.dailyInspectDone)
+    && (!workerInspectRequired || interlock.workerInspectDone);
   const issueDisabledReason = issuing || confirming ? t('common.actionProcessingHelp', '처리 중입니다. 완료될 때까지 기다려 주세요.')
     : issuedFg ? t('production.inputAssembly.finishIssuedHelp', '발행된 FG 라벨을 스캔하여 확정하거나 발행을 취소하세요.')
     : !selectedOrder ? t('production.inputAssembly.requireOrder', '작업지시를 선택하세요.')
     : !processCode ? t('production.subprocess.requireProcess', '공정을 선택하세요.')
     : !equipCode ? t('production.inputAssembly.requireEquip', '설비를 선택하세요.')
+    : dailyInspectRequired && !interlock.dailyInspectDone ? '설비 일상점검을 먼저 완료하세요.'
+    : workerInspectRequired && !interlock.workerInspectDone ? '작업자 설비점검을 먼저 완료하세요.'
     : t('production.inputAssembly.sgNotReadyHelp', '필요한 반제품을 스캔하고 잔량을 확인하세요.');
 
   const onIssue = useCallback(async () => {
@@ -419,19 +468,19 @@ export default function InputAssemblyPage() {
       </div>
 
       {/* 상단 고정 바: 설비(=공정) + 작업지시 */}
-      <Card padding="none" className="flex-shrink-0">
-        <CardContent className="p-3">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+      <Card padding="none" className="min-w-0 flex-shrink-0 overflow-x-auto">
+        <CardContent className="!p-0">
+          <div className="flex h-14 min-w-[980px] flex-nowrap items-center gap-3 whitespace-nowrap bg-surface/50 px-4">
             {/* 1) 설비 — 가장 먼저 선택. 설비가 공정을 결정(설비→공정)하고 작업지시 조회조건이 된다. */}
-            <div className="w-full lg:w-56">
-              <label className="block text-sm font-medium text-text mb-1">
+            <div className="w-52 shrink-0">
+              <label className="sr-only">
                 {t("production.inputAssembly.equip", "설비")}
               </label>
               <button
                 type="button"
                 onClick={() => setEquipModalOpen(true)}
                 disabled={contextLocked}
-                className={`flex h-11 w-full items-center gap-2 rounded-lg border px-3 text-left transition-colors ${
+                className={`flex h-11 w-full items-center gap-2 rounded-lg border-2 px-3 text-left transition-colors ${
                   equipCode
                     ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
                     : "border-dashed border-border hover:border-primary"
@@ -441,7 +490,7 @@ export default function InputAssemblyPage() {
                 <div className="min-w-0 flex-1">
                   {equipCode ? (
                     <>
-                      <div className="truncate text-sm font-semibold text-text">{equipName}</div>
+                      <div className="truncate text-sm font-extrabold text-text">{equipName}</div>
                       <div className="truncate text-[11px] text-text-muted">
                         {equipCode}
                         {processName && (
@@ -460,27 +509,28 @@ export default function InputAssemblyPage() {
             </div>
 
             {/* 2) 작업지시 — 설비 선택 후 활성화. 선택 설비의 공정에 내려진 작업지시만 조회. */}
-            <div className="flex-1 min-w-0">
+            <div className="min-w-[200px] flex-1">
               {selectedOrder ? (
-                <div className="flex items-center justify-between gap-3 rounded border border-primary/40 bg-primary/5 px-3 py-2">
-                  <div className="min-w-0 text-sm">
-                    <span className="font-mono text-text">{selectedOrder.orderNo}</span>
-                    <span className="text-text-muted">
+                <div className="flex h-11 min-w-0 items-center justify-between gap-2 rounded-lg border border-border bg-card px-3">
+                  <div className="min-w-0 flex-1 truncate text-sm">
+                    <span className="font-mono text-sm font-bold text-text">{selectedOrder.orderNo}</span>
+                    <span className="text-xs text-text-muted">
                       {" · "}
                       {selectedOrder.itemCode}
                       {selectedOrder.itemName ? ` · ${selectedOrder.itemName}` : ""}
                     </span>
                   </div>
-                  <Button variant="secondary" size="sm" onClick={clearOrder} disabled={contextLocked}>
+                  <Button className="!h-7 shrink-0 !rounded !px-2.5 !text-xs" size="sm" onClick={clearOrder} disabled={contextLocked}>
                     {t("common.change", "변경")}
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
+                <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-border bg-card px-2">
+                  <div className="min-w-0 flex-1">
                     <BarcodeScanInput
                       ref={orderScanRef}
-                      label={t("production.subprocess.orderScanLabel", "작업지시번호 스캔 또는 입력 후 Enter")}
+                      aria-label={t("production.subprocess.orderScanLabel", "작업지시번호 스캔 또는 입력 후 Enter")}
+                      className="!h-8 !text-xs"
                       value={orderScan}
                       onChange={setOrderScan}
                       onScan={fetchOrderByNo}
@@ -499,12 +549,34 @@ export default function InputAssemblyPage() {
                     onClick={() => setOrderSearchOpen(true)}
                     leftIcon={<Search className="w-4 h-4" />}
                     disabled={!equipCode}
-                    className="mb-0.5"
+                    className="!h-7 shrink-0 !rounded !px-2.5 !text-xs"
                   >
                     {t("common.search")}
                   </Button>
                 </div>
               )}
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <div className="flex h-11 max-w-52 shrink-0 items-center rounded-lg border border-border bg-card px-3">
+              <Button className="!h-7 min-w-0 !rounded !px-2.5 !text-xs [&>span]:truncate" size="sm" onClick={() => setWorkerModalOpen(true)} disabled={!equipCode || contextLocked} leftIcon={<UserRound className="h-4 w-4" />}>
+                <span className="truncate">{selectedWorkers.length > 0 ? `${selectedWorkers[0].workerName}${selectedWorkers.length > 1 ? ` 외 ${selectedWorkers.length - 1}` : ''}` : '작업자 선택'}</span>
+              </Button>
+              </div>
+              <HeaderCheckItem
+                label="설비 일상점검"
+                done={!dailyInspectRequired || interlock.dailyInspectDone}
+                disabled={!dailyInspectRequired || !equipCode || contextLocked}
+                disabledReason={!dailyInspectRequired ? '환경설정에서 필수 점검이 아닙니다.' : !equipCode ? '설비를 먼저 선택하세요.' : '처리 중입니다.'}
+                onInput={() => setDailyInspectOpen(true)}
+              />
+              <HeaderCheckItem
+                label="작업자설비점검"
+                done={!workerInspectRequired || interlock.workerInspectDone}
+                disabled={!workerInspectRequired || (dailyInspectRequired && !interlock.dailyInspectDone) || !selectedOrder || selectedWorkers.length === 0 || contextLocked}
+                disabledReason={!workerInspectRequired ? '환경설정에서 필수 점검이 아닙니다.' : dailyInspectRequired && !interlock.dailyInspectDone ? '설비 일상점검을 먼저 완료하세요.' : !selectedOrder ? '작업지시를 먼저 선택하세요.' : selectedWorkers.length === 0 ? '작업자를 먼저 선택하세요.' : '처리 중입니다.'}
+                onInput={() => setWorkerInspectOpen(true)}
+                wide
+              />
             </div>
           </div>
         </CardContent>
@@ -578,6 +650,21 @@ export default function InputAssemblyPage() {
         onClose={() => setEquipModalOpen(false)}
         equips={equips}
         onSelect={handleEquipSelect}
+      />
+      <WorkerSelectModal
+        isOpen={workerModalOpen}
+        onClose={() => setWorkerModalOpen(false)}
+        onConfirm={handleWorkerSelect}
+      />
+      <DailyInspectModal
+        isOpen={dailyInspectOpen}
+        onClose={() => setDailyInspectOpen(false)}
+        onDone={() => { setDailyInspectOpen(false); void refreshInspectStatus(); }}
+      />
+      <WorkerInspectModal
+        isOpen={workerInspectOpen}
+        onClose={() => setWorkerInspectOpen(false)}
+        onDone={() => { setWorkerInspectOpen(false); void refreshInspectStatus(); }}
       />
 
       {/* FG 라벨 자동 출력 호스트(오프스크린). 조립 확정 시 printFg=true면 출력. */}

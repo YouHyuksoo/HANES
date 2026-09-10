@@ -72,6 +72,17 @@ import { formatYmdLocal } from '../../../shared/date.util';
 const SELF_INSPECT_BATCH_WINDOW_MS = 10_000;
 /** 설비점검 인터록 sys-config 키. 값이 없으면(null) 켜진 것으로 본다(기본 Y). 'N'일 때만 끈다. */
 const EQUIP_INSPECT_INTERLOCK_KEY = 'EQUIP_INSPECT_INTERLOCK';
+type ProductionInspectScope = 'ASSEMBLY' | 'SUBASSEMBLY';
+const INSPECT_REQUIRED_KEYS: Record<ProductionInspectScope, { daily: string; worker: string }> = {
+  ASSEMBLY: {
+    daily: 'ASSEMBLY_DAILY_INSPECT_REQUIRED',
+    worker: 'ASSEMBLY_WORKER_INSPECT_REQUIRED',
+  },
+  SUBASSEMBLY: {
+    daily: 'SUBASSEMBLY_DAILY_INSPECT_REQUIRED',
+    worker: 'SUBASSEMBLY_WORKER_INSPECT_REQUIRED',
+  },
+};
 
 @Injectable()
 export class ProdResultService {
@@ -745,12 +756,23 @@ export class ProdResultService {
     dto: Pick<CreateProdResultDto, 'equipCode' | 'orderNo'>,
     company?: string,
     plant?: string,
+    scope?: ProductionInspectScope,
   ): Promise<void> {
     const equipCode = dto.equipCode?.trim();
     if (!equipCode) return;
 
     const configValue = await this.sysConfigService.getValue(EQUIP_INSPECT_INTERLOCK_KEY, company, plant);
     if (typeof configValue === 'string' && configValue.trim().toUpperCase() === 'N') return;
+
+    const requiredKeys = scope ? INSPECT_REQUIRED_KEYS[scope] : undefined;
+    const [dailyRequiredValue, workerRequiredValue] = requiredKeys
+      ? await Promise.all([
+        this.sysConfigService.getValue(requiredKeys.daily, company, plant),
+        this.sysConfigService.getValue(requiredKeys.worker, company, plant),
+      ])
+      : [null, null];
+    const dailyRequired = !requiredKeys || dailyRequiredValue == null || dailyRequiredValue.trim().toUpperCase() !== 'N';
+    const workerRequired = !requiredKeys || workerRequiredValue == null || workerRequiredValue.trim().toUpperCase() !== 'N';
 
     const poolItems = await this.equipInspectItemPoolRepository.find({
       where: {
@@ -761,8 +783,8 @@ export class ProdResultService {
         ...(plant ? { plant } : {}),
       },
     });
-    const hasDaily = poolItems.some((item) => item.inspectType === 'DAILY');
-    const hasWorker = poolItems.some((item) => item.inspectType === 'WORKER');
+    const hasDaily = dailyRequired && poolItems.some((item) => item.inspectType === 'DAILY');
+    const hasWorker = workerRequired && poolItems.some((item) => item.inspectType === 'WORKER');
     if (!hasDaily && !hasWorker) return;
 
     const today = formatYmdLocal(new Date());

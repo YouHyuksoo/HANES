@@ -551,9 +551,7 @@
     "switchToDark": "다크 모드로 전환",
     "colorTheme": "컬러 테마 전환",
     "collapseSidebar": "사이드바 접기",
-    "expandSidebar": "사이드바 펼치기",
-    "tourMode": "투어 모드",
-    "tourModeHelp": "화면의 필드·컬럼·버튼 설명을 표시합니다."
+    "expandSidebar": "사이드바 펼치기"
   },
   "auth": {
     "login": "로그인",
