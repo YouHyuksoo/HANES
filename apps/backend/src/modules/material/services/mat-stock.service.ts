@@ -10,7 +10,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In, FindOptionsWhere, IsNull, QueryRunner, MoreThan, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import { Repository, DataSource, In, Like, FindOptionsWhere, IsNull, QueryRunner, MoreThan, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
@@ -111,6 +111,17 @@ export class MatStockService {
     if (trimmedSearch) {
       // 검색어(품목코드/품목명/시리얼)는 DB WHERE 로 건다 — 페이지를 자른 뒤 메모리에서 거르면 검색 결과가 페이지 밖으로 밀린다.
       const searchValue = `%${trimmedSearch.toUpperCase()}%`;
+      // Oracle에서 상관 EXISTS를 목록/COUNT QueryBuilder에 함께 넣으면 드라이버가 생성하는
+      // 페이징 COUNT SQL이 실패할 수 있다. 품목명 검색은 먼저 코드로 해석해 같은 재고 쿼리에 IN으로 결합한다.
+      const matchingParts = await this.itemMasterRepository.find({
+        where: {
+          itemName: Like(`%${trimmedSearch}%`),
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+        select: ['itemCode'],
+      });
+      const matchingItemCodes = [...new Set(matchingParts.map((part) => part.itemCode).filter(Boolean))];
       const qb = this.matStockRepository.createQueryBuilder('stock');
       if (!includeZero) qb.andWhere('stock.qty > 0');
       if (dateFrom) qb.andWhere('stock.updatedAt >= :dateFrom', { dateFrom });
@@ -120,19 +131,12 @@ export class MatStockService {
       if (locationCode) qb.andWhere('stock.locationCode = :locationCode', { locationCode });
       if (company) qb.andWhere('stock.company = :company', { company });
       if (plant) qb.andWhere('stock.plant = :plant', { plant });
-      qb.andWhere(`
-        (
-          UPPER(stock.itemCode) LIKE :search
-          OR UPPER(COALESCE(stock.matUid, '')) LIKE :search
-          OR EXISTS (
-            SELECT 1 FROM "ITEM_MASTERS" im
-            WHERE im."ITEM_CODE" = stock.itemCode
-              AND im."COMPANY" = stock.company
-              AND im."PLANT_CD" = stock.plant
-              AND UPPER(im."ITEM_NAME") LIKE :search
-          )
-        )
-      `, { search: searchValue });
+      const searchConditions = ['UPPER(stock.itemCode) LIKE :search', 'UPPER(stock.matUid) LIKE :search'];
+      if (matchingItemCodes.length > 0) searchConditions.push('stock.itemCode IN (:...matchingItemCodes)');
+      qb.andWhere(`(${searchConditions.join(' OR ')})`, {
+        search: searchValue,
+        ...(matchingItemCodes.length > 0 ? { matchingItemCodes } : {}),
+      });
       [data, total] = await qb
         .orderBy('stock.updatedAt', 'DESC')
         .skip(skip)

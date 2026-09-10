@@ -182,7 +182,7 @@ describe('MatStockService', () => {
 
       expect(mockMatStockRepo.find).not.toHaveBeenCalled();
       expect(qb.andWhere).toHaveBeenCalledWith('stock.qty > 0');
-      expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('LIKE :search'), { search: '%MAT-SEARCH%' });
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('LIKE :search'), expect.objectContaining({ search: '%MAT-SEARCH%' }));
       expect(qb.skip).toHaveBeenCalledWith(10);
       expect(qb.take).toHaveBeenCalledWith(10);
       expect(result.total).toBe(1);
