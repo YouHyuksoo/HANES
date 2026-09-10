@@ -96,7 +96,8 @@ export default function InputKioskPage() {
 
   // 설비 목록 로드
   useEffect(() => {
-    api.get('/equipment/equips', { params: { limit: '500', useYn: 'Y' } })
+    // 미사용 설비도 목록에서 구분 표시하되 선택은 모달에서 차단한다.
+    api.get('/equipment/equips', { params: { limit: '500' } })
       .then(res => setEquips(normalizeEquipOptions(res.data)))
       .catch(() => setEquips([]));
   }, []);

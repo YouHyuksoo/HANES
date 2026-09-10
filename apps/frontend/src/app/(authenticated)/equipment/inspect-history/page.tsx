@@ -13,7 +13,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ScrollText, Search, RefreshCw,
+  ScrollText, Search, RefreshCw, ClipboardList,
 } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -23,7 +23,7 @@ import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
 import { createInspectHistoryGridColumns } from "./inspectHistoryColumns";
-import type { InspectHistory } from "./types";
+import type { InspectDetail, InspectHistory } from "./types";
 
 /** 서버 페이지 크기 */
 const PAGE_SIZE = 200;
@@ -56,6 +56,7 @@ export default function InspectHistoryPage() {
   const [dateFrom, setDateFrom] = useState(() => getTodayLocal());
   const [dateTo, setDateTo] = useState(() => getTodayLocal());
   const [page, setPage] = useState(1);
+  const [selectedHistory, setSelectedHistory] = useState<InspectHistory | null>(null);
 
   useEffect(() => { setPage(1); }, [searchText, typeFilter, equipTypeFilter, resultFilter, dateFrom, dateTo]);
 
@@ -71,6 +72,10 @@ export default function InspectHistoryPage() {
       if (dateTo) params.inspectDateTo = dateTo;
       const res = await api.get("/equipment/inspect-history", { params });
       setData(res.data?.data ?? []);
+      setSelectedHistory((current) => {
+        if (!current) return current;
+        return (res.data?.data ?? []).find((row: InspectHistory) => row.id === current.id) ?? null;
+      });
       setTotal(Number(res.data?.meta?.total ?? 0));
     } catch {
       setData([]);
@@ -83,6 +88,17 @@ export default function InspectHistoryPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const columns = useMemo(() => createInspectHistoryGridColumns(t), [t]);
+  const detailItems = useMemo<InspectDetail[]>(() => {
+    if (!selectedHistory?.details) return [];
+    try {
+      const parsed = typeof selectedHistory.details === "string"
+        ? JSON.parse(selectedHistory.details)
+        : selectedHistory.details;
+      return Array.isArray(parsed) ? parsed : (parsed?.items ?? []);
+    } catch {
+      return [];
+    }
+  }, [selectedHistory]);
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -101,9 +117,11 @@ export default function InspectHistoryPage() {
         </div>
       </div>
 
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
+      <div className="flex-1 min-h-0 flex gap-4">
+      <Card className="flex-1 min-w-0 min-h-0 overflow-hidden" padding="none"><CardContent className="h-full p-4">
         <DataGrid data={data} columns={columns} isLoading={loading} enableColumnFilter
           enableExport exportFileName={t("equipment.inspectHistory.title")}
+          onRowClick={setSelectedHistory}
           toolbarLeft={
             <div className="flex gap-3 flex-1 min-w-0">
               <div className="flex-1 min-w-0">
@@ -125,6 +143,49 @@ export default function InspectHistoryPage() {
           } 
           sqlQuery={inspectHistorySqlPreview}/>
       </CardContent></Card>
+      <Card className="w-[360px] shrink-0 min-h-0 overflow-hidden" padding="none">
+        <CardContent className="h-full p-4 flex flex-col min-h-0">
+          <div className="flex items-center gap-2 pb-3 border-b border-border shrink-0">
+            <ClipboardList className="w-5 h-5 text-primary" />
+            <div>
+              <h2 className="font-semibold text-text">상세 점검내역</h2>
+              <p className="text-xs text-text-muted">행을 선택하면 항목별 결과를 확인합니다.</p>
+            </div>
+          </div>
+          {!selectedHistory ? (
+            <div className="flex-1 flex items-center justify-center text-sm text-text-muted">조회할 이력을 선택하세요.</div>
+          ) : (
+            <div className="flex-1 min-h-0 overflow-y-auto pt-3 space-y-3">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div><span className="text-text-muted">설비</span><p className="font-mono text-text">{selectedHistory.equipCode}</p></div>
+                <div><span className="text-text-muted">점검일</span><p className="text-text">{selectedHistory.inspectDate || '-'}</p></div>
+                <div><span className="text-text-muted">점검자</span><p className="text-text">{selectedHistory.inspectorName || '-'}</p></div>
+                <div><span className="text-text-muted">작업지시</span><p className="font-mono text-text">{selectedHistory.orderNo || '-'}</p></div>
+              </div>
+              {detailItems.length === 0 ? (
+                <div className="rounded border border-border p-3 text-xs text-text-muted">저장된 항목별 상세내역이 없습니다.</div>
+              ) : (
+                <div className="space-y-2">
+                  {detailItems.map((detail, index) => (
+                    <div key={`${detail.itemId ?? 'item'}-${index}`} className="rounded border border-border p-2.5 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-text">{detail.itemName || detail.itemId || `점검항목 ${index + 1}`}</span>
+                        <span className={detail.result === 'FAIL' ? 'text-red-500 font-semibold' : 'text-green-600 font-semibold'}>{detail.result || '-'}</span>
+                      </div>
+                      {(detail.measuredValue || detail.remark || detail.reasonCode) && (
+                        <p className="mt-1 text-text-muted break-words">
+                          {[detail.measuredValue && `측정값: ${detail.measuredValue}`, detail.remark && `비고: ${detail.remark}`, detail.reasonCode && `사유: ${detail.reasonCode}${detail.reasonText ? ` (${detail.reasonText})` : ''}`].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      </div>
     </div>
   );
 }

@@ -21,7 +21,6 @@ import { WorkCalendar } from '../../../entities/work-calendar.entity';
 import { WorkCalendarDay } from '../../../entities/work-calendar-day.entity';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { CreateEquipInspectDto, UpdateEquipInspectDto, EquipInspectQueryDto } from '../dto/equip-inspect.dto';
-import { parseDateStart } from '../../../shared/date.util';
 
 type InspectType = 'DAILY' | 'PERIODIC' | 'WORKER';
 
@@ -262,6 +261,10 @@ export class EquipInspectService {
     }
     if (company) log.andWhere('log.company = :company', { company });
     if (plant) log.andWhere('log.plant = :plant', { plant });
+    // 운영 DB에서는 최신 재점검을 선택하고, 단순 조회 mock은 기존 체인도 지원한다.
+    if (typeof (log as any).orderBy === 'function') {
+      (log as any).orderBy('log.inspectAt', 'DESC').addOrderBy('log.createdAt', 'DESC');
+    }
     const foundLog = await log.getOne();
 
     if (!foundLog) {
@@ -302,9 +305,9 @@ export class EquipInspectService {
         ? inspectAt
         : dto.inspectDate ? this.resolveReferenceTime(dto.inspectDate) : inspectAt,
     );
-    const inspectDate = inspectType === 'WORKER'
-      ? inspectAt
-      : dto.inspectDate ? parseDateStart(dto.inspectDate) : inspectAt;
+    // 이력은 동일 조업일/작업지시에서도 재점검할 수 있어 실제 점검시각을 PK 값으로 보존한다.
+    // 완료 여부는 WORK_DATE/ORDER_NO 기준 최신 로그로 별도 판정한다.
+    const inspectDate = inspectAt;
 
     // PDA 상세 결과에서 FAIL 항목은 원인 추적을 위해 사유코드를 필수로 받는다.
     const detailItems = dto.details && Array.isArray((dto.details as { items?: unknown }).items)

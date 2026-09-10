@@ -1,10 +1,10 @@
 /**
  * @file entities/equip-inspect-log.entity.ts
  * @description 설비 점검 이력 엔티티 - 설비 점검 결과를 저장한다.
- *              복합키: EQUIP_CODE + INSPECT_TYPE + INSPECT_DATE
+ *              복합키: EQUIP_CODE + INSPECT_TYPE + INSPECT_DATE(실제 점검시각)
  *
  * 초보자 가이드:
- * 1. 물리 PK: equipCode + inspectType + inspectDate
+ * 1. 물리 PK: equipCode + inspectType + inspectDate(재점검 이력별 시각)
  * 2. 업무 키: DAILY는 workDate, WORKER는 orderNo로 완료 여부를 판단
  * 2. details: CLOB JSON으로 항목별 점검 결과 저장
  * 3. 설비일일점검은 조업일 기준, 작업자설비점검은 작업지시 기준으로 유지

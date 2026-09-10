@@ -4,6 +4,7 @@ export interface EquipOption {
   processCode?: string;
   processName?: string;
   lineType?: string;
+  useYn?: string;
   currentJobOrderId?: string | null;
   currentWorkerCodes?: string | null;
 }
@@ -35,6 +36,7 @@ export function normalizeEquipOptions(payload: unknown): EquipOption[] {
     if (typeof item.processCode === 'string') option.processCode = item.processCode;
     if (typeof item.processName === 'string') option.processName = item.processName;
     if (typeof item.lineType === 'string') option.lineType = item.lineType;
+    if (typeof item.useYn === 'string') option.useYn = item.useYn;
     option.currentJobOrderId = typeof item.currentJobOrderId === 'string' ? item.currentJobOrderId : null;
     option.currentWorkerCodes = typeof item.currentWorkerCodes === 'string' ? item.currentWorkerCodes : null;
     return [option];

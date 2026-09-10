@@ -218,6 +218,17 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
   }, [selectedEquip, items, results, measureValues, remarks, inspectorName,
     anyFail, setInterlock, onDone, t]);
 
+  const startNewInspection = useCallback(() => {
+    const init: Record<number, ItemResult> = {};
+    items.forEach((item) => { init[item.seq] = ''; });
+    setResults(init);
+    setMeasureValues({});
+    setRemarks({});
+    setInspectorName(selectedWorkers[0]?.workerName ?? '');
+    setAlreadyDone(false);
+    setCompletedInspect(null);
+  }, [items, selectedWorkers]);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.dailyInspectTitle')} size="2xl">
       {alreadyDone ? (
@@ -307,7 +318,10 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
           )}
 
           <div className="flex justify-end pt-2 border-t border-border">
-            <Button onClick={onDone}>{t('common.confirm')}</Button>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={startNewInspection}>{t('kiosk.prep.newInspection', '새 점검 등록')}</Button>
+              <Button onClick={onDone}>{t('common.confirm')}</Button>
+            </div>
           </div>
         </div>
       ) : (
