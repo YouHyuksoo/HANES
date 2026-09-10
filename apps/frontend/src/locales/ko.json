@@ -5134,6 +5134,7 @@
       "title": "구조검사",
       "scanPlaceholder": "FG 바코드를 스캔 또는 입력하세요",
       "defectChecklist": "불량항목",
+      "defectItemRequired": "불합격 판정에는 불량항목을 1개 이상 체크하세요.",
       "defectType": "불량유형",
       "description": "저전압 공정 DIM"
     }
@@ -5314,6 +5315,7 @@
       "defectRemark": "비고",
       "mainDefectCode": "대표 불량코드",
       "detailReason": "상세 사유",
+      "defectCodeRequired": "불합격 사유(대표 불량코드)를 선택하세요.",
       "alreadyInspected": "검사 완료됨",
       "inspectInfo": "제품 정보",
       "searchPlaceholder": "작업지시번호, 품목코드 검색",

@@ -4598,6 +4598,7 @@
       "title": "结构检验",
       "scanPlaceholder": "请扫描或输入FG条码",
       "defectChecklist": "不良项目",
+      "defectItemRequired": "不合格判定请至少勾选一个不良项目。",
       "defectType": "不良类型",
       "description": "低压工序 DIM"
     }
@@ -4778,6 +4779,7 @@
       "defectRemark": "备注",
       "mainDefectCode": "主要不良代码",
       "detailReason": "详细原因",
+      "defectCodeRequired": "请选择不良代码（不合格原因）。",
       "alreadyInspected": "已完成检查",
       "inspectInfo": "生产实绩信息",
       "searchPlaceholder": "搜索工单号、品目代码",

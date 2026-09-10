@@ -62,7 +62,9 @@ export default function IntegratedInspectPanel({ fgLabel, onClose, onSave }: Pro
   const orderNo = fgLabel?.orderNo ?? manualOrderNo;
   const itemCode = fgLabel?.itemCode ?? manualItemCode;
   const allStepsSelected = steps.every((s) => s.passYn !== null);
-  const canSubmit = allStepsSelected && orderNo.trim() && itemCode.trim();
+  /** 불합격(N) 스텝은 불량코드(사유)가 필수 */
+  const failStepsMissingReason = steps.filter((s) => s.passYn === "N" && !s.errorCode.trim());
+  const canSubmit = allStepsSelected && failStepsMissingReason.length === 0 && orderNo.trim() && itemCode.trim();
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
@@ -169,9 +171,10 @@ export default function IntegratedInspectPanel({ fgLabel, onClose, onSave }: Pro
                 {isFail && (
                   <div className="space-y-2">
                     <Input
-                      placeholder={t("quality.inspect.defectCode", "불량코드")}
+                      placeholder={`${t("quality.inspect.defectCode", "불량코드")} *`}
                       value={step.errorCode}
                       onChange={(e) => updateStep(stepDef.inspectType, "errorCode", e.target.value)}
+                      error={!step.errorCode.trim() ? t("quality.inspect.defectCodeRequired") : undefined}
                       fullWidth
                     />
                     <Input

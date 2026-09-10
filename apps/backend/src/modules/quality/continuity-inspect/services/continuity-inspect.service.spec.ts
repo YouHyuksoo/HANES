@@ -239,7 +239,7 @@ describe('ContinuityInspectService', () => {
       if (entity === FgLabel) return { fgBarcode: 'FG-1', company: 'C1', plant: 'P1', ...example } as any;
       return null;
     });
-    await expect(target.inspect({ orderNo: 'JO-001', itemCode: 'ITEM-001', passYn: 'N', fgBarcode: 'FG-1' } as any, 'C1', 'P1')).rejects.toThrow(example.message);
+    await expect(target.inspect({ orderNo: 'JO-001', itemCode: 'ITEM-001', passYn: 'N', errorCode: 'OPEN', fgBarcode: 'FG-1' } as any, 'C1', 'P1')).rejects.toThrow(example.message);
     expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
   });
 
@@ -309,10 +309,60 @@ describe('ContinuityInspectService', () => {
       expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(InspectResult, expect.objectContaining({ inspectType: 'VISUAL', inspectScope: 'FULL' }));
     });
 
+    it('rejects a FAIL judgement without a defect code before opening a transaction', async () => {
+      mockSysConfigService.isEnabled.mockResolvedValue(false);
+      await expect(target.visualInspectBatch({ orderNo: 'JO-1', fgBarcodes: ['FG-1'], passYn: 'N', errorCode: '  ' }, 'C1', 'P1'))
+        .rejects.toThrow('불량코드');
+      await expect(target.visualInspectBatch({ orderNo: 'JO-1', fgBarcodes: ['FG-1'], passYn: 'N', errorCode: null }, 'C1', 'P1'))
+        .rejects.toThrow('불량코드');
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
     it('rejects duplicate targets before opening a transaction', async () => {
       mockSysConfigService.isEnabled.mockResolvedValue(false);
       await expect(target.visualInspectBatch({ orderNo: 'JO-1', fgBarcodes: ['FG-1', 'FG-1'], passYn: 'Y' }, 'C1', 'P1'))
         .rejects.toThrow('중복된 FG');
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('FAIL judgement requires a defect code (all inspect entry points)', () => {
+    beforeEach(() => {
+      mockSysConfigService.isEnabled.mockResolvedValue(false);
+    });
+
+    it('inspect rejects FAIL without errorCode before opening a transaction', async () => {
+      await expect(target.inspect({ orderNo: 'JO-1', passYn: 'N', inspectType: 'CONTINUITY' } as any, 'C1', 'P1'))
+        .rejects.toThrow('불량코드');
+      await expect(target.inspect({ orderNo: 'JO-1', passYn: 'N', inspectType: 'CONTINUITY', errorCode: ' ' } as any, 'C1', 'P1'))
+        .rejects.toThrow('불량코드');
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
+    it('integratedInspect rejects a FAIL step without errorCode and names the step', async () => {
+      await expect(target.integratedInspect({
+        orderNo: 'JO-1', itemCode: 'ITEM-1',
+        steps: [{ inspectType: 'CONTINUITY', passYn: 'Y' }, { inspectType: 'LEAK', passYn: 'N', errorCode: '' }],
+      } as any, 'C1', 'P1')).rejects.toThrow(/불량코드.*LEAK/);
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
+    it('structureInspect rejects FAIL without errorCode before opening a transaction', async () => {
+      await expect(target.structureInspect('FG-1', { passYn: 'N', errorCode: null }, 'C1', 'P1'))
+        .rejects.toThrow('불량코드');
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
+    it('autoInspect (equipment result) is exempt: FAIL without errorCode still reaches the transaction', async () => {
+      mockTx.run.mockRejectedValueOnce(new Error('tx-reached'));
+      await expect(target.autoInspect({ orderNo: 'JO-1', itemCode: 'ITEM-1', result: 'FAIL' } as any, 'C1', 'P1'))
+        .rejects.toThrow('tx-reached');
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('reInspect rejects FAIL without errorCode before opening a transaction', async () => {
+      await expect(target.reInspect('FG-1', { passYn: 'N' }, 'C1', 'P1'))
+        .rejects.toThrow('불량코드');
       expect(mockTx.run).not.toHaveBeenCalled();
     });
   });

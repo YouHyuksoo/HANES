@@ -4598,6 +4598,7 @@
       "title": "Kiểm tra kết cấu",
       "scanPlaceholder": "Quét hoặc nhập mã vạch FG",
       "defectChecklist": "Hạng mục lỗi",
+      "defectItemRequired": "Hãy chọn ít nhất một hạng mục lỗi khi phán định không đạt.",
       "defectType": "Loại lỗi",
       "description": "DIM công đoạn điện áp thấp"
     }
@@ -4778,6 +4779,7 @@
       "defectRemark": "Ghi chú",
       "mainDefectCode": "Mã lỗi chính",
       "detailReason": "Lý do chi tiết",
+      "defectCodeRequired": "Hãy chọn mã lỗi (lý do không đạt).",
       "alreadyInspected": "Đã kiểm tra xong",
       "inspectInfo": "Thông tin kết quả SX",
       "searchPlaceholder": "Tìm số lệnh, mã SP",

@@ -26,11 +26,14 @@ export default function FailModal({ isOpen, onClose, onSubmit, submitting }: Pro
   const [errorCode, setErrorCode] = useState("");
   const [errorDetail, setErrorDetail] = useState("");
 
+  const canSubmit = errorCode.trim().length > 0;
+
   const handleSubmit = useCallback(async () => {
+    if (!canSubmit) return;
     await onSubmit(errorCode, errorDetail);
     setErrorCode("");
     setErrorDetail("");
-  }, [errorCode, errorDetail, onSubmit]);
+  }, [canSubmit, errorCode, errorDetail, onSubmit]);
 
   const handleClose = useCallback(() => {
     setErrorCode("");
@@ -44,6 +47,7 @@ export default function FailModal({ isOpen, onClose, onSubmit, submitting }: Pro
         <div>
           <label className="block text-sm font-medium text-text mb-1">
             {t("inspection.result.errorCode")}
+            <span className="ml-1 text-red-600 dark:text-red-400">*</span>
           </label>
           <ComCodeSelect
             groupCode="CONTINUITY_DEFECT"
@@ -68,7 +72,12 @@ export default function FailModal({ isOpen, onClose, onSubmit, submitting }: Pro
           <Button variant="secondary" onClick={handleClose}>
             {t("common.cancel")}
           </Button>
-          <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
+          <Button
+            variant="primary"
+            onClick={handleSubmit}
+            disabled={submitting || !canSubmit}
+            disabledReason={t("quality.inspect.defectCodeRequired")}
+          >
             {t("common.save")}
           </Button>
         </div>

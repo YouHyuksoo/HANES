@@ -343,6 +343,7 @@ export class ContinuityInspectService {
     if (!['Y', 'N'].includes(dto.passYn)) {
       throw new BadRequestException('육안검사 판정은 Y 또는 N이어야 합니다.');
     }
+    this.assertFailReason(dto.passYn, dto.errorCode);
     return this.tx.run(async (qr) => {
       const locked = new Map<string, FgLabel>();
       for (const fgBarcode of [...barcodes].sort()) {
@@ -497,7 +498,12 @@ export class ContinuityInspectService {
     dto: ContinuityInspectDto,
     company?: string,
     plant?: string,
+    options: { requireFailReason?: boolean } = {},
   ): Promise<{ inspectResult: InspectResult; fgBarcode: string | null }> {
+    // 작업자 판정은 불량코드 필수. 설비 자동검사(autoInspect)는 기계 결과라 예외(requireFailReason=false).
+    if (options.requireFailReason !== false) {
+      this.assertFailReason(dto.passYn, dto.errorCode);
+    }
     const result = await this.tx.run(async (queryRunner) => {
       /** 1. 작업지시 존재 확인 */
       const jobOrder = await queryRunner.manager.findOne(JobOrder, {
@@ -624,6 +630,17 @@ export class ContinuityInspectService {
     return result;
   }
 
+  /**
+   * 불합격(N) 판정에는 불량코드(사유)가 반드시 있어야 한다.
+   * 통전/육안/구조/재검사/통합검사 등 모든 검사 진입점이 공통으로 호출한다(트랜잭션 진입 전).
+   */
+  private assertFailReason(passYn: string | null | undefined, errorCode: string | null | undefined, stepLabel?: string): void {
+    if (passYn !== 'N') return;
+    if (errorCode?.trim()) return;
+    const where = stepLabel ? ` (${stepLabel})` : '';
+    throw new BadRequestException(`불합격 판정에는 불량코드(사유)가 필요합니다.${where}`);
+  }
+
   private assertTenantMatches(
     context: string,
     expected: { company?: string; plant?: string },
@@ -668,6 +685,7 @@ export class ContinuityInspectService {
     company?: string,
     plant?: string,
   ): Promise<{ inspectResult: InspectResult; fgLabel: FgLabel }> {
+    this.assertFailReason(dto.passYn, dto.errorCode);
     const result = await this.tx.run(async (queryRunner) => {
       const label = await this.mutableLabelInTx(queryRunner, fgBarcode, company, plant);
       if (label.inspectPassYn !== 'N') {
@@ -740,6 +758,9 @@ export class ContinuityInspectService {
     const steps = dto.steps ?? [];
     if (steps.length === 0) {
       throw new BadRequestException('최소 1개 이상의 검사 스텝이 필요합니다.');
+    }
+    for (const step of steps) {
+      this.assertFailReason(step.passYn, step.errorCode, step.inspectType);
     }
 
     return this.tx.run(async (queryRunner) => {
@@ -1059,6 +1080,7 @@ export class ContinuityInspectService {
     if (await this.sysConfigService.isEnabled('STRUCTURE_INSP_BYPASS')) {
       throw new BadRequestException('구조검사가 시스템 설정에서 bypass 처리되었습니다. 관리자에게 문의하세요.');
     }
+    this.assertFailReason(dto.passYn, dto.errorCode);
     return this.tx.run(async (qr) => {
       const label = await qr.manager.findOne(FgLabel, {
         where: { fgBarcode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
@@ -1151,6 +1173,7 @@ export class ContinuityInspectService {
       },
       company,
       plant,
+      { requireFailReason: false },
     );
   }
 

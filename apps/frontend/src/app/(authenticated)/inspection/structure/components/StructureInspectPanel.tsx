@@ -34,8 +34,12 @@ export default function StructureInspectPanel({ fgLabel, onClose, onSave, animat
     setChecklist((prev) => prev.map((item) => (item.code === code ? { ...item, [field]: value } : item)));
   };
 
+  const checkedCount = checklist.filter((c) => c.checked).length;
+  /** 불합격(N) 판정은 불량항목 1개 이상 체크가 필수 (체크된 코드가 errorCode로 저장됨) */
+  const failReasonMissing = passYn === "N" && checkedCount === 0;
+
   const handleSubmit = async () => {
-    if (!fgLabel) return;
+    if (!fgLabel || failReasonMissing) return;
     setSaving(true);
     try {
       const checkedItems = checklist.filter((c) => c.checked);
@@ -62,7 +66,7 @@ export default function StructureInspectPanel({ fgLabel, onClose, onSave, animat
         {fgLabel && (
           <div className="flex items-center gap-2">
             <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-            <Button size="sm" onClick={handleSubmit} disabled={saving}>
+            <Button size="sm" onClick={handleSubmit} disabled={saving || failReasonMissing} disabledReason={t("inspection.structure.defectItemRequired")}>
               {saving ? t("common.saving") : t("common.save")}
             </Button>
           </div>
@@ -119,7 +123,13 @@ export default function StructureInspectPanel({ fgLabel, onClose, onSave, animat
 
             {passYn === "N" && (
               <div>
-                <h3 className="text-xs font-semibold text-text-muted mb-2">{t("inspection.structure.defectChecklist", "불량항목")}</h3>
+                <h3 className="text-xs font-semibold text-text-muted mb-2">
+                  {t("inspection.structure.defectChecklist", "불량항목")}
+                  <span className="ml-1 text-red-600 dark:text-red-400">*</span>
+                </h3>
+                {failReasonMissing && (
+                  <p className="mb-2 text-xs text-red-600 dark:text-red-400">{t("inspection.structure.defectItemRequired")}</p>
+                )}
                 <div className="space-y-2">
                   {checklist.map((item) => (
                     <div key={item.code} className={`rounded-lg border p-3 transition-colors ${item.checked ? "border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-900/20" : "border-border bg-surface"}`}>

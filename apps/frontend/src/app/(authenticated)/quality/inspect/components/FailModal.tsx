@@ -6,8 +6,8 @@
  *
  * 초보자 가이드:
  * 1. FAIL 버튼 클릭 시 열리는 모달
- * 2. ComCodeSelect로 VISUAL_DEFECT 그룹코드에서 불량 유형 선택
- * 3. 상세 내용 텍스트 입력 후 저장
+ * 2. ComCodeSelect로 VISUAL_DEFECT 그룹코드에서 불량 유형 선택 (필수)
+ * 3. 상세 내용 텍스트 입력 후 저장 — 불량코드 미선택 시 저장 버튼 비활성
  */
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
@@ -26,11 +26,14 @@ export default function FailModal({ isOpen, onClose, onSubmit, submitting }: Pro
   const [errorCode, setErrorCode] = useState("");
   const [errorDetail, setErrorDetail] = useState("");
 
+  const canSubmit = errorCode.trim().length > 0;
+
   const handleSubmit = useCallback(async () => {
+    if (!canSubmit) return;
     await onSubmit(errorCode, errorDetail);
     setErrorCode("");
     setErrorDetail("");
-  }, [errorCode, errorDetail, onSubmit]);
+  }, [canSubmit, errorCode, errorDetail, onSubmit]);
 
   const handleClose = useCallback(() => {
     setErrorCode("");
@@ -44,6 +47,7 @@ export default function FailModal({ isOpen, onClose, onSubmit, submitting }: Pro
         <div>
           <label className="block text-sm font-medium text-text mb-1">
             {t("quality.inspect.mainDefectCode")}
+            <span className="ml-1 text-red-600 dark:text-red-400">*</span>
           </label>
           <ComCodeSelect
             groupCode="VISUAL_DEFECT"
@@ -68,7 +72,12 @@ export default function FailModal({ isOpen, onClose, onSubmit, submitting }: Pro
           <Button variant="secondary" onClick={handleClose}>
             {t("common.cancel")}
           </Button>
-          <Button variant="primary" onClick={handleSubmit} disabled={submitting}>
+          <Button
+            variant="primary"
+            onClick={handleSubmit}
+            disabled={submitting || !canSubmit}
+            disabledReason={t("quality.inspect.defectCodeRequired")}
+          >
             {t("common.save")}
           </Button>
         </div>
