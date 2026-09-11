@@ -229,6 +229,11 @@
           "path": "/material/receive-history"
         },
         {
+          "menuCode": "MAT_IQC_DEFECT_RECEIVE",
+          "title": "IQC불합격자재 불량창고입고",
+          "path": "/material/iqc-defect-receive"
+        },
+        {
           "menuCode": "MAT_LOT",
           "title": "자재 LOT 조회",
           "path": "/material/lot"

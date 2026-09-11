@@ -90,6 +90,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "MAT_RECEIVE_LABEL", labelKey: "menu.material.receiveLabel", path: "/material/receive-label" },
       { code: "MAT_RECEIVE", labelKey: "menu.material.receive", path: "/material/receive" },
       { code: "MAT_RECEIVE_HISTORY", labelKey: "menu.material.receiveHistory", path: "/material/receive-history" },
+      { code: "MAT_IQC_DEFECT_RECEIVE", labelKey: "menu.material.iqcDefectReceive", path: "/material/iqc-defect-receive" },
       { code: "MAT_REQUEST", labelKey: "menu.material.request", path: "/material/request" },
       { code: "MAT_REQUEST_OTHER", labelKey: "menu.material.requestOther", path: "/material/request-other" },
       { code: "MAT_ISSUE", labelKey: "menu.material.issue", path: "/material/issue" },

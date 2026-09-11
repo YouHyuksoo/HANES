@@ -397,6 +397,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/material/iqc-defect-receive": {
+      const mod = await import("./page-registries/material__iqc-defect-receive.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/material/iqc-history": {
       const mod = await import("./page-registries/material__iqc-history.generated");
       component = mod.getPageComponent();

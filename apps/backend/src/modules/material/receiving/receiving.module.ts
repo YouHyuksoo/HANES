@@ -22,11 +22,13 @@ import { AqlModule } from '../../quality/aql/aql.module';
 import { ArrivalController } from '../controllers/arrival.controller';
 import { ConcessionController } from '../controllers/concession.controller';
 import { IqcHistoryController } from '../controllers/iqc-history.controller';
+import { IqcDefectReceiveController } from '../controllers/iqc-defect-receive.controller';
 import { ReceiptCancelController } from '../controllers/receipt-cancel.controller';
 import { ReceivingController } from '../controllers/receiving.controller';
 import { ArrivalService } from '../services/arrival.service';
 import { ConcessionService } from '../services/concession.service';
 import { IqcHistoryService } from '../services/iqc-history.service';
+import { IqcDefectReceiveService } from '../services/iqc-defect-receive.service';
 import { ReceiptCancelService } from '../services/receipt-cancel.service';
 import { ReceivingService } from '../services/receiving.service';
 
@@ -58,6 +60,7 @@ import { ReceivingService } from '../services/receiving.service';
     ArrivalController,
     ReceivingController,
     IqcHistoryController,
+    IqcDefectReceiveController,
     ReceiptCancelController,
     ConcessionController,
   ],
@@ -65,6 +68,7 @@ import { ReceivingService } from '../services/receiving.service';
     ArrivalService,
     ReceivingService,
     IqcHistoryService,
+    IqcDefectReceiveService,
     ReceiptCancelService,
     ConcessionService,
   ],
