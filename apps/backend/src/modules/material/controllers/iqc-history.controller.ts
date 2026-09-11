@@ -11,7 +11,7 @@ import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { ApiTags, ApiOperation, ApiConsumes } from '@nestjs/swagger';
 import { IqcHistoryService } from '../services/iqc-history.service';
-import { IqcHistoryQueryDto, CreateIqcResultDto, CreateArrivalIqcResultDto, PendingArrivalQueryDto, CancelIqcResultDto, PendingSerialsQueryDto } from '../dto/iqc-history.dto';
+import { IqcHistoryQueryDto, CreateIqcResultDto, CreateArrivalIqcResultDto, PendingArrivalQueryDto, CancelIqcResultDto, PendingSerialsQueryDto, PendingLookupQueryDto } from '../dto/iqc-history.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -41,6 +41,13 @@ export class IqcHistoryController {
         debugSql: result.debugSql,
       },
     };
+  }
+
+  @Get('request-lookup')
+  @ApiOperation({ summary: '바코드(시리얼/입하번호/PO번호) → 검사의뢰서 출력 대상 그룹 해석 (검사 상태 무관, 재발행 포함)' })
+  async resolveRequestTargetsByBarcode(@Query() query: PendingLookupQueryDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.iqcHistoryService.resolveRequestTargetsByBarcode(query.barcode, company, plant);
+    return ResponseUtil.success(data);
   }
 
   @Get('pending-serials')

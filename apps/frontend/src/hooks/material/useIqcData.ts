@@ -53,6 +53,29 @@ export interface IqcSubmitExtra {
 
 const INITIAL_RESULT_FORM: IqcResultForm = { result: '', inspector: '', remark: '' };
 
+/** 백엔드 pending-arrivals 그룹 행 → IqcItem (검사대기 목록·검사의뢰서 출력 공용 매핑, 단일 출처) */
+export function mapPendingGroupToIqcItem(g: Record<string, unknown>): IqcItem {
+  const str = (v: unknown) => (v == null ? '' : String(v));
+  const num = (v: unknown) => (typeof v === 'number' ? v : Number(v) || 0);
+  return {
+    id: `${str(g.arrivalNo)}::${str(g.itemCode)}`,
+    arrivalNo: str(g.arrivalNo) || '-',
+    itemCode: str(g.itemCode),
+    itemName: str(g.itemName),
+    vendorCode: str(g.vendor),
+    supplierName: str(g.vendorName) || str(g.vendor) || '-',
+    poNo: g.poNo == null ? null : str(g.poNo),
+    totalQty: num(g.totalQty),
+    serialCount: num(g.serialCount),
+    unit: str(g.unit) || 'EA',
+    inspectMethod: g.inspectMethod == null ? null : str(g.inspectMethod),
+    defectModelGroup: g.defectModelGroup == null ? null : str(g.defectModelGroup),
+    arrivalDate: str(g.recvDate) || str(g.createdAt),
+    status: mapToFrontendStatus(str(g.iqcStatus) || 'PENDING'),
+    inspector: null,
+  };
+}
+
 const formatDebugSql = (debugSql?: { sql?: string; parameters?: Record<string, unknown> }) => {
   if (!debugSql?.sql) return '';
   const parameters = debugSql.parameters && Object.keys(debugSql.parameters).length > 0
@@ -87,23 +110,7 @@ export function useIqcData() {
       });
       const groups = res.data?.data ?? [];
       setSqlQuery(formatDebugSql(res.data?.meta?.debugSql));
-      const mapped: IqcItem[] = groups.map((g: any) => ({
-        id: `${g.arrivalNo}::${g.itemCode}`,
-        arrivalNo: g.arrivalNo || '-',
-        itemCode: g.itemCode || '',
-        itemName: g.itemName || '',
-        vendorCode: g.vendor || '',
-        supplierName: g.vendorName || g.vendor || '-',
-        poNo: g.poNo ?? null,
-        totalQty: g.totalQty ?? 0,
-        serialCount: g.serialCount ?? 0,
-        unit: g.unit || 'EA',
-        inspectMethod: g.inspectMethod ?? null,
-        defectModelGroup: g.defectModelGroup ?? null,
-        arrivalDate: g.recvDate || g.createdAt || '',
-        status: mapToFrontendStatus(g.iqcStatus || 'PENDING'),
-        inspector: null,
-      }));
+      const mapped: IqcItem[] = groups.map(mapPendingGroupToIqcItem);
       setItems(mapped);
     } catch {
       setItems([]);

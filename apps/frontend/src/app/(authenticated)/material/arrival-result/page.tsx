@@ -28,6 +28,8 @@ import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import { getTodayLocal } from "@/utils/date";
 import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
+import IqcRequestPrintModal from "@/components/material/IqcRequestPrintModal";
+import { useIqcRequestPrint } from "@/hooks/material/useIqcRequestPrint";
 import { getReprintHintKey } from "./reprintHint";
 import HelpTooltip from "@/components/shared/HelpTooltip";
 import type { PoLineReceiptResponse } from "../arrival/components/types";
@@ -83,6 +85,8 @@ export default function ArrivalResultPage() {
 
   // 우측 시리얼
   const [selected, setSelected] = useState<ArrivalResultRow | null>(null);
+  /** IQC 검사의뢰서 재발행 — 선택 입하 그룹(입하번호+품목) 기준, 검사 완료 후에도 가능 */
+  const iqcRequest = useIqcRequestPrint();
   const [serials, setSerials] = useState<SerialRow[]>([]);
   const [serialLoading, setSerialLoading] = useState(false);
   const [checked, setChecked] = useState<Set<string>>(new Set());
@@ -381,9 +385,17 @@ export default function ArrivalResultPage() {
                       {t("material.arrivalResult.manufacturer", "제조사")}: {selected.mfgPartnerName ?? "-"}
                     </div>
                   </div>
-                  <Button size="sm" variant="secondary" onClick={openMfg} disabled={selected.status === "CANCELED"} disabledReason="취소된 입하는 제조사를 변경할 수 없습니다.">
-                    <Pencil className="w-3.5 h-3.5 mr-1" />{t("material.arrivalResult.changeMfg", "제조사 변경")}
-                  </Button>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <Button size="sm" variant="secondary" onClick={openMfg} disabled={selected.status === "CANCELED"} disabledReason="취소된 입하는 제조사를 변경할 수 없습니다.">
+                      <Pencil className="w-3.5 h-3.5 mr-1" />{t("material.arrivalResult.changeMfg", "제조사 변경")}
+                    </Button>
+                    <Button size="sm" variant="secondary"
+                      onClick={() => iqcRequest.openFor([{ arrivalNo: selected.arrivalNo, itemCode: selected.itemCode, iqcStatus: selected.iqcStatus }])}
+                      disabled={selected.status === "CANCELED"}
+                      disabledReason={t("material.iqc.request.canceledArrival", "취소된 입하는 검사의뢰서를 발행할 수 없습니다.")}>
+                      <ClipboardList className="w-3.5 h-3.5 mr-1" />{t("material.iqc.request.printButton", "검사의뢰서 출력")}
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <div className="text-text-muted text-center py-2">{t("material.arrivalResult.selectHint", "좌측에서 입하 건을 선택하세요")}</div>
@@ -516,6 +528,9 @@ export default function ArrivalResultPage() {
         onTemplateChange={handleTemplateChange}
         onClose={() => setLabelData(null)}
       />
+
+      {/* IQC 검사의뢰서 재발행 */}
+      <IqcRequestPrintModal targets={iqcRequest.targets} onClose={iqcRequest.close} />
     </div>
   );
 }

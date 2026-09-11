@@ -9,10 +9,14 @@
  * 2. **대상**: 입하 후 PENDING, IQC_IN_PROGRESS 상태인 건
  * 3. API: GET /material/lots, POST /material/iqc-history
  */
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Shield, Search, RefreshCw } from 'lucide-react';
 import { Card, CardContent, Button, Input } from '@/components/ui';
 import ComCodeSelect from '@/components/shared/ComCodeSelect';
+import { BarcodeScanInput } from '@/components/shared';
+import IqcRequestPrintModal from '@/components/material/IqcRequestPrintModal';
+import { useIqcRequestPrint } from '@/hooks/material/useIqcRequestPrint';
 import IqcTable from '@/components/material/IqcTable';
 import IqcModal from '@/components/material/IqcModal';
 import { useIqcData } from '@/hooks/material/useIqcData';
@@ -34,6 +38,9 @@ export default function IqcPage() {
     handleIqcSubmit,
     refresh,
   } = useIqcData();
+  /** 검사의뢰서 재발행 — 입하 화면과 같은 훅/모달 공용 */
+  const requestPrint = useIqcRequestPrint();
+  const [scanValue, setScanValue] = useState('');
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -55,10 +62,25 @@ export default function IqcPage() {
           <IqcTable
             data={filteredItems}
             onInspect={openIqcModal}
+            onPrintRequest={(item) => requestPrint.openFor([{ arrivalNo: item.arrivalNo, itemCode: item.itemCode }])}
             isLoading={loading}
             sqlQuery={sqlQuery}
             toolbarLeft={
               <div className="flex gap-3 flex-1 min-w-0">
+                {/* 검사의뢰서 출력 조건 스캔: 자재 시리얼 / 입하번호 / PO번호 바코드 */}
+                <div className="w-64 flex-shrink-0">
+                  <BarcodeScanInput
+                    value={scanValue}
+                    onChange={setScanValue}
+                    onScan={requestPrint.lookupByBarcode}
+                    autoClear
+                    maintainFocus={false}
+                    blinkIndicator
+                    refocusAfterScan
+                    placeholder={t('material.iqc.request.scanPlaceholder', '의뢰서 출력: 시리얼/입하번호/PO 스캔')}
+                    fullWidth
+                  />
+                </div>
                 <div className="flex-1 min-w-0">
                   <Input
                     placeholder={t('material.iqc.searchPlaceholder')}
@@ -86,6 +108,8 @@ export default function IqcPage() {
           />
         </CardContent>
       </Card>
+
+      <IqcRequestPrintModal targets={requestPrint.targets} onClose={requestPrint.close} />
 
       <IqcModal
         isOpen={isIqcModalOpen}

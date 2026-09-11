@@ -8,6 +8,15 @@ import { IsString, IsOptional, IsInt, IsNumber, Min, Max, IsDateString, IsIn, Is
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+/** 바코드(자재 시리얼/입하번호/PO번호) → 검사대기 그룹 해석 */
+export class PendingLookupQueryDto {
+  @ApiProperty({ description: '스캔 바코드 (MAT_UID | ARRIVAL_NO | PO_NO)' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  barcode: string;
+}
+
 /** 입하+품목의 PENDING 시리얼 목록 조회 */
 export class PendingSerialsQueryDto {
   @ApiProperty({ description: '입하번호' })

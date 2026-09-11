@@ -210,6 +210,7 @@ canSubmit =
 |------|------|------|------|
 | 검사대기 목록 조회 | GET | `/material/iqc-history/pending-arrivals` | |
 | 검사대기 시리얼 조회 | GET | `/material/iqc-history/pending-serials` | `?arrivalNo=&itemCode=` |
+| 바코드→검사의뢰서 대상 그룹 해석 | GET | `/material/iqc-history/request-lookup` | `?barcode=` — MAT_UID → ARRIVAL_NO → PO_NO 순으로 매칭, 검사상태 무관(취소 LOT 제외), 그룹별 `iqcStatus`(MAX) 포함. 미매칭 시 `groups: []` (예외 아님) |
 | 입하단위 검사결과 등록 | POST | `/material/iqc-history/arrival` | DETAILS JSON 포함 |
 | 검사성적서 업로드 | POST | `/material/iqc-history/{inspectDate}/{seq}/upload-cert` | 파일 multipart |
 | 판정 취소 | DELETE | `/material/iqc-history/{inspectDate}/{seq}` | STATUS→CANCELED, 시리얼→PENDING 복원 |

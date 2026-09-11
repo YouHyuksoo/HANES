@@ -2,7 +2,7 @@
 menuCode: MAT_ARRIVAL_RESULT
 audience: user
 title: 입하실적조회
-summary: 입하관리에서 등록된 입하 실적을 조회하고, 선택 입하의 LOT 시리얼 확인·라벨 재출력·제조사 변경·입하 취소를 처리하는 화면입니다.
+summary: 입하관리에서 등록된 입하 실적을 조회하고, 선택 입하의 LOT 시리얼 확인·라벨 재출력·검사의뢰서 재발행·제조사 변경·입하 취소를 처리하는 화면입니다.
 tags: [자재, 입하, 실적, 라벨, 취소]
 keywords: [입하번호, arrivalNo, 시리얼, serials, 제조사, 입하취소, 라벨재출력]
 related: [MAT_ARRIVAL, MAT_ARRIVAL_TRANSACTION, INV_ARRIVAL_STOCK]
@@ -16,6 +16,7 @@ related: [MAT_ARRIVAL, MAT_ARRIVAL_TRANSACTION, INV_ARRIVAL_STOCK]
 - 상단 필터에서 상태, 품목코드, 입하번호, 공급사 조건으로 입하 실적을 조회합니다.
 - 그리드 행을 선택하면 해당 입하번호의 LOT 시리얼 목록을 불러옵니다.
 - 선택한 LOT 시리얼은 라벨 템플릿을 골라 재출력할 수 있습니다.
+- 선택 입하 정보의 **검사의뢰서 출력** 버튼으로 **수입검사 의뢰서**(A4)를 재발행할 수 있습니다. 검사가 끝난(PASS/FAIL) 입하도 발행되며, 그 경우 의뢰서 머리에 "재발행 · 검사상태"가 표기됩니다. 취소된 입하는 발행할 수 없습니다.
 
 ## ① 컬럼·필드
 

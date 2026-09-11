@@ -345,6 +345,49 @@ export class IqcHistoryService {
 
 
   /**
+   * 바코드 1개로 검사의뢰서 출력 대상 그룹(입하번호+품목)을 해석한다 — 본 발행·재발행 공용.
+   * 우선순위: 자재 시리얼(MAT_UID) → 입하번호(ARRIVAL_NO) → PO번호(PO_NO).
+   * 검사 상태는 제한하지 않는다(검사 완료 후 재발행 허용). 취소된 LOT은 제외.
+   * 매칭이 없으면 예외 대신 빈 그룹을 돌려 화면이 안내 메시지를 내도록 한다.
+   */
+  async resolveRequestTargetsByBarcode(
+    barcode: string,
+    company?: string,
+    plant?: string,
+  ): Promise<{ barcode: string; matchedBy: 'MAT_UID' | 'ARRIVAL_NO' | 'PO_NO' | null; groups: Array<{ arrivalNo: string; itemCode: string; iqcStatus: string | null }> }> {
+    const code = (barcode ?? '').trim();
+    if (!code) return { barcode: code, matchedBy: null, groups: [] };
+
+    const attempts: Array<{ matchedBy: 'MAT_UID' | 'ARRIVAL_NO' | 'PO_NO'; column: string }> = [
+      { matchedBy: 'MAT_UID', column: 'lot.matUid' },
+      { matchedBy: 'ARRIVAL_NO', column: 'lot.arrivalNo' },
+      { matchedBy: 'PO_NO', column: 'lot.poNo' },
+    ];
+    for (const attempt of attempts) {
+      const qb = this.matLotRepository
+        .createQueryBuilder('lot')
+        .select('lot.arrivalNo', 'arrivalNo')
+        .addSelect('lot.itemCode', 'itemCode')
+        .addSelect('MAX(lot.iqcStatus)', 'iqcStatus')
+        .where(`${attempt.column} = :code`, { code })
+        .andWhere('lot.arrivalNo IS NOT NULL')
+        .andWhere("lot.status <> 'CANCELED'");
+      if (company) qb.andWhere('lot.company = :company', { company });
+      if (plant) qb.andWhere('lot.plant = :plant', { plant });
+      qb.groupBy('lot.arrivalNo').addGroupBy('lot.itemCode').orderBy('lot.arrivalNo', 'ASC').addOrderBy('lot.itemCode', 'ASC');
+      const rows = await qb.getRawMany<{ arrivalNo: string; itemCode: string; iqcStatus: string | null }>();
+      if (rows.length > 0) {
+        return {
+          barcode: code,
+          matchedBy: attempt.matchedBy,
+          groups: rows.map((r) => ({ arrivalNo: r.arrivalNo, itemCode: r.itemCode, iqcStatus: r.iqcStatus ?? null })),
+        };
+      }
+    }
+    return { barcode: code, matchedBy: null, groups: [] };
+  }
+
+  /**
    * 입하단위 IQC 검사 대상 목록 (입하번호 + 품목 단위 그룹 집계)
    * - 개별 시리얼이 아니라 ARRIVAL_NO + ITEM_CODE 로 묶어서 1행으로 반환
    * - 집계는 SQL GROUP BY 로 수행 (메모리 집계 금지)

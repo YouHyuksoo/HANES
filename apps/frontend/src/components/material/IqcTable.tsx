@@ -6,7 +6,7 @@
  */
 import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ClipboardCheck } from 'lucide-react';
+import { ClipboardCheck, Printer } from 'lucide-react';
 import { ColumnDef } from '@tanstack/react-table';
 import HelpTooltip from '@/components/shared/HelpTooltip';
 import DataGrid from '@/components/data-grid/DataGrid';
@@ -18,6 +18,8 @@ import { useComCodeMap } from '@/hooks/useComCode';
 interface IqcTableProps {
   data: IqcItem[];
   onInspect: (item: IqcItem) => void;
+  /** 검사의뢰서 출력 (검사대기 건) */
+  onPrintRequest?: (item: IqcItem) => void;
   toolbarLeft?: ReactNode;
   isLoading?: boolean;
   sqlQuery?: string;
@@ -36,7 +38,7 @@ const METHOD_COLORS: Record<string, string> = {
   SKIP: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
 };
 
-export default function IqcTable({ data, onInspect, toolbarLeft, isLoading, sqlQuery }: IqcTableProps) {
+export default function IqcTable({ data, onInspect, onPrintRequest, toolbarLeft, isLoading, sqlQuery }: IqcTableProps) {
   const { t } = useTranslation();
   const iqcInspectMethodMap = useComCodeMap('IQC_INSPECT_METHOD');
   const columns = useMemo<ColumnDef<IqcItem>[]>(
@@ -44,7 +46,7 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading, sqlQ
       {
         id: 'actions',
         header: t('material.col.inspect'),
-        size: 100,
+        size: 150,
         meta: { filterType: 'none' as const },
         cell: ({ row }) => {
           const item = row.original;
@@ -64,7 +66,26 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading, sqlQ
               {t('material.iqc.iqcInspect')}
             </button>
         );
-          return (canInspect) ? action : <HelpTooltip description={t('material.disabledHelp.iqcStatus', '검사대기 또는 검사 중인 입하 건만 검사할 수 있습니다.')} focusable>{action}</HelpTooltip>;
+          const printAction = onPrintRequest ? (
+            <button
+              className={`disabled:pointer-events-none inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors ${
+                canInspect
+                  ? 'text-text border-border hover:border-primary hover:text-primary'
+                  : 'text-text-muted border-border opacity-50 cursor-not-allowed'
+              }`}
+              title={t('material.iqc.request.print', '의뢰서')}
+              disabled={!canInspect}
+              onClick={() => onPrintRequest(item)}
+            >
+              <Printer className="w-4 h-4" />
+            </button>
+          ) : null;
+          return (
+            <div className="flex items-center gap-1">
+              {canInspect ? action : <HelpTooltip description={t('material.disabledHelp.iqcStatus', '검사대기 또는 검사 중인 입하 건만 검사할 수 있습니다.')} focusable>{action}</HelpTooltip>}
+              {printAction}
+            </div>
+          );
         },
       },
       { accessorKey: 'arrivalNo', header: t('material.col.arrivalNo'), size: 160, meta: { filterType: 'text' as const } },
@@ -135,7 +156,7 @@ export default function IqcTable({ data, onInspect, toolbarLeft, isLoading, sqlQ
         cell: ({ getValue }) => <span>{(getValue() as string) || '-'}</span>,
       },
     ],
-    [onInspect, t, iqcInspectMethodMap]
+    [onInspect, onPrintRequest, t, iqcInspectMethodMap]
   );
 
   return <DataGrid

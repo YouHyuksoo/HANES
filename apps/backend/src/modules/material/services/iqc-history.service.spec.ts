@@ -340,6 +340,49 @@ describe('IqcHistoryService cancel policy', () => {
     });
   });
 
+  describe('resolveRequestTargetsByBarcode', () => {
+    const qbWith = (rows: Array<{ arrivalNo: string; itemCode: string; iqcStatus: string | null }>) => ({
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue(rows),
+    });
+
+    it('자재 시리얼(MAT_UID) 바코드는 해당 LOT의 입하번호+품목 그룹 1건으로 해석하고 검사상태를 함께 준다', async () => {
+      mockMatLotRepo.createQueryBuilder.mockReturnValueOnce(qbWith([{ arrivalNo: 'ARR-001', itemCode: 'ITEM-001', iqcStatus: 'PASS' }]) as any);
+
+      const result = await target.resolveRequestTargetsByBarcode('VH1-RM260911-00001', 'HANES', 'P01');
+
+      expect(result.matchedBy).toBe('MAT_UID');
+      expect(result.groups).toEqual([{ arrivalNo: 'ARR-001', itemCode: 'ITEM-001', iqcStatus: 'PASS' }]);
+    });
+
+    it('입하번호 바코드는 그 입하의 품목 그룹 전체를 검사 상태와 무관하게 반환한다(검사 완료 후 재발행)', async () => {
+      mockMatLotRepo.createQueryBuilder
+        .mockReturnValueOnce(qbWith([]) as any)
+        .mockReturnValueOnce(qbWith([{ arrivalNo: 'ARR-002', itemCode: 'A', iqcStatus: 'PENDING' }, { arrivalNo: 'ARR-002', itemCode: 'B', iqcStatus: 'PASS' }]) as any);
+
+      const result = await target.resolveRequestTargetsByBarcode('ARR-002', 'HANES', 'P01');
+
+      expect(result.matchedBy).toBe('ARRIVAL_NO');
+      expect(result.groups.map((g) => g.iqcStatus)).toEqual(['PENDING', 'PASS']);
+    });
+
+    it('어디에도 없는 바코드는 matchedBy null + 빈 그룹을 반환한다(예외 아님)', async () => {
+      mockMatLotRepo.createQueryBuilder.mockReturnValue(qbWith([]) as any);
+
+      const result = await target.resolveRequestTargetsByBarcode('UNKNOWN', 'HANES', 'P01');
+
+      expect(result).toEqual({ barcode: 'UNKNOWN', matchedBy: null, groups: [] });
+      expect(mockMatLotRepo.createQueryBuilder).toHaveBeenCalledTimes(3);
+    });
+  });
+
   describe('createArrivalResult', () => {
     it('입하단위 IQC 판정은 LOT과 입하 행 상태를 같은 결과로 갱신한다', async () => {
       mockMatLotRepo.find.mockResolvedValue([

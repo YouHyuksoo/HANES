@@ -23,6 +23,9 @@ import PoLineGrid from './components/PoLineGrid';
 import PoLineReceiptModal from './components/PoLineReceiptModal';
 import SerialIssueConfirmModal from './components/SerialIssueConfirmModal';
 import MatLabelPreviewModal from './components/MatLabelPreviewModal';
+import IqcRequestPrintModal from '@/components/material/IqcRequestPrintModal';
+import { BarcodeScanInput } from '@/components/shared';
+import { useIqcRequestPrint } from '@/hooks/material/useIqcRequestPrint';
 import ManualArrivalPanel from './components/ManualArrivalPanel';
 import type { PoLineRow, PoLineReceiptInput, PoLineReceiptResponse } from './components/types';
 import {
@@ -71,6 +74,9 @@ export default function ArrivalPage() {
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [labelDesign, setLabelDesign] = useState<LabelDesign>(() => createDefaultLabelDesign('mat_lot'));
   const [templates, setTemplates] = useState<TemplateInfo[]>([]);
+  /** IQC 검사의뢰서 출력 — 입하 직후(라벨 모달) 또는 툴바 바코드 스캔(시리얼/입하번호/PO)으로 발행 */
+  const iqcRequest = useIqcRequestPrint();
+  const [iqcScanValue, setIqcScanValue] = useState('');
   const [selectedTemplateKey, setSelectedTemplateKey] = useState(DEFAULT_TEMPLATE_KEY);
 
   const fetchLines = useCallback(async () => {
@@ -242,6 +248,19 @@ export default function ArrivalPage() {
               onSelectLine={setSelectedLine}
               toolbarLeft={
                 <div className="flex gap-2 flex-1 min-w-0 items-center">
+                  <div className="w-64 flex-shrink-0">
+                    <BarcodeScanInput
+                      value={iqcScanValue}
+                      onChange={setIqcScanValue}
+                      onScan={iqcRequest.lookupByBarcode}
+                      autoClear
+                      maintainFocus={false}
+                      blinkIndicator
+                      refocusAfterScan
+                      placeholder={t('material.iqc.request.scanPlaceholder', '의뢰서 출력: 시리얼/입하번호/PO 스캔')}
+                      fullWidth
+                    />
+                  </div>
                   <Input
                     placeholder={t('common.partCode')}
                     value={itemCode}
@@ -325,8 +344,16 @@ export default function ArrivalPage() {
         templateOptions={templateOptions}
         selectedTemplateKey={selectedTemplateKey}
         onTemplateChange={handleTemplateChange}
+        onPrintIqcRequest={() => {
+          if (!labelData) return;
+          const itemCodes = Array.from(new Set(labelData.serials.map((s) => s.itemCode).filter(Boolean)));
+          iqcRequest.openFor(itemCodes.map((itemCode) => ({ arrivalNo: labelData.arrivalNo, itemCode })));
+        }}
         onClose={() => setLabelData(null)}
       />
+
+      {/* IQC 검사의뢰서 출력 (입하 직후 본 발행) */}
+      <IqcRequestPrintModal targets={iqcRequest.targets} onClose={iqcRequest.close} />
 
     </div>
   );

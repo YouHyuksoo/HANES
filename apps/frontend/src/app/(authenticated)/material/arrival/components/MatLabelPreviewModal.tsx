@@ -12,7 +12,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { Printer } from "lucide-react";
+import { Printer, ClipboardList } from "lucide-react";
 import { Modal, Button, Select } from "@/components/ui";
 import { printAgentPng, PrintAgentUnavailableError } from "@/services/print-agent";
 import { printPngLabelsInBrowser, renderLabelNodeToPngBase64, type LabelPrintMethod } from "@/services/label-print";
@@ -32,6 +32,8 @@ interface Props {
   templateOptions?: SelectOption[];
   selectedTemplateKey?: string;
   onTemplateChange?: (templateKey: string) => void;
+  /** 입하 직후 IQC 검사의뢰서 출력(다음 부서 의뢰). 없으면 버튼 미표시 */
+  onPrintIqcRequest?: () => void;
   onClose: () => void;
 }
 
@@ -52,6 +54,7 @@ export default function MatLabelPreviewModal({
   templateOptions = [{ value: DEFAULT_TEMPLATE_KEY, label: "기본 디자인" }],
   selectedTemplateKey = DEFAULT_TEMPLATE_KEY,
   onTemplateChange: handleTemplateChange = () => undefined,
+  onPrintIqcRequest,
   onClose,
 }: Props) {
   const { t } = useTranslation();
@@ -177,7 +180,14 @@ export default function MatLabelPreviewModal({
         </div>
       </div>
       <LabelPrintRenderer ref={printRef} items={activePrintItems} design={labelDesign} visible={printing} />
-      <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+      <div className="flex items-center justify-between gap-2 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+        <div>
+          {onPrintIqcRequest && (
+            <Button variant="secondary" onClick={onPrintIqcRequest} leftIcon={<ClipboardList className="w-4 h-4" />}>
+              {t('material.iqc.request.printButton', '검사의뢰서 출력')}
+            </Button>
+          )}
+        </div>
         <Button variant="secondary" onClick={onClose}>{t('common.close')}</Button>
       </div>
     </Modal>
