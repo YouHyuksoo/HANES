@@ -3887,6 +3887,7 @@
       "scanPlaceholder": "扫描物料条码或输入后按Enter",
       "selectEquipFirst": "请先选择设备",
       "noMounted": "无已装载物料。",
+      "mountedList": "已装载物料",
       "lot": "LOT",
       "remainQty": "剩余量",
       "refillScan": "补充扫描",

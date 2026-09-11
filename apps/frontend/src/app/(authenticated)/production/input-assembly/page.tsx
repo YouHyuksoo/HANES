@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { Boxes, Cpu, ChevronDown, RefreshCw, Scan, Search, UserRound } from "lucide-react";
+import { Cpu, ChevronDown, Maximize2, Minimize2, RefreshCw, Scan, Search, UserRound } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BarcodeScanInput } from "@/components/shared";
-import { Button, Card, CardContent } from "@/components/ui";
+import { Button } from "@/components/ui";
 import api from "@/services/api";
 import { judgeRestoredJobOrder } from "@/components/production/jobOrderRestore";
 import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
@@ -443,34 +444,25 @@ export default function InputAssemblyPage() {
     setIssuedFg(null);
   }, []);
 
-  return (
-    <div className="h-full flex flex-col overflow-hidden p-5 gap-3 animate-fade-in bg-background">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between flex-shrink-0">
-        <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Boxes className="w-7 h-7 text-primary" />
-            {t("production.inputAssembly.title", "실적입력(조립)")}
-          </h1>
-          <p className="text-text-muted mt-1">
-            {t("production.inputAssembly.description", "반제품 SFG 라벨을 스캔하여 완제품을 조립합니다.")}
-          </p>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={resetAll}
-          disabled={contextLocked}
-          leftIcon={<RefreshCw className="w-4 h-4" />}
-        >
-          {t("common.reset")}
-        </Button>
-      </div>
+  /** 전체화면(chromeless) 토글 — input-kiosk와 동일하게 ?view=full + document fullscreen */
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const isFullView = searchParams.get("view") === "full";
+  const toggleFullView = useCallback(() => {
+    if (isFullView) {
+      router.push("/production/input-assembly");
+      if (document.fullscreenElement) void document.exitFullscreen();
+      return;
+    }
+    router.push("/production/input-assembly?view=full");
+    void document.documentElement.requestFullscreen?.();
+  }, [isFullView, router]);
 
-      {/* 상단 고정 바: 설비(=공정) + 작업지시 */}
-      <Card padding="none" className="min-w-0 flex-shrink-0 overflow-x-auto">
-        <CardContent className="!p-0">
-          <div className="flex h-14 min-w-[980px] flex-nowrap items-center gap-3 whitespace-nowrap bg-surface/50 px-4">
+  return (
+    <div className="h-full flex flex-col overflow-hidden bg-background">
+      {/* 상단 고정 바(input-kiosk EquipHeader 형식): 설비(=공정) + 작업지시 + 작업자/점검 + 초기화/전체화면. 페이지 타이틀은 두지 않는다. */}
+      <div className="flex-shrink-0 border-b border-border bg-card overflow-x-auto">
+          <div className="flex h-14 min-w-[980px] flex-nowrap items-center gap-3 whitespace-nowrap bg-surface/50 px-3">
             {/* 1) 설비 — 가장 먼저 선택. 설비가 공정을 결정(설비→공정)하고 작업지시 조회조건이 된다. */}
             <div className="w-52 shrink-0">
               <label className="sr-only">
@@ -577,28 +569,49 @@ export default function InputAssemblyPage() {
                 onInput={() => setWorkerInspectOpen(true)}
                 wide
               />
+              <button
+                type="button"
+                onClick={resetAll}
+                disabled={contextLocked}
+                title={t("common.reset")}
+                aria-label={t("common.reset")}
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-text-muted transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={toggleFullView}
+                title={isFullView ? t("fab.exitFullscreen", "전체화면 종료") : t("fab.fullscreen", "전체화면 보기")}
+                aria-label={isFullView ? t("fab.exitFullscreen", "전체화면 종료") : t("fab.fullscreen", "전체화면 보기")}
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-text-muted transition-colors hover:border-primary hover:text-primary"
+              >
+                {isFullView ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              </button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+      </div>
 
       {/* 본문 3영역 — input-kiosk 스타일: 좌(설비 자재 장착) | 중앙(작업지도서) | 우(반제품 SFG 스캔).
-          좌·우는 고정폭으로 축소하고 중앙 작업지도서를 넓게 둔다. */}
-      <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)_340px] gap-3 flex-1 min-h-0">
-        <EquipMaterialMountPanel
-          equipCode={equipCode}
-          orderNo={selectedOrder?.orderNo}
-          itemCode={selectedOrder?.itemCode}
-          expectedItemTypes={["RAW_MATERIAL"]}
-          autoFocusKey={selectedOrder?.orderNo}
-        />
+          좌·우는 고정폭, 중앙 작업지도서를 넓게. 각 패널은 내부에서 스크롤하며 바깥으로 넘치지 않는다. */}
+      <div className="grid flex-1 min-h-0 overflow-hidden grid-cols-[300px_minmax(0,1fr)_340px] bg-border gap-px">
+        <div className="min-w-0 min-h-0 overflow-hidden flex flex-col bg-card">
+          <EquipMaterialMountPanel
+            equipCode={equipCode}
+            orderNo={selectedOrder?.orderNo}
+            itemCode={selectedOrder?.itemCode}
+            expectedItemTypes={["RAW_MATERIAL"]}
+            autoFocusKey={selectedOrder?.orderNo}
+          />
+        </div>
         {/* 중앙: 작업지도서 — 선택된 작업지시 품목 + 공정 기준 조회 */}
-        <div className="flex flex-col h-full min-h-0 overflow-hidden rounded border border-border bg-card">
+        <div className="min-w-0 min-h-0 overflow-hidden flex flex-col bg-card">
           <WorkInstructionView
             itemCode={selectedOrder?.itemCode}
             processCode={processCode || undefined}
           />
         </div>
+        <div className="min-w-0 min-h-0 overflow-hidden flex flex-col bg-surface">
         <SgScanPanel
           key={`${equipCode}:${selectedOrder?.orderNo ?? ""}`}
           orderNo={selectedOrder?.orderNo}
@@ -612,10 +625,11 @@ export default function InputAssemblyPage() {
           disabled={issuing || confirming}
           ready={sgReady}
         />
+        </div>
       </div>
 
       {/* 하단 액션 바 */}
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 border-t border-border bg-card px-3 py-2">
         <AssemblyActionBar
           canIssue={canIssue}
           issueDisabledReason={issueDisabledReason}

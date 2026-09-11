@@ -3887,6 +3887,7 @@
       "scanPlaceholder": "Scan material barcode or enter then press Enter",
       "selectEquipFirst": "Please select equipment first",
       "noMounted": "No mounted materials.",
+      "mountedList": "Mounted Materials",
       "lot": "LOT",
       "remainQty": "Remaining",
       "refillScan": "Refill scan",

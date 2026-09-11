@@ -3887,6 +3887,7 @@
       "scanPlaceholder": "Quét mã vạch vật tư hoặc nhập rồi nhấn Enter",
       "selectEquipFirst": "Vui lòng chọn thiết bị trước",
       "noMounted": "Không có vật tư đã gắn.",
+      "mountedList": "Vật tư đã gắn",
       "lot": "LOT",
       "remainQty": "Còn lại",
       "refillScan": "Quét bổ sung",

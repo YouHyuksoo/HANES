@@ -63,7 +63,7 @@ test('/production/input-assembly: material mount panel receives order BOM contex
 test('/production/input-assembly: UI fallback wording uses SFG, not SG, for semi-finished labels', () => {
   assert.doesNotMatch(source, /SG 라벨|SG 바코드|SG 스캔/);
   assert.doesNotMatch(sgScanPanelSource, /SG 라벨|SG 바코드|SG 스캔|반제품\(SG\)/);
-  assert.match(source, /SFG 라벨/);
+  // 페이지 타이틀/설명 영역은 제거됨(input-kiosk 형식). SFG 표기는 스캔 패널에서 검증한다.
   assert.match(sgScanPanelSource, /SFG 바코드/);
 });
 
@@ -71,4 +71,19 @@ test('JobOrderSelectModal: equipment filter allows unassigned operation orders',
   assert.match(jobOrderModalSource, /assignableEquipCode: equipCode/);
   assert.match(jobOrderModalSource, /allowUnassignedEquip && !item\.equipCode/);
   assert.match(jobOrderModalSource, /현재\/미배정/);
+});
+
+test('/production/input-assembly: kiosk-style chromeless layout without page title, panels scroll internally', () => {
+  assert.doesNotMatch(source, /<h1/);
+  assert.doesNotMatch(source, /production\.inputAssembly\.description/);
+  assert.match(source, /grid flex-1 min-h-0 overflow-hidden grid-cols-\[300px_minmax\(0,1fr\)_340px\]/);
+  assert.match(source, /view=full/);
+  const mountPanelSource = readFileSync(join(process.cwd(),
+    'apps/frontend/src/app/(authenticated)/production/input-assembly/components/EquipMaterialMountPanel.tsx'), 'utf8');
+  // 장착대기/BOM/장착목록은 모두 flex-1 스크롤 영역 안에 있고, 고정 헤더에는 스캔 입력만 남는다.
+  const mountPanelJsx = mountPanelSource.slice(mountPanelSource.lastIndexOf('\n  return (\n'));
+  const fixedHeader = mountPanelJsx.split('<div className="flex-1 min-h-0 overflow-y-auto">')[0];
+  assert.doesNotMatch(fixedHeader, /waitingRowsToShow\.map/);
+  assert.doesNotMatch(fixedHeader, /expectedItems\.map/);
+  assert.match(mountPanelSource, /className="flex-1 min-h-0 overflow-y-auto">[\s\S]*waitingRowsToShow\.map[\s\S]*rows\.map/);
 });

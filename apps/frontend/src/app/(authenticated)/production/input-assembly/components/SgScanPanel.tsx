@@ -141,31 +141,33 @@ export default function SgScanPanel({
   );
 
   return (
-    <div className="flex flex-col h-full min-h-0 border border-border rounded">
-      <div className="p-4 flex-shrink-0 border-b border-border">
-        <h2 className="font-bold text-text mb-3 flex items-center gap-2">
-          <Scan className="w-5 h-5 text-primary" />
-          {t("production.inputAssembly.scanSection", "반제품 스캔 (세트·리셋)")}
-        </h2>
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={continuous} disabled={disabled}
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
+      <div className="flex-shrink-0 border-b border-border bg-slate-100 dark:bg-slate-800 px-3 py-2">
+        <div className="mb-1.5 flex items-center gap-1.5">
+          <h2 className="flex items-center gap-1.5 text-xs font-semibold text-text">
+            <Scan className="h-3.5 w-3.5 text-primary" />
+            {t("production.inputAssembly.scanSection", "반제품 스캔 (세트·리셋)")}
+            <span className="tabular-nums text-text-muted">{sgList.length}</span>
+          </h2>
+          <label className="ml-auto flex items-center gap-1 text-[11px] text-text">
+            <input type="checkbox" className="h-3 w-3" checked={continuous} disabled={disabled}
               onChange={(event) => onContinuousChange(event.target.checked)} />
             {t("production.inputAssembly.continuous")}
           </label>
-          <Button size="sm" variant="secondary" onClick={onReset} disabled={disabled || !sgList.length}>
+          <Button size="sm" variant="secondary" className="!h-6 !rounded !px-2 !text-[11px]"
+            onClick={onReset} disabled={disabled || !sgList.length}>
             {t("production.inputAssembly.resetScans")}
           </Button>
         </div>
-        <p className="text-xs text-text-muted mb-2">{t("production.inputAssembly.continuousHelp")}</p>
         {!!orderNo && !ready && (
-          <p className="text-xs text-amber-600 mb-2">{t("production.inputAssembly.incompleteSet")}</p>
+          <p className="mb-1.5 text-[11px] leading-tight text-amber-600">{t("production.inputAssembly.incompleteSet")}</p>
         )}
         <BarcodeScanInput
           ref={scanRef}
           value={scanInput}
           onChange={setScanInput}
           onScan={handleScan}
+          className="!h-8 !text-xs"
           placeholder={t("production.inputAssembly.scanPlaceholder", "SFG 바코드 스캔 또는 입력 후 Enter")}
           disabled={disabled || !orderNo || loading}
           maintainFocus={false}
@@ -174,74 +176,75 @@ export default function SgScanPanel({
           refocusAfterScan
           fullWidth
         />
+        <p className="mt-1 text-[10px] leading-tight text-text-muted" title={t("production.inputAssembly.continuousHelp")}>
+          {t("production.inputAssembly.continuousHelp")}
+        </p>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto p-4">
+      <div className="flex-1 min-h-0 overflow-auto">
         {sgList.length === 0 ? (
-          <p className="text-sm text-text-muted text-center py-6 border border-dashed border-border rounded">
+          <p className="m-3 rounded border border-dashed border-border py-6 text-center text-xs text-text-muted">
             {t("common.noData")}
           </p>
         ) : (
-          <div className="border border-border rounded overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-surface border-b border-border">
-                <tr className="text-text-muted text-xs">
-                  <th className="px-3 py-2 text-left font-semibold">#</th>
-                  <th className="px-3 py-2 text-left font-semibold">
-                    {t("production.kitting.sgBarcode", "SFG 바코드")}
-                  </th>
-                  <th className="px-3 py-2 text-left font-semibold">
-                    {t("common.itemCode", "품번")}
-                  </th>
-                  <th className="px-3 py-2 text-right font-semibold">
-                    {t("production.kitting.sgRemainQty", "잔량")}
-                  </th>
-                  <th className="px-3 py-2 text-center font-semibold">
-                    {t("common.status", "상태")}
-                  </th>
-                  <th className="px-3 py-2 text-center font-semibold"></th>
+          <table className="w-full text-[11px]">
+            <thead className="sticky top-0 z-10 bg-surface">
+              <tr className="border-b border-border text-[10px] text-text-muted">
+                <th className="px-2 py-1 text-left font-semibold">#</th>
+                <th className="px-2 py-1 text-left font-semibold">
+                  {t("production.kitting.sgBarcode", "SFG 바코드")}
+                </th>
+                <th className="px-2 py-1 text-left font-semibold">
+                  {t("common.itemCode", "품번")}
+                </th>
+                <th className="px-2 py-1 text-right font-semibold">
+                  {t("production.kitting.sgRemainQty", "잔량")}
+                </th>
+                <th className="px-2 py-1 text-center font-semibold">
+                  {t("common.status", "상태")}
+                </th>
+                <th className="w-6 px-1 py-1"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {sgList.map((item, index) => (
+                <tr
+                  key={item.sgBarcode}
+                  className="border-b border-border/50 hover:bg-surface/60"
+                >
+                  <td className="px-2 py-1 text-[10px] text-text-muted">{index + 1}</td>
+                  <td className="px-2 py-1 font-mono">
+                    {item.sgBarcode}
+                    {item.labelType && (
+                      <span className="ml-1 rounded border border-border px-1 py-px align-middle text-[9px] text-text-muted">
+                        {item.labelType === "BUNDLE"
+                          ? t("sgLabel.typeBundle", "묶음")
+                          : t("sgLabel.typeCircuit", "회로")}
+                      </span>
+                    )}
+                  </td>
+                  <td className="truncate px-2 py-1">{item.itemCode}</td>
+                  <td className="px-2 py-1 text-right tabular-nums">
+                    {item.remainQty != null ? item.remainQty.toLocaleString() : "-"}
+                  </td>
+                  <td className="px-2 py-1 text-center [&_span]:!text-[10px]">
+                    <ComCodeBadge groupCode="SG_LABEL_STATUS" code={item.status} />
+                  </td>
+                  <td className="px-1 py-1 text-center">
+                    <button
+                      type="button"
+                      className="rounded p-0.5 text-red-500 hover:bg-red-500/10"
+                      onClick={() => onRemove(item.sgBarcode)}
+                      disabled={disabled}
+                      title={t("common.delete")}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {sgList.map((item, index) => (
-                  <tr
-                    key={item.sgBarcode}
-                    className="border-b border-border/70 hover:bg-surface/60"
-                  >
-                    <td className="px-3 py-2 text-text-muted text-xs">{index + 1}</td>
-                    <td className="px-3 py-2 font-mono text-xs">
-                      {item.sgBarcode}
-                      {item.labelType && (
-                        <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] border border-border text-text-muted align-middle">
-                          {item.labelType === "BUNDLE"
-                            ? t("sgLabel.typeBundle", "묶음")
-                            : t("sgLabel.typeCircuit", "회로")}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-xs">{item.itemCode}</td>
-                    <td className="px-3 py-2 text-right text-xs tabular-nums">
-                      {item.remainQty != null ? item.remainQty.toLocaleString() : "-"}
-                    </td>
-                    <td className="px-3 py-2 text-center">
-                      <ComCodeBadge groupCode="SG_LABEL_STATUS" code={item.status} />
-                    </td>
-                    <td className="px-3 py-2 text-center">
-                      <button
-                        type="button"
-                        className="p-1 rounded hover:bg-red-500/10 text-red-500"
-                        onClick={() => onRemove(item.sgBarcode)}
-                        disabled={disabled}
-                        title={t("common.delete")}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

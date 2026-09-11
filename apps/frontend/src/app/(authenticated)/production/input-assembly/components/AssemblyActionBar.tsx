@@ -45,15 +45,15 @@ export default function AssemblyActionBar({
   };
 
   return (
-    <div className="flex flex-col gap-3 border-t border-border pt-3 lg:flex-row lg:items-center">
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
       <div className="flex-shrink-0">
         <Button
-          size="lg"
+          size="md"
           onClick={onIssue}
           disabled={!canIssue || issuing || !!issuedFg}
           disabledReason={issueDisabledReason}
           isLoading={issuing}
-          leftIcon={<Play className="w-5 h-5" />}
+          leftIcon={<Play className="w-4 h-4" />}
         >
           {t("production.inputAssembly.issueLabel", "조립 실행 → FG 라벨 발행")}
         </Button>
@@ -63,8 +63,8 @@ export default function AssemblyActionBar({
         {issuedFg ? (
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
             <div className="min-w-0 flex-1">
-              <div className="font-mono text-base font-bold text-text truncate">{issuedFg}</div>
-              <div className="text-xs text-text-muted">
+              <div className="font-mono text-sm font-bold text-text truncate">{issuedFg}</div>
+              <div className="text-[11px] text-text-muted">
                 {t("production.inputAssembly.printAndScan", "이 라벨을 출력·부착 후 실물 라벨을 스캔하세요")}
               </div>
             </div>
@@ -73,6 +73,7 @@ export default function AssemblyActionBar({
                 value={confirmScan}
                 onChange={setConfirmScan}
                 onScan={submitConfirm}
+                className="!h-8 !text-xs"
                 placeholder={t("production.inputAssembly.confirmScanPlaceholder", "실물 FG 라벨 스캔")}
                 disabled={confirming || !canConfirm}
               />
@@ -98,7 +99,7 @@ export default function AssemblyActionBar({
             </div>
           </div>
         ) : (
-          <p className="text-sm text-text-muted">
+          <p className="text-xs text-text-muted">
             {t("production.inputAssembly.issueFirst", "먼저 조립을 실행해 FG 라벨을 발행하세요")}
           </p>
         )}
