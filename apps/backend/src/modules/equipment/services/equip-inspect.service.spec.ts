@@ -211,6 +211,107 @@ describe('EquipInspectService', () => {
         overallResult: 'PASS',
       }));
     });
+
+    // 2026-09-11: 설비일상점검 재점검이 ORA-00001 → 409 "이미 등록된 건이 있습니다"로 막히던 결함.
+    // repository.save()는 INSPECT_DATE('date' 매핑)의 시각을 잘라 설비·유형당 하루 1건만 허용했다.
+    it.each(['DAILY', 'PERIODIC'])(
+      'stores %s inspectDate with inspection time so same-day re-inspection does not collide',
+      async (inspectType) => {
+        mockEquipRepo.findOne.mockResolvedValue({
+          equipCode: 'EQ-ATCNS-HV-01',
+          company: '40',
+          plant: '1000',
+          processCode: 'ATCNS-HV',
+        } as any);
+        mockCalendarRepo.createQueryBuilder.mockReturnValue({
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          orderBy: jest.fn().mockReturnThis(),
+          addOrderBy: jest.fn().mockReturnThis(),
+          getOne: jest.fn().mockResolvedValue(null),
+        } as any);
+        mockLogRepo.query.mockResolvedValue({ affected: 1 } as any);
+
+        await target.create({
+          equipCode: 'EQ-ATCNS-HV-01',
+          inspectType,
+          inspectAt: '2026-09-11T22:45:10',
+          inspectorName: '가공공통작업자01',
+          overallResult: 'FAIL',
+          details: { items: [] },
+        } as any, { company: '40', plant: '1000' });
+
+        expect(mockLogRepo.query).toHaveBeenCalledWith(
+          expect.stringContaining("TO_DATE(:3, 'YYYY-MM-DD HH24:MI:SS')"),
+          expect.arrayContaining(['EQ-ATCNS-HV-01', inspectType, '2026-09-11 22:45:10']),
+        );
+        expect(mockLogRepo.save).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  describe('update / deleteByKey', () => {
+    const findByKeyStub = () => {
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({
+          equipCode: 'EQ-ATCNS-HV-01',
+          inspectType: 'DAILY',
+          inspectDate: new Date('2026-09-11T22:45:10'),
+          overallResult: 'PASS',
+        }),
+      };
+      return qb;
+    };
+
+    // 같은 날 재점검이 여러 건 쌓이므로 날짜 구간만으로는 그날 전체를 덮어쓴다. 최신 1건만 대상이어야 한다.
+    it('narrows the day-range predicate to the latest inspection of that day', async () => {
+      const mutationBuilder = {
+        update: jest.fn().mockReturnThis(),
+        delete: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      };
+      mockLogRepo.createQueryBuilder
+        .mockReturnValueOnce(findByKeyStub() as any)
+        .mockReturnValueOnce(mutationBuilder as any)
+        .mockReturnValueOnce(findByKeyStub() as any);
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-ATCNS-HV-01' } as any);
+
+      await target.update('EQ-ATCNS-HV-01', 'DAILY', '2026-09-11', { remark: '재점검' } as any, '40', '1000');
+
+      expect(mutationBuilder.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('MAX(l2.INSPECT_DATE)'),
+        expect.objectContaining({ equipCode: 'EQ-ATCNS-HV-01', inspectType: 'DAILY', inspectDate: '2026-09-11' }),
+      );
+    });
+
+    it('deletes only the latest inspection of that day', async () => {
+      const mutationBuilder = {
+        delete: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      };
+      mockLogRepo.createQueryBuilder
+        .mockReturnValueOnce(findByKeyStub() as any)
+        .mockReturnValueOnce(mutationBuilder as any);
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-ATCNS-HV-01' } as any);
+
+      await target.deleteByKey('EQ-ATCNS-HV-01', 'DAILY', '2026-09-11', '40', '1000');
+
+      expect(mutationBuilder.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('MAX(l2.INSPECT_DATE)'),
+        expect.objectContaining({ equipCode: 'EQ-ATCNS-HV-01' }),
+      );
+    });
   });
 
   describe('getInspectionStatus', () => {

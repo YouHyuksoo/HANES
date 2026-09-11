@@ -337,11 +337,9 @@ export class EquipInspectService {
       plant: context?.plant ?? equip.plant,
     };
 
-    const saved = inspectType === 'WORKER'
-      ? await this.insertWorkerInspectLog(logData)
-      : await this.equipInspectLogRepository.save(
-        this.equipInspectLogRepository.create(logData),
-      );
+    // 모든 점검 유형이 같은 경로로 저장된다. repository.save()는 INSPECT_DATE(Oracle DATE, TypeORM 'date')의
+    // 시각을 잘라 00:00:00으로 넣어 설비·유형당 하루 1건만 허용하는 PK 충돌(ORA-00001 → 409)을 만든다.
+    const saved = await this.insertInspectLog(logData);
 
     if (saved.overallResult && saved.overallResult.toUpperCase().includes('FAIL')) {
       await this.equipMasterRepository.update(
@@ -364,7 +362,7 @@ export class EquipInspectService {
     };
   }
 
-  private async insertWorkerInspectLog(log: Partial<EquipInspectLog>): Promise<EquipInspectLog> {
+  private async insertInspectLog(log: Partial<EquipInspectLog>): Promise<EquipInspectLog> {
     // TypeORM Oracle DATE binding can persist date-only values; explicit TO_DATE keeps the PK time part.
     await this.equipInspectLogRepository.query(
       `INSERT INTO EQUIP_INSPECT_LOGS (
@@ -580,6 +578,22 @@ export class EquipInspectService {
     return `${this.formatDateTime(date)}.${String(date.getMilliseconds()).padStart(3, '0')}`;
   }
 
+  /**
+   * 같은 조업일에 재점검이 쌓이면 날짜 구간 조건은 그날의 모든 로그를 가리킨다.
+   * 수정·삭제는 조회(findByKey)와 같은 대상, 즉 그날의 최신 1건만 건드려야 하므로
+   * INSPECT_DATE(시각 포함)가 그날 최대인 행으로 좁힌다.
+   */
+  private latestOfDayPredicate(company?: string, plant?: string): string {
+    const tenant = `${company ? ' AND l2.COMPANY = :company' : ''}${plant ? ' AND l2.PLANT_CD = :plant' : ''}`;
+    return `inspectDate = (
+      SELECT MAX(l2.INSPECT_DATE) FROM EQUIP_INSPECT_LOGS l2
+      WHERE l2.EQUIP_CODE = :equipCode
+        AND l2.INSPECT_TYPE = :inspectType
+        AND l2.INSPECT_DATE >= TO_DATE(:inspectDate, 'YYYY-MM-DD')
+        AND l2.INSPECT_DATE < TO_DATE(:inspectDate, 'YYYY-MM-DD') + 1${tenant}
+    )`;
+  }
+
   /** 점검 결과 수정 (복합키) */
   async update(
     equipCode: string,
@@ -604,7 +618,8 @@ export class EquipInspectService {
       .set(updateData)
       .where('equipCode = :equipCode', { equipCode })
       .andWhere('inspectType = :inspectType', { inspectType })
-      .andWhere('inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate });
+      .andWhere('inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate })
+      .andWhere(this.latestOfDayPredicate(company, plant), { equipCode, inspectType, inspectDate });
     if (company) updateBuilder.andWhere('company = :company', { company });
     if (plant) updateBuilder.andWhere('plant = :plant', { plant });
     await updateBuilder.execute();
@@ -653,7 +668,8 @@ export class EquipInspectService {
       .from(EquipInspectLog)
       .where('equipCode = :equipCode', { equipCode })
       .andWhere('inspectType = :inspectType', { inspectType })
-      .andWhere('inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate });
+      .andWhere('inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate })
+      .andWhere(this.latestOfDayPredicate(company, plant), { equipCode, inspectType, inspectDate });
     if (company) deleteBuilder.andWhere('company = :company', { company });
     if (plant) deleteBuilder.andWhere('plant = :plant', { plant });
     await deleteBuilder.execute();

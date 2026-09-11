@@ -25,6 +25,11 @@ export class EquipInspectLog {
   @PrimaryColumn({ name: 'INSPECT_TYPE', length: 50 })
   inspectType: string;
 
+  /**
+   * 재점검 이력을 구분하는 PK라서 날짜가 아니라 **점검 시각까지** 담는다.
+   * TypeORM 'date' 매핑은 save() 시 시각을 잘라 설비·유형당 하루 1건으로 만들어 PK 충돌(ORA-00001 → 409)을 낸다.
+   * 그래서 쓰기는 전부 EquipInspectService.insertInspectLog의 TO_DATE raw INSERT를 거친다. save()로 되돌리지 말 것.
+   */
   @PrimaryColumn({ name: 'INSPECT_DATE', type: 'date' })
   inspectDate: Date;
 
