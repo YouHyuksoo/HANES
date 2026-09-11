@@ -50,6 +50,19 @@ test('sidebar keeps full help link in a fixed bottom area', () => {
   assert.match(sidebarSource, /isMenuDisabled=\{\(\) => false\}/);
 });
 
+test('sidebar pins interface + system groups in their own bottom area above full help', () => {
+  assert.match(sidebarSource, /const ADMIN_MENU_CODES = \["INTERFACE", "SYSTEM"\]/);
+  assert.match(sidebarSource, /const adminItems = items\.filter\(item => ADMIN_MENU_CODES\.includes\(item\.code\)\)/);
+  // 업무 메뉴 목록에서는 제외되고, 별도 nav 로 렌더된다
+  assert.match(sidebarSource, /!ADMIN_MENU_CODES\.includes\(item\.code\)/);
+  assert.match(sidebarSource, /aria-label=\{`\$\{t\("menu\.interface"\)\} · \$\{t\("menu\.system"\)\}`\}/);
+  // 순서: 워크플로우/모니터링 → 인터페이스/시스템 → 전체 도움말
+  const wf = sidebarSource.indexOf('items={workflowItems}');
+  const admin = sidebarSource.indexOf('items={adminItems}');
+  const help = sidebarSource.indexOf('items={[HELP_MENU_ITEM]}');
+  assert.ok(wf > 0 && wf < admin && admin < help, 'admin nav must sit between workflow nav and help nav');
+});
+
 test('all sidebar menu label keys resolve in every locale', () => {
   const labelKeys = [...menuConfigSource.matchAll(/labelKey:\s*"([^"]+)"/g)].map((match) => match[1]);
   const localeFiles = ['ko', 'en', 'vi', 'zh'];

@@ -19,6 +19,8 @@ import { useMenuFavorites } from "@/hooks/useMenuFavorites";
 import SidebarMenu from "./SidebarMenu";
 import { FavoriteSidebar } from "./FavoriteSidebar";
 
+/** 하단 고정 영역(전체 도움말 위)으로 분리하는 관리자 성격 메뉴 그룹 */
+const ADMIN_MENU_CODES = ["INTERFACE", "SYSTEM"] as readonly string[];
 const HELP_MENU_PATH = "/help";
 const HELP_MENU_ITEM: MenuConfigItem = {
   code: "HELP_INDEX",
@@ -55,7 +57,11 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
 
   const sidebarWidth = collapsed ? "var(--sidebar-collapsed-width)" : "var(--sidebar-width)";
   const workflowItems = items.filter(item => item.code === "WORKFLOW" || item.code === "MONITORING");
-  const regularItems = items.filter(item => item.code !== "WORKFLOW" && item.code !== "MONITORING");
+  /** 관리자 성격 그룹(인터페이스·시스템관리)은 업무 메뉴와 분리해 하단 고정 영역(전체 도움말 위)에 둔다 */
+  const adminItems = items.filter(item => ADMIN_MENU_CODES.includes(item.code));
+  const regularItems = items.filter(
+    item => item.code !== "WORKFLOW" && item.code !== "MONITORING" && !ADMIN_MENU_CODES.includes(item.code),
+  );
 
   return (
     <>
@@ -98,6 +104,24 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
             onMenuDragStart={(code) => { if (!isFavorite(code)) toggleFavorite(code); }}
           />
         </nav>
+        {adminItems.length > 0 && (
+          <nav className="flex-shrink-0 max-h-[45vh] overflow-y-auto border-t border-border bg-surface px-3 py-2" aria-label={`${t("menu.interface")} · ${t("menu.system")}`}>
+            <SidebarMenu
+              items={adminItems}
+              collapsed={collapsed}
+              pathname={pathname}
+              expandedMenus={expandedMenus}
+              onToggleMenu={toggleMenu}
+              isMenuActive={isMenuActive}
+              isMenuDisabled={isMenuDisabled}
+              onClose={onClose}
+              t={t}
+              isFavorite={isFavorite}
+              onToggleFavorite={toggleFavorite}
+              onMenuDragStart={(code) => { if (!isFavorite(code)) toggleFavorite(code); }}
+            />
+          </nav>
+        )}
         <nav className="flex-shrink-0 border-t border-border bg-surface p-3">
           <SidebarMenu
             items={[HELP_MENU_ITEM]}
