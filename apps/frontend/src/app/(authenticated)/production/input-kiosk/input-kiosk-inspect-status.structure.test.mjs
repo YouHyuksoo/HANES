@@ -29,9 +29,12 @@ test('input kiosk restores current job order and workers from equipment master k
 test('input kiosk restores self inspection completion state from result history', () => {
   assert.match(source, /refreshSelfInspectStatus/);
   assert.match(source, /\/production\/self-inspect\/results\/\$\{encodeURIComponent\(selectedJobOrder\.orderNo\)\}/);
-  assert.match(source, /setFirstInspectDone\(latestInspectBatchPassed\(rows, 'FIRST'\)\)/);
-  assert.match(source, /setMidInspectDone\(latestInspectBatchPassed\(rows, 'MID'\)\)/);
-  assert.match(source, /setLastInspectDone\(latestInspectBatchPassed\(rows, 'LAST'\)\)/);
+  // 항목 없는 시점(초/중/종물)은 완료로 본다(2026-09-09 결함 14) — 서버 게이트(assertSelfInspectGates)와 같은 규칙
+  assert.match(source, /setFirstInspectDone\(selfInspectItemCounts\.FIRST === 0 \|\| latestInspectBatchPassed\(rows, 'FIRST'\)\)/);
+  assert.match(source, /setMidInspectDone\(selfInspectItemCounts\.MID === 0 \|\| latestInspectBatchPassed\(rows, 'MID'\)\)/);
+  assert.match(source, /setLastInspectDone\(selfInspectItemCounts\.LAST === 0 \|\| latestInspectBatchPassed\(rows, 'LAST'\)\)/);
+  assert.match(source, /if \(!firstInspectDone && selfInspectItemCounts\.FIRST !== 0\)/);
+  assert.match(source, /&& selfInspectItemCounts\.MID !== 0;/);
 });
 
 test('input kiosk ignores FIRST pending delegates for production blocking before mass production', () => {

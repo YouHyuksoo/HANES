@@ -18,6 +18,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, QueryRunner, FindOptionsSelect, IsNull, In, Brackets, LessThanOrEqual, MoreThanOrEqual, Or } from 'typeorm';
+import { SelfInspectItem } from '../../../entities/self-inspect-item.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
@@ -40,6 +41,7 @@ import {
 } from '../dto/job-order.dto';
 import { parseDateStart } from '../../../shared/date.util';
 import { parseCsvList } from '../../../common/utils/csv-list.util';
+import { ceilQty, mulQty } from '@harness/shared';
 
 /** 작업지시 조회 시 공통으로 사용하는 select 필드 */
 /** 설비 필터의 "미착수"(실적 없음) 선택값 — 실제 EQUIP_CODE와 겹치지 않는 프론트 표시용 상수(프론트와 동일 문자열 공유) */
@@ -551,11 +553,59 @@ export class JobOrderService {
       await this.createRoutingOperationOrders(queryRunner, saved, routingProcesses, saved.orderNo, operationAssignmentMap);
       await this.createChildOrdersRecursive(queryRunner, saved, dto, saved.orderNo, 0, new Set());
 
-      return this.jobOrderRepository.findOne({
+      const created = await this.jobOrderRepository.findOne({
         where: { orderNo: saved.orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
         relations: ['part', 'routing', 'children', 'children.part', 'children.routing'],
       });
+      // 생성 시점에 BOM 트리 전 공정지시의 자주검사(초/중/종물) 항목 유무를 점검해 경고로 돌려준다(2026-09-09 결함 14).
+      const warnings = await this.collectSelfInspectWarnings(queryRunner, saved.orderNo, company, plant);
+      return created ? { ...created, warnings } : created;
     });
+  }
+
+  /**
+   * 작업지시 트리(루트 + 하위 품목/공정지시)의 공정별 자주검사 항목 유무 점검.
+   * SELF_INSPECT_ITEMS 는 공정코드 단위이므로 항목이 하나도 없는 공정은 키오스크에서 초물검사가 비어 실적이 막힌다.
+   * 실적 시점이 아니라 지시 생성 시점에 알려 마스터를 먼저 채우게 한다.
+   */
+  private async collectSelfInspectWarnings(
+    queryRunner: QueryRunner,
+    rootOrderNo: string,
+    company?: string,
+    plant?: string,
+  ): Promise<string[]> {
+    const tenant = { ...(company ? { company } : {}), ...(plant ? { plant } : {}) };
+    const orders = await queryRunner.manager.find(JobOrder, {
+      where: [{ orderNo: rootOrderNo, ...tenant }, { rootOrderNo, ...tenant }],
+      select: ['orderNo', 'orderKind', 'processCode'],
+    });
+    const processCodes = Array.from(new Set(
+      orders.filter((o) => String(o.orderKind ?? '').toUpperCase() === 'OPERATION' && o.processCode).map((o) => o.processCode as string),
+    ));
+    if (processCodes.length === 0) return [];
+    const items = await queryRunner.manager.find(SelfInspectItem, {
+      where: { useYn: 'Y', processCode: In(processCodes), ...tenant },
+      select: ['processCode', 'timing'],
+    });
+    const timingsByProcess = new Map<string, Set<string>>();
+    for (const item of items) {
+      if (!item.processCode) continue;
+      const set = timingsByProcess.get(item.processCode) ?? new Set<string>();
+      set.add(String(item.timing ?? '').toUpperCase());
+      timingsByProcess.set(item.processCode, set);
+    }
+    const warnings: string[] = [];
+    for (const processCode of processCodes) {
+      const timings = timingsByProcess.get(processCode);
+      if (!timings || timings.size === 0) {
+        warnings.push(`공정 ${processCode}: 자주검사(초물/중물/종물) 항목이 없습니다. 실적 등록 전 자주검사 마스터를 등록하세요.`);
+        continue;
+      }
+      if (!timings.has('FIRST')) {
+        warnings.push(`공정 ${processCode}: 초물 자주검사 항목이 없습니다(초물검사는 건너뜁니다).`);
+      }
+    }
+    return warnings;
   }
 
   /**
@@ -641,7 +691,7 @@ export class JobOrderService {
           orderKind: 'ITEM',
           routingSeq: null,
           equipCode: null,
-          planQty: Math.ceil(parent.planQty * Number(bom.qtyPer)),
+          planQty: ceilQty(mulQty(parent.planQty, Number(bom.qtyPer))),
           planDate: parseDateStart(dto.planDate),
           priority: dto.priority ?? 5,
           remark: `[자동생성] ${parent.orderNo}의 반제품`,

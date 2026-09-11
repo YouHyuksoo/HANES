@@ -471,9 +471,39 @@ export function createDefaultLabelDesign(category: LabelCategory): LabelDesign {
   });
 }
 
+/**
+ * 소스 테이블별 바코드/QR에 실어야 하는 식별자 필드(단일 출처).
+ * 바코드 요소에 sourceField가 비어 있으면 이 값으로 보정한다 — 비어 있으면 "SAMPLE"이 인쇄되어
+ * 실물 라벨을 스캔해도 식별이 안 되는 사고가 난다(2026-09-09 입하 라벨 QR=SAMPLE).
+ */
+export const DEFAULT_BARCODE_FIELD_BY_SOURCE: Record<LabelSourceTable, string> = {
+  equipment: "equipCode",
+  consumable: "conUid",
+  worker: "workerCode",
+  mat_lot: "matUid",
+  box: "boxNo",
+  pallet: "palletNo",
+  sg_label: "sgBarcode",
+  fg_label: "fgBarcode",
+};
+
+/** 바코드 요소의 빈 sourceField를 소스 테이블 기본 식별자로 보정한다(그 외 요소는 그대로). */
+export function normalizeLabelElements(
+  elements: LabelElement[] | undefined,
+  sourceTable: LabelSourceTable,
+): LabelElement[] | undefined {
+  if (!Array.isArray(elements)) return elements;
+  return elements.map((element) => {
+    if (element.type !== "barcode" || (element.sourceField && element.sourceField.trim())) return element;
+    const table = element.sourceTable ?? sourceTable;
+    return { ...element, sourceTable: table, sourceField: DEFAULT_BARCODE_FIELD_BY_SOURCE[table] };
+  });
+}
+
 export function ensureObjectLabelDesign(design: LabelDesign, category: LabelCategory): LabelDesign {
   if (Array.isArray(design.elements) && design.elements.length > 0) {
-    return { ...design, version: 2, sourceTable: design.sourceTable ?? categorySourceTable[category] };
+    const sourceTable = design.sourceTable ?? categorySourceTable[category];
+    return { ...design, version: 2, sourceTable, elements: normalizeLabelElements(design.elements, sourceTable) };
   }
 
   const fallback = createDefaultLabelDesign(category);

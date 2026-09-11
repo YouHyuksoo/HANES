@@ -16,6 +16,7 @@ import {
   LabelElement,
   LabelElementKind,
   LabelSourceTable,
+  DEFAULT_BARCODE_FIELD_BY_SOURCE,
 } from "../types";
 import { getDesignSourceFields, getLabelSource, getSampleData, labelSources } from "../labelSources";
 import LabelDesignRenderer, { ResizeAnchor } from "./LabelDesignRenderer";
@@ -273,13 +274,12 @@ export default function LabelObjectDesigner({ category, design, onChange }: Labe
     updateDesign({
       sourceTable: next,
       sourceFields: nextFields,
-      elements: (design.elements ?? []).map((element) => ({
-        ...element,
-        sourceTable: next,
-        sourceField: element.sourceField && nextFields.some((field) => field.key === element.sourceField)
-          ? element.sourceField
-          : undefined,
-      })),
+      elements: (design.elements ?? []).map((element) => {
+        const keepField = element.sourceField && nextFields.some((field) => field.key === element.sourceField);
+        // 바코드는 소스 필드가 비면 SAMPLE이 인쇄되므로 새 테이블의 기본 식별자로 반드시 채운다.
+        const fallback = element.type === "barcode" ? DEFAULT_BARCODE_FIELD_BY_SOURCE[next] : undefined;
+        return { ...element, sourceTable: next, sourceField: keepField ? element.sourceField : fallback };
+      }),
     });
   };
 

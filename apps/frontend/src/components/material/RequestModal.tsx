@@ -85,7 +85,7 @@ export default function RequestModal({
       const items = await loadBomRequestItems(orderNo);
       setRequestItems(items);
       if (items.length === 0) {
-        setErrorMessage('BOM 기준 출고 예정 원자재가 없습니다.');
+        setErrorMessage(t('material.request.noBomItems', 'BOM 기준 출고 예정 원자재가 없습니다. 반제품 투입·반제품 생산 공정인지 확인하세요.'));
       }
     } catch (err: unknown) {
       const message =

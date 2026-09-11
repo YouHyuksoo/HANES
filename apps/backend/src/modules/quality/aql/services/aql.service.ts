@@ -409,6 +409,22 @@ export class AqlService {
    * - 항목 중 하나라도 FAIL이면 LOT FAIL
    * 등급(DEFECT_GRADE)이 설정된 검사항목이 없으면 기존 품목 단일 resolveIqcPolicy로 폴백한다.
    */
+  /**
+   * 불량코드에 입력한 불량수량을 검사항목별 불량수에 반영한다.
+   * 시리얼 1개가 대량 LOT(예: 8,400EA)인 경우 시리얼 FAIL 1건은 '불량 1개' 가 아니라 '시료 중 불량 N개' 이므로,
+   * FAIL 판정된 항목의 불량수는 max(FAIL 시리얼 수, 입력한 불량수량 합계) 로 본다(2026-09-09 결함 03).
+   * 여러 항목이 FAIL 이면 각 항목에 같은 합계를 적용한다(보수적 판정).
+   */
+  attributeDefectQtyToFailedItems(itemDefectCounts: Record<number, number>, defectQtyTotal: number): Record<number, number> {
+    const total = this.toNonNegativeInt(defectQtyTotal);
+    if (total <= 0) return itemDefectCounts;
+    const out: Record<number, number> = { ...itemDefectCounts };
+    for (const [seq, count] of Object.entries(out)) {
+      if (this.toNonNegativeInt(count) > 0) out[Number(seq)] = Math.max(this.toNonNegativeInt(count), total);
+    }
+    return out;
+  }
+
   async resolveIqcPolicyByItem(input: {
     itemCode: string;
     vendorCode?: string | null;
@@ -573,7 +589,13 @@ export class AqlService {
     }
     const judgeReasonWithSource = sampleSource === 'RATIO_FALLBACK'
       ? `${result === 'PASS' ? '검사항목별 기본 판정' : failReasons.join('; ')} (IQC_SAMPLE_RATIO ${sampleQty}/${lotQty} fallback)`
-      : result === 'PASS' ? '검사항목별 AQL 기준 합격' : failReasons.join('; ');
+      : result === 'PASS'
+        ? `검사항목별 AQL 기준 합격${(() => {
+            const nonzero = itemResults.filter((r) => r.defectCount > 0 && r.acceptQty != null)
+              .map((r) => `${r.inspItemCode} ${r.defectGrade || ''} 불량 ${r.defectCount}건 ≤ Ac ${r.acceptQty}`);
+            return nonzero.length > 0 ? ` (${nonzero.join('; ')})` : '';
+          })()}`
+        : failReasons.join('; ');
 
     return {
       itemCode: input.itemCode,

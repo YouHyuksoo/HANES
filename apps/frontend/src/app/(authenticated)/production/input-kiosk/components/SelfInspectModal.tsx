@@ -318,6 +318,11 @@ export default function SelfInspectModal({ isOpen, timing, onClose, onDone }: Se
           <div className="py-8 flex flex-col items-center gap-3 text-text-muted">
             <AlertTriangle className="w-10 h-10 opacity-40" />
             <p className="text-sm">{t('kiosk.selfInspect.noItems')}</p>
+            <p className="text-xs text-center max-w-md">{t('kiosk.selfInspect.noItemsHint', '이 공정에 등록된 자주검사 항목이 없어 검사 없이 완료 처리합니다. 항목이 필요하면 자주검사 마스터(라우팅 > 자주검사 설정)에 등록하세요.')}</p>
+            <button type="button" onClick={onDone}
+              className="mt-1 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-text hover:border-primary hover:text-primary">
+              {t('kiosk.selfInspect.skipNoItems', '항목 없음 확인 (건너뛰기)')}
+            </button>
           </div>
         ) : (
           <div className="overflow-x-auto max-h-[42vh] overflow-y-auto rounded-lg border border-border">

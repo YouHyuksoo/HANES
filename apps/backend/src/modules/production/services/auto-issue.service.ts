@@ -26,7 +26,7 @@ import { Repository, QueryRunner, In } from 'typeorm';
 
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingMaterial } from '../../../entities/routing-material.entity';
-import { resolveRoutingConsumeQty } from '@harness/shared';
+import { resolveRoutingConsumeQty, mulQty } from '@harness/shared';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { JobMaterialLot } from '../../../entities/job-material-lot.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -256,7 +256,8 @@ export class AutoIssueService {
 
     /* ── 6. 자식 품목별 차감 (스캔 LOT 우선) ── */
     for (const bom of bomList) {
-      const requiredQty = resolveRoutingConsumeQty(bom.qtyPer, allocByItem.get(bom.childItemCode)) * qty;
+      // 소수 소요량(0.67M/EA 등) 곱셈은 mulQty 로 반올림 — 582.9000000000001 > 582.9 로 마지막 실적이 막히던 결함(17번) 방지
+      const requiredQty = mulQty(resolveRoutingConsumeQty(bom.qtyPer, allocByItem.get(bom.childItemCode)), qty);
       if (requiredQty <= 0) continue;
 
       /* 공정재고(설비 장착분, WIP_MAT_STOCKS) 소비 — WipMatStockService에 위임.

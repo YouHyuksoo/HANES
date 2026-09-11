@@ -21,6 +21,7 @@ import { useKioskStore } from '@/stores/kioskStore';
 import { BarcodeScanInput, InspectItemImage } from '@/components/shared';
 
 interface WorkerInspectItem {
+  rowKey: number;
   seq: number;
   itemCode?: string | null;
   itemName: string;
@@ -68,6 +69,8 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
   }, []);
 
   const normalizeItems = useCallback((rows: WorkerInspectApiItem[]) => rows.map((item, index) => ({
+    /** 행 키(목록 index). seq(sortSeq)는 중복될 수 있어 키로 쓰지 않는다(2026-09-09 결함 13 동일 유형). */
+    rowKey: index,
     seq: Number(item.seq ?? item.sortSeq ?? index + 1),
     itemCode: item.itemCode ?? null,
     itemName: item.itemName,
@@ -94,7 +97,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
       const data = normalizeItems(res.data?.data ?? []);
       setItems(data);
       const init: Record<number, ItemResult> = {};
-      data.forEach(i => { init[i.seq] = ''; });
+      data.forEach(i => { init[i.rowKey] = ''; });
       setResults(init);
       focusQrInput();
     }).catch((err: unknown) => {
@@ -123,24 +126,24 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
       focusQrInput();
       return;
     }
-    setActiveSeq(matched.seq);
-    const matchedRow = rowRefs.current[matched.seq];
+    setActiveSeq(matched.rowKey);
+    const matchedRow = rowRefs.current[matched.rowKey];
     matchedRow?.scrollIntoView({ block: 'center', behavior: 'smooth' });
     setQrInput('');
     focusQrInput();
   }, [focusQrInput, items, normalizeQrCode, t]);
 
-  const handleResult = useCallback((seq: number, val: 'OK' | 'NG') => {
+  const handleResult = useCallback((rowKey: number, val: 'OK' | 'NG') => {
     const now = new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    setResults(prev => ({ ...prev, [seq]: val }));
-    setScanTimes(prev => ({ ...prev, [seq]: now }));
+    setResults(prev => ({ ...prev, [rowKey]: val }));
+    setScanTimes(prev => ({ ...prev, [rowKey]: now }));
     setActiveSeq(null);
     focusQrInput(50);
   }, [focusQrInput]);
 
-  const okCount = items.filter(i => results[i.seq] === 'OK').length;
-  const ngCount = items.filter(i => results[i.seq] === 'NG').length;
-  const pendingCount = items.filter(i => results[i.seq] === '').length;
+  const okCount = items.filter(i => results[i.rowKey] === 'OK').length;
+  const ngCount = items.filter(i => results[i.rowKey] === 'NG').length;
+  const pendingCount = items.filter(i => results[i.rowKey] === '').length;
   const allAnswered = items.length > 0 && pendingCount === 0;
   const anyNg = ngCount > 0;
   const total = items.length || 1;
@@ -174,8 +177,8 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
         itemCode: i.itemCode ?? null,
         itemName: i.itemName,
         workerQrCode: i.workerQrCode ?? null,
-        result: results[i.seq],
-        ngReason: ngReasons[i.seq] ?? '',
+        result: results[i.rowKey],
+        ngReason: ngReasons[i.rowKey] ?? '',
       }));
       await api.post('/equipment/daily-inspect', {
         equipCode: selectedEquip.equipCode,
@@ -297,13 +300,13 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
                 </div>
               </div>
             ) : items.map(item => {
-                  const r = results[item.seq];
-                  const isActive = activeSeq === item.seq;
+                  const r = results[item.rowKey];
+                  const isActive = activeSeq === item.rowKey;
                   const isNg = r === 'NG';
                   return (
                     <div
-                      key={item.seq}
-                      ref={el => { rowRefs.current[item.seq] = el; }}
+                      key={item.rowKey}
+                      ref={el => { rowRefs.current[item.rowKey] = el; }}
                       tabIndex={isActive ? 0 : -1}
                       aria-current={isActive ? 'true' : undefined}
                       className={`p-2.5 border rounded-lg transition-colors ${
@@ -315,7 +318,7 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
                     >
                       <div className="flex items-center gap-2">
                         <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
-                          {item.seq}
+                          {item.rowKey + 1}
                         </span>
                         <div className="shrink-0">
                           <InspectItemImage imageUrl={item.imageUrl} alt={item.itemName} size={48} />
@@ -336,20 +339,20 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
                             </p>
                           )}
                         </div>
-                        {scanTimes[item.seq] && (
+                        {scanTimes[item.rowKey] && (
                           <span className="text-[10px] text-text-muted flex items-center gap-1 shrink-0">
-                            <Clock className="w-3 h-3" />{scanTimes[item.seq]}
+                            <Clock className="w-3 h-3" />{scanTimes[item.rowKey]}
                           </span>
                         )}
                         <div className="flex gap-1 shrink-0">
-                          <button onClick={() => handleResult(item.seq, 'OK')}
+                          <button onClick={() => handleResult(item.rowKey, 'OK')}
                             className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
                               r === 'OK' ? 'bg-green-500 text-white border-green-500'
                               : 'border-border text-text-muted hover:border-green-400 hover:text-green-700 dark:hover:text-green-400'
                             }`}>
                             <CheckCircle2 className="w-3.5 h-3.5" /> OK
                           </button>
-                          <button onClick={() => handleResult(item.seq, 'NG')}
+                          <button onClick={() => handleResult(item.rowKey, 'NG')}
                             className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
                               r === 'NG' ? 'bg-red-500 text-white border-red-500'
                               : 'border-border text-text-muted hover:border-red-400 hover:text-red-700 dark:hover:text-red-400'
@@ -362,8 +365,8 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
                         <div className="mt-1.5 pl-8">
                           <input
                             type="text"
-                            value={ngReasons[item.seq] ?? ''}
-                            onChange={e => setNgReasons(prev => ({ ...prev, [item.seq]: e.target.value }))}
+                            value={ngReasons[item.rowKey] ?? ''}
+                            onChange={e => setNgReasons(prev => ({ ...prev, [item.rowKey]: e.target.value }))}
                             placeholder={t('kiosk.prep.ngReasonPlaceholder')}
                             className="w-full px-2 py-1 text-xs border border-red-300 dark:border-red-700 rounded bg-surface focus:outline-none focus:ring-1 focus:ring-red-400"
                           />

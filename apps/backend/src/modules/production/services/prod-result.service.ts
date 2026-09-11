@@ -734,11 +734,13 @@ export class ProdResultService {
 
     // 수량 초과 체크
     if (willBeTotal > jobOrder.planQty) {
+      const remaining = Math.max(0, jobOrder.planQty - existingTotal);
       throw new BadRequestException(
         `작업지시(${jobOrder.orderNo}) 수량 초과: ` +
         `계획수량 ${jobOrder.planQty}, ` +
         `기등록 ${existingTotal} (양품${existingGood}/불량${existingDefect}), ` +
-        `이번입력 ${newGoodQty + newDefectQty} (양품${newGoodQty}/불량${newDefectQty})`
+        `이번입력 ${newGoodQty + newDefectQty} (양품${newGoodQty}/불량${newDefectQty}). ` +
+        `양품+불량 합계가 계획수량을 넘을 수 없습니다 — 입력 가능 잔여수량 ${remaining}`
       );
     }
   }

@@ -102,10 +102,13 @@ export default function ProductionInputBar({
 
   const handleSubmit = useCallback(async () => {
     if (!canSave) return;
-    const good = parseQty(goodQty);
     // pendingDefects 합계가 있으면 우선, 없으면 defectQty 직접 입력값 사용
     const pendingDefectTotal = pendingDefects.reduce((s, d) => s + d.qty, 0);
     const defect = pendingDefectTotal > 0 ? pendingDefectTotal : parseQty(defectQty);
+    // 양품은 전송 시점에 작업수 - 불량으로 재계산한다. 불량입력 패널로 등록한 불량은 goodQty state 에 반영되지 않아
+    // 작업수 100 + 불량 20 → 양품 100/불량 20 으로 과대 전송되던 결함(2026-09-09 18번 조사 중 확인).
+    const total = parseQty(totalQty);
+    const good = total > 0 ? Math.max(0, total - defect) : parseQty(goodQty);
     if (good + defect === 0) {
       toast.error(t('kiosk.input.qtyRequired'));
       return;
@@ -149,7 +152,7 @@ export default function ProductionInputBar({
     } finally {
       setSaving(false);
     }
-  }, [canSave, goodQty, defectQty, pendingDefects, selectedJobOrder, selectedEquip,
+  }, [canSave, goodQty, defectQty, totalQty, pendingDefects, selectedJobOrder, selectedEquip,
       selectedWorkers, serialNo, incrementSerial, clearPendingDefects, onSaved, onResultSaved, t]);
 
   return (
@@ -242,6 +245,10 @@ export default function ProductionInputBar({
               )}
             </div>
           </div>
+          {/* 불량 입력 안내: 불량코드는 좌측 불량입력 패널에서 등록, 이 칸은 합계 표시 */}
+          <p className="text-[10px] leading-tight text-text-muted">
+            {t('kiosk.input.defectHint', '불량은 좌측 불량입력 패널에서 불량코드와 함께 등록하세요. 등록되면 이 칸은 합계만 표시합니다.')}
+          </p>
         </div>
 
         {/* 실적입력 버튼 */}

@@ -453,6 +453,18 @@ export default function WorkOrderRequestPanel({
                               {childCount}
                             </span>
                           )}
+                          <span
+                            title={t('production.order.orderKind', '구분')}
+                            className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none ring-1 ${
+                              String(order.orderKind ?? 'ITEM').toUpperCase() === 'OPERATION'
+                                ? 'text-amber-700 ring-amber-400 dark:text-amber-300 dark:ring-amber-600'
+                                : 'text-sky-700 ring-sky-400 dark:text-sky-300 dark:ring-sky-600'
+                            }`}
+                          >
+                            {String(order.orderKind ?? 'ITEM').toUpperCase() === 'OPERATION'
+                              ? t('production.order.orderKindOperation', '공정')
+                              : t('production.order.orderKindItem', '품목')}
+                          </span>
                           {itemTypeMeta && (
                             <span
                               title={t('common.itemType', '품목유형')}

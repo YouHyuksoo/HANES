@@ -81,6 +81,15 @@ describe('AqlService', () => {
     );
   });
 
+  it('attributes the entered defect-code qty to every FAIL item (max of fail-serial count and qty total)', () => {
+    // 시리얼 1개 = 8,400EA LOT 에서 항목 1·3 FAIL, 불량코드 수량 합계 6 → FAIL 항목은 6, PASS 항목(2)은 그대로 0
+    expect(service.attributeDefectQtyToFailedItems({ 1: 1, 2: 0, 3: 1 }, 6)).toEqual({ 1: 6, 2: 0, 3: 6 });
+    // 이미 FAIL 시리얼 수가 더 크면 유지
+    expect(service.attributeDefectQtyToFailedItems({ 1: 9 }, 6)).toEqual({ 1: 9 });
+    // 불량수량 미입력이면 원본 그대로
+    expect(service.attributeDefectQtyToFailedItems({ 1: 1 }, 0)).toEqual({ 1: 1 });
+  });
+
   it('rejects overlapping lot quantity ranges for one AQL code', async () => {
     standardRepo.findOne.mockResolvedValue(null);
 

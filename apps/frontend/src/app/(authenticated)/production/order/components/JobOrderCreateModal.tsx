@@ -449,8 +449,11 @@ export default function JobOrderCreateModal({ isOpen, draftOrder, onClose, onSav
           equipCode: operationAssignments[row.key] || undefined,
         })),
       };
-      await api.post("/production/job-orders", payload);
+      const res = await api.post("/production/job-orders", payload);
       toast.success(t("production.order.createSuccess", "작업지시를 생성했습니다."));
+      // 자주검사 항목 없는 공정 등 서버 경고(warnings)는 생성 직후 바로 알린다(2026-09-09 결함 14)
+      const warnings: string[] = Array.isArray(res.data?.data?.warnings) ? res.data.data.warnings : [];
+      if (warnings.length > 0) toast(warnings.join("\n"), { icon: "⚠️", duration: 10000 });
       onSave();
       onClose();
     } catch {

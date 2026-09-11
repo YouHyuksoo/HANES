@@ -94,11 +94,13 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
       ? t('kiosk.prep.noBomItems')
       : t('kiosk.material.remaining', { count: unscannedCount });
 
-  // BOM 요구 품목이 모두 장착되면 인터락 자동 해제
+  // BOM 요구 품목이 모두 장착되면 인터락 자동 해제.
+  // 닫힌 상태에서는 재평가하지 않는다 — 닫힐 때 mounted 를 비우면서 materialScanDone 을 false 로 덮어써
+  // 실적입력 버튼이 비활성으로 남던 결함(2026-09-09 22번, 작업지시를 바꿨다 돌아오면 풀리던 증상). 열린 동안만 이 모달이 판정한다.
   useEffect(() => {
-    if (bomItems.length === 0) return;
+    if (!isOpen || bomItems.length === 0) return;
     setInterlock('materialScanDone', bomItems.every(b => mountedByItem.has(b.childItemCode)));
-  }, [bomItems, mountedByItem, setInterlock]);
+  }, [isOpen, bomItems, mountedByItem, setInterlock]);
 
   const handleScan = useCallback(async (rawMatUid?: string) => {
     const matUid = (rawMatUid ?? scanInput).replace(/\r?\n|\r/g, '').trim();

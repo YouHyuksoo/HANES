@@ -115,20 +115,39 @@ export class AqlController {
   }
 
   @Get('resolve-iqc-items')
-  @ApiOperation({ summary: '품목/LOT 수량 기준 검사항목별 IQC AQL 정책 산출' })
+  @ApiOperation({ summary: '품목/LOT 수량 기준 검사항목별 IQC AQL 정책 산출 (itemDefectCounts/defectQtyTotal 전달 시 예상 판정 미리보기)' })
   async resolveIqcItems(
     @Query('itemCode') itemCode: string,
     @Query('vendorCode') vendorCode: string,
     @Query('lotQty') lotQty: string,
     @Company() company: string,
     @Plant() plant: string,
+    @Query('itemDefectCounts') itemDefectCountsJson?: string,
+    @Query('itemInspectedCounts') itemInspectedCountsJson?: string,
+    @Query('defectQtyTotal') defectQtyTotal?: string,
   ) {
+    const parseCounts = (raw?: string): Record<number, number> => {
+      if (!raw) return {};
+      try {
+        const obj = JSON.parse(raw) as Record<string, unknown>;
+        const out: Record<number, number> = {};
+        for (const [k, v] of Object.entries(obj ?? {})) {
+          const seq = Number(k); const n = Number(v);
+          if (Number.isFinite(seq) && Number.isFinite(n) && n >= 0) out[seq] = Math.floor(n);
+        }
+        return out;
+      } catch {
+        return {};
+      }
+    };
+    // 화면 미리보기도 저장 시와 같은 규칙(불량수량 귀속)을 거친다 — 판정 로직 단일 출처
+    const itemDefectCounts = this.aqlService.attributeDefectQtyToFailedItems(parseCounts(itemDefectCountsJson), Number(defectQtyTotal) || 0);
     const data = await this.aqlService.resolveIqcPolicyByItem({
       itemCode,
       vendorCode,
       lotQty: Number(lotQty),
-      itemDefectCounts: {},
-      itemInspectedCounts: {},
+      itemDefectCounts,
+      itemInspectedCounts: parseCounts(itemInspectedCountsJson),
       fallbackDefectCounts: { critical: 0, major: 0, minor: 0 },
       company,
       plant,

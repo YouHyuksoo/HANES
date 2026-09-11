@@ -68,6 +68,9 @@ interface AqlPolicyPreview {
   inspectionLevel: string;
   inspectionMode: string;
   sampleQty: number;
+  /** 현재 불량수 기준 예상 LOT 판정(서버 규칙) */
+  result?: 'PASS' | 'FAIL';
+  judgeReason?: string;
   itemResults?: Array<{
     seq: number;
     inspItemCode?: string | null;
@@ -279,19 +282,6 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
       .catch(() => setDefectCodeOptions([]));
   }, [isOpen, selectedItem]);
 
-  useEffect(() => {
-    if (!isOpen || !selectedItem) return;
-
-    api.get("/quality/aql/resolve-iqc-items", {
-      params: {
-        itemCode: selectedItem.itemCode,
-        vendorCode: selectedItem.vendorCode,
-        lotQty: selectedItem.totalQty,
-      },
-    })
-      .then((res) => setAqlPolicy(res.data?.data ?? null))
-      .catch(() => setAqlPolicy(null));
-  }, [isOpen, selectedItem]);
 
   const aqlItems = useMemo(
     () => inspectItems.filter((it) => (it.inspectionType ?? 'AQL').toUpperCase() === 'AQL'),
@@ -466,7 +456,12 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const selectedPendingSerial = selectedSerial
     ? pendingSerials.find((serial) => serial.matUid === selectedScannedSerial?.matUid)
     : undefined;
-  const hasInspectItems = inspectItems.length > 0;
+  /**
+   * 시리얼별 측정표는 AQL(시료 측정) 항목이 있을 때만 의미가 있다.
+   * 전수/파괴(FULL/DESTRUCTIVE) 항목만 있는 품목은 시리얼별 측정값이 없으므로 수동 PASS/FAIL 버튼으로 판정한다
+   * (2026-09-09 결함 05: 전수검사 항목만 있으면 표가 비고 시리얼이 '대기'로 남아 등록 불가).
+   */
+  const hasInspectItems = aqlItems.length > 0;
   const unscannedPending = pendingSerials;
   const isIncomplete = serialInspectionPayload.some((serial) => !serial.result);
   const passCount = serialInspectionPayload.filter((serial) => serial.result === "PASS").length;
@@ -489,6 +484,50 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
   const hasDefectCodeRows = defectRows.some((row) => row.defectCode && Number(row.qty) > 0);
   const needsDefectCode = (anyFail || anyDestructFail) && !hasDefectCodeRows;
   const hasContradictingDefectCodes = !(anyFail || anyDestructFail) && hasDefectCodeRows;
+  /** 검사항목(seq)별 FAIL 시리얼 수 + 파괴/전수 불량수 — 서버 저장 시 계산과 같은 입력(countFailByInspItem + destructive.defects) */
+  const previewDefectCountsKey = useMemo(() => {
+    const counts: Record<number, number> = {};
+    for (const serial of serialInspectionPayload) {
+      for (const row of serial.items) {
+        if (row.judge !== "FAIL") continue;
+        const seq = Number(String(row.itemId ?? "").split("::")[1]);
+        if (Number.isFinite(seq)) counts[seq] = (counts[seq] ?? 0) + 1;
+      }
+    }
+    for (const d of destructivePayload) {
+      if (d.defectQty > 0) counts[d.seq] = (counts[d.seq] ?? 0) + d.defectQty;
+    }
+    return JSON.stringify(counts);
+  }, [serialInspectionPayload, destructivePayload]);
+  const previewDefectQtyTotal = useMemo(() => defectRows.reduce((sum, row) => sum + (Number(row.qty) || 0), 0), [defectRows]);
+  const failCriteriaText = useMemo(() => {
+    if (!aqlPolicy) return t("material.iqc.failCriteriaLoading", "조회 중");
+    const parts: string[] = [];
+    if (aqlPolicy.majorRule) parts.push(t("material.iqc.failCriteriaRule", "{{grade}} 불량 {{re}}개 이상 (Ac {{ac}}/Re {{re}})", { grade: "Major", ac: aqlPolicy.majorRule.acceptQty, re: aqlPolicy.majorRule.rejectQty }));
+    if (aqlPolicy.minorRule) parts.push(t("material.iqc.failCriteriaRule", "{{grade}} 불량 {{re}}개 이상 (Ac {{ac}}/Re {{re}})", { grade: "Minor", ac: aqlPolicy.minorRule.acceptQty, re: aqlPolicy.minorRule.rejectQty }));
+    if (parts.length === 0) return t("material.iqc.failCriteriaNoAql", "불량 1개 이상 FAIL (AQL 미적용: Critical/전수/파괴)");
+    return parts.join(" · ");
+  }, [aqlPolicy, t]);
+
+  // AQL 정책 + 예상 판정 미리보기: 시리얼 판정/불량수량이 바뀔 때마다 저장 시와 같은 서버 규칙으로 다시 계산한다(03·04번).
+  useEffect(() => {
+    if (!isOpen || !selectedItem) return;
+    const timer = window.setTimeout(() => {
+      api.get("/quality/aql/resolve-iqc-items", {
+        params: {
+          itemCode: selectedItem.itemCode,
+          vendorCode: selectedItem.vendorCode,
+          lotQty: selectedItem.totalQty,
+          itemDefectCounts: previewDefectCountsKey,
+          defectQtyTotal: previewDefectQtyTotal,
+        },
+      })
+        .then((res) => setAqlPolicy(res.data?.data ?? null))
+        .catch(() => setAqlPolicy(null));
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, selectedItem, previewDefectCountsKey, previewDefectQtyTotal]);
+
   const canSubmit = (scannedSerials.length > 0 || (aqlItems.length === 0 && destructItems.length > 0))
     && !loadingItems
     && !isIncomplete
@@ -541,13 +580,17 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     <Modal isOpen={isOpen} onClose={onClose} title={t("material.iqc.modalTitle")} size="full">
       <div className="flex h-[calc(75vh-32px)] max-h-[620px] flex-col gap-2 overflow-hidden">
         {/* 상단: 입하 정보 */}
-        <div className="grid grid-cols-5 gap-x-4 gap-y-0.5 rounded-md bg-surface px-3 py-1.5 text-xs flex-shrink-0">
+        <div className="grid grid-cols-6 gap-x-4 gap-y-0.5 rounded-md bg-surface px-3 py-1.5 text-xs flex-shrink-0">
           <p className="min-w-0 truncate text-text-muted">{t("material.iqc.arrivalNoLabel")}: <span className="font-semibold text-text">{selectedItem.arrivalNo}</span></p>
           <p className="min-w-0 truncate text-text-muted">{t("material.iqc.supplierLabel")}: <span className="font-semibold text-text">{selectedItem.supplierName}</span></p>
           <p className="min-w-0 truncate text-text-muted">{t("material.iqc.serialCount", "시리얼수")}: <span className="font-semibold text-text">{selectedItem.serialCount.toLocaleString()}</span></p>
           <p className="min-w-0 truncate text-text-muted">{t("material.iqc.totalQty", "총수량")}: <span className="font-semibold text-text">{selectedItem.totalQty.toLocaleString()} {selectedItem.unit}</span></p>
           <p className="min-w-0 truncate text-text-muted" title={`${selectedItem.itemName} (${selectedItem.itemCode})`}>
             {t("material.iqc.partLabel")}: <span className="font-semibold text-text">{selectedItem.itemName} ({selectedItem.itemCode})</span>
+          </p>
+          {/* 불합격기준: AQL Ac/Re 를 검사자가 읽을 수 있는 문장으로 — 시리얼 FAIL 해놓고 최종 PASS 가 되는 이유를 여기서 설명한다(04번) */}
+          <p className="min-w-0 truncate text-text-muted" title={failCriteriaText}>
+            {t("material.iqc.failCriteria", "불합격기준")}: <span className="font-semibold text-red-600 dark:text-red-400">{failCriteriaText}</span>
           </p>
         </div>
 
@@ -974,7 +1017,11 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                     <div className="p-4 space-y-3">
                       <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                         <AlertCircle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
-                        <p className="text-sm text-yellow-700 dark:text-yellow-300">{t("material.iqc.noInspectItems", "이 품목에 등록된 IQC 검사항목이 없습니다. 수동으로 합불 판정해주세요.")}</p>
+                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                          {destructItems.length > 0
+                            ? t("material.iqc.manualJudgeDestructHint", "시료 측정(AQL) 항목이 없어 시리얼은 PASS/FAIL 버튼으로 직접 판정합니다. 전수/파괴 검사 수량·불량수는 왼쪽 열 아래 「파괴/전수 검사」 칸에 입력하세요.")
+                            : t("material.iqc.noInspectItems", "이 품목에 등록된 IQC 검사항목이 없습니다. 수동으로 합불 판정해주세요.")}
+                        </p>
                       </div>
                       <div className="flex gap-2">
                         <Button size="sm" variant={selectedInspection?.result === "PASS" ? "primary" : "secondary"} onClick={() => updateSerialSimpleResult(selectedSerial, "PASS")}>PASS</Button>
@@ -996,6 +1043,13 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
                   : anyFail || anyDestructFail
                     ? <span className="text-red-600 dark:text-red-400">FAIL {failCount} / PASS {passCount}</span>
                     : <span className="text-green-600 dark:text-green-400">PASS {passCount}</span>}
+              {scannedSerials.length > 0 && aqlPolicy?.result && (
+                <span className="ml-3 font-normal" title={aqlPolicy.judgeReason ?? ''}>
+                  {t("material.iqc.expectedJudge", "예상 LOT 판정")}:{" "}
+                  <span className={aqlPolicy.result === "FAIL" ? "font-bold text-red-600 dark:text-red-400" : "font-bold text-green-600 dark:text-green-400"}>{aqlPolicy.result}</span>
+                  {aqlPolicy.judgeReason ? <span className="text-text-muted"> — {aqlPolicy.judgeReason}</span> : null}
+                </span>
+              )}
             </span>
             <Button size="sm" variant={(anyFail || anyDestructFail) ? "danger" : "primary"} onClick={handleSerialSubmit} disabled={!canSubmit} disabledReason={loadingItems ? t('material.disabledHelp.inspectionLoading', '검사항목을 불러오고 있습니다.') : scannedSerials.length === 0 && !(aqlItems.length === 0 && destructItems.length > 0) ? t('material.disabledHelp.iqcScan', '검사할 자재시리얼을 스캔하세요.') : isIncomplete ? t('material.disabledHelp.iqcIncomplete', '판정이 끝나지 않은 자재시리얼의 검사 판정을 완료하세요.') : needsDefectCode ? t('material.disabledHelp.iqcDefect', '불합격 항목의 불량코드와 불량수량을 입력하세요.') : t('material.disabledHelp.iqcConflict', '합격 판정에는 불량코드와 불량수량을 등록할 수 없습니다.')}>
               {(anyFail || anyDestructFail) ? <XCircle className="w-4 h-4 mr-1" /> : <CheckCircle className="w-4 h-4 mr-1" />}

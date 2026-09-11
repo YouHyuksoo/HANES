@@ -20,6 +20,8 @@ import { useKioskStore } from '@/stores/kioskStore';
 import { InspectItemImage } from '@/components/shared';
 
 interface InspectItem {
+  /** 화면 행 키(목록 index). seq(sortSeq)는 설비 점검항목 배정에서 중복될 수 있어(예: 두 항목 모두 3) 키로 쓰지 않는다(2026-09-09 결함 13). */
+  rowKey: number;
   seq: number;
   sortSeq?: number | null;
   itemName: string;
@@ -143,12 +145,13 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
     }).then(res => {
       const data: InspectItem[] = (res.data?.data ?? []).map((i: InspectItem, index: number) => ({
         ...i,
+        rowKey: index,
         seq: Number(i.seq ?? i.sortSeq ?? index + 1),
         itemType: i.itemType || 'VISUAL',
       }));
       setItems(data);
       const init: Record<number, ItemResult> = {};
-      data.forEach(i => { init[i.seq] = ''; });
+      data.forEach(i => { init[i.rowKey] = ''; });
       setResults(init);
       setMeasureValues({});
       setRemarks({});
@@ -165,19 +168,19 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
     if (selectedWorkers[0]?.workerName) setInspectorName(selectedWorkers[0].workerName);
   }, [selectedWorkers]);
 
-  const handleMeasureChange = useCallback((seq: number, value: string, item: InspectItem) => {
-    setMeasureValues(prev => ({ ...prev, [seq]: value }));
-    setResults(prev => ({ ...prev, [seq]: judgeByRange(value, item.lslValue, item.uslValue) }));
+  const handleMeasureChange = useCallback((rowKey: number, value: string, item: InspectItem) => {
+    setMeasureValues(prev => ({ ...prev, [rowKey]: value }));
+    setResults(prev => ({ ...prev, [rowKey]: judgeByRange(value, item.lslValue, item.uslValue) }));
   }, []);
 
-  const handleVisualChange = useCallback((seq: number, val: string) => {
-    setResults(prev => ({ ...prev, [seq]: val as ItemResult }));
+  const handleVisualChange = useCallback((rowKey: number, val: string) => {
+    setResults(prev => ({ ...prev, [rowKey]: val as ItemResult }));
   }, []);
 
-  const allAnswered = items.length > 0 && items.every(i => results[i.seq] !== '');
-  const anyFail = items.some(i => results[i.seq] === 'FAIL');
-  const okCount = items.filter(i => results[i.seq] === 'PASS').length;
-  const ngCount = items.filter(i => results[i.seq] === 'FAIL').length;
+  const allAnswered = items.length > 0 && items.every(i => results[i.rowKey] !== '');
+  const anyFail = items.some(i => results[i.rowKey] === 'FAIL');
+  const okCount = items.filter(i => results[i.rowKey] === 'PASS').length;
+  const ngCount = items.filter(i => results[i.rowKey] === 'FAIL').length;
   const answeredCount = okCount + ngCount;
   const saveDisabledReason = saving
     ? t('common.saving')
@@ -194,9 +197,9 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
       const details: Record<string, string> = {};
       items.forEach(i => {
         const base = `${i.seq}_${i.itemName}`;
-        details[base] = results[i.seq] || 'PASS';
-        if (i.itemType === 'MEASURE' && measureValues[i.seq]) details[`${base}_value`] = measureValues[i.seq];
-        if (remarks[i.seq]) details[`${base}_remark`] = remarks[i.seq];
+        details[base] = results[i.rowKey] || 'PASS';
+        if (i.itemType === 'MEASURE' && measureValues[i.rowKey]) details[`${base}_value`] = measureValues[i.rowKey];
+        if (remarks[i.rowKey]) details[`${base}_remark`] = remarks[i.rowKey];
       });
       await api.post('/equipment/daily-inspect', {
         equipCode: selectedEquip.equipCode,
@@ -220,7 +223,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
 
   const startNewInspection = useCallback(() => {
     const init: Record<number, ItemResult> = {};
-    items.forEach((item) => { init[item.seq] = ''; });
+    items.forEach((item) => { init[item.rowKey] = ''; });
     setResults(init);
     setMeasureValues({});
     setRemarks({});
@@ -278,8 +281,8 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                     const remark = getCompletedItemValue(details, item, '_remark');
                     const isFail = result === 'FAIL';
                     return (
-                      <tr key={item.seq} className="border-b border-border last:border-0">
-                        <td className="px-3 py-2 text-center text-xs text-text-muted">{item.seq}</td>
+                      <tr key={item.rowKey} className="border-b border-border last:border-0">
+                        <td className="px-3 py-2 text-center text-xs text-text-muted">{item.rowKey + 1}</td>
                         <td className="px-2 py-2 text-center">
                           <InspectItemImage imageUrl={item.imageUrl} alt={item.itemName} />
                         </td>
@@ -442,12 +445,12 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                   </thead>
                   <tbody>
                     {items.map(item => {
-                      const r = results[item.seq];
+                      const r = results[item.rowKey];
                       const isFail = r === 'FAIL';
                       const isPass = r === 'PASS';
                       return (
-                        <tr key={item.seq} className="border-b border-border last:border-0 transition-colors">
-                          <td className="px-3 py-2 text-center text-xs text-text-muted">{item.seq}</td>
+                        <tr key={item.rowKey} className="border-b border-border last:border-0 transition-colors">
+                          <td className="px-3 py-2 text-center text-xs text-text-muted">{item.rowKey + 1}</td>
                           <td className="px-2 py-2 text-center">
                             <InspectItemImage imageUrl={item.imageUrl} alt={item.itemName} />
                           </td>
@@ -473,8 +476,8 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                             {item.itemType === 'MEASURE' ? (
                               <input
                                 type="number"
-                                value={measureValues[item.seq] ?? ''}
-                                onChange={e => handleMeasureChange(item.seq, e.target.value, item)}
+                                value={measureValues[item.rowKey] ?? ''}
+                                onChange={e => handleMeasureChange(item.rowKey, e.target.value, item)}
                                 placeholder={item.unit ?? t('kiosk.prep.measureValue')}
                                 className={`w-full px-2 py-1 text-sm text-right border rounded-lg bg-surface focus:outline-none focus:ring-1 ${
                                   isFail ? 'border-red-400 text-red-600 dark:text-red-400 font-bold focus:ring-red-400' : 'border-border focus:ring-primary'
@@ -483,7 +486,7 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                             ) : (
                               <select
                                 value={r || ''}
-                                onChange={e => handleVisualChange(item.seq, e.target.value)}
+                                onChange={e => handleVisualChange(item.rowKey, e.target.value)}
                                 className={`w-full px-2 py-1 text-sm border rounded-lg bg-surface focus:outline-none focus:ring-1 ${
                                   isFail ? 'border-red-400 text-red-600 dark:text-red-400 font-bold focus:ring-red-400'
                                     : isPass ? 'border-green-400 text-green-700 dark:text-green-400 focus:ring-green-400'
@@ -507,8 +510,8 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
                           <td className="px-3 py-2">
                             <input
                               type="text"
-                              value={remarks[item.seq] ?? ''}
-                              onChange={e => setRemarks(prev => ({ ...prev, [item.seq]: e.target.value }))}
+                              value={remarks[item.rowKey] ?? ''}
+                              onChange={e => setRemarks(prev => ({ ...prev, [item.rowKey]: e.target.value }))}
                               placeholder={t('kiosk.prep.remark')}
                               className="w-full px-2 py-1 text-xs border border-border rounded bg-surface focus:outline-none focus:ring-1 focus:ring-primary"
                             />

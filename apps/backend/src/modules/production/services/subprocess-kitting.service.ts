@@ -28,7 +28,7 @@ import { ProductGenealogy } from '../../../entities/product-genealogy.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { RoutingMaterial } from '../../../entities/routing-material.entity';
-import { planAssemblySgConsumption, resolveRoutingConsumeQty } from '@harness/shared';
+import { planAssemblySgConsumption, resolveRoutingConsumeQty, mulQty } from '@harness/shared';
 import { ConfirmAssemblyDto, ConfirmSubKitDto } from '../dto/subprocess-kitting.dto';
 import { ProductionSpecificationService } from './production-specification.service';
 import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
@@ -862,7 +862,7 @@ export class SubprocessKittingService {
           itemName: part?.itemName ?? b.childItemCode,
           itemType: 'SEMI_PRODUCT',
           qtyPer: Number(b.qtyPer),
-          totalRequired: Number(jobOrder.planQty) * Number(b.qtyPer),
+          totalRequired: mulQty(Number(jobOrder.planQty), Number(b.qtyPer)),
         };
       });
 

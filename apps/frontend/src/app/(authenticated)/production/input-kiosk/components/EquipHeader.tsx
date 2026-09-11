@@ -44,7 +44,7 @@ export default function EquipHeader({
   const [isEquipModalOpen, setIsEquipModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const {
-    selectedEquip, selectedJobOrder, selectedWorkers, interlock,
+    selectedEquip, selectedJobOrder, selectedWorkers, interlock, savedResultCount,
   } = useKioskStore();
   const isWorkView = searchParams.get('view') === 'work';
 
@@ -69,7 +69,9 @@ export default function EquipHeader({
     void document.documentElement.requestFullscreen();
   }, [isWorkView, router]);
 
-  const completed = selectedJobOrder?.completedQty ?? 0;
+  // 진행수량은 서버 PROD_RESULTS 집계(savedResultCount)를 단일 출처로 쓴다.
+  // selectedJobOrder.completedQty는 선택 시점 스냅샷이라 실적 저장 후 갱신되지 않아 0/1,000(0%)로 남던 결함(2026-09-09 15번).
+  const completed = savedResultCount ?? selectedJobOrder?.completedQty ?? 0;
   const planQty = selectedJobOrder?.planQty ?? 0;
   const progress = planQty ? Math.min(Math.round((completed / planQty) * 100), 100) : 0;
 

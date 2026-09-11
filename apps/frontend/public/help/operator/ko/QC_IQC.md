@@ -213,7 +213,8 @@ canSubmit =
 | 바코드→검사의뢰서 대상 그룹 해석 | GET | `/material/iqc-history/request-lookup` | `?barcode=` — MAT_UID → ARRIVAL_NO → PO_NO 순으로 매칭, 검사상태 무관(취소 LOT 제외), 그룹별 `iqcStatus`(MAX) 포함. 미매칭 시 `groups: []` (예외 아님) |
 | 입하단위 검사결과 등록 | POST | `/material/iqc-history/arrival` | DETAILS JSON 포함 |
 | 검사성적서 업로드 | POST | `/material/iqc-history/{inspectDate}/{seq}/upload-cert` | 파일 multipart |
-| 판정 취소 | DELETE | `/material/iqc-history/{inspectDate}/{seq}` | STATUS→CANCELED, 시리얼→PENDING 복원 |
+| 판정 취소 | DELETE | `/material/iqc-history/{inspectDate}/{seq}` | STATUS→CANCELED, 시리얼→PENDING 복원. 불량창고 자동이동(IQC_FAIL)·수동입고(IQC_DEFECT_RECEIVE) 모두 원복 |
+| 불합격 재고 처리 모드 | SYS_CONFIGS | `IQC_FAIL_DEFECT_MOVE_MODE` | MANUAL(기본): FAIL 저장 시 재고 이동 없음 → `/material/iqc-defect-receive` 화면에서 수동입고 / AUTO: 종전 자동이동 |
 | 품목 검사항목 조회 | GET | `/master/iqc-part-specs/{itemCode}/resolve-items` | inspectionType 포함 |
 | 품목 기준 헤더 조회 | GET | `/master/iqc-part-specs/{itemCode}` | sampleQty 초기값 |
 | AQL 샘플수량 조회 | GET | `/quality/aql/resolve-iqc-items` | `?itemCode=&vendorCode=&lotQty=` |

@@ -20,6 +20,7 @@ import { Repository, QueryRunner, EntityManager } from 'typeorm';
 import { ProcMatStock } from '../../../entities/proc-mat-stock.entity';
 import { ProcMatTransaction } from '../../../entities/proc-mat-transaction.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { ltQty, roundQty } from '@harness/shared';
 
 /** 공정재고 가산 파라미터 */
 export interface AddProcStockParams {
@@ -158,9 +159,9 @@ export class ProcMatStockService {
     });
 
     const ordered = this.orderLotsForDeduct(rows, p.scannedMatUids);
-    const totalAvailable = ordered.reduce((sum, r) => sum + (r.availableQty ?? 0), 0);
+    const totalAvailable = roundQty(ordered.reduce((sum, r) => sum + (r.availableQty ?? 0), 0));
 
-    if (totalAvailable < p.qty) {
+    if (ltQty(totalAvailable, p.qty)) {
       throw new BadRequestException(
         `공정재고 부족: 설비 장착 전 자재 출고(공정 입고) 필요 (공정=${p.processCode}, 품목=${p.itemCode}, 가용=${totalAvailable}, 요청=${p.qty})`,
       );
@@ -182,8 +183,8 @@ export class ProcMatStockService {
           itemCode: p.itemCode, matUid: row.matUid,
         },
         {
-          qty: (row.qty ?? 0) - take,
-          availableQty: avail - take,
+          qty: roundQty((row.qty ?? 0) - take),
+          availableQty: roundQty(avail - take),
         },
       );
 
@@ -355,8 +356,8 @@ export class ProcMatStockService {
     const existing = await manager.findOne(ProcMatStock, { where: key });
     if (existing) {
       await manager.update(ProcMatStock, key, {
-        qty: (existing.qty ?? 0) + p.addQty,
-        availableQty: (existing.availableQty ?? 0) + p.addQty,
+        qty: roundQty((existing.qty ?? 0) + p.addQty),
+        availableQty: roundQty((existing.availableQty ?? 0) + p.addQty),
       });
     } else {
       await manager.save(
@@ -381,8 +382,8 @@ export class ProcMatStockService {
       );
       return;
     }
-    const nextQty = Math.max(0, (existing.qty ?? 0) - p.deductQty);
-    const nextAvail = Math.max(0, (existing.availableQty ?? 0) - p.deductQty);
+    const nextQty = roundQty(Math.max(0, (existing.qty ?? 0) - p.deductQty));
+    const nextAvail = roundQty(Math.max(0, (existing.availableQty ?? 0) - p.deductQty));
     await manager.update(ProcMatStock, key, { qty: nextQty, availableQty: nextAvail });
   }
 

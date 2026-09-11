@@ -6,6 +6,7 @@
 export * from './date';
 export * from './numbering';
 export * from './part-rules';
+export * from './qty-math';
 export * from './routing-material-rules';
 export * from './job-order-rules';
 export * from './process-capa-rules';

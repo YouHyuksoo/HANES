@@ -18,6 +18,7 @@ import { Button, Input, Select } from "@/components/ui";
 import { PartSearchModal, LineSelect, ProcessSelect, QtyInput } from "@/components/shared";
 import { useProcessEquipmentOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
+import toast from "react-hot-toast";
 
 export interface JobOrderFormData {
   orderNo?: string;
@@ -177,7 +178,9 @@ export default function JobOrderFormPanel({ editingOrder, draftOrder, onClose, o
       if (isEdit && editingOrder?.orderNo) {
         await api.put(`/production/job-orders/${editingOrder.orderNo}`, payload);
       } else {
-        await api.post("/production/job-orders", payload);
+        const res = await api.post("/production/job-orders", payload);
+        const warnings: string[] = Array.isArray(res.data?.data?.warnings) ? res.data.data.warnings : [];
+        if (warnings.length > 0) toast(warnings.join("\n"), { icon: "⚠️", duration: 10000 });
       }
       onSave();
       onClose();

@@ -8,6 +8,8 @@
  * 3. POST /material/iqc-history/arrival 로 입하건 IQC 로그와 시리얼별 상세 결과를 저장
  */
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import type { IqcStatus } from '@/components/material';
 import api from '@/services/api';
 
@@ -92,6 +94,7 @@ const mapToFrontendStatus = (iqcStatus: string): IqcStatus => {
 };
 
 export function useIqcData() {
+  const { t } = useTranslation();
   const [items, setItems] = useState<IqcItem[]>([]);
   const [sqlQuery, setSqlQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -186,6 +189,10 @@ export function useIqcData() {
         );
       }
 
+      // 불합격은 자동이동이 아니라 「IQC불합격자재 불량창고입고」 화면에서 수동 입고한다(2026-09-11 06번)
+      if (result === 'FAIL') {
+        toast(t('material.iqc.failReceiveHint', '불합격 LOT은 입하재고에 남아 있습니다. 자재관리 > IQC불합격자재 불량창고입고 화면에서 불량창고에 입고하세요.'), { icon: '⚠️', duration: 8000 });
+      }
       setIsIqcModalOpen(false);
       setSelectedItem(null);
       setResultForm(INITIAL_RESULT_FORM);

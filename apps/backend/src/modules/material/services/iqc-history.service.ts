@@ -42,6 +42,11 @@ export interface PendingArrivalsResult {
   debugSql: DebugSql;
 }
 
+/** IQC 불합격 재고 처리 모드 설정 키 — AUTO: FAIL 저장 시 불량창고 자동이동 / MANUAL(기본): 불량창고 수동입고 화면에서 처리 */
+export const IQC_FAIL_DEFECT_MOVE_MODE_KEY = 'IQC_FAIL_DEFECT_MOVE_MODE';
+/** 불량창고 수동입고 트랜잭션 REF_TYPE */
+export const IQC_DEFECT_RECEIVE_REF_TYPE = 'IQC_DEFECT_RECEIVE';
+
 @Injectable()
 export class IqcHistoryService {
   constructor(
@@ -255,11 +260,18 @@ export class IqcHistoryService {
     const lotTenantWhere = this.tenantWhere(lot.company, lot.plant);
 
     const destructive = this.parseDestructive(dto.details);
+    // 입하단위 경로(createArrivalResult)와 같은 규칙: 파괴/전수 불량 합류 + 불량코드 수량 귀속 (2026-09-09 결함 03 동일 유형)
+    const itemDefectCounts = this.countFailByInspItem(dto.details);
+    for (const [seq, qty] of Object.entries(destructive.defects)) {
+      itemDefectCounts[Number(seq)] = (itemDefectCounts[Number(seq)] ?? 0) + qty;
+    }
+    // 단건 DTO(CreateIqcResultDto)에는 불량코드 수량 입력이 없어 귀속 대상은 0 — 파괴/전수 불량 합류만 적용된다
+    const singleDefectQtyTotal = 0;
     const aqlPolicy = await this.aqlService.resolveIqcPolicyByItem({
       itemCode: lot.itemCode,
       vendorCode: lot.vendor ?? null,
       lotQty: Math.max(1, Number(lot.initQty) || 1),
-      itemDefectCounts: this.countFailByInspItem(dto.details),
+      itemDefectCounts: this.aqlService.attributeDefectQtyToFailedItems(itemDefectCounts, singleDefectQtyTotal),
       itemInspectedCounts: destructive.inspected,
       fallbackDefectCounts: { critical: 0, major: 0, minor: 0 },
       company: lot.company,
@@ -515,12 +527,15 @@ export class IqcHistoryService {
       itemDefectCounts[Number(seq)] = (itemDefectCounts[Number(seq)] ?? 0) + qty;
     }
     this.assertDefectCodesHaveFailedInspection(dto, itemDefectCounts);
+    // 불량코드 수량을 FAIL 항목의 불량수에 귀속 — 시리얼 1개가 대량 LOT 인 경우 시리얼 FAIL 1건 ≠ 불량 1개(2026-09-09 결함 03)
+    const defectQtyTotal = (dto.defects ?? []).reduce((sum, defect) => sum + this.toNonNegativeInt(defect.qty), 0);
+    const attributedDefectCounts = this.aqlService.attributeDefectQtyToFailedItems(itemDefectCounts, defectQtyTotal);
     // 검사항목별(각 항목 검사수준/등급/AQL) 판정. 등급 설정 항목이 없으면 내부에서 품목 단일로 폴백.
     const aqlPolicy = await this.aqlService.resolveIqcPolicyByItem({
       itemCode: dto.itemCode,
       vendorCode,
       lotQty,
-      itemDefectCounts,
+      itemDefectCounts: attributedDefectCounts,
       itemInspectedCounts: destructive.inspected,
       fallbackDefectCounts: defectCounts,
       fallbackDefectCodes: dto.defects,
@@ -803,22 +818,55 @@ export class IqcHistoryService {
     return Number.isFinite(n) && n > 0 ? n : 0;
   }
 
+  /**
+   * IQC FAIL 후처리.
+   * - MANUAL(기본): 재고를 입하재고에 그대로 두고 「IQC불합격자재 불량창고입고」 화면에서 사용자가 입고한다(2026-09-11 06번).
+   * - AUTO: 종전처럼 FAIL 저장 시 불량창고로 자동이동(REF_TYPE=IQC_FAIL).
+   */
   private async handleIqcFail(
     matUid: string,
     itemCode: string,
     company?: string | null,
     plant?: string | null,
   ) {
+    const mode = (await this.sysConfigService.getValue(IQC_FAIL_DEFECT_MOVE_MODE_KEY, company ?? undefined, plant ?? undefined)) ?? 'MANUAL';
+    if (String(mode).toUpperCase() !== 'AUTO') return;
     const defectWarehouse = await this.warehouseRepository.findOne({
       where: { warehouseType: 'DEFECT', useYn: 'Y', ...this.tenantWhere(company, plant) },
     });
     if (!defectWarehouse) return;
     this.assertSameTenant('불용창고', { company, plant }, defectWarehouse);
+    await this.moveLotToDefectWarehouse({
+      matUid, itemCode, defectWarehouseCode: defectWarehouse.warehouseCode,
+      refType: 'IQC_FAIL', remark: 'IQC 불합격 자동이동 (불용창고)', workerId: null, company, plant,
+    });
+  }
+
+  /**
+   * LOT 재고(창고재고 또는 입하재고)를 불량창고로 이동한다 — 자동이동(IQC_FAIL)·수동입고(IQC_DEFECT_RECEIVE) 공용.
+   * @returns 생성된 STOCK_TRANSACTIONS.TRANS_NO (이동할 재고가 없으면 null)
+   */
+  async moveLotToDefectWarehouse(p: {
+    matUid: string;
+    itemCode: string;
+    defectWarehouseCode: string;
+    refType: string;
+    remark: string;
+    workerId?: string | null;
+    company?: string | null;
+    plant?: string | null;
+  }): Promise<string | null> {
+    const { matUid, itemCode, company, plant } = p;
+    const defectWarehouse = await this.warehouseRepository.findOne({
+      where: { warehouseCode: p.defectWarehouseCode, ...this.tenantWhere(company, plant) },
+    });
+    if (!defectWarehouse) throw new NotFoundException(`불량창고를 찾을 수 없습니다: ${p.defectWarehouseCode}`);
+    this.assertSameTenant('불용창고', { company, plant }, defectWarehouse);
 
     const stock = await this.matStockRepository.findOne({
       where: { matUid, itemCode, ...this.tenantWhere(company, plant) },
     });
-    if (stock && stock.qty > 0) {
+    if (stock && stock.qty > 0 && stock.warehouseCode !== defectWarehouse.warehouseCode) {
       this.assertSameTenant('IQC 대상 재고', { company, plant }, stock);
       return this.moveQtyToDefectWarehouse({
         qty: stock.qty,
@@ -826,6 +874,9 @@ export class IqcHistoryService {
         defectWarehouseCode: defectWarehouse.warehouseCode,
         itemCode,
         matUid,
+        refType: p.refType,
+        remark: p.remark,
+        workerId: p.workerId ?? null,
         company,
         plant,
         clearSource: async (queryRunner) => {
@@ -841,7 +892,7 @@ export class IqcHistoryService {
     const arrivalStock = await this.dataSource.getRepository(MatArrivalStock).findOne({
       where: { matUid, itemCode, ...this.tenantWhere(company, plant) },
     });
-    if (!arrivalStock || arrivalStock.qty <= 0) return;
+    if (!arrivalStock || arrivalStock.qty <= 0) return null;
     this.assertSameTenant('IQC 대상 입하재고', { company, plant }, arrivalStock);
 
     return this.moveQtyToDefectWarehouse({
@@ -850,6 +901,9 @@ export class IqcHistoryService {
       defectWarehouseCode: defectWarehouse.warehouseCode,
       itemCode,
       matUid,
+      refType: p.refType,
+      remark: p.remark,
+      workerId: p.workerId ?? null,
       company,
       plant,
       clearSource: async (queryRunner) => {
@@ -872,10 +926,13 @@ export class IqcHistoryService {
     defectWarehouseCode: string;
     itemCode: string;
     matUid: string;
+    refType: string;
+    remark: string;
+    workerId?: string | null;
     company?: string | null;
     plant?: string | null;
     clearSource: (queryRunner: QueryRunner) => Promise<void>;
-  }) {
+  }): Promise<string> {
     return this.tx.run(async (queryRunner) => {
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
       await p.clearSource(queryRunner);
@@ -913,16 +970,20 @@ export class IqcHistoryService {
       await queryRunner.manager.save(StockTransaction, {
         transNo,
         transType: 'MAT_MOVE',
+        transDate: new Date(),
         fromWarehouseId: p.fromWarehouseId,
         toWarehouseId: p.defectWarehouseCode,
         itemCode: p.itemCode,
         matUid: p.matUid,
         qty: p.qty,
-        remark: 'IQC 불합격 자동이동 (불용창고)',
-        refType: 'IQC_FAIL',
+        remark: p.remark,
+        refType: p.refType,
+        workerId: p.workerId ?? null,
+        status: 'DONE',
         company: p.company,
         plant: p.plant,
       });
+      return transNo;
     });
   }
 
@@ -1159,7 +1220,7 @@ export class IqcHistoryService {
       where: {
         matUid,
         itemCode,
-        refType: 'IQC_FAIL',
+        refType: In(['IQC_FAIL', IQC_DEFECT_RECEIVE_REF_TYPE]),
         cancelRefId: IsNull(),
         status: 'DONE',
         ...this.tenantWhere(company, plant),

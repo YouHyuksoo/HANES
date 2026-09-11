@@ -78,6 +78,8 @@ describe('IqcHistoryService cancel policy', () => {
       minorRule: { aqlCode: 'AQL-II-2.5', aqlValue: 2.5, codeLetter: 'A', sampleSize: 5, acceptQty: 0, rejectQty: 1 },
       judgeReason: 'AQL 기준 합격',
     });
+    // 불량수량 귀속 규칙은 AqlService 단위 테스트에서 검증하고, 여기서는 통과(pass-through)시킨다
+    mockAqlService.attributeDefectQtyToFailedItems.mockImplementation((counts) => counts);
     mockAqlService.updateVendorInspectionModeAfterLot.mockResolvedValue(null);
     mockAqlService.revertVendorInspectionModeForCanceledLot.mockResolvedValue(null);
 
@@ -337,6 +339,21 @@ describe('IqcHistoryService cancel policy', () => {
         sql: 'SELECT ... FROM MAT_LOTS lot WHERE lot.IQC_STATUS = ?',
         parameters: { iqcStatus: 'PENDING', company: 'HANES', plant: 'P01' },
       });
+    });
+  });
+
+  describe('createArrivalResult defect-qty attribution (defect 03, 2026-09-09)', () => {
+    it('passes the entered defect-code qty total into the AQL attribution before judging', async () => {
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'S-1', itemCode: 'ITEM-001', initQty: 8400, iqcStatus: 'PENDING', company: 'HANES', plant: 'P01', vendor: 'V1' } as any,
+      ]);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Terminal', unit: 'EA' } as any);
+      const details = JSON.stringify({ serials: [{ matUid: 'S-1', result: 'FAIL', items: [{ itemId: 'ITEM-001::1', judge: 'FAIL' }] }] });
+      await target.createArrivalResult(
+        { arrivalNo: 'ARR-1', itemCode: 'ITEM-001', result: 'FAIL', details, defects: [{ defectCode: 'D1', qty: 6 }] } as any,
+        'HANES', 'P01',
+      ).catch(() => undefined);
+      expect(mockAqlService.attributeDefectQtyToFailedItems).toHaveBeenCalledWith({ 1: 1 }, 6);
     });
   });
 
@@ -855,7 +872,19 @@ describe('IqcHistoryService cancel policy', () => {
     expect(result.certFilePath).toBe('C:/Project/HANES/apps/backend/uploads/iqc-certs/cert.pdf');
   });
 
+  it('MANUAL(기본) 모드에서는 FAIL 저장 시 재고를 이동하지 않는다 — 불량창고 수동입고 화면에서 처리(2026-09-11 06번)', async () => {
+    mockSysConfigService.getValue.mockResolvedValue(null);
+    mockMatLotRepo.find.mockResolvedValue([
+      { matUid: 'S-1', itemCode: 'ITEM-001', initQty: 10, iqcStatus: 'PENDING', company: 'HANES', plant: 'P01', vendor: 'V1' } as any,
+    ]);
+    mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as any);
+    mockAqlService.resolveIqcPolicyByItem.mockResolvedValue({ result: 'FAIL', sampleQty: 0, judgeReason: 'x', itemResults: [], majorRule: null, minorRule: null } as any);
+    await target.createArrivalResult({ arrivalNo: 'ARR-M', itemCode: 'ITEM-001', result: 'FAIL', defects: [{ defectCode: 'D', qty: 1 }] } as any, 'HANES', 'P01').catch(() => undefined);
+    expect(mockWarehouseRepo.findOne).not.toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ warehouseType: 'DEFECT' }) }));
+  });
+
   it('moves failed IQC stock through TransactionService', async () => {
+    mockSysConfigService.getValue.mockResolvedValue('AUTO'); // 자동이동 모드에서만 이동(기본 MANUAL은 수동입고)
     const lot = {
       matUid: 'MAT-001',
       itemCode: 'ITEM-001',
@@ -923,6 +952,7 @@ describe('IqcHistoryService cancel policy', () => {
   });
 
   it('moves failed IQC arrival stock to defect warehouse when MAT_STOCKS is empty', async () => {
+    mockSysConfigService.getValue.mockResolvedValue('AUTO'); // 자동이동 모드에서만 이동(기본 MANUAL은 수동입고)
     const lot = {
       matUid: 'MAT-001',
       itemCode: 'ITEM-001',

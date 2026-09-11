@@ -33,6 +33,7 @@ import {
   IssueJobOrderFromPlanDto,
 } from '../dto/prod-plan.dto';
 import { parseDateStart } from '../../../shared/date.util';
+import { ceilQty, mulQty } from '@harness/shared';
 
 @Injectable()
 export class ProdPlanService {
@@ -450,7 +451,7 @@ export class ProdPlanService {
       const childRoutingCode = await this.resolveRoutingCodeByItem(bom.childItemCode, company, plant);
       const childProcessCode = await this.resolveFirstProcessCode(childRoutingCode, company, plant);
       const childOrderNo = await this.numbering.nextJobOrderNo(queryRunner);
-      const childQty = Math.ceil(parent.planQty * Number(bom.qtyPer || 1));
+      const childQty = ceilQty(mulQty(parent.planQty, Number(bom.qtyPer || 1)));
 
       const child = await queryRunner.manager.save(
         queryRunner.manager.create(JobOrder, {

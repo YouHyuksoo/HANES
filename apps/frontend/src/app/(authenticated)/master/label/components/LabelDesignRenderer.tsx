@@ -121,6 +121,18 @@ function renderElementContent(element: LabelElement, data?: Record<string, unkno
   }
 
   if (element.type === "barcode") {
+    // 실데이터(data) 렌더에서 값이 비면 절대 "SAMPLE"을 인코딩하지 않는다 — 스캔 불가 라벨이 실물에 붙는 사고 방지.
+    if (!value && data) {
+      return (
+        <div
+          data-label-barcode-empty="true"
+          className="w-full h-full flex items-center justify-center border border-dashed border-red-500 text-red-600 text-[8px] font-bold"
+          style={placeholderStyle}
+        >
+          NO DATA{element.sourceField ? `:${element.sourceField}` : ""}
+        </div>
+      );
+    }
     return <BarcodeImage value={value || "SAMPLE"} format={element.barcodeFormat ?? "qrcode"} />;
   }
 

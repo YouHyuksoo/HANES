@@ -13,6 +13,7 @@ import { useApiQuery, useInvalidateQueries } from '@/hooks/useApi';
 import { api } from '@/services/api';
 import type { IssueRequestStatus } from '@/components/material';
 import type { ProductionJobOrderRow } from '@harness/shared';
+import { isJobOrderFinished } from '@harness/shared';
 
 /** 요청 품목 아이템 */
 export interface RequestItem {
@@ -120,7 +121,9 @@ const filterJobOrderTree = (
     }
 
     if (filteredChildren.length > 0) {
-      return options.includeAncestors ? [{ ...node, children: filteredChildren }] : filteredChildren;
+      // 취소/완료된 조상은 필터를 통과한 자식이 있어도 표시하지 않는다(2026-09-09 결함 09: 취소 지시가 '대기' 필터에 계속 노출).
+      const ancestorVisible = options.includeAncestors && !isJobOrderFinished(String(node.status ?? ''));
+      return ancestorVisible ? [{ ...node, children: filteredChildren }] : filteredChildren;
     }
 
     return [];
@@ -266,7 +269,9 @@ export function useIssueRequestData() {
         || normalizeJobOrderSearchText(itemName).includes(modelFilter);
       const matchesStatus = !woStatus || String(row.status) === woStatus;
       const matchesItemType = !woItemType || row.part?.itemType === woItemType;
-      return matchesOrderNo && matchesModel && matchesStatus && matchesItemType;
+      // 출고요청 대상은 품목지시(ITEM)만 — 공정지시(OPERATION)에 중복 요청되던 결함(2026-09-09 11번)
+      const isItemOrder = String(row.orderKind ?? 'ITEM').toUpperCase() !== 'OPERATION';
+      return matchesOrderNo && matchesModel && matchesStatus && matchesItemType && isItemOrder;
     }, { includeAncestors: !woItemType });
 
     return flattenJobOrderTree(filteredTree);

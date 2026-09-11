@@ -13,7 +13,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, FindOptionsWhere, LessThanOrEqual, MoreThanOrEqual, Between } from 'typeorm';
-import { isProductionIssueType, ISSUE_REQUEST_PENDING_STATUSES, ISSUE_REQUEST_PENDING_FILTER, deriveIssueRequestStatusFromItems, MAT_LOT_STATUS } from '@harness/shared';
+import { isProductionIssueType, ISSUE_REQUEST_PENDING_STATUSES, ISSUE_REQUEST_PENDING_FILTER, deriveIssueRequestStatusFromItems, MAT_LOT_STATUS, mulQty, isJobOrderFinished } from '@harness/shared';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
@@ -338,7 +338,7 @@ export class IssueRequestService {
     return rawBomRows
       .map((bom) => {
         const part = partMap.get(bom.childItemCode);
-        const bomReqQty = this.toNumber(bom.qtyPer) * this.toNumber(jobOrder.planQty);
+        const bomReqQty = mulQty(this.toNumber(bom.qtyPer), this.toNumber(jobOrder.planQty));
         const prevIssueQty = prevIssueMap.get(bom.childItemCode) ?? 0;
         const floorStockQty = floorStockMap.get(bom.childItemCode) ?? 0;
         const requestQty = Math.max(Math.ceil(bomReqQty - prevIssueQty - floorStockQty), 0);
@@ -380,6 +380,27 @@ export class IssueRequestService {
    * 중복 출고요청 가드: 동일 작업지시의 미완료(REQUESTED/APPROVED/PARTIAL) 요청에
    * 같은 품목이 이미 있으면 중복 생성을 차단한다. 작업지시 없는 수동요청은 제외.
    */
+  /**
+   * 출고요청은 품목지시(ORDER_KIND=ITEM)에만 등록한다.
+   * 공정지시(OPERATION)는 품목지시 아래 공정별로 자동 생성되는 하위 지시라 여기에 또 요청하면 소요량이 2배로 잡힌다
+   * (2026-09-09 실측: 작업지시 8세트에 출고요청 12건, 6건 중복).
+   */
+  private async assertItemOrderForRequest(orderNo: string | undefined, company?: string, plant?: string) {
+    if (!orderNo) return;
+    const jobOrder = await this.jobOrderRepository.findOne({
+      where: { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      select: ['orderNo', 'orderKind', 'parentOrderNo', 'status'],
+    });
+    if (jobOrder && isJobOrderFinished(String(jobOrder.status ?? ''))) {
+      throw new BadRequestException(`완료·취소된 작업지시(${orderNo})에는 출고요청을 등록할 수 없습니다.`);
+    }
+    if (jobOrder && String(jobOrder.orderKind ?? 'ITEM').toUpperCase() === 'OPERATION') {
+      throw new BadRequestException(
+        `공정지시(${orderNo})에는 출고요청을 등록할 수 없습니다. 상위 품목지시${jobOrder.parentOrderNo ? `(${jobOrder.parentOrderNo})` : ''}를 선택하세요.`,
+      );
+    }
+  }
+
   private async assertNoDuplicateActiveRequest(dto: CreateIssueRequestDto, company?: string, plant?: string) {
     if (!dto.orderNo) return;
     const tenantWhere = this.tenantWhere(company, plant);
@@ -405,6 +426,7 @@ export class IssueRequestService {
 
   /** 출고요청 생성 (헤더 + 품목 일괄 저장) */
   async create(dto: CreateIssueRequestDto, company?: string, plant?: string) {
+    await this.assertItemOrderForRequest(dto.orderNo, company, plant);
     await this.assertNoDuplicateActiveRequest(dto, company, plant);
     const requestNo = await this.tx.run(async (queryRunner) => {
       const requestNo = await this.generateRequestNo(queryRunner);

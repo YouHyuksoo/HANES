@@ -22,6 +22,7 @@ import { WipMatStock } from '../../../entities/wip-mat-stock.entity';
 import { WipMatTransaction } from '../../../entities/wip-mat-transaction.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { parseCsvList } from '../../../common/utils/csv-list.util';
+import { ltQty, roundQty } from '@harness/shared';
 
 /** 공정재고 가산 파라미터 */
 export interface AddWipStockParams {
@@ -207,9 +208,10 @@ export class WipMatStockService {
     });
 
     const ordered = this.orderLotsForDeduct(rows, p.scannedMatUids);
-    const totalAvailable = ordered.reduce((sum, r) => sum + (r.availableQty ?? 0), 0);
+    const totalAvailable = roundQty(ordered.reduce((sum, r) => sum + (r.availableQty ?? 0), 0));
 
-    if (totalAvailable < p.qty && p.stockPolicy === 'BLOCK') {
+    // 부동소수점 오차 흡수 비교(ltQty) — 가용 582.9 vs 요청 582.9000000000001 을 부족으로 보지 않는다(17번)
+    if (ltQty(totalAvailable, p.qty) && p.stockPolicy === 'BLOCK') {
       throw new BadRequestException(
         `공정재고 부족: 자재 준비 출고 필요 (${p.itemCode})`,
       );
@@ -231,8 +233,9 @@ export class WipMatStockService {
           itemCode: p.itemCode, matUid: row.matUid,
         },
         {
-          qty: (row.qty ?? 0) - take,
-          availableQty: avail - take,
+          // 차감 결과도 반올림해 저장 — 0.5000000000000222 같은 잔차가 DB 에 누적되던 것 방지(17번)
+          qty: roundQty((row.qty ?? 0) - take),
+          availableQty: roundQty(avail - take),
         },
       );
 
@@ -263,8 +266,8 @@ export class WipMatStockService {
       remaining -= take;
     }
 
-    if (remaining > 0 && p.stockPolicy === 'WARN') {
-      const msg = `공정재고 부족(가용분만 차감): ${p.itemCode} 부족수량 ${remaining}`;
+    if (roundQty(remaining) > 0 && p.stockPolicy === 'WARN') {
+      const msg = `공정재고 부족(가용분만 차감): ${p.itemCode} 부족수량 ${roundQty(remaining)}`;
       this.logger.warn(msg);
       if (p.warnings) p.warnings.push(msg);
     }
@@ -565,8 +568,8 @@ export class WipMatStockService {
     const existing = await manager.findOne(WipMatStock, { where: key });
     if (existing) {
       await manager.update(WipMatStock, key, {
-        qty: (existing.qty ?? 0) + p.addQty,
-        availableQty: (existing.availableQty ?? 0) + p.addQty,
+        qty: roundQty((existing.qty ?? 0) + p.addQty),
+        availableQty: roundQty((existing.availableQty ?? 0) + p.addQty),
       });
     } else {
       await manager.save(
@@ -600,8 +603,8 @@ export class WipMatStockService {
       );
       return;
     }
-    const nextQty = Math.max(0, (existing.qty ?? 0) - p.deductQty);
-    const nextAvail = Math.max(0, (existing.availableQty ?? 0) - p.deductQty);
+    const nextQty = roundQty(Math.max(0, (existing.qty ?? 0) - p.deductQty));
+    const nextAvail = roundQty(Math.max(0, (existing.availableQty ?? 0) - p.deductQty));
     await manager.update(WipMatStock, key, { qty: nextQty, availableQty: nextAvail });
   }
 

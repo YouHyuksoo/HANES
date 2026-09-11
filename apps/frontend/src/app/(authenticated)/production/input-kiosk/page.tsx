@@ -80,6 +80,8 @@ export default function InputKioskPage() {
   const [equips, setEquips] = useState<EquipOption[]>([]);
   const [historyKey, setHistoryKey] = useState(0);
   const [firstInspectDone, setFirstInspectDone] = useState(false);
+  /** 공정별 자주검사 항목 수(초/중/종물). -1 = 미조회 */
+  const [selfInspectItemCounts, setSelfInspectItemCounts] = useState<{ FIRST: number; MID: number; LAST: number }>({ FIRST: -1, MID: -1, LAST: -1 });
   const [lastInspectDone, setLastInspectDone] = useState(false);
   const [hasLastItems, setHasLastItems] = useState(false);
 
@@ -254,32 +256,44 @@ export default function InputKioskPage() {
         `/production/self-inspect/results/${encodeURIComponent(selectedJobOrder.orderNo)}`,
       );
       const rows: SelfInspectRow[] = Array.isArray(res.data?.data) ? res.data.data : [];
-      setFirstInspectDone(latestInspectBatchPassed(rows, 'FIRST'));
-      setMidInspectDone(latestInspectBatchPassed(rows, 'MID'));
-      setLastInspectDone(latestInspectBatchPassed(rows, 'LAST'));
+      // 해당 공정에 항목이 없는 시점(초/중/종물)은 '완료'로 본다 — 항목 없는 공정에서 초물검사가 비어 실적이 막히던 결함(2026-09-09 14번).
+      // 서버 게이트(assertSelfInspectGates)도 항목 없는 공정은 검사하지 않으므로 화면과 서버가 같은 규칙이다.
+      setFirstInspectDone(selfInspectItemCounts.FIRST === 0 || latestInspectBatchPassed(rows, 'FIRST'));
+      setMidInspectDone(selfInspectItemCounts.MID === 0 || latestInspectBatchPassed(rows, 'MID'));
+      setLastInspectDone(selfInspectItemCounts.LAST === 0 || latestInspectBatchPassed(rows, 'LAST'));
       setHasPendingDelegate(rows.some((row: SelfInspectRow) => row.status === 'PENDING' && row.timing !== 'FIRST'));
     } catch {
       setFirstInspectDone(false);
       setMidInspectDone(false);
       setLastInspectDone(false);
     }
-  }, [selectedJobOrder?.orderNo, setHasPendingDelegate, setMidInspectDone]);
+  }, [selectedJobOrder?.orderNo, selfInspectItemCounts, setHasPendingDelegate, setMidInspectDone]);
 
   useEffect(() => { void refreshSelfInspectStatus(); }, [refreshSelfInspectStatus]);
 
+  // 공정별 자주검사 항목 수(초/중/종물) — 없는 시점은 게이트를 건너뛰고, 처음 확인 시 안내한다
   useEffect(() => {
     if (!selectedJobOrder) {
       setHasLastItems(false);
+      setSelfInspectItemCounts({ FIRST: -1, MID: -1, LAST: -1 });
       return;
     }
     const processCode = selectedEquip?.processCode ?? selectedJobOrder.processCode ?? '';
-    api.get('/production/self-inspect/items', {
-      params: { processCode, timing: 'LAST' },
-    }).then((res) => {
-      const items = Array.isArray(res.data?.data) ? res.data.data : [];
-      setHasLastItems(items.length > 0);
-    }).catch(() => setHasLastItems(false));
-  }, [selectedJobOrder, selectedEquip]);
+    let cancelled = false;
+    Promise.all((['FIRST', 'MID', 'LAST'] as const).map((timing) =>
+      api.get('/production/self-inspect/items', { params: { processCode, timing } })
+        .then((res) => (Array.isArray(res.data?.data) ? res.data.data.length : 0))
+        .catch(() => 0),
+    )).then(([first, mid, last]) => {
+      if (cancelled) return;
+      setSelfInspectItemCounts({ FIRST: first, MID: mid, LAST: last });
+      setHasLastItems(last > 0);
+      if (first === 0) {
+        toast(t('kiosk.selfInspect.noFirstItemsSkip', '이 공정({{processCode}})에는 초물 자주검사 항목이 없어 초물검사를 건너뜁니다. 필요하면 자주검사 마스터를 등록하세요.', { processCode }), { icon: '⚠️', duration: 6000 });
+      }
+    });
+    return () => { cancelled = true; };
+  }, [selectedJobOrder, selectedEquip, t]);
 
   useEffect(() => {
     if (!selectedJobOrder?.orderNo || firstInspectDone) return;
@@ -365,13 +379,13 @@ export default function InputKioskPage() {
 
   // 실적 저장 후 처리 — 서버 기준 진행수량 재동기화 + 초물 자주검사 자동 트리거
   const handleSaved = useCallback(() => {
-    // 초물 전체 PASS 전까지는 시생산이며, 실적 저장 후 초물검사를 계속 유도한다.
-    if (!firstInspectDone) {
+    // 초물 전체 PASS 전까지는 시생산이며, 실적 저장 후 초물검사를 계속 유도한다(항목 없는 공정은 제외).
+    if (!firstInspectDone && selfInspectItemCounts.FIRST !== 0) {
       setSelfInspectTiming('FIRST');
     }
     refreshProgress();
     setHistoryKey(k => k + 1);
-  }, [firstInspectDone, refreshProgress]);
+  }, [firstInspectDone, refreshProgress, selfInspectItemCounts.FIRST]);
 
   // 실적 저장 성공 시: 라우팅 발행공정이면 백엔드가 발행한 SFG 라벨을 조회해 Print Agent로 자동 출력.
   const sgPrinterRef = useRef<SgLabelPrintHandle>(null);
@@ -399,7 +413,7 @@ export default function InputKioskPage() {
   const progressPct  = selectedJobOrder?.planQty
     ? (savedResultCount / selectedJobOrder.planQty) * 100
     : 0;
-  const isMidBlock = progressPct >= midBlockPct && !midInspectDone;
+  const isMidBlock = progressPct >= midBlockPct && !midInspectDone && selfInspectItemCounts.MID !== 0;
   const isLastBlock = Boolean(
     hasLastItems
     && selectedJobOrder?.planQty
