@@ -9,6 +9,15 @@ jobs:
   deploy:
     runs-on: self-hosted
 
+    # self-hosted 러너는 job 이 끝나면 그 job 이 띄운 프로세스 트리를 정리한다.
+    # PM2 데몬은 첫 pm2 호출 때 생성되므로, 그 시점부터 추적에서 빼지 않으면
+    # job 종료와 함께 데몬이 죽는다. 데몬이 죽으면 백엔드가 같이 죽고
+    # 프론트·프록시는 포트만 쥔 고아로 남아 TCP 는 붙는데 HTTP 응답이 없는 상태가 된다.
+    # (2026-09-11~12 반복 장애의 원인. 배포 직후엔 정상, 몇 분 뒤 무응답.)
+    # step 단위가 아니라 job 전체에 걸어야 첫 pm2 호출부터 보호된다.
+    env:
+      RUNNER_TRACKING_ID: ''
+
     defaults:
       run:
         working-directory: C:\Project\HANES
@@ -109,7 +118,7 @@ jobs:
           pm2 delete hanes-proxy 2>&1 | Out-Null
           $ErrorActionPreference = 'Stop'
           Set-Location C:\Project\HANES
-          $env:RUNNER_TRACKING_ID = ""
+          # RUNNER_TRACKING_ID 는 job 레벨 env 에서 이미 비워 둔다(파일 상단 주석 참조).
           pm2 start ecosystem.config.js --update-env
           pm2 save
           Start-Sleep 8

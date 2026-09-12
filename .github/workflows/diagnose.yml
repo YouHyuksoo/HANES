@@ -17,6 +17,11 @@ jobs:
   diagnose:
     runs-on: self-hosted
 
+    # 진단도 pm2 를 부른다. 여기서 PM2 데몬이 추적 대상으로 새로 생성되면
+    # 이 job 이 끝날 때 데몬이 죽어, 진단이 멀쩡한 서버를 망가뜨린다. deploy 와 동일하게 비운다.
+    env:
+      RUNNER_TRACKING_ID: ''
+
     steps:
       - name: Ports and listeners
         run: |
