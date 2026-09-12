@@ -103,40 +103,52 @@ jobs:
         if: inputs.analyze_error_log
         run: |
           $ErrorActionPreference = 'Stop'
-          $path = "C:\Project\HANES\logs\backend-error.log"
-          if (!(Test-Path $path)) { Write-Host "no backend-error.log"; exit 0 }
-          $fi = Get-Item $path
-          Write-Host "file  : $([math]::Round($fi.Length/1MB, 1)) MB, last write $($fi.LastWriteTime)"
+          # 로그 교체 후에는 원본이 backend-error__<시각>.log 로 옮겨간다. 큰 것부터 본다.
+          $files = Get-ChildItem "C:\Project\HANES\logs\backend-error*.log*" -ErrorAction SilentlyContinue |
+                   Sort-Object Length -Descending | Select-Object -First 2
+          if (-not $files) { Write-Host "no backend error log"; exit 0 }
 
-          Write-Host "`n--- first 12 lines ---"
-          Get-Content $path -TotalCount 12
-          Write-Host "`n--- last 40 lines ---"
-          Get-Content $path -Tail 40
+          foreach ($f in $files) {
+            Write-Host "`n================ $($f.Name)  $([math]::Round($f.Length/1MB,1)) MB  last write $($f.LastWriteTime) ================"
+            if ($f.Length -eq 0) { Write-Host "(empty)"; continue }
 
-          Write-Host "`n--- scanning ---"
-          $sig = @{}
-          $byHour = @{}
-          $total = 0
-          $reader = [System.IO.StreamReader]::new($path)
-          try {
-            while ($null -ne ($line = $reader.ReadLine())) {
-              $total++
-              if ($line -match '^(\d{4}-\d{2}-\d{2} \d{2}):') { $byHour[$matches[1]] = 1 + $byHour[$matches[1]] }
-              # 숫자와 식별자는 뭉쳐서 같은 유형이 한 줄로 모이게 한다.
-              if ($line -match '(ORA-\d{5}|[A-Za-z]+(?:Error|Exception)|ECONNREFUSED|ETIMEDOUT|EADDRINUSE|ENOENT)') {
-                $key = $matches[1]
-                $sig[$key] = 1 + $sig[$key]
+            $sig = @{}      # ORA 코드·예외 클래스
+            $origin = @{}   # 어느 서비스/컨트롤러에서 났는지
+            $byHour = @{}
+            $total = 0
+
+            # 백엔드가 쓰는 중인 파일이라 공유 모드로 열어야 한다. 교체본이면 .gz 일 수 있다.
+            $fs = [System.IO.File]::Open($f.FullName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+            $stream = if ($f.Name.EndsWith('.gz')) {
+              [System.IO.Compression.GZipStream]::new($fs, [System.IO.Compression.CompressionMode]::Decompress)
+            } else { $fs }
+            $reader = [System.IO.StreamReader]::new($stream)
+            try {
+              while ($null -ne ($line = $reader.ReadLine())) {
+                $total++
+                if ($line -match '^(\d{4}-\d{2}-\d{2} \d{2}):') { $byHour[$matches[1]] = 1 + $byHour[$matches[1]] }
+                if ($line -match '(ORA-\d{5}|[A-Za-z]+(?:Error|Exception)|ECONNREFUSED|ETIMEDOUT|EADDRINUSE|ENOENT)') {
+                  $sig[$matches[1]] = 1 + $sig[$matches[1]]
+                }
+                # 스택에서 우리 코드 지점만 추린다. node_modules 프레임은 어느 에러나 비슷해 의미가 없다.
+                if ($line -match 'at ([A-Za-z]+(?:Service|Controller|Filter))\.([A-Za-z]+)') {
+                  $k = "$($matches[1]).$($matches[2])"
+                  $origin[$k] = 1 + $origin[$k]
+                }
               }
-            }
-          } finally { $reader.Close() }
+            } finally { $reader.Close() }
 
-          Write-Host "total lines : $total"
-          Write-Host "`n--- top error signatures ---"
-          $sig.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 25 |
-            ForEach-Object { '{0,10}  {1}' -f $_.Value, $_.Key }
-          Write-Host "`n--- busiest hours (lines written) ---"
-          $byHour.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 15 |
-            ForEach-Object { '{0,10}  {1}' -f $_.Value, $_.Key }
+            Write-Host "total lines : $total"
+            Write-Host "`n-- error signatures --"
+            $sig.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 15 |
+              ForEach-Object { '{0,10}  {1}' -f $_.Value, $_.Key }
+            Write-Host "`n-- where it came from --"
+            $origin.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 15 |
+              ForEach-Object { '{0,10}  {1}' -f $_.Value, $_.Key }
+            Write-Host "`n-- busiest hours --"
+            $byHour.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 10 |
+              ForEach-Object { '{0,10}  {1}' -f $_.Value, $_.Key }
+          }
         shell: powershell
 
       - name: System resources

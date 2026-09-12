@@ -3,6 +3,12 @@ name: Deploy HANES MES to Windows Server
 on:
   push:
     branches: [main]
+    # 진단 워크플로만 고쳤는데 배포가 돌면 서비스가 괜히 한 번 끊긴다.
+    # 운영 코드가 아닌 파일은 배포를 트리거하지 않는다.
+    paths-ignore:
+      - '.github/workflows/diagnose.yml'
+      - 'docs/**'
+      - '**/*.md'
   workflow_dispatch:
 
 jobs:
