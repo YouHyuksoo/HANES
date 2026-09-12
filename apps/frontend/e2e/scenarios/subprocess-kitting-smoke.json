@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "subprocess-kitting-smoke",
+  "title": "서브공정 키팅 — 화면 진입 스모크 (읽기 전용)",
+  "startRoute": "/production/subprocess-kitting",
+  "dataPolicy": "readonly",
+  "reportSlug": "subprocess-kitting-smoke",
+  "preconditions": [
+    "dev 서버 3002 / 백엔드 3003 기동",
+    "e2e 세션(storageState)이 유효할 것",
+    "데이터를 전혀 변경하지 않는다 — 조회와 모달 열고 닫기만 한다"
+  ],
+  "onFailure": "abort",
+  "defaultTimeoutMs": 10000,
+  "settleMs": 500,
+  "vars": {},
+  "steps": [
+    {
+      "action": "goto",
+      "value": "/production/subprocess-kitting",
+      "note": "서브공정 키팅 화면 진입",
+      "expect": {
+        "type": "API_CALL",
+        "method": "GET",
+        "pathIncludes": "/equipment/equips",
+        "status": 200
+      }
+    },
+    {
+      "action": "waitForText",
+      "value": "이전 공정 SFG 스캔",
+      "note": "화면 골격이 그려졌는지 확인"
+    },
+    {
+      "action": "screenshot",
+      "as": "01-initial.png",
+      "label": "01. 진입 직후",
+      "scope": "content"
+    },
+    {
+      "action": "click",
+      "target": { "role": "button", "name": "설비를 선택하세요" },
+      "note": "설비 선택 모달 열기"
+    },
+    {
+      "action": "screenshot",
+      "as": "02-equip-modal.png",
+      "label": "02. 설비 선택 모달",
+      "scope": "viewport"
+    },
+    {
+      "action": "press",
+      "target": { "placeholder": "검색" },
+      "value": "Escape",
+      "note": "모달 닫기 — 아무것도 선택하지 않는다"
+    }
+  ]
+}

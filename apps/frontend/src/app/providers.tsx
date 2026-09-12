@@ -14,6 +14,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 import ApiFeedbackModal from "@/components/shared/ApiFeedbackModal";
+import ActivityCollector from "@/components/system/ActivityCollector";
 import JobOrderHud from "@/components/production/JobOrderHud";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/authStore";
@@ -177,6 +178,7 @@ export function Providers({ children }: ProvidersProps) {
           error: { duration: 6000, iconTheme: { primary: "#ef4444", secondary: "#fff" } },
         }}
       />
+      <ActivityCollector />
       <ApiFeedbackModal />
       <JobOrderHud />
       {children}

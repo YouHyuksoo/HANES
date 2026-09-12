@@ -49,6 +49,7 @@ interface CachedSqlDebug {
 import toast from "react-hot-toast";
 import { useErrorStore } from "@/stores/errorStore";
 import { classifyApiError } from "./api-error-severity";
+import { pushActivityEvent, toEventPath } from "./activity-collector";
 import { useAuthStore } from "@/stores/authStore";
 
 // 응답 인터셉터의 자동 성공 토스트를 끄는 opt-out 플래그.
@@ -236,6 +237,13 @@ api.interceptors.response.use(
   (response) => {
     recordSqlDebugResponse(response.config?.url, response.data?.meta?.debugSql);
     const method = response.config.method?.toUpperCase();
+    // 시나리오 실행기 판정용 이벤트 (services/activity-collector.ts)
+    pushActivityEvent({
+      type: "API_CALL",
+      method,
+      path: toEventPath(response.config?.url),
+      status: response.status,
+    });
     const msg = response.data?.message;
     if (msg && method && ["POST", "PUT", "PATCH", "DELETE"].includes(method) && !response.config.skipSuccessToast) {
       toast.success(msg);
@@ -248,6 +256,13 @@ api.interceptors.response.use(
     if (!error.response) {
       const isTimeout = error.code === "ECONNABORTED" || /timeout/i.test(error.message ?? "");
       const timeoutMs = (error.config as AxiosRequestConfig)?.timeout;
+      pushActivityEvent({
+        type: "API_ERROR",
+        method: error.config?.method?.toUpperCase(),
+        path: toEventPath(error.config?.url),
+        status: 0,
+        message: isTimeout ? "요청 시간 초과" : "서버 연결 실패",
+      });
       useErrorStore.getState().showError({
         severity: "system",
         timestamp: new Date().toLocaleString(),
@@ -267,6 +282,15 @@ api.interceptors.response.use(
     const status = error.response.status;
     const data = error.response.data as ApiErrorResponse;
     const serverMessage = data?.message || data?.error || "알 수 없는 오류";
+
+    pushActivityEvent({
+      type: "API_ERROR",
+      method: error.config?.method?.toUpperCase(),
+      path: toEventPath(error.config?.url),
+      status,
+      message: serverMessage,
+      errorCode: data?.errorCode,
+    });
 
     // 401은 로그인 페이지로 리다이렉트 (모달 불필요)
     if (status === 401) {

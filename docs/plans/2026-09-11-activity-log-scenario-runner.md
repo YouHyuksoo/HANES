@@ -75,15 +75,16 @@ declare global {
 for each step:
   1. DOM 조작 실행 (click / fill / scan / goto ...)
   2. 이벤트 대기: 100ms 간격으로 버퍼를 폴링하며
-       - expect 술어 일치      -> 성공, 즉시 종료
-       - alreadyDone 술어 일치 -> "이미 진행됨", 즉시 종료
-       - 에러 이벤트 도착      -> 실패, 즉시 종료 (조기 실패)
-       - 타임아웃(기본 10s)    -> expect가 있으면 실패 / 없으면 성공
+       - alreadyDone 일치      -> "이미 진행됨", 종료
+       - expect 일치           -> 성공, 종료   (에러가 이미 와 있어도 expect가 이긴다)
+       - 그 외 에러 이벤트      -> candidateErrors에 적재하고 계속 대기 (조기 실패 안 함)
+       - 타임아웃(기본 10s)    -> candidateErrors 있으면 실패 / expect 있으면 실패 / 없으면 성공
   3. 버퍼 drain -> 스텝 결과에 첨부
 ```
 
 - API 응답은 비동기로 도착하므로 **단순 drain이 아니라 폴링 대기**여야 한다. 조작 직후 한 번 읽으면 아직 비어 있다
-- `expect`가 없는 순수 조작 스텝은 에러 이벤트만 없으면 성공
+- **에러를 즉시 실패로 쓰지 않는 이유**: 배경 폴링과 `suppressErrorModal` 인라인 처리 호출이 무관한 `API_ERROR`를 흘린다. 상세 규칙·`ignoreErrors`·`settleMs`는 규격서 6.2가 단일 출처다
+- `expect`가 없는 순수 조작 스텝도 즉시 성공이 아니라 `settleMs`(기본 500ms)만큼 에러를 관찰한 뒤 확정한다
 - **`goto` / 리로드는 `window`를 날린다. 반드시 이동 *전에* drain한다.** 이걸 놓치면 첫 화면전환 시나리오에서 증거가 조용히 사라진다
 
 ### 2.5 서버 로그(채널 A)가 계속 하는 일
@@ -179,6 +180,21 @@ for each step:
 
 ## 5. 일 2: 시나리오 규격 확정 (schemaVersion 1)
 
+> **완료 (2026-09-12).** 확정 규격은 `docs/specs/2026-09-12-scenario-runner-schema-v1-design.md`가 단일 출처다.
+> 아래는 요지만 남긴 것이며, 충돌 시 규격서를 따른다.
+>
+> 확정된 것:
+> 1. 기존 `ui-test-crud-red` 시나리오를 **신규 steps 규격으로 이관**(규격 1개로 통일).
+>    이관 필요 기능 7개(label 셀렉터·행 스코프·prefix cleanup·스크린샷 3스코프·내장변수 등)를
+>    편입하고, 무손실 대조표를 규격서 9절에 실었다.
+> 2. **에러 귀속 규칙**(규격서 6.2) — 에러 이벤트를 즉시 실패로 쓰지 않는다. 후보로 모으고
+>    `expect` 충족이 이긴다. 배경 폴링·인라인 처리 호출의 `API_ERROR` 하나에 무관한 스텝이
+>    실패하는 것을 막기 위함이다. `ignoreErrors` 선언 + `settleMs` 관찰창으로 보완한다.
+>    대가: 진짜 실패도 타임아웃까지 기다린다(조기 실패 포기).
+> 3. **시나리오는 선언, 로직은 러너**(규격서 1.1) — JSON에 루프·조건 문법을 넣지 않는다.
+>    반복이 필요한 동작은 내장 액션(`cleanupPrefix`, `inspection`)으로 캡슐화한다.
+>    AI가 생성한 JSON을 읽어서 검증할 수 있어야 하기 때문이다.
+
 구현물이 아니라 **문서 산출물**이다. 일 3(실행기)과 일 4(작성 스킬)가 같은 규격을 참조해야 하므로 먼저 못 박는다.
 
 ### 5.1 시나리오 JSON
@@ -234,15 +250,20 @@ for each step:
 
 초판의 `assertToast`는 **폐기한다.** 토스트 소멸(4초)과 경합하던 문제 자체가 사라진다.
 
+에러 이벤트의 귀속(이 에러가 이 스텝 때문인가)은 별도 규칙이 필요하다 — 규격서 6.2 참조.
+
 ### 5.3 액션과 셀렉터
 
-- `action`: `goto / click / fill / scan / press / waitForText / capture / waitMs / pause / inspection`
+- `action`: `goto / click / fill / scan / press / waitForText / capture / screenshot / api / cleanupPrefix / inspection / waitMs / pause`
+  (전용 `search`는 두지 않는다 — HANES 검색은 디바운스 방식이라 `fill`로 충분. 규격서 4.3)
 - `scan` = fill + Enter (`BarcodeScanInput` 동작과 일치)
 - `capture` + `{{변수}}` 치환 — 발행된 바코드를 읽어 다음 스텝에 사용
 - `target` 우선순위: `testId` → `role`+`name` → `ariaLabel` → `placeholder` → `text` (ko 로케일 기준)
-- `inspection`: 점검 인터록(일상점검/작업자점검) 전용 액션. 모달을 열어 이미 완료면 "이미 진행됨", 아니면 전 항목 PASS 후 저장
+- `inspection`: 점검 인터록 전용 내장 액션. 배지가 `완료(합격)`이면 "이미 진행됨", 아니면 모달을 열어 선택형 항목을 합격 처리 후 저장. 저장 후에도 `완료(불합격)`이면 실패 — 측정형 항목이 규격을 벗어난 경우이며 러너가 뚫으면 안 된다 (규격서 7.1)
 
-> **[결정 필요]** 기존 `ui-test-crud-red` 시나리오는 `label` / `placeholderIncludes` / 버튼 텍스트 기반이라 셀렉터 규약이 다르다. 신규 규격으로 이관할지, 두 규격을 병존시킬지 일 2에서 결정한다.
+> **[결정됨 2026-09-12]** 기존 `ui-test-crud-red` 시나리오를 신규 규격으로 **이관**한다(병존 없음).
+> 그에 따라 셀렉터 우선순위에 `label`을 3순위로 편입했다 — HANES 폼이 `aria-label`이 아니라
+> 가시 `<label>` 텍스트로 필드를 식별하기 때문이다. 근거와 전체 우선순위는 규격서 5절 참조.
 
 ## 6. 일 3: 시나리오 실행기
 
@@ -279,7 +300,7 @@ const drain = (page: Page) => page.evaluate(() => {
 - 에러 이벤트 감지 즉시 해당 스텝 실패 처리 — **DOM 감시 불필요**
 - `ApiFeedbackModal`은 **판정 대상이 아니라 조작 대상**이다. 모달을 띄운 API 에러는 이미 이벤트로 잡혔고, 러너는 다음 스텝을 위해 모달을 **닫기만** 하면 된다
 - `onFailure: pause`면 브라우저를 멈추고 개입 대기 → 수동 조작 후 재개
-  - **구현 전 스파이크 필요**: `page.pause()` 중 사용자가 페이지를 직접 조작 가능한지 5분 확인. 불가하면 개입 방식 재설계
+  - **검증됨(2026-09-12)**: headed 스파이크로 `page.pause()` 중 브라우저 화면의 클릭·입력이 정상 동작함을 확인했다. 관람자가 실패 지점에서 직접 수습하고 Resume으로 이어갈 수 있다
 - 실행 종료 후 `GET /system/activity-logs`를 조회해 서버 기록도 리포트에 첨부 (판정용 아님, 대조용)
 
 ### 6.5 코드 사전 작업
@@ -292,7 +313,7 @@ const drain = (page: Page) => page.evaluate(() => {
 
 | 기존 스킬 | 겹치는 부분 | 처리 |
 |---|---|---|
-| `ui-test-crud-red` | 시나리오 JSON + Playwright 러너 + `{{변수}}` 치환 + 에러모달 검증 + HTML 리포트 | **승계 관계.** 기존은 `create/red/update/delete` **고정 슬롯형**이라 서브공정 키팅 같은 자유 업무 플로우를 표현할 수 없다. 본 규격의 `steps` 배열형이 상위호환 |
+| `ui-test-crud-red` | 시나리오 JSON + Playwright 러너 + `{{변수}}` 치환 + 에러모달 검증 + HTML 리포트 | **이관 확정(2026-09-12).** 기존은 `create/red/update/delete` 고정 슬롯형이라 서브공정 키팅 같은 자유 업무 플로우를 표현할 수 없다. `steps` 배열형으로 흡수하고 규격을 하나로 통일한다. 무손실 대조표 = 규격서 9절 |
 | `aitester-source-indexer` | "화면 소스 분석해 route/필드라벨/버튼/i18n 해석" 전체 | **재사용.** `.aitester/knowledge/*.json`을 스킬 입력으로 쓴다. 1단계를 새로 짜지 않는다 |
 | `hanes-page-scenario-qa` | "HANES 화면 시나리오 테스트" 트리거 선점 | **경계 분리.** 신규 스킬 description은 **작성/생성만** 잡고 실행/QA는 명시적으로 배제한다 (D14) |
 
@@ -320,7 +341,7 @@ repo 내 `.claude/skills/`에 둔다. 규격 JSON·러너와 같은 커밋으로
 | 순서 | 작업 | 선행 이유 |
 |---|---|---|
 | 1 | **일 1** 수집기 (DB → 백엔드 → 프론트 수집 + 링버퍼 → 조회화면 → JSHANES 적용) | 링버퍼가 없으면 실행기가 판정할 수 없다 |
-| 2 | **일 2** 규격 확정 (문서) | 일 3과 일 4가 같은 어휘를 참조해야 한다 |
+| 2 | ~~**일 2** 규격 확정 (문서)~~ — **완료 2026-09-12**, `docs/specs/2026-09-12-scenario-runner-schema-v1-design.md` | 일 3과 일 4가 같은 어휘를 참조해야 한다 |
 | 3 | **일 3** 실행기 (스파이크 → 러너 → 시나리오 2개 → 실기 검증) | 일 4의 검증 루프(7.2-4)가 러너를 요구한다 |
 | 4 | **일 4** 작성 스킬 | |
 

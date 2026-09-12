@@ -88,3 +88,6 @@ CProjectHANESscripts
 
 # HTTPS 프록시 실행파일 — 배포 워크플로가 내려받음(tools/proxy/README.md)
 tools/proxy/caddy.exe
+
+# 시나리오 러너 실행 산출물 (리포트/스크린샷) — 실행할 때마다 생기므로 커밋하지 않는다
+docs/reports/scenario-runs/
