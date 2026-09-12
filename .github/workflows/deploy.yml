@@ -125,6 +125,30 @@ jobs:
           pm2 list
         shell: powershell
 
+      # PM2 로그가 무한정 커지는 것을 막는다. 로테이션이 없어 backend-error.log 가 100MB,
+      # backend-out.log 가 73MB 까지 자라 있었다(2026-09-12 확인). 프록시는 Caddyfile 에
+      # roll_size/roll_keep 이 있어 4MB 대로 유지되고 있었고, PM2 쪽만 빠져 있었다.
+      # pm2-logrotate 는 PM2 모듈이라 데몬이 떠 있는 상태에서 설치·설정한다.
+      - name: Configure PM2 log rotation
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:PM2_HOME = "C:\Users\Administrator\.pm2"
+          if (!(Test-Path (Join-Path $env:PM2_HOME "node_modules\pm2-logrotate"))) {
+            Write-Host "installing pm2-logrotate ..."
+            pm2 install pm2-logrotate
+          } else {
+            Write-Host "pm2-logrotate already installed"
+          }
+          # 설정은 매 배포마다 다시 맞춘다. 서버에서 손으로 바꿔도 배포가 기준값으로 되돌린다.
+          pm2 set pm2-logrotate:max_size 20M          # 20MB 넘으면 새 파일로 교체
+          pm2 set pm2-logrotate:retain 10             # 최근 10개만 보관(압축 기준 상한 수백 MB)
+          pm2 set pm2-logrotate:compress true         # 회전된 파일은 gzip 압축
+          pm2 set pm2-logrotate:rotateInterval '0 0 * * *'  # 크기와 별개로 매일 자정에도 교체
+          pm2 set pm2-logrotate:workerInterval 60     # 60초마다 크기 확인
+          Write-Host "--- pm2-logrotate config ---"
+          pm2 conf pm2-logrotate
+        shell: powershell
+
       # 기동 확인. 예전에는 443 리스너만 경고로 보고 넘어가서, 프론트·프록시가 재시작만 반복하며
       # 죽어 있어도 배포가 초록불로 끝났다(2026-09-11). 이제 실패시켜 즉시 드러낸다.
       - name: Verify HANES services are serving
