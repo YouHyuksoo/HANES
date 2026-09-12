@@ -12,6 +12,11 @@ on:
         description: 'pm2 log lines per process'
         required: false
         default: '200'
+      analyze_error_log:
+        description: 'scan backend-error.log for error signatures (slow on large files)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   diagnose:
@@ -90,6 +95,48 @@ jobs:
             Write-Host "======================== $($f.Name)  (modified $($f.LastWriteTime), $([int]($f.Length/1KB)) KB) ========================"
             Get-Content $f.FullName -Tail 60
           }
+        shell: powershell
+
+      # 100MB 까지 자란 backend-error.log 의 내용을 한 번 스캔해 어떤 에러가 몇 번, 언제 쌓였는지 센다.
+      # 파일을 통째로 읽으면 느리므로 StreamReader 로 한 줄씩 흘려보내며 집계만 남긴다.
+      - name: Analyze backend error log
+        if: inputs.analyze_error_log
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $path = "C:\Project\HANES\logs\backend-error.log"
+          if (!(Test-Path $path)) { Write-Host "no backend-error.log"; exit 0 }
+          $fi = Get-Item $path
+          Write-Host "file  : $([math]::Round($fi.Length/1MB, 1)) MB, last write $($fi.LastWriteTime)"
+
+          Write-Host "`n--- first 12 lines ---"
+          Get-Content $path -TotalCount 12
+          Write-Host "`n--- last 40 lines ---"
+          Get-Content $path -Tail 40
+
+          Write-Host "`n--- scanning ---"
+          $sig = @{}
+          $byHour = @{}
+          $total = 0
+          $reader = [System.IO.StreamReader]::new($path)
+          try {
+            while ($null -ne ($line = $reader.ReadLine())) {
+              $total++
+              if ($line -match '^(\d{4}-\d{2}-\d{2} \d{2}):') { $byHour[$matches[1]] = 1 + $byHour[$matches[1]] }
+              # 숫자와 식별자는 뭉쳐서 같은 유형이 한 줄로 모이게 한다.
+              if ($line -match '(ORA-\d{5}|[A-Za-z]+(?:Error|Exception)|ECONNREFUSED|ETIMEDOUT|EADDRINUSE|ENOENT)') {
+                $key = $matches[1]
+                $sig[$key] = 1 + $sig[$key]
+              }
+            }
+          } finally { $reader.Close() }
+
+          Write-Host "total lines : $total"
+          Write-Host "`n--- top error signatures ---"
+          $sig.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 25 |
+            ForEach-Object { '{0,10}  {1}' -f $_.Value, $_.Key }
+          Write-Host "`n--- busiest hours (lines written) ---"
+          $byHour.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 15 |
+            ForEach-Object { '{0,10}  {1}' -f $_.Value, $_.Key }
         shell: powershell
 
       - name: System resources
