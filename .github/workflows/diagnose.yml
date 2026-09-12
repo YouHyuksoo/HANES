@@ -1,0 +1,101 @@
+# 배포 서버에 SSH/WinRM 으로 붙을 수 없을 때(관리 포트가 닫혀 있음) 서버 상태를 확인하는 통로.
+# self-hosted 러너가 그 서버에서 돌고 있으므로, 이 워크플로를 수동 실행하면 로그를 가져올 수 있다.
+#
+# 원칙: 읽기 전용. 프로세스를 죽이거나 재기동하지 않는다. 배포도 하지 않는다.
+#       복구가 필요하면 deploy 워크플로를 쓴다.
+name: Diagnose HANES server (read-only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      log_lines:
+        description: 'pm2 log lines per process'
+        required: false
+        default: '200'
+
+jobs:
+  diagnose:
+    runs-on: self-hosted
+
+    steps:
+      - name: Ports and listeners
+        run: |
+          $ErrorActionPreference = 'SilentlyContinue'
+          foreach ($port in 3002, 3003, 443, 3080) {
+            $conn = Get-NetTCPConnection -LocalPort $port -State Listen | Select-Object -First 1
+            if ($conn) {
+              $proc = Get-Process -Id $conn.OwningProcess
+              $started = if ($proc) { $proc.StartTime } else { 'unknown' }
+              Write-Host "port $port : LISTEN pid=$($conn.OwningProcess) name=$($proc.ProcessName) started=$started"
+            } else {
+              Write-Host "port $port : free"
+            }
+          }
+        shell: powershell
+
+      - name: Local HTTP probes
+        run: |
+          $ErrorActionPreference = 'SilentlyContinue'
+          foreach ($probe in @(@{ n = 'frontend'; u = 'http://127.0.0.1:3002/' }, @{ n = 'backend'; u = 'http://127.0.0.1:3003/api' })) {
+            $sw = [Diagnostics.Stopwatch]::StartNew()
+            try {
+              $res = Invoke-WebRequest -Uri $probe.u -UseBasicParsing -TimeoutSec 15
+              Write-Host "$($probe.n) : $($res.StatusCode) in $([int]$sw.Elapsed.TotalMilliseconds) ms"
+            } catch {
+              $code = $_.Exception.Response.StatusCode.value__
+              if ($code) { Write-Host "$($probe.n) : $code in $([int]$sw.Elapsed.TotalMilliseconds) ms" }
+              else { Write-Host "$($probe.n) : NO RESPONSE in $([int]$sw.Elapsed.TotalMilliseconds) ms - $($_.Exception.Message)" }
+            }
+          }
+        shell: powershell
+
+      - name: PM2 process table
+        run: |
+          $env:PM2_HOME = "C:\Users\Administrator\.pm2"
+          pm2 list
+          Write-Host "--- jlist (status / restarts / uptime / memory) ---"
+          try {
+            $list = pm2 jlist | ConvertFrom-Json
+            foreach ($app in $list) {
+              $e = $app.pm2_env
+              Write-Host "$($app.name) status=$($e.status) restarts=$($e.restart_time) unstable=$($e.unstable_restarts) uptime=$($e.pm_uptime) mem=$($app.monit.memory) cpu=$($app.monit.cpu) exit=$($e.exit_code)"
+            }
+          } catch { Write-Warning "pm2 jlist failed: $($_.Exception.Message)" }
+        shell: powershell
+
+      - name: PM2 logs
+        # 입력값은 env 로 넘긴다. run 안에 직접 보간하면 PowerShell 의 ${...} 와 충돌하고
+        # 스크립트 인젝션 통로가 된다.
+        env:
+          LOG_LINES: ${{ inputs.log_lines }}
+        run: |
+          $env:PM2_HOME = "C:\Users\Administrator\.pm2"
+          $n = $env:LOG_LINES
+          if (-not $n) { $n = '200' }
+          foreach ($app in 'hanes-backend', 'hanes-frontend', 'hanes-proxy') {
+            Write-Host "======================== $app ========================"
+            pm2 logs $app --lines $n --nostream
+          }
+        shell: powershell
+
+      - name: Log files tail
+        run: |
+          $ErrorActionPreference = 'SilentlyContinue'
+          foreach ($f in Get-ChildItem "C:\Project\HANES\logs\*.log") {
+            Write-Host "======================== $($f.Name)  (modified $($f.LastWriteTime), $([int]($f.Length/1KB)) KB) ========================"
+            Get-Content $f.FullName -Tail 60
+          }
+        shell: powershell
+
+      - name: System resources
+        run: |
+          $ErrorActionPreference = 'SilentlyContinue'
+          $os = Get-CimInstance Win32_OperatingSystem
+          Write-Host "boot time    : $($os.LastBootUpTime)"
+          Write-Host "memory free  : $([int]($os.FreePhysicalMemory/1KB)) MB / $([int]($os.TotalVisibleMemorySize/1KB)) MB"
+          Get-PSDrive C | ForEach-Object { Write-Host "disk C:      : free $([int]($_.Free/1GB)) GB / used $([int]($_.Used/1GB)) GB" }
+          Write-Host "--- node / caddy processes ---"
+          Get-Process node, caddy -ErrorAction SilentlyContinue |
+            Select-Object Id, ProcessName, @{n='MB';e={[int]($_.WorkingSet64/1MB)}}, StartTime |
+            Format-Table -AutoSize | Out-String | Write-Host
+        shell: powershell
