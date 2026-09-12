@@ -90,14 +90,14 @@ jobs:
             New-NetFirewallRule -DisplayName "HANES HTTPS 443" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow -Profile Any | Out-Null
             Write-Host "Firewall rule added: HANES HTTPS 443"
           }
-          $listener = Get-NetTCPConnection -LocalPort 443 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
-          if ($listener) {
-            $proc = Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue
-            if ($proc -and $proc.ProcessName -ne "caddy") {
-              throw "Port 443 is already in use by $($proc.ProcessName) (PID $($proc.Id)). Change https_port in tools/proxy/Caddyfile or free the port."
-            }
-          }
         shell: powershell
+
+      # pm2 delete 는 등록만 지운다. 남은 자식 프로세스 트리가 3002/3003/443 을 계속 물고 있으면
+      # 새 프로세스가 EADDRINUSE 로 죽고 좀비가 포트를 서비스한다(TCP 는 붙는데 HTTP 무응답).
+      # 여기서 포트를 확실히 비운 뒤에 기동한다. 다른 프로그램이 쓰는 포트면 스크립트가 실패시킨다.
+      - name: Free HANES ports (3002/3003/443)
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Project\HANES\scripts\free-hanes-ports.ps1
+        shell: cmd
 
       - name: Start HANES PM2 processes
         run: |
@@ -114,7 +114,49 @@ jobs:
           pm2 save
           Start-Sleep 8
           pm2 list
-          # 프록시 기동 확인(443 리스너). 인증서 발급은 백그라운드로 진행되며 pm2 logs hanes-proxy 로 확인.
-          $proxyUp = Get-NetTCPConnection -LocalPort 443 -State Listen -ErrorAction SilentlyContinue
-          if ($proxyUp) { Write-Host "hanes-proxy is listening on 443" } else { Write-Warning "hanes-proxy is NOT listening on 443 - check pm2 logs hanes-proxy" }
+        shell: powershell
+
+      # 기동 확인. 예전에는 443 리스너만 경고로 보고 넘어가서, 프론트·프록시가 재시작만 반복하며
+      # 죽어 있어도 배포가 초록불로 끝났다(2026-09-11). 이제 실패시켜 즉시 드러낸다.
+      - name: Verify HANES services are serving
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $env:PM2_HOME = "C:\Users\Administrator\.pm2"
+          $problems = @()
+
+          # 1) PM2 프로세스가 online 이고 재시작 루프가 아닌지.
+          #    jlist 를 못 읽으면 이 검사만 건너뛴다. 실제 게이트는 아래 응답 확인이다.
+          $list = $null
+          try { $list = pm2 jlist | ConvertFrom-Json } catch { Write-Warning "pm2 jlist 파싱 실패: $($_.Exception.Message)" }
+          if ($list) {
+            foreach ($name in @('hanes-frontend', 'hanes-backend', 'hanes-proxy')) {
+              $app = $list | Where-Object { $_.name -eq $name }
+              if (-not $app) { $problems += "$name is not registered in PM2"; continue }
+              $status = if ($app.pm2_env -and $app.pm2_env.status) { $app.pm2_env.status } else { $app.status }
+              $restarts = if ($app.pm2_env -and $null -ne $app.pm2_env.restart_time) { [int]$app.pm2_env.restart_time } else { -1 }
+              Write-Host "$name : status=$status restarts=$restarts"
+              if ($status -and $status -ne 'online') { $problems += "$name status is $status" }
+              elseif ($restarts -ge 3) { $problems += "$name restarted $restarts times (port conflict or crash loop)" }
+            }
+          }
+
+          # 2) 실제로 응답하는지. 포트만 열려 있고 응답 못 하는 좀비를 여기서 잡는다.
+          foreach ($probe in @(@{ Name = 'frontend'; Url = 'http://127.0.0.1:3002/' }, @{ Name = 'backend'; Url = 'http://127.0.0.1:3003/api' })) {
+            try {
+              $res = Invoke-WebRequest -Uri $probe.Url -UseBasicParsing -TimeoutSec 20
+              Write-Host "$($probe.Name) responded $($res.StatusCode)"
+            } catch {
+              $code = $_.Exception.Response.StatusCode.value__
+              # 404/401 등은 HTTP 응답이 온 것이므로 살아 있다고 본다. 무응답·연결거부만 실패.
+              if ($code) { Write-Host "$($probe.Name) responded $code" }
+              else { $problems += "$($probe.Name) did not respond: $($_.Exception.Message)" }
+            }
+          }
+
+          if ($problems.Count -gt 0) {
+            pm2 logs hanes-frontend --lines 40 --nostream
+            pm2 logs hanes-proxy --lines 40 --nostream
+            throw ("배포 후 서비스 확인 실패:`n  - " + ($problems -join "`n  - "))
+          }
+          Write-Host "All HANES services are serving."
         shell: powershell
