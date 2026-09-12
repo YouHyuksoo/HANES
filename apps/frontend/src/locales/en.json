@@ -4516,6 +4516,10 @@
     "jobOrder": {
       "orderNo": "Work Order No.",
       "orderQty": "Order Qty"
+    },
+    "inspect": {
+      "dailyNgBlock": "Equipment daily inspection was judged NG. Fix the issue and inspect again.",
+      "workerNgBlock": "Worker equipment inspection was judged NG. Fix the issue and inspect again."
     }
   },
   "inspection": {
@@ -9259,7 +9263,9 @@
         "dailyInspect": "Equipment daily inspection is not completed",
         "workerInspect": "Worker equipment inspection is not completed",
         "materialScan": "Material scan is not completed",
-        "consumableScan": "Consumable scan is not completed"
+        "consumableScan": "Consumable scan is not completed",
+        "dailyInspectNg": "Equipment daily inspection failed (re-inspection required)",
+        "workerInspectNg": "Worker equipment inspection failed (re-inspection required)"
       }
     },
     "jobOrder": {

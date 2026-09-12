@@ -188,7 +188,11 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone }: WorkerIn
         overallResult: anyNg ? 'FAIL' : 'PASS',
         details: { items: details },
       }, { skipSuccessToast: true });
-      setInterlock('workerInspectDone', !anyNg || startWork);
+      // NG면 startWork(작업 시작)여도 인터록을 풀지 않는다.
+      // 종합판정 FAIL로 저장되므로 서버 게이트가 실적 등록을 거부하고,
+      // 여기서만 통과시키면 화면은 완료인데 저장 시 400이 나는 불일치가 생긴다.
+      // 조치 후 재점검해 PASS가 되어야 풀린다.
+      setInterlock('workerInspectDone', !anyNg);
       toast.success(t('kiosk.prep.workerInspectSaved'));
       if (startWork || !anyNg) onDone();
     } catch (e: unknown) {

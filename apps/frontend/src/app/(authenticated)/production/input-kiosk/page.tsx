@@ -200,20 +200,26 @@ export default function InputKioskPage() {
   // 설비일일점검 / 작업자설비점검 완료 시각(헤더 "완료 HH:mm" 표시용)
   const [dailyInspectAt, setDailyInspectAt] = useState<string | null>(null);
   const [workerInspectAt, setWorkerInspectAt] = useState<string | null>(null);
+  // 종합판정(OVERALL_RESULT). 점검 기록은 있으나 판정이 PASS가 아니면 진행을 막고 판정을 표시한다.
+  const [dailyInspectResult, setDailyInspectResult] = useState<string | null>(null);
+  const [workerInspectResult, setWorkerInspectResult] = useState<string | null>(null);
 
-  // 설비 선택 시 → 서버 조업일 기준 일일점검 완료 여부+시각 자동 체크
+  // 설비 선택 시 → 서버 조업일 기준 일일점검 완료 여부+판정+시각 자동 체크
   const refreshDailyInspect = useCallback(async () => {
-    if (!selectedEquip?.equipCode) { setDailyInspectAt(null); return; }
+    if (!selectedEquip?.equipCode) { setDailyInspectAt(null); setDailyInspectResult(null); return; }
     try {
       const res = await api.get('/equipment/daily-inspect/check', {
         params: { equipCode: selectedEquip.equipCode, inspectType: 'DAILY' },
       });
       const d = res.data?.data;
-      setInterlock('dailyInspectDone', Boolean(d?.alreadyInspected));
+      // 인터록은 "기록 존재"가 아니라 "종합판정 PASS"를 기준으로 한다.
+      setInterlock('dailyInspectDone', Boolean(d?.inspectPassed));
       setDailyInspectAt(d?.inspectedAt ?? null);
+      setDailyInspectResult(d?.alreadyInspected ? (d?.overallResult ?? null) : null);
     } catch {
       setInterlock('dailyInspectDone', false);
       setDailyInspectAt(null);
+      setDailyInspectResult(null);
     }
   }, [selectedEquip?.equipCode, setInterlock]);
   useEffect(() => { void refreshDailyInspect(); }, [refreshDailyInspect]);
@@ -223,6 +229,7 @@ export default function InputKioskPage() {
     if (!selectedEquip?.equipCode || !selectedJobOrder?.orderNo) {
       setInterlock('workerInspectDone', false);
       setWorkerInspectAt(null);
+      setWorkerInspectResult(null);
       return;
     }
     try {
@@ -234,11 +241,13 @@ export default function InputKioskPage() {
         },
       });
       const d = res.data?.data;
-      setInterlock('workerInspectDone', Boolean(d?.alreadyInspected));
+      setInterlock('workerInspectDone', Boolean(d?.inspectPassed));
       setWorkerInspectAt(d?.inspectedAt ?? null);
+      setWorkerInspectResult(d?.alreadyInspected ? (d?.overallResult ?? null) : null);
     } catch {
       setInterlock('workerInspectDone', false);
       setWorkerInspectAt(null);
+      setWorkerInspectResult(null);
     }
   }, [selectedEquip?.equipCode, selectedJobOrder?.orderNo, setInterlock]);
   useEffect(() => { void refreshWorkerInspect(); }, [refreshWorkerInspect]);
@@ -427,8 +436,17 @@ export default function InputKioskPage() {
     if (!selectedEquip) reasons.push(t('kiosk.input.disabledReasons.noEquip'));
     if (!selectedJobOrder) reasons.push(t('kiosk.input.disabledReasons.noJobOrder'));
     if (selectedWorkers.length === 0) reasons.push(t('kiosk.input.disabledReasons.noWorker'));
-    if (!interlock.dailyInspectDone) reasons.push(t('kiosk.input.disabledReasons.dailyInspect'));
-    if (!interlock.workerInspectDone) reasons.push(t('kiosk.input.disabledReasons.workerInspect'));
+    // 점검 기록은 있는데 판정이 PASS가 아니면 "미완료"가 아니라 "판정 불합격"으로 안내한다.
+    if (!interlock.dailyInspectDone) {
+      reasons.push(dailyInspectResult
+        ? t('kiosk.input.disabledReasons.dailyInspectNg')
+        : t('kiosk.input.disabledReasons.dailyInspect'));
+    }
+    if (!interlock.workerInspectDone) {
+      reasons.push(workerInspectResult
+        ? t('kiosk.input.disabledReasons.workerInspectNg')
+        : t('kiosk.input.disabledReasons.workerInspect'));
+    }
     if (!interlock.materialScanDone) reasons.push(t('kiosk.input.disabledReasons.materialScan'));
     if (!interlock.consumableScanDone) reasons.push(t('kiosk.input.disabledReasons.consumableScan'));
     if (hasPendingDelegate) reasons.push(t('kiosk.selfInspect.delegateBlocking'));
@@ -443,6 +461,8 @@ export default function InputKioskPage() {
     interlock.workerInspectDone,
     interlock.materialScanDone,
     interlock.consumableScanDone,
+    dailyInspectResult,
+    workerInspectResult,
     hasPendingDelegate,
     isMidBlock,
     isLastBlock,
@@ -477,6 +497,8 @@ export default function InputKioskPage() {
         onRemoveWorker={handleRemoveWorker}
         dailyInspectAt={dailyInspectAt}
         workerInspectAt={workerInspectAt}
+        dailyInspectResult={dailyInspectResult}
+        workerInspectResult={workerInspectResult}
       />
 
       {/* ② ③ ④ 메인 3패널 */}

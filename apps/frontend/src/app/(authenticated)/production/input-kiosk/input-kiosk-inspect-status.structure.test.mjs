@@ -14,7 +14,25 @@ test('input kiosk checks daily inspection by backend operational work date', () 
 test('input kiosk checks worker inspection by selected job order', () => {
   assert.match(source, /inspectType:\s*'WORKER'/);
   assert.match(source, /orderNo:\s*selectedJobOrder\.orderNo/);
-  assert.match(source, /setInterlock\('workerInspectDone', Boolean\(d\?\.alreadyInspected\)\)/);
+  assert.match(source, /setInterlock\('workerInspectDone', Boolean\(d\?\.inspectPassed\)\)/);
+});
+
+// 인터록은 "점검 기록이 있다"가 아니라 "종합판정이 PASS다"를 기준으로 한다.
+// 완료했어도 종합판정 NG면 작업을 진행할 수 없고, 재점검으로 PASS가 되어야 풀린다.
+test('input kiosk gates production on inspection judgment, not on record existence', () => {
+  assert.match(source, /setInterlock\('dailyInspectDone', Boolean\(d\?\.inspectPassed\)\)/);
+  assert.doesNotMatch(source, /setInterlock\('dailyInspectDone', Boolean\(d\?\.alreadyInspected\)\)/);
+  assert.doesNotMatch(source, /setInterlock\('workerInspectDone', Boolean\(d\?\.alreadyInspected\)\)/);
+});
+
+// 판정 결과를 헤더에 함께 보여준다 — 완료 여부만으로는 NG를 구분할 수 없다.
+test('input kiosk surfaces the overall judgment in the header badges', () => {
+  assert.match(source, /setDailyInspectResult\(/);
+  assert.match(source, /setWorkerInspectResult\(/);
+  assert.match(source, /dailyInspectResult=\{dailyInspectResult\}/);
+  assert.match(source, /workerInspectResult=\{workerInspectResult\}/);
+  assert.match(source, /disabledReasons\.dailyInspectNg/);
+  assert.match(source, /disabledReasons\.workerInspectNg/);
 });
 
 test('input kiosk restores current job order and workers from equipment master keys', () => {

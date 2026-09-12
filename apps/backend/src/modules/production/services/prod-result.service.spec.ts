@@ -1372,31 +1372,52 @@ describe('ProdResultService', () => {
       setupCreateBase();
       sysConfigService.getValue.mockResolvedValue(null);
       equipInspectItemPoolRepo.find.mockResolvedValue(dailyPool);
-      equipInspectService.checkAlreadyInspected.mockResolvedValue(false);
+      equipInspectService.getInspectionStatus.mockResolvedValue({ alreadyInspected: false, inspectPassed: false, overallResult: null } as any);
 
       await expect(service.create(dto, 'C1', 'P1')).rejects.toThrow(BadRequestException);
       await expect(service.create(dto, 'C1', 'P1')).rejects.toThrow('설비 일상점검을 완료해야');
-      expect(equipInspectService.checkAlreadyInspected).toHaveBeenCalledWith(
-        'EQ-1', expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), 'DAILY', 'C1', 'P1',
+      expect(equipInspectService.getInspectionStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ equipCode: 'EQ-1', inspectType: 'DAILY' }),
+        { company: 'C1', plant: 'P1' },
       );
       expect(tx.run).not.toHaveBeenCalled();
     });
 
-    it('DAILY 점검이 완료돼 있으면 통과한다', async () => {
+    it('DAILY 점검이 종합판정 PASS로 완료돼 있으면 통과한다', async () => {
       setupCreateBase();
       sysConfigService.getValue.mockResolvedValue(null);
       equipInspectItemPoolRepo.find.mockResolvedValue(dailyPool);
-      equipInspectService.checkAlreadyInspected.mockResolvedValue(true);
+      equipInspectService.getInspectionStatus.mockResolvedValue({ alreadyInspected: true, inspectPassed: true, overallResult: 'PASS' } as any);
 
       await expect(service.create(dto, 'C1', 'P1')).resolves.toBeDefined();
       expect(tx.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('DAILY 점검을 완료했어도 종합판정이 FAIL이면 차단한다', async () => {
+      setupCreateBase();
+      sysConfigService.getValue.mockResolvedValue(null);
+      equipInspectItemPoolRepo.find.mockResolvedValue(dailyPool);
+      equipInspectService.getInspectionStatus.mockResolvedValue({ alreadyInspected: true, inspectPassed: false, overallResult: 'FAIL' } as any);
+
+      await expect(service.create(dto, 'C1', 'P1')).rejects.toThrow('설비 일상점검 종합판정이 불합격');
+      expect(tx.run).not.toHaveBeenCalled();
+    });
+
+    it('DAILY 종합판정이 PASS가 아닌 값(CONDITIONAL)이어도 차단한다', async () => {
+      setupCreateBase();
+      sysConfigService.getValue.mockResolvedValue(null);
+      equipInspectItemPoolRepo.find.mockResolvedValue(dailyPool);
+      equipInspectService.getInspectionStatus.mockResolvedValue({ alreadyInspected: true, inspectPassed: false, overallResult: 'CONDITIONAL' } as any);
+
+      await expect(service.create(dto, 'C1', 'P1')).rejects.toThrow('설비 일상점검 종합판정이 불합격');
+      expect(tx.run).not.toHaveBeenCalled();
     });
 
     it('WORKER 항목이 있고 작업지시 기준 작업자점검이 없으면 차단한다', async () => {
       setupCreateBase();
       sysConfigService.getValue.mockResolvedValue(null);
       equipInspectItemPoolRepo.find.mockResolvedValue(workerPool);
-      equipInspectService.getInspectionStatus.mockResolvedValue({ alreadyInspected: false } as any);
+      equipInspectService.getInspectionStatus.mockResolvedValue({ alreadyInspected: false, inspectPassed: false, overallResult: null } as any);
 
       await expect(service.create(dto, 'C1', 'P1')).rejects.toThrow('작업자 설비점검을 완료해야');
       expect(equipInspectService.checkAlreadyInspected).not.toHaveBeenCalled();
@@ -1407,14 +1428,24 @@ describe('ProdResultService', () => {
       expect(tx.run).not.toHaveBeenCalled();
     });
 
-    it('WORKER 점검이 완료돼 있으면 통과한다', async () => {
+    it('WORKER 점검이 종합판정 PASS로 완료돼 있으면 통과한다', async () => {
       setupCreateBase();
       sysConfigService.getValue.mockResolvedValue(null);
       equipInspectItemPoolRepo.find.mockResolvedValue(workerPool);
-      equipInspectService.getInspectionStatus.mockResolvedValue({ alreadyInspected: true } as any);
+      equipInspectService.getInspectionStatus.mockResolvedValue({ alreadyInspected: true, inspectPassed: true, overallResult: 'PASS' } as any);
 
       await expect(service.create(dto, 'C1', 'P1')).resolves.toBeDefined();
       expect(tx.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('WORKER 점검을 완료했어도 종합판정이 FAIL이면 차단한다', async () => {
+      setupCreateBase();
+      sysConfigService.getValue.mockResolvedValue(null);
+      equipInspectItemPoolRepo.find.mockResolvedValue(workerPool);
+      equipInspectService.getInspectionStatus.mockResolvedValue({ alreadyInspected: true, inspectPassed: false, overallResult: 'FAIL' } as any);
+
+      await expect(service.create(dto, 'C1', 'P1')).rejects.toThrow('작업자 설비점검 종합판정이 불합격');
+      expect(tx.run).not.toHaveBeenCalled();
     });
 
     it('equipCode가 없으면 게이트를 건너뛴다', async () => {

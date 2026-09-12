@@ -5048,6 +5048,10 @@
     "jobOrder": {
       "orderNo": "작업지시번호",
       "orderQty": "지시수량"
+    },
+    "inspect": {
+      "dailyNgBlock": "설비 일상점검 종합판정이 NG입니다. 조치 후 재점검하세요.",
+      "workerNgBlock": "작업자 설비점검 종합판정이 NG입니다. 조치 후 재점검하세요."
     }
   },
   "inspection": {
@@ -9282,7 +9286,9 @@
         "dailyInspect": "설비일상점검 미완료",
         "workerInspect": "작업자설비점검 미완료",
         "materialScan": "자재 스캔 미완료",
-        "consumableScan": "소모성 점검 미완료"
+        "consumableScan": "소모성 점검 미완료",
+        "dailyInspectNg": "설비일상점검 종합판정 NG (재점검 필요)",
+        "workerInspectNg": "작업자설비점검 종합판정 NG (재점검 필요)"
       }
     },
     "jobOrder": {

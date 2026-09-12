@@ -4516,6 +4516,10 @@
     "jobOrder": {
       "orderNo": "工单号",
       "orderQty": "指示数量"
+    },
+    "inspect": {
+      "dailyNgBlock": "设备日常点检综合判定为NG。请处理后重新点检。",
+      "workerNgBlock": "作业者设备点检综合判定为NG。请处理后重新点检。"
     }
   },
   "inspection": {
@@ -9259,7 +9263,9 @@
         "dailyInspect": "未完成设备日常点检",
         "workerInspect": "未完成作业者设备点检",
         "materialScan": "未完成材料扫描",
-        "consumableScan": "未完成耗材扫描"
+        "consumableScan": "未完成耗材扫描",
+        "dailyInspectNg": "设备日常点检综合判定NG（需重新点检）",
+        "workerInspectNg": "作业者设备点检综合判定NG（需重新点检）"
       }
     },
     "jobOrder": {

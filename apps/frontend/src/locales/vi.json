@@ -4516,6 +4516,10 @@
     "jobOrder": {
       "orderNo": "Số lệnh sản xuất",
       "orderQty": "Số lượng chỉ thị"
+    },
+    "inspect": {
+      "dailyNgBlock": "Kiểm tra thiết bị hàng ngày bị đánh giá NG. Hãy khắc phục rồi kiểm tra lại.",
+      "workerNgBlock": "Kiểm tra thiết bị người vận hành bị đánh giá NG. Hãy khắc phục rồi kiểm tra lại."
     }
   },
   "inspection": {
@@ -9259,7 +9263,9 @@
         "dailyInspect": "Chưa hoàn thành kiểm tra thiết bị hàng ngày",
         "workerInspect": "Chưa hoàn thành kiểm tra thiết bị người dùng",
         "materialScan": "Chưa quét vật liệu",
-        "consumableScan": "Chưa quét phụ tùng tiêu hao"
+        "consumableScan": "Chưa quét phụ tùng tiêu hao",
+        "dailyInspectNg": "Kiểm tra thiết bị hàng ngày bị đánh giá NG (cần kiểm tra lại)",
+        "workerInspectNg": "Kiểm tra thiết bị người vận hành bị đánh giá NG (cần kiểm tra lại)"
       }
     },
     "jobOrder": {

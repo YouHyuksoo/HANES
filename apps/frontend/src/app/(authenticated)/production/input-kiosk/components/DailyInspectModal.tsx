@@ -117,7 +117,8 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
       const status = res.data?.data ?? {};
       if (status.alreadyInspected) {
         setAlreadyDone(true);
-        setInterlock('dailyInspectDone', true);
+        // 점검 기록이 있어도 종합판정이 PASS일 때만 인터록을 푼다 (NG면 재점검 필요).
+        setInterlock('dailyInspectDone', Boolean(status.inspectPassed));
         const workDate = status.workDate ?? displayDate;
         api.get(`/equipment/daily-inspect/${selectedEquip?.equipCode}/${workDate}`, {
           signal: controller.signal,
@@ -208,7 +209,8 @@ export default function DailyInspectModal({ isOpen, onClose, onDone }: DailyInsp
         overallResult: anyFail ? 'FAIL' : 'PASS',
         details,
       }, { skipSuccessToast: true });
-      setInterlock('dailyInspectDone', true);
+      // 종합판정 NG로 저장했으면 인터록을 풀지 않는다 — 서버 게이트도 동일 기준으로 거부한다.
+      setInterlock('dailyInspectDone', !anyFail);
       toast.success(t('kiosk.prep.dailyInspectSaved'));
       onDone();
     } catch (e: unknown) {

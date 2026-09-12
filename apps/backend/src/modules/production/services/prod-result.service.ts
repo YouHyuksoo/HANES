@@ -791,15 +791,18 @@ export class ProdResultService {
 
     const today = formatYmdLocal(new Date());
     if (hasDaily) {
-      const inspected = await this.equipInspectService.checkAlreadyInspected(
-        equipCode,
-        today,
-        'DAILY',
-        company,
-        plant,
+      const status = await this.equipInspectService.getInspectionStatus(
+        { equipCode, inspectType: 'DAILY', inspectDate: today },
+        { company, plant },
       );
-      if (!inspected) {
+      if (!status.alreadyInspected) {
         throw new BadRequestException(`설비 일상점검을 완료해야 실적을 등록할 수 있습니다: ${equipCode}`);
+      }
+      // 완료됐어도 종합판정이 PASS가 아니면 차단한다 (재점검으로 PASS가 되어야 진행).
+      if (!status.inspectPassed) {
+        throw new BadRequestException(
+          `설비 일상점검 종합판정이 불합격(${status.overallResult ?? '미판정'})이므로 실적을 등록할 수 없습니다: ${equipCode} — 조치 후 재점검하세요.`,
+        );
       }
     }
 
@@ -814,6 +817,11 @@ export class ProdResultService {
       if (!status.alreadyInspected) {
         throw new BadRequestException(
           `작업자 설비점검을 완료해야 실적을 등록할 수 있습니다: ${equipCode} (작업지시 ${dto.orderNo})`,
+        );
+      }
+      if (!status.inspectPassed) {
+        throw new BadRequestException(
+          `작업자 설비점검 종합판정이 불합격(${status.overallResult ?? '미판정'})이므로 실적을 등록할 수 없습니다: ${equipCode} (작업지시 ${dto.orderNo}) — 조치 후 재점검하세요.`,
         );
       }
     }

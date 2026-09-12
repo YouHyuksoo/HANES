@@ -25,6 +25,7 @@ import type { Worker } from "@/components/worker/WorkerSelector";
 import DailyInspectModal from "../input-kiosk/components/DailyInspectModal";
 import WorkerInspectModal from "../input-kiosk/components/WorkerInspectModal";
 import HeaderCheckItem from "../input-kiosk/components/HeaderCheckItem";
+import { inspectStatusDetail, isInspectNg } from "../input-kiosk/utils/inspectStatus";
 
 interface AssemblyComponent {
   itemCode: string;
@@ -236,20 +237,39 @@ export default function InputAssemblyPage() {
     setWorkerModalOpen(false);
   }, [selectedWorkers, setSelectedWorkers]);
 
+  // 종합판정(OVERALL_RESULT). 점검 기록은 있으나 판정이 PASS가 아닌 상태를 구분해 표시/차단한다.
+  const [dailyInspectResult, setDailyInspectResult] = useState<string | null>(null);
+  const [workerInspectResult, setWorkerInspectResult] = useState<string | null>(null);
+
+  // 점검 배지에 완료 여부 + 종합판정을 함께 표시한다("완료(합격)" / "완료(불합격)").
+  // 판정 라벨은 공통코드 i18n comCode.INSPECT_JUDGE.* 단일 출처.
+  const inspectDetailLabels = {
+    done: t('kiosk.header.done', '완료'),
+    judge: (code: string) => t(`comCode.INSPECT_JUDGE.${code}`, code),
+  };
+  const inspectDoneDetail = (result?: string | null) => inspectStatusDetail(result, null, inspectDetailLabels);
+  const inspectNgDetail = (result?: string | null) =>
+    isInspectNg(result) ? inspectStatusDetail(result, null, inspectDetailLabels) : undefined;
+
   const refreshInspectStatus = useCallback(async () => {
     if (!equipCode) {
       setInterlock('dailyInspectDone', !dailyInspectRequired);
       setInterlock('workerInspectDone', !workerInspectRequired);
+      setDailyInspectResult(null);
+      setWorkerInspectResult(null);
       return;
     }
     const checks = await Promise.allSettled([
       dailyInspectRequired ? api.get('/equipment/daily-inspect/check', { params: { equipCode, inspectType: 'DAILY' } }) : Promise.resolve(null),
       workerInspectRequired && selectedOrder?.orderNo ? api.get('/equipment/daily-inspect/check', { params: { equipCode, inspectType: 'WORKER', orderNo: selectedOrder.orderNo } }) : Promise.resolve(null),
     ]);
-    const daily = checks[0].status === 'fulfilled' && checks[0].value?.data?.data?.alreadyInspected;
-    const worker = checks[1].status === 'fulfilled' && checks[1].value?.data?.data?.alreadyInspected;
-    setInterlock('dailyInspectDone', !dailyInspectRequired || Boolean(daily));
-    setInterlock('workerInspectDone', !workerInspectRequired || Boolean(worker));
+    const dailyData = checks[0].status === 'fulfilled' ? checks[0].value?.data?.data : null;
+    const workerData = checks[1].status === 'fulfilled' ? checks[1].value?.data?.data : null;
+    // 인터록은 "기록 존재"가 아니라 "종합판정 PASS" 기준.
+    setInterlock('dailyInspectDone', !dailyInspectRequired || Boolean(dailyData?.inspectPassed));
+    setInterlock('workerInspectDone', !workerInspectRequired || Boolean(workerData?.inspectPassed));
+    setDailyInspectResult(dailyData?.alreadyInspected ? (dailyData?.overallResult ?? null) : null);
+    setWorkerInspectResult(workerData?.alreadyInspected ? (workerData?.overallResult ?? null) : null);
   }, [dailyInspectRequired, equipCode, selectedOrder?.orderNo, setInterlock, workerInspectRequired]);
 
   useEffect(() => { void refreshInspectStatus(); }, [refreshInspectStatus]);
@@ -346,8 +366,14 @@ export default function InputAssemblyPage() {
     : !selectedOrder ? t('production.inputAssembly.requireOrder', '작업지시를 선택하세요.')
     : !processCode ? t('production.subprocess.requireProcess', '공정을 선택하세요.')
     : !equipCode ? t('production.inputAssembly.requireEquip', '설비를 선택하세요.')
-    : dailyInspectRequired && !interlock.dailyInspectDone ? '설비 일상점검을 먼저 완료하세요.'
-    : workerInspectRequired && !interlock.workerInspectDone ? '작업자 설비점검을 먼저 완료하세요.'
+    : dailyInspectRequired && !interlock.dailyInspectDone
+      ? (dailyInspectResult
+        ? t('production.inspect.dailyNgBlock', '설비 일상점검 종합판정이 NG입니다. 조치 후 재점검하세요.')
+        : '설비 일상점검을 먼저 완료하세요.')
+    : workerInspectRequired && !interlock.workerInspectDone
+      ? (workerInspectResult
+        ? t('production.inspect.workerNgBlock', '작업자 설비점검 종합판정이 NG입니다. 조치 후 재점검하세요.')
+        : '작업자 설비점검을 먼저 완료하세요.')
     : t('production.inputAssembly.sgNotReadyHelp', '필요한 반제품을 스캔하고 잔량을 확인하세요.');
 
   const onIssue = useCallback(async () => {
@@ -557,13 +583,18 @@ export default function InputAssemblyPage() {
               <HeaderCheckItem
                 label="설비 일상점검"
                 done={!dailyInspectRequired || interlock.dailyInspectDone}
+                doneDetail={inspectDoneDetail(dailyInspectResult)}
+                notDoneDetail={inspectNgDetail(dailyInspectResult)}
                 disabled={!dailyInspectRequired || !equipCode || contextLocked}
                 disabledReason={!dailyInspectRequired ? '환경설정에서 필수 점검이 아닙니다.' : !equipCode ? '설비를 먼저 선택하세요.' : '처리 중입니다.'}
                 onInput={() => setDailyInspectOpen(true)}
+                wide
               />
               <HeaderCheckItem
                 label="작업자설비점검"
                 done={!workerInspectRequired || interlock.workerInspectDone}
+                doneDetail={inspectDoneDetail(workerInspectResult)}
+                notDoneDetail={inspectNgDetail(workerInspectResult)}
                 disabled={!workerInspectRequired || (dailyInspectRequired && !interlock.dailyInspectDone) || !selectedOrder || selectedWorkers.length === 0 || contextLocked}
                 disabledReason={!workerInspectRequired ? '환경설정에서 필수 점검이 아닙니다.' : dailyInspectRequired && !interlock.dailyInspectDone ? '설비 일상점검을 먼저 완료하세요.' : !selectedOrder ? '작업지시를 먼저 선택하세요.' : selectedWorkers.length === 0 ? '작업자를 먼저 선택하세요.' : '처리 중입니다.'}
                 onInput={() => setWorkerInspectOpen(true)}

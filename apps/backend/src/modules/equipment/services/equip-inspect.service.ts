@@ -61,7 +61,14 @@ export class EquipInspectService {
     private readonly shiftPatternRepository: Repository<ShiftPattern>,
   ) {}
 
-  /** 오늘 해당 설비의 점검 완료 여부 확인 */
+  /**
+   * 오늘 해당 설비의 점검 "기록 존재" 여부만 확인한다.
+   *
+   * 주의: 종합판정(OVERALL_RESULT)을 보지 않으므로 NG로 점검된 설비도 true를 반환한다.
+   * 생산 인터록처럼 "진행 가능한가"를 판정하는 용도로 쓰면 안 된다 —
+   * 그 경우 `getInspectionStatus().inspectPassed`(기록 존재 + 판정 PASS)를 사용한다.
+   * 재점검 안내처럼 "기록이 있는가"를 묻는 용도에만 쓴다.
+   */
   async checkAlreadyInspected(
     equipCode: string,
     inspectDate: string,
@@ -108,9 +115,16 @@ export class EquipInspectService {
       .addOrderBy('log.createdAt', 'DESC')
       .getOne();
     const inspectedAtSource = latestLog?.inspectAt ?? latestLog?.createdAt ?? null;
+    // 종합판정(OVERALL_RESULT)은 alreadyInspected와 분리해 내려준다.
+    // alreadyInspected = "기록이 있다"(NG여도 true). 재점검 안내·PDA 경고가 이 의미에 의존한다.
+    // inspectPassed  = "기록이 있고 종합판정이 PASS"(생산 인터록 판정용).
+    // PASS 화이트리스트로 판정한다 — CONDITIONAL/NULL/공백이 조용히 통과하면 안 된다.
+    const overallResult = latestLog?.overallResult ?? null;
 
     return {
       alreadyInspected: !!latestLog,
+      overallResult,
+      inspectPassed: !!latestLog && String(overallResult ?? '').toUpperCase() === 'PASS',
       inspectedAt: inspectedAtSource ? this.formatDateTime(inspectedAtSource) : null,
       inspectorName: latestLog?.inspectorName ?? null,
       equipCode: query.equipCode,

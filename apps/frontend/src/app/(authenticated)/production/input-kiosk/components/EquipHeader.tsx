@@ -18,6 +18,7 @@ import { useKioskStore } from '@/stores/kioskStore';
 import EquipSelectModal from './EquipSelectModal';
 import HeaderCheckItem from './HeaderCheckItem';
 import type { EquipOption } from '../utils/equipOptions';
+import { inspectStatusDetail, isInspectNg } from '../utils/inspectStatus';
 
 interface EquipHeaderProps {
   equips: EquipOption[];
@@ -31,12 +32,17 @@ interface EquipHeaderProps {
   dailyInspectAt?: string | null;
   /** 작업자설비점검 완료 시각 "YYYY-MM-DD HH:mm:ss" */
   workerInspectAt?: string | null;
+  /** 설비일일점검 종합판정(PASS/FAIL). 점검 기록이 없으면 null */
+  dailyInspectResult?: string | null;
+  /** 작업자설비점검 종합판정(PASS/FAIL). 점검 기록이 없으면 null */
+  workerInspectResult?: string | null;
 }
 
 export default function EquipHeader({
   equips, onOpenJobOrder, onOpenWorker, onOpenDailyInspect, onOpenWorkerInspect,
   onSelectEquip, onRemoveWorker,
   dailyInspectAt, workerInspectAt,
+  dailyInspectResult, workerInspectResult,
 }: EquipHeaderProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -84,13 +90,26 @@ export default function EquipHeader({
     selectedWorkers.length === 0 ? t('kiosk.header.workerRequiredForInspect', '작업자를 1명 이상 추가하세요.') : '',
   ].filter(Boolean).join(' ') || undefined;
 
-  // 완료 시각을 "완료 HH:mm" 형태로 — 시각이 없으면 undefined(→ HeaderCheckItem이 "완료"로 폴백)
+  // 점검 배지는 완료 여부만이 아니라 종합판정을 함께 보여준다 — "완료(합격) 14:32" / "완료(불합격) 14:32".
+  // 판정 라벨은 공통코드 i18n comCode.INSPECT_JUDGE.* 단일 출처를 쓴다.
+  // 불합격은 done=false로 넘어가므로 빨간 배지 + 입력버튼 열림(재점검 유도) 상태가 된다.
   const doneLabel = t('kiosk.header.done', '완료');
-  const inspectDoneDetail = (at?: string | null) => {
+  const detailLabels = {
+    done: doneLabel,
+    judge: (code: string) => t(`comCode.INSPECT_JUDGE.${code}`, code),
+  };
+  const statusDetail = (result?: string | null, at?: string | null) =>
+    inspectStatusDetail(result, at, detailLabels);
+  // 판정이 없으면(점검 기록 없음) 기존 "완료 HH:mm" 폴백을 유지한다.
+  const inspectDoneDetail = (at?: string | null, result?: string | null) => {
+    const withJudge = statusDetail(result, at);
+    if (withJudge) return withJudge;
     if (!at) return undefined;
     const hhmm = (at.split(' ')[1] ?? at).slice(0, 5);
     return `${doneLabel} ${hhmm}`;
   };
+  const ngDetail = (result?: string | null, at?: string | null) =>
+    isInspectNg(result) ? statusDetail(result, at) : undefined;
 
   return (
     <>
@@ -186,15 +205,18 @@ export default function EquipHeader({
             <HeaderCheckItem
               label={t('kiosk.header.dailyInspect')}
               done={interlock.dailyInspectDone}
-              doneDetail={inspectDoneDetail(dailyInspectAt)}
+              doneDetail={inspectDoneDetail(dailyInspectAt, dailyInspectResult)}
+              notDoneDetail={ngDetail(dailyInspectResult, dailyInspectAt)}
               disabled={!selectedEquip}
               disabledReason={dailyInspectDisabledReason}
               onInput={onOpenDailyInspect}
+              wide
             />
             <HeaderCheckItem
               label={t('kiosk.header.workerInspect')}
               done={interlock.workerInspectDone}
-              doneDetail={inspectDoneDetail(workerInspectAt)}
+              doneDetail={inspectDoneDetail(workerInspectAt, workerInspectResult)}
+              notDoneDetail={ngDetail(workerInspectResult, workerInspectAt)}
               disabled={!interlock.dailyInspectDone || !selectedJobOrder || selectedWorkers.length === 0}
               disabledReason={workerInspectDisabledReason}
               onInput={onOpenWorkerInspect}

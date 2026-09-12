@@ -199,6 +199,7 @@ describe('SubprocessKittingService 설비점검 인터록 게이트', () => {
       { equipCode: 'EQ-1', orderNo: 'JO-001' },
       'C1',
       'P1',
+      'ASSEMBLY',
     );
     expect(tx.run).not.toHaveBeenCalled();
   });
@@ -219,6 +220,7 @@ describe('SubprocessKittingService 설비점검 인터록 게이트', () => {
       { equipCode: 'EQ-2', orderNo: 'JO-002' },
       'C1',
       'P1',
+      'SUBASSEMBLY',
     );
     expect(tx.run).not.toHaveBeenCalled();
   });
