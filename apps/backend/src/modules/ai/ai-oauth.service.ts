@@ -16,9 +16,13 @@ import { AiOauthToken } from '../../entities/ai-oauth-token.entity';
  *   client_id  Codex CLI 의 public client. Codex·Hermes 가 같은 값을 쓴다.
  *   필수 파라미터 id_token_add_organizations / codex_cli_simplified_flow 가 없으면
  *              "Invalid authorize request" 400 이 난다.
- *   redirect_uri 는 임의 도메인이 허용된다(배포 서버 콜백 사용 가능).
+ *   redirect_uri 는 http://localhost:<port>/auth/callback 만 통과한다.
+ *              다른 도메인은 첫 홉이 302 라 되는 것처럼 보이지만 끝까지 따라가면 거부된다.
  *
- * 발급된 access_token 의 aud 가 https://api.openai.com/v1 이라 그대로 Bearer 로 호출한다.
+ * 발급된 access_token 의 aud 는 https://api.openai.com/v1 이지만, 이걸 플랫폼 API 키처럼
+ * 쓰면 안 된다. 그쪽은 org 의 API 크레딧으로 과금돼 크레딧이 없으면 429 가 난다.
+ * ChatGPT 구독으로 호출하려면 chatgpt.com/backend-api 로 나가야 하고, 그때 필요한
+ * 계정 ID 는 readChatgptAccountId 가 access_token claims 에서 꺼낸다(2026-09-13 실측).
  */
 @Injectable()
 export class AiOauthService {
@@ -207,6 +211,19 @@ export class AiOauthService {
     }
   }
 
+  /**
+   * access_token claims 에서 ChatGPT 계정 ID 를 꺼낸다.
+   *
+   * 이 값은 chatgpt.com/backend-api 호출 시 `chatgpt-account-id` 헤더로 넣어야 한다.
+   * id_token 의 sub(google-oauth2|...)와는 다른 값이다 — 그걸 넣으면 호출이 계정을 찾지 못한다.
+   */
+  static readChatgptAccountId(accessClaims: Record<string, unknown>): string | null {
+    const auth = accessClaims['https://api.openai.com/auth'];
+    if (!auth || typeof auth !== 'object') return null;
+    const id = (auth as Record<string, unknown>).chatgpt_account_id;
+    return typeof id === 'string' && id ? id : null;
+  }
+
   /** JWT payload 를 읽는다(서명 검증은 하지 않는다 — 표시용 정보만 꺼낸다) */
   private decodeJwt(token?: string): Record<string, unknown> {
     if (!token || token.split('.').length !== 3) return {};
@@ -237,7 +254,7 @@ export class AiOauthService {
       accessToken,
       refreshToken: tokens.refresh_token ? String(tokens.refresh_token) : null,
       idToken: tokens.id_token ? String(tokens.id_token) : null,
-      accountId: (idClaims.sub as string) ?? null,
+      accountId: AiOauthService.readChatgptAccountId(accessClaims),
       accountEmail: (idClaims.email as string) ?? null,
       expiresAt: expSec ? new Date(expSec * 1000) : null,
       lastRefresh: new Date(),
@@ -272,6 +289,19 @@ export class AiOauthService {
    * 호출에 쓸 access_token 을 돌려준다. 만료가 임박하면 먼저 갱신한다.
    * 연결이 없으면 null — 호출부가 "연결해 주세요"로 안내한다.
    */
+  /**
+   * 호출에 필요한 자격 한 묶음. accountId 는 저장 컬럼이 아니라 토큰에서 직접 읽는다
+   * (예전 버전이 sub 를 넣어 둔 행이 남아 있어도 올바른 값이 나오게 하려는 것).
+   */
+  async getCredentials(
+    company?: string,
+    plant?: string,
+  ): Promise<{ accessToken: string; accountId: string | null } | null> {
+    const accessToken = await this.getAccessToken(company, plant);
+    if (!accessToken) return null;
+    return { accessToken, accountId: AiOauthService.readChatgptAccountId(this.decodeJwt(accessToken)) };
+  }
+
   async getAccessToken(company?: string, plant?: string): Promise<string | null> {
     // AiService 는 테넌트 스코프 없이 설정을 읽는다(SysConfig 도 configKey 만으로 조회).
     // 여기서만 회사/사업장을 요구하면 개념이 어긋나므로, 생략 시 해당 provider 의 단일 행을 쓴다.

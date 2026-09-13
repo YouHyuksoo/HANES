@@ -2,8 +2,9 @@
 --
 -- 배경:
 --   OpenAI 는 API 키 외에 OAuth(Authorization Code + PKCE)로도 붙을 수 있다.
---   auth.openai.com 에서 발급한 access_token 의 aud 가 https://api.openai.com/v1 이라
---   그대로 Bearer 로 쓴다. Codex CLI / Hermes 가 같은 방식으로 동작한다(2026-09-13 실측).
+--   단 이 토큰은 플랫폼 API 키의 대체물이 아니다. api.openai.com 으로 보내면 인증은 되지만
+--   org 의 API 크레딧으로 과금된다(크레딧 없으면 429). ChatGPT 구독을 쓰려면
+--   Codex CLI 와 같은 경로인 chatgpt.com/backend-api/codex/responses 로 나가야 한다(2026-09-13 실측).
 --
 -- 왜 SYS_CONFIGS 가 아닌가:
 --   토큰이 1800자 내외로 길고, 설정 화면에 값이 그대로 노출되면 안 된다.
@@ -40,7 +41,9 @@ COMMENT ON TABLE  AI_OAUTH_TOKENS IS 'AI provider OAuth 토큰 (회사/사업장
 /
 COMMENT ON COLUMN AI_OAUTH_TOKENS.PROVIDER IS 'AI provider [openai-oauth]';
 /
-COMMENT ON COLUMN AI_OAUTH_TOKENS.ACCESS_TOKEN IS 'API 호출용 Bearer 토큰 (aud=https://api.openai.com/v1)';
+COMMENT ON COLUMN AI_OAUTH_TOKENS.ACCESS_TOKEN IS 'ChatGPT 백엔드 호출용 Bearer 토큰';
+/
+COMMENT ON COLUMN AI_OAUTH_TOKENS.ACCOUNT_ID IS 'chatgpt-account-id 헤더 값 (access_token claims 의 chatgpt_account_id, id_token.sub 아님)';
 /
 COMMENT ON COLUMN AI_OAUTH_TOKENS.REFRESH_TOKEN IS '만료 시 재발급용. 없으면 재로그인 필요';
 /

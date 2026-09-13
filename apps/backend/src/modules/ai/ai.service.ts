@@ -23,8 +23,9 @@ const PROVIDER_DEFAULT_MODEL: Record<string, string> = {
   mistral: 'mistral-medium-latest',
   openai: 'gpt-4o-mini',
   openrouter: 'openai/gpt-oss-120b:free',
-  // OAuth 로 붙은 ChatGPT 계정. API 키 방식과 같은 엔드포인트를 쓴다.
-  'openai-oauth': 'gpt-4o-mini',
+  // OAuth 로 붙은 ChatGPT 계정. 플랫폼 API(api.openai.com)가 아니라 ChatGPT 백엔드로 나간다.
+  // 모델명도 플랫폼 것과 다르다 — 사용 가능 목록은 codex/models 가 계정별로 내려준다.
+  'openai-oauth': 'gpt-6-astra',
 };
 
 type LlmMessage = { role: 'system' | 'user' | 'assistant'; content: string; attachments?: AiChatAttachmentDto[] };
@@ -131,8 +132,7 @@ export class AiService {
       case 'openrouter':
         return this.callOpenRouter(model, apiKey, messages);
       case AiOauthService.PROVIDER:
-        // 엔드포인트는 API 키 방식과 동일하다. access_token 을 Bearer 로 넣을 뿐이다.
-        return this.callOpenAI(model, apiKey, messages);
+        return this.callChatGptBackend(model, apiKey, messages);
       default:
         return this.callMistral(model, apiKey, messages);
     }
@@ -178,6 +178,118 @@ export class AiService {
 
   private async callOpenAI(model: string, apiKey: string, messages: LlmMessage[]): Promise<string> {
     return this.callOpenAICompatible('https://api.openai.com/v1/chat/completions', 'OpenAI', model, apiKey, messages);
+  }
+
+  /**
+   * ChatGPT 계정(OAuth)으로 붙는 경로 — chatgpt.com/backend-api/codex/responses
+   *
+   * 왜 플랫폼 API(api.openai.com/v1/chat/completions)가 아닌가:
+   * OAuth 로 받은 토큰은 플랫폼 org 로도 인증은 되지만 그쪽은 API 크레딧으로 과금된다.
+   * ChatGPT 구독은 API 크레딧을 주지 않아서 크레딧이 없으면 429("no credits remaining")가 난다.
+   * 구독을 쓰려면 Codex CLI 와 같은 경로로 나가야 한다(2026-09-13 실측).
+   *
+   * 이 경로의 조건 3가지:
+   * 1. `chatgpt-account-id` 헤더 — access_token claims 의 chatgpt_account_id
+   * 2. `version` / `originator` 헤더 — 서버가 클라이언트 버전으로 모델 노출을 가른다.
+   *    낮은 버전을 보내면 최신 모델이 목록에서 빠지고 400("not supported")이 난다.
+   * 3. Chat Completions 가 아니라 Responses 형식(input/instructions), 응답은 SSE 스트림
+   */
+  private static readonly CHATGPT_BACKEND = 'https://chatgpt.com/backend-api/codex/responses';
+  private static readonly CODEX_CLIENT_VERSION = '0.154.0';
+
+  private async callChatGptBackend(model: string, accessToken: string, messages: LlmMessage[]): Promise<string> {
+    if (this.hasImageAttachments(messages)) {
+      throw new BadRequestException(
+        '현재 ChatGPT 계정 연결(OAuth)에서는 이미지 첨부 분석을 지원하지 않습니다. OpenAI API 키 방식으로 변경해 주세요.',
+      );
+    }
+    const accountId = (await this.oauth.getCredentials())?.accountId;
+    if (!accountId) {
+      throw new BadRequestException(
+        'ChatGPT 계정 ID를 찾지 못했습니다. 시스템 환경설정 > AI에서 다시 연결해 주세요.',
+      );
+    }
+
+    // Responses 형식: system 은 instructions 로, 나머지는 input 배열로 옮긴다.
+    const instructions = messages
+      .filter((m) => m.role === 'system')
+      .map((m) => m.content)
+      .join('\n\n');
+    const input = messages
+      .filter((m) => m.role !== 'system')
+      .map((m) => ({
+        type: 'message',
+        role: m.role,
+        content: [{ type: m.role === 'assistant' ? 'output_text' : 'input_text', text: m.content }],
+      }));
+
+    const version = AiService.CODEX_CLIENT_VERSION;
+    const res = await fetch(AiService.CHATGPT_BACKEND, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+        Authorization: `Bearer ${accessToken}`,
+        'chatgpt-account-id': accountId,
+        'User-Agent': `codex_cli_rs/${version}`,
+        originator: 'codex_cli_rs',
+        version,
+      },
+      body: JSON.stringify({
+        model,
+        instructions: instructions || SYSTEM_PROMPT,
+        input,
+        tools: [],
+        tool_choice: 'auto',
+        parallel_tool_calls: false,
+        store: false,
+        stream: true,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`ChatGPT ${res.status}: ${body.slice(0, 300)}`);
+    }
+    return this.readResponsesStream(res);
+  }
+
+  /** Responses SSE 스트림에서 본문 텍스트만 모은다 */
+  private async readResponsesStream(res: Response): Promise<string> {
+    if (!res.body) throw new Error('ChatGPT 응답 본문이 비어 있습니다.');
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let text = '';
+    let failed: string | null = null;
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      // SSE 는 빈 줄로 이벤트를 끊는다. 마지막 조각은 다음 청크와 이어붙여야 한다.
+      const chunks = buffer.split('\n\n');
+      buffer = chunks.pop() ?? '';
+      for (const chunk of chunks) {
+        for (const line of chunk.split('\n')) {
+          if (!line.startsWith('data:')) continue;
+          const payload = line.slice(5).trim();
+          if (!payload || payload === '[DONE]') continue;
+          let event: { type?: string; delta?: string; response?: { error?: { message?: string } } };
+          try {
+            event = JSON.parse(payload) as typeof event;
+          } catch {
+            continue;
+          }
+          if (event.type === 'response.output_text.delta' && typeof event.delta === 'string') {
+            text += event.delta;
+          } else if (event.type === 'response.failed') {
+            failed = event.response?.error?.message ?? '알 수 없는 오류';
+          }
+        }
+      }
+    }
+    if (failed) throw new Error(`ChatGPT: ${failed}`);
+    return text;
   }
 
   private async callOpenRouter(model: string, apiKey: string, messages: LlmMessage[]): Promise<string> {

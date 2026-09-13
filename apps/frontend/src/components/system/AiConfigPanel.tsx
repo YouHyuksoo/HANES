@@ -22,11 +22,9 @@ const PROVIDER_OPTIONS = [
 const OAUTH_PROVIDER = "openai-oauth";
 
 const MODEL_OPTIONS: Record<string, { value: string; label: string }[]> = {
-  // 계정 연결도 OpenAI 와 같은 모델을 쓴다(엔드포인트 동일, 인증만 다르다)
-  [OAUTH_PROVIDER]: [
-    { value: "gpt-4o-mini", label: "gpt-4o-mini" },
-    { value: "gpt-4o", label: "gpt-4o" },
-  ],
+  // 계정 연결은 플랫폼 API가 아니라 ChatGPT 백엔드로 나간다.
+  // 그래서 모델명이 API 키 방식과 다르다(gpt-4o 계열은 여기서 호출되지 않는다).
+  [OAUTH_PROVIDER]: [{ value: "gpt-6-astra", label: "gpt-6-astra (ChatGPT 구독)" }],
   // mistral-large는 상위 구독 티어에서만 호출된다(무료/기본 티어는 403 tier_not_allowed). 기본 선택은 medium.
   mistral: [
     { value: "mistral-medium-latest", label: "mistral-medium-latest" },
