@@ -9584,7 +9584,15 @@
       "keyEmptyPlaceholder": "Enter key (empty = use server .env)",
       "keyConfigured": "API key is configured.",
       "keyMissing": "API key is not set.",
-      "test": "Test Connection"
+      "test": "Test Connection",
+      "accountLink": "Link OpenAI account",
+      "accountLinkDesc": "Connect with a ChatGPT account instead of an API key. Once linked, it refreshes automatically when the token expires.",
+      "accountLinked": "Linked",
+      "accountNotLinked": "Not linked.",
+      "accountConnect": "Link OpenAI account",
+      "accountRelink": "Relink",
+      "accountUnlink": "Unlink",
+      "accountExpired": "Expired — please link again"
     },
     "catalog": {
       "title": "AI Table Catalog",

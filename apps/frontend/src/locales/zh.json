@@ -9584,7 +9584,15 @@
       "keyEmptyPlaceholder": "输入密钥（留空则使用服务器 .env）",
       "keyConfigured": "已配置 API 密钥。",
       "keyMissing": "未配置 API 密钥。",
-      "test": "测试连接"
+      "test": "测试连接",
+      "accountLink": "连接 OpenAI 账户",
+      "accountLinkDesc": "使用 ChatGPT 账户代替 API 密钥进行连接。连接一次后，令牌过期时会自动续期。",
+      "accountLinked": "已连接",
+      "accountNotLinked": "尚未连接。",
+      "accountConnect": "连接 OpenAI 账户",
+      "accountRelink": "重新连接",
+      "accountUnlink": "解除连接",
+      "accountExpired": "已过期，请重新连接"
     },
     "catalog": {
       "title": "AI 表目录",

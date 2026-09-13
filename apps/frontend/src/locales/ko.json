@@ -9607,7 +9607,15 @@
       "keyEmptyPlaceholder": "키 입력 (비우면 서버 .env 사용)",
       "keyConfigured": "키가 설정되어 있습니다.",
       "keyMissing": "키가 설정되지 않았습니다.",
-      "test": "연결 테스트"
+      "test": "연결 테스트",
+      "accountLink": "OpenAI 계정 연결",
+      "accountLinkDesc": "API 키 대신 ChatGPT 계정으로 연결합니다. 한 번 연결하면 만료 시 자동으로 갱신됩니다.",
+      "accountLinked": "연결됨",
+      "accountNotLinked": "연결되지 않았습니다.",
+      "accountConnect": "OpenAI 계정 연결",
+      "accountRelink": "다시 연결",
+      "accountUnlink": "연결 해제",
+      "accountExpired": "만료됨, 다시 연결하세요"
     },
     "catalog": {
       "title": "AI 테이블 카탈로그",

@@ -9584,7 +9584,15 @@
       "keyEmptyPlaceholder": "Nhập khóa (để trống = dùng .env máy chủ)",
       "keyConfigured": "Đã cấu hình khóa API.",
       "keyMissing": "Chưa cấu hình khóa API.",
-      "test": "Kiểm tra kết nối"
+      "test": "Kiểm tra kết nối",
+      "accountLink": "Liên kết tài khoản OpenAI",
+      "accountLinkDesc": "Kết nối bằng tài khoản ChatGPT thay cho khóa API. Sau khi liên kết, token sẽ tự động được làm mới khi hết hạn.",
+      "accountLinked": "Đã liên kết",
+      "accountNotLinked": "Chưa liên kết.",
+      "accountConnect": "Liên kết tài khoản OpenAI",
+      "accountRelink": "Liên kết lại",
+      "accountUnlink": "Hủy liên kết",
+      "accountExpired": "Đã hết hạn — hãy liên kết lại"
     },
     "catalog": {
       "title": "Danh mục bảng AI",

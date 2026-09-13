@@ -11,6 +11,7 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Mistral } from '@mistralai/mistralai';
+import { AiOauthService } from './ai-oauth.service';
 import { SysConfig } from '../../entities/sys-config.entity';
 import { AiChatAttachmentDto, AiChatMessageDto } from './dto/ai-chat.dto';
 
@@ -22,6 +23,8 @@ const PROVIDER_DEFAULT_MODEL: Record<string, string> = {
   mistral: 'mistral-medium-latest',
   openai: 'gpt-4o-mini',
   openrouter: 'openai/gpt-oss-120b:free',
+  // OAuth 로 붙은 ChatGPT 계정. API 키 방식과 같은 엔드포인트를 쓴다.
+  'openai-oauth': 'gpt-4o-mini',
 };
 
 type LlmMessage = { role: 'system' | 'user' | 'assistant'; content: string; attachments?: AiChatAttachmentDto[] };
@@ -37,6 +40,7 @@ export class AiService {
   constructor(
     @InjectRepository(SysConfig)
     private readonly sysConfigRepo: Repository<SysConfig>,
+    private readonly oauth: AiOauthService,
   ) {}
 
   private async getConfigValue(configKey: string, def: string): Promise<string> {
@@ -48,6 +52,11 @@ export class AiService {
 
   /** 키: sys-config(UI 입력) 우선, 없으면 .env */
   private async getApiKey(provider: string): Promise<string | undefined> {
+    // OAuth provider 는 저장된 access_token 을 Bearer 로 쓴다.
+    // 만료가 임박하면 getAccessToken 이 refresh_token 으로 먼저 갱신한다.
+    if (provider === AiOauthService.PROVIDER) {
+      return (await this.oauth.getAccessToken()) ?? undefined;
+    }
     const cfg = await this.getConfigValue(`AI_${provider.toUpperCase()}_KEY`, '');
     if (cfg.trim()) return cfg.trim();
     switch (provider) {
@@ -86,7 +95,11 @@ export class AiService {
     const model = await this.getConfigValue('AI_MODEL', PROVIDER_DEFAULT_MODEL[provider] ?? 'mistral-medium-latest');
     const apiKey = await this.getApiKey(provider);
     if (!apiKey) {
-      throw new BadRequestException(`${provider} API 키가 설정되지 않았습니다. 시스템 환경설정 > AI에서 키를 등록해 주세요.`);
+      throw new BadRequestException(
+        provider === AiOauthService.PROVIDER
+          ? 'OpenAI 계정이 연결되지 않았거나 연결이 만료되었습니다. 시스템 환경설정 > AI에서 다시 연결해 주세요.'
+          : `${provider} API 키가 설정되지 않았습니다. 시스템 환경설정 > AI에서 키를 등록해 주세요.`,
+      );
     }
 
     for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -117,6 +130,9 @@ export class AiService {
         return this.callOpenAI(model, apiKey, messages);
       case 'openrouter':
         return this.callOpenRouter(model, apiKey, messages);
+      case AiOauthService.PROVIDER:
+        // 엔드포인트는 API 키 방식과 동일하다. access_token 을 Bearer 로 넣을 뿐이다.
+        return this.callOpenAI(model, apiKey, messages);
       default:
         return this.callMistral(model, apiKey, messages);
     }

@@ -10,7 +10,9 @@ describe('AiService multimodal chat payloads', () => {
         Promise.resolve(values[where.configKey] === undefined ? null : { configValue: values[where.configKey] }),
       ),
     };
-    return new AiService(repo as any);
+    // OAuth provider 를 쓰지 않는 테스트라 토큰 조회는 항상 null 을 돌려준다
+    const oauth = { getAccessToken: jest.fn().mockResolvedValue(null) };
+    return new AiService(repo as any, oauth as any);
   };
 
   beforeEach(() => {

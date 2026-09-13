@@ -13,11 +13,20 @@ import toast from "react-hot-toast";
 
 const PROVIDER_OPTIONS = [
   { value: "mistral", label: "Mistral" },
-  { value: "openai", label: "OpenAI" },
+  { value: "openai", label: "OpenAI (API 키)" },
+  { value: "openai-oauth", label: "OpenAI (계정 연결)" },
   { value: "openrouter", label: "OpenRouter" },
 ];
 
+/** 계정 연결로 붙는 provider — API 키 입력 대신 로그인 버튼을 보여준다 */
+const OAUTH_PROVIDER = "openai-oauth";
+
 const MODEL_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  // 계정 연결도 OpenAI 와 같은 모델을 쓴다(엔드포인트 동일, 인증만 다르다)
+  [OAUTH_PROVIDER]: [
+    { value: "gpt-4o-mini", label: "gpt-4o-mini" },
+    { value: "gpt-4o", label: "gpt-4o" },
+  ],
   // mistral-large는 상위 구독 티어에서만 호출된다(무료/기본 티어는 403 tier_not_allowed). 기본 선택은 medium.
   mistral: [
     { value: "mistral-medium-latest", label: "mistral-medium-latest" },
@@ -126,6 +135,42 @@ export default function AiConfigPanel() {
     setExistingKeys((prev) => new Set(prev).add(key));
   }, [existingKeys]);
 
+  // ── OpenAI 계정 연결 (OAuth) ────────────────────────────────────────────
+  const [oauth, setOauth] = useState<{ connected: boolean; accountEmail?: string | null; expired?: boolean } | null>(null);
+
+  const loadOauth = useCallback(async () => {
+    try {
+      const res = await api.get("/ai/oauth/status", { suppressErrorModal: true });
+      setOauth(res.data?.data ?? res.data);
+    } catch {
+      setOauth(null);
+    }
+  }, []);
+
+  useEffect(() => { if (provider === OAUTH_PROVIDER) void loadOauth(); }, [provider, loadOauth]);
+
+  /**
+   * 새 창에서 OpenAI 로그인을 띄운다.
+   * 콜백은 서버가 받아 토큰을 저장하고 창을 닫는다 — 창이 닫히면 상태를 다시 읽는다.
+   */
+  const handleConnect = useCallback(async () => {
+    const res = await api.post("/ai/oauth/start", {});
+    const url = (res.data?.data ?? res.data)?.authorizeUrl;
+    if (!url) return;
+    const win = window.open(url, "openai-oauth", "width=520,height=720");
+    const timer = window.setInterval(() => {
+      if (win?.closed) {
+        window.clearInterval(timer);
+        void loadOauth();
+      }
+    }, 1000);
+  }, [loadOauth]);
+
+  const handleDisconnect = useCallback(async () => {
+    await api.delete("/ai/oauth");
+    await loadOauth();
+  }, [loadOauth]);
+
   const handleTest = useCallback(async () => {
     setTesting(true);
     setTestResult(null);
@@ -209,6 +254,41 @@ export default function AiConfigPanel() {
           {t("ai.config.enabled", "AI 채팅 활성화")}
         </label>
 
+        {provider === OAUTH_PROVIDER ? (
+          <div className="rounded-lg border border-border px-3 py-3 text-sm">
+            <div className="mb-2 font-medium text-text">{t("ai.config.accountLink", "OpenAI 계정 연결")}</div>
+            <p className="mb-2 text-xs text-text-muted">
+              {t("ai.config.accountLinkDesc", "API 키 대신 ChatGPT 계정으로 연결합니다. 한 번 연결하면 만료 시 자동으로 갱신됩니다.")}
+            </p>
+            <div className="flex items-center gap-2">
+              {oauth?.connected ? (
+                <>
+                  <span className={`inline-flex items-center gap-1 text-xs ${oauth.expired ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"}`}>
+                    {oauth.expired ? <XCircle className="h-3.5 w-3.5" /> : <CheckCircle className="h-3.5 w-3.5" />}
+                    {oauth.accountEmail ?? t("ai.config.accountLinked", "연결됨")}
+                    {oauth.expired ? ` — ${t("ai.config.accountExpired", "만료됨, 다시 연결하세요")}` : ""}
+                  </span>
+                  <Button size="sm" variant="secondary" onClick={handleConnect}>
+                    {t("ai.config.accountRelink", "다시 연결")}
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={handleDisconnect}>
+                    {t("ai.config.accountUnlink", "연결 해제")}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                    <XCircle className="h-3.5 w-3.5" />
+                    {t("ai.config.accountNotLinked", "연결되지 않았습니다.")}
+                  </span>
+                  <Button size="sm" onClick={handleConnect}>
+                    {t("ai.config.accountConnect", "OpenAI 계정 연결")}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        ) : (
         <label className="text-sm">
           <span className="mb-1 block font-medium text-text">{t("ai.config.apiKey", "API 키")}</span>
           <Input
@@ -225,6 +305,7 @@ export default function AiConfigPanel() {
             {keyConfigured ? t("ai.config.keyConfigured", "키가 설정되어 있습니다.") : t("ai.config.keyMissing", "키가 설정되지 않았습니다.")}
           </span>
         </label>
+        )}
 
         {testResult && (
           <div className={`rounded-lg border px-3 py-2 text-sm ${testResult.ok ? "border-green-500 text-green-700 dark:text-green-400" : "border-red-500 text-red-700 dark:text-red-400"}`}>
