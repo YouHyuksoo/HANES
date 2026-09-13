@@ -31,7 +31,7 @@ jobs:
       - name: Ports and listeners
         run: |
           $ErrorActionPreference = 'SilentlyContinue'
-          foreach ($port in 3002, 3003, 443, 3080) {
+          foreach ($port in 3100, 3003, 443, 3080) {
             $conn = Get-NetTCPConnection -LocalPort $port -State Listen | Select-Object -First 1
             if ($conn) {
               $proc = Get-Process -Id $conn.OwningProcess
@@ -46,7 +46,7 @@ jobs:
       - name: Local HTTP probes
         run: |
           $ErrorActionPreference = 'SilentlyContinue'
-          foreach ($probe in @(@{ n = 'frontend'; u = 'http://127.0.0.1:3002/' }, @{ n = 'backend'; u = 'http://127.0.0.1:3003/api' })) {
+          foreach ($probe in @(@{ n = 'frontend'; u = 'http://127.0.0.1:3100/' }, @{ n = 'backend'; u = 'http://127.0.0.1:3003/api' })) {
             $sw = [Diagnostics.Stopwatch]::StartNew()
             try {
               $res = Invoke-WebRequest -Uri $probe.u -UseBasicParsing -TimeoutSec 15

@@ -16,11 +16,11 @@ module.exports = {
     {
       name: "hanes-frontend",
       script: "node_modules/next/dist/bin/next",
-      args: "start -p 3002",
+      args: "start -p 3100",
       cwd: "C:\\Project\\HANES\\apps\\frontend",
       env: {
         NODE_ENV: "production",
-        PORT: 3002,
+        PORT: 3100,
       },
       watch: false,
       max_memory_restart: "1G",
@@ -47,7 +47,7 @@ module.exports = {
       max_restarts: 10,
     },
     {
-      // HTTPS 리버스 프록시(443 → 3002). tools/proxy/README.md 참조.
+      // HTTPS 리버스 프록시(443 → 3100). tools/proxy/README.md 참조.
       // caddy.exe 는 deploy.yml "Prepare HTTPS proxy" 단계가 내려받는다(gitignore).
       name: "hanes-proxy",
       script: "C:\\Project\\HANES\\tools\\proxy\\caddy.exe",

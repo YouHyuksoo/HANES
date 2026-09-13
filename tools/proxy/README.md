@@ -1,6 +1,6 @@
 # HANES HTTPS 프록시 (Caddy)
 
-배포 서버에서 `https://hswbs.haengsung.com`(443)을 받아 Next(3002)로 넘기는 리버스 프록시다.
+배포 서버에서 `https://hswbs.haengsung.com`(443)을 받아 Next(3100)로 넘기는 리버스 프록시다.
 GitHub Actions `deploy.yml` 의 "Prepare HTTPS proxy" 단계가 `caddy.exe` 를 내려받고 방화벽 규칙을 만들며,
 `ecosystem.config.js` 의 `hanes-proxy` 로 PM2 가 상주시킨다.
 
@@ -22,7 +22,7 @@ https 페이지에서는 허용되므로 라벨 출력이 에이전트로 동작
 1. 각 PC 의 Print Agent 설정(`http://127.0.0.1:37111/settings`) 허용 Origin 에 `https://hswbs.haengsung.com` 추가
    (에이전트 기본값에도 포함돼 있어 새로 설치하는 PC 는 불필요).
 2. 사용자 접속 주소를 `https://hswbs.haengsung.com` 으로 안내. Chrome 이 사이트당 1회 "로컬 네트워크 접근 허용" 을 물으면 허용.
-3. 안정화 후 3002 외부 포트포워딩을 닫는다.
+3. ~~안정화 후 3002 외부 포트포워딩을 닫는다.~~ → 2026-09-14 3002 외부 포워딩은 SSH(sshd가 3002 바인딩) 용도로 전환했다. 운영 Next 는 3100 으로 이동.
 
 ## 장애 시
 

@@ -85,7 +85,7 @@ jobs:
           node tools\generate-work-instruction-seed-images.mjs
         shell: cmd
 
-      # HTTPS 리버스 프록시(443 → 3002) 준비: caddy.exe 다운로드(없을 때만), 인증서 폴더, 방화벽 443, 포트 점유 확인.
+      # HTTPS 리버스 프록시(443 → 3100) 준비: caddy.exe 다운로드(없을 때만), 인증서 폴더, 방화벽 443, 포트 점유 확인.
       # tools/proxy/README.md 참조. 443 을 다른 프로그램이 쓰면 여기서 실패시켜 원인을 드러낸다.
       - name: Prepare HTTPS proxy (Caddy)
         run: |
@@ -107,10 +107,11 @@ jobs:
           }
         shell: powershell
 
-      # pm2 delete 는 등록만 지운다. 남은 자식 프로세스 트리가 3002/3003/443 을 계속 물고 있으면
+      # pm2 delete 는 등록만 지운다. 남은 자식 프로세스 트리가 3100/3003/443 을 계속 물고 있으면
       # 새 프로세스가 EADDRINUSE 로 죽고 좀비가 포트를 서비스한다(TCP 는 붙는데 HTTP 무응답).
       # 여기서 포트를 확실히 비운 뒤에 기동한다. 다른 프로그램이 쓰는 포트면 스크립트가 실패시킨다.
-      - name: Free HANES ports (3002/3003/443)
+      # (3002 는 sshd 전환 포트라 필수 해제 대상이 아니다. node 좀비만 정리한다 — free-hanes-ports.ps1 참조)
+      - name: Free HANES ports (3100/3003/443)
         run: powershell -NoProfile -ExecutionPolicy Bypass -File C:\Project\HANES\scripts\free-hanes-ports.ps1
         shell: cmd
 
@@ -186,7 +187,7 @@ jobs:
             return "$Name did not respond within $TimeoutSec s: $lastError"
           }
 
-          foreach ($probe in @(@{ Name = 'frontend'; Url = 'http://127.0.0.1:3002/' }, @{ Name = 'backend'; Url = 'http://127.0.0.1:3003/api' })) {
+          foreach ($probe in @(@{ Name = 'frontend'; Url = 'http://127.0.0.1:3100/' }, @{ Name = 'backend'; Url = 'http://127.0.0.1:3003/api' })) {
             $failure = Wait-Service -Name $probe.Name -Url $probe.Url
             if ($failure) { $problems += $failure }
           }
