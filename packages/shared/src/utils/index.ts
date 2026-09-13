@@ -23,3 +23,4 @@ export * from './purchase-order-rules';
 export * from './mat-lot-rules';
 export * from './repair-rules';
 export * from './assembly-sg-rules';
+export * from './inspect-measurement-spec';

@@ -10,7 +10,7 @@
 
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsString, IsOptional, IsInt, IsIn, Min, MaxLength, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsIn, IsNumber, Min, MaxLength, ValidateNested } from 'class-validator';
 
 /**
  * 통전검사 결과 등록 DTO
@@ -276,10 +276,10 @@ export class UpdateEquipProtocolDto extends PartialType(CreateEquipProtocolDto) 
 export class IntegratedInspectStepDto {
   @ApiProperty({
     description: '검사 유형',
-    enum: ['CONTINUITY', 'LEAK', 'HIPOT', 'STRUCTURE'],
+    enum: ['CONTINUITY', 'LEAK', 'HIPOT', 'STRUCTURE', 'TORQUE'],
   })
   @IsString()
-  @IsIn(['CONTINUITY', 'LEAK', 'HIPOT', 'STRUCTURE'])
+  @IsIn(['CONTINUITY', 'LEAK', 'HIPOT', 'STRUCTURE', 'TORQUE'])
   inspectType: string;
 
   @ApiProperty({ description: '합격 여부', enum: ['Y', 'N'] })
@@ -303,6 +303,28 @@ export class IntegratedInspectStepDto {
   @IsOptional()
   @IsString()
   inspectData?: string;
+
+  @ApiPropertyOptional({ description: '리크 주입압 (bar)' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  chargeBar?: number;
+  @ApiPropertyOptional({ description: '리크 유지 후 측정압 (bar)' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  holdBar?: number;
+  @ApiPropertyOptional({ description: '리크 유지시간 (s)' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  holdSeconds?: number;
+  @ApiPropertyOptional({ description: '내전압 (kV)' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  voltageKv?: number;
+  @ApiPropertyOptional({ description: '내전압 전류 (mA)' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  currentMa?: number;
+  @ApiPropertyOptional({ description: '내전압 인가시간 (s)' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  testSeconds?: number;
+  @ApiPropertyOptional({ description: '체결 토크' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  torque?: number;
 }
 
 /**
@@ -339,7 +361,7 @@ export class IntegratedInspectDto {
   lineCode?: string;
 
   @ApiProperty({
-    description: '검사 스텝별 결과 (최대 4개)',
+    description: '검사 스텝별 결과 (회로/리크/내전압/구조/토크)',
     type: [IntegratedInspectStepDto],
   })
   @ValidateNested({ each: true })

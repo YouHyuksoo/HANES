@@ -24,6 +24,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipProtocol } from '../../../entities/equip-protocol.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
+import { InspectItemSpec } from '../../../entities/inspect-item-spec.entity';
 import { SharedModule } from '../../../shared/shared.module';
 import { SystemModule } from '../../system/system.module';
 
@@ -35,6 +36,7 @@ import { SystemModule } from '../../system/system.module';
       JobOrder,
       EquipProtocol,
       ProdResult,
+      InspectItemSpec,
     ]),
     SharedModule,
     SystemModule,

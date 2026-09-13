@@ -34,6 +34,8 @@ import { EquipInspectItemPoolController } from './controllers/equip-inspect-item
 import { EquipInspectItemPoolService } from './services/equip-inspect-item-pool.service';
 import { TerminalCrimpSpecController } from './controllers/terminal-crimp-spec.controller';
 import { TerminalCrimpSpecService } from './services/terminal-crimp-spec.service';
+import { InspectItemSpecController } from './controllers/inspect-item-spec.controller';
+import { InspectItemSpecService } from './services/inspect-item-spec.service';
 import { InspectAidController } from './controllers/inspect-aid.controller';
 import { InspectAidService } from './services/inspect-aid.service';
 import { EquipBomController } from './controllers/equip-bom.controller';
@@ -99,6 +101,7 @@ import { IqcItemPool } from '../../entities/iqc-item-pool.entity';
 import { IqcPartSpec } from '../../entities/iqc-part-spec.entity';
 import { IqcPartSpecItem } from '../../entities/iqc-part-spec-item.entity';
 import { TerminalCrimpSpec } from '../../entities/terminal-crimp-spec.entity';
+import { InspectItemSpec } from '../../entities/inspect-item-spec.entity';
 import { InspectAid } from '../../entities/inspect-aid.entity';
 import { AqlStandard } from '../../entities/aql-standard.entity';
 import { AqlSamplingRule } from '../../entities/aql-sampling-rule.entity';
@@ -145,6 +148,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
       IqcPartSpec,
       IqcPartSpecItem,
       TerminalCrimpSpec,
+      InspectItemSpec,
       InspectAid,
       AqlStandard,
       AqlSamplingRule,
@@ -175,6 +179,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     EquipInspectController,
     EquipInspectItemPoolController,
     TerminalCrimpSpecController,
+    InspectItemSpecController,
     InspectAidController,
     EquipBomController,
     WorkInstructionController,
@@ -207,6 +212,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     EquipInspectService,
     EquipInspectItemPoolService,
     TerminalCrimpSpecService,
+    InspectItemSpecService,
     InspectAidService,
     EquipBomService,
     WorkInstructionService,
@@ -239,6 +245,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     EquipInspectService,
     EquipInspectItemPoolService,
     TerminalCrimpSpecService,
+    InspectItemSpecService,
     InspectAidService,
     EquipBomService,
     WorkInstructionService,

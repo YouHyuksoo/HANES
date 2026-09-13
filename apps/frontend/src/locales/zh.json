@@ -339,6 +339,8 @@
     "master.iqcPartSpec": "按品目IQC项目管理",
     "master.inspectAid": "检验辅助工具",
     "master.terminalCrimpSpec": "端子压接规格",
+    "master.inspectItemSpec": "检验实测规格",
+    "inspectMeasurementSpec": "检验实测规格",
     "master.iqcItem.itemCode": "项目编号",
     "master.iqcItem.judgeMethod": "判定方法",
     "master.iqcItem.visual": "目视",

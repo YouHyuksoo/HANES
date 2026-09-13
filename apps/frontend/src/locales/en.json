@@ -339,6 +339,8 @@
     "master.iqcPartSpec": "IQC Items by Part",
     "master.inspectAid": "Inspection Aids",
     "master.terminalCrimpSpec": "Terminal Crimp Specs",
+    "master.inspectItemSpec": "Inspect Measurement Specs",
+    "inspectMeasurementSpec": "Inspect Measurement Specs",
     "master.iqcItem.itemCode": "Item Code",
     "master.iqcItem.judgeMethod": "Judge Method",
     "master.iqcItem.visual": "Visual",

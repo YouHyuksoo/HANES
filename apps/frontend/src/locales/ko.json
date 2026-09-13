@@ -339,6 +339,8 @@
     "master.iqcPartSpec": "품목별 IQC 항목관리",
     "master.inspectAid": "검사보조구 관리",
     "master.terminalCrimpSpec": "단자별 압착 규격",
+    "master.inspectItemSpec": "검사 실측 스펙",
+    "inspectMeasurementSpec": "검사 실측 스펙",
     "master.iqcItem.itemCode": "항목코드",
     "master.iqcItem.judgeMethod": "판정방법",
     "master.iqcItem.visual": "육안",

@@ -39,6 +39,7 @@ export function createIntegratedGridColumns({
           CONTINUITY: t("inspection.integrated.continuity", "회로"),
           LEAK: t("inspection.integrated.leak", "리크"),
           HIPOT: t("inspection.integrated.hipot", "내전압"),
+          TORQUE: t("inspection.integrated.torque", "토크"),
           STRUCTURE: t("inspection.integrated.structure", "구조"),
         };
         return labels[v] ?? v;

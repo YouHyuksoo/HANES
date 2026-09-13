@@ -339,6 +339,8 @@
     "master.iqcPartSpec": "Hạng mục IQC theo phẩm mục",
     "master.inspectAid": "Dụng cụ hỗ trợ kiểm tra",
     "master.terminalCrimpSpec": "Tiêu chuẩn ép đầu cốt",
+    "master.inspectItemSpec": "Thông số đo kiểm tra",
+    "inspectMeasurementSpec": "Thông số đo kiểm tra",
     "master.iqcItem.itemCode": "Mã hạng mục",
     "master.iqcItem.judgeMethod": "Phương pháp",
     "master.iqcItem.visual": "Bằng mắt",

@@ -277,6 +277,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/master/inspect-item-spec": {
+      const mod = await import("./page-registries/master__inspect-item-spec.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/master/iqc-item": {
       const mod = await import("./page-registries/master__iqc-item.generated");
       component = mod.getPageComponent();
@@ -744,6 +749,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
     }
     case "/quality/inspect": {
       const mod = await import("./page-registries/quality__inspect.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/quality/inspect-measurement-spec": {
+      const mod = await import("./page-registries/quality__inspect-measurement-spec.generated");
       component = mod.getPageComponent();
       break;
     }

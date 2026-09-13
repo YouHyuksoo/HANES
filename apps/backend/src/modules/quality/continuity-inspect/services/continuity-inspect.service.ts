@@ -29,6 +29,8 @@ import { JobOrder } from '../../../../entities/job-order.entity';
 import { EquipProtocol } from '../../../../entities/equip-protocol.entity';
 import { parseProtocolData, ParsedProtocolData } from './protocol-parser';
 import { ProdResult } from '../../../../entities/prod-result.entity';
+import { InspectItemSpec } from '../../../../entities/inspect-item-spec.entity';
+import { judgeInspectMeasurement } from '@harness/shared';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
 import { TransactionService } from '../../../../shared/transaction.service';
 import { SysConfigService } from '../../../system/services/sys-config.service';
@@ -759,11 +761,44 @@ export class ContinuityInspectService {
     if (steps.length === 0) {
       throw new BadRequestException('최소 1개 이상의 검사 스텝이 필요합니다.');
     }
-    for (const step of steps) {
-      this.assertFailReason(step.passYn, step.errorCode, step.inspectType);
-    }
+    const workingSteps = steps.map((s) => ({ ...s }));
 
     return this.tx.run(async (queryRunner) => {
+      const tenantCompany = company;
+      const tenantPlant = plant;
+      for (const step of workingSteps) {
+        if (step.inspectType === 'LEAK' || step.inspectType === 'HIPOT' || step.inspectType === 'TORQUE') {
+          const specRows = await queryRunner.manager.find(InspectItemSpec, {
+            where: {
+              itemCode: dto.itemCode,
+              inspectType: step.inspectType,
+              useYn: 'Y',
+              ...(tenantCompany ? { company: tenantCompany } : {}),
+              ...(tenantPlant ? { plant: tenantPlant } : {}),
+            },
+          });
+          const spec = specRows.find((s) => s.connectorKey === '*') ?? specRows[0] ?? null;
+          const judged = judgeInspectMeasurement(spec, {
+            chargeBar: step.chargeBar,
+            holdBar: step.holdBar,
+            holdSeconds: step.holdSeconds,
+            voltageKv: step.voltageKv,
+            currentMa: step.currentMa,
+            testSeconds: step.testSeconds,
+            torque: step.torque,
+          });
+          if (judged) {
+            step.passYn = judged.passYn;
+            if (judged.passYn === 'N') {
+              step.errorDetail = step.errorDetail || judged.reason;
+              step.errorCode = step.errorCode?.trim() ? step.errorCode : 'SPEC';
+            }
+          }
+        }
+        this.assertFailReason(step.passYn, step.errorCode, step.inspectType);
+      }
+      const steps = workingSteps;
+
       /** 1. 작업지시 존재 확인 */
       const jobOrder = await queryRunner.manager.findOne(JobOrder, {
         where: {
@@ -826,7 +861,15 @@ export class ContinuityInspectService {
           passYn: step.passYn,
           errorCode: step.passYn === 'N' ? (step.errorCode ?? null) : null,
           errorDetail: step.passYn === 'N' ? (step.errorDetail ?? null) : null,
-          inspectData: step.passYn === 'N' ? (step.inspectData ?? null) : null,
+          inspectData: step.inspectData ?? JSON.stringify({
+            chargeBar: step.chargeBar ?? null,
+            holdBar: step.holdBar ?? null,
+            holdSeconds: step.holdSeconds ?? null,
+            voltageKv: step.voltageKv ?? null,
+            currentMa: step.currentMa ?? null,
+            testSeconds: step.testSeconds ?? null,
+            torque: step.torque ?? null,
+          }),
           fgBarcode,
           inspectorId: dto.workerId ?? null,
           equipCode: dto.equipCode ?? null,

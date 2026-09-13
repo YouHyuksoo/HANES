@@ -13,6 +13,7 @@ const STEPS: Array<{ inspectType: IntegratedStepState["inspectType"]; labelKey: 
   { inspectType: "LEAK", labelKey: "inspection.integrated.leak" },
   { inspectType: "HIPOT", labelKey: "inspection.integrated.hipot" },
   { inspectType: "STRUCTURE", labelKey: "inspection.integrated.structure" },
+  { inspectType: "TORQUE", labelKey: "inspection.integrated.torque" },
 ];
 
 interface FgLabelInfo {
@@ -79,6 +80,13 @@ export default function IntegratedInspectPanel({ fgLabel, onClose, onSave }: Pro
           passYn: s.passYn,
           errorCode: s.passYn === "N" ? (s.errorCode || undefined) : undefined,
           errorDetail: s.passYn === "N" ? (s.errorDetail || undefined) : undefined,
+          chargeBar: s.chargeBar ? Number(s.chargeBar) : undefined,
+          holdBar: s.holdBar ? Number(s.holdBar) : undefined,
+          holdSeconds: s.holdSeconds ? Number(s.holdSeconds) : undefined,
+          voltageKv: s.voltageKv ? Number(s.voltageKv) : undefined,
+          currentMa: s.currentMa ? Number(s.currentMa) : undefined,
+          testSeconds: s.testSeconds ? Number(s.testSeconds) : undefined,
+          torque: s.torque ? Number(s.torque) : undefined,
         })),
       };
 
@@ -125,7 +133,7 @@ export default function IntegratedInspectPanel({ fgLabel, onClose, onSave }: Pro
         )}
 
         {/* 4 Step cards (horizontal) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-start">
           {STEPS.map((stepDef) => {
             const step = steps.find((s) => s.inspectType === stepDef.inspectType)!;
             const isPass = step.passYn === "Y";
@@ -142,6 +150,33 @@ export default function IntegratedInspectPanel({ fgLabel, onClose, onSave }: Pro
                 }`}
               >
                 <h3 className="text-sm font-bold text-text mb-3">{t(stepDef.labelKey)}</h3>
+
+                {stepDef.inspectType === "LEAK" && (
+                  <div className="grid grid-cols-1 gap-2 mb-2">
+                    <Input label={t("inspection.integrated.chargeBar", "주입압 bar")} value={step.chargeBar ?? ""}
+                      onChange={(e) => updateStep(stepDef.inspectType, "chargeBar", e.target.value)} fullWidth />
+                    <Input label={t("inspection.integrated.holdBar", "측정압 bar")} value={step.holdBar ?? ""}
+                      onChange={(e) => updateStep(stepDef.inspectType, "holdBar", e.target.value)} fullWidth />
+                    <Input label={t("inspection.integrated.holdSeconds", "유지시간 s")} value={step.holdSeconds ?? ""}
+                      onChange={(e) => updateStep(stepDef.inspectType, "holdSeconds", e.target.value)} fullWidth />
+                  </div>
+                )}
+                {stepDef.inspectType === "HIPOT" && (
+                  <div className="grid grid-cols-1 gap-2 mb-2">
+                    <Input label={t("inspection.integrated.voltageKv", "전압 kV")} value={step.voltageKv ?? ""}
+                      onChange={(e) => updateStep(stepDef.inspectType, "voltageKv", e.target.value)} fullWidth />
+                    <Input label={t("inspection.integrated.currentMa", "전류 mA")} value={step.currentMa ?? ""}
+                      onChange={(e) => updateStep(stepDef.inspectType, "currentMa", e.target.value)} fullWidth />
+                    <Input label={t("inspection.integrated.testSeconds", "인가시간 s")} value={step.testSeconds ?? ""}
+                      onChange={(e) => updateStep(stepDef.inspectType, "testSeconds", e.target.value)} fullWidth />
+                  </div>
+                )}
+                {stepDef.inspectType === "TORQUE" && (
+                  <div className="mb-2">
+                    <Input label={t("inspection.integrated.torque", "토크")} value={step.torque ?? ""}
+                      onChange={(e) => updateStep(stepDef.inspectType, "torque", e.target.value)} fullWidth />
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <button

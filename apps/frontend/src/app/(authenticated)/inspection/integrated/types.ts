@@ -1,9 +1,16 @@
 export interface IntegratedStepState {
-  inspectType: "CONTINUITY" | "LEAK" | "HIPOT" | "STRUCTURE";
+  inspectType: "CONTINUITY" | "LEAK" | "HIPOT" | "STRUCTURE" | "TORQUE";
   labelKey: string;
   passYn: "Y" | "N" | null;
   errorCode: string;
   errorDetail: string;
+  chargeBar?: string;
+  holdBar?: string;
+  holdSeconds?: string;
+  voltageKv?: string;
+  currentMa?: string;
+  testSeconds?: string;
+  torque?: string;
 }
 
 export interface IntegratedInspectApiResponse {
