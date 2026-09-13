@@ -53,10 +53,14 @@ export class KnowledgePipelineService {
   ) {}
 
   async retrieve(userMessage: string, context?: AiKnowledgeContextDto): Promise<KnowledgePipelineResult> {
+    // 단계별 소요를 트레이스에 남긴다. 어디서 시간이 가는지 추측으로 답하지 않으려는 것이다.
+    const t0 = Date.now();
     const understanding = await this.understand(userMessage);
+    const tUnderstand = Date.now();
 
     // [2] 멀티질의 하이브리드 검색 + RRF 융합
     const fused = await this.searchWithRrf(understanding.queries, context);
+    const tSearch = Date.now();
 
     // [3] 그래프 확장 — 관계를 점수가 아니라 컨텍스트로 포함한다
     const menuCodes = this.collectMenuCodes(fused, understanding, context);
@@ -91,7 +95,10 @@ export class KnowledgePipelineService {
     }
 
     // [4] 리랭크 — 그래프 확장/비즈니스 로직 청크는 리랭크와 무관하게 유지
+    const tGraph = Date.now();
+    const rerankSkipped = fused.length <= FINAL_TOP_K;
     const reranked = await this.rerank(userMessage, fused);
+    const tRerank = Date.now();
     const chunks = this.mergeUnique([...reranked.slice(0, FINAL_TOP_K), ...graphChunks, ...businessLogicChunks]);
 
     // [5] 구조화 컨텍스트
@@ -112,6 +119,15 @@ export class KnowledgePipelineService {
       queries: understanding.queries,
       llmMenus: understanding.menus,
       menuCodes,
+      ms: {
+        understand: tUnderstand - t0,
+        search: tSearch - tUnderstand,
+        graph: tGraph - tSearch,
+        rerank: tRerank - tGraph,
+        total: Date.now() - t0,
+      },
+      rerankSkipped,
+      candidates: fused.length,
       chunks: chunks.slice(0, 12).map((c) => `${c.sourcePath}#${c.heading ?? ''}`),
     });
     return { chunks, prompt, intent: understanding.intent };
@@ -134,7 +150,7 @@ export class KnowledgePipelineService {
       // 메뉴 사전을 주입해 사용자 용어("박스입고")를 공식 메뉴코드(PROD_RECEIVE)로 매핑할 수 있게 한다.
       let vocab = '';
       try {
-        const catalog = this.knowledge.getMenuCatalog();
+        const catalog = this.narrowMenuCatalog(this.knowledge.getMenuCatalog(), userMessage);
         if (catalog.length > 0) {
           vocab = `\n\n## 메뉴 사전 (menuCode=화면명)\n${catalog.map((item) => `${item.menuCode}=${item.title}`).join('\n')}`;
         }
@@ -163,6 +179,37 @@ export class KnowledgePipelineService {
     }
   }
 
+  /**
+   * 질의이해 프롬프트에 넣을 메뉴 사전을 질문과 겹치는 것만으로 줄인다.
+   *
+   * 사전 전체(400줄)를 매번 넣으면 이 한 번의 호출이 파이프라인에서 가장 비싸진다.
+   * 그렇다고 빼면 안 된다 — "박스입고"를 "제품입고"로 고쳐 쓰는 일이 이 사전에서 나오고,
+   * 그 재작성이 임베딩 검색보다 먼저 일어나기 때문에 여기서 놓치면 뒤가 전부 어긋난다.
+   *
+   * 그래서 글자 2-gram 으로 느슨하게 건진다. "박스입고"에서 "입고"가 떨어져 나와
+   * 입고 계열 메뉴가 통째로 남는 식이라, 정확히 같은 말이 아니어도 후보에 들어온다.
+   * 하나도 안 걸리면 사전 전체로 되돌린다(줄이려다 못 찾는 것보다 낫다).
+   */
+  private narrowMenuCatalog(
+    catalog: Array<{ menuCode: string; title: string }>,
+    userMessage: string,
+    limit = 60,
+  ): Array<{ menuCode: string; title: string }> {
+    if (catalog.length <= limit) return catalog;
+    const grams = new Set<string>();
+    // 조사/공백/기호를 토큰 경계로 신경 쓰지 않는다. 한국어는 붙여 쓰는 합성어가 많아
+    // 형태소 분석 없이는 2-gram 쪽이 오히려 덜 놓친다.
+    const normalized = userMessage.replace(/\s+/g, '');
+    for (let i = 0; i + 2 <= normalized.length; i += 1) grams.add(normalized.slice(i, i + 2));
+    if (grams.size === 0) return catalog;
+    const hit = catalog.filter((item) => {
+      const title = item.title.replace(/\s+/g, '');
+      for (const gram of grams) if (title.includes(gram)) return true;
+      return false;
+    });
+    return hit.length > 0 ? hit.slice(0, limit) : catalog;
+  }
+
   /** [2] 질의별 검색 결과를 RRF(1/(k+rank))로 융합한다. 단일 질의 내부 점수 체계는 knowledge.search가 담당. */
   private async searchWithRrf(queries: string[], context?: AiKnowledgeContextDto): Promise<KnowledgeSearchResult[]> {
     const rrf = new Map<string, { chunk: KnowledgeSearchResult; score: number }>();
@@ -186,7 +233,10 @@ export class KnowledgePipelineService {
 
   /** [4] LLM 리랭크. 실패 시 RRF 순서 그대로. */
   private async rerank(userMessage: string, candidates: KnowledgeSearchResult[]): Promise<KnowledgeSearchResult[]> {
-    if (candidates.length < 2) return candidates;
+    // 어차피 상위 FINAL_TOP_K 개만 쓴다. 후보가 그 이하면 순서를 바꿔도 최종 집합이 같으므로
+    // LLM 왕복(3~7초)이 순수 비용이다. 실패 폴백과 같은 값을 돌려주지만 의미는 다르다 —
+    // 이건 "리랭크가 필요 없었다"이지 "리랭크가 실패했다"가 아니라서 warn 을 남기지 않는다.
+    if (candidates.length <= FINAL_TOP_K) return candidates;
     const input = candidates.slice(0, RERANK_INPUT_LIMIT);
     try {
       const list = input
