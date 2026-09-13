@@ -8,6 +8,7 @@ import { test } from '@playwright/test';
  */
 test('화면의 버튼/입력/testid 를 나열한다', async ({ page }) => {
   // 시나리오 작성용 도구다. 일반 e2e 실행에서는 돌지 않게 한다.
+  test.setTimeout(120_000);
   test.skip(!process.env.PROBE_ROUTE, 'PROBE_ROUTE=<경로> 를 지정했을 때만 실행한다');
   const route = process.env.PROBE_ROUTE ?? '/production/subprocess-kitting';
   await page.goto(route);

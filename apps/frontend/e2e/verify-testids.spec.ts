@@ -66,3 +66,25 @@ test('생산계획 화면 testid 가 DOM 에 존재한다', async ({ page }) => 
   const issueCount = await page.getByTestId('prod-plan-issue-job-order').count();
   console.log('[testid] 행 발행버튼', issueCount, '개 (계획 데이터가 없으면 0)');
 });
+
+test('자재출고요청 화면 testid 가 DOM 에 존재한다', async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto('/material/request');
+  await page.waitForLoadState('networkidle');
+  expect(page.url(), '세션 만료').not.toContain('/login');
+
+  for (const id of ['mat-request-order-search', 'mat-request-order-row']) {
+    await expect(page.getByTestId(id).first(), `${id} 가 DOM 에 없다`).toBeVisible({ timeout: 25000 });
+    console.log('[testid] OK', id);
+  }
+
+  // 작업지시를 선택해야 우측에 요청 작성 버튼이 나타난다
+  await page.getByTestId('mat-request-order-row').first().click();
+  await expect(page.getByTestId('mat-request-new'), 'mat-request-new 가 DOM 에 없다').toBeVisible({ timeout: 20000 });
+  console.log('[testid] OK mat-request-new');
+
+  // 작성 모드로 들어가야 등록(쓰기) 버튼이 나타난다
+  await page.getByTestId('mat-request-new').click();
+  await expect(page.getByTestId('mat-request-submit'), 'mat-request-submit 가 DOM 에 없다').toBeVisible({ timeout: 20000 });
+  console.log('[testid] OK mat-request-submit');
+});

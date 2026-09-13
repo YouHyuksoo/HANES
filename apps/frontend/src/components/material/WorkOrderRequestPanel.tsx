@@ -328,6 +328,7 @@ export default function WorkOrderRequestPanel({
           <ClipboardList className="w-5 h-5 text-primary flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <Input
+              data-testid="mat-request-order-search"
               placeholder={t('material.request.filterOrderNo')}
               value={woOrderNo}
               onChange={(e) => onWoOrderNoChange(e.target.value)}
@@ -403,6 +404,7 @@ export default function WorkOrderRequestPanel({
                     <div
                       role="button"
                       tabIndex={0}
+                      data-testid="mat-request-order-row"
                       onClick={() => handleSelectOrder(order)}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter' || event.key === ' ') {
@@ -562,7 +564,7 @@ export default function WorkOrderRequestPanel({
                 </div>
               ) : null}
               {mode === 'history' ? (
-                <Button size="sm" onClick={enterCreateMode}>
+                <Button size="sm" onClick={enterCreateMode} data-testid="mat-request-new">
                   <FilePlus2 className="w-4 h-4 mr-1" /> {t('material.request.newRequest')}
                 </Button>
               ) : (
@@ -576,7 +578,7 @@ export default function WorkOrderRequestPanel({
                   <div className="w-40">
                     <Select options={reasonOptions} value={reason} onChange={setReason} fullWidth />
                   </div>
-                  <Button size="sm" onClick={handleSubmit} disabled={!canSubmit} disabledReason={isSubmitting ? t('material.disabledHelp.requestSaving', '출고요청을 저장하고 있습니다.') : isLoadingBom ? t('material.disabledHelp.bomLoading', '작업지시의 BOM 품목을 불러오고 있습니다.') : !selectedOrderNo ? t('material.disabledHelp.selectOrder', '작업지시를 선택하세요.') : !selectedProcessCode ? t('material.disabledHelp.selectProcess', '출고 대상 공정을 선택하세요.') : t('material.disabledHelp.positiveRequest', '요청수량이 0보다 큰 품목을 한 건 이상 입력하세요.')}>
+                  <Button size="sm" onClick={handleSubmit} disabled={!canSubmit} data-testid="mat-request-submit" disabledReason={isSubmitting ? t('material.disabledHelp.requestSaving', '출고요청을 저장하고 있습니다.') : isLoadingBom ? t('material.disabledHelp.bomLoading', '작업지시의 BOM 품목을 불러오고 있습니다.') : !selectedOrderNo ? t('material.disabledHelp.selectOrder', '작업지시를 선택하세요.') : !selectedProcessCode ? t('material.disabledHelp.selectProcess', '출고 대상 공정을 선택하세요.') : t('material.disabledHelp.positiveRequest', '요청수량이 0보다 큰 품목을 한 건 이상 입력하세요.')}>
                     {isSubmitting ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Plus className="w-4 h-4 mr-1" />}
                     {t('material.request.registerRequest')}
                   </Button>
