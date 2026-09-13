@@ -485,10 +485,11 @@ export default function JobOrderCreateModal({ isOpen, draftOrder, onClose, onSav
                 total: generatedOperationRows.length,
               })}
             </div>
-            <Button variant="ghost" onClick={onClose} disabled={saving}>
+            <Button variant="ghost" onClick={onClose} disabled={saving} data-testid="job-order-cancel">
               {t("common.cancel")}
             </Button>
             <Button onClick={handleSubmit} disabled={!canSave} isLoading={saving}
+              data-testid="job-order-save"
               disabledReason={generatedRoutingLoading ? "라우팅 정보를 불러오는 중입니다." : !form.itemCode ? "품목을 선택하세요." : !form.planQty ? "계획수량을 입력하세요." : !form.planDate ? "계획일을 선택하세요." : "선택 품목의 라우팅 공정을 먼저 등록하세요."}>
               {t("production.order.create", "작업지시 생성")}
             </Button>
@@ -506,10 +507,12 @@ export default function JobOrderCreateModal({ isOpen, draftOrder, onClose, onSav
                 <div>
                   <label className="mb-1 block text-xs font-medium text-text">{t("common.partName")}</label>
                   <div className="flex gap-1">
-                    <Input value={form.itemCode} readOnly placeholder={t("common.partSearchPlaceholder")} fullWidth />
+                    <Input value={form.itemCode} readOnly placeholder={t("common.partSearchPlaceholder")} fullWidth
+                      data-testid="job-order-item-code" />
                     <button
                       type="button"
                       onClick={() => setPartSearchOpen(true)}
+                      data-testid="job-order-item-search"
                       className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[var(--radius)] border border-border bg-surface text-text-muted transition-colors hover:bg-primary/10 hover:text-primary"
                       title={t("common.partSearch")}
                     >
@@ -518,11 +521,14 @@ export default function JobOrderCreateModal({ isOpen, draftOrder, onClose, onSav
                   </div>
                 </div>
                 <QtyInput label={t("production.order.planQty")} value={Number(form.planQty) || 0}
-                  onChange={(n) => setField("planQty", n ? String(n) : "")} fullWidth />
+                  onChange={(n) => setField("planQty", n ? String(n) : "")} fullWidth
+                  data-testid="job-order-plan-qty" />
                 <Input label={`${t("production.order.planDate")} *`} type="date" value={form.planDate}
-                  onChange={(e) => setField("planDate", e.target.value)} fullWidth />
+                  onChange={(e) => setField("planDate", e.target.value)} fullWidth
+                  data-testid="job-order-plan-date" />
                 <LineSelect label={t("production.order.line")} value={form.lineCode}
-                  onChange={(v) => setField("lineCode", v)} fullWidth />
+                  onChange={(v) => setField("lineCode", v)} fullWidth
+                  data-testid="job-order-line" />
                 <div className="grid grid-cols-[72px_minmax(0,1fr)] gap-2">
                   <Input label={t("production.order.priority")} type="number" value={form.priority}
                     onChange={(e) => setField("priority", e.target.value)} fullWidth />

@@ -49,7 +49,7 @@ interface CachedSqlDebug {
 import toast from "react-hot-toast";
 import { useErrorStore } from "@/stores/errorStore";
 import { classifyApiError } from "./api-error-severity";
-import { pushActivityEvent, toEventPath } from "./activity-collector";
+import { pushActivityEvent, toEventPath, isWriteMethod } from "./activity-collector";
 import { useAuthStore } from "@/stores/authStore";
 
 // 응답 인터셉터의 자동 성공 토스트를 끄는 opt-out 플래그.
@@ -243,6 +243,9 @@ api.interceptors.response.use(
       method,
       path: toEventPath(response.config?.url),
       status: response.status,
+      // 쓰기 응답만 담는다 — 시나리오 체인이 "직전 절차가 만든 것"을 여기서 읽는다.
+      // 조회 응답은 크고 체인에 쓸 일이 없다.
+      result: isWriteMethod(method) ? response.data?.data ?? response.data : undefined,
     });
     const msg = response.data?.message;
     if (msg && method && ["POST", "PUT", "PATCH", "DELETE"].includes(method) && !response.config.skipSuccessToast) {

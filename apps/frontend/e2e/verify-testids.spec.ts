@@ -1,0 +1,37 @@
+import { test, expect } from '@playwright/test';
+
+/**
+ * testid 가 실제 DOM 까지 도달하는지 확인한다.
+ * 공용 컴포넌트가 props 를 DOM 에 안 뿌리면 심어도 무의미하므로 실측이 필요하다.
+ *
+ *   npx playwright test e2e/verify-testids.spec.ts --project=chromium --no-deps
+ */
+test('작업지시 화면 testid 8개가 DOM 에 존재한다', async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto('/production/order');
+  await page.waitForLoadState('networkidle');
+  expect(page.url(), '세션 만료').not.toContain('/login');
+
+  // 목록 화면
+  await expect(page.getByTestId('job-order-create')).toBeVisible({ timeout: 20000 });
+
+  // 생성 모달을 열고 내부 요소 확인
+  await page.getByTestId('job-order-create').click();
+  const inModal = [
+    'job-order-item-code',
+    'job-order-item-search',
+    'job-order-plan-qty',
+    'job-order-plan-date',
+    'job-order-line',
+    'job-order-save',
+    'job-order-cancel',
+  ];
+  for (const id of inModal) {
+    await expect(page.getByTestId(id), `${id} 가 DOM 에 없다`).toBeVisible({ timeout: 15000 });
+    console.log('[testid] OK', id);
+  }
+
+  // 저장 버튼은 입력 전이라 비활성이어야 한다 (드라이버가 선행조건 미충족을 잡는 지점)
+  await expect(page.getByTestId('job-order-save')).toBeDisabled();
+  console.log('[testid] 저장 버튼 초기 비활성 확인');
+});

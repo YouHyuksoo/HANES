@@ -68,6 +68,7 @@ describe('ActivityLogService', () => {
     it('should save log when activity logging is enabled', async () => {
       // Arrange
       mockSysConfigService.isEnabled.mockResolvedValue(true);
+      mockRepo.query.mockResolvedValue([{ SEQ: 7 }] as any);
       mockRepo.create.mockReturnValue({ ...params } as any);
       mockRepo.save.mockResolvedValue({ ...params } as any);
 
@@ -95,11 +96,55 @@ describe('ActivityLogService', () => {
     it('should not throw when save fails (fire-and-forget)', async () => {
       // Arrange
       mockSysConfigService.isEnabled.mockResolvedValue(true);
+      mockRepo.query.mockResolvedValue([{ SEQ: 8 }] as any);
       mockRepo.create.mockReturnValue({} as any);
       mockRepo.save.mockRejectedValue(new Error('DB error'));
 
       // Act & Assert - should not throw
       await expect(target.logActivity(params)).resolves.not.toThrow();
+    });
+
+    it.each(['TOAST_ERROR', 'API_ERROR', 'JS_ERROR'])(
+      '%s 는 ENABLE_ACTIVITY_LOG 가 꺼져 있어도 저장한다',
+      async (activityType) => {
+        mockSysConfigService.isEnabled.mockResolvedValue(false);
+        mockRepo.query.mockResolvedValue([{ SEQ: 11 }] as any);
+        mockRepo.create.mockReturnValue({} as any);
+        mockRepo.save.mockResolvedValue({} as any);
+
+        await target.logActivity({ ...params, activityType });
+
+        // 설정을 아예 조회하지 않는다 — 장애 기록을 설정에 맡기지 않는다
+        expect(mockSysConfigService.isEnabled).not.toHaveBeenCalled();
+        expect(mockRepo.save).toHaveBeenCalled();
+      },
+    );
+
+    it('SEQ 를 시퀀스로 채번해 넣는다 (기본값 1 의존 시 같은 날 2건째가 ORA-00001)', async () => {
+      mockSysConfigService.isEnabled.mockResolvedValue(true);
+      mockRepo.query.mockResolvedValue([{ SEQ: 42 }] as any);
+      mockRepo.create.mockReturnValue({} as any);
+      mockRepo.save.mockResolvedValue({} as any);
+
+      await target.logActivity(params);
+
+      expect(mockRepo.query).toHaveBeenCalledWith(
+        expect.stringContaining('SEQ_ACTIVITY_LOG.NEXTVAL'),
+      );
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ seq: 42 }));
+    });
+
+    it('actorKind 기본값은 HUMAN 이고 SCENARIO 를 넘기면 그대로 저장한다', async () => {
+      mockSysConfigService.isEnabled.mockResolvedValue(true);
+      mockRepo.query.mockResolvedValue([{ SEQ: 1 }] as any);
+      mockRepo.create.mockReturnValue({} as any);
+      mockRepo.save.mockResolvedValue({} as any);
+
+      await target.logActivity(params);
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ actorKind: 'HUMAN' }));
+
+      await target.logActivity({ ...params, actorKind: 'SCENARIO' });
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ actorKind: 'SCENARIO' }));
     });
   });
 
@@ -109,6 +154,7 @@ describe('ActivityLogService', () => {
     const findAllQb = (data: any[] = [], total = 0) => {
       const qb: any = {
         orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),

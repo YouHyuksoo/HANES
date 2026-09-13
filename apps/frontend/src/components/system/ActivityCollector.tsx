@@ -10,12 +10,15 @@
  *    (래퍼 함수를 만들어 전부 교체하는 방식은 호출부를 전부 건드려야 해서 쓰지 않았다)
  * 2. **JS 에러**: `window.onerror` + `unhandledrejection`.
  * 3. API 계열(API_CALL / API_ERROR)은 여기가 아니라 `services/api.ts` 인터셉터가 수집한다.
- * 4. 화면에 아무것도 그리지 않는다. providers.tsx의 <Toaster> 옆에 마운트한다.
+ * 4. 적재된 이벤트를 서버로도 흘리도록 sink(activity-reporter)를 등록한다.
+ *    링버퍼는 브라우저 안에만 있어서 백엔드 AI가 실패 원인을 못 본다 — 그래서 서버 사본이 필요하다.
+ * 5. 화면에 아무것도 그리지 않는다. providers.tsx의 <Toaster> 옆에 마운트한다.
  */
 
 import { useEffect, useRef } from 'react';
 import { useToasterStore } from 'react-hot-toast';
-import { pushActivityEvent } from '@/services/activity-collector';
+import { pushActivityEvent, setActivitySink } from '@/services/activity-collector';
+import { reportActivityEvent } from '@/services/activity-reporter';
 
 /** 토스트 메시지는 문자열이 아닐 수 있다(JSX). 문자열만 안전하게 뽑는다. */
 function toMessage(value: unknown): string | undefined {
@@ -50,6 +53,12 @@ export default function ActivityCollector() {
       seenToastIds.current = new Set([...seenToastIds.current].filter((id) => alive.has(id)));
     }
   }, [toasts]);
+
+  // 링버퍼에 쌓인 이벤트를 서버 전송으로도 흘린다 (채널 A)
+  useEffect(() => {
+    setActivitySink(reportActivityEvent);
+    return () => setActivitySink(null);
+  }, []);
 
   useEffect(() => {
     const onError = (event: ErrorEvent) => {

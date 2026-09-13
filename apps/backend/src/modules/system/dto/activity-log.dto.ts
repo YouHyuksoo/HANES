@@ -6,15 +6,39 @@
  * 1. **CreateActivityLogDto**: 프론트엔드에서 페이지 접속 로그 전송 시 사용
  * 2. **ActivityLogQueryDto**: 관리 화면에서 활동 로그 조회 시 필터/페이지네이션
  */
-import { IsString, IsOptional, IsIn } from 'class-validator';
+import { IsString, IsOptional, IsIn, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationQueryDto } from '@common/dto/base-query.dto';
+
+/** 수집 가능한 활동 유형 — 프론트 수집기(services/activity-collector.ts)와 같은 목록을 유지한다 */
+export const ACTIVITY_TYPES = [
+  'LOGIN',
+  'PAGE_ACCESS',
+  'TOAST_SUCCESS',
+  'TOAST_ERROR',
+  'API_CALL',
+  'API_ERROR',
+  'JS_ERROR',
+  'SCAN',
+] as const;
 
 export class CreateActivityLogDto {
   @ApiProperty({ description: '활동 유형', example: 'PAGE_ACCESS' })
   @IsString()
-  @IsIn(['LOGIN', 'PAGE_ACCESS'])
+  @IsIn(ACTIVITY_TYPES as unknown as string[])
   activityType: string;
+
+  @ApiPropertyOptional({ description: '토스트/에러 메시지 본문' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  message?: string;
+
+  @ApiPropertyOptional({ description: '기록 주체', example: 'HUMAN' })
+  @IsOptional()
+  @IsString()
+  @IsIn(['HUMAN', 'SCENARIO'])
+  actorKind?: string;
 
   @ApiPropertyOptional({ description: '페이지 경로', example: '/dashboard' })
   @IsOptional()

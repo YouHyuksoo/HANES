@@ -40,6 +40,14 @@ export interface ActivityEvent {
   pagePath?: string;
   /** SCAN 값 */
   value?: string;
+  /**
+   * 쓰기(POST/PUT/PATCH/DELETE) 응답 본문.
+   * 시나리오 체인이 "직전 절차가 만든 것"(예: 생성된 작업지시번호)을 여기서 읽는다.
+   * 화면 수정·토스트 파싱·재조회 없이 실제로 일어난 일을 그대로 참조하기 위한 필드다.
+   * 조회(GET)는 담지 않는다 — 목록 응답이 크고 체인에 쓸 일이 없다.
+   * 링버퍼 전용이며 서버로는 보내지 않는다(응답 페이로드 장기보관 회피).
+   */
+  result?: unknown;
 }
 
 declare global {
@@ -66,16 +74,41 @@ function isExcluded(path?: string): boolean {
  * 이벤트를 링버퍼에 적재한다.
  * SSR(window 없음)에서는 아무것도 하지 않는다.
  */
+/** 쓰기 메서드 — 이 응답만 result에 담는다 */
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+export function isWriteMethod(method?: string): boolean {
+  return WRITE_METHODS.has((method ?? '').toUpperCase());
+}
+
+/**
+ * 적재된 이벤트를 넘겨받는 구독자 — 서버 전송(activity-reporter)이 여기 등록한다.
+ * 수집기가 리포터를 직접 import 하면 순환 참조가 되므로 주입 방식으로 둔다.
+ */
+let sink: ((event: ActivityEvent) => void) | null = null;
+
+export function setActivitySink(fn: ((event: ActivityEvent) => void) | null): void {
+  sink = fn;
+}
+
 export function pushActivityEvent(event: Omit<ActivityEvent, 'ts' | 'pagePath'> & { ts?: number }): void {
   if (typeof window === 'undefined') return;
   if (isExcluded(event.path)) return;
 
   const buffer = (window.__HANES_ACTIVITY__ ??= []);
-  buffer.push({
+  const full: ActivityEvent = {
     ...event,
     ts: event.ts ?? Date.now(),
     pagePath: window.location?.pathname,
-  });
+  };
+  buffer.push(full);
+
+  // 서버 전송은 부가 작업이다. 실패해도 링버퍼 적재를 막지 않는다.
+  try {
+    sink?.(full);
+  } catch {
+    // 무시
+  }
 
   // 상한 초과분은 앞에서 버린다
   if (buffer.length > ACTIVITY_BUFFER_LIMIT) {

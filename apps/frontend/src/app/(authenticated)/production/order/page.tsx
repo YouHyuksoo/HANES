@@ -294,7 +294,7 @@ export default function JobOrderPage() {
               onClick={() => setViewMode(v => v === "list" ? "tree" : "list")}>
               {viewMode === "list" ? t("production.order.treeView") : t("production.order.listView")}
             </Button>
-            <Button size="sm" onClick={handleCreate}>
+            <Button size="sm" onClick={handleCreate} data-testid="job-order-create">
               <Plus className="w-4 h-4 mr-1" /> {t("production.order.create")}
             </Button>
           </div>

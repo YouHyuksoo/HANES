@@ -49,6 +49,8 @@ export class ActivityLogController {
     await this.activityLogService.logActivity({
       userId,
       activityType: dto.activityType,
+      message: dto.message ?? null,
+      actorKind: dto.actorKind ?? 'HUMAN',
       pagePath: dto.pagePath ?? null,
       pageName: dto.pageName ?? null,
       ipAddress,

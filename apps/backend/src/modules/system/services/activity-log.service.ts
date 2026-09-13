@@ -15,6 +15,9 @@ import { SysConfigService } from './sys-config.service';
 import { ActivityLogQueryDto } from '../dto/activity-log.dto';
 
 /** logActivity 메서드에 전달하는 내부 DTO */
+/** 설정(ENABLE_ACTIVITY_LOG)이 꺼져 있어도 항상 기록하는 유형 — 장애 추적을 설정에 맡기지 않는다 */
+const ALWAYS_LOGGED_TYPES = new Set(['TOAST_ERROR', 'API_ERROR', 'JS_ERROR']);
+
 export interface LogActivityParams {
   userId: string;
   userEmail?: string | null;
@@ -27,6 +30,10 @@ export interface LogActivityParams {
   deviceType?: string | null;
   company?: string | null;
   plant?: string | null;
+  /** 토스트/에러 메시지 본문 */
+  message?: string | null;
+  /** HUMAN | SCENARIO */
+  actorKind?: string | null;
 }
 
 @Injectable()
@@ -45,10 +52,23 @@ export class ActivityLogService {
    */
   async logActivity(params: LogActivityParams): Promise<void> {
     try {
-      const isEnabled = await this.sysConfigService.isEnabled('ENABLE_ACTIVITY_LOG');
-      if (!isEnabled) return;
+      // 에러 3종은 설정과 무관하게 저장한다. 장애가 났을 때 기록이 없으면 추적이 불가능하고,
+      // 그 설정은 평상시 수집량을 줄이려는 것이지 장애 기록을 끄려는 것이 아니다.
+      if (!ALWAYS_LOGGED_TYPES.has(params.activityType)) {
+        const isEnabled = await this.sysConfigService.isEnabled('ENABLE_ACTIVITY_LOG');
+        if (!isEnabled) return;
+      }
+
+      // PK가 (ACTIVITY_DATE, SEQ)인데 SEQ 기본값이 1이라 채번하지 않으면
+      // 같은 날 2번째 insert가 ORA-00001로 죽는다. 시퀀스로 채번한다(MAX+1 금지).
+      const [{ SEQ: nextSeq }] = await this.activityLogRepository.query(
+        'SELECT SEQ_ACTIVITY_LOG.NEXTVAL AS SEQ FROM DUAL',
+      );
 
       const log = this.activityLogRepository.create({
+        seq: Number(nextSeq),
+        message: params.message ?? null,
+        actorKind: params.actorKind ?? 'HUMAN',
         userEmail: params.userId ?? params.userEmail ?? null,
         userName: params.userName ?? null,
         activityType: params.activityType,
@@ -79,6 +99,9 @@ export class ActivityLogService {
     const qb = this.activityLogRepository
       .createQueryBuilder('al')
       .orderBy('al.createdAt', 'DESC')
+      // 2차 정렬키가 없으면 같은 밀리초에 쌓인 행들의 순서가 페이지마다 달라져
+      // 경계에서 행이 중복되거나 누락된다. 전수 수집을 켜면 바로 드러난다.
+      .addOrderBy('al.seq', 'DESC')
       .skip(skip)
       .take(limit);
 
