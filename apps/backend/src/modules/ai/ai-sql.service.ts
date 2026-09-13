@@ -13,6 +13,7 @@ import { AiCatalogService } from './ai-catalog.service';
 import { SchemaInfoService } from './schema-info.service';
 import { SqlValidatorService } from './sql-validator.service';
 import { AiPageToolsService } from '../ai-page-tools/ai-page-tools.service';
+import { AiScenariosService } from '../ai-scenarios/ai-scenarios.service';
 import { AiChatMessageDto, AiKnowledgeContextDto, AiPageToolContextDto } from './dto/ai-chat.dto';
 import { AiKnowledgeService, KnowledgeSearchResult } from '../ai-knowledge/ai-knowledge.service';
 import { KnowledgeIntent, KnowledgePipelineService } from './knowledge-pipeline.service';
@@ -34,6 +35,20 @@ export interface AiKnowledgeSourceSummary {
   score: number;
 }
 
+/**
+ * 인앱 드라이버로 실행할 시나리오 제안.
+ * pageToolCall 과 나란히 두고 합치지 않는다 — 전자는 한 페이지의 도구 1개,
+ * 이것은 여러 화면을 잇는 절차다.
+ */
+export interface AiScenarioRunProposal {
+  scenarioId: string;
+  title: string;
+  /** 사용자 말에서 뽑아낸 값. 시나리오에는 데이터가 없고 여기로만 들어온다 */
+  params: Record<string, unknown>;
+  /** 실데이터를 바꾸는 단계 수 — 0 이면 읽기 전용 절차 */
+  writeStepCount: number;
+}
+
 export interface AiSqlResult {
   content: string;
   sql?: string;
@@ -42,6 +57,8 @@ export interface AiSqlResult {
   requiresApproval?: boolean;
   /** 승인 후 실행할 페이지 도구 호출 제안(write 도구) */
   pageToolCall?: AiPageToolCallProposal;
+  /** 승인 후 인앱 드라이버가 실행할 시나리오 제안 */
+  scenarioRun?: AiScenarioRunProposal;
   /** 답변 근거로 사용한 RAG 지식 청크 요약 (검색 결과가 있을 때만) */
   sources?: AiKnowledgeSourceSummary[];
 }
@@ -54,6 +71,15 @@ const TOOL_SELECT_PROMPT = `당신은 사용자의 등록/처리 요청을 "페�
 - 반드시 JSON만 출력: {"toolName":"도구이름","input":{...}}. 맞는 도구가 없으면 {"toolName":null}.
 - inputSchema의 required 필드는 사용자 문구에서 추출하세요. 값을 알 수 없으면 그 필드를 생략합니다(빈 문자열 금지).
 - enum이 지정된 필드는 반드시 그 값 중 하나로 매핑하세요(설명의 매핑 규칙 참고).
+- 다른 설명 없이 JSON만 출력하세요.`;
+
+const SCENARIO_SELECT_PROMPT = `당신은 사용자의 업무 요청을 "화면 절차(시나리오)"로 변환하는 AI입니다.
+규칙:
+- 아래 '시나리오 목록'에서 요청에 가장 맞는 절차 하나를 고르고, 그 시나리오의 params 에 맞는 값을 사용자 문구에서 추출합니다.
+- 반드시 JSON만 출력: {"scenarioId":"아이디","params":{...}}. 맞는 절차가 없으면 {"scenarioId":null}.
+- required 인 param 은 사용자 문구에서 반드시 추출하세요. 값을 알 수 없으면 그 필드를 생략합니다(빈 문자열이나 임의값 금지).
+- 날짜는 YYYY-MM-DD, 수량은 숫자만 추출합니다.
+- 조회/질문(예: "얼마나 있어?", "보여줘")은 절차가 아닙니다. {"scenarioId":null} 을 반환하세요.
 - 다른 설명 없이 JSON만 출력하세요.`;
 
 const TABLE_SELECT_PROMPT = `당신은 HANES MES 데이터베이스에서 사용자 질문에 답할 테이블을 고르는 도우미입니다.
@@ -191,6 +217,7 @@ export class AiSqlService {
     private readonly schemaInfo: SchemaInfoService,
     private readonly validator: SqlValidatorService,
     private readonly pageTools: AiPageToolsService,
+    private readonly scenarios: AiScenariosService,
     private readonly knowledge: AiKnowledgeService,
     private readonly knowledgePipeline: KnowledgePipelineService,
     @InjectDataSource() private readonly dataSource: DataSource,
@@ -275,6 +302,28 @@ export class AiSqlService {
   ): Promise<AiSqlResult> {
     if (routeMode === 'help') {
       return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent);
+    }
+
+    // 업무 처리 요청이면 시나리오(화면 절차)를 먼저 찾는다.
+    // 시나리오는 화면에 매이지 않으므로 pageToolContext 가 없어도 고를 수 있고,
+    // 도구 초안(draft-only, 모달만 채우고 멈춤)과 달리 저장까지 끝내므로
+    // 사용자가 말한 결과에 더 가깝다. 맞는 절차가 없으면 기존 흐름으로 흘려보낸다.
+    const looksLikeWork =
+      routeMode !== 'mes' &&
+      (routeMode === 'do'
+        || (this.looksLikePageWorkflowRequest(userMessage) && !this.looksLikeDataQueryRequest(userMessage)));
+    if (looksLikeWork) {
+      const run = await this.selectScenario(userMessage);
+      if (run) {
+        const writeNote = run.writeStepCount > 0
+          ? ` 이 절차에는 실제로 저장하는 단계가 ${run.writeStepCount}개 있으며, 각 단계 직전에 다시 확인합니다.`
+          : ' 이 절차는 데이터를 바꾸지 않습니다.';
+        return {
+          content: `"${run.title}" 절차를 화면에서 진행하겠습니다. 실행 계획을 확인하고 승인해 주세요.${writeNote}`,
+          scenarioRun: run,
+          requiresApproval: true,
+        };
+      }
     }
 
     const shouldTryPageTool =
@@ -485,6 +534,63 @@ export class AiSqlService {
       const tool = writable.find((t) => t.name === parsed.toolName);
       if (!tool) return null;
       return { pageId, toolName: tool.name, label: tool.label, input: parsed.input ?? {} };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * 사용자 요청 → 인앱 드라이버가 실행할 시나리오 매핑(LLM). 없으면 null.
+   *
+   * 여기가 이 기능에서 유일하게 "판단"하는 지점이다.
+   * 드라이버는 판단하지 않고 고른 절차를 그대로 실행한다.
+   */
+  private async selectScenario(userMessage: string): Promise<AiScenarioRunProposal | null> {
+    const list = this.scenarios.list();
+    if (list.length === 0) return null;
+
+    const docs = list.map((s) => ({
+      scenarioId: s.id,
+      title: s.title,
+      description: s.description,
+      params: s.params,
+    }));
+    const res = await this.aiService.complete([
+      { role: 'system', content: SCENARIO_SELECT_PROMPT },
+      { role: 'user', content: `## 시나리오 목록
+${JSON.stringify(docs)}
+
+## 요청
+${userMessage}` },
+    ]);
+    try {
+      const start = res.indexOf('{');
+      const end = res.lastIndexOf('}');
+      if (start === -1 || end === -1) return null;
+      const parsed = JSON.parse(res.slice(start, end + 1)) as {
+        scenarioId?: string | null;
+        params?: Record<string, unknown>;
+      };
+      if (!parsed.scenarioId) return null;
+      const picked = list.find((s) => s.id === parsed.scenarioId);
+      if (!picked) return null;
+
+      // required 가 빠졌으면 실행 제안을 만들지 않는다.
+      // 화면을 절반만 채우고 멈추느니 사용자에게 값을 되묻는 편이 낫다.
+      const params = parsed.params ?? {};
+      const missing = Object.entries(picked.params)
+        .filter(([key, spec]) => spec.required && (params[key] === undefined || params[key] === ''))
+        .map(([, spec]) => spec.label);
+      if (missing.length > 0) {
+        this.logger.debug(`시나리오 ${picked.id} 선택했으나 값 부족: ${missing.join(', ')}`);
+        return null;
+      }
+      return {
+        scenarioId: picked.id,
+        title: picked.title,
+        params,
+        writeStepCount: picked.writeStepCount,
+      };
     } catch {
       return null;
     }

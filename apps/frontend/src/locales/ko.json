@@ -9593,7 +9593,10 @@
       "dislike": "싫어요",
       "resize": "드래그하여 너비 조절",
       "embeddingDegraded": "의미 검색 비활성",
-      "embeddingDegradedHint": "임베딩 API 키가 없어 의미 검색이 비활성화되었습니다. 시스템 설정에서 AI 임베딩 키를 등록하세요."
+      "embeddingDegradedHint": "임베딩 API 키가 없어 의미 검색이 비활성화되었습니다. 시스템 설정에서 AI 임베딩 키를 등록하세요.",
+      "scenarioWriteNote": "화면을 순서대로 조작합니다. 실제로 저장하는 단계는 직전에 다시 확인합니다.",
+      "scenarioReadNote": "화면을 순서대로 조작합니다. 데이터는 바뀌지 않습니다.",
+      "scenarioStart": "화면에서 진행"
     },
     "config": {
       "provider": "AI 제공자",

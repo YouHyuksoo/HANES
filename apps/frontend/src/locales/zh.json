@@ -9570,7 +9570,10 @@
       "dislike": "踩",
       "resize": "拖动调整宽度",
       "embeddingDegraded": "语义搜索未启用",
-      "embeddingDegradedHint": "未配置嵌入 API 密钥，语义搜索已停用。请在系统设置中注册 AI 嵌入密钥。"
+      "embeddingDegradedHint": "未配置嵌入 API 密钥，语义搜索已停用。请在系统设置中注册 AI 嵌入密钥。",
+      "scenarioWriteNote": "将按顺序操作画面。实际保存的步骤会在执行前再次确认。",
+      "scenarioReadNote": "将按顺序操作画面。不会更改数据。",
+      "scenarioStart": "在画面上执行"
     },
     "config": {
       "provider": "提供商",

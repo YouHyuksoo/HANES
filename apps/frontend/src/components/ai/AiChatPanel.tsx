@@ -15,7 +15,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import api from "@/services/api";
 import { usePageToolStore } from "@/ai-page-tools/pageToolStore";
-import { useAiChatStore, type AiChatAttachment, type AiChatMessage, type AiChatPersona, type AiChatSource } from "@/stores/aiChatStore";
+import { useAiChatStore, type AiChatAttachment, type AiChatMessage, type AiChatPersona, type AiChatSource, type AiScenarioRunProposal } from "@/stores/aiChatStore";
+import { useScenarioRunStore } from "@/scenario-driver/store";
 import { useHelpStore } from "@/stores/helpStore";
 import { findMenuCodeByPath } from "@/config/menuConfig";
 import { slugify } from "@/lib/help";
@@ -222,6 +223,7 @@ export default function AiChatPanel() {
         requiresApproval: data.requiresApproval,
         executed: data.executed,
         pageToolCall: data.pageToolCall,
+        scenarioRun: data.scenarioRun,
         sources: data.sources,
       });
     } catch (e: unknown) {
@@ -356,6 +358,26 @@ export default function AiChatPanel() {
     },
     [sending, addMessage, t],
   );
+
+  /**
+   * 시나리오 실행 시작.
+   * 본문(steps)은 채팅 응답에 담지 않는다(프롬프트·전송 낭비). 승인 시점에 받아온다.
+   * 드라이버는 전역(providers.tsx)에 있으므로 채팅 패널이 닫혀도 계속 돈다.
+   */
+  const startScenario = useCallback(async (proposal: AiScenarioRunProposal) => {
+    try {
+      const res = await api.get(`/ai/scenarios/${encodeURIComponent(proposal.scenarioId)}`);
+      const scenario = res.data?.data;
+      if (!scenario) throw new Error("시나리오를 불러오지 못했습니다.");
+      const vars: Record<string, string> = {};
+      for (const [k, v] of Object.entries(proposal.params)) vars[k] = String(v);
+      useScenarioRunStore.getState().request(scenario, vars);
+      close();
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      addMessage({ role: "assistant", content: msg || "시나리오를 시작하지 못했습니다." });
+    }
+  }, [addMessage, close]);
 
   const executeTool = useCallback(
     async (idx: number, call?: { pageId: string; toolName: string; input: Record<string, unknown> }) => {
@@ -665,6 +687,41 @@ export default function AiChatPanel() {
                     <button type="button" onClick={() => executeTool(i, m.pageToolCall)} disabled={sending} className="flex items-center gap-1 rounded bg-amber-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50">
                       <Play className="h-3 w-3" />
                       {t("ai.chat.execute", "실행")}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+
+              {/* 시나리오 실행 카드 — 승인하면 인앱 드라이버가 화면을 직접 조작한다 */}
+              {m.role === "assistant" && m.scenarioRun && !approvedIdx.has(i) && (
+                <div className="mt-2 w-[92%] rounded-lg border border-primary/50 p-2.5">
+                  <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-primary">
+                    <Play className="h-3.5 w-3.5" />
+                    {m.scenarioRun.title}
+                  </div>
+                  {Object.keys(m.scenarioRun.params).length > 0 && (
+                    <div className="mb-2 rounded bg-surface px-2 py-1.5 text-[11px] text-text">
+                      {Object.entries(m.scenarioRun.params).map(([k, v]) => (
+                        <div key={k} className="flex gap-2">
+                          <span className="text-text-muted">{k}</span>
+                          <span className="font-semibold">{String(v)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="mb-2 text-[11px] text-text-muted">
+                    {m.scenarioRun.writeStepCount > 0
+                      ? t("ai.chat.scenarioWriteNote", "화면을 순서대로 조작합니다. 실제로 저장하는 단계는 직전에 다시 확인합니다.")
+                      : t("ai.chat.scenarioReadNote", "화면을 순서대로 조작합니다. 데이터는 바뀌지 않습니다.")}
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <button type="button" onClick={() => setApprovedIdx((p) => new Set(p).add(i))} className="rounded px-2.5 py-1 text-xs text-text-muted hover:bg-surface">
+                      {t("ai.chat.cancel", "취소")}
+                    </button>
+                    <button type="button" onClick={() => { setApprovedIdx((p) => new Set(p).add(i)); void startScenario(m.scenarioRun!); }} className="flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-xs font-medium text-white hover:bg-primary/90">
+                      <Play className="h-3 w-3" />
+                      {t("ai.chat.scenarioStart", "화면에서 진행")}
                     </button>
                   </div>
                 </div>

@@ -25,6 +25,8 @@ describe('AiSqlService response quality prompts', () => {
       stripFences: jest.fn((sql: string) => sql.trim()),
     };
     const pageTools = { getManifest: jest.fn() };
+    // 시나리오 목록이 비면 selectScenario 가 즉시 null 을 반환해 기존 흐름이 그대로 유지된다
+    const scenarios = { list: jest.fn().mockReturnValue([]), get: jest.fn(), assertParams: jest.fn() };
     const knowledge = {
       search: jest.fn().mockResolvedValue([]),
       formatContext: jest.fn().mockReturnValue(''),
@@ -44,12 +46,13 @@ describe('AiSqlService response quality prompts', () => {
       schemaInfo as any,
       validator as any,
       pageTools as any,
+      scenarios as any,
       knowledge as any,
       knowledgePipeline as any,
       dataSource as any,
     );
 
-    return { target, catalog, schemaInfo, validator, dataSource, knowledge, pageTools };
+    return { target, catalog, schemaInfo, validator, dataSource, knowledge, pageTools, scenarios };
   };
 
   it('일반 대화 system prompt는 단순 답변 대신 근거와 후속 확인을 요구한다', async () => {
@@ -272,6 +275,7 @@ describe('AiSqlService knowledge pipeline 연동', () => {
       { getSelectionCatalog: jest.fn().mockResolvedValue({ catalog: '', tables: [] }), getSchemaText: jest.fn() } as any,
       { validate: jest.fn(), stripFences: jest.fn((s: string) => s) } as any,
       { getManifest: jest.fn() } as any,
+      { list: jest.fn().mockReturnValue([]) } as any,
       { formatContext: jest.fn() } as any,
       pipeline as any,
       {} as any,
@@ -301,6 +305,7 @@ describe('AiSqlService knowledge pipeline 연동', () => {
       { getSelectionCatalog: jest.fn().mockResolvedValue({ catalog: '', tables: [] }), getSchemaText: jest.fn() } as any,
       { validate: jest.fn(), stripFences: jest.fn((s: string) => s) } as any,
       { getManifest: jest.fn() } as any,
+      { list: jest.fn().mockReturnValue([]) } as any,
       knowledge as any,
       pipeline as any,
       {} as any,
@@ -311,5 +316,74 @@ describe('AiSqlService knowledge pipeline 연동', () => {
 
     expect(knowledge.search).toHaveBeenCalled();
     expect(result.content).toBeTruthy();
+  });
+});
+
+describe('시나리오 선택 (인앱 드라이버 연결)', () => {
+  const makeService = (scenarioList: unknown[], llmAnswer: string) => {
+    const aiService = { complete: jest.fn().mockResolvedValue(llmAnswer) };
+    const scenarios = { list: jest.fn().mockReturnValue(scenarioList) };
+    const service = new AiSqlService(
+      aiService as any,
+      { getSelectionCatalog: jest.fn().mockResolvedValue({ catalog: '', tables: [] }), getRelationsText: jest.fn() } as any,
+      { getSelectionCatalog: jest.fn().mockResolvedValue({ catalog: '', tables: [] }), getSchemaText: jest.fn() } as any,
+      { validate: jest.fn(), stripFences: jest.fn((s: string) => s) } as any,
+      { getManifest: jest.fn() } as any,
+      scenarios as any,
+      { search: jest.fn().mockResolvedValue([]), formatContext: jest.fn().mockReturnValue('') } as any,
+      { retrieve: jest.fn().mockRejectedValue(new Error('stub')) } as any,
+      {} as any,
+    );
+    return { service, aiService, scenarios };
+  };
+
+  const SAMPLE = [{
+    id: 'job-order-create',
+    title: '작업지시 생성',
+    description: '작업지시를 새로 만든다',
+    startRoute: '/production/order',
+    params: {
+      itemCode: { label: '품목', required: true },
+      planQty: { label: '계획수량', required: true },
+    },
+    writeStepCount: 1,
+  }];
+
+  it('요청에 맞는 시나리오를 고르고 값을 채운다', async () => {
+    const { service } = makeService(
+      SAMPLE,
+      '{"scenarioId":"job-order-create","params":{"itemCode":"ITEM-A","planQty":500}}',
+    );
+    const run = await (service as any).selectScenario('ITEM-A 500개 작업지시 내줘');
+    expect(run).toMatchObject({
+      scenarioId: 'job-order-create',
+      title: '작업지시 생성',
+      writeStepCount: 1,
+      params: { itemCode: 'ITEM-A', planQty: 500 },
+    });
+  });
+
+  it('required 값이 빠지면 실행을 제안하지 않는다 — 화면을 절반만 채우고 멈추면 안 된다', async () => {
+    const { service } = makeService(
+      SAMPLE,
+      '{"scenarioId":"job-order-create","params":{"itemCode":"ITEM-A"}}',
+    );
+    expect(await (service as any).selectScenario('ITEM-A 작업지시')).toBeNull();
+  });
+
+  it('맞는 절차가 없으면 null 을 반환해 기존 흐름으로 흘려보낸다', async () => {
+    const { service } = makeService(SAMPLE, '{"scenarioId":null}');
+    expect(await (service as any).selectScenario('재고 얼마나 있어?')).toBeNull();
+  });
+
+  it('등록된 시나리오가 없으면 LLM 을 부르지 않는다', async () => {
+    const { service, aiService } = makeService([], '{}');
+    expect(await (service as any).selectScenario('작업지시 내줘')).toBeNull();
+    expect(aiService.complete).not.toHaveBeenCalled();
+  });
+
+  it('목록에 없는 id 를 지어내면 무시한다', async () => {
+    const { service } = makeService(SAMPLE, '{"scenarioId":"made-up","params":{}}');
+    expect(await (service as any).selectScenario('뭔가 해줘')).toBeNull();
   });
 });

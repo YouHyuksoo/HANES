@@ -9570,7 +9570,10 @@
       "dislike": "Dislike",
       "resize": "Drag to resize",
       "embeddingDegraded": "Semantic search off",
-      "embeddingDegradedHint": "Semantic search is disabled because no embedding API key is set. Register an AI embedding key in System Config."
+      "embeddingDegradedHint": "Semantic search is disabled because no embedding API key is set. Register an AI embedding key in System Config.",
+      "scenarioWriteNote": "The screen will be operated step by step. Each step that actually saves is confirmed just before it runs.",
+      "scenarioReadNote": "The screen will be operated step by step. No data will be changed.",
+      "scenarioStart": "Run on screen"
     },
     "config": {
       "provider": "Provider",

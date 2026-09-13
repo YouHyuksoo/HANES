@@ -47,8 +47,19 @@ export interface AiChatMessage {
   executed?: boolean;
   /** 페이지 도구 실행 제안(승인 카드) */
   pageToolCall?: AiPageToolCallProposal;
+  /** 인앱 드라이버가 실행할 시나리오 제안 — 승인하면 화면이 스스로 절차를 진행한다 */
+  scenarioRun?: AiScenarioRunProposal;
   /** 답변 근거 출처 (RAG 검색 결과가 있을 때만) */
   sources?: AiChatSource[];
+}
+
+/** 백엔드 AiSqlResult.scenarioRun 과 같은 모양 */
+export interface AiScenarioRunProposal {
+  scenarioId: string;
+  title: string;
+  params: Record<string, unknown>;
+  /** 실데이터를 바꾸는 단계 수 — 0 이면 읽기 전용 절차 */
+  writeStepCount: number;
 }
 
 interface AiChatState {

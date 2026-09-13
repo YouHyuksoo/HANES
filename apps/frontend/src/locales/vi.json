@@ -9570,7 +9570,10 @@
       "dislike": "Không thích",
       "resize": "Kéo để thay đổi kích thước",
       "embeddingDegraded": "Tắt tìm kiếm ngữ nghĩa",
-      "embeddingDegradedHint": "Tìm kiếm ngữ nghĩa bị tắt vì chưa có khóa API embedding. Hãy đăng ký khóa AI embedding trong Cấu hình hệ thống."
+      "embeddingDegradedHint": "Tìm kiếm ngữ nghĩa bị tắt vì chưa có khóa API embedding. Hãy đăng ký khóa AI embedding trong Cấu hình hệ thống.",
+      "scenarioWriteNote": "Màn hình sẽ được thao tác theo thứ tự. Mỗi bước thực sự lưu dữ liệu sẽ được xác nhận ngay trước khi chạy.",
+      "scenarioReadNote": "Màn hình sẽ được thao tác theo thứ tự. Dữ liệu không bị thay đổi.",
+      "scenarioStart": "Chạy trên màn hình"
     },
     "config": {
       "provider": "Nhà cung cấp",
