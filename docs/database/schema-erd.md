@@ -1,21 +1,21 @@
 ---
 sources: []
-verifiedCommit: 04591846
+verifiedCommit: 73716145
 generated: true
 ---
 
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-09-10 12:04:25
+- 작성일: 2026-09-14 03:49:08
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
 
 ## 1. 요약
 
-- 테이블 수: 176
-- 컬럼 수: 2925
-- PK 보유 테이블: 172
+- 테이블 수: 178
+- 컬럼 수: 2968
+- PK 보유 테이블: 174
 - DB FK 수: 52
 - COM_CODES 그룹 수: 164
 
@@ -93,6 +93,7 @@ generated: true
 ### Other
 
 - `AI_CHAT_FEEDBACKS`: - / PK: `FEEDBACK_ID`
+- `AI_OAUTH_TOKENS`: AI provider OAuth 토큰 (회사/사업장 단위 1건) / PK: `PROVIDER, COMPANY, PLANT_CD`
 - `AQL_ACCEPTANCE_RULES`: ISO 2859-1 Code Letter와 AQL값별 Ac/Re 판정표 / PK: `COMPANY, PLANT_CD, INSPECTION_MODE, CODE_LETTER, AQL_VALUE`
 - `AQL_CODE_LETTER_RULES`: ISO 2859-1 LOT 수량/검사수준별 Sample Size Code Letter 표 / PK: `COMPANY, PLANT_CD, INSPECTION_LEVEL, LOT_QTY_FROM`
 - `AQL_CODE_LETTER_SAMPLES`: ISO 2859-1 Code Letter별 표준 샘플수량 표 / PK: `COMPANY, PLANT_CD, CODE_LETTER`
@@ -179,6 +180,7 @@ generated: true
 - `FAI_REQUESTS`: 초도품검사(FAI) 요청 / PK: `FAI_NO`
 - `GAUGE_MASTERS`: 게이지(측정기) 마스터 / PK: `GAUGE_CODE`
 - `INSPECT_AIDS`: 검사보조구 마스터 (양품/불량 한도견본, 검사홀더/지그) ― 유효기간·승인·사진 관리 / PK: `COMPANY, PLANT_CD, AID_CODE`
+- `INSPECT_ITEM_SPECS`: 품목별 리크/내전압/토크 검사 스펙 (THN 관리계획서 I50/H57 실측 판정) / PK: `SPEC_ID`
 - `INSPECT_RESULTS`: 검사 결과 (공정검사/AOI 등) / PK: `RESULT_NO`
 - `IQC_AQL_POLICIES`: IQC AQL 정책 기준정보 / PK: `COMPANY, PLANT_CD, POLICY_CODE`
 - `IQC_ITEM_MASTERS`: IQC 검사항목 마스터 (품목별) / PK: `COMPANY, PLANT_CD, ITEM_CODE, SEQ`
@@ -255,6 +257,21 @@ erDiagram
     VARCHAR2_10 RATING NOT_NULL
     VARCHAR2_50 CREATED_BY NOT_NULL
     TIMESTAMP_6 CREATED_AT NOT_NULL
+  }
+  AI_OAUTH_TOKENS {
+    VARCHAR2_30 PROVIDER PK NOT_NULL
+    VARCHAR2_50 COMPANY PK NOT_NULL
+    VARCHAR2_50 PLANT_CD PK NOT_NULL
+    CLOB ACCESS_TOKEN NOT_NULL
+    CLOB REFRESH_TOKEN
+    CLOB ID_TOKEN
+    VARCHAR2_100 ACCOUNT_ID
+    VARCHAR2_255 ACCOUNT_EMAIL
+    TIMESTAMP_6 EXPIRES_AT
+    TIMESTAMP_6 LAST_REFRESH
+    VARCHAR2_100 CREATED_BY
+    VARCHAR2_100 UPDATED_BY
+    string more_columns
   }
   AQL_ACCEPTANCE_RULES {
     VARCHAR2_50 COMPANY PK NOT_NULL
@@ -1035,6 +1052,21 @@ erDiagram
     VARCHAR2_200 LOCATION
     DATE VALID_FROM
     DATE VALID_TO
+    string more_columns
+  }
+  INSPECT_ITEM_SPECS {
+    NUMBER_15 SPEC_ID PK NOT_NULL
+    VARCHAR2_50 COMPANY NOT_NULL
+    VARCHAR2_50 PLANT_CD NOT_NULL
+    VARCHAR2_50 ITEM_CODE NOT_NULL
+    VARCHAR2_20 INSPECT_TYPE NOT_NULL
+    VARCHAR2_50 CONNECTOR_KEY NOT_NULL
+    NUMBER_10_3 CHARGE_BAR
+    NUMBER_10_3 CHARGE_TOL_BAR
+    NUMBER_10_3 MEASURE_BAR
+    NUMBER_10_3 MEASURE_TOL_BAR
+    NUMBER_10_3 HOLD_SECONDS
+    NUMBER_10_3 MIN_HOLD_BAR
     string more_columns
   }
   INSPECT_RESULTS {
@@ -2974,6 +3006,7 @@ erDiagram
 | `INSPECT_AIDS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `INSPECT_AIDS` | `PROCESS_CODE` | `PROCESS_CAPAS` |
 | `INSPECT_AIDS` | `DEFECT_CODE` | `DEFECT_CATEGORY_MASTERS` |
+| `INSPECT_ITEM_SPECS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `INSPECT_RESULTS` | `PROD_RESULT_ID` | `PROD_RESULTS` |
 | `INSPECT_RESULTS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `INV_ADJ_LOGS` | `WAREHOUSE_CODE` | `WAREHOUSES` |
@@ -3100,6 +3133,7 @@ erDiagram
 | `SELF_INSPECT_ITEMS` | `PROCESS_CODE` | `PROCESS_CAPAS` |
 | `SELF_INSPECT_RESULTS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `SELF_INSPECT_RESULTS` | `PROCESS_CODE` | `PROCESS_CAPAS` |
+| `SELF_INSPECT_RESULTS` | `INSPECT_ITEM_ID` | `INSPECT_ITEM_SPECS` |
 | `SENSOR_DATA_LOGS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `SG_LABELS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `SG_LABELS` | `WAREHOUSE_CODE` | `WAREHOUSES` |
@@ -3112,8 +3146,6 @@ erDiagram
 | `SIMULATION_SCHEDULES` | `PROCESS_CODE` | `PROCESS_CAPAS` |
 | `SPC_CHARTS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `SPC_CHARTS` | `PROCESS_CODE` | `PROCESS_CAPAS` |
-| `SPC_DATA` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
-| `STOCK_TRANSACTIONS` | `ITEM_CODE` | `ITEM_MASTERS` |
 
 ## 5. 모듈별 ERD
 
@@ -4079,6 +4111,21 @@ erDiagram
     VARCHAR2_10 RATING NOT_NULL
     VARCHAR2_50 CREATED_BY NOT_NULL
     TIMESTAMP_6 CREATED_AT NOT_NULL
+  }
+  AI_OAUTH_TOKENS {
+    VARCHAR2_30 PROVIDER PK NOT_NULL
+    VARCHAR2_50 COMPANY PK NOT_NULL
+    VARCHAR2_50 PLANT_CD PK NOT_NULL
+    CLOB ACCESS_TOKEN NOT_NULL
+    CLOB REFRESH_TOKEN
+    CLOB ID_TOKEN
+    VARCHAR2_100 ACCOUNT_ID
+    VARCHAR2_255 ACCOUNT_EMAIL
+    TIMESTAMP_6 EXPIRES_AT
+    TIMESTAMP_6 LAST_REFRESH
+    VARCHAR2_100 CREATED_BY
+    VARCHAR2_100 UPDATED_BY
+    string more_columns
   }
   AQL_ACCEPTANCE_RULES {
     VARCHAR2_50 COMPANY PK NOT_NULL
@@ -5240,6 +5287,21 @@ erDiagram
     DATE VALID_TO
     string more_columns
   }
+  INSPECT_ITEM_SPECS {
+    NUMBER_15 SPEC_ID PK NOT_NULL
+    VARCHAR2_50 COMPANY NOT_NULL
+    VARCHAR2_50 PLANT_CD NOT_NULL
+    VARCHAR2_50 ITEM_CODE NOT_NULL
+    VARCHAR2_20 INSPECT_TYPE NOT_NULL
+    VARCHAR2_50 CONNECTOR_KEY NOT_NULL
+    NUMBER_10_3 CHARGE_BAR
+    NUMBER_10_3 CHARGE_TOL_BAR
+    NUMBER_10_3 MEASURE_BAR
+    NUMBER_10_3 MEASURE_TOL_BAR
+    NUMBER_10_3 HOLD_SECONDS
+    NUMBER_10_3 MIN_HOLD_BAR
+    string more_columns
+  }
   INSPECT_RESULTS {
     VARCHAR2_36 PROD_RESULT_ID
     VARCHAR2_50 SERIAL_NO
@@ -5791,7 +5853,7 @@ erDiagram
 | `SEQ` | `NUMBER` | `N` | PK | 기본값 `1` |  |
 | `EMAIL` | `VARCHAR2(255)` | `N` | FK->USERS(EMAIL) |  |  |
 | `NAME` | `VARCHAR2(255)` | `Y` |  |  |  |
-| `ACTIVITY_TYPE` | `VARCHAR2(50)` | `N` |  |  |  |
+| `ACTIVITY_TYPE` | `VARCHAR2(50)` | `N` |  |  | 활동 유형 [LOGIN, PAGE_ACCESS, TOAST_SUCCESS, TOAST_ERROR, API_CALL, API_ERROR, JS_ERROR, SCAN] |
 | `PAGE_PATH` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `PAGE_NAME` | `VARCHAR2(200)` | `Y` |  |  |  |
 | `IP_ADDRESS` | `VARCHAR2(50)` | `Y` |  |  |  |
@@ -5800,6 +5862,8 @@ erDiagram
 | `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` |  |
+| `MESSAGE` | `VARCHAR2(4000)` | `Y` |  |  | 토스트/에러 메시지 본문 |
+| `ACTOR_KIND` | `VARCHAR2(20)` | `N` |  | 기본값 `'HUMAN'` | 기록 주체 [HUMAN=사람 조작, SCENARIO=시나리오 드라이버] |
 
 ### `AI_CHAT_FEEDBACKS`
 
@@ -5818,6 +5882,28 @@ erDiagram
 | `RATING` | `VARCHAR2(10)` | `N` |  | CHECK `RATING IN ('LIKE','DISLIKE')` |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `N` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+
+### `AI_OAUTH_TOKENS`
+
+- 설명: AI provider OAuth 토큰 (회사/사업장 단위 1건)
+- PK: `PROVIDER, COMPANY, PLANT_CD`
+
+| 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
+|---|---|---|---|---|---|
+| `PROVIDER` | `VARCHAR2(30)` | `N` | PK |  | AI provider [openai-oauth] |
+| `COMPANY` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 |  |
+| `ACCESS_TOKEN` | `CLOB` | `N` |  |  | API 호출용 Bearer 토큰 (aud=https://api.openai.com/v1) |
+| `REFRESH_TOKEN` | `CLOB` | `Y` |  |  | 만료 시 재발급용. 없으면 재로그인 필요 |
+| `ID_TOKEN` | `CLOB` | `Y` |  |  |  |
+| `ACCOUNT_ID` | `VARCHAR2(100)` | `Y` |  |  |  |
+| `ACCOUNT_EMAIL` | `VARCHAR2(255)` | `Y` |  |  | 연결된 계정 (화면 표시용) |
+| `EXPIRES_AT` | `TIMESTAMP(6)` | `Y` |  |  | access_token 만료 시각. 임박하면 자동 갱신한다 |
+| `LAST_REFRESH` | `TIMESTAMP(6)` | `Y` |  |  |  |
+| `CREATED_BY` | `VARCHAR2(100)` | `Y` |  |  |  |
+| `UPDATED_BY` | `VARCHAR2(100)` | `Y` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `AQL_ACCEPTANCE_RULES`
 
@@ -7136,6 +7222,39 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` | 생성일시 |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` | 수정일시 |
+
+### `INSPECT_ITEM_SPECS`
+
+- 설명: 품목별 리크/내전압/토크 검사 스펙 (THN 관리계획서 I50/H57 실측 판정)
+- PK: `SPEC_ID`
+- UK: `COMPANY, PLANT_CD, ITEM_CODE, INSPECT_TYPE, CONNECTOR_KEY`
+
+| 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
+|---|---|---|---|---|---|
+| `SPEC_ID` | `NUMBER(15)` | `N` | PK |  |  |
+| `COMPANY` | `VARCHAR2(50)` | `N` | UK | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(50)` | `N` | UK | 테넌트 범위 컬럼 |  |
+| `ITEM_CODE` | `VARCHAR2(50)` | `N` | UK |  |  |
+| `INSPECT_TYPE` | `VARCHAR2(20)` | `N` | UK | CHECK `INSPECT_TYPE IN ('LEAK','HIPOT','TORQUE')`<br>COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관, INITIAL=초기검사, RETEST=재검사 |  |
+| `CONNECTOR_KEY` | `VARCHAR2(50)` | `N` | UK | 기본값 `'*'` |  |
+| `CHARGE_BAR` | `NUMBER(10,3)` | `Y` |  |  | 리크 주입압 목표 (bar), THN 0.7 |
+| `CHARGE_TOL_BAR` | `NUMBER(10,3)` | `Y` |  |  |  |
+| `MEASURE_BAR` | `NUMBER(10,3)` | `Y` |  |  |  |
+| `MEASURE_TOL_BAR` | `NUMBER(10,3)` | `Y` |  |  |  |
+| `HOLD_SECONDS` | `NUMBER(10,3)` | `Y` |  |  |  |
+| `MIN_HOLD_BAR` | `NUMBER(10,3)` | `Y` |  |  | 리크 유지 후 합격 하한 압력 (bar), THN 0.3 |
+| `TEST_VOLTAGE_KV` | `NUMBER(10,3)` | `Y` |  |  | 내전압 시험 전압 (kV), THN 3.00 |
+| `TEST_SECONDS` | `NUMBER(10,3)` | `Y` |  |  |  |
+| `MAX_CURRENT_MA` | `NUMBER(10,3)` | `Y` |  |  | 내전압 허용전류 (mA), THN 2.0 |
+| `TORQUE_LSL` | `NUMBER(10,3)` | `Y` |  |  |  |
+| `TORQUE_USL` | `NUMBER(10,3)` | `Y` |  |  |  |
+| `TORQUE_UNIT` | `VARCHAR2(20)` | `Y` |  |  |  |
+| `REMARK` | `VARCHAR2(500)` | `Y` |  |  |  |
+| `USE_YN` | `CHAR(1)` | `N` |  | 기본값 `'Y'`<br>CHECK `USE_YN IN ('Y','N')`<br>COM_CODES.USE_YN: Y=사용, N=미사용<br>관례값 Y/N |  |
+| `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `INSPECT_RESULTS`
 
@@ -9676,6 +9795,9 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` | 생성일시 |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` | 수정일시 |
+| `APPLICATOR_DISK` | `NUMBER(10,3)` | `Y` |  |  | Applicator 디스크값 (크림프하이트와 일치해야 함) |
+| `APPLICATOR_LIFE_SHOTS` | `NUMBER(10)` | `Y` |  |  | Applicator 수명 타수 (측각 10만/일반 20만) |
+| `SAMPLE_LOT_QTY` | `NUMBER(10)` | `Y` |  |  | 초중종물 기준 작업수량 (THN 300) |
 
 ### `TRACE_LOGS`
 

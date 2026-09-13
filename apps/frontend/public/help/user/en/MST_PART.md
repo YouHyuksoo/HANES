@@ -61,7 +61,7 @@ Register and manage the **basic information for all items (raw materials, semi-f
 | Column | Role / Description |
 |------|------|
 | **Box Quantity (boxQty)** | Standard quantity per box (for packaging and box labels). |
-| **Min Package Qty (minPackQty)** | Minimum unit quantity for material dispensing. |
+| **Issue Pack Unit (minPackQty)** | Minimum unit quantity for material dispensing. |
 | **LOT Unit Qty (lotUnitQty)** | Standard quantity for processing production items as a batch unit. |
 | **Pallet Unit (packUnit)** | Pallet or upper packaging unit standard. |
 | **Safety Stock (safetyStock)** | Reference quantity for determining stock shortage. Below this value is considered insufficient. |

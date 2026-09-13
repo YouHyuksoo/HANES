@@ -41,7 +41,7 @@ ITEM_MASTERS (PK: COMPANY, PLANT_CD, ITEM_CODE)
 | 基本样本数 | `SAMPLE_QTY` | IQC基本样本数(与AQL样本数不同)。 |
 | AQL策略 | `IQC_AQL_POLICY_CODE` | 引用`IQC_AQL_POLICIES.POLICY_CODE`。入库LOT判定基准。 |
 | 箱数量 | `BOX_QTY` | 装箱基准。 |
-| 最小包装数量 | `MIN_PACK_QTY` | 最小发放单位。 |
+| 领料包装单位 | `MIN_PACK_QTY` | 最小发放单位。 |
 | LOT组成单位 | `LOT_UNIT_QTY` | 工序品捆包单位。 |
 | 托盘组成单位 | `PACK_UNIT` | 上层包装单位。 |
 | 安全库存 | `SAFETY_STOCK` | 不足判断基准。 |

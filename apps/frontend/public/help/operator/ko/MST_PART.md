@@ -68,7 +68,7 @@ master/part/
 | AQL 정책 | IQC_AQL_POLICY_CODE | VARCHAR2(100) | IQC_AQL_POLICIES 참조 |
 | 사용여부 | USE_YN | CHAR(1) | Y/N (DB: 'Y'/'N') |
 | 박스장입수량 | BOX_QTY | NUMBER(12,4) | |
-| 최소불출단위수량 | MIN_PACK_QTY | NUMBER(12,4) | |
+| 불출포장단위 | MIN_PACK_QTY | NUMBER(12,4) | |
 | 묶음단위수량 | LOT_UNIT_QTY | NUMBER(12,4) | |
 | 안전재고 | SAFETY_STOCK | NUMBER(12,4) | |
 | 유효기간 | EXPIRY_DATE | NUMBER(12,0) | 입고/제조 기준 유효기간 일수 |

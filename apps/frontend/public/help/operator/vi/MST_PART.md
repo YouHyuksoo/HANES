@@ -41,7 +41,7 @@ ITEM_MASTERS (PK: COMPANY, PLANT_CD, ITEM_CODE)
 | Số lượng mẫu cơ bản | `SAMPLE_QTY` | Số lượng mẫu IQC cơ bản (riêng với số mẫu AQL). |
 | Chính sách AQL | `IQC_AQL_POLICY_CODE` | Tham chiếu `IQC_AQL_POLICIES.POLICY_CODE`. Tiêu chuẩn đánh giá LOT nhập. |
 | Số lượng hộp | `BOX_QTY` | Tiêu chuẩn đóng hộp. |
-| Số lượng đóng gói tối thiểu | `MIN_PACK_QTY` | Đơn vị cấp phát tối thiểu. |
+| Đơn vị đóng gói xuất kho | `MIN_PACK_QTY` | Đơn vị cấp phát tối thiểu. |
 | Đơn vị cấu thành LOT | `LOT_UNIT_QTY` | Đơn vị gom sản phẩm công đoạn. |
 | Đơn vị cấu thành Pallet | `PACK_UNIT` | Đơn vị đóng gói cấp trên. |
 | Tồn kho an toàn | `SAFETY_STOCK` | Tiêu chuẩn đánh giá thiếu. |

@@ -41,7 +41,7 @@ ITEM_MASTERS (PK: COMPANY, PLANT_CD, ITEM_CODE)
 | Default Sample Qty | `SAMPLE_QTY` | IQC default sample quantity (separate from AQL sample count). |
 | AQL Policy | `IQC_AQL_POLICY_CODE` | References `IQC_AQL_POLICIES.POLICY_CODE`. Receiving LOT judgment basis. |
 | Box Qty | `BOX_QTY` | Box packing standard. |
-| Min Pack Qty | `MIN_PACK_QTY` | Minimum issue unit. |
+| Issue Pack Unit | `MIN_PACK_QTY` | Minimum issue unit. |
 | LOT Unit Qty | `LOT_UNIT_QTY` | Process product bundle unit. |
 | Pallet Unit | `PACK_UNIT` | Upper packaging unit. |
 | Safety Stock | `SAFETY_STOCK` | Shortage judgment basis. |

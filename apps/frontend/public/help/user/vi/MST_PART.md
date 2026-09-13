@@ -61,7 +61,7 @@ related: [QC_AQL]
 | Cột | Vai trò / Ý nghĩa |
 |------|------|
 | **Số lượng thùng(boxQty)** | Số lượng tiêu chuẩn đóng gói trong một thùng (tiêu chuẩn đóng gói, nhãn thùng). |
-| **Số lượng đóng gói tối thiểu(minPackQty)** | Số lượng có thể xử lý làm đơn vị tối thiểu khi cấp phát vật tư. |
+| **Đơn vị đóng gói xuất kho(minPackQty)** | Số lượng có thể xử lý làm đơn vị tối thiểu khi cấp phát vật tư. |
 | **Đơn vị cấu thành LOT(lotUnitQty)** | Số lượng tiêu chuẩn để xử lý sản phẩm công đoạn sản xuất theo đơn vị bó. |
 | **Đơn vị cấu thành Pallet(packUnit)** | Tiêu chuẩn cấu thành Pallet hoặc đơn vị đóng gói cấp trên. |
 | **Tồn kho an toàn(safetyStock)** | Số lượng tiêu chuẩn dùng đánh giá thiếu tồn kho. Dưới giá trị này được coi là thiếu. |
