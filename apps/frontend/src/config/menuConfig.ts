@@ -11,7 +11,7 @@
 import {
   LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck,
   Database, FileBox, Cog, Building2, ArrowLeftRight, UserCog,
-  ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler, GitBranch,
+  ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler, GitBranch, PlayCircle,
 } from "lucide-react";
 
 /** 메뉴 설정 항목 인터페이스 */
@@ -312,6 +312,16 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "OUT_VENDOR", labelKey: "menu.outsourcing.vendor", path: "/outsourcing/vendor" },
       { code: "OUT_ORDER", labelKey: "menu.outsourcing.order", path: "/outsourcing/order" },
       { code: "OUT_RECEIVE", labelKey: "menu.outsourcing.receive", path: "/outsourcing/receive" },
+    ],
+  },
+  {
+    // 자동 실행 절차. 정의는 백엔드 definitions/*.json 이 단일 출처이고
+    // 이 화면은 그것을 보고 직접 돌리는 경로다(평소 경로는 AI 채팅).
+    code: "SCENARIO",
+    labelKey: "menu.scenario",
+    icon: PlayCircle,
+    children: [
+      { code: "SCN_RUNNER", labelKey: "menu.scenario.runner", path: "/scenario/runner" },
     ],
   },
   {

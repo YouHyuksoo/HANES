@@ -515,6 +515,8 @@
     "outsourcing.vendor": "Vendor Management",
     "outsourcing.order": "Outsource Order Mgmt",
     "outsourcing.receive": "Outsource Receive Mgmt",
+    "scenario": "Scenario Runner",
+    "scenario.runner": "Run Scenario",
     "interface": "Interface",
     "interface.dashboard": "ERP Sync Status Inquiry",
     "interface.log": "Transfer Log Inquiry",
@@ -9830,5 +9832,20 @@
     "browserOpened": "Opened the print dialog for {{count}} label(s). Choose a printer and print.",
     "agentUnavailableHint": "Cannot connect to the label print agent. Switch the print method to 'Browser print' to print without the agent.",
     "browserPreparing": "Preparing the print view for {{count}} label(s)."
+  },
+  "scenarioRunner": {
+    "title": "Scenario Runner",
+    "subtitle": "Registered automated procedures. Running one presses the screen buttons for you.",
+    "empty": "No scenarios are registered.",
+    "selectPrompt": "Pick a procedure on the left.",
+    "params": "Values",
+    "steps": "Steps",
+    "run": "Run",
+    "writeSteps": "{{count}} saving step(s)",
+    "readonly": "Read-only",
+    "missing": "Required: {{names}}",
+    "loadError": "Failed to load the scenario list.",
+    "loadOneError": "Failed to load the scenario.",
+    "startError": "Failed to start the scenario."
   }
 }

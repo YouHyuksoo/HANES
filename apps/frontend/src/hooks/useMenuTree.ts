@@ -7,7 +7,7 @@ import { useEffect, useMemo, useCallback } from "react";
 import {
   Folder, LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck,
   Database, FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog,
-  ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler, GitBranch,
+  ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler, GitBranch, PlayCircle,
 } from "lucide-react";
 import { menuConfig, type MenuConfigItem } from "@/config/menuConfig";
 import { useAuthStore } from "@/stores/authStore";
@@ -16,7 +16,7 @@ import { useMenuTreeStore } from "@/stores/menuTreeStore";
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   LayoutDashboard, Package, Factory, ScanLine, Shield, Wrench, Truck,
   Database, FileBox, Cog, Building2, ArrowLeftRight, Warehouse, UserCog,
-  ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler, GitBranch,
+  ClipboardCheck, ShoppingCart, Monitor, PackageCheck, Ruler, GitBranch, PlayCircle,
 };
 
 const HELP_MENU_PATH = "/help";

@@ -812,6 +812,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/scenario/runner": {
+      const mod = await import("./page-registries/scenario__runner.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/shipping/box-stock": {
       const mod = await import("./page-registries/shipping__box-stock.generated");
       component = mod.getPageComponent();

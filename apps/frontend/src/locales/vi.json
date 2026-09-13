@@ -515,6 +515,8 @@
     "outsourcing.vendor": "Quản lý nhà thầu",
     "outsourcing.order": "Quản lý đặt hàng gia công",
     "outsourcing.receive": "Quản lý nhập kho gia công",
+    "scenario": "Trình chạy kịch bản",
+    "scenario.runner": "Chạy kịch bản",
     "interface": "Giao diện",
     "interface.dashboard": "Tra cứu tình trạng ERP",
     "interface.log": "Tra cứu lịch sử truyền",
@@ -9830,5 +9832,20 @@
     "browserOpened": "Đã mở hộp thoại in cho {{count}} nhãn. Hãy chọn máy in và in.",
     "agentUnavailableHint": "Không kết nối được với Print Agent. Đổi phương thức in sang 'In bằng trình duyệt' để in mà không cần agent.",
     "browserPreparing": "Đang chuẩn bị màn hình in cho {{count}} nhãn."
+  },
+  "scenarioRunner": {
+    "title": "Trình chạy kịch bản",
+    "subtitle": "Các quy trình tự động đã đăng ký. Khi chạy, hệ thống sẽ bấm nút trên màn hình thay bạn.",
+    "empty": "Chưa có kịch bản nào được đăng ký.",
+    "selectPrompt": "Hãy chọn một quy trình ở bên trái.",
+    "params": "Giá trị thực thi",
+    "steps": "Bước",
+    "run": "Chạy",
+    "writeSteps": "{{count}} bước ghi dữ liệu",
+    "readonly": "Chỉ xem",
+    "missing": "Giá trị bắt buộc: {{names}}",
+    "loadError": "Không tải được danh sách kịch bản.",
+    "loadOneError": "Không tải được kịch bản.",
+    "startError": "Không khởi động được kịch bản."
   }
 }

@@ -19,8 +19,12 @@ import { useMenuFavorites } from "@/hooks/useMenuFavorites";
 import SidebarMenu from "./SidebarMenu";
 import { FavoriteSidebar } from "./FavoriteSidebar";
 
-/** 하단 고정 영역(전체 도움말 위)으로 분리하는 관리자 성격 메뉴 그룹 */
-const ADMIN_MENU_CODES = ["INTERFACE", "SYSTEM"] as readonly string[];
+/**
+ * 하단 고정 영역(전체 도움말 위)으로 분리하는 관리자 성격 메뉴 그룹.
+ * 시나리오 런너도 여기 둔다 — 업무 메뉴가 아니라 절차를 대신 실행하는 운영 도구이고,
+ * "인터페이스 바로 위"라는 자리 자체가 이 고정 영역 안이다(순서는 SORT_ORDER 155 < 160).
+ */
+const ADMIN_MENU_CODES = ["SCENARIO", "INTERFACE", "SYSTEM"] as readonly string[];
 const HELP_MENU_PATH = "/help";
 const HELP_MENU_ITEM: MenuConfigItem = {
   code: "HELP_INDEX",

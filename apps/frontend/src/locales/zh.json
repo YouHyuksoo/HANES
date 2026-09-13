@@ -515,6 +515,8 @@
     "outsourcing.vendor": "外协商管理",
     "outsourcing.order": "外协订单管理",
     "outsourcing.receive": "外协入库管理",
+    "scenario": "场景执行器",
+    "scenario.runner": "执行场景",
     "interface": "接口",
     "interface.dashboard": "ERP集成状况查询",
     "interface.log": "传输历史查询",
@@ -9830,5 +9832,20 @@
     "browserOpened": "已打开 {{count}} 张标签的打印对话框。请选择打印机进行打印。",
     "agentUnavailableHint": "无法连接标签打印代理。将打印方式改为“浏览器打印”即可在没有代理的情况下打印。",
     "browserPreparing": "正在准备 {{count}} 张标签的打印画面。"
+  },
+  "scenarioRunner": {
+    "title": "场景执行器",
+    "subtitle": "已登记的自动执行流程。执行时将代替您点击画面按钮。",
+    "empty": "没有已登记的场景。",
+    "selectPrompt": "请在左侧选择流程。",
+    "params": "执行值",
+    "steps": "步骤",
+    "run": "执行",
+    "writeSteps": "保存 {{count}} 个步骤",
+    "readonly": "仅查询",
+    "missing": "必填值：{{names}}",
+    "loadError": "无法加载场景列表。",
+    "loadOneError": "无法加载场景。",
+    "startError": "无法启动场景。"
   }
 }

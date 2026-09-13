@@ -50,8 +50,10 @@ test('sidebar keeps full help link in a fixed bottom area', () => {
   assert.match(sidebarSource, /isMenuDisabled=\{\(\) => false\}/);
 });
 
-test('sidebar pins interface + system groups in their own bottom area above full help', () => {
-  assert.match(sidebarSource, /const ADMIN_MENU_CODES = \["INTERFACE", "SYSTEM"\]/);
+test('sidebar pins scenario + interface + system groups in their own bottom area above full help', () => {
+  // 시나리오 런너는 업무 메뉴가 아니라 절차를 대신 실행하는 운영 도구라 이 영역에 둔다.
+  // 영역 안 순서는 DB SORT_ORDER 가 정한다(SCENARIO 155 < INTERFACE 160).
+  assert.match(sidebarSource, /const ADMIN_MENU_CODES = \["SCENARIO", "INTERFACE", "SYSTEM"\]/);
   assert.match(sidebarSource, /const adminItems = items\.filter\(item => ADMIN_MENU_CODES\.includes\(item\.code\)\)/);
   // 업무 메뉴 목록에서는 제외되고, 별도 nav 로 렌더된다
   assert.match(sidebarSource, /!ADMIN_MENU_CODES\.includes\(item\.code\)/);

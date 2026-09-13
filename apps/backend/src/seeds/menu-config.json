@@ -19,6 +19,7 @@
     "CUSTOMS",
     "CONSUMABLES",
     "OUTSOURCING",
+    "SCENARIO",
     "INTERFACE",
     "SYSTEM"
   ],
@@ -209,6 +210,9 @@
       "OUT_VENDOR",
       "OUT_ORDER",
       "OUT_RECEIVE"
+    ],
+    "SCENARIO": [
+      "SCN_RUNNER"
     ],
     "INTERFACE": [
       "IF_DASHBOARD",
