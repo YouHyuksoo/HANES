@@ -9573,7 +9573,18 @@
       "embeddingDegradedHint": "Tìm kiếm ngữ nghĩa bị tắt vì chưa có khóa API embedding. Hãy đăng ký khóa AI embedding trong Cấu hình hệ thống.",
       "scenarioWriteNote": "Màn hình sẽ được thao tác theo thứ tự. Mỗi bước thực sự lưu dữ liệu sẽ được xác nhận ngay trước khi chạy.",
       "scenarioReadNote": "Màn hình sẽ được thao tác theo thứ tự. Dữ liệu không bị thay đổi.",
-      "scenarioStart": "Chạy trên màn hình"
+      "scenarioStart": "Chạy trên màn hình",
+      "stage": {
+        "understand": "Đang phân tích câu hỏi...",
+        "search": "Đang tìm tài liệu...",
+        "rerank": "Đang chọn căn cứ...",
+        "scenario": "Đang tìm quy trình màn hình...",
+        "tool": "Đang tìm chức năng thực thi...",
+        "tables": "Đang xác định đối tượng truy vấn...",
+        "sql": "Đang tạo điều kiện truy vấn...",
+        "query": "Đang truy vấn dữ liệu...",
+        "answer": "Đang soạn câu trả lời..."
+      }
     },
     "config": {
       "provider": "Nhà cung cấp",

@@ -43,6 +43,9 @@ const PER_QUERY_TOP_K = 12;
 const RERANK_INPUT_LIMIT = 20;
 const FINAL_TOP_K = 8;
 
+/** retrieve 가 알리는 진행 단계. 문구가 아니라 키다(번역은 화면이 한다). */
+export type KnowledgePipelineStage = 'understand' | 'search' | 'rerank';
+
 @Injectable()
 export class KnowledgePipelineService {
   private readonly logger = new Logger(KnowledgePipelineService.name);
@@ -52,13 +55,19 @@ export class KnowledgePipelineService {
     private readonly knowledge: AiKnowledgeService,
   ) {}
 
-  async retrieve(userMessage: string, context?: AiKnowledgeContextDto): Promise<KnowledgePipelineResult> {
+  async retrieve(
+    userMessage: string,
+    context?: AiKnowledgeContextDto,
+    onStage?: (stage: KnowledgePipelineStage) => void,
+  ): Promise<KnowledgePipelineResult> {
     // 단계별 소요를 트레이스에 남긴다. 어디서 시간이 가는지 추측으로 답하지 않으려는 것이다.
     const t0 = Date.now();
+    onStage?.('understand');
     const understanding = await this.understand(userMessage);
     const tUnderstand = Date.now();
 
     // [2] 멀티질의 하이브리드 검색 + RRF 융합
+    onStage?.('search');
     const fused = await this.searchWithRrf(understanding.queries, context);
     const tSearch = Date.now();
 
@@ -97,6 +106,7 @@ export class KnowledgePipelineService {
     // [4] 리랭크 — 그래프 확장/비즈니스 로직 청크는 리랭크와 무관하게 유지
     const tGraph = Date.now();
     const rerankSkipped = fused.length <= FINAL_TOP_K;
+    if (!rerankSkipped) onStage?.('rerank');
     const reranked = await this.rerank(userMessage, fused);
     const tRerank = Date.now();
     const chunks = this.mergeUnique([...reranked.slice(0, FINAL_TOP_K), ...graphChunks, ...businessLogicChunks]);

@@ -9573,7 +9573,18 @@
       "embeddingDegradedHint": "Semantic search is disabled because no embedding API key is set. Register an AI embedding key in System Config.",
       "scenarioWriteNote": "The screen will be operated step by step. Each step that actually saves is confirmed just before it runs.",
       "scenarioReadNote": "The screen will be operated step by step. No data will be changed.",
-      "scenarioStart": "Run on screen"
+      "scenarioStart": "Run on screen",
+      "stage": {
+        "understand": "Understanding the question...",
+        "search": "Searching documents...",
+        "rerank": "Selecting sources...",
+        "scenario": "Looking up the screen procedure...",
+        "tool": "Looking up the action...",
+        "tables": "Finding the data to query...",
+        "sql": "Building the query...",
+        "query": "Querying data...",
+        "answer": "Writing the answer..."
+      }
     },
     "config": {
       "provider": "Provider",

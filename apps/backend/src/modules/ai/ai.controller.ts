@@ -112,6 +112,7 @@ export class AiController {
    *
    * 답변 생성이 30초 안팎이라 다 끝날 때까지 화면이 비어 있었다. 내용은 같고
    * 도착 시점만 앞당긴다. 이벤트는 셋이다.
+   *   stage : 지금 하는 일(키). 화면이 "질문 이해 중 / 문서 찾는 중"처럼 보여준다.
    *   meta  : 출처 목록 (검색 직후 — 답변보다 먼저 온다)
    *   delta : 답변 조각. 시나리오 제안처럼 델타가 없는 분기도 있다.
    *   done  : 최종 결과 전체. /ai/chat 응답과 같은 모양이라 화면은 이걸로 메시지를 만든다.
@@ -140,6 +141,7 @@ export class AiController {
 
     try {
       const result = await this.aiSqlService.process(dto.messages, dto.pageToolContext, dto.knowledgeContext, {
+        onStage: (stage) => send('stage', { stage }),
         onMeta: (sources) => send('meta', { sources }),
         onDelta: (chunk) => send('delta', { chunk }),
       });

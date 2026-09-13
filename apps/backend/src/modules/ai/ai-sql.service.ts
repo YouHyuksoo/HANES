@@ -75,7 +75,24 @@ export interface AiChatStreamHooks {
   onMeta?: (sources: AiKnowledgeSourceSummary[]) => void;
   /** 답변 조각. generalChat 경로에서만 발생한다 */
   onDelta?: (chunk: string) => void;
+  /** 지금 무슨 일을 하는 중인지. 화면이 "생각 중..." 대신 구체적으로 보여주게 한다 */
+  onStage?: (stage: AiChatStage) => void;
 }
+
+/**
+ * 진행 단계. 문구가 아니라 키를 보낸다 — 화면 언어가 넷(ko/en/zh/vi)이라
+ * 번역은 프런트가 한다. 여기서 한국어를 보내면 다른 언어에서 그대로 새어 나온다.
+ */
+export type AiChatStage =
+  | 'understand' // 질문 분석
+  | 'search' // 문서 검색
+  | 'rerank' // 근거 선별
+  | 'scenario' // 화면 절차 탐색
+  | 'tool' // 페이지 도구 탐색
+  | 'tables' // 데이터 조회용 테이블 선택
+  | 'sql' // SQL 생성
+  | 'query' // SQL 실행
+  | 'answer'; // 답변 작성
 
 type AiChatRouteMode = 'auto' | 'mes' | 'help' | 'do' | 'web';
 
@@ -261,7 +278,7 @@ export class AiSqlService {
     let knowledgeChunks: KnowledgeSearchResult[] = [];
     let knowledgeIntent: KnowledgeIntent = 'usage';
     try {
-      const pipelineResult = await this.knowledgePipeline.retrieve(userMessage, knowledgeContext);
+      const pipelineResult = await this.knowledgePipeline.retrieve(userMessage, knowledgeContext, stream?.onStage);
       knowledgePrompt = pipelineResult.prompt;
       knowledgeChunks = pipelineResult.chunks;
       knowledgeIntent = pipelineResult.intent;
@@ -288,9 +305,22 @@ export class AiSqlService {
       knowledgeContext,
       knowledgeIntent,
       route.mode,
-      stream?.onDelta,
+      stream,
     );
     return this.withSources(result, knowledgeChunks);
+  }
+
+  /**
+   * SQL 경로에서 일반 대화로 되돌아갈 때 쓴다.
+   * 'tables'/'sql' 단계를 보여주던 화면이 답변 생성으로 넘어갔다는 걸 알아야 하는데,
+   * 되돌아가는 지점이 여러 곳이라 호출부마다 onStage 를 적으면 빠뜨리기 쉽다.
+   */
+  private answerAfterStage(
+    onStage: ((stage: AiChatStage) => void) | undefined,
+    run: () => Promise<AiSqlResult>,
+  ): Promise<AiSqlResult> {
+    onStage?.('answer');
+    return run();
   }
 
   /** 검색된 지식 청크를 응답의 sources 필드로 병합(청크가 없으면 그대로 반환) */
@@ -319,9 +349,12 @@ export class AiSqlService {
     knowledgeContext?: AiKnowledgeContextDto,
     knowledgeIntent: KnowledgeIntent = 'usage',
     routeMode: AiChatRouteMode = 'auto',
-    onDelta?: (chunk: string) => void,
+    stream?: AiChatStreamHooks,
   ): Promise<AiSqlResult> {
+    const onDelta = stream?.onDelta;
+    const onStage = stream?.onStage;
     if (routeMode === 'help') {
+      onStage?.('answer');
       return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent, onDelta);
     }
 
@@ -334,6 +367,7 @@ export class AiSqlService {
       (routeMode === 'do'
         || (this.looksLikePageWorkflowRequest(userMessage) && !this.looksLikeDataQueryRequest(userMessage)));
     if (looksLikeWork) {
+      onStage?.('scenario');
       const run = await this.selectScenario(userMessage);
       if (run) {
         const writeNote = run.writeStepCount > 0
@@ -353,6 +387,7 @@ export class AiSqlService {
       (routeMode === 'do' || (this.looksLikePageWorkflowRequest(userMessage) && !this.looksLikeDataQueryRequest(userMessage)));
     if (shouldTryPageTool) {
       // 등록/처리 요청 → 페이지의 write 도구로 매핑(있으면 승인 카드로 제안)
+      onStage?.('tool');
       const call = await this.selectPageTool(userMessage, pageToolContext.pageId);
       if (call) {
         return {
@@ -361,18 +396,21 @@ export class AiSqlService {
           requiresApproval: true,
         };
       }
+      onStage?.('answer');
       return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent, onDelta);
     }
 
     // [1단계] 관련 테이블 선택 (없으면 일반 대화)
+    onStage?.('tables');
     const tables = await this.selectTables(userMessage);
-    if (tables.length === 0) return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent, onDelta);
+    if (tables.length === 0) return this.answerAfterStage(onStage, () => this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent, onDelta));
 
     // [2단계] SQL 생성 (스키마 + 카탈로그 관계(JOIN 키) 주입)
+    onStage?.('sql');
     const schemaText = await this.schemaInfo.getSchemaText(tables);
     const relations = await this.catalog.getRelationsText(tables);
     const rawSql = await this.generateSql(userMessage, relations ? `${schemaText}\n\n${relations}` : schemaText);
-    if (!rawSql) return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent, onDelta);
+    if (!rawSql) return this.answerAfterStage(onStage, () => this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent, onDelta));
 
     // [검증]
     const v = this.validator.validate(rawSql);
@@ -392,7 +430,9 @@ export class AiSqlService {
 
     // 조회: 즉시 실행 + 분석
     try {
+      onStage?.('query');
       const rows = await this.runSelect(sql);
+      onStage?.('answer');
       const analysis = await this.analyze(userMessage, sql, rows, knowledgePrompt, knowledgeContext, knowledgeIntent);
       return { content: analysis, sql, executed: true, rowCount: rows.length };
     } catch (error: unknown) {

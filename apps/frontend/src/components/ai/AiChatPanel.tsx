@@ -14,7 +14,7 @@ import { Sparkles, X, Send, LoaderCircle, Trash2, Database, Play, Copy, Check, T
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import api from "@/services/api";
-import { streamAiChat } from "@/services/ai-chat-stream";
+import { streamAiChat, type AiChatStage } from "@/services/ai-chat-stream";
 import { usePageToolStore } from "@/ai-page-tools/pageToolStore";
 import { useAiChatStore, type AiChatAttachment, type AiChatMessage, type AiChatPersona, type AiChatSource, type AiScenarioRunProposal } from "@/stores/aiChatStore";
 import { useScenarioRunStore } from "@/scenario-driver/store";
@@ -109,6 +109,22 @@ const AI_ROUTE_MODES = [
   { prefix: "/WEB", label: "/WEB", title: "외부 웹 검색" },
 ];
 
+/**
+ * 진행 단계 기본 문구. 실제 표기는 i18n(`ai.chat.stage.*`)이 담당하고,
+ * 여기 값은 번역 키가 없을 때만 쓰인다.
+ */
+const AI_STAGE_FALLBACK: Record<AiChatStage, string> = {
+  understand: "질문 이해 중...",
+  search: "문서 찾는 중...",
+  rerank: "근거 고르는 중...",
+  scenario: "화면 절차 찾는 중...",
+  tool: "실행할 기능 찾는 중...",
+  tables: "조회 대상 찾는 중...",
+  sql: "조회 조건 만드는 중...",
+  query: "데이터 조회 중...",
+  answer: "답변 작성 중...",
+};
+
 const DEFAULT_AI_CHAT_WIDTH = 880;
 const MAX_IMAGE_ATTACHMENTS = 3;
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
@@ -127,6 +143,8 @@ export default function AiChatPanel() {
   const [sending, setSending] = useState(false);
   // 스트리밍으로 도착한 조각을 모아 두는 곳. 확정 전까지 store 에 넣지 않는다.
   const [streamingText, setStreamingText] = useState("");
+  // 지금 서버가 하는 일. 답변 첫 글자가 나오기까지가 길어서 그 동안 뭘 하는지 보여준다.
+  const [stage, setStage] = useState<AiChatStage | null>(null);
   const [approvedIdx, setApprovedIdx] = useState<Set<number>>(new Set());
   const [expandedSources, setExpandedSources] = useState<Set<number>>(new Set());
   const [feedbackByIdx, setFeedbackByIdx] = useState<Map<number, { feedbackId: number; rating: "LIKE" | "DISLIKE" }>>(new Map());
@@ -227,7 +245,10 @@ export default function AiChatPanel() {
       // (시나리오 제안처럼 조각이 하나도 없는 응답도 있기 때문).
       const data = await streamAiChat<AiChatResponse>(
         { messages: history, pageToolContext, knowledgeContext },
-        { onDelta: (chunk) => setStreamingText((prev) => prev + chunk) },
+        {
+          onStage: setStage,
+          onDelta: (chunk) => setStreamingText((prev) => prev + chunk),
+        },
       );
       addMessage({
         role: "assistant",
@@ -246,6 +267,7 @@ export default function AiChatPanel() {
     } finally {
       // 확정 메시지가 store 에 들어갔으니 미리보기는 지운다. 남겨두면 같은 답이 두 번 보인다.
       setStreamingText("");
+      setStage(null);
       setSending(false);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
@@ -836,7 +858,9 @@ export default function AiChatPanel() {
             ) : (
               <div className="flex items-center gap-2 rounded-2xl border border-border bg-surface px-3.5 py-2 text-sm text-text-muted">
                 <LoaderCircle className="h-4 w-4 animate-spin" />
-                {t("ai.chat.thinking", "생각 중...")}
+                {stage
+                  ? t(`ai.chat.stage.${stage}`, AI_STAGE_FALLBACK[stage])
+                  : t("ai.chat.thinking", "생각 중...")}
               </div>
             )}
           </div>

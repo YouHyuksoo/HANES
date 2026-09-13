@@ -9573,7 +9573,18 @@
       "embeddingDegradedHint": "未配置嵌入 API 密钥，语义搜索已停用。请在系统设置中注册 AI 嵌入密钥。",
       "scenarioWriteNote": "将按顺序操作画面。实际保存的步骤会在执行前再次确认。",
       "scenarioReadNote": "将按顺序操作画面。不会更改数据。",
-      "scenarioStart": "在画面上执行"
+      "scenarioStart": "在画面上执行",
+      "stage": {
+        "understand": "正在理解问题...",
+        "search": "正在检索文档...",
+        "rerank": "正在筛选依据...",
+        "scenario": "正在查找画面流程...",
+        "tool": "正在查找可执行功能...",
+        "tables": "正在确定查询对象...",
+        "sql": "正在生成查询条件...",
+        "query": "正在查询数据...",
+        "answer": "正在生成回答..."
+      }
     },
     "config": {
       "provider": "提供商",
