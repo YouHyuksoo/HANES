@@ -92,6 +92,9 @@ export function resolveTarget(target: TargetSpec): HTMLElement | null {
   if (target.nthButton !== undefined) {
     return [...scope.querySelectorAll<HTMLElement>('button')][target.nthButton] ?? null;
   }
+  // row 만 지정된 경우 그 행 자체가 대상이다.
+  // DataGrid 는 onRowClick 으로 선택을 처리하므로 행 안에 버튼이 없는 화면이 많다.
+  if (target.row && scope instanceof HTMLElement) return scope;
   return null;
 }
 

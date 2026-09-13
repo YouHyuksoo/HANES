@@ -283,6 +283,7 @@ export default function PartSearchModal({
       {/* 검색 바 */}
       <div className="flex items-end gap-2 mb-3">
         <Input
+          data-testid="part-search-input"
           placeholder={t("common.partSearchPlaceholder", "품목코드 또는 품목명 입력...")}
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
@@ -296,7 +297,7 @@ export default function PartSearchModal({
           onChange={(v) => setItemType(v)}
           className="w-32 flex-shrink-0"
         />
-        <Button onClick={handleSearch} className="flex-shrink-0">
+        <Button onClick={handleSearch} className="flex-shrink-0" data-testid="part-search-submit">
           {t("common.search")}
         </Button>
       </div>

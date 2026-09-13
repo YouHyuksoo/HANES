@@ -32,9 +32,11 @@ export default function ScenarioRunOverlay() {
 
   return (
     <div
+      // 전체화면을 덮는 것 자체가 차단이다. 뒤 화면은 이 요소가 포인터를 가로채 클릭되지 않는다.
+      // 여기에 onClickCapture 로 stopPropagation 을 걸면 오버레이 자신의 버튼(저장 진행·중단)까지
+      // 막혀서 실행이 그 자리에 멈춘다 — 실제로 겪은 결함이다.
+      // 드라이버는 el.click() 으로 프로그램 호출하므로 오버레이에 가려도 조작에 지장이 없다.
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 p-4"
-      // 실행 중에는 사용자의 클릭이 화면에 닿지 않게 막는다
-      onClickCapture={(e) => { if (isBusy(status)) e.stopPropagation(); }}
       role="dialog"
       aria-modal="true"
       aria-label="시나리오 실행"

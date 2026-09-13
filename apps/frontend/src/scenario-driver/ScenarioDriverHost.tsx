@@ -20,7 +20,13 @@ import { setActivityActorKind } from '@/services/activity-reporter';
 import { captureText, clickTarget, fillTarget, scanTarget, waitFor, describeTarget } from './dom';
 import { clearEvents, judgeStep } from './judge';
 import { useScenarioRunStore } from './store';
-import type { Scenario, ScenarioStep } from './types';
+import type { Scenario, ScenarioStep, TargetSpec } from './types';
+
+/**
+ * 화면 이동 한도. App Router 는 라우트가 준비돼야 URL 을 바꾸고,
+ * 개발 서버는 첫 방문 시 그 화면을 컴파일하느라 오래 걸린다.
+ */
+const GOTO_TIMEOUT_MS = 60_000;
 
 /** {{param}} 치환 */
 function render(value: string | undefined, vars: Record<string, string>): string {
@@ -30,10 +36,24 @@ function render(value: string | undefined, vars: Record<string, string>): string
   );
 }
 
+/**
+ * target 안의 {{변수}}도 치환한다.
+ * row/text/label 처럼 "어느 행/어느 요소"를 값으로 지정하는 키가 있어서,
+ * value 만 치환하면 화면에서 "{{itemCode}}" 라는 문자열을 찾다가 실패한다.
+ */
+function renderTarget(target: TargetSpec | undefined, vars: Record<string, string>): TargetSpec | undefined {
+  if (!target) return undefined;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(target)) {
+    out[k] = typeof v === 'string' ? render(v, vars) : v;
+  }
+  return out as TargetSpec;
+}
+
 /** 사람이 읽는 스텝 설명 — note 가 없으면 액션에서 만들어 준다 */
 export function describeStep(step: ScenarioStep, vars: Record<string, string> = {}): string {
   if (step.note) return render(step.note, vars);
-  const t = step.target ? describeTarget(step.target) : '';
+  const t = step.target ? describeTarget(renderTarget(step.target, vars)!) : '';
   switch (step.action) {
     case 'goto': return `${render(step.value, vars)} 화면으로 이동`;
     case 'click': return `${t} 누르기`;
@@ -57,30 +77,34 @@ export default function ScenarioDriverHost() {
     async (step: ScenarioStep, vars: Record<string, string>): Promise<void> => {
       const timeoutMs = step.timeoutMs ?? 10_000;
       const value = render(step.value, vars);
+      const target = renderTarget(step.target, vars);
       const store = useScenarioRunStore.getState();
 
       switch (step.action) {
-        case 'goto':
+        case 'goto': {
           // 이동 전에 버퍼를 비운다 — 직전 화면의 이벤트가 다음 스텝 판정에 섞이면 안 된다
           clearEvents();
           router.push(value);
-          // 라우팅 완료를 경로로 확인한다. 렌더 완료는 다음 스텝의 waitForTarget 이 기다린다.
+          // App Router 는 새 라우트가 준비될 때까지 URL 을 바꾸지 않는다.
+          // 개발 서버에서 처음 여는 화면은 컴파일에 수십 초가 걸리므로
+          // 일반 스텝보다 넉넉한 한도를 준다(실측: 10초로는 모자랐다).
           await waitFor(() => (window.location.pathname === value.split('?')[0] ? true : null), {
-            timeoutMs,
+            timeoutMs: Math.max(timeoutMs, GOTO_TIMEOUT_MS),
             what: `${value} 화면`,
           });
           return;
+        }
         case 'click':
-          if (!step.target) throw new Error('click 스텝에 target 이 없습니다.');
-          await clickTarget(step.target, timeoutMs);
+          if (!target) throw new Error('click 스텝에 target 이 없습니다.');
+          await clickTarget(target, timeoutMs);
           return;
         case 'fill':
-          if (!step.target) throw new Error('fill 스텝에 target 이 없습니다.');
-          await fillTarget(step.target, value, timeoutMs);
+          if (!target) throw new Error('fill 스텝에 target 이 없습니다.');
+          await fillTarget(target, value, timeoutMs);
           return;
         case 'scan':
-          if (!step.target) throw new Error('scan 스텝에 target 이 없습니다.');
-          await scanTarget(step.target, value, timeoutMs);
+          if (!target) throw new Error('scan 스텝에 target 이 없습니다.');
+          await scanTarget(target, value, timeoutMs);
           return;
         case 'waitForText':
           await waitFor(
@@ -89,8 +113,8 @@ export default function ScenarioDriverHost() {
           );
           return;
         case 'capture': {
-          if (!step.target || !step.as) throw new Error('capture 스텝에 target/as 가 없습니다.');
-          const text = await captureText(step.target, timeoutMs);
+          if (!target || !step.as) throw new Error('capture 스텝에 target/as 가 없습니다.');
+          const text = await captureText(target, timeoutMs);
           store.setVar(step.as, text);
           return;
         }

@@ -17,8 +17,30 @@ import type { Scenario, ScenarioStep, ScenarioSummary } from './scenario.types';
 export class AiScenariosService {
   private readonly logger = new Logger(AiScenariosService.name);
   private readonly scenarios = new Map<string, Scenario>();
+  /** 개발 환경에서 파일 변경을 감지하는 기준값 */
+  private lastLoadedStamp = '';
 
   constructor() {
+    this.load();
+  }
+
+  /**
+   * 개발 환경에서만 파일이 바뀌면 다시 읽는다.
+   * nest watch 는 .ts 만 보기 때문에 JSON 을 고쳐도 재시작되지 않는다.
+   * 시나리오를 쓰고 바로 돌려보는 흐름에서 매번 재시작을 요구하면 작성이 느려진다.
+   * 운영은 배포 때 재시작되므로 부팅 1회 적재로 충분하다.
+   */
+  private reloadIfChanged(): void {
+    if (process.env.NODE_ENV === 'production') return;
+    const dir = this.resolveDir();
+    if (!dir) return;
+    const stamp = fs
+      .readdirSync(dir)
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => `${f}:${fs.statSync(path.join(dir, f)).mtimeMs}`)
+      .join('|');
+    if (stamp === this.lastLoadedStamp) return;
+    this.scenarios.clear();
     this.load();
   }
 
@@ -53,11 +75,17 @@ export class AiScenariosService {
         this.logger.error(`시나리오를 읽지 못했습니다: ${file} — ${message}`);
       }
     }
+    this.lastLoadedStamp = fs
+      .readdirSync(dir)
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => `${f}:${fs.statSync(path.join(dir, f)).mtimeMs}`)
+      .join('|');
     this.logger.log(`시나리오 ${this.scenarios.size}건 적재`);
   }
 
   /** AI 가 선택에 쓰는 목록 — steps 는 빼고 내린다 */
   list(): ScenarioSummary[] {
+    this.reloadIfChanged();
     return [...this.scenarios.values()].map((s) => ({
       id: s.id,
       title: s.title,
@@ -70,6 +98,7 @@ export class AiScenariosService {
 
   /** 드라이버가 실행할 본문 */
   get(id: string): Scenario {
+    this.reloadIfChanged();
     const found = this.scenarios.get(id);
     if (!found) throw new NotFoundException(`시나리오를 찾을 수 없습니다: ${id}`);
     return found;
@@ -88,7 +117,12 @@ export class AiScenariosService {
 }
 
 const ACTIONS = new Set(['goto', 'click', 'fill', 'scan', 'waitForText', 'capture', 'waitMs']);
-const TARGET_KEYS = ['testId', 'role', 'label', 'ariaLabel', 'placeholder', 'text', 'nthButton'];
+/**
+ * 해석 가능한 target 키.
+ * 'row' 를 포함하는 이유: DataGrid 는 onRowClick 으로 선택을 처리해서 행 안에 버튼이 없는
+ * 화면이 많다. 그 경우 행 자체가 클릭 대상이다(드라이버 dom.ts resolveTarget 과 같은 규칙).
+ */
+const TARGET_KEYS = ['testId', 'role', 'label', 'ariaLabel', 'placeholder', 'text', 'nthButton', 'row'];
 const VAR_PATTERN = /\{\{\s*([^{}]+?)\s*\}\}/g;
 
 /**

@@ -31,9 +31,14 @@ describe('validateScenario', () => {
     expect(validateScenario({ ...base, description: '  ' }, 'sample').join()).toContain('description');
   });
 
-  it('target 에 해석 가능한 키가 없으면 거부한다', () => {
-    const bad = { ...base, steps: [{ action: 'click' as const, target: { row: '행만' } }] };
+  it('target 이 비어 있으면 거부한다', () => {
+    const bad = { ...base, steps: [{ action: 'click' as const, target: {} }] };
     expect(validateScenario(bad, 'sample').join()).toContain('해석 가능한 키');
+  });
+
+  it('row 단독은 유효하다 — DataGrid 는 행 자체가 클릭 대상이다', () => {
+    const ok = { ...base, steps: [{ action: 'click' as const, target: { row: '{{itemCode}}' } }] };
+    expect(validateScenario(ok, 'sample')).toEqual([]);
   });
 
   it('params 에 없는 값을 쓰면 거부한다 — 시나리오는 절차만 담는다', () => {

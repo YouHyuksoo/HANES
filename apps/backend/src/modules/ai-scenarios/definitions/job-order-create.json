@@ -30,19 +30,32 @@
     },
     {
       "action": "click",
-      "target": { "testId": "job-order-create" },
+      "target": {
+        "testId": "job-order-create"
+      },
       "note": "작업지시 생성 창 열기"
     },
     {
       "action": "click",
-      "target": { "testId": "job-order-item-search" },
+      "target": {
+        "testId": "job-order-item-search"
+      },
       "note": "품목 검색 창 열기"
     },
     {
       "action": "fill",
-      "target": { "placeholder": "검색" },
+      "target": {
+        "testId": "part-search-input"
+      },
       "value": "{{itemCode}}",
-      "note": "품목 {{itemCode}} 검색",
+      "note": "품목 {{itemCode}} 입력"
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "part-search-submit"
+      },
+      "note": "품목 검색",
       "expect": {
         "type": "API_CALL",
         "method": "GET",
@@ -52,24 +65,32 @@
     },
     {
       "action": "click",
-      "target": { "row": "{{itemCode}}", "nthButton": 0 },
+      "target": {
+        "row": "{{itemCode}}"
+      },
       "note": "검색된 품목 {{itemCode}} 선택"
     },
     {
       "action": "fill",
-      "target": { "testId": "job-order-plan-qty" },
+      "target": {
+        "testId": "job-order-plan-qty"
+      },
       "value": "{{planQty}}",
       "note": "계획수량 {{planQty}} 입력"
     },
     {
       "action": "fill",
-      "target": { "testId": "job-order-plan-date" },
+      "target": {
+        "testId": "job-order-plan-date"
+      },
       "value": "{{planDate}}",
       "note": "계획일 {{planDate}} 입력"
     },
     {
       "action": "click",
-      "target": { "testId": "job-order-save" },
+      "target": {
+        "testId": "job-order-save"
+      },
       "note": "작업지시 생성",
       "write": true,
       "expect": {
