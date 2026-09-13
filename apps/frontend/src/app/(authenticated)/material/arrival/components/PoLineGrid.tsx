@@ -57,6 +57,9 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
           <button
             type="button"
             disabled={disabled}
+            // 시나리오 드라이버가 행을 특정해 누른다. 행마다 같은 버튼이라
+            // 품목코드를 붙여 구분한다(같은 PO에 품목이 여러 줄이다).
+            data-testid={`mat-arrival-receive-${r.itemCode}`}
             onClick={(e) => { e.stopPropagation(); if (!disabled) onSelectLine(r); }}
             className={`disabled:pointer-events-none inline-flex items-center gap-1 px-3 py-1 rounded text-xs font-semibold text-white ${
               disabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-pink-600 hover:bg-pink-700'

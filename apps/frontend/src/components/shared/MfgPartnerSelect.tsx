@@ -25,12 +25,14 @@ interface MfgPartnerSelectProps {
   required?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
+  /** 시나리오 드라이버가 집을 수 있게 native select 에 붙인다 */
+  testId?: string;
 }
 
 let cachedOptions: MfgPartner[] | null = null;
 
 export default function MfgPartnerSelect({
-  value, onChange, placeholder = '제조사 선택', required, disabled, fullWidth,
+  value, onChange, placeholder = '제조사 선택', required, disabled, fullWidth, testId,
 }: MfgPartnerSelectProps) {
   const [options, setOptions] = useState<MfgPartner[]>(cachedOptions ?? []);
   const [loading, setLoading] = useState(!cachedOptions);
@@ -73,6 +75,7 @@ export default function MfgPartnerSelect({
         label: `${p.partnerCode} · ${p.partnerName}`,
       }))}
       className={required && !value ? 'border-red-500 focus:border-red-500' : ''}
+      data-testid={testId}
     />
   );
 }

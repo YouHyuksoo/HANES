@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "mat-arrival-po-line",
+  "title": "자재 입하처리",
+  "description": "입하관리 화면에서 발주(PO) 라인의 자재를 입하 등록한다. 품목과 수량, 제조사를 지정하면 해당 PO 라인을 찾아 입하수량을 넣고 저장한다. 저장하면 입하 이력이 생기고 자재 시리얼(라벨)이 발급된다. PO 라인 잔량이 줄어들므로 실제로 데이터가 바뀐다. 수동 입하(PO 없이 등록)나 입하 취소는 이 절차가 아니다.",
+  "startRoute": "/material/arrival",
+  "params": {
+    "itemCode": {
+      "label": "품목",
+      "required": true,
+      "type": "string",
+      "resolver": "resolveItemCandidates"
+    },
+    "qty": {
+      "label": "입하수량",
+      "required": true,
+      "type": "number"
+    }
+  },
+  "steps": [
+    {
+      "action": "goto",
+      "value": "/material/arrival",
+      "note": "입하관리 화면으로 이동"
+    },
+    {
+      "action": "click",
+      "target": { "testId": "mat-arrival-receive-{{itemCode}}" },
+      "note": "품목 {{itemCode}} 의 PO 라인에서 자재입하 열기"
+    },
+    {
+      "action": "fill",
+      "target": { "testId": "mat-arrival-qty" },
+      "value": "{{qty}}",
+      "note": "입하수량 {{qty}} 입력"
+    },
+    {
+      "action": "fill",
+      "target": { "testId": "mat-arrival-mfg" },
+      "value": "THN_제조사",
+      "note": "제조사 선택 — 모달이 이 값만 비워 두고 열어서(창고는 자동 선택) 지정하지 않으면 저장 버튼이 잠긴다. 사용 중(USE_YN=Y)인 제조사가 THN_제조사 하나뿐이라 고정했다(2026-09-14 실측). 제조사가 늘면 params 로 올려야 한다"
+    },
+    {
+      "action": "fill",
+      "target": { "testId": "mat-arrival-warehouse" },
+      "value": "W001",
+      "note": "입하창고 원자재창고(W001) 선택 — 기존 입하 408건이 모두 쓰는 창고다(2026-09-14 실측). 모달 기본값은 목록 첫 항목이라 명시한다"
+    },
+    {
+      "action": "click",
+      "target": { "testId": "mat-arrival-save" },
+      "note": "저장 — 발급할 시리얼 수를 묻는 확인 창이 뜬다"
+    },
+    {
+      "action": "click",
+      "target": { "testId": "mat-arrival-serial-confirm" },
+      "note": "시리얼 발급 확인 — 여기서 실제로 입하가 등록된다",
+      "write": true,
+      "expect": {
+        "type": "API_CALL",
+        "method": "POST",
+        "pathIncludes": "/material/arrivals/po-line",
+        "status": 201
+      }
+    }
+  ]
+}
