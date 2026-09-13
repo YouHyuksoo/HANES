@@ -244,6 +244,7 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
             <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
             <Button
               variant="primary"
+              data-testid="kiosk-material-scan-done"
               disabled={!allScanned}
               onClick={() => {
                 setInterlock('materialScanDone', true);

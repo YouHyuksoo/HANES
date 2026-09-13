@@ -129,6 +129,7 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
         <div className="flex justify-end gap-2 pt-2 border-t border-border">
           <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
           <Button
+            data-testid="kiosk-consumable-scan-done"
             variant="primary"
             disabled={!allMounted}
             onClick={() => {

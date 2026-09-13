@@ -242,6 +242,8 @@ export default function EquipSelectModal({ isOpen, onClose, equips, onSelect }: 
                         {group.items.map(equip => (
                           <button
                             key={equip.equipCode}
+                            // 설비마다 같은 버튼이라 코드로 구분한다
+                            data-testid={`kiosk-equip-${equip.equipCode}`}
                             disabled={equip.useYn === 'N'}
                             onClick={() => { onSelect(equip); onClose(); }}
                             title={equip.useYn === 'N' ? t('kiosk.equip.unusedHint', '미사용 설비는 생산입력에 선택할 수 없습니다.') : undefined}

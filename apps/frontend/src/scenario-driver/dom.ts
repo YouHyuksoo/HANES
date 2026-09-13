@@ -271,7 +271,18 @@ export interface FailureSnapshot {
   /** 모달 안이었는지 — 조작 기준점이 어디였는지가 원인 해석을 바꾼다 */
   inDialog: boolean;
   /** 대상 요소를 찾았는지, 찾았다면 어떤 상태였는지 */
-  target?: { describe: string; found: boolean; tag?: string; disabled?: boolean; text?: string };
+  target?: {
+    describe: string;
+    found: boolean;
+    tag?: string;
+    disabled?: boolean;
+    text?: string;
+    /**
+     * title 속성. HANES 는 비활성 버튼의 사유를 여기에 줄바꿈으로 나열한다
+     * (키오스크 실적저장 버튼의 disabledReasons). 원인이 통째로 들어 있는 자리다.
+     */
+    title?: string;
+  };
   /** 기준점 안의 입력 필드 전량 */
   fields: FieldSnapshot[];
   /** 화면에 떠 있던 빨간 문구(검증 메시지·에러) */
@@ -332,6 +343,7 @@ export function snapshotFailure(target?: TargetSpec): FailureSnapshot {
           tag: el?.tagName.toLowerCase(),
           disabled: el ? isDisabled(el) : undefined,
           text: el ? (el.textContent ?? '').trim().slice(0, 80) : undefined,
+          title: el?.getAttribute('title')?.slice(0, 400) || undefined,
         }
       : undefined,
     fields,

@@ -193,6 +193,7 @@ export default function MaterialListPanel({
           </span>
           {onOpenMaterialScan && (
             <button
+              data-testid="kiosk-material-scan-open"
               onClick={onOpenMaterialScan}
               disabled={!selectedJobOrder}
               title={selectedJobOrder
@@ -300,6 +301,7 @@ export default function MaterialListPanel({
           </span>
           {onOpenConsumableScan && (
             <button
+              data-testid="kiosk-consumable-scan-open"
               onClick={onOpenConsumableScan}
               disabled={consumableScanDisabledReasons.length > 0}
               title={consumableScanDisabledReasons.length === 0

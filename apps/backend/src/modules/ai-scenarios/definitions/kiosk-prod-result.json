@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "id": "kiosk-prod-result",
+  "title": "생산실적 입력 (키오스크)",
+  "description": "생산실적 키오스크에서 설비와 작업지시, 작업자를 잡고 자재·소모품 확인을 거쳐 생산실적을 저장한다. 저장하면 PROD_RESULTS 에 실적이 남고 작업지시 진행수량이 올라가며, 발행공정이면 SFG 라벨이 발행된다. 실제로 데이터가 바뀐다. 설비일일점검과 작업자설비검사는 이 절차가 대신 하지 않는다 — 사람이 판정해야 하는 일이라, 그 점검이 안 되어 있으면 마지막 저장 단계에서 멈춘다. 불량 등록이나 자주검사는 이 절차가 아니다.",
+  "startRoute": "/production/input-kiosk",
+  "params": {
+    "equipCode": {
+      "label": "설비",
+      "required": true,
+      "type": "string"
+    },
+    "orderNo": {
+      "label": "작업지시번호",
+      "required": true,
+      "type": "string"
+    },
+    "workerCode": {
+      "label": "작업자",
+      "required": true,
+      "type": "string"
+    },
+    "qty": {
+      "label": "작업수",
+      "required": true,
+      "type": "number"
+    }
+  },
+  "steps": [
+    {
+      "action": "goto",
+      "value": "/production/input-kiosk",
+      "note": "생산실적 키오스크로 이동"
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-equip-open"
+      },
+      "note": "설비 선택 창 열기"
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-equip-{{equipCode}}"
+      },
+      "note": "설비 {{equipCode}} 선택 — 고르면 그 설비의 현재 작업지시·작업자를 서버에서 복원한다"
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-joborder-open"
+      },
+      "note": "작업지시 선택 창 열기",
+      "timeoutMs": 20000
+    },
+    {
+      "action": "fill",
+      "target": {
+        "testId": "kiosk-joborder-search"
+      },
+      "value": "{{orderNo}}",
+      "note": "작업지시 {{orderNo}} 검색 — 목록이 8건씩 끊겨 나와서 검색 없이는 뒤 페이지의 지시를 집을 수 없다(2026-09-14 실측)"
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-joborder-{{orderNo}}"
+      },
+      "note": "작업지시 {{orderNo}} 고르기 — 목록에 없으면 그 설비/공정의 진행 가능한 지시가 아니다",
+      "timeoutMs": 20000
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-joborder-confirm"
+      },
+      "note": "작업지시 확정"
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-worker-open"
+      },
+      "note": "작업자 선택 창 열기"
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-worker-{{workerCode}}"
+      },
+      "note": "작업자 {{workerCode}} 고르기",
+      "timeoutMs": 20000
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-worker-confirm"
+      },
+      "note": "작업자 확정 — 설비의 현재 작업자로 저장된다"
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-material-scan-open"
+      },
+      "note": "자재 확인 창 열기"
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-material-scan-done"
+      },
+      "note": "자재 확인 완료 — BOM 자재가 이미 설비에 장착돼 있어야 이 버튼이 열린다. 안 열리면 장착 대기 LOT 를 먼저 걸어야 한다는 뜻이다",
+      "timeoutMs": 20000
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-consumable-scan-open"
+      },
+      "note": "소모품 확인 창 열기"
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-consumable-scan-done"
+      },
+      "note": "소모품 확인 완료 — 매핑된 소모품이 없거나 모두 장착돼 있어야 열린다",
+      "timeoutMs": 20000
+    },
+    {
+      "action": "fill",
+      "target": {
+        "testId": "kiosk-total-qty"
+      },
+      "value": "{{qty}}",
+      "note": "작업수 {{qty}} 입력 — 양품은 작업수에서 불량을 뺀 값으로 자동 계산된다"
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-save-result"
+      },
+      "note": "생산실적 저장 — 여기서 실제로 실적이 등록된다. 설비일일점검·작업자설비검사가 안 끝났으면 이 버튼이 잠겨 있고, 버튼 title 에 남은 사유가 그대로 적혀 있다",
+      "write": true,
+      "expect": {
+        "type": "API_CALL",
+        "method": "POST",
+        "pathIncludes": "/production/prod-results",
+        "status": 201
+      }
+    }
+  ]
+}

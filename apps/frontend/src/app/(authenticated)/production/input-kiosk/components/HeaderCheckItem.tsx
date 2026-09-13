@@ -26,6 +26,8 @@ interface HeaderCheckItemProps {
   disabledReason?: string;
   onInput: () => void;
   wide?: boolean;
+  /** 시나리오 드라이버가 입력 버튼을 집는다 */
+  testId?: string;
 }
 
 export default function HeaderCheckItem({
@@ -39,6 +41,7 @@ export default function HeaderCheckItem({
   disabledReason,
   onInput,
   wide = false,
+  testId,
 }: HeaderCheckItemProps) {
   const { t } = useTranslation();
   const isDisabled = Boolean(disabled || notTarget);
@@ -76,6 +79,7 @@ export default function HeaderCheckItem({
       <button
         onClick={onInput}
         disabled={isDisabled}
+        data-testid={testId}
         aria-describedby={reasonId}
         aria-label={buttonTitle}
         title={buttonTitle}

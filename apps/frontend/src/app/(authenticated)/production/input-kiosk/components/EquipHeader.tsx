@@ -119,6 +119,7 @@ export default function EquipHeader({
 
           {/* 설비 선택 */}
           <button
+            data-testid="kiosk-equip-open"
             onClick={() => setIsEquipModalOpen(true)}
             className={`flex h-11 w-52 shrink-0 items-center gap-2 rounded-lg border-2 px-3 text-left transition-colors ${
               selectedEquip
@@ -159,13 +160,13 @@ export default function EquipHeader({
                     {selectedJobOrder.processType}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-xs text-black/60 dark:text-white/60">{selectedJobOrder.itemName}</span>
-                  <button onClick={onOpenJobOrder}
+                  <button data-testid="kiosk-joborder-open" onClick={onOpenJobOrder}
                     className="shrink-0 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90">
                     {t('common.change')}
                   </button>
                 </div>
               ) : (
-                <button onClick={() => selectedEquip && onOpenJobOrder()} disabled={!selectedEquip}
+                <button data-testid="kiosk-joborder-open" onClick={() => selectedEquip && onOpenJobOrder()} disabled={!selectedEquip}
                   title={selectedEquip ? t('kiosk.header.selectJobOrder') : t('kiosk.header.selectEquipFirst', '설비를 먼저 선택하세요.')}
                   className={`rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-surface disabled:text-black/60 dark:text-white/60 ${selectedEquip ? 'animate-pulse' : ''}`}>
                   {t('kiosk.header.selectJobOrder')}
@@ -185,7 +186,7 @@ export default function EquipHeader({
                   </button>
                 </span>
               ))}
-              <button onClick={onOpenWorker} disabled={!selectedEquip}
+              <button data-testid="kiosk-worker-open" onClick={onOpenWorker} disabled={!selectedEquip}
                 title={selectedEquip ? t('kiosk.header.addWorker') : t('kiosk.header.selectEquipFirst', '설비를 먼저 선택하세요.')}
                 className={`inline-flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-surface disabled:text-black/60 dark:text-white/60 ${selectedEquip && selectedWorkers.length === 0 ? 'animate-pulse' : ''}`}>
                 <UserPlus className="h-3 w-3" />
@@ -210,6 +211,7 @@ export default function EquipHeader({
               disabled={!selectedEquip}
               disabledReason={dailyInspectDisabledReason}
               onInput={onOpenDailyInspect}
+              testId="kiosk-daily-inspect-open"
               wide
             />
             <HeaderCheckItem
@@ -220,6 +222,7 @@ export default function EquipHeader({
               disabled={!interlock.dailyInspectDone || !selectedJobOrder || selectedWorkers.length === 0}
               disabledReason={workerInspectDisabledReason}
               onInput={onOpenWorkerInspect}
+              testId="kiosk-worker-inspect-open"
               wide
             />
           </div>

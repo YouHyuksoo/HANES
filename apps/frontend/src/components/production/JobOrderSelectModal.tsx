@@ -187,6 +187,8 @@ export default function JobOrderSelectModal({
           const selectable = isSelectable(row.original);
           return (
             <button
+              // 행마다 같은 라디오라 지시번호로 구분한다(시나리오 드라이버용)
+              data-testid={`kiosk-joborder-${row.original.orderNo}`}
               onClick={() => selectable && setSelectedJobOrder(row.original)}
               disabled={!selectable}
               className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
@@ -335,7 +337,7 @@ export default function JobOrderSelectModal({
           <Button size="sm" variant="secondary" onClick={handleClose}>
             {t('common.cancel')}
           </Button>
-          <Button size="sm" onClick={handleConfirm} disabled={!selectedJobOrder}>
+          <Button size="sm" data-testid="kiosk-joborder-confirm" onClick={handleConfirm} disabled={!selectedJobOrder}>
             <Check className="w-4 h-4 mr-1" />
             {t('common.confirm')}
           </Button>
@@ -347,6 +349,7 @@ export default function JobOrderSelectModal({
         <div className="flex items-center gap-3">
           <div className="flex-1">
             <Input
+              data-testid="kiosk-joborder-search"
               placeholder={t('production.inputManual.searchJobOrderPlaceholder')}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}

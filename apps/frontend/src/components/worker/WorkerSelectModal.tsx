@@ -176,6 +176,7 @@ function WorkerSelectModal({ isOpen, onClose, onConfirm }: WorkerSelectModalProp
                   filteredWorkers.map((worker) => (
                     <button
                       key={worker.id}
+                      data-testid={`kiosk-worker-${worker.workerCode}`}
                       onClick={() => setTempWorker(worker)}
                       className="w-full min-h-14 flex items-center gap-2 px-2.5 py-2 rounded-lg border border-border bg-surface hover:bg-background active:bg-primary/10 active:border-primary/30 transition-colors text-left"
                     >
@@ -268,7 +269,7 @@ function WorkerSelectModal({ isOpen, onClose, onConfirm }: WorkerSelectModalProp
               <ArrowLeft className="w-5 h-5 mr-2" />
               {t("production.inputManual.workerReselect")}
             </Button>
-            <Button onClick={handleConfirm} className="flex-1 py-4 text-base">
+            <Button data-testid="kiosk-worker-confirm" onClick={handleConfirm} className="flex-1 py-4 text-base">
               <CheckCircle className="w-5 h-5 mr-2" />
               {t("production.inputManual.workerConfirm")}
             </Button>

@@ -207,6 +207,7 @@ export default function ProductionInputBar({
               <input
                 type="text"
                 inputMode="numeric"
+                data-testid="kiosk-total-qty"
                 value={totalQty === '' ? '' : formatQty(parseQty(totalQty))}
                 onChange={e => handleTotalChange(e.target.value)}
                 placeholder="0"
@@ -253,6 +254,7 @@ export default function ProductionInputBar({
 
         {/* 실적입력 버튼 */}
         <button
+          data-testid="kiosk-save-result"
           onClick={handleSubmit}
           disabled={!canSave || saving}
           title={buttonTitle}
