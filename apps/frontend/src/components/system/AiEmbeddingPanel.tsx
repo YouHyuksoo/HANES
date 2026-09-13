@@ -45,6 +45,7 @@ const DEFAULT_KNOWLEDGE_TARGETS = [
   { path: "docs/plans", label: "계획 문서" },
   { path: "docs/workflows/definitions", label: "워크플로우 정의" },
   { path: "docs/business-logics", label: "비즈니스 로직" },
+  { path: "docs/guides", label: "운영 가이드" },
 ];
 const DEFAULT_KNOWLEDGE_TARGET_LABELS = new Map(DEFAULT_KNOWLEDGE_TARGETS.map((target) => [target.path, target.label]));
 

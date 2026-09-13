@@ -55,7 +55,7 @@ standardVersion: 1
 
 ## 프로젝트 참고사항
 
-- AI RAG 인덱스가 docs/{standards,design,architecture,database,specs,plans,workflows/definitions,business-logics} + help를 청킹한다 — 폴더 개명 시 apps/backend/src/modules/ai-knowledge/ai-knowledge.service.ts DEFAULT_KNOWLEDGE_TARGETS 동기 필요.
+- AI RAG 인덱스가 docs/{standards,design,architecture,database,specs,plans,workflows/definitions,business-logics,guides} + help를 청킹한다 — 폴더 개명 시 apps/backend/src/modules/ai-knowledge/ai-knowledge.service.ts DEFAULT_KNOWLEDGE_TARGETS 동기 필요.
 - database/ = 데이터 계층 문서(스키마/ERD/컬럼도메인/엔티티/테이블 카탈로그).
   - `schema-erd.md`는 `tools/generate_db_schema_doc.py`가 DB에서 자동생성(frontmatter 포함).
   - **`table-catalog.md`는 text-to-SQL용 테이블 카탈로그**(설명/동의어/JOIN키). 이 폴더로 이관해 docs 표준으로 관리한다. 두 경로로 소비됨: ① AiCatalogService가 파일을 직접 읽어 프롬프트 주입(테이블 선택+JOIN, 임베딩 아님) ② docs/database 청킹에 포함돼 RAG Q&A에도 잡힘. 기본 경로는 `AI_CATALOG_PATH` env로 override 가능(기본 `docs/database/table-catalog.md`). `/system/config` UI로 편집·DB동기화.

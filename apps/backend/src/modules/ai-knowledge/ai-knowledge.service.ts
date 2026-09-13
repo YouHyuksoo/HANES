@@ -9,6 +9,7 @@ import * as path from 'path';
 import { EmbeddingService } from './embedding.service';
 import { KnowledgeChunk, chunkMarkdown, withContextHeader } from './markdown-chunker';
 import { WorkflowDoc, parseWorkflowDoc } from './workflow-parser';
+import { tokenizeKnowledgeQuery } from './knowledge-query-tokens';
 
 type DatabaseInstance = any;
 
@@ -33,6 +34,8 @@ const DEFAULT_KNOWLEDGE_TARGETS: KnowledgeTarget[] = [
   { path: 'docs/workflows/definitions', docType: 'workflow' },
   // engineer 페르소나의 근거 문서. 검색 부스트가 sourcePath(docs/business-logics/) 기준이라 docType은 document를 쓴다.
   { path: 'docs/business-logics', docType: 'document' },
+  // 고객/현장 품질·운영 가이드(관리계획서 텍스트화 등). 폴더 추가 시 프론트 AiEmbeddingPanel도 같이 갱신.
+  { path: 'docs/guides', docType: 'document' },
   // 테이블 카탈로그(table-catalog.md)는 docs/database 폴더에 포함돼 자동 청킹된다(별도 항목 불필요).
   // text-to-SQL 테이블 선택/JOIN 주입은 AiCatalogService가 같은 파일을 직접 읽는다(임베딩과 별개 경로).
 ];
@@ -712,9 +715,14 @@ export class AiKnowledgeService implements OnModuleInit {
       }
     }
 
+    // FTS/lexical에 안 걸린 청크라도 벡터 점수가 있으면 남긴다.
+    // 예전에는 grounded가 하나라도 있으면 벡터-only 후보를 버려
+    // "기밀시험 0.3bar"처럼 도움말 FTS만 약하게 맞을 때 관리계획서가 탈락했다.
+    const VECTOR_ONLY_KEEP_MIN = 0.2;
     const candidates = groundedScores.size > 0
-      ? Array.from(scores.entries()).filter(([id]) => groundedScores.has(id))
-      : [];
+      ? Array.from(scores.entries()).filter(([id, score]) =>
+          groundedScores.has(id) || score >= VECTOR_ONLY_KEEP_MIN)
+      : Array.from(scores.entries());
     const ids = candidates.sort((a, b) => b[1] - a[1]).slice(0, topK).map(([id]) => id);
     if (ids.length === 0) return [];
     const placeholders = ids.map(() => '?').join(',');
@@ -817,13 +825,13 @@ export class AiKnowledgeService implements OnModuleInit {
   }
 
   private toFtsQuery(query: string): string {
-    const tokens: string[] = query.match(/[0-9a-zA-Z가-힣_]+/g) ?? [];
+    const tokens = tokenizeKnowledgeQuery(query);
     return tokens.slice(0, 8).map((token) => `"${token.replace(/"/g, '""')}"`).join(' OR ');
   }
 
   private buildLexicalTerms(query: string): string[] {
     const stopWords = new Set(['알려줘', '알려', '주세요', '방법', '사용법', '어떻게', '무엇', '뭐야', '좀']);
-    const tokens = query.match(/[0-9a-zA-Z가-힣_]+/g) ?? [];
+    const tokens = tokenizeKnowledgeQuery(query);
     const terms = new Set<string>();
     const add = (value: string) => {
       const term = this.stripKoreanParticle(value.trim());
@@ -853,7 +861,13 @@ export class AiKnowledgeService implements OnModuleInit {
 
   private lexicalLookupTerms(terms: string[]): string[] {
     const subjectTerms = terms.filter((term) => term.length >= 3 && !/등록|입력|저장|조회|수정|삭제|취소|처리/.test(term));
-    return (subjectTerms.length > 0 ? subjectTerms : terms).slice(0, 16);
+    const pool = subjectTerms.length > 0 ? subjectTerms : terms;
+    // 0.3 / 3.00 같은 순수 숫자는 LIKE가 도움말 숫자와 200건을 채워 관리계획서를 밀어낸다.
+    // 조회는 단어(방수커넥터, 0.3bar)로 하고, 숫자는 점수 계산에서만 쓴다.
+    const nonNumeric = pool.filter((term) => !/^[0-9]+(?:\.[0-9]+)?$/.test(term));
+    const narrowed = nonNumeric.filter((term) => !/^[a-zA-Z]{1,3}$/.test(term));
+    const picked = (narrowed.length > 0 ? narrowed : nonNumeric.length > 0 ? nonNumeric : pool).slice(0, 16);
+    return picked;
   }
 
   private stripKoreanParticle(value: string): string {
@@ -893,6 +907,8 @@ export class AiKnowledgeService implements OnModuleInit {
       if (heading.includes(term)) fieldWeight += 0.1;
       if (summary.includes(term)) fieldWeight += 0.14;
       if (keywords.includes(term)) fieldWeight += 0.18;
+      // 0.3bar / 3.00kV 같은 규격 숫자는 짧은 토큰이라 본문 가중이 너무 작다.
+      if (/[0-9]+\.[0-9]+/.test(term) && content.includes(term)) fieldWeight += 0.35;
       score += fieldWeight * lengthWeight;
     }
     if (score <= 0) return 0;
