@@ -25,12 +25,9 @@
 import api from './api';
 import type { ActivityEvent, ActivityEventType } from './activity-collector';
 import { useSysConfigStore } from '@/stores/sysConfigStore';
+import { isActivityErrorType, ACTIVITY_VERBOSE_TYPES } from '@harness/shared';
 
-/** 설정과 무관하게 항상 전송 — 백엔드 ALWAYS_LOGGED_TYPES 와 같은 목록을 유지한다 */
-const ALWAYS_SENT: ActivityEventType[] = ['TOAST_ERROR', 'API_ERROR', 'JS_ERROR'];
-
-/** ACTIVITY_LOG_COLLECT_ALL 이 Y 일 때만 전송 (평상시 수집량 억제) */
-const VERBOSE_TYPES: ActivityEventType[] = ['TOAST_SUCCESS', 'API_CALL', 'SCAN'];
+// 두 목록 모두 @harness/shared 가 단일 출처다 — 백엔드 저장 규칙과 같아야 한다
 
 /** 현재 시나리오 실행 중인지 — 드라이버가 켜고 끈다 */
 let actorKind: 'HUMAN' | 'SCENARIO' = 'HUMAN';
@@ -40,11 +37,11 @@ export function setActivityActorKind(kind: 'HUMAN' | 'SCENARIO'): void {
 }
 
 function shouldSend(type: ActivityEventType): boolean {
-  if (ALWAYS_SENT.includes(type)) return true;
+  if (isActivityErrorType(type)) return true;
 
   const config = useSysConfigStore.getState();
   if (!config.isEnabled('ENABLE_ACTIVITY_LOG')) return false;
-  if (VERBOSE_TYPES.includes(type)) return config.isEnabled('ACTIVITY_LOG_COLLECT_ALL');
+  if ((ACTIVITY_VERBOSE_TYPES as readonly string[]).includes(type)) return config.isEnabled('ACTIVITY_LOG_COLLECT_ALL');
   return true;
 }
 

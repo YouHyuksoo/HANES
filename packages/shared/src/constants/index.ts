@@ -102,3 +102,6 @@ export * from './process';
 
 // 공통코드 값 상수
 export * from './com-code-values';
+
+// 활동 이벤트 규격 — 프론트·백엔드가 같이 보는 목록이라 단일 출처로 둔다
+export * from './activity-event';

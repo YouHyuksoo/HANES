@@ -8,8 +8,8 @@
  * 따라서 에러는 후보로 모으고, expect 충족이 이긴다.
  */
 import type { Page } from '@playwright/test';
+import { isActivityErrorType } from '@harness/shared';
 import {
-  ERROR_EVENT_TYPES,
   type ActivityEvent,
   type EventPredicate,
   type StepVerdict,
@@ -41,7 +41,7 @@ export function matches(event: ActivityEvent, predicate: EventPredicate): boolea
 }
 
 function isError(event: ActivityEvent): boolean {
-  return ERROR_EVENT_TYPES.includes(event.type);
+  return isActivityErrorType(event.type);
 }
 
 function isIgnored(event: ActivityEvent, ignoreRules: EventPredicate[]): boolean {

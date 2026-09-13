@@ -6,6 +6,8 @@
  * 이 파일을 고치기 전에 규격서를 먼저 고친다.
  */
 
+import type { ActivityEventType } from '@harness/shared';
+
 /** 수집기(services/activity-collector.ts)가 링버퍼에 넣는 이벤트 */
 export interface ActivityEvent {
   ts: number;
@@ -21,17 +23,9 @@ export interface ActivityEvent {
   ignored?: boolean;
 }
 
-export type ActivityEventType =
-  | 'TOAST_SUCCESS'
-  | 'TOAST_ERROR'
-  | 'API_CALL'
-  | 'API_ERROR'
-  | 'JS_ERROR'
-  | 'SCAN'
-  | 'PAGE_ACCESS';
-
-/** 판정에 쓰는 에러 이벤트 종류 (규격서 6.2) */
-export const ERROR_EVENT_TYPES: ActivityEventType[] = ['TOAST_ERROR', 'API_ERROR', 'JS_ERROR'];
+// 유형·에러 목록은 @harness/shared 가 단일 출처다 (인앱 드라이버·백엔드와 같은 목록)
+export type { ActivityEventType } from '@harness/shared';
+export { ACTIVITY_ERROR_TYPES as ERROR_EVENT_TYPES } from '@harness/shared';
 
 /** 이벤트 술어 — 필드가 여러 개면 AND (규격서 6.1) */
 export interface EventPredicate {

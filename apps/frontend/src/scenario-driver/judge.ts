@@ -11,9 +11,10 @@
  * 대가로 진짜 실패는 타임아웃까지 기다린다 — 조기 실패의 속도를 버리고 오판을 없앴다.
  */
 import { drainActivityEvents, type ActivityEvent } from '@/services/activity-collector';
+import { isActivityErrorType } from '@harness/shared';
 import type { EventPredicate, StepVerdict } from './types';
 
-const ERROR_TYPES = new Set(['TOAST_ERROR', 'API_ERROR', 'JS_ERROR']);
+// 에러 판정 대상은 @harness/shared 가 단일 출처다 (수집·전송·저장과 같은 목록)
 
 /** 드라이버가 항상 무시하는 경로 — 수집기 자신의 전송 트래픽 */
 const ALWAYS_IGNORED: EventPredicate[] = [{ pathIncludes: '/system/activity-logs' }];
@@ -73,7 +74,7 @@ export async function judgeStep({
       // 무시 규칙에 걸린 에러도 증거로는 남긴다 — ignoreErrors 가 과하게 넓어
       // 진짜 실패를 삼키고 있는지 사람이 검토할 수 있어야 한다.
       observed.push(event);
-      const isError = ERROR_TYPES.has(event.type);
+      const isError = isActivityErrorType(event.type);
       if (isError && !ignoreRules.some((r) => matches(event, r))) candidateErrors.push(event);
     }
 

@@ -9,23 +9,13 @@
 import { IsString, IsOptional, IsIn, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationQueryDto } from '@common/dto/base-query.dto';
-
-/** 수집 가능한 활동 유형 — 프론트 수집기(services/activity-collector.ts)와 같은 목록을 유지한다 */
-export const ACTIVITY_TYPES = [
-  'LOGIN',
-  'PAGE_ACCESS',
-  'TOAST_SUCCESS',
-  'TOAST_ERROR',
-  'API_CALL',
-  'API_ERROR',
-  'JS_ERROR',
-  'SCAN',
-] as const;
+// 활동 유형·기록주체 목록은 @harness/shared 가 단일 출처다(프론트와 같이 봐야 한다)
+import { ACTIVITY_EVENT_TYPES, ACTIVITY_ACTOR_KINDS } from '@harness/shared';
 
 export class CreateActivityLogDto {
   @ApiProperty({ description: '활동 유형', example: 'PAGE_ACCESS' })
   @IsString()
-  @IsIn(ACTIVITY_TYPES as unknown as string[])
+  @IsIn(ACTIVITY_EVENT_TYPES as unknown as string[])
   activityType: string;
 
   @ApiPropertyOptional({ description: '토스트/에러 메시지 본문' })
@@ -37,7 +27,7 @@ export class CreateActivityLogDto {
   @ApiPropertyOptional({ description: '기록 주체', example: 'HUMAN' })
   @IsOptional()
   @IsString()
-  @IsIn(['HUMAN', 'SCENARIO'])
+  @IsIn(ACTIVITY_ACTOR_KINDS as unknown as string[])
   actorKind?: string;
 
   @ApiPropertyOptional({ description: '페이지 경로', example: '/dashboard' })

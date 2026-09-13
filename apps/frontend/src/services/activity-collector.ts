@@ -13,14 +13,10 @@
  * 설계 근거: docs/plans/2026-09-11-activity-log-scenario-runner.md 2절
  */
 
-export type ActivityEventType =
-  | 'TOAST_SUCCESS'
-  | 'TOAST_ERROR'
-  | 'API_CALL'
-  | 'API_ERROR'
-  | 'JS_ERROR'
-  | 'SCAN'
-  | 'PAGE_ACCESS';
+// 유형 목록은 @harness/shared 가 단일 출처다 (백엔드 DTO 와 같은 목록이어야 한다)
+export type { ActivityEventType } from '@harness/shared';
+
+import type { ActivityEventType } from '@harness/shared';
 
 export interface ActivityEvent {
   /** Date.now() */

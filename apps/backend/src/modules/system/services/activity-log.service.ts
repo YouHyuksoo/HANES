@@ -13,10 +13,10 @@ import { Repository } from 'typeorm';
 import { ActivityLog } from '../../../entities/activity-log.entity';
 import { SysConfigService } from './sys-config.service';
 import { ActivityLogQueryDto } from '../dto/activity-log.dto';
+import { isActivityErrorType } from '@harness/shared';
 
 /** logActivity 메서드에 전달하는 내부 DTO */
-/** 설정(ENABLE_ACTIVITY_LOG)이 꺼져 있어도 항상 기록하는 유형 — 장애 추적을 설정에 맡기지 않는다 */
-const ALWAYS_LOGGED_TYPES = new Set(['TOAST_ERROR', 'API_ERROR', 'JS_ERROR']);
+// 장애 기록 3종은 @harness/shared 가 단일 출처다 — 프론트 전송 규칙과 같은 목록이어야 한다
 
 export interface LogActivityParams {
   userId: string;
@@ -54,7 +54,7 @@ export class ActivityLogService {
     try {
       // 에러 3종은 설정과 무관하게 저장한다. 장애가 났을 때 기록이 없으면 추적이 불가능하고,
       // 그 설정은 평상시 수집량을 줄이려는 것이지 장애 기록을 끄려는 것이 아니다.
-      if (!ALWAYS_LOGGED_TYPES.has(params.activityType)) {
+      if (!isActivityErrorType(params.activityType)) {
         const isEnabled = await this.sysConfigService.isEnabled('ENABLE_ACTIVITY_LOG');
         if (!isEnabled) return;
       }
