@@ -8,14 +8,20 @@
  * 1. useMenuTree()로 권한 필터링된 메뉴 트리를 받아 리프(경로 있는) 항목만 평탄화
  * 2. Ctrl/Cmd+K로 어디서든 검색창 포커스, 방향키로 결과 탐색, Enter로 이동
  * 3. 클릭 외부 감지로 드롭다운 닫기
+ * 4. 이동은 사이드바와 같은 경로다 — addTab 후 navigateClientOnly(history.pushState).
+ *    router.push 를 쓰면 안 된다. App Router 는 새 라우트가 준비될 때까지 URL 을 바꾸지 않아
+ *    아직 컴파일되지 않은 화면을 고르면 수십 초 동안 아무 반응이 없는 것처럼 보인다
+ *    (2026-09-14 실측: 검색으로 신규 화면 선택 시 3초엔 그대로, 30초 뒤에야 이동).
+ *    TabKeepAlive 가 경로별 작은 registry 만 import 하는 구조도 같은 이유로 만들어졌다.
  */
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { Search, CornerDownLeft } from "lucide-react";
 import Input from "@/components/ui/Input";
 import { useMenuTree } from "@/hooks/useMenuTree";
+import { useTabStore } from "@/stores/tabStore";
+import { navigateClientOnly } from "./clientNavigation";
 import type { MenuConfigItem } from "@/config/menuConfig";
 
 interface SearchableMenuItem {
@@ -23,6 +29,9 @@ interface SearchableMenuItem {
   path: string;
   label: string;
   breadcrumb: string;
+  /** 탭 등록에 필요하다 — 부모 아이콘 조회용 */
+  labelKey: string;
+  parentCode: string;
 }
 
 const MAX_RESULTS = 8;
@@ -32,6 +41,7 @@ function flattenSearchable(
   isMenuDisabled: (item: MenuConfigItem) => boolean,
   t: TFunction,
   parentLabel = "",
+  parentCode = "",
 ): SearchableMenuItem[] {
   const result: SearchableMenuItem[] = [];
   for (const item of items) {
@@ -43,12 +53,15 @@ function flattenSearchable(
           path: item.path,
           label,
           breadcrumb: parentLabel ? `${parentLabel} > ${label}` : label,
+          labelKey: item.labelKey,
+          // 최상위 단독 메뉴는 자기 자신이 부모다(SidebarMenu 와 같은 규칙)
+          parentCode: parentCode || item.code,
         });
       }
       continue;
     }
     if (item.children) {
-      result.push(...flattenSearchable(item.children, isMenuDisabled, t, label));
+      result.push(...flattenSearchable(item.children, isMenuDisabled, t, label, item.code));
     }
   }
   return result;
@@ -56,8 +69,8 @@ function flattenSearchable(
 
 export default function HeaderMenuSearch() {
   const { t } = useTranslation();
-  const router = useRouter();
   const { items, isMenuDisabled } = useMenuTree();
+  const addTab = useTabStore((s) => s.addTab);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -109,11 +122,14 @@ export default function HeaderMenuSearch() {
   }, [open]);
 
   const goTo = useCallback((item: SearchableMenuItem) => {
-    router.push(item.path);
+    // 탭 수 상한에 걸리면 이동도 하지 않는다(안내 모달은 TabBar 가 띄운다) — 사이드바와 같은 규칙
+    const opened = addTab({ id: item.code, path: item.path, labelKey: item.labelKey, parentId: item.parentCode });
+    if (!opened) return;
+    navigateClientOnly(item.path);
     setQuery("");
     setOpen(false);
     inputRef.current?.blur();
-  }, [router]);
+  }, [addTab]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Escape") {
