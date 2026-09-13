@@ -219,7 +219,7 @@ export default function PartFormModal({ isOpen, onClose, editingPart, onSave }: 
             {PACKAGING_QTY_OPTIONS.map(qty => <option key={qty} value={qty} />)}
           </datalist>
         </div>
-        <Field field="minPackQty" label={t("master.part.minPackQty", "최소불출단위수량(자재)")}>
+        <Field field="minPackQty" label={t("master.part.minPackQty", "불출포장단위")}>
           <QtyInput value={Number(form.minPackQty) || 0} onChange={(n) => setField("minPackQty", n)} fullWidth />
         </Field>
         <Field field="lotUnitQty" label={t("master.part.lotUnitQty", "묶음단위수량(생산공정품)")}>

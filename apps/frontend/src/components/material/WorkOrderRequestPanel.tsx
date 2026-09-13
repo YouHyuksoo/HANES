@@ -741,7 +741,7 @@ export default function WorkOrderRequestPanel({
                         <th className="text-right px-3 py-2 font-medium w-24">{t('material.request.floorStockQty')}</th>
                         <th className="text-right px-3 py-2 font-medium w-24">{t('material.request.currentStock')}</th>
                         <th className="text-center px-3 py-2 font-medium w-32">{t('material.request.requestQtyLabel')}</th>
-                        <th className="text-right px-3 py-2 font-medium w-20">{t('material.request.minPackQty', { defaultValue: '포장단위' })}</th>
+                        <th className="text-right px-3 py-2 font-medium w-20">{t('material.request.minPackQty', { defaultValue: '불출포장단위' })}</th>
                         <th className="text-right px-3 py-2 font-medium w-24">{t('material.request.issueQtyLabel', { defaultValue: '실출고수량' })}</th>
                       </tr>
                     </thead>

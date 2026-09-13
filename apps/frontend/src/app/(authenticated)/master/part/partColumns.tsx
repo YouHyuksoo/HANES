@@ -147,7 +147,7 @@ export function createPartGridColumns({
     },
     { accessorKey: "color", header: t("master.part.color", "색상"), size: 80, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "boxQty", header: t("master.part.boxQty", "박스장입수량"), size: 90, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v ? v.toLocaleString() : "-"; } },
-    { accessorKey: "minPackQty", header: t("master.part.minPackQty", "최소불출단위수량(자재)"), size: 135, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? v.toLocaleString() : "-"; } },
+    { accessorKey: "minPackQty", header: t("master.part.minPackQty", "불출포장단위"), size: 135, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v > 0 ? v.toLocaleString() : "-"; } },
     { accessorKey: "lotUnitQty", header: t("master.part.lotUnitQty", "묶음단위수량(생산공정품)"), size: 150, meta: { filterType: "number" as const }, cell: ({ getValue }) => { const v = getValue() as number; return v != null ? v.toLocaleString() : "-"; } },
     {
       accessorKey: "inspectMethod",

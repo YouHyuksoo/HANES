@@ -18,14 +18,14 @@ const combined = [page, partColumns, panel, modal].join('\n');
 
 test('/master/part uses the revised Korean quantity labels', () => {
   assert.equal(ko.master.part.boxQty, '박스장입수량');
-  assert.equal(ko.master.part.minPackQty, '최소불출단위수량(자재)');
+  assert.equal(ko.master.part.minPackQty, '불출포장단위');
   assert.equal(ko.master.part.lotUnitQty, '묶음단위수량(생산공정품)');
 
   assert.match(partColumns, /t\("master\.part\.boxQty", "박스장입수량"\)/);
-  assert.match(partColumns, /t\("master\.part\.minPackQty", "최소불출단위수량\(자재\)"\)/);
+  assert.match(partColumns, /t\("master\.part\.minPackQty", "불출포장단위"\)/);
   assert.match(partColumns, /t\("master\.part\.lotUnitQty", "묶음단위수량\(생산공정품\)"\)/);
   assert.match(panel, /t\("master\.part\.boxQty", "박스장입수량"\)/);
-  assert.match(panel, /t\("master\.part\.minPackQty", "최소불출단위수량\(자재\)"\)/);
+  assert.match(panel, /t\("master\.part\.minPackQty", "불출포장단위"\)/);
   assert.match(panel, /t\("master\.part\.lotUnitQty", "묶음단위수량\(생산공정품\)"\)/);
   assert.match(modal, /t\("master\.part\.boxQty", "박스장입수량"\)/);
   assert.match(modal, /t\("master\.part\.lotUnitQty", "묶음단위수량\(생산공정품\)"\)/);

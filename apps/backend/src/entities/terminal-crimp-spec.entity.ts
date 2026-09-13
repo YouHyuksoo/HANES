@@ -64,6 +64,15 @@ export class TerminalCrimpSpec {
   @Column({ type: 'varchar2', name: 'APPLICATOR_CODE', length: 50, nullable: true })
   applicatorCode: string | null;
 
+  @Column({ name: 'APPLICATOR_DISK', type: 'decimal', precision: 10, scale: 3, nullable: true })
+  applicatorDisk: number | null;
+
+  @Column({ name: 'APPLICATOR_LIFE_SHOTS', type: 'decimal', precision: 10, scale: 0, nullable: true })
+  applicatorLifeShots: number | null;
+
+  @Column({ name: 'SAMPLE_LOT_QTY', type: 'decimal', precision: 10, scale: 0, nullable: true })
+  sampleLotQty: number | null;
+
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 

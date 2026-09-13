@@ -45,8 +45,8 @@ export class IqcPartSpecService {
       filters.push(`p.USE_YN = :${bindings.length}`);
     }
     if (search?.trim()) {
-      bindings.push(`%${search.trim().toUpperCase()}%`, `%${search.trim().toUpperCase()}%`);
-      filters.push(`(UPPER(p.ITEM_CODE) LIKE :${bindings.length - 1} OR UPPER(p.ITEM_NAME) LIKE :${bindings.length})`);
+      bindings.push(`%${search.trim().toUpperCase()}%`, `%${search.trim().toUpperCase()}%`, `%${search.trim().toUpperCase()}%`);
+      filters.push(`(UPPER(p.ITEM_CODE) LIKE :${bindings.length - 2} OR UPPER(p.ITEM_NAME) LIKE :${bindings.length - 1} OR UPPER(NVL(p.PRODUCT_TYPE,' ')) LIKE :${bindings.length})`);
     }
     const assignedCount = `(SELECT COUNT(*) FROM IQC_PART_SPECS s
       JOIN IQC_PART_SPEC_ITEMS i ON i.COMPANY = s.COMPANY AND i.PLANT_CD = s.PLANT_CD AND i.ITEM_CODE = s.ITEM_CODE
@@ -56,9 +56,10 @@ export class IqcPartSpecService {
     const where = filters.join(' AND ');
     const [data, counts] = await Promise.all([
       this.specRepo.manager.query(`SELECT p.ITEM_CODE AS "itemCode", p.ITEM_NAME AS "itemName",
+        p.PRODUCT_TYPE AS "productType",
         p.USE_YN AS "useYn", p.SAMPLE_QTY AS "sampleQty", p.IQC_AQL_POLICY_CODE AS "iqcAqlPolicyCode",
         ${assignedCount} AS "inspectItemCount"
-        FROM ITEM_MASTERS p WHERE ${where} ORDER BY p.ITEM_CODE
+        FROM ITEM_MASTERS p WHERE ${where} ORDER BY NVL(p.PRODUCT_TYPE,' '), p.ITEM_CODE
         OFFSET :${bindings.length + 1} ROWS FETCH NEXT :${bindings.length + 2} ROWS ONLY`, [...bindings, (page - 1) * limit, limit]),
       this.specRepo.manager.query(`SELECT COUNT(*) AS "total" FROM ITEM_MASTERS p WHERE ${where}`, bindings),
     ]);

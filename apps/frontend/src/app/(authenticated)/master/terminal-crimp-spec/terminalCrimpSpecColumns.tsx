@@ -28,6 +28,9 @@ export interface TerminalCrimpSpecRow {
   stripLengthMin: number | null;
   stripLengthMax: number | null;
   applicatorCode: string | null;
+  applicatorDisk: number | null;
+  applicatorLifeShots: number | null;
+  sampleLotQty: number | null;
   remark: string | null;
   useYn: string;
   updatedAt: string;

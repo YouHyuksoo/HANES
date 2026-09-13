@@ -28,6 +28,9 @@ export interface TerminalCrimpSpecForm {
   stripLengthMin: string;
   stripLengthMax: string;
   applicatorCode: string;
+  applicatorDisk: string;
+  applicatorLifeShots: string;
+  sampleLotQty: string;
   remark: string;
   useYn: string;
 }
@@ -47,6 +50,9 @@ export const emptyTerminalCrimpSpecForm = (): TerminalCrimpSpecForm => ({
   stripLengthMin: "",
   stripLengthMax: "",
   applicatorCode: "",
+  applicatorDisk: "",
+  applicatorLifeShots: "",
+  sampleLotQty: "",
   remark: "",
   useYn: "Y",
 });
@@ -114,6 +120,9 @@ export default function TerminalCrimpSpecFormPanel({
             </div>
             <Input label={t("master.terminalCrimpSpec.applicatorCode")} value={form.applicatorCode}
               onChange={e => onChange("applicatorCode", e.target.value)} fullWidth />
+            {num("applicatorDisk", t("master.terminalCrimpSpec.applicatorDisk", "Applicator 디스크"))}
+            {num("applicatorLifeShots", t("master.terminalCrimpSpec.applicatorLifeShots", "수명 타수"))}
+            {num("sampleLotQty", t("master.terminalCrimpSpec.sampleLotQty", "초중종물 기준수량"))}
             <UseYnSelect includeAll={false} label={t("common.useYn")} value={form.useYn}
               onChange={v => onChange("useYn", v)} fullWidth />
           </div>

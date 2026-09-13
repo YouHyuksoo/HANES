@@ -75,6 +75,18 @@ export class CreateTerminalCrimpSpecDto {
   @MaxLength(50)
   applicatorCode?: string | null;
 
+  @ApiPropertyOptional({ description: 'Applicator 디스크값 (mm)' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  applicatorDisk?: number | null;
+
+  @ApiPropertyOptional({ description: 'Applicator 수명 타수' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  applicatorLifeShots?: number | null;
+
+  @ApiPropertyOptional({ description: '초중종물 기준 작업수량' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  sampleLotQty?: number | null;
+
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
   @IsString()

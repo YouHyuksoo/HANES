@@ -281,7 +281,7 @@ export default function IssueFromRequestModal({
     },
     {
       accessorKey: 'minPackQty',
-      header: t('material.request.minPackQty', { defaultValue: '포장단위' }),
+      header: t('material.request.minPackQty', { defaultValue: '불출포장단위' }),
       size: 80,
       meta: { filterType: 'number' as const },
       cell: ({ getValue }) => {

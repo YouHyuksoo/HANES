@@ -88,7 +88,7 @@ export default function SubKitActionBar({
           isLoading={issuing}
           leftIcon={<Play className="w-5 h-5" />}
         >
-          {t("production.subprocess.issueSgLabel", "키팅 실행 → SFG 라벨 발행")}
+          {t("production.subprocess.issueSgLabel", "SFG 라벨 발행")}
         </Button>
       </div>
 
@@ -130,7 +130,7 @@ export default function SubKitActionBar({
           </div>
         ) : (
           <p className="text-sm text-text-muted">
-            {t("production.subprocess.issueFirst", "먼저 키팅을 실행해 SFG 라벨을 발행하세요")}
+            {t("production.subprocess.issueFirst", "먼저 SFG 라벨을 발행하세요")}
           </p>
         )}
       </div>

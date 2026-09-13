@@ -86,7 +86,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
   if (!line) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('material.arrival.modal.receiveTitle')} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('material.arrival.modal.receiveTitle')} size="2xl">
       <div className="flex flex-col gap-4">
         {/* PO 정보 */}
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded p-3 text-sm">
@@ -112,7 +112,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
         </div>
 
         {/* 폼 그리드 */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <label className="text-sm flex flex-col gap-1">
             <span>{t('material.arrival.col.receivedQty')}<span className="text-red-500 ml-0.5">*</span></span>
             <div className="flex items-stretch gap-1">

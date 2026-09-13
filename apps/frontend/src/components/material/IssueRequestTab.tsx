@@ -92,6 +92,50 @@ export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: I
 
   // DataGrid 컬럼 정의
   const columns = useMemo<ColumnDef<IssueRequestRecord>[]>(() => ([
+    {
+      id: 'actions',
+      header: t('material.col.actions'),
+      size: 130,
+      meta: { filterType: 'none' as const },
+      cell: ({ row }) => {
+        const record = row.original;
+        return (
+          <div className="flex gap-1">
+            {record.status === 'REQUESTED' && (
+              <>
+                <button
+                  type="button"
+                  className="p-1 hover:bg-surface rounded"
+                  title={t('material.issue.approveAction')}
+                  onClick={() => setApproveTarget(record.requestNo)}
+                >
+                  <CheckCircle className="w-4 h-4 text-blue-500" />
+                </button>
+                <button
+                  type="button"
+                  className="p-1 hover:bg-surface rounded"
+                  title={t('material.issue.rejectAction')}
+                  onClick={() => setRejectTarget(record.requestNo)}
+                >
+                  <XCircle className="w-4 h-4 text-red-400" />
+                </button>
+              </>
+            )}
+            {/* 승인 또는 부분출고(잔량 재출고) 상태에서 출고처리 가능 — 백엔드 issueFromRequest 허용 상태와 동일 */}
+            {['APPROVED', 'PARTIAL'].includes(record.status) && (
+              <button
+                type="button"
+                className="p-1 hover:bg-surface rounded"
+                title={t('material.issue.processAction')}
+                onClick={() => setIssueTarget(record.requestNo)}
+              >
+                <Play className="w-4 h-4 text-primary" />
+              </button>
+            )}
+          </div>
+        );
+      },
+    },
     { accessorKey: 'requestNo', header: t('material.col.requestNo'), size: 160, meta: { filterType: 'text' as const } },
     { accessorKey: 'requestDate', header: t('material.col.requestDate'), size: 155, cell: ({ getValue }) => formatDateTimeKst(getValue() as string), meta: { filterType: 'date' as const } },
     {
@@ -139,50 +183,6 @@ export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: I
       ),
     },
     { accessorKey: 'requester', header: t('material.col.requester'), size: 80, meta: { filterType: 'text' as const } },
-    {
-      id: 'actions',
-      header: t('material.col.actions'),
-      size: 130,
-      meta: { filterType: 'none' as const },
-      cell: ({ row }) => {
-        const record = row.original;
-        return (
-          <div className="flex gap-1">
-            {record.status === 'REQUESTED' && (
-              <>
-                <button
-                  type="button"
-                  className="p-1 hover:bg-surface rounded"
-                  title={t('material.issue.approveAction')}
-                  onClick={() => setApproveTarget(record.requestNo)}
-                >
-                  <CheckCircle className="w-4 h-4 text-blue-500" />
-                </button>
-                <button
-                  type="button"
-                  className="p-1 hover:bg-surface rounded"
-                  title={t('material.issue.rejectAction')}
-                  onClick={() => setRejectTarget(record.requestNo)}
-                >
-                  <XCircle className="w-4 h-4 text-red-400" />
-                </button>
-              </>
-            )}
-            {/* 승인 또는 부분출고(잔량 재출고) 상태에서 출고처리 가능 — 백엔드 issueFromRequest 허용 상태와 동일 */}
-            {['APPROVED', 'PARTIAL'].includes(record.status) && (
-              <button
-                type="button"
-                className="p-1 hover:bg-surface rounded"
-                title={t('material.issue.processAction')}
-                onClick={() => setIssueTarget(record.requestNo)}
-              >
-                <Play className="w-4 h-4 text-primary" />
-              </button>
-            )}
-          </div>
-        );
-      },
-    },
   ] as ColumnDef<IssueRequestRecord>[]).filter((column) => issueType !== 'MANUAL' || !('accessorKey' in column) || column.accessorKey !== 'orderNo'), [t, issueType]);
 
   return (

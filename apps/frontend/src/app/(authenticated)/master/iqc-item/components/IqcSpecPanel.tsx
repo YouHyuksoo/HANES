@@ -125,7 +125,7 @@ export default function IqcSpecPanel({ itemCode, itemName, poolItems, onSaved }:
             unit: it.inspItem?.unit ?? null,
             lsl: it.lsl ?? null,
             usl: it.usl ?? null,
-            judgeCriteria: it.judgeCriteria ?? null,
+            judgeCriteria: it.judgeCriteria ?? it.inspItem?.criteria ?? null,
             defectGrade: it.defectGrade ?? null,
             inspectionLevel: it.inspectionLevel ?? null,
             aql: it.aql ?? null,

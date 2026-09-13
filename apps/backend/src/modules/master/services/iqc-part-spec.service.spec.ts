@@ -60,8 +60,8 @@ describe('IqcPartSpecService', () => {
       expect(sql).toContain("i.USE_YN = 'Y') > 0");
       expect(sql).toContain('pool.COMPANY = i.COMPANY AND pool.PLANT_CD = i.PLANT_CD');
       expect(sql).toContain('p.USE_YN = :3');
-      expect(sql).toContain('UPPER(p.ITEM_CODE) LIKE :4 OR UPPER(p.ITEM_NAME) LIKE :5');
-      expect(params.slice(0, 5)).toEqual(['C1', 'P1', 'Y', '%WIRE%', '%WIRE%']);
+      expect(sql).toContain("UPPER(p.ITEM_CODE) LIKE :4 OR UPPER(p.ITEM_NAME) LIKE :5 OR UPPER(NVL(p.PRODUCT_TYPE,' ')) LIKE :6");
+      expect(params.slice(0, 6)).toEqual(['C1', 'P1', 'Y', '%WIRE%', '%WIRE%', '%WIRE%']);
     }
     expect(query.mock.calls[0][1].slice(-2)).toEqual([50, 50]);
   });

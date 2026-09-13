@@ -99,6 +99,9 @@ export default function TerminalCrimpSpecPage() {
       stripLengthMin: s(row.stripLengthMin),
       stripLengthMax: s(row.stripLengthMax),
       applicatorCode: row.applicatorCode ?? "",
+      applicatorDisk: row.applicatorDisk != null ? String(row.applicatorDisk) : "",
+      applicatorLifeShots: row.applicatorLifeShots != null ? String(row.applicatorLifeShots) : "",
+      sampleLotQty: row.sampleLotQty != null ? String(row.sampleLotQty) : "",
       remark: row.remark ?? "",
       useYn: row.useYn || "Y",
     };
@@ -137,6 +140,9 @@ export default function TerminalCrimpSpecPage() {
       stripLengthMin: toNumberOrNull(form.stripLengthMin),
       stripLengthMax: toNumberOrNull(form.stripLengthMax),
       applicatorCode: form.applicatorCode.trim() || null,
+      applicatorDisk: toNumberOrNull(form.applicatorDisk),
+      applicatorLifeShots: toNumberOrNull(form.applicatorLifeShots),
+      sampleLotQty: toNumberOrNull(form.sampleLotQty),
       remark: form.remark.trim() || null,
       useYn: form.useYn,
     };
