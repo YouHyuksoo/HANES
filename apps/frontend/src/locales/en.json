@@ -9592,7 +9592,9 @@
       "accountConnect": "Link OpenAI account",
       "accountRelink": "Relink",
       "accountUnlink": "Unlink",
-      "accountExpired": "Expired — please link again"
+      "accountExpired": "Expired — please link again",
+      "manualCodeHelp": "Automatic linking is not available on this server. After signing in, paste the code value from the address bar.",
+      "manualCodeSubmit": "Finish linking"
     },
     "catalog": {
       "title": "AI Table Catalog",

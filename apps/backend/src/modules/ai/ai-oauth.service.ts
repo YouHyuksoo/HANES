@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as crypto from 'node:crypto';
+import * as http from 'node:http';
 import { AiOauthToken } from '../../entities/ai-oauth-token.entity';
 
 /**
@@ -31,6 +32,18 @@ export class AiOauthService {
     'openid profile email offline_access api.connectors.read api.connectors.invoke';
   /** 만료 이 시간 안쪽이면 미리 갱신한다 */
   private static readonly REFRESH_MARGIN_MS = 10 * 60 * 1000;
+  /**
+   * 콜백 경로는 고정이다.
+   * 실측(2026-09-13): 이 client 는 http://localhost:<포트>/auth/callback 만 받아들인다.
+   * 경로가 다르거나 https 외부 도메인이면 로그인 화면에 가기 전에 unknown_error 로 끝난다.
+   */
+  static readonly CALLBACK_PATH = '/auth/callback';
+  /**
+   * state 는 충분히 길어야 한다.
+   * 16바이트(22자)로는 "The state is missing or does not have enough characters" 를 받는다.
+   * 32바이트(43자)는 통과한다.
+   */
+  private static readonly STATE_BYTES = 32;
 
   /**
    * 진행 중인 로그인 상태. code_verifier 는 수 분짜리 1회용이라 DB 에 두지 않는다.
@@ -47,11 +60,89 @@ export class AiOauthService {
     return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
 
+  /** 진행 중인 루프백 리스너 — 로그인 1회당 하나. 끝나면 닫는다 */
+  private listener: http.Server | null = null;
+
+  /**
+   * 루프백 콜백 리스너를 띄운다.
+   * OpenAI 는 http://localhost:<포트>/auth/callback 로만 code 를 돌려주므로,
+   * 브라우저가 도는 바로 그 장비에 리스너가 있어야 한다.
+   * 배포 서버처럼 브라우저를 띄울 수 없는 곳은 code 수동 입력(exchangeCode)을 쓴다.
+   */
+  private async ensureListener(port: number, company: string, plant: string, userId?: string): Promise<void> {
+    await this.stopListener();
+    const server = http.createServer((req, res) => {
+      const url = new URL(req.url ?? '/', `http://localhost:${port}`);
+      if (url.pathname !== AiOauthService.CALLBACK_PATH) {
+        res.writeHead(404).end();
+        return;
+      }
+      const reply = (message: string) => {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(
+          `<!doctype html><meta charset="utf-8"><body style="font-family:system-ui;padding:40px">` +
+          `<p>${message}</p><p>이 창을 닫아 주세요.</p>` +
+          `<script>setTimeout(()=>window.close(),1500)</script></body>`,
+        );
+      };
+      const error = url.searchParams.get('error');
+      const code = url.searchParams.get('code');
+      const state = url.searchParams.get('state');
+      if (error || !code || !state) {
+        reply(`연결하지 못했습니다: ${error ?? '값 누락'}`);
+        void this.stopListener();
+        return;
+      }
+      this.handleCallback(code, state, company, plant, userId)
+        .then((saved) => reply(`OpenAI 계정(${saved.accountEmail ?? '연결됨'})이 연결되었습니다.`))
+        .catch((e: unknown) => reply(`연결에 실패했습니다: ${e instanceof Error ? e.message : String(e)}`))
+        .finally(() => void this.stopListener());
+    });
+    await new Promise<void>((resolve, reject) => {
+      // 루프백에만 바인딩한다. 외부에서 접근할 수 있으면 안 된다.
+      server.once('error', reject);
+      server.listen(port, '127.0.0.1', () => resolve());
+    });
+    this.listener = server;
+    // 로그인을 끝내지 않고 방치하는 경우가 있으므로 10분 뒤 자동으로 닫는다
+    setTimeout(() => void this.stopListener(), 10 * 60 * 1000).unref?.();
+  }
+
+  private async stopListener(): Promise<void> {
+    const server = this.listener;
+    this.listener = null;
+    if (!server) return;
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+
   /** 로그인 시작 — authorize URL 을 만들어 돌려준다 */
+  async startWithListener(
+    port: number,
+    company: string,
+    plant: string,
+    userId?: string,
+  ): Promise<{ authorizeUrl: string; state: string; listening: boolean }> {
+    const redirectUri = `http://localhost:${port}${AiOauthService.CALLBACK_PATH}`;
+    let listening = false;
+    try {
+      await this.ensureListener(port, company, plant, userId);
+      listening = true;
+    } catch (error: unknown) {
+      // 리스너를 못 띄우면(포트 점유 등) URL 은 그대로 주고 code 수동 입력으로 넘긴다
+      this.logger.warn(`루프백 리스너 기동 실패(${port}): ${error instanceof Error ? error.message : String(error)}`);
+    }
+    return { ...this.start(redirectUri), listening };
+  }
+
+  /** 수동 입력용 — 브라우저 주소창의 code 를 받아 교환한다 (배포 서버처럼 리스너를 못 쓰는 환경) */
+  async exchangeCode(code: string, state: string, company: string, plant: string, userId?: string) {
+    return this.handleCallback(code, state, company, plant, userId);
+  }
+
   start(redirectUri: string): { authorizeUrl: string; state: string } {
     const verifier = this.base64url(crypto.randomBytes(32));
     const challenge = this.base64url(crypto.createHash('sha256').update(verifier).digest());
-    const state = this.base64url(crypto.randomBytes(16));
+    const state = this.base64url(crypto.randomBytes(AiOauthService.STATE_BYTES));
 
     this.prunePending();
     this.pending.set(state, { verifier, redirectUri, createdAt: Date.now() });

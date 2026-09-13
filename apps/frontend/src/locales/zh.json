@@ -9592,7 +9592,9 @@
       "accountConnect": "连接 OpenAI 账户",
       "accountRelink": "重新连接",
       "accountUnlink": "解除连接",
-      "accountExpired": "已过期，请重新连接"
+      "accountExpired": "已过期，请重新连接",
+      "manualCodeHelp": "此服务器无法使用自动连接。登录后请粘贴地址栏中的 code 值。",
+      "manualCodeSubmit": "完成连接"
     },
     "catalog": {
       "title": "AI 表目录",

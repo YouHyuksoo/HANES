@@ -7,8 +7,8 @@
  * - POST /ai/chat/feedback   : 응답 좋아요/싫어요 저장
  * - DELETE /ai/chat/feedback/:id : 좋아요/싫어요 취소
  * - GET  /ai/oauth/status     : OpenAI 계정 연결 상태
- * - POST /ai/oauth/start      : OAuth 로그인 시작 (authorize URL 반환)
- * - GET  /ai/oauth/callback   : OAuth 콜백 (code → 토큰 교환·저장)
+ * - POST /ai/oauth/start      : OAuth 로그인 시작 (authorize URL + 루프백 리스너)
+ * - POST /ai/oauth/exchange   : code 수동 입력 교환 (리스너를 못 쓰는 환경)
  * - DELETE /ai/oauth          : 연결 해제
  */
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req, Res, ParseIntPipe, BadRequestException } from '@nestjs/common';
@@ -49,46 +49,44 @@ export class AiController {
     return this.aiOauthService.getStatus(company, plant);
   }
 
+  /**
+   * 로그인 시작.
+   * 콜백 주소는 고를 수 없다 — 이 client 는 http://localhost:<포트>/auth/callback 만 받는다
+   * (실측 2026-09-13: 다른 경로나 외부 도메인은 로그인 화면에 가기도 전에 unknown_error).
+   *
+   * 그래서 백엔드가 루프백 리스너를 띄운다. 백엔드와 브라우저가 같은 장비면 그대로 끝난다.
+   * 배포 서버처럼 다른 장비면 listening=false 로 내려가고, 화면이 code 수동 입력을 안내한다.
+   */
   @Post('oauth/start')
-  oauthStart(@Req() req: Request) {
-    // 콜백은 요청이 들어온 호스트 기준으로 만든다.
-    // 로컬(localhost:3003)과 배포서버가 각자 자기 주소를 쓰게 하려는 것이다.
-    // 실측(2026-09-13): OpenAI 는 임의 도메인 redirect_uri 를 받아들인다.
-    const proto = getHeaderString(req.headers['x-forwarded-proto']) ?? req.protocol;
-    const host = getHeaderString(req.headers['x-forwarded-host']) ?? req.get('host');
-    const redirectUri = `${proto}://${host}/api/v1/ai/oauth/callback`;
-    return this.aiOauthService.start(redirectUri);
+  oauthStart(
+    @Company() company: string,
+    @Plant() plant: string,
+    @Req() req: Request,
+    @Body('port') port?: number,
+  ) {
+    return this.aiOauthService.startWithListener(
+      Number(port) || 1455,
+      company,
+      plant,
+      getRequestUser(req)?.email ?? getRequestUser(req)?.id,
+    );
   }
 
-  /**
-   * OAuth 콜백. OpenAI 가 브라우저를 이리로 되돌려 보낸다.
-   * 로그인 세션이 없는 상태로 도착하므로 인증을 걸지 않는다 —
-   * 대신 state 로 진행 중인 요청인지 검증한다(서버 메모리에만 있다).
-   */
-  @Public()
-  @Get('oauth/callback')
-  async oauthCallback(
-    @Query('code') code: string,
-    @Query('state') state: string,
-    @Query('error') error: string,
-    @Res() res: Response,
+  /** code 수동 교환 — 브라우저 주소창에 남은 code/state 를 받아 토큰으로 바꾼다 */
+  @Post('oauth/exchange')
+  oauthExchange(
+    @Body('code') code: string,
+    @Body('state') state: string,
+    @Company() company: string,
+    @Plant() plant: string,
+    @Req() req: Request,
   ) {
-    const close = (message: string) =>
-      res.send(
-        `<!doctype html><meta charset="utf-8"><body style="font-family:system-ui;padding:40px">
-         <p>${message}</p><p>이 창을 닫아 주세요.</p>
-         <script>setTimeout(()=>window.close(),1500)</script></body>`,
-      );
-    if (error) return close(`연결이 취소되었습니다: ${error}`);
-    if (!code || !state) return close('필요한 값이 없어 연결하지 못했습니다.');
-    try {
-      // 콜백에는 로그인 세션이 없으므로 회사/사업장은 기본값으로 저장한다.
-      const saved = await this.aiOauthService.handleCallback(code, state, '40', '1000');
-      return close(`OpenAI 계정(${saved.accountEmail ?? '연결됨'})이 연결되었습니다.`);
-    } catch (e: unknown) {
-      return close(`연결에 실패했습니다: ${e instanceof Error ? e.message : String(e)}`);
+    if (!code?.trim() || !state?.trim()) {
+      throw new BadRequestException('code 와 state 가 모두 필요합니다.');
     }
+    return this.aiOauthService.exchangeCode(code.trim(), state.trim(), company, plant, getRequestUser(req)?.email ?? getRequestUser(req)?.id);
   }
+
 
   @Delete('oauth')
   async oauthDisconnect(@Company() company: string, @Plant() plant: string) {

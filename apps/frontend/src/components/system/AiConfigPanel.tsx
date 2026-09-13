@@ -149,22 +149,42 @@ export default function AiConfigPanel() {
 
   useEffect(() => { if (provider === OAUTH_PROVIDER) void loadOauth(); }, [provider, loadOauth]);
 
+  /** 리스너를 못 띄운 경우(배포 서버 등) 수동 입력으로 넘어간다 */
+  const [manual, setManual] = useState<{ state: string } | null>(null);
+  const [manualCode, setManualCode] = useState("");
+
   /**
    * 새 창에서 OpenAI 로그인을 띄운다.
-   * 콜백은 서버가 받아 토큰을 저장하고 창을 닫는다 — 창이 닫히면 상태를 다시 읽는다.
+   *
+   * 콜백 주소는 고를 수 없다 — http://localhost:<포트>/auth/callback 만 허용된다.
+   * 백엔드와 브라우저가 같은 장비면 백엔드가 띄운 루프백 리스너가 code 를 받아 끝난다.
+   * 다른 장비(배포 서버)면 리스너가 소용없으므로, 로그인 후 주소창에 남는 code 를
+   * 사용자가 붙여넣게 한다.
    */
   const handleConnect = useCallback(async () => {
     const res = await api.post("/ai/oauth/start", {});
-    const url = (res.data?.data ?? res.data)?.authorizeUrl;
-    if (!url) return;
-    const win = window.open(url, "openai-oauth", "width=520,height=720");
-    const timer = window.setInterval(() => {
-      if (win?.closed) {
-        window.clearInterval(timer);
-        void loadOauth();
-      }
-    }, 1000);
+    const data = res.data?.data ?? res.data;
+    if (!data?.authorizeUrl) return;
+    setManual(data.listening ? null : { state: data.state });
+    setManualCode("");
+    const win = window.open(data.authorizeUrl, "openai-oauth", "width=520,height=720");
+    if (data.listening) {
+      const timer = window.setInterval(() => {
+        if (win?.closed) {
+          window.clearInterval(timer);
+          void loadOauth();
+        }
+      }, 1000);
+    }
   }, [loadOauth]);
+
+  const handleManualExchange = useCallback(async () => {
+    if (!manual || !manualCode.trim()) return;
+    await api.post("/ai/oauth/exchange", { code: manualCode.trim(), state: manual.state });
+    setManual(null);
+    setManualCode("");
+    await loadOauth();
+  }, [manual, manualCode, loadOauth]);
 
   const handleDisconnect = useCallback(async () => {
     await api.delete("/ai/oauth");
@@ -287,6 +307,20 @@ export default function AiConfigPanel() {
                 </>
               )}
             </div>
+
+            {manual && (
+              <div className="mt-3 rounded border border-amber-400 px-3 py-2 text-xs">
+                <p className="mb-2 text-amber-700 dark:text-amber-400">
+                  {t("ai.config.manualCodeHelp", "이 서버에서는 자동 연결을 쓸 수 없습니다. 로그인 후 주소창에 남는 code 값을 붙여넣어 주세요.")}
+                </p>
+                <div className="flex gap-2">
+                  <Input value={manualCode} onChange={(e) => setManualCode(e.target.value)} placeholder="code=..." fullWidth />
+                  <Button size="sm" onClick={handleManualExchange} disabled={!manualCode.trim()}>
+                    {t("ai.config.manualCodeSubmit", "연결 완료")}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
         <label className="text-sm">

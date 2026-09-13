@@ -9592,7 +9592,9 @@
       "accountConnect": "Liên kết tài khoản OpenAI",
       "accountRelink": "Liên kết lại",
       "accountUnlink": "Hủy liên kết",
-      "accountExpired": "Đã hết hạn — hãy liên kết lại"
+      "accountExpired": "Đã hết hạn — hãy liên kết lại",
+      "manualCodeHelp": "Máy chủ này không dùng được liên kết tự động. Sau khi đăng nhập, hãy dán giá trị code từ thanh địa chỉ.",
+      "manualCodeSubmit": "Hoàn tất liên kết"
     },
     "catalog": {
       "title": "Danh mục bảng AI",
