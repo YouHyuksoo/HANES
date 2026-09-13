@@ -22,6 +22,7 @@ import { useAuthStore } from "@/stores/authStore";
 interface PartItem {
   itemCode: string;
   itemName: string;
+  productType?: string | null;
   sampleQty?: number | null;
   iqcAqlPolicyCode?: string | null;
   inspectItemCount: number;
@@ -57,7 +58,7 @@ export default function IqcPartSpecPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const requestVersion = useRef(0);
-  const pageSize = 50;
+  const pageSize = 200;
   const [aqlPreviewLotQty, setAqlPreviewLotQty] = useState("1000");
   const [aqlPreview, setAqlPreview] = useState<AqlPolicyPreview | null>(null);
   const [aqlPreviewLoading, setAqlPreviewLoading] = useState(false);
@@ -186,7 +187,7 @@ export default function IqcPartSpecPage() {
             onSearchChange={value => { setSearchText(value); setPage(1); }}
             loading={partsLoading}
             serverFiltered
-            searchPlaceholder={t("master.iqcPartSpec.partSearch", "품목코드, 품목명 검색...")}
+            searchPlaceholder={t("master.iqcPartSpec.partSearch", "품목그룹, 품목코드 검색...")}
             filters={<div className="space-y-2 mb-2">
               <IqcPartHelp field="useYn" className="w-full"><UseYnSelect value={useYn} onChange={value => { setUseYn(value); setPage(1); }} fullWidth /></IqcPartHelp>
               <IqcPartHelp field="hasItems" className="w-full"><Select aria-label={t("master.iqcPartSpec.hasItems", "IQC 검사항목 유무")} value={hasInspectItems}
