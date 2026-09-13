@@ -33,9 +33,31 @@ const VISIBLE = (el: Element): boolean => {
   return style.visibility !== 'hidden' && style.display !== 'none';
 };
 
+/**
+ * 조작 대상의 탐색 기준점.
+ *
+ * 모달이 떠 있으면 그 안에서만 찾는다. 사람이 보는 것과 같다 —
+ * 위에 뜬 창을 조작하지 뒤에 가려진 화면을 조작하지 않는다.
+ *
+ * 이게 없어서 실제로 결함을 겪었다(2026-09-13): 품목검색 모달이 떠 있는데
+ * 행 탐색이 문서 전체를 훑어 **배경 그리드의 행**을 집었고,
+ * 그 화면은 패널이 열린 상태에서 행을 누르면 수정 모드로 바뀌는 구조라
+ * 신규 저장(POST)이 기존 건 수정(PUT)으로 나가 400 이 났다.
+ *
+ * 시나리오 실행 오버레이 자신은 제외한다(그것도 role=dialog 다).
+ */
+function rootOf(): ParentNode {
+  const dialogs = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')]
+    .filter((d) => !d.hasAttribute('data-scenario-overlay'))
+    .filter(VISIBLE);
+  // 여러 개면 가장 마지막(위에 뜬) 것
+  return dialogs.length > 0 ? dialogs[dialogs.length - 1] : document;
+}
+
 function scopeOf(target: TargetSpec): ParentNode | null {
-  if (!target.row) return document;
-  const rows = [...document.querySelectorAll('tr')];
+  const root = rootOf();
+  if (!target.row) return root;
+  const rows = [...root.querySelectorAll('tr')];
   return rows.find((tr) => (tr.textContent ?? '').includes(target.row!)) ?? null;
 }
 

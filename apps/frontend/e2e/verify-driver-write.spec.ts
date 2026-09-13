@@ -1,4 +1,16 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+/**
+ * 드라이버 전역 훅이 준비될 때까지 기다린다.
+ * goto 직후엔 아직 하이드레이션 중이라 evaluate 가 "context destroyed" 로 터진다.
+ */
+async function waitForDriver(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () => typeof (window as unknown as { __SCENARIO_RUN__?: unknown }).__SCENARIO_RUN__ === 'function',
+    undefined,
+    { timeout: 30000 },
+  );
+}
 
 /**
  * 쓰기 흐름 실증 — awaitWrite(저장 직전 확인)와 실제 저장까지.
@@ -22,6 +34,7 @@ test('드라이버가 저장 직전에 확인을 받고 실제로 작업지시�
   await page.waitForLoadState('networkidle');
   expect(page.url(), '세션 만료').not.toContain('/login');
 
+  await waitForDriver(page);
   const token = await page.evaluate(() => localStorage.getItem('harness-token'));
   const scnRes = await page.request.get('http://localhost:3003/api/v1/ai/scenarios/job-order-create', {
     headers: { Authorization: `Bearer ${token}` },
@@ -91,4 +104,59 @@ test('드라이버가 저장 직전에 확인을 받고 실제로 작업지시�
   const afterRows = (await afterSave.json())?.data ?? [];
   console.log('[write] 승인 후 작업지시 건수:', Array.isArray(afterRows) ? afterRows.length : '?');
   expect((afterRows as unknown[]).length, '작업지시가 실제로 생성되지 않았다').toBeGreaterThan((beforeRows as unknown[]).length);
+});
+
+test('생산계획 등록 시나리오도 저장까지 완주한다', async ({ page }) => {
+  test.skip(!process.env.RUN_WRITE, 'RUN_WRITE=1 일 때만 실행 — 실데이터를 생성한다');
+  test.setTimeout(180_000);
+
+  const itemCode = process.env.PLAN_ITEM ?? 'N91H00-X9800';
+  const planQty = process.env.PLAN_QTY ?? '20';
+
+  await page.goto('/dashboard');
+  await page.waitForLoadState('networkidle');
+  expect(page.url(), '세션 만료').not.toContain('/login');
+
+  await waitForDriver(page);
+  const token = await page.evaluate(() => localStorage.getItem('harness-token'));
+  const scnRes = await page.request.get('http://localhost:3003/api/v1/ai/scenarios/prod-plan-create', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const scenario = (await scnRes.json())?.data;
+  expect(scenario?.id, '시나리오를 서버에서 받지 못했다').toBe('prod-plan-create');
+
+  await page.evaluate(
+    ([s, vars]) => {
+      const w = window as unknown as { __SCENARIO_RUN__?: (s: unknown, v: unknown) => void };
+      w.__SCENARIO_RUN__!(s, vars);
+    },
+    [scenario, { itemCode, planQty }] as [unknown, unknown],
+  );
+
+  const overlay = page.getByRole('dialog', { name: '시나리오 실행' });
+  await expect(overlay).toBeVisible({ timeout: 15000 });
+  await overlay.getByRole('button', { name: '실행' }).click();
+
+  await expect(overlay).toContainText('다음 단계는 실제 데이터를 저장합니다', { timeout: 90000 });
+  await overlay.getByRole('button', { name: '저장 진행' }).click();
+
+  await page.waitForFunction(
+    () => {
+      const w = window as unknown as { __SCENARIO_STATE__?: () => { status?: string } };
+      const st = w.__SCENARIO_STATE__?.().status;
+      return st === 'done' || st === 'failed';
+    },
+    undefined,
+    { timeout: 90000 },
+  );
+
+  const state = await page.evaluate(() => {
+    const w = window as unknown as { __SCENARIO_STATE__?: () => Record<string, unknown> };
+    return w.__SCENARIO_STATE__?.() ?? null;
+  });
+  for (const r of ((state as Record<string, unknown[]>)?.results ?? []) as Array<Record<string, unknown>>) {
+    console.log(`[plan]   ${r.index} ${r.verdict} ${r.note ?? ''}${r.error ? ` :: ${r.error}` : ''}`);
+  }
+  expect(String((state as Record<string, unknown>)?.status),
+    `실행 실패: ${JSON.stringify((state as Record<string, unknown>)?.failure)}`).toBe('done');
 });

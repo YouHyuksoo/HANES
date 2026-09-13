@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "id": "prod-plan-create",
+  "title": "생산계획 등록",
+  "description": "제품생산계획 화면에서 품목과 수량으로 월 생산계획을 등록한다. 작업지시를 바로 내는 것이 아니라 계획을 먼저 잡는 절차다. 등록한 계획은 나중에 행에서 작업지시로 발행할 수 있다. 실제로 계획이 저장된다.",
+  "startRoute": "/production/monthly-plan",
+  "params": {
+    "itemCode": {
+      "label": "품목",
+      "required": true,
+      "type": "string",
+      "resolver": "resolveItemCandidates"
+    },
+    "planQty": {
+      "label": "계획수량",
+      "required": true,
+      "type": "number"
+    }
+  },
+  "steps": [
+    {
+      "action": "goto",
+      "value": "/production/monthly-plan",
+      "note": "제품생산계획 화면으로 이동"
+    },
+    {
+      "action": "click",
+      "target": { "testId": "prod-plan-add" },
+      "note": "계획 등록 패널 열기"
+    },
+    {
+      "action": "click",
+      "target": { "testId": "prod-plan-item-search" },
+      "note": "품목 검색 창 열기"
+    },
+    {
+      "action": "fill",
+      "target": { "testId": "part-search-input" },
+      "value": "{{itemCode}}",
+      "note": "품목 {{itemCode}} 입력"
+    },
+    {
+      "action": "click",
+      "target": { "testId": "part-search-submit" },
+      "note": "품목 검색",
+      "expect": {
+        "type": "API_CALL",
+        "method": "GET",
+        "pathIncludes": "/master/parts",
+        "status": 200
+      }
+    },
+    {
+      "action": "click",
+      "target": { "row": "{{itemCode}}" },
+      "note": "검색된 품목 {{itemCode}} 선택"
+    },
+    {
+      "action": "fill",
+      "target": { "testId": "prod-plan-qty" },
+      "value": "{{planQty}}",
+      "note": "계획수량 {{planQty}} 입력"
+    },
+    {
+      "action": "click",
+      "target": { "testId": "prod-plan-save" },
+      "note": "생산계획 저장",
+      "write": true,
+      "expect": {
+        "type": "API_CALL",
+        "method": "POST",
+        "pathIncludes": "/production/prod-plans",
+        "status": 201
+      }
+    }
+  ]
+}

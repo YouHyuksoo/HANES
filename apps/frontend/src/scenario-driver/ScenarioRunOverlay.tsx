@@ -40,6 +40,9 @@ export default function ScenarioRunOverlay() {
       role="dialog"
       aria-modal="true"
       aria-label="시나리오 실행"
+      // 드라이버의 요소 탐색에서 이 오버레이는 제외한다(dom.ts rootOf).
+      // 그러지 않으면 "가장 위에 뜬 창"이 항상 이 오버레이가 되어 아무것도 못 찾는다.
+      data-scenario-overlay=""
     >
       <div className="w-full max-w-lg rounded-lg border border-border bg-card shadow-xl">
         <div className="border-b border-border px-5 py-3">
