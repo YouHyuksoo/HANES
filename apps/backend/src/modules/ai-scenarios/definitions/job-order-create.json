@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "id": "job-order-create",
+  "title": "작업지시 생성",
+  "description": "작업지시관리 화면에서 품목과 수량으로 작업지시를 새로 만든다. 생산계획에서 발행하는 것이 아니라 직접 등록하는 절차다. 실제로 작업지시가 생성된다.",
+  "startRoute": "/production/order",
+  "params": {
+    "itemCode": {
+      "label": "품목",
+      "required": true,
+      "type": "string",
+      "resolver": "resolveItemCandidates"
+    },
+    "planQty": {
+      "label": "계획수량",
+      "required": true,
+      "type": "number"
+    },
+    "planDate": {
+      "label": "계획일",
+      "required": true,
+      "type": "string"
+    }
+  },
+  "steps": [
+    {
+      "action": "goto",
+      "value": "/production/order",
+      "note": "작업지시관리 화면으로 이동"
+    },
+    {
+      "action": "click",
+      "target": { "testId": "job-order-create" },
+      "note": "작업지시 생성 창 열기"
+    },
+    {
+      "action": "click",
+      "target": { "testId": "job-order-item-search" },
+      "note": "품목 검색 창 열기"
+    },
+    {
+      "action": "fill",
+      "target": { "placeholder": "검색" },
+      "value": "{{itemCode}}",
+      "note": "품목 {{itemCode}} 검색",
+      "expect": {
+        "type": "API_CALL",
+        "method": "GET",
+        "pathIncludes": "/master/parts",
+        "status": 200
+      }
+    },
+    {
+      "action": "click",
+      "target": { "row": "{{itemCode}}", "nthButton": 0 },
+      "note": "검색된 품목 {{itemCode}} 선택"
+    },
+    {
+      "action": "fill",
+      "target": { "testId": "job-order-plan-qty" },
+      "value": "{{planQty}}",
+      "note": "계획수량 {{planQty}} 입력"
+    },
+    {
+      "action": "fill",
+      "target": { "testId": "job-order-plan-date" },
+      "value": "{{planDate}}",
+      "note": "계획일 {{planDate}} 입력"
+    },
+    {
+      "action": "click",
+      "target": { "testId": "job-order-save" },
+      "note": "작업지시 생성",
+      "write": true,
+      "expect": {
+        "type": "API_CALL",
+        "method": "POST",
+        "pathIncludes": "/production/job-orders",
+        "status": 201
+      }
+    }
+  ]
+}

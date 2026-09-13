@@ -46,6 +46,7 @@ import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { GuardModule } from './common/modules/guard.module';
 import { AiModule } from './modules/ai/ai.module';
 import { AiPageToolsModule } from './modules/ai-page-tools/ai-page-tools.module';
+import { AiScenariosModule } from './modules/ai-scenarios/ai-scenarios.module';
 import { PrintAgentModule } from './modules/print-agent/print-agent.module';
 
 @Module({
@@ -115,6 +116,7 @@ import { PrintAgentModule } from './modules/print-agent/print-agent.module';
 
     // AI 페이지 도구 표준 (manifest + read-only 후보 조회)
     AiPageToolsModule,
+    AiScenariosModule,
 
     // 대시보드 (KPI, 최근 생산현황)
     DashboardModule,
