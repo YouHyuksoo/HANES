@@ -97,7 +97,7 @@ export default function EquipMaterialMountPanel({
     } catch (error: unknown) {
       const message =
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        t("production.equipMaterial.loadFailed", "장착 자재 조회에 실패했습니다.");
+        t("production.equipMaterial.loadFailed", "장착된 자재 조회에 실패했습니다.");
       toast.error(message);
     }
   }, [equipCode, t]);
@@ -304,7 +304,7 @@ export default function EquipMaterialMountPanel({
             <section className="border-t-2 border-border">
               <div className="sticky top-0 z-10 flex items-center gap-1.5 border-b border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text">
                 <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                <span>{t("production.equipMaterial.mountedList", "장착 자재")}</span>
+                <span>{t("production.equipMaterial.mountedList", "장착된 자재")}</span>
                 <span className="ml-auto tabular-nums text-text-muted">{rows.length}</span>
               </div>
               {rows.length === 0 ? (
