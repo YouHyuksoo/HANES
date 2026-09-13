@@ -86,8 +86,17 @@ export class AiService {
     };
   }
 
-  /** LLM 호출 코어 (provider 분기 + 429 재시도). 호출자가 전체 messages(system 포함)를 구성한다. */
-  async complete(messages: LlmMessage[]): Promise<string> {
+  /**
+   * LLM 호출 코어 (provider 분기 + 429 재시도). 호출자가 전체 messages(system 포함)를 구성한다.
+   *
+   * onDelta 를 주면 생성되는 대로 조각을 흘려보낸다. 최종 답변처럼 사용자에게 그대로
+   * 보여주는 호출에만 넘긴다 — 질의이해·리랭크·SQL 생성처럼 JSON 을 받아 파싱하는
+   * 호출에 넘기면 원시 JSON 이 채팅창에 흘러나온다.
+   *
+   * 스트리밍을 지원하지 않는 provider 는 다 받은 뒤 한 번에 흘린다. 호출부는
+   * "조각이 오면 붙인다" 한 가지 방식만 알면 된다.
+   */
+  async complete(messages: LlmMessage[], onDelta?: (chunk: string) => void): Promise<string> {
     const enabled = await this.getConfigValue('AI_ENABLED', 'Y');
     if (enabled !== 'Y') {
       throw new BadRequestException('AI 채팅이 비활성화되어 있습니다. 시스템 환경설정에서 AI를 활성화해 주세요.');
@@ -105,7 +114,7 @@ export class AiService {
 
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
-        return await this.callProvider(provider, model, apiKey, messages);
+        return await this.callProvider(provider, model, apiKey, messages, onDelta);
       } catch (error: unknown) {
         const detail = error instanceof Error ? error.message : String(error);
         const statusCode = typeof error === 'object' && error !== null ? Reflect.get(error, 'statusCode') : undefined;
@@ -125,17 +134,31 @@ export class AiService {
     throw new BadRequestException('AI 응답 생성에 실패했습니다.');
   }
 
-  private async callProvider(provider: string, model: string, apiKey: string, messages: LlmMessage[]): Promise<string> {
+  private async callProvider(
+    provider: string,
+    model: string,
+    apiKey: string,
+    messages: LlmMessage[],
+    onDelta?: (chunk: string) => void,
+  ): Promise<string> {
     switch (provider) {
       case 'openai':
-        return this.callOpenAI(model, apiKey, messages);
+        return this.emitWhole(this.callOpenAI(model, apiKey, messages), onDelta);
       case 'openrouter':
-        return this.callOpenRouter(model, apiKey, messages);
+        return this.emitWhole(this.callOpenRouter(model, apiKey, messages), onDelta);
       case AiOauthService.PROVIDER:
-        return this.callChatGptBackend(model, apiKey, messages);
+        // 유일하게 진짜로 흘려보내는 경로. 나머지는 응답 전체를 받은 뒤 한 번에 흘린다.
+        return this.callChatGptBackend(model, apiKey, messages, onDelta);
       default:
-        return this.callMistral(model, apiKey, messages);
+        return this.emitWhole(this.callMistral(model, apiKey, messages), onDelta);
     }
+  }
+
+  /** 스트리밍을 지원하지 않는 provider 를 호출부 입장에서 같은 모양으로 보이게 한다 */
+  private async emitWhole(pending: Promise<string>, onDelta?: (chunk: string) => void): Promise<string> {
+    const content = await pending;
+    if (content) onDelta?.(content);
+    return content;
   }
 
   private async callMistral(model: string, apiKey: string, messages: LlmMessage[]): Promise<string> {
@@ -197,7 +220,12 @@ export class AiService {
   private static readonly CHATGPT_BACKEND = 'https://chatgpt.com/backend-api/codex/responses';
   private static readonly CODEX_CLIENT_VERSION = '0.154.0';
 
-  private async callChatGptBackend(model: string, accessToken: string, messages: LlmMessage[]): Promise<string> {
+  private async callChatGptBackend(
+    model: string,
+    accessToken: string,
+    messages: LlmMessage[],
+    onDelta?: (chunk: string) => void,
+  ): Promise<string> {
     if (this.hasImageAttachments(messages)) {
       throw new BadRequestException(
         '현재 ChatGPT 계정 연결(OAuth)에서는 이미지 첨부 분석을 지원하지 않습니다. OpenAI API 키 방식으로 변경해 주세요.',
@@ -250,11 +278,11 @@ export class AiService {
       const body = await res.text();
       throw new Error(`ChatGPT ${res.status}: ${body.slice(0, 300)}`);
     }
-    return this.readResponsesStream(res);
+    return this.readResponsesStream(res, onDelta);
   }
 
-  /** Responses SSE 스트림에서 본문 텍스트만 모은다 */
-  private async readResponsesStream(res: Response): Promise<string> {
+  /** Responses SSE 스트림에서 본문 텍스트만 모은다. onDelta 가 있으면 조각을 즉시 넘긴다. */
+  private async readResponsesStream(res: Response, onDelta?: (chunk: string) => void): Promise<string> {
     if (!res.body) throw new Error('ChatGPT 응답 본문이 비어 있습니다.');
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -282,6 +310,7 @@ export class AiService {
           }
           if (event.type === 'response.output_text.delta' && typeof event.delta === 'string') {
             text += event.delta;
+            onDelta?.(event.delta);
           } else if (event.type === 'response.failed') {
             failed = event.response?.error?.message ?? '알 수 없는 오류';
           }

@@ -3,6 +3,7 @@
  * @description AI 채팅 컨트롤러
  * - GET  /ai/status      : 활성화/provider/model/키설정여부
  * - POST /ai/chat         : 데이터 질의(text-to-SQL) 통합 — 일반대화 폴백
+ * - POST /ai/chat/stream  : 같은 처리 + 진행 상황 SSE(meta/delta/done)
  * - POST /ai/execute-sql  : 승인된 INSERT/UPDATE 실행
  * - POST /ai/chat/feedback   : 응답 좋아요/싫어요 저장
  * - DELETE /ai/chat/feedback/:id : 좋아요/싫어요 취소
@@ -11,7 +12,7 @@
  * - POST /ai/oauth/exchange   : code 수동 입력 교환 (리스너를 못 쓰는 환경)
  * - DELETE /ai/oauth          : 연결 해제
  */
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req, Res, ParseIntPipe, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req, Res, ParseIntPipe, BadRequestException, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AiService } from './ai.service';
 import { AiOauthService } from './ai-oauth.service';
@@ -29,6 +30,8 @@ import { WorkflowKnowledgeInterpreterService } from './workflow-knowledge-interp
 
 @Controller('ai')
 export class AiController {
+  private readonly logger = new Logger(AiController.name);
+
   constructor(
     private readonly aiService: AiService,
     private readonly aiSqlService: AiSqlService,
@@ -102,6 +105,53 @@ export class AiController {
   @Post('chat')
   chat(@Body() dto: AiChatDto) {
     return this.aiSqlService.process(dto.messages, dto.pageToolContext, dto.knowledgeContext);
+  }
+
+  /**
+   * POST /ai/chat/stream — /ai/chat 과 같은 처리를 하되 진행 상황을 흘려보낸다.
+   *
+   * 답변 생성이 30초 안팎이라 다 끝날 때까지 화면이 비어 있었다. 내용은 같고
+   * 도착 시점만 앞당긴다. 이벤트는 셋이다.
+   *   meta  : 출처 목록 (검색 직후 — 답변보다 먼저 온다)
+   *   delta : 답변 조각. 시나리오 제안처럼 델타가 없는 분기도 있다.
+   *   done  : 최종 결과 전체. /ai/chat 응답과 같은 모양이라 화면은 이걸로 메시지를 만든다.
+   *
+   * @Res() 를 쓰는 이유: 전역 TransformInterceptor 가 {success,data} 로 감싸 버리면
+   * SSE 가 아니게 된다. 응답을 직접 쓰면 그 경로를 타지 않는다.
+   */
+  @Post('chat/stream')
+  async chatStream(@Body() dto: AiChatDto, @Res() res: Response, @Req() req: Request): Promise<void> {
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    // 리버스 프록시가 버퍼링하면 조각이 모였다가 한꺼번에 간다 — 스트리밍한 의미가 없어진다.
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    // 사용자가 창을 닫거나 취소하면 더 쓰지 않는다. 끊긴 소켓에 쓰면 EPIPE 가 난다.
+    let closed = false;
+    req.on('close', () => {
+      closed = true;
+    });
+    const send = (event: string, data: unknown): void => {
+      if (closed || res.writableEnded) return;
+      res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    };
+
+    try {
+      const result = await this.aiSqlService.process(dto.messages, dto.pageToolContext, dto.knowledgeContext, {
+        onMeta: (sources) => send('meta', { sources }),
+        onDelta: (chunk) => send('delta', { chunk }),
+      });
+      send('done', result);
+    } catch (error: unknown) {
+      // 이미 헤더를 보낸 뒤라 예외 필터가 상태코드를 바꿀 수 없다. 스트림 안에서 알린다.
+      const message = error instanceof Error ? error.message : 'AI 응답 생성에 실패했습니다.';
+      this.logger.error(`채팅 스트림 실패: ${message}`);
+      send('error', { message });
+    } finally {
+      if (!closed && !res.writableEnded) res.end();
+    }
   }
 
   @Post('workflow-knowledge/interpret')

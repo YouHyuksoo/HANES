@@ -14,6 +14,7 @@ import { Sparkles, X, Send, LoaderCircle, Trash2, Database, Play, Copy, Check, T
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import api from "@/services/api";
+import { streamAiChat } from "@/services/ai-chat-stream";
 import { usePageToolStore } from "@/ai-page-tools/pageToolStore";
 import { useAiChatStore, type AiChatAttachment, type AiChatMessage, type AiChatPersona, type AiChatSource, type AiScenarioRunProposal } from "@/stores/aiChatStore";
 import { useScenarioRunStore } from "@/scenario-driver/store";
@@ -22,6 +23,12 @@ import { findMenuCodeByPath } from "@/config/menuConfig";
 import { slugify } from "@/lib/help";
 import PageToolExecutionLog from "./PageToolExecutionLog";
 import PageToolInspector from "./PageToolInspector";
+
+/** /ai/chat, /ai/chat/stream 이 공통으로 돌려주는 결과 모양 */
+type AiChatResponse = Pick<
+  AiChatMessage,
+  "content" | "sql" | "requiresApproval" | "executed" | "pageToolCall" | "scenarioRun" | "sources"
+>;
 
 interface SpeechRecognitionEventLike {
   results: ArrayLike<ArrayLike<{ transcript: string }>>;
@@ -118,6 +125,8 @@ export default function AiChatPanel() {
   const openHelpFor = useHelpStore((state) => state.openHelpFor);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  // 스트리밍으로 도착한 조각을 모아 두는 곳. 확정 전까지 store 에 넣지 않는다.
+  const [streamingText, setStreamingText] = useState("");
   const [approvedIdx, setApprovedIdx] = useState<Set<number>>(new Set());
   const [expandedSources, setExpandedSources] = useState<Set<number>>(new Set());
   const [feedbackByIdx, setFeedbackByIdx] = useState<Map<number, { feedbackId: number; rating: "LIKE" | "DISLIKE" }>>(new Map());
@@ -213,9 +222,13 @@ export default function AiChatPanel() {
         audience: AI_PERSONAS.find((item) => item.value === persona)?.audience ?? "user",
         persona,
       };
-      // RAG 검색 + LLM 생성이 30초를 넘기는 경우가 있다(실측 28~35초). 기본 타임아웃으로는 정상 응답이 실패로 보인다.
-      const res = await api.post("/ai/chat", { messages: history, pageToolContext, knowledgeContext }, { timeout: 120000 });
-      const data = res.data?.data ?? {};
+      // 스트리밍으로 받는다. 전체가 30초 안팎이라 다 기다리면 화면이 그동안 비어 있다.
+      // 조각은 미리보기로만 쓰고, 화면에 남길 메시지는 done 이 준 최종 결과로 만든다
+      // (시나리오 제안처럼 조각이 하나도 없는 응답도 있기 때문).
+      const data = await streamAiChat<AiChatResponse>(
+        { messages: history, pageToolContext, knowledgeContext },
+        { onDelta: (chunk) => setStreamingText((prev) => prev + chunk) },
+      );
       addMessage({
         role: "assistant",
         content: data.content || t("ai.chat.empty", "응답이 비어 있습니다."),
@@ -227,9 +240,12 @@ export default function AiChatPanel() {
         sources: data.sources,
       });
     } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      // 스트리밍 호출은 서버 메시지를 Error 로 올려 준다(axios 응답 구조가 아니다).
+      const msg = e instanceof Error ? e.message : undefined;
       addMessage({ role: "assistant", content: msg || t("ai.chat.error", "응답을 가져오지 못했습니다.") });
     } finally {
+      // 확정 메시지가 store 에 들어갔으니 미리보기는 지운다. 남겨두면 같은 답이 두 번 보인다.
+      setStreamingText("");
       setSending(false);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
@@ -805,12 +821,24 @@ export default function AiChatPanel() {
             </div>
           ))
         )}
+        {/*
+          생성 중 미리보기. 확정된 메시지는 done 이 오면 store 에 한 번에 들어가고,
+          그 전까지는 여기에만 그린다 — 조각마다 store 에 쓰면 persist 가 매번 돌아
+          localStorage 쓰기가 토큰 수만큼 발생한다.
+        */}
         {sending && (
           <div className="flex justify-start">
-            <div className="flex items-center gap-2 rounded-2xl border border-border bg-surface px-3.5 py-2 text-sm text-text-muted">
-              <LoaderCircle className="h-4 w-4 animate-spin" />
-              {t("ai.chat.thinking", "생각 중...")}
-            </div>
+            {streamingText ? (
+              <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl border border-border bg-surface px-3.5 py-2 text-sm text-text">
+                {streamingText}
+                <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-text-muted align-middle" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 rounded-2xl border border-border bg-surface px-3.5 py-2 text-sm text-text-muted">
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+                {t("ai.chat.thinking", "생각 중...")}
+              </div>
+            )}
           </div>
         )}
       </div>

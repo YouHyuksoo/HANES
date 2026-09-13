@@ -190,6 +190,38 @@ export const api = axios.create({
   },
 });
 
+/**
+ * 인증/테넌트 헤더 — axios 인터셉터와 fetch 호출(SSE)이 같은 규칙을 쓰도록 한 곳에 둔다.
+ *
+ * Zustand store 를 먼저 보고, hydration 전이면 localStorage 로 떨어진다
+ * (핫리로드 직후 store 가 비어 있는 순간이 있다).
+ */
+export function resolveAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const token = localStorage.getItem("harness-token");
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const { selectedCompany, selectedPlant } = useAuthStore.getState();
+  if (selectedCompany) headers["X-Company"] = selectedCompany;
+  if (selectedPlant) headers["X-Plant"] = selectedPlant;
+
+  if (!selectedCompany || !selectedPlant) {
+    try {
+      const authData = JSON.parse(localStorage.getItem("harness-auth") || "{}");
+      if (!selectedCompany && authData?.state?.selectedCompany) {
+        headers["X-Company"] = authData.state.selectedCompany;
+      }
+      if (!selectedPlant && authData?.state?.selectedPlant) {
+        headers["X-Plant"] = authData.state.selectedPlant;
+      }
+    } catch { /* 무시 */ }
+  }
+  return headers;
+}
+
+/** SSE 처럼 axios 를 쓰지 못하는 호출이 baseURL 을 다시 계산하지 않도록 */
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+
 // 요청 인터셉터 - 토큰 + X-Company 헤더 추가
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -197,32 +229,10 @@ api.interceptors.request.use(
       return Promise.reject(createViewerReadonlyError(config));
     }
 
-    const token = localStorage.getItem("harness-token");
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    // 선택된 회사코드/사업장코드를 X-Company, X-Plant 헤더에 추가
-    // Zustand store → localStorage fallback (핫리로드 시 hydration 타이밍 보장)
-    const { selectedCompany, selectedPlant } = useAuthStore.getState();
-    if (selectedCompany) {
-      config.headers["X-Company"] = selectedCompany;
-    }
-    if (selectedPlant) {
-      config.headers["X-Plant"] = selectedPlant;
-    }
-
-    // store가 아직 hydration 전이면 localStorage에서 직접 읽기
-    if (!selectedCompany || !selectedPlant) {
-      try {
-        const authData = JSON.parse(localStorage.getItem("harness-auth") || "{}");
-        if (!selectedCompany && authData?.state?.selectedCompany) {
-          config.headers["X-Company"] = authData.state.selectedCompany;
-        }
-        if (!selectedPlant && authData?.state?.selectedPlant) {
-          config.headers["X-Plant"] = authData.state.selectedPlant;
-        }
-      } catch { /* 무시 */ }
+    if (config.headers) {
+      for (const [key, value] of Object.entries(resolveAuthHeaders())) {
+        config.headers[key] = value;
+      }
     }
 
     return config;

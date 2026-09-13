@@ -63,6 +63,20 @@ export interface AiSqlResult {
   sources?: AiKnowledgeSourceSummary[];
 }
 
+/**
+ * 채팅을 스트리밍으로 내보낼 때 쓰는 훅.
+ *
+ * 두 훅 다 선택이고, 넘기지 않으면 기존 동작(다 끝나고 한 번에 반환)과 완전히 같다.
+ * 시나리오 제안이나 SQL 실행처럼 델타가 아예 생기지 않는 분기도 있으므로,
+ * 호출부는 최종 결과를 반환값으로 받아야 한다. 델타는 "생성 중 미리보기"일 뿐이다.
+ */
+export interface AiChatStreamHooks {
+  /** 검색이 끝나 출처가 확정된 시점 — 답변 생성보다 먼저 온다 */
+  onMeta?: (sources: AiKnowledgeSourceSummary[]) => void;
+  /** 답변 조각. generalChat 경로에서만 발생한다 */
+  onDelta?: (chunk: string) => void;
+}
+
 type AiChatRouteMode = 'auto' | 'mes' | 'help' | 'do' | 'web';
 
 const TOOL_SELECT_PROMPT = `당신은 사용자의 등록/처리 요청을 "페이지 도구 호출"로 변환하는 AI입니다.
@@ -227,6 +241,7 @@ export class AiSqlService {
     messages: AiChatMessageDto[],
     pageToolContext?: AiPageToolContextDto,
     knowledgeContext?: AiKnowledgeContextDto,
+    stream?: AiChatStreamHooks,
   ): Promise<AiSqlResult> {
     const rawUserMessage = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
     const route = this.parseRouteMode(rawUserMessage);
@@ -260,6 +275,10 @@ export class AiSqlService {
       }
     }
 
+    // 출처는 검색이 끝난 시점에 이미 확정된다. 답변 생성(가장 긴 구간)을 기다리게 하지 말고
+    // 먼저 내보내 화면이 그동안 출처 목록을 그릴 수 있게 한다.
+    stream?.onMeta?.(this.withSources({ content: '' }, knowledgeChunks).sources ?? []);
+
     const effectiveMessages = this.replaceLastUserMessage(messages, userMessage);
     const result = await this.processWithKnowledge(
       userMessage,
@@ -269,6 +288,7 @@ export class AiSqlService {
       knowledgeContext,
       knowledgeIntent,
       route.mode,
+      stream?.onDelta,
     );
     return this.withSources(result, knowledgeChunks);
   }
@@ -299,9 +319,10 @@ export class AiSqlService {
     knowledgeContext?: AiKnowledgeContextDto,
     knowledgeIntent: KnowledgeIntent = 'usage',
     routeMode: AiChatRouteMode = 'auto',
+    onDelta?: (chunk: string) => void,
   ): Promise<AiSqlResult> {
     if (routeMode === 'help') {
-      return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent);
+      return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent, onDelta);
     }
 
     // 업무 처리 요청이면 시나리오(화면 절차)를 먼저 찾는다.
@@ -340,18 +361,18 @@ export class AiSqlService {
           requiresApproval: true,
         };
       }
-      return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent);
+      return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent, onDelta);
     }
 
     // [1단계] 관련 테이블 선택 (없으면 일반 대화)
     const tables = await this.selectTables(userMessage);
-    if (tables.length === 0) return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent);
+    if (tables.length === 0) return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent, onDelta);
 
     // [2단계] SQL 생성 (스키마 + 카탈로그 관계(JOIN 키) 주입)
     const schemaText = await this.schemaInfo.getSchemaText(tables);
     const relations = await this.catalog.getRelationsText(tables);
     const rawSql = await this.generateSql(userMessage, relations ? `${schemaText}\n\n${relations}` : schemaText);
-    if (!rawSql) return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent);
+    if (!rawSql) return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent, onDelta);
 
     // [검증]
     const v = this.validator.validate(rawSql);
@@ -619,6 +640,7 @@ ${userMessage}` },
     knowledgePrompt = '',
     knowledgeContext?: AiKnowledgeContextDto,
     knowledgeIntent: KnowledgeIntent = 'usage',
+    onDelta?: (chunk: string) => void,
   ): Promise<AiSqlResult> {
     if (!knowledgePrompt.trim()) {
       return { content: NO_KNOWLEDGE_RESPONSE };
@@ -631,10 +653,11 @@ ${userMessage}` },
     const systemParts = [GENERAL_PROMPT, personaPrompt, this.formatIntentPrompt(knowledgeIntent), pageToolPrompt, knowledgeSystem]
       .filter(Boolean)
       .join('\n\n');
-    const content = await this.aiService.complete([
-      { role: 'system', content: systemParts },
-      ...messages,
-    ]);
+    // 이 호출만 사용자에게 그대로 보여줄 답변이다. 스트리밍 대상은 여기 하나뿐이다.
+    const content = await this.aiService.complete(
+      [{ role: 'system', content: systemParts }, ...messages],
+      onDelta,
+    );
     return { content };
   }
 
