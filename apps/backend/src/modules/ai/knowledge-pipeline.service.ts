@@ -21,17 +21,23 @@ export interface KnowledgePipelineResult {
   chunks: KnowledgeSearchResult[];
   prompt: string;
   intent: KnowledgeIntent;
+  /** MES 실데이터를 조회해야 답할 수 있는 질문인지 (text-to-SQL 경로로 보낼지 판단용) */
+  needsData: boolean;
 }
 
 interface QueryUnderstanding {
   intent: KnowledgeIntent;
   queries: string[];
   menus: string[];
+  needsData: boolean;
 }
 
 const UNDERSTAND_PROMPT = `당신은 MES 도움말 검색을 위한 질의 분석기입니다. 사용자 질문을 분석해 JSON만 출력하세요.
-{"intent":"usage|workflow|troubleshoot|engineer","queries":["검색질의1","검색질의2"],"menus":["언급된 메뉴코드"]}
+{"intent":"usage|workflow|troubleshoot|engineer","needsData":false,"queries":["검색질의1","검색질의2"],"menus":["언급된 메뉴코드"]}
 - intent: usage=단일 화면 사용법, workflow=업무 흐름/전후관계("다음에 뭐", "전에 뭘"), troubleshoot=안 됨/오류/원인, engineer=테이블/API/로직 구조.
+- needsData: MES에 저장된 실제 데이터(건수, 목록, 수량, 상태, 특정 품목·지시번호의 값)를 조회해야 답할 수 있으면 true.
+  화면 사용법·절차·규칙·구조 설명처럼 문서만으로 답할 수 있으면 false.
+  "얼마나", "있나", "몇 건", "누가", "언제"처럼 실제 값을 묻는 표현이면 조회 단어가 없어도 true 입니다.
 - queries: 검색에 유리하게 재작성한 한국어 질의 1~3개. 아래 메뉴 사전의 공식 화면명(예: "박스입고"→"제품입고")을 반영하되 질문의 의미를 바꾸지 마세요.
 - menus: 질문이 가리키는 화면을 아래 메뉴 사전에서 골라 메뉴코드로 반환(최대 3개). 사전에 없는 코드를 지어내지 마세요. 확신 없으면 빈 배열.
 JSON 외 다른 텍스트 금지.`;
@@ -42,9 +48,17 @@ const RRF_K = 60;
 const PER_QUERY_TOP_K = 12;
 const RERANK_INPUT_LIMIT = 20;
 const FINAL_TOP_K = 8;
+/** 리랭크를 기다려 주는 한도. 넘으면 RRF 순서 그대로 간다. */
+const RERANK_TIMEOUT_MS = 6_000;
 
 /** retrieve 가 알리는 진행 단계. 문구가 아니라 키다(번역은 화면이 한다). */
 export type KnowledgePipelineStage = 'understand' | 'search' | 'rerank';
+
+/**
+ * 리랭크가 어떻게 끝났는지. 넷을 구분해 두는 이유는 트레이스에서
+ * "타임아웃이 잦은가(= 6초가 빡빡한가)"를 나중에 답할 수 있어야 해서다.
+ */
+type RerankOutcome = 'skipped' | 'applied' | 'timeout' | 'failed';
 
 @Injectable()
 export class KnowledgePipelineService {
@@ -107,7 +121,7 @@ export class KnowledgePipelineService {
     const tGraph = Date.now();
     const rerankSkipped = fused.length <= FINAL_TOP_K;
     if (!rerankSkipped) onStage?.('rerank');
-    const reranked = await this.rerank(userMessage, fused);
+    const { chunks: reranked, outcome: rerankOutcome } = await this.rerank(userMessage, fused);
     const tRerank = Date.now();
     const chunks = this.mergeUnique([...reranked.slice(0, FINAL_TOP_K), ...graphChunks, ...businessLogicChunks]);
 
@@ -129,6 +143,7 @@ export class KnowledgePipelineService {
       queries: understanding.queries,
       llmMenus: understanding.menus,
       menuCodes,
+      needsData: understanding.needsData,
       ms: {
         understand: tUnderstand - t0,
         search: tSearch - tUnderstand,
@@ -137,10 +152,11 @@ export class KnowledgePipelineService {
         total: Date.now() - t0,
       },
       rerankSkipped,
+      rerankOutcome,
       candidates: fused.length,
       chunks: chunks.slice(0, 12).map((c) => `${c.sourcePath}#${c.heading ?? ''}`),
     });
-    return { chunks, prompt, intent: understanding.intent };
+    return { chunks, prompt, intent: understanding.intent, needsData: understanding.needsData };
   }
 
   /** 파이프라인 트레이스를 jsonl로 남긴다 — 검색 품질 튜닝/디버깅용. */
@@ -155,7 +171,9 @@ export class KnowledgePipelineService {
 
   /** [1] 질의 이해. 실패 시 원문 단일 질의 + usage 의도로 폴백. */
   private async understand(userMessage: string): Promise<QueryUnderstanding> {
-    const fallback: QueryUnderstanding = { intent: 'usage', queries: [userMessage], menus: [] };
+    // 폴백은 needsData=true 다. 질의이해가 실패했을 때 데이터 질문을 도움말로 처리해
+    // "확인이 필요합니다"로 끝내는 쪽이, 도움말 질문에 3초를 더 쓰는 쪽보다 나쁘다.
+    const fallback: QueryUnderstanding = { intent: 'usage', queries: [userMessage], menus: [], needsData: true };
     try {
       // 메뉴 사전을 주입해 사용자 용어("박스입고")를 공식 메뉴코드(PROD_RECEIVE)로 매핑할 수 있게 한다.
       let vocab = '';
@@ -182,7 +200,13 @@ export class KnowledgePipelineService {
         ? parsed.queries.map((q) => String(q).trim()).filter(Boolean).slice(0, 3)
         : [];
       const menus = Array.isArray(parsed.menus) ? parsed.menus.map((m) => String(m).trim()).filter(Boolean) : [];
-      return { intent, queries: queries.length > 0 ? queries : [userMessage], menus };
+      return {
+        intent,
+        queries: queries.length > 0 ? queries : [userMessage],
+        menus,
+        // 값이 빠져 있으면 데이터 질문으로 본다(위 폴백과 같은 이유).
+        needsData: parsed.needsData !== false,
+      };
     } catch (error: unknown) {
       this.logger.warn(`질의 이해 실패, 원문 폴백: ${error instanceof Error ? error.message : String(error)}`);
       return fallback;
@@ -242,36 +266,52 @@ export class KnowledgePipelineService {
   }
 
   /** [4] LLM 리랭크. 실패 시 RRF 순서 그대로. */
-  private async rerank(userMessage: string, candidates: KnowledgeSearchResult[]): Promise<KnowledgeSearchResult[]> {
+  private async rerank(
+    userMessage: string,
+    candidates: KnowledgeSearchResult[],
+  ): Promise<{ chunks: KnowledgeSearchResult[]; outcome: RerankOutcome }> {
     // 어차피 상위 FINAL_TOP_K 개만 쓴다. 후보가 그 이하면 순서를 바꿔도 최종 집합이 같으므로
     // LLM 왕복(3~7초)이 순수 비용이다. 실패 폴백과 같은 값을 돌려주지만 의미는 다르다 —
     // 이건 "리랭크가 필요 없었다"이지 "리랭크가 실패했다"가 아니라서 warn 을 남기지 않는다.
-    if (candidates.length <= FINAL_TOP_K) return candidates;
+    if (candidates.length <= FINAL_TOP_K) return { chunks: candidates, outcome: 'skipped' };
     const input = candidates.slice(0, RERANK_INPUT_LIMIT);
     try {
       const list = input
         .map((c, i) => `${i + 1}. [${c.title ?? c.menuCode ?? c.docType}] ${c.heading ?? ''} — ${(c.summary ?? c.content).slice(0, 200)}`)
         .join('\n');
-      const res = await this.aiService.complete([
-        { role: 'system', content: RERANK_PROMPT },
-        { role: 'user', content: `## 질문\n${userMessage}\n\n## 후보\n${list}` },
+      // 관측값이 3.1s / 5.1s / 19.4s 로 벌어진다. 느린 쪽이 첫 글자까지의 대기를 통째로 끌어올린다.
+      // 순서를 못 고치면 RRF 순서로 가면 그만이라, 오래 기다리느니 포기하는 편이 낫다.
+      // 경주에서 져도 LLM 요청 자체는 계속 돈다(취소가 아니다). 결과만 버린다 — 부수효과가 없어 괜찮다.
+      const res = await Promise.race([
+        this.aiService.complete([
+          { role: 'system', content: RERANK_PROMPT },
+          { role: 'user', content: `## 질문\n${userMessage}\n\n## 후보\n${list}` },
+        ]),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), RERANK_TIMEOUT_MS)),
       ]);
+      if (res === null) {
+        this.logger.warn(`리랭크 ${RERANK_TIMEOUT_MS}ms 초과, RRF 순서로 진행합니다.`);
+        return { chunks: candidates, outcome: 'timeout' };
+      }
       const start = res.indexOf('[');
       const end = res.lastIndexOf(']');
-      if (start === -1 || end === -1) return candidates;
+      if (start === -1 || end === -1) return { chunks: candidates, outcome: 'failed' };
       // LLM이 중복 인덱스를 반환해도 프롬프트에 같은 청크가 중복 노출되지 않도록 dedupe한다.
       const order = Array.from(new Set(
         (JSON.parse(res.slice(start, end + 1)) as unknown[])
           .map((n) => Number(n))
           .filter((n) => Number.isInteger(n) && n >= 1 && n <= input.length),
       ));
-      if (order.length === 0) return candidates;
+      if (order.length === 0) return { chunks: candidates, outcome: 'failed' };
       const picked = order.map((n) => input[n - 1]);
       const rest = input.filter((c) => !picked.includes(c));
-      return [...picked, ...rest, ...candidates.slice(RERANK_INPUT_LIMIT)];
+      return {
+        chunks: [...picked, ...rest, ...candidates.slice(RERANK_INPUT_LIMIT)],
+        outcome: 'applied',
+      };
     } catch (error: unknown) {
       this.logger.warn(`리랭크 실패, RRF 순서 유지: ${error instanceof Error ? error.message : String(error)}`);
-      return candidates;
+      return { chunks: candidates, outcome: 'failed' };
     }
   }
 

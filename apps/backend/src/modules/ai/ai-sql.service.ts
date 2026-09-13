@@ -277,11 +277,14 @@ export class AiSqlService {
     let knowledgePrompt = '';
     let knowledgeChunks: KnowledgeSearchResult[] = [];
     let knowledgeIntent: KnowledgeIntent = 'usage';
+    // 파이프라인이 실패하면 판단 근거가 없다. 그때는 데이터 질문으로 보고 기존 경로를 탄다.
+    let needsData = true;
     try {
       const pipelineResult = await this.knowledgePipeline.retrieve(userMessage, knowledgeContext, stream?.onStage);
       knowledgePrompt = pipelineResult.prompt;
       knowledgeChunks = pipelineResult.chunks;
       knowledgeIntent = pipelineResult.intent;
+      needsData = pipelineResult.needsData;
     } catch (error: unknown) {
       this.logger.warn(`지식 파이프라인 실패, 단일 검색 폴백: ${error instanceof Error ? error.message : String(error)}`);
       try {
@@ -306,6 +309,7 @@ export class AiSqlService {
       knowledgeIntent,
       route.mode,
       stream,
+      needsData,
     );
     return this.withSources(result, knowledgeChunks);
   }
@@ -350,6 +354,7 @@ export class AiSqlService {
     knowledgeIntent: KnowledgeIntent = 'usage',
     routeMode: AiChatRouteMode = 'auto',
     stream?: AiChatStreamHooks,
+    needsData = true,
   ): Promise<AiSqlResult> {
     const onDelta = stream?.onDelta;
     const onStage = stream?.onStage;
@@ -398,6 +403,17 @@ export class AiSqlService {
       }
       onStage?.('answer');
       return this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent, onDelta);
+    }
+
+    // 도움말 질문이면 여기서 멈춘다.
+    //
+    // 예전엔 무조건 selectTables 를 불러 0개를 받고 되돌아왔다 — LLM 왕복 하나가 통째로 낭비다.
+    // 판단은 질의이해가 이미 한다(needsData). 문구 규칙으로 거르는 방법도 검토했지만
+    // "이번달 작업지시 얼마나 나갔어", "N91H00-X9800 재고 있나" 처럼 조회 단어가 없는
+    // 진짜 데이터 질문을 막아서 못 쓴다(실측). /MES 는 사용자가 명시한 것이므로 그대로 통과시킨다.
+    if (!needsData && routeMode !== 'mes') {
+      return this.answerAfterStage(onStage, () =>
+        this.generalChat(messages, pageToolContext, knowledgePrompt, knowledgeContext, knowledgeIntent, onDelta));
     }
 
     // [1단계] 관련 테이블 선택 (없으면 일반 대화)
