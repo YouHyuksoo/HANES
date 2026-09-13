@@ -10,6 +10,8 @@
  *
  * 실패는 되돌리지 않는다. 어디서 왜 멈췄는지 보여주고 사용자가 이어받게 한다.
  */
+import { useState } from 'react';
+import api from '@/services/api';
 import { useScenarioRunStore, isBusy } from './store';
 import { describeStep } from './ScenarioDriverHost';
 
@@ -24,6 +26,11 @@ const VERDICT_MARK: Record<string, string> = {
 export default function ScenarioRunOverlay() {
   const { status, scenario, vars, stepIndex, results, failure, pendingWriteNote, approve, approveWrite, cancel, reset } =
     useScenarioRunStore();
+
+  // 진단은 오버레이 안에서 끝낸다. 사용자는 이미 여기를 보고 있고,
+  // 채팅으로 넘기면 그 경로는 도움말 근거로 답하게 되어 "확인되지 않습니다"가 나온다.
+  const [diagnosis, setDiagnosis] = useState<string | null>(null);
+  const [diagnosing, setDiagnosing] = useState(false);
 
   if (status === 'idle' || !scenario) return null;
 
@@ -123,6 +130,12 @@ export default function ScenarioRunOverlay() {
               </div>
             </div>
           )}
+
+          {status === 'failed' && diagnosis && (
+            <div className="mt-2 whitespace-pre-wrap rounded border border-border bg-surface px-3 py-2 text-xs text-text">
+              {diagnosis}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 border-t border-border px-5 py-3">
@@ -151,8 +164,37 @@ export default function ScenarioRunOverlay() {
               </button>
             </>
           )}
+          {status === 'failed' && failure && !diagnosis && (
+            <button
+              onClick={async () => {
+                setDiagnosing(true);
+                try {
+                  const res = await api.post('/ai/scenario-diagnose', {
+                    scenarioId: scenario.id,
+                    stepIndex: failure.stepIndex,
+                    reason: failure.reason,
+                    vars,
+                    events: failure.events,
+                    snapshot: failure.snapshot,
+                  });
+                  setDiagnosis(res.data?.data?.answer ?? res.data?.answer ?? '분석 결과를 받지 못했습니다.');
+                } catch (error: unknown) {
+                  setDiagnosis(error instanceof Error ? `분석에 실패했습니다: ${error.message}` : '분석에 실패했습니다.');
+                } finally {
+                  setDiagnosing(false);
+                }
+              }}
+              disabled={diagnosing}
+              className="rounded border border-border px-3 py-1.5 text-xs text-text disabled:opacity-60"
+            >
+              {diagnosing ? '분석 중...' : 'AI에게 원인 물어보기'}
+            </button>
+          )}
           {(status === 'done' || status === 'failed') && (
-            <button onClick={() => reset()} className="rounded bg-primary px-3 py-1.5 text-xs font-semibold text-white">
+            <button
+              onClick={() => { setDiagnosis(null); reset(); }}
+              className="rounded bg-primary px-3 py-1.5 text-xs font-semibold text-white"
+            >
               닫기
             </button>
           )}

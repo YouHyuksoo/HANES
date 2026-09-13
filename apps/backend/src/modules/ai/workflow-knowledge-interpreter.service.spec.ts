@@ -209,7 +209,7 @@ describe('AiController workflow knowledge route', () => {
     const fallback = { interpreted: false, candidates: [], errorCode: 'AI_UNAVAILABLE' } as const;
     const interpreter = { interpret: jest.fn().mockResolvedValue(fallback) };
     const controller = new AiController(
-      {} as never, {} as never, {} as never, {} as never, {} as never, interpreter as never, {} as never,
+      {} as never, {} as never, {} as never, {} as never, {} as never, interpreter as never, {} as never, {} as never,
     );
 
     await expect(controller.interpretWorkflowKnowledge({ query: '입하 등록' })).resolves.toBe(fallback);

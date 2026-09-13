@@ -219,6 +219,14 @@ export async function fillTarget(target: TargetSpec, value: string, timeoutMs = 
   }
   input.focus();
   setNativeValue(input, value);
+  // select 는 없는 값을 넣으면 조용히 "" 로 남는다. 그대로 두면 이 스텝이 성공으로 지나가고
+  // 실패는 몇 단계 뒤 "저장 버튼이 비활성"으로 나타나 원인이 가려진다(2026-09-14 실측).
+  if (input instanceof HTMLSelectElement && input.value !== value) {
+    const choices = [...input.options].map((o) => o.value).filter(Boolean).join(', ');
+    throw new Error(
+      `${describeTarget(target)}에 "${value}"를 선택할 수 없습니다. 고를 수 있는 값: ${choices || '(없음)'}`,
+    );
+  }
 }
 
 /** 스캔 = 입력 + Enter (BarcodeScanInput 동작과 일치) */
@@ -237,4 +245,96 @@ export async function captureText(target: TargetSpec, timeoutMs = 10_000): Promi
   const el = await waitForTarget(target, timeoutMs);
   const input = el instanceof HTMLInputElement ? el : null;
   return (input ? input.value : el.textContent ?? '').trim();
+}
+
+// ── 실패 증거 수집 ────────────────────────────────────────────────────────
+//
+// 왜 이벤트만으로는 모자란가:
+// 실제로 겪은 실패(2026-09-14)는 "저장 버튼이 비활성"이었다. API 도 토스트도 없으니
+// 활동 링버퍼는 텅 비어 있었고, 원인(제조사 목록에 그 코드가 없어 선택이 빈 채로 남음)은
+// 사람이 브라우저를 열어 select.options 를 들여다봐야만 보였다. 그건 현장 사용자가 못 한다.
+// 그래서 멈춘 순간의 화면 상태를 구조화해 남긴다 — AI 가 읽을 수 있는 형태로.
+
+export interface FieldSnapshot {
+  testId?: string;
+  label?: string;
+  tag: string;
+  value: string;
+  disabled: boolean;
+  /** select 일 때 고를 수 있었던 값 — "그 코드가 목록에 없었다"를 여기서 본다 */
+  options?: string[];
+}
+
+export interface FailureSnapshot {
+  /** 멈춘 시점의 화면 경로 */
+  path: string;
+  /** 모달 안이었는지 — 조작 기준점이 어디였는지가 원인 해석을 바꾼다 */
+  inDialog: boolean;
+  /** 대상 요소를 찾았는지, 찾았다면 어떤 상태였는지 */
+  target?: { describe: string; found: boolean; tag?: string; disabled?: boolean; text?: string };
+  /** 기준점 안의 입력 필드 전량 */
+  fields: FieldSnapshot[];
+  /** 화면에 떠 있던 빨간 문구(검증 메시지·에러) */
+  messages: string[];
+}
+
+function labelOf(el: Element): string | undefined {
+  const id = el.getAttribute('id');
+  if (id) {
+    const lab = document.querySelector(`label[for="${id}"]`);
+    if (lab?.textContent) return lab.textContent.trim();
+  }
+  const wrap = el.closest('div')?.parentElement;
+  const lab = wrap?.querySelector('label');
+  return lab?.textContent?.trim() || undefined;
+}
+
+const MAX_FIELDS = 40;
+const MAX_OPTIONS = 30;
+
+export function snapshotFailure(target?: TargetSpec): FailureSnapshot {
+  const root = rootOf();
+  const el = target ? resolveTarget(target) : null;
+
+  const fields: FieldSnapshot[] = [...root.querySelectorAll<HTMLElement>('input, textarea, select')]
+    .filter(VISIBLE)
+    .slice(0, MAX_FIELDS)
+    .map((f) => {
+      const input = f as HTMLInputElement | HTMLSelectElement;
+      return {
+        testId: f.getAttribute('data-testid') ?? undefined,
+        label: labelOf(f),
+        tag: f.tagName.toLowerCase(),
+        value: input.value ?? '',
+        disabled: isDisabled(f),
+        options:
+          f instanceof HTMLSelectElement
+            ? [...f.options].slice(0, MAX_OPTIONS).map((o) => `${o.value}|${o.textContent?.trim() ?? ''}`)
+            : undefined,
+      };
+    });
+
+  // 빨간 문구만 모은다. 화면 전체 텍스트를 담으면 프롬프트가 터지고 신호가 묻힌다.
+  const messages = [...(root instanceof Element ? root : document).querySelectorAll<HTMLElement>('[class*="text-red"], [role="alert"]')]
+    .filter(VISIBLE)
+    .map((m) => (m.textContent ?? '').trim())
+    // 필수표시 * 같은 기호만 있는 것은 문구가 아니다 — 프롬프트에서 신호를 흐린다
+    .filter((t) => t.length < 200 && /[\p{L}\p{N}]/u.test(t))
+    .slice(0, 10);
+
+  return {
+    path: window.location.pathname,
+    inDialog: root !== document,
+    target: target
+      ? {
+          describe: describeTarget(target),
+          found: !!el,
+          tag: el?.tagName.toLowerCase(),
+          disabled: el ? isDisabled(el) : undefined,
+          text: el ? (el.textContent ?? '').trim().slice(0, 80) : undefined,
+        }
+      : undefined,
+    fields,
+    messages: [...new Set(messages)],
+  };
 }

@@ -13,6 +13,7 @@
  * 원인을 AI 에게 넘겨 사용자에게 안내한다 — 그게 이 기능의 범위다.
  */
 import { create } from 'zustand';
+import type { FailureSnapshot } from './dom';
 import type { RunStatus, Scenario, StepResult } from './types';
 
 export interface ScenarioFailure {
@@ -21,6 +22,12 @@ export interface ScenarioFailure {
   reason: string;
   /** 그 시점 링버퍼 이벤트 — AI 원인 분석의 재료 */
   events: unknown[];
+  /**
+   * 멈춘 순간의 화면 상태.
+   * 이벤트가 비는 실패(버튼 비활성·요소 없음)는 이것만이 유일한 증거다.
+   * 사용자 중단에는 없다 — 그건 결함이 아니다.
+   */
+  snapshot?: FailureSnapshot;
 }
 
 interface ScenarioRunState {

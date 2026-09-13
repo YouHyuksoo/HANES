@@ -14,6 +14,7 @@ import { AiKnowledgeModule } from '../ai-knowledge/ai-knowledge.module';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
 import { AiSqlService } from './ai-sql.service';
+import { ScenarioDiagnoseService } from './scenario-diagnose.service';
 import { AiCatalogService } from './ai-catalog.service';
 import { SchemaInfoService } from './schema-info.service';
 import { SqlValidatorService } from './sql-validator.service';
@@ -24,6 +25,6 @@ import { WorkflowKnowledgeInterpreterService } from './workflow-knowledge-interp
 @Module({
   imports: [TypeOrmModule.forFeature([SysConfig, AiChatFeedback, AiOauthToken]), AiPageToolsModule, AiScenariosModule, AiKnowledgeModule],
   controllers: [AiController],
-  providers: [AiOauthService, AiService, AiSqlService, AiCatalogService, SchemaInfoService, SqlValidatorService, AiFeedbackService, KnowledgePipelineService, WorkflowKnowledgeInterpreterService],
+  providers: [AiOauthService, AiService, AiSqlService, ScenarioDiagnoseService, AiCatalogService, SchemaInfoService, SqlValidatorService, AiFeedbackService, KnowledgePipelineService, WorkflowKnowledgeInterpreterService],
 })
 export class AiModule {}

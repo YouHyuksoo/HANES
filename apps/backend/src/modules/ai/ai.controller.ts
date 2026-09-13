@@ -5,6 +5,7 @@
  * - POST /ai/chat         : 데이터 질의(text-to-SQL) 통합 — 일반대화 폴백
  * - POST /ai/chat/stream  : 같은 처리 + 진행 상황 SSE(meta/delta/done)
  * - POST /ai/execute-sql  : 승인된 INSERT/UPDATE 실행
+ * - POST /ai/scenario-diagnose : 시나리오 실행 실패 원인 분석
  * - POST /ai/chat/feedback   : 응답 좋아요/싫어요 저장
  * - DELETE /ai/chat/feedback/:id : 좋아요/싫어요 취소
  * - GET  /ai/oauth/status     : OpenAI 계정 연결 상태
@@ -17,6 +18,8 @@ import { Request, Response } from 'express';
 import { AiService } from './ai.service';
 import { AiOauthService } from './ai-oauth.service';
 import { AiSqlService } from './ai-sql.service';
+import { ScenarioDiagnoseService } from './scenario-diagnose.service';
+import { ScenarioDiagnoseDto } from './dto/scenario-diagnose.dto';
 import { AiCatalogService } from './ai-catalog.service';
 import { AiFeedbackService } from './ai-feedback.service';
 import { EmbeddingService } from '../ai-knowledge/embedding.service';
@@ -40,7 +43,18 @@ export class AiController {
     private readonly aiFeedbackService: AiFeedbackService,
     private readonly workflowKnowledgeInterpreter: WorkflowKnowledgeInterpreterService,
     private readonly aiOauthService: AiOauthService,
+    private readonly scenarioDiagnoseService: ScenarioDiagnoseService,
   ) {}
+
+  /**
+   * 시나리오가 멈춘 원인을 묻는다.
+   * 일반 채팅을 쓰지 않는 이유는 scenario-diagnose.service.ts 머리말에 적었다 —
+   * 근거가 도움말 문서가 아니라 그 순간의 화면 상태라서 프롬프트가 다르다.
+   */
+  @Post('scenario-diagnose')
+  scenarioDiagnose(@Body() dto: ScenarioDiagnoseDto) {
+    return this.scenarioDiagnoseService.diagnose(dto);
+  }
 
   // ── OpenAI 계정 연결 (OAuth) ─────────────────────────────────────────────
   //

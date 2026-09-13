@@ -17,8 +17,9 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { setActivityActorKind } from '@/services/activity-reporter';
-import { captureText, clickTarget, fillTarget, scanTarget, waitFor, describeTarget } from './dom';
+import { captureText, clickTarget, fillTarget, scanTarget, waitFor, describeTarget, snapshotFailure } from './dom';
 import { clearEvents, judgeStep } from './judge';
+import { drainActivityEvents } from '@/services/activity-collector';
 import { useScenarioRunStore } from './store';
 import type { Scenario, ScenarioStep, TargetSpec } from './types';
 
@@ -163,7 +164,15 @@ export default function ScenarioDriverHost() {
           } catch (e: unknown) {
             const reason = e instanceof Error ? e.message : String(e);
             store().recordStep({ index: i, verdict: 'FAIL', note: describeStep(step, store().vars), error: reason });
-            store().fail({ stepIndex: i, reason, events: [] });
+            // 여기는 judge 가 돌기 전이라 링버퍼가 아직 비워지지 않았다.
+            // 이 경로의 실패(요소 없음·비활성 등)야말로 원인이 화면 밖에 있어서
+            // 사람이 읽어도 모르는 경우가 많다. 이벤트를 남겨야 AI 가 짚을 수 있다.
+            store().fail({
+              stepIndex: i,
+              reason,
+              events: drainActivityEvents(),
+              snapshot: snapshotFailure(renderTarget(step.target, store().vars)),
+            });
             return;
           }
 
@@ -184,6 +193,7 @@ export default function ScenarioDriverHost() {
               stepIndex: i,
               reason: judged.error ?? '알 수 없는 실패',
               events: judged.events,
+              snapshot: snapshotFailure(renderTarget(step.target, store().vars)),
             });
             return;
           }
@@ -192,7 +202,12 @@ export default function ScenarioDriverHost() {
       } catch (e: unknown) {
         const reason = e instanceof Error ? e.message : String(e);
         if (store().status !== 'failed') {
-          store().fail({ stepIndex: store().stepIndex, reason, events: [] });
+          store().fail({
+            stepIndex: store().stepIndex,
+            reason,
+            events: drainActivityEvents(),
+            snapshot: snapshotFailure(),
+          });
         }
       } finally {
         setActivityActorKind('HUMAN');
