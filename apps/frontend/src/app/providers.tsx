@@ -15,6 +15,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 import ApiFeedbackModal from "@/components/shared/ApiFeedbackModal";
 import ActivityCollector from "@/components/system/ActivityCollector";
+import ScenarioDriverHost from "@/scenario-driver/ScenarioDriverHost";
+import ScenarioRunOverlay from "@/scenario-driver/ScenarioRunOverlay";
 import JobOrderHud from "@/components/production/JobOrderHud";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/authStore";
@@ -179,6 +181,9 @@ export function Providers({ children }: ProvidersProps) {
         }}
       />
       <ActivityCollector />
+      {/* 시나리오 드라이버 — 화면이 바뀌어도 죽지 않도록 여기(전역)에 단 하나만 둔다 */}
+      <ScenarioDriverHost />
+      <ScenarioRunOverlay />
       <ApiFeedbackModal />
       <JobOrderHud />
       {children}

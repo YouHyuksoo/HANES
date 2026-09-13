@@ -71,6 +71,7 @@ export function usePlanColumns({ onConfirm, onUnconfirm, onIssue }: UsePlanColum
                 <button
                   onClick={(e) => { e.stopPropagation(); onIssue(item); }}
                   disabled={remain <= 0}
+                  data-testid="prod-plan-issue-job-order"
                   title={remain <= 0 ? t("monthlyPlan.noRemainQty") : t("monthlyPlan.issueJobOrder")}
                   className="px-3 py-1 text-xs font-medium rounded-md border border-blue-400 bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 dark:bg-blue-700 dark:hover:bg-blue-600"
                 >

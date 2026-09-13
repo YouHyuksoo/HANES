@@ -172,7 +172,8 @@ export default function MonthlyPlanPage() {
             <Button variant="secondary" size="sm" onClick={() => setShowAutoGen(true)}>
               <Wand2 className="w-4 h-4 mr-1" />{t("monthlyPlan.autoGenerate.button")}
             </Button>
-            <Button size="sm" onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingPlan(null); setIsPanelOpen(true); }}>
+            <Button size="sm" data-testid="prod-plan-add"
+              onClick={() => { panelAnimateRef.current = !isPanelOpen; setEditingPlan(null); setIsPanelOpen(true); }}>
               <Plus className="w-4 h-4 mr-1" />{t("monthlyPlan.addPlan")}
             </Button>
           </div>
@@ -191,7 +192,7 @@ export default function MonthlyPlanPage() {
               <div className="flex gap-3 flex-1 min-w-0">
                 <DateRangeFilter from={fromDate} to={toDate} onFromChange={setStartDate} onToChange={setEndDate} className="flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <Input placeholder={t("monthlyPlan.searchPlaceholder")}
+                  <Input placeholder={t("monthlyPlan.searchPlaceholder")} data-testid="prod-plan-search"
                     value={searchText} onChange={e => setSearchText(e.target.value)}
                     leftIcon={<Search className="w-4 h-4" />} fullWidth />
                 </div>

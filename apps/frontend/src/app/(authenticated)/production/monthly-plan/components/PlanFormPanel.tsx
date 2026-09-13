@@ -126,8 +126,8 @@ export default function PlanFormPanel({ editingPlan, defaultMonth, onClose, onSa
           {isEdit ? t("monthlyPlan.editPlan") : t("monthlyPlan.addPlan")}
         </h2>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button size="sm" onClick={handleSubmit}
+          <Button size="sm" variant="secondary" onClick={onClose} data-testid="prod-plan-cancel">{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleSubmit} data-testid="prod-plan-save"
             disabled={saving || !form.itemCode.trim() || form.planQty <= 0}>
             {saving ? t("common.saving") : t("common.save", "저장")}
           </Button>
@@ -143,6 +143,7 @@ export default function PlanFormPanel({ editingPlan, defaultMonth, onClose, onSa
           <div className="grid grid-cols-2 gap-3">
             <Input
               label={t("monthlyPlan.planMonth")}
+              data-testid="prod-plan-month"
               type="month"
               value={form.planMonth}
               onChange={e => setField("planMonth", e.target.value)}
@@ -166,11 +167,13 @@ export default function PlanFormPanel({ editingPlan, defaultMonth, onClose, onSa
                   readOnly
                   disabled={isEdit}
                   fullWidth
+                  data-testid="prod-plan-item-code"
                 />
                 <button
                   type="button"
                   onClick={() => setPartSearchOpen(true)}
                   disabled={isEdit}
+                  data-testid="prod-plan-item-search"
                   className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-[var(--radius)] border border-gray-400 dark:border-gray-500 bg-surface hover:bg-primary/10 text-text-muted hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   title={t("common.partSearch")}
                 >
@@ -184,6 +187,7 @@ export default function PlanFormPanel({ editingPlan, defaultMonth, onClose, onSa
               value={Number(form.planQty) || 0}
               onChange={n => setField("planQty", n)}
               fullWidth
+              data-testid="prod-plan-qty"
             />
             <Input
               label={t("monthlyPlan.priority")}

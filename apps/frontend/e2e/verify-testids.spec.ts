@@ -35,3 +35,34 @@ test('작업지시 화면 testid 8개가 DOM 에 존재한다', async ({ page })
   await expect(page.getByTestId('job-order-save')).toBeDisabled();
   console.log('[testid] 저장 버튼 초기 비활성 확인');
 });
+
+test('생산계획 화면 testid 가 DOM 에 존재한다', async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto('/production/monthly-plan');
+  await page.waitForLoadState('networkidle');
+  expect(page.url(), '세션 만료').not.toContain('/login');
+
+  for (const id of ['prod-plan-add', 'prod-plan-search']) {
+    await expect(page.getByTestId(id), `${id} 가 DOM 에 없다`).toBeVisible({ timeout: 20000 });
+    console.log('[testid] OK', id);
+  }
+
+  // 계획 추가 패널을 열고 폼 요소 확인
+  await page.getByTestId('prod-plan-add').click();
+  for (const id of [
+    'prod-plan-month',
+    'prod-plan-item-code',
+    'prod-plan-item-search',
+    'prod-plan-qty',
+    'prod-plan-save',
+    'prod-plan-cancel',
+  ]) {
+    await expect(page.getByTestId(id), `${id} 가 DOM 에 없다`).toBeVisible({ timeout: 15000 });
+    console.log('[testid] OK', id);
+  }
+
+  // 행의 "작업지시 발행" 버튼 — 계획 데이터가 있을 때만 존재한다
+  await page.getByTestId('prod-plan-cancel').click();
+  const issueCount = await page.getByTestId('prod-plan-issue-job-order').count();
+  console.log('[testid] 행 발행버튼', issueCount, '개 (계획 데이터가 없으면 0)');
+});
