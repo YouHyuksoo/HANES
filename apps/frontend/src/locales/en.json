@@ -2847,7 +2847,16 @@
       "noBomItems": "No raw materials to issue based on BOM. Check whether this is a semi-finished input / semi-finished production process (the previous process output is fed directly). In that case no issue request is needed.",
       "bomLoadError": "Failed to load BOM-based issue items for the work order.",
       "bomCalculating": "Calculating BOM-based issue items...",
-      "items": "items"
+      "items": "items",
+      "tabHistory": "Request History",
+      "tabCreate": "New Request",
+      "selectOrderNotice": "Select a work order to switch to that order’s issue request history.",
+      "noBomRegistered": "No valid BOM for this work order item (as of {{date}}). Check the BOM validity period under Master Data > BOM.",
+      "noRawInBom": "The BOM contains no raw materials. It consists only of products, semi-products, or consumables.",
+      "allCovered": "Required quantities are already covered by previous issues and floor stock. Nothing left to request.",
+      "issuableQty": "Issuable",
+      "pendingIqcShort": "IQC pending",
+      "issuableShortage": "Issuable stock falls short because of IQC-pending inventory."
     },
     "requestOther": {
       "title": "Other Issue Request",
@@ -8561,7 +8570,9 @@
       "duplicateLot": "LOT already scanned",
       "lotDepleted": "LOT stock is depleted",
       "noScannedLots": "No scanned LOTs",
-      "overQty": "Exceeds required quantity. Continue?"
+      "overQty": "Exceeds required quantity. Continue?",
+      "bomNoRawMaterial": "The BOM contains no raw materials (products/semi-products/consumables only)",
+      "bomAlreadyCovered": "Nothing to issue: already covered by previous issues and floor stock"
     },
     "adjustment": {
       "title": "Adjustment",

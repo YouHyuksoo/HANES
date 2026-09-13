@@ -144,12 +144,21 @@ export function useMatIssuingScan(): UseMatIssuingScanReturn {
       }
 
       // BOM 기준 출고예정 품목 (웹 출고요청 화면과 동일 API)
-      const { data: bomRes } = await api.get<{ data: BomRequestItemApiData[] }>(
+      const { data: bomRes } = await api.get<{
+        data: {
+          items?: BomRequestItemApiData[];
+          summary?: { bomCount: number; rawCount: number; coveredCount: number };
+        };
+      }>(
         `/material/issue-requests/job-orders/${encodeURIComponent(orderNo)}/bom-items`,
       );
-      const bomList = bomRes?.data ?? [];
+      const bomList = bomRes?.data?.items ?? [];
       if (bomList.length === 0) {
-        setError("BOM_NOT_FOUND");
+        // 빈 결과의 원인을 구분해서 알린다(BOM 미등록 / 원자재 없음 / 이미 충족).
+        const summary = bomRes?.data?.summary;
+        if (!summary || summary.bomCount === 0) setError("BOM_NOT_FOUND");
+        else if (summary.rawCount === 0) setError("BOM_NO_RAW_MATERIAL");
+        else setError("BOM_ALREADY_COVERED");
         return;
       }
 

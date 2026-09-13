@@ -87,8 +87,35 @@ interface JobOrderListResponse {
   total?: number;
 }
 
+/**
+ * BOM 기준 출고예정 산출의 단계별 건수.
+ * 결과가 비었을 때 원인(BOM 미등록 / 원자재 없음 / 이미 충족)을 화면에서 구분하기 위한 값이다.
+ */
+export interface BomRequestSummary {
+  /** 기준일 유효 BOM 자식 행 수 */
+  bomCount: number;
+  /** 그중 원자재만 남긴 행 수 */
+  rawCount: number;
+  /** 원자재 중 기출고+현장재고로 충족되어 제외된 행 수 */
+  coveredCount: number;
+  /** BOM 기준일(YYYY-MM-DD) = 작업지시 계획일 */
+  bomEffectiveDate: string;
+}
+
+export interface BomRequestResult {
+  items: RequestItem[];
+  summary: BomRequestSummary | null;
+}
+
+interface BomRequestApiPayload {
+  items?: RequestItem[];
+  summary?: BomRequestSummary;
+}
+
 export type JobOrderTreeListRow = ProductionJobOrderRow & {
   _depth?: number;
+  /** 필터에 직접 매칭되지 않고 하위 지시의 상위 계층으로만 남은 행(선택 대상 아님, 그룹 헤더로만 표시) */
+  _contextOnly?: boolean;
 };
 
 /** 품목 검색 응답 */
@@ -110,29 +137,30 @@ const filterJobOrderTree = (
   nodes: ProductionJobOrderRow[],
   predicate: (row: ProductionJobOrderRow) => boolean,
   options: { includeAncestors: boolean } = { includeAncestors: true },
-): ProductionJobOrderRow[] =>
+): JobOrderTreeListRow[] =>
   nodes.flatMap((node) => {
     const matchesSelf = predicate(node);
     const children = node.children ?? [];
     const filteredChildren = filterJobOrderTree(children, predicate, options);
 
     if (matchesSelf) {
-      return [{ ...node, children: filteredChildren }];
+      return [{ ...node, children: filteredChildren, _contextOnly: false }];
     }
 
     if (filteredChildren.length > 0) {
       // 취소/완료된 조상은 필터를 통과한 자식이 있어도 표시하지 않는다(2026-09-09 결함 09: 취소 지시가 '대기' 필터에 계속 노출).
       const ancestorVisible = options.includeAncestors && !isJobOrderFinished(String(node.status ?? ''));
-      return ancestorVisible ? [{ ...node, children: filteredChildren }] : filteredChildren;
+      // 필터 미통과 조상은 계층 파악용 그룹 헤더로만 표시한다(선택 불가). 조상이 빠지면 자식이 최상위로 승격된다.
+      return ancestorVisible ? [{ ...node, children: filteredChildren, _contextOnly: true }] : filteredChildren;
     }
 
     return [];
   });
 
-const flattenJobOrderTree = (nodes: ProductionJobOrderRow[], depth = 0): JobOrderTreeListRow[] =>
+const flattenJobOrderTree = (nodes: JobOrderTreeListRow[], depth = 0): JobOrderTreeListRow[] =>
   nodes.flatMap((node) => [
     { ...node, _depth: depth },
-    ...flattenJobOrderTree(node.children ?? [], depth + 1),
+    ...flattenJobOrderTree((node.children ?? []) as JobOrderTreeListRow[], depth + 1),
   ]);
 
 export function useIssueRequestData() {
@@ -221,23 +249,29 @@ export function useIssueRequestData() {
     }
   }, []);
 
-  const loadBomRequestItems = useCallback(async (orderNo: string): Promise<RequestItem[]> => {
-    if (!orderNo) return [];
-    const response = await api.get<{ success: boolean; data: RequestItem[] }>(
+  const loadBomRequestItems = useCallback(async (orderNo: string): Promise<BomRequestResult> => {
+    if (!orderNo) return { items: [], summary: null };
+    const response = await api.get<{ success: boolean; data: BomRequestApiPayload }>(
       `/material/issue-requests/job-orders/${encodeURIComponent(orderNo)}/bom-items`,
     );
-    const list = Array.isArray(response.data?.data) ? response.data.data : [];
-    return list.map((item) => ({
-      itemCode: item.itemCode,
-      itemName: item.itemName,
-      unit: item.unit ?? 'EA',
-      currentStock: Number(item.currentStock ?? 0),
-      requestQty: Number(item.requestQty ?? 0),
-      bomReqQty: Number(item.bomReqQty ?? 0),
-      prevIssueQty: Number(item.prevIssueQty ?? 0),
-      floorStockQty: Number(item.floorStockQty ?? 0),
-      minPackQty: Number(item.minPackQty ?? 0),
-    }));
+    const payload = response.data?.data;
+    const list = Array.isArray(payload?.items) ? payload.items : [];
+    return {
+      items: list.map((item) => ({
+        itemCode: item.itemCode,
+        itemName: item.itemName,
+        unit: item.unit ?? 'EA',
+        currentStock: Number(item.currentStock ?? 0),
+        issuableQty: Number(item.issuableQty ?? 0),
+        pendingIqcQty: Number(item.pendingIqcQty ?? 0),
+        requestQty: Number(item.requestQty ?? 0),
+        bomReqQty: Number(item.bomReqQty ?? 0),
+        prevIssueQty: Number(item.prevIssueQty ?? 0),
+        floorStockQty: Number(item.floorStockQty ?? 0),
+        minPackQty: Number(item.minPackQty ?? 0),
+      })),
+      summary: payload?.summary ?? null,
+    };
   }, []);
 
   // 특정 작업지시의 기존 출고요청 내역 조회 (우측 그룹 상세용)

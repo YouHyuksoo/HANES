@@ -297,6 +297,14 @@ export class IssueRequestService {
   }
 
   /** 작업지시 완제품의 BOM 직하위 원자재를 출고예정 품목으로 산출 */
+  /** BOM 기준일을 화면 표기용 YYYY-MM-DD 로 만든다(UTC 변환 금지 - 로컬 날짜 그대로). */
+  private toDateOnlyStringLocal(date: Date): string {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
   async buildBomRequestItems(orderNo: string, company?: string, plant?: string) {
     const jobOrder = await this.jobOrderRepository.findOne({
       where: { orderNo, ...this.tenantWhere(company, plant) },
@@ -317,7 +325,15 @@ export class IssueRequestService {
       },
       order: { seq: 'ASC' },
     });
-    if (bomRows.length === 0) return [];
+    // 빈 결과의 원인을 호출부가 구분할 수 있도록 단계별 건수를 함께 돌려준다.
+    // (BOM 미등록 / BOM에 원자재 없음 / 기출고·현장재고로 이미 충족)
+    const emptySummary = (bomCount: number, rawCount: number, coveredCount: number) => ({
+      bomCount,
+      rawCount,
+      coveredCount,
+      bomEffectiveDate: this.toDateOnlyStringLocal(bomEffectiveDate),
+    });
+    if (bomRows.length === 0) return { items: [], summary: emptySummary(0, 0, 0) };
 
     const childCodes = [...new Set(bomRows.map((bom) => bom.childItemCode).filter(Boolean))];
     const parts = childCodes.length > 0
@@ -335,7 +351,7 @@ export class IssueRequestService {
       this.getAvailableStockQtyMap(rawCodes, effectiveCompany, effectivePlant),
     ]);
 
-    return rawBomRows
+    const rows = rawBomRows
       .map((bom) => {
         const part = partMap.get(bom.childItemCode);
         const bomReqQty = mulQty(this.toNumber(bom.qtyPer), this.toNumber(jobOrder.planQty));
@@ -356,8 +372,12 @@ export class IssueRequestService {
           floorStockQty,
           minPackQty: this.toNumber(part?.minPackQty),
         };
-      })
-      .filter((item) => item.requestQty > 0);
+      });
+    const items = rows.filter((item) => item.requestQty > 0);
+    return {
+      items,
+      summary: emptySummary(bomRows.length, rawBomRows.length, rows.length - items.length),
+    };
   }
 
   private resolveBomEffectiveDate(jobOrder: JobOrder): Date {

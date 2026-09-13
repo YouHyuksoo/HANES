@@ -495,7 +495,7 @@ describe('IssueRequestService', () => {
         },
         order: { seq: 'ASC' },
       });
-      expect(result).toEqual([
+      expect(result.items).toEqual([
         expect.objectContaining({
           itemCode: 'RM-001',
           itemName: 'Raw A',
@@ -508,6 +508,94 @@ describe('IssueRequestService', () => {
           minPackQty: 5,
         }),
       ]);
+      // BOM 2행 중 원자재 1행, 그 1행은 요청수량이 남아 걸러지지 않았다
+      expect(result.summary).toEqual({
+        bomCount: 2,
+        rawCount: 1,
+        coveredCount: 0,
+        bomEffectiveDate: '2026-04-15',
+      });
+    });
+
+    it('BOM 이 없으면 bomCount 0 으로 빈 결과를 돌려준다', async () => {
+      jobOrderRepo.findOne.mockResolvedValue({
+        orderNo: 'WO-002',
+        itemCode: 'FG-002',
+        planQty: 10,
+        planDate: bomEffectiveDate,
+        company: 'C1',
+        plant: 'P1',
+      } as JobOrder);
+      bomRepo.find.mockResolvedValue([] as BomMaster[]);
+
+      const result = await service.buildBomRequestItems('WO-002', 'C1', 'P1');
+
+      expect(result.items).toEqual([]);
+      expect(result.summary).toEqual({
+        bomCount: 0,
+        rawCount: 0,
+        coveredCount: 0,
+        bomEffectiveDate: '2026-04-15',
+      });
+    });
+
+    it('기출고와 현장재고로 모두 충족되면 coveredCount 로 구분한다', async () => {
+      jobOrderRepo.findOne.mockResolvedValue({
+        orderNo: 'WO-003',
+        itemCode: 'FG-003',
+        planQty: 10,
+        planDate: bomEffectiveDate,
+        company: 'C1',
+        plant: 'P1',
+      } as JobOrder);
+      bomRepo.find.mockResolvedValue([
+        { parentItemCode: 'FG-003', childItemCode: 'RM-001', qtyPer: 2, seq: 1, useYn: 'Y' },
+      ] as BomMaster[]);
+      itemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'RM-001', itemName: 'Raw A', itemType: 'RAW', unit: 'EA', minPackQty: 5 },
+      ] as ItemMaster[]);
+      // BOM필요 20 = 기출고 12 + 현장재고 8 → 요청수량 0
+      matIssueRepo.createQueryBuilder.mockReturnValue(createQueryBuilder([{ itemCode: 'RM-001', qty: '12' }]) as any);
+      matStockRepo.createQueryBuilder
+        .mockReturnValueOnce(createQueryBuilder([{ itemCode: 'RM-001', qty: '8' }]) as any)
+        .mockReturnValueOnce(createQueryBuilder([{ itemCode: 'RM-001', qty: '50' }]) as any);
+
+      const result = await service.buildBomRequestItems('WO-003', 'C1', 'P1');
+
+      expect(result.items).toEqual([]);
+      expect(result.summary).toEqual({
+        bomCount: 1,
+        rawCount: 1,
+        coveredCount: 1,
+        bomEffectiveDate: '2026-04-15',
+      });
+    });
+
+    it('BOM 에 원자재가 없으면 rawCount 0 으로 구분한다', async () => {
+      jobOrderRepo.findOne.mockResolvedValue({
+        orderNo: 'WO-004',
+        itemCode: 'FG-004',
+        planQty: 10,
+        planDate: bomEffectiveDate,
+        company: 'C1',
+        plant: 'P1',
+      } as JobOrder);
+      bomRepo.find.mockResolvedValue([
+        { parentItemCode: 'FG-004', childItemCode: 'WIP-001', qtyPer: 1, seq: 1, useYn: 'Y' },
+      ] as BomMaster[]);
+      itemMasterRepo.find.mockResolvedValue([
+        { itemCode: 'WIP-001', itemName: 'Semi A', itemType: 'WIP', unit: 'EA' },
+      ] as ItemMaster[]);
+
+      const result = await service.buildBomRequestItems('WO-004', 'C1', 'P1');
+
+      expect(result.items).toEqual([]);
+      expect(result.summary).toEqual({
+        bomCount: 1,
+        rawCount: 0,
+        coveredCount: 0,
+        bomEffectiveDate: '2026-04-15',
+      });
     });
 
     it('작업지시 계획일이 없으면 BOM 기준 출고예정 품목을 산출하지 않는다', async () => {

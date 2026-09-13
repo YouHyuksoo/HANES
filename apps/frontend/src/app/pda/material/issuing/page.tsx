@@ -61,6 +61,8 @@ export default function MaterialIssuingPage() {
     if (error === "NOT_IN_BOM") return t("pda.issuing.notInBom");
     if (error === "JOB_ORDER_NOT_FOUND") return t("pda.scan.noResult");
     if (error === "BOM_NOT_FOUND") return t("pda.issuing.bomNotFound");
+    if (error === "BOM_NO_RAW_MATERIAL") return t("pda.issuing.bomNoRawMaterial");
+    if (error === "BOM_ALREADY_COVERED") return t("pda.issuing.bomAlreadyCovered");
     if (error === "DUPLICATE_LOT") return t("pda.issuing.duplicateLot");
     if (error === "LOT_DEPLETED") return t("pda.issuing.lotDepleted");
     if (error === "NO_SCANNED_LOTS") return t("pda.issuing.noScannedLots");

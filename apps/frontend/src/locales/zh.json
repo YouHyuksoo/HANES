@@ -2829,7 +2829,16 @@
       "noBomItems": "没有基于BOM的待出库原材料。请确认是否为半成品投入/半成品生产工序（直接投入上道工序半成品）。此时无需出库申请，属正常情况。",
       "bomLoadError": "无法加载工单BOM待出库物料。",
       "bomCalculating": "正在计算工单BOM待出库物料...",
-      "items": "件"
+      "items": "件",
+      "tabHistory": "出库请求记录",
+      "tabCreate": "新建请求",
+      "selectOrderNotice": "选择作业指令后，将切换为该作业指令的出库请求记录。",
+      "noBomRegistered": "该作业指令品目没有有效的BOM（基准日 {{date}}）。请在基准信息 > BOM 中确认有效期。",
+      "noRawInBom": "BOM 中没有原材料，仅由产品／半成品／消耗品构成，无出库请求对象。",
+      "allCovered": "所需数量已由既有出库和现场库存全部满足，无需再申请。",
+      "issuableQty": "可出库",
+      "pendingIqcShort": "IQC待检",
+      "issuableShortage": "因存在IQC未检验库存，实际可出库数量不足。"
     },
     "requestOther": {
       "title": "其他出库申请",
@@ -8543,7 +8552,9 @@
       "duplicateLot": "该LOT已扫描",
       "lotDepleted": "该LOT库存已耗尽",
       "noScannedLots": "没有已扫描的LOT",
-      "overQty": "超出需求数量，是否继续？"
+      "overQty": "超出需求数量，是否继续？",
+      "bomNoRawMaterial": "BOM 中没有原材料（仅产品／半成品／消耗品）",
+      "bomAlreadyCovered": "既有出库和现场库存已满足，无需出库的物料"
     },
     "adjustment": {
       "title": "库存调整",

@@ -3379,7 +3379,16 @@
       "bomLoadError": "작업지시 BOM 기준 출고 예정 품목을 불러오지 못했습니다.",
       "bomCalculating": "작업지시 BOM 기준 출고 예정 품목을 계산 중입니다.",
       "items": "건",
-      "notSelected": "선택안함"
+      "notSelected": "선택안함",
+      "tabHistory": "출고요청 내역",
+      "tabCreate": "신규 요청",
+      "selectOrderNotice": "작업지시를 선택하면 해당 작업지시의 출고요청 내역으로 바뀝니다.",
+      "noBomRegistered": "이 작업지시 품목에 유효한 BOM이 없습니다 (기준일 {{date}}). 기준정보 > BOM에서 유효기간을 확인하세요.",
+      "noRawInBom": "BOM에 원자재가 없습니다. 제품/반제품/소모품으로만 구성되어 출고요청 대상이 없습니다.",
+      "allCovered": "필요 수량이 기출고와 현장재고로 모두 충족되어 추가로 요청할 원자재가 없습니다.",
+      "issuableQty": "출고가능",
+      "pendingIqcShort": "IQC대기",
+      "issuableShortage": "IQC 미검사 재고 때문에 실제 출고 가능 수량이 부족합니다."
     },
     "requestOther": {
       "title": "기타출고요청",
@@ -8584,7 +8593,9 @@
       "duplicateLot": "이미 스캔된 LOT입니다",
       "lotDepleted": "재고가 소진된 LOT입니다",
       "noScannedLots": "스캔된 LOT이 없습니다",
-      "overQty": "요청 수량 초과입니다. 계속하시겠습니까?"
+      "overQty": "요청 수량 초과입니다. 계속하시겠습니까?",
+      "bomNoRawMaterial": "BOM에 원자재가 없습니다 (제품/반제품/소모품만 구성)",
+      "bomAlreadyCovered": "기출고와 현장재고로 모두 충족되어 출고할 자재가 없습니다"
     },
     "adjustment": {
       "title": "재고조정",

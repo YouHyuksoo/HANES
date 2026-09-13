@@ -2829,7 +2829,16 @@
       "noBomItems": "Không có nguyên vật liệu cần xuất theo BOM. Hãy kiểm tra có phải công đoạn đưa vào bán thành phẩm / sản xuất bán thành phẩm (đưa thẳng bán thành phẩm công đoạn trước). Trường hợp này không cần yêu cầu xuất kho.",
       "bomLoadError": "Không thể tải vật tư xuất theo BOM của lệnh sản xuất.",
       "bomCalculating": "Đang tính vật tư xuất theo BOM...",
-      "items": "mục"
+      "items": "mục",
+      "tabHistory": "Lịch sử yêu cầu",
+      "tabCreate": "Yêu cầu mới",
+      "selectOrderNotice": "Chọn lệnh sản xuất để chuyển sang lịch sử yêu cầu xuất kho của lệnh đó.",
+      "noBomRegistered": "Không có BOM hợp lệ cho hạng mục của lệnh sản xuất này (ngày chuẩn {{date}}). Kiểm tra thời hạn hiệu lực tại Dữ liệu chuẩn > BOM.",
+      "noRawInBom": "BOM không có nguyên vật liệu, chỉ gồm thành phẩm/bán thành phẩm/vật tư tiêu hao.",
+      "allCovered": "Số lượng cần thiết đã được đáp ứng đủ bằng lượng đã xuất và tồn kho tại hiện trường.",
+      "issuableQty": "Có thể xuất",
+      "pendingIqcShort": "Chờ IQC",
+      "issuableShortage": "Số lượng xuất thực tế thiếu do tồn kho chưa kiểm IQC."
     },
     "requestOther": {
       "title": "Yêu cầu xuất khác",
@@ -8543,7 +8552,9 @@
       "duplicateLot": "LOT đã được quét",
       "lotDepleted": "LOT đã hết tồn kho",
       "noScannedLots": "Chưa có LOT nào được quét",
-      "overQty": "Vượt quá số lượng yêu cầu. Tiếp tục?"
+      "overQty": "Vượt quá số lượng yêu cầu. Tiếp tục?",
+      "bomNoRawMaterial": "BOM không có nguyên vật liệu (chỉ thành phẩm/bán thành phẩm/vật tư tiêu hao)",
+      "bomAlreadyCovered": "Không có vật tư cần xuất: đã đủ bằng lượng đã xuất và tồn hiện trường"
     },
     "adjustment": {
       "title": "Điều chỉnh tồn kho",
