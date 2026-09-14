@@ -15,6 +15,7 @@ import { drain, judgeStep } from './events';
 import { describeTarget, resolveTarget } from './selector';
 import type {
   ActivityEvent,
+  EventPredicate,
   RunResult,
   Scenario,
   ScenarioStep,
@@ -80,6 +81,22 @@ interface ActionContext {
 
 function r(ctx: ActionContext) {
   return (value: string) => render(value, ctx.vars);
+}
+
+/**
+ * 이벤트 술어의 문자열 필드에도 {{변수}} 치환을 적용한다 (규격서 3.2).
+ * 이게 없으면 expect.pathIncludes 의 {{equipCode}} 가 원문 그대로 비교돼 영영 일치하지 않는다.
+ */
+function renderPredicate(
+  predicate: EventPredicate | undefined,
+  render_: (value: string) => string,
+): EventPredicate | undefined {
+  if (!predicate) return predicate;
+  const out: EventPredicate = { ...predicate };
+  if (out.messageIncludes !== undefined) out.messageIncludes = render_(out.messageIncludes);
+  if (out.pathIncludes !== undefined) out.pathIncludes = render_(out.pathIncludes);
+  if (out.errorCode !== undefined) out.errorCode = render_(out.errorCode);
+  return out;
 }
 
 async function authHeaders(page: Page): Promise<Record<string, string>> {
@@ -186,7 +203,17 @@ async function runScreenshot(ctx: ActionContext, step: ScenarioStep): Promise<st
 async function runInspection(ctx: ActionContext, step: ScenarioStep): Promise<StepVerdict> {
   const kind = String(step.value ?? 'DAILY').toUpperCase();
   const badgeLabel = kind === 'WORKER' ? '작업자설비점검' : '설비 일상점검';
-  const card = ctx.page.locator('div', { hasText: badgeLabel }).last();
+  const openTestId = kind === 'WORKER' ? 'kiosk-worker-inspect-open' : 'kiosk-daily-inspect-open';
+
+  // HeaderCheckItem 이 주는 testId 를 우선 쓴다. 텍스트 div 로 더듬으면
+  // 가장 안쪽 라벨 div 가 잡혀 그 안에 입력 버튼이 없고 클릭이 타임아웃난다.
+  const openButton = ctx.page.getByTestId(openTestId);
+  const hasTestId = (await openButton.count()) > 0;
+  const card = hasTestId
+    ? ctx.page.locator('div').filter({ has: ctx.page.getByTestId(openTestId) }).last()
+    : ctx.page.locator('div', { hasText: badgeLabel })
+        .filter({ has: ctx.page.getByRole('button', { name: /^(입력|보기)$/ }) })
+        .last();
   const text = (await card.innerText().catch(() => '')) ?? '';
 
   if (text.includes('완료(합격)') || /완료\s*\d{2}:\d{2}/.test(text)) {
@@ -196,7 +223,11 @@ async function runInspection(ctx: ActionContext, step: ScenarioStep): Promise<St
     throw new Error(`${badgeLabel} 종합판정이 불합격이다 — 설비 조치 후 사람이 재점검해야 한다 (규격서 7.1)`);
   }
 
-  await card.getByRole('button', { name: '입력' }).first().click();
+  const trigger = hasTestId ? openButton : card.getByRole('button', { name: '입력' }).first();
+  if (await trigger.isDisabled().catch(() => false)) {
+    throw new Error(`${badgeLabel} 입력 버튼이 비활성이다 — 선행 조건(설비/작업지시/작업자 선택)을 먼저 채워야 한다`);
+  }
+  await trigger.click();
   const dialog = ctx.page.getByRole('dialog').first();
   await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
@@ -302,12 +333,14 @@ export async function runSteps(
       if (outcome === 'ALREADY_DONE') verdict = 'ALREADY_DONE';
 
       if (!NON_UI_ACTIONS.has(step.action) && verdict !== 'ALREADY_DONE') {
+        const renderStep_ = r(ctx);
         const judged = await judgeStep(ctx.page, {
-          expect: step.expect,
-          alreadyDone: step.alreadyDone,
+          expect: renderPredicate(step.expect, renderStep_),
+          alreadyDone: renderPredicate(step.alreadyDone, renderStep_),
           timeoutMs: step.timeoutMs ?? ctx.scenario.defaultTimeoutMs ?? DEFAULT_TIMEOUT_MS,
           settleMs,
-          ignoreErrors: [...scenarioIgnores, ...(step.ignoreErrors ?? [])],
+          ignoreErrors: [...scenarioIgnores, ...(step.ignoreErrors ?? [])]
+            .map((p) => renderPredicate(p, renderStep_)!),
         });
         verdict = judged.verdict;
         events = judged.events;

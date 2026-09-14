@@ -96,7 +96,7 @@ export default function SubKitActionBar({
         {issuedSg ? (
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
             <div className="min-w-0 flex-1">
-              <div className="font-mono text-base font-bold text-text truncate">{issuedSg}</div>
+              <div data-testid="subkit-issued-sg" className="font-mono text-base font-bold text-text truncate">{issuedSg}</div>
               <div className="text-xs text-text-muted">
                 {t("production.subprocess.printAndScan", "이 라벨을 출력·부착 후 실물 라벨을 스캔하세요")}
               </div>

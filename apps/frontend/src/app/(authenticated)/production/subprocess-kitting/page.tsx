@@ -690,6 +690,7 @@ export default function SubprocessKittingPage() {
                 disabled={!dailyInspectRequired || !equipCode}
                 disabledReason={!dailyInspectRequired ? '환경설정에서 필수 점검이 아닙니다.' : '설비를 먼저 선택하세요.'}
                 onInput={() => setDailyInspectOpen(true)}
+                testId="kiosk-daily-inspect-open"
                 wide
               />
               <HeaderCheckItem
@@ -700,6 +701,7 @@ export default function SubprocessKittingPage() {
                 disabled={!workerInspectRequired || (dailyInspectRequired && !interlock.dailyInspectDone) || !selectedOrder || selectedWorkers.length === 0}
                 disabledReason={!workerInspectRequired ? '환경설정에서 필수 점검이 아닙니다.' : dailyInspectRequired && !interlock.dailyInspectDone ? '설비 일상점검을 먼저 완료하세요.' : !selectedOrder ? '작업지시를 먼저 선택하세요.' : '작업자를 먼저 선택하세요.'}
                 onInput={() => setWorkerInspectOpen(true)}
+                testId="kiosk-worker-inspect-open"
                 wide
               />
             </div>
