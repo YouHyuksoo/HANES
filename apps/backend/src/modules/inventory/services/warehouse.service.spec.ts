@@ -246,6 +246,20 @@ describe('WarehouseService', () => {
         plant: 'P1',
       }));
     });
+
+    it('불용창고를 UNUSABLE 유형 기본창고로 만든다', async () => {
+      mockWhRepo.find.mockResolvedValue([]);
+      mockWhRepo.create.mockImplementation((payload) => payload as Warehouse);
+      mockWhRepo.save.mockResolvedValue([] as any);
+
+      await target.initDefaultWarehouses('C1', 'P1');
+
+      expect(mockWhRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        warehouseCode: 'WH-DEFECT',
+        warehouseType: 'UNUSABLE',
+        isDefault: 'Y',
+      }));
+    });
   });
 
   describe('getDefaultWarehouse', () => {

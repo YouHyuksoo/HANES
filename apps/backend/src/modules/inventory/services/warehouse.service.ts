@@ -250,6 +250,7 @@ export class WarehouseService {
       { code: 'FG_MAIN', name: '완제품 메인창고', type: 'FG', isDefault: true },
       { code: 'FG_SHIP', name: '출하대기창고', type: 'FG', isDefault: false },
       { code: 'DEFECT', name: '불량품창고', type: 'DEFECT', isDefault: true },
+      { code: 'WH-DEFECT', name: '불용창고', type: 'UNUSABLE', isDefault: true },
       { code: 'SCRAP', name: '폐기창고', type: 'SCRAP', isDefault: true },
       { code: 'SUBCON_MAIN', name: '외주 메인창고', type: 'SUBCON', isDefault: true },
     ];
