@@ -12,6 +12,7 @@
     "test": "turbo test",
     "test:backend": "pnpm --dir apps/backend run test:unit",
     "test:backend:ci": "pnpm --dir apps/backend run test:ci",
+    "test:oracle-smoke": "pnpm --dir apps/backend run test:oracle-smoke",
     "test:frontend:e2e": "pnpm --dir apps/frontend test:e2e",
     "code-map:generate": "node tools/code-map/src/generate.mjs",
     "code-map:test": "node --test tools/code-map/tests/*.test.mjs",

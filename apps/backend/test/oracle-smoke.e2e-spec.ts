@@ -1,0 +1,109 @@
+/**
+ * @file test/oracle-smoke.e2e-spec.ts
+ * @description 실 Oracle 스모크 — 단위 테스트(mock)로는 절대 드러나지 않는 부류를 잡는다.
+ *
+ * 왜 필요한가 (2026-09-14 실사례):
+ * - `findOne({ lock })` 이 만드는 `FETCH FIRST + FOR UPDATE` 를 Oracle 이 거부(ORA-02014)해
+ *   수리 기능이 한 번도 동작한 적이 없었다. 단위 테스트 2,650건은 전부 녹색이었다.
+ * - `type: 'date'` 컬럼이 문자열로 하이드레이션되는데 `.toISOString()` 을 불러 출하 통계가 500 이었다.
+ * 둘 다 "TypeORM 이 만든 SQL 을 Oracle 이 실제로 받는가 / 돌려준 값의 타입이 선언과 맞는가" 문제라
+ * 실 DB 를 때려야만 드러난다.
+ *
+ * 실행 (기본 스킵 — 자격증명과 DB 접근이 필요하다):
+ *   RUN_ORACLE_SMOKE=1 pnpm --dir apps/backend run test:e2e
+ *
+ * 안전성: 읽기 전용이다. 쓰기를 건드리는 검사는 트랜잭션을 열고 반드시 ROLLBACK 한다.
+ */
+import { DataSource } from 'typeorm';
+import * as path from 'path';
+import * as dotenv from 'dotenv';
+import { lockRowsForUpdate } from '../src/common/utils/row-lock.util';
+import { toDateOnly } from '../src/common/utils/date-only.util';
+
+dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+const enabled = process.env.RUN_ORACLE_SMOKE === '1';
+const describeOrSkip = enabled ? describe : describe.skip;
+
+jest.setTimeout(180_000);
+
+describeOrSkip('Oracle smoke (실 DB)', () => {
+  let ds: DataSource;
+
+  beforeAll(async () => {
+    ds = new DataSource({
+      type: 'oracle',
+      host: process.env.ORACLE_HOST || 'localhost',
+      port: parseInt(process.env.ORACLE_PORT || '1521', 10),
+      username: process.env.ORACLE_USER,
+      password: process.env.ORACLE_PASSWORD,
+      serviceName: process.env.ORACLE_SERVICE_NAME,
+      synchronize: false,
+      logging: ['error'],
+      entities: [path.resolve(__dirname, '../src/entities/*.entity{.ts,.js}')],
+    });
+    await ds.initialize();
+  });
+
+  afterAll(async () => {
+    if (ds?.isInitialized) await ds.destroy();
+  });
+
+  it('모든 엔티티가 실제 스키마에 대해 조회된다 — 매핑/타입 불일치를 잡는다', async () => {
+    const failures: string[] = [];
+    for (const meta of ds.entityMetadatas) {
+      try {
+        await ds.getRepository(meta.target).find({ take: 1 });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        failures.push(`${meta.tableName} (${meta.name}): ${message.split('\n')[0]}`);
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  it("type:'date' 컬럼 하이드레이션 값을 toDateOnly 가 전부 처리한다", async () => {
+    const dateColumns = ds.entityMetadatas.flatMap((meta) =>
+      meta.columns
+        .filter((column) => column.type === 'date')
+        .map((column) => ({ meta, property: column.propertyName })),
+    );
+    expect(dateColumns.length).toBeGreaterThan(0);
+
+    const failures: string[] = [];
+    for (const { meta, property } of dateColumns) {
+      const [row] = await ds.getRepository(meta.target).find({ take: 1, where: {} as never });
+      if (!row) continue;
+      const value = (row as Record<string, unknown>)[property];
+      if (value === null || value === undefined) continue;
+
+      // 선언은 Date 지만 Oracle 은 문자열로 돌려준다. 어느 쪽이든 toDateOnly 가 YYYY-MM-DD 를 만들어야 한다.
+      const converted = toDateOnly(value as Date | string);
+      if (converted === null || !/^\d{4}-\d{2}-\d{2}$/.test(converted)) {
+        failures.push(`${meta.tableName}.${property}: typeof=${typeof value} value=${String(value)} → ${converted}`);
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  it('행 잠금이 Oracle 에서 실제로 걸린다 (ORA-02014 회귀 방지)', async () => {
+    const qr = ds.createQueryRunner();
+    await qr.connect();
+    await qr.startTransaction();
+    try {
+      // 조건에 맞는 행이 없어도 SQL 이 거부되지 않아야 한다 — 우리가 잡는 것은 구문 거부다.
+      await expect(
+        lockRowsForUpdate(qr, 'REPAIR_ORDERS', { SEQ: -1, COMPANY: '__none__' }),
+      ).resolves.toBeDefined();
+
+      // 비교 대조: 옛 방식(findOne + lock)은 같은 조건에서 ORA-02014 로 거부된다.
+      await expect(
+        qr.query("SELECT SEQ FROM REPAIR_ORDERS WHERE SEQ = -1 FETCH FIRST 1 ROWS ONLY FOR UPDATE"),
+      ).rejects.toThrow(/ORA-02014/);
+    } finally {
+      await qr.rollbackTransaction();
+      await qr.release();
+    }
+  });
+});

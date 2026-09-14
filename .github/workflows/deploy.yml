@@ -70,6 +70,14 @@ jobs:
         shell: cmd
         continue-on-error: true
 
+      # 실 Oracle 스모크 — 단위 테스트(mock)로는 안 잡히는 부류를 잡는다.
+      # 읽기 전용이고 쓰기 검사는 롤백한다. 2026-09-14 에 이 부류로 수리 기능이 통째로
+      # 죽어 있던 것(ORA-02014)과 출하 통계 500 을 놓쳤다. 현재는 배포를 막지 않는다.
+      - name: Oracle smoke
+        run: pnpm run test:oracle-smoke
+        shell: cmd
+        continue-on-error: true
+
       - name: Backend typecheck
         run: pnpm run typecheck:backend
         shell: cmd

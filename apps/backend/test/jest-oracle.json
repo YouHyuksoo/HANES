@@ -1,0 +1,10 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": "oracle-smoke\\.e2e-spec\\.ts$",
+  "setupFiles": ["<rootDir>/oracle-smoke.setup.js"],
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  }
+}
