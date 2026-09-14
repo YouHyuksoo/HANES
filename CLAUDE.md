@@ -41,8 +41,8 @@ python C:/Users/hsyou/.codex/skills/ai-coordination/scripts/coordination_state.p
 - 이미 dev 서버가 떠 있으면 `pnpm build`를 실행하지 않는다. typecheck가 필요하면 아래 명령을 우선한다.
 
 ```powershell
-pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false
-pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false
+pnpm.cmd run typecheck:frontend
+pnpm.cmd run typecheck:backend
 ```
 
 - focused test와 typecheck를 먼저 수행한다.
