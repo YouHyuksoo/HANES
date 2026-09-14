@@ -216,4 +216,8 @@ describe('RepairStockService', () => {
     expect(qr.rollbackTransaction).toHaveBeenCalledTimes(1);
     expect(qr.commitTransaction).not.toHaveBeenCalled();
   });
+  it('불용창고(UNUSABLE) 재고로 수리를 인수할 수 있다', async () => {
+    warehouse = { warehouseType: 'UNUSABLE', useYn: 'Y' };
+    await expect(service.startInTx(qr, order, 'WH-DEFECT')).resolves.not.toThrow();
+  });
 });

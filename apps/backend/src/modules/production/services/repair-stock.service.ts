@@ -36,7 +36,7 @@ export class RepairStockService {
     if ((await this.movements(qr, order)).length) {
       throw new BadRequestException('이미 재고를 출고한 수리오더입니다.');
     }
-    await this.activeWarehouse(qr, order, warehouseCode, ['WIP', 'FG', 'DEFECT']);
+    await this.activeWarehouse(qr, order, warehouseCode, ['WIP', 'FG', 'DEFECT', 'UNUSABLE']);
     const item = await qr.manager.findOne(ItemMaster, {
       where: { itemCode: order.itemCode, ...this.tenant(order) },
     });
