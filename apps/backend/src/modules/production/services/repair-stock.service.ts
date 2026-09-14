@@ -16,6 +16,7 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { ProductInventoryService } from '../../inventory/services/product-inventory.service';
 import { MatIssueService } from '../../material/services/mat-issue.service';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 
 export interface RepairMaterialAllocation {
   itemCode: string;
@@ -43,9 +44,13 @@ export class RepairStockService {
     if (!item || item.useYn !== 'Y' || !['FINISHED', 'SEMI_PRODUCT'].includes(item.itemType)) {
       throw new BadRequestException('수리 대상은 사용 중인 반제품/완제품 품목이어야 합니다.');
     }
+    // Oracle 은 findOne({lock}) 의 FETCH FIRST + FOR UPDATE 를 거부한다 — 재고 행을 먼저 잠그고 lock 없이 읽는다.
+    await lockRowsForUpdate(qr, 'PRODUCT_STOCKS', {
+      WAREHOUSE_CODE: warehouseCode, ITEM_CODE: order.itemCode, QUALITY_STATUS: this.sourceQuality(order),
+      COMPANY: order.company, PLANT_CD: order.plant,
+    });
     const stock = await qr.manager.findOne(ProductStock, {
       where: { warehouseCode, itemCode: order.itemCode, qualityStatus: this.sourceQuality(order), ...this.tenant(order) },
-      lock: { mode: 'pessimistic_write' },
     });
     if (!stock || stock.qty < order.qty || stock.availableQty < order.qty || isProductStockOnHold(stock.status)) {
       throw new BadRequestException('수리할 대상 가용재고가 부족하거나 보류 상태입니다.');
@@ -168,9 +173,9 @@ export class RepairStockService {
       if (!item || item.useYn !== 'Y' || item.itemType !== 'RAW_MATERIAL') {
         throw new BadRequestException(`사용부품은 사용 중인 원자재 품목이어야 합니다: ${allocation.itemCode}`);
       }
+      await lockRowsForUpdate(qr, 'MAT_LOTS', { MAT_UID: allocation.matUid, COMPANY: order.company, PLANT_CD: order.plant });
       const lot = await qr.manager.findOne(MatLot, {
         where: { matUid: allocation.matUid, ...this.tenant(order) },
-        lock: { mode: 'pessimistic_write' },
       });
       if (!lot || lot.itemCode !== allocation.itemCode) {
         throw new BadRequestException(`사용부품과 LOT 품목이 일치하지 않습니다: ${allocation.matUid}`);

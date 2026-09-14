@@ -48,6 +48,7 @@ import { ProductInventoryService } from '../../inventory/services/product-invent
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { NumberingService } from '../../../shared/numbering.service';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 
 @Injectable()
 export class ShipOrderService {
@@ -1131,9 +1132,10 @@ export class ShipOrderService {
       // 1) 팔레트출하분: SHIPPED→reverse 후 CANCELED 마감+팔레트 분리, PREPARING/LOADED→cancel
       //    트랜잭션 내에서 shipment를 잠금 재조회 + 상태/ERP 재검증(비잠금 사전조회의 동시성 창 제거)
       for (const s0 of activeShipments) {
+        // Oracle 은 findOne({lock}) 의 FETCH FIRST + FOR UPDATE 를 거부한다 — 출하 행을 먼저 잠그고 lock 없이 읽는다.
+        await lockRowsForUpdate(qr, 'SHIPMENT_LOGS', { SHIP_NO: s0.shipNo, COMPANY: company, PLANT_CD: plant });
         const s = await qr.manager.findOne(ShipmentLog, {
           where: { shipNo: s0.shipNo, ...where },
-          lock: { mode: 'pessimistic_write' },
         });
         if (!s) throw new BadRequestException(`출하건을 찾을 수 없습니다: ${s0.shipNo}`);
         if (s.erpSyncYn === 'Y') {

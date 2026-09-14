@@ -26,7 +26,8 @@ describe('RepairWorkflowService', () => {
   it('starts with inventory and updates status in the same locked transaction',async()=>{
     const {service,qr,stock}=make();
     await service.start('2026-09-05',9,{warehouseCode:'FG_WIP'},'40','1000');
-    expect(qr.manager.findOne).toHaveBeenCalledWith(RepairOrder,expect.objectContaining({lock:{mode:'pessimistic_write'}}));
+    expect(qr.query).toHaveBeenCalledWith(expect.stringMatching(/^SELECT 1 FROM REPAIR_ORDERS WHERE REPAIR_DATE BETWEEN .* FOR UPDATE$/),expect.arrayContaining([9,'40','1000']));
+    expect(qr.manager.findOne).toHaveBeenCalledWith(RepairOrder,expect.not.objectContaining({lock:expect.anything()}));
     expect(stock.startInTx).toHaveBeenCalledWith(qr,expect.objectContaining({seq:9}),'FG_WIP');
     expect(qr.manager.update).toHaveBeenCalledWith(RepairOrder,expect.anything(),expect.objectContaining({status:'IN_REPAIR'}));
   });

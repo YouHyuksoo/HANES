@@ -11,8 +11,9 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { InspectResult } from '../../../entities/inspect-result.entity';
 import { RepairTargetService } from './repair-target.service';
 import { RepairStockService } from './repair-stock.service';
-import { repairDay, repairDateOnly } from './repair-date';
+import { repairDay, repairDayRange, repairDateOnly } from './repair-date';
 import { StartRepairDto, CompleteRepairDto, InspectRepairDto } from '../dto/repair.dto';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 
 @Injectable()
 export class RepairWorkflowService {
@@ -20,7 +21,9 @@ export class RepairWorkflowService {
     private readonly seq: SeqGeneratorService, private readonly target: RepairTargetService) {}
 
   private async locked(qr: QueryRunner, date: string, seq: number, company: string, plant: string) {
-    const order=await qr.manager.findOne(RepairOrder, {where:{repairDate:repairDay(date),seq,company,plant},lock:{mode:'pessimistic_write'}});
+    // Oracle 은 findOne({lock}) 이 만드는 FETCH FIRST + FOR UPDATE 를 거부한다(ORA-02014) — 행을 먼저 잠그고 lock 없이 읽는다.
+    await lockRowsForUpdate(qr,'REPAIR_ORDERS',{REPAIR_DATE:{between:repairDayRange(date)},SEQ:seq,COMPANY:company,PLANT_CD:plant});
+    const order=await qr.manager.findOne(RepairOrder, {where:{repairDate:repairDay(date),seq,company,plant}});
     if(!order) throw new NotFoundException('수리오더를 찾을 수 없습니다.');
     return order;
   }

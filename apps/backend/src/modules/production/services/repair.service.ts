@@ -27,7 +27,8 @@ import {
 } from '../dto/repair.dto';
 import { RepairTargetService } from './repair-target.service';
 import { repairStage } from '@harness/shared';
-import { repairDay, repairDateOnly } from './repair-date';
+import { repairDay, repairDayRange, repairDateOnly } from './repair-date';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 
 @Injectable()
 export class RepairService {
@@ -227,9 +228,12 @@ export class RepairService {
     plant: string,
   ) {
     return this.tx.run(async (queryRunner) => {
+      // Oracle 은 findOne({lock}) 의 FETCH FIRST + FOR UPDATE 를 거부한다 — 오더 행을 먼저 잠그고 lock 없이 읽는다.
+      await lockRowsForUpdate(queryRunner, 'REPAIR_ORDERS', {
+        REPAIR_DATE: { between: repairDayRange(repairDate) }, SEQ: seq, COMPANY: company, PLANT_CD: plant,
+      });
       const existing = await queryRunner.manager.findOne(RepairOrder, {
         where: { repairDate: repairDay(repairDate), seq, company, plant },
-        lock: { mode: 'pessimistic_write' },
       });
       if (!existing) {
         throw new NotFoundException(
@@ -295,9 +299,12 @@ export class RepairService {
     plant: string,
   ) {
     await this.tx.run(async (queryRunner) => {
+      // Oracle 은 findOne({lock}) 의 FETCH FIRST + FOR UPDATE 를 거부한다 — 오더 행을 먼저 잠그고 lock 없이 읽는다.
+      await lockRowsForUpdate(queryRunner, 'REPAIR_ORDERS', {
+        REPAIR_DATE: { between: repairDayRange(repairDate) }, SEQ: seq, COMPANY: company, PLANT_CD: plant,
+      });
       const existing = await queryRunner.manager.findOne(RepairOrder, {
         where: { repairDate: repairDay(repairDate), seq, company, plant },
-        lock: { mode: 'pessimistic_write' },
       });
       if (!existing) {
         throw new NotFoundException(

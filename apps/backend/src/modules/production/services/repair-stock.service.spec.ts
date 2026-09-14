@@ -176,8 +176,12 @@ describe('RepairStockService', () => {
     movements = [origin()];
     parts = [{ itemCode: 'RAW', qty: 3 }];
     await service.finishInTx(qr, order, 'FG_WIP', [allocation]);
+    // Oracle 은 findOne({lock}) 을 못 쓰므로 raw FOR UPDATE 로 LOT 행을 먼저 잠근다
+    expect(qr.query).toHaveBeenCalledWith(
+      expect.stringMatching(/^SELECT 1 FROM MAT_LOTS WHERE .* FOR UPDATE$/), ['LOT1', 'C', 'P'],
+    );
     expect(qr.manager.findOne).toHaveBeenCalledWith(MatLot, {
-      where: { matUid: 'LOT1', company: 'C', plant: 'P' }, lock: { mode: 'pessimistic_write' },
+      where: { matUid: 'LOT1', company: 'C', plant: 'P' },
     });
     expect(material.createInTx).toHaveBeenCalledWith(qr, {
       warehouseCode: 'RAW_WH', issueType: 'REPAIR', items: [{ matUid: 'LOT1', issueQty: 3 }], workerId: 'W', remark: 'REPAIR:71',

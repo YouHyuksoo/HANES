@@ -10,6 +10,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { RepairOrder } from '../../../entities/repair-order.entity';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 
 export interface RepairTargetDraft {
   itemCode: string;
@@ -95,9 +96,10 @@ export class RepairTargetService {
       || draft.prdUid !== draft.fgBarcode || (draft.qty ?? 1) !== 1) {
       throw new BadRequestException('FG 수리는 실제 바코드와 동일한 시리얼, 수량 1로 등록해야 합니다.');
     }
+    // Oracle 은 findOne({lock}) 의 FETCH FIRST + FOR UPDATE 를 거부한다 — 잠금이 필요하면 행을 먼저 잠근다.
+    if (lock) await lockRowsForUpdate(qr, 'FG_LABELS', { FG_BARCODE: draft.fgBarcode, COMPANY: company, PLANT_CD: plant });
     const label = await qr.manager.findOne(FgLabel, {
       where: { fgBarcode: draft.fgBarcode, company, plant },
-      ...(lock ? { lock: { mode: 'pessimistic_write' as const } } : {}),
     });
     if (!label || label.itemCode !== draft.itemCode || label.status !== 'VISUAL_FAIL' || label.boxNo || label.replacedBy) {
       throw new BadRequestException('품목이 일치하는 포장 전 외관불합격 FG 라벨만 수리할 수 있습니다.');

@@ -84,7 +84,10 @@ describe('RepairTargetService', () => {
   it('serializes starts on the label and refuses another active repair of the same barcode', async () => {
     duplicate = { ...order, seq: 72, status: 'IN_REPAIR' };
     await expect(service.validateStartInTx(qr, order)).rejects.toThrow();
-    expect(qr.manager.findOne).toHaveBeenCalledWith(FgLabel, expect.objectContaining({ lock: { mode: 'pessimistic_write' } }));
+    expect(qr.query).toHaveBeenCalledWith(
+      expect.stringMatching(/^SELECT 1 FROM FG_LABELS WHERE .* FOR UPDATE$/), ['FG001', 'C', 'P'],
+    );
+    expect(qr.manager.findOne).toHaveBeenCalledWith(FgLabel, expect.not.objectContaining({ lock: expect.anything() }));
     expect(qr.manager.findOne).toHaveBeenCalledWith(RepairOrder, expect.objectContaining({ where: expect.objectContaining({ fgBarcode: 'FG001', status: 'IN_REPAIR', company: 'C', plant: 'P' }) }));
   });
 
