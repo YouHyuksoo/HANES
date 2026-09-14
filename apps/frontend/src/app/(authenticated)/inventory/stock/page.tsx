@@ -28,6 +28,7 @@ export default function InventoryStockPage() {
     { value: 'FG', label: t('inventory.stock.fg') },
     { value: 'FLOOR', label: t('inventory.stock.floor') },
     { value: 'DEFECT', label: t('inventory.stock.defect') },
+    { value: 'UNUSABLE', label: t('inventory.stock.unusable') },
     { value: 'SCRAP', label: t('inventory.stock.scrap') },
   ], [t]);
 

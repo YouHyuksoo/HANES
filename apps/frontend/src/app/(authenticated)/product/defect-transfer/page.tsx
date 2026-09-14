@@ -219,7 +219,10 @@ export default function ProductDefectTransferPage() {
         <Card className="min-h-0 overflow-hidden" padding="none">
           <CardContent className="h-full p-4 flex flex-col min-h-0">
             <div className="mb-3 flex items-center justify-between flex-shrink-0">
-              <h2 className="text-sm font-bold text-text">{t("productMgmt.defectTransfer.targetTitle", "입고 대상 불량 재고")}</h2>
+              <div className="flex items-baseline gap-3">
+                <h2 className="text-sm font-bold text-text">{t("productMgmt.defectTransfer.targetTitle", "입고 대상 불량 재고")}</h2>
+                <span className="text-xs text-text-muted">{t("productMgmt.defectTransfer.targetWarehouse", "입고 창고: 불용창고")}</span>
+              </div>
               <span className="text-xs text-text-muted">{targetRows.length.toLocaleString()}건</span>
             </div>
             <DataGrid
