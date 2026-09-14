@@ -4873,6 +4873,7 @@
       "resultAll": "判定: 全部",
       "pass": "合格",
       "fail": "不合格",
+      "unjudged": "未判定",
       "judgement": "判定",
       "inspector": "检查员",
       "defectChecklist": "不良清单",
@@ -6221,7 +6222,8 @@
       "storageDays": "库龄天数",
       "storageDaysValue": "{{count}}天",
       "longStored": "长期库存",
-      "longStoredOnly": "仅长期库存"    },
+      "longStoredOnly": "仅长期库存"
+    },
     "pallet": {
       "title": "托盘装载",
       "subtitle": "管理托盘装载。",

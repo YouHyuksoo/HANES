@@ -332,6 +332,17 @@ export class IntegratedInspectStepDto {
  * ALL PASS 시 FG_BARCODE 발행, 하나라도 FAIL이면 종합 FAIL(미발행)
  */
 export class IntegratedInspectDto {
+  @ApiPropertyOptional({
+    description:
+      '검사 대상 FG 바코드. 스캔·선택으로 들어오면 그 라벨에 판정을 기록한다(새로 발행하지 않는다). ' +
+      '미지정이면 수동 입력 흐름으로 보고 전 스텝 합격 시 라벨을 새로 발행한다.',
+    example: 'FG26090400413',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  fgBarcode?: string;
+
   @ApiProperty({ description: '작업지시 번호', example: 'JO-20260316-001' })
   @IsString()
   @MaxLength(50)

@@ -152,12 +152,14 @@ export class ContinuityInspectController {
   @ApiOperation({ summary: 'Search FG labels' })
   @ApiQuery({ name: 'search', required: false, description: '바코드/품목코드/지시번호 검색' })
   @ApiQuery({ name: 'status', required: false, description: '라벨 상태 필터' })
+  @ApiQuery({ name: 'inspectPassYn', required: false, description: "판정 필터 — 'Y' 합격 / 'N' 불합격 / 'NONE' 미판정. 미지정이면 전체" })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiResponse({ status: 200, description: 'Success' })
   async findAllFgLabels(
     @Query('search') search?: string,
     @Query('status') status?: string,
+    @Query('inspectPassYn') inspectPassYn?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Company() company?: string,
@@ -166,6 +168,7 @@ export class ContinuityInspectController {
     const data = await this.continuityInspectService.findAllFgLabels({
       search,
       status,
+      inspectPassYn,
       company,
       plant,
       page: page ? parseInt(page, 10) : undefined,

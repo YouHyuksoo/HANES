@@ -586,4 +586,89 @@ describe('ContinuityInspectService', () => {
     });
     expect(qb.andWhere).toHaveBeenCalledWith('pr.status != :canceled', { canceled: 'CANCELED' });
   });
+
+  describe('integratedInspect — 스캔한 라벨을 검사한다(새로 발행하지 않는다)', () => {
+    const steps = [
+      { inspectType: 'CONTINUITY', passYn: 'Y' },
+      { inspectType: 'LEAK', passYn: 'Y' },
+    ];
+
+    /** 스캔 라벨 1건 + 작업지시 1건이 잡히도록 QueryRunner 를 세운다. */
+    function arrangeScannedLabel(label: Partial<FgLabel>) {
+      const saved: Record<string, unknown>[] = [];
+      mockSysConfigService.isEnabled.mockResolvedValue(false);
+      mockSeqGen.getNo.mockImplementation(async () => `IR-${saved.length + 1}`);
+      mockQueryRunner.query.mockResolvedValue([]);
+      (mockQueryRunner.manager.findOne as jest.Mock).mockImplementation(async (entity: unknown) => {
+        if (entity === FgLabel) return { ...label };
+        if (entity === JobOrder) return { orderNo: 'JO-1', company: 'C1', plant: 'P1' };
+        return null;
+      });
+      (mockQueryRunner.manager.find as jest.Mock).mockResolvedValue([]);
+      (mockQueryRunner.manager.create as jest.Mock).mockImplementation((_e: unknown, v: unknown) => v);
+      (mockQueryRunner.manager.save as jest.Mock).mockImplementation(async (_e: unknown, v: unknown) => {
+        saved.push(v as Record<string, unknown>);
+        return v;
+      });
+      return saved;
+    }
+
+    it('전 스텝 합격이어도 새 바코드를 발행하지 않고 스캔한 라벨에 판정을 남긴다', async () => {
+      const saved = arrangeScannedLabel({
+        fgBarcode: 'FG-100', itemCode: 'ITEM-1', orderNo: 'JO-1', company: 'C1', plant: 'P1',
+      });
+
+      const res = await target.integratedInspect(
+        { orderNo: 'JO-1', itemCode: 'ITEM-1', fgBarcode: 'FG-100', steps } as any, 'C1', 'P1',
+      );
+
+      expect(res.overallPass).toBe(true);
+      expect(res.fgBarcode).toBe('FG-100');
+      // 새 바코드 채번이 일어나면 안 된다 — 과발행 가드에 걸리던 원인이었다
+      expect(mockSeqGen.nextFgBarcode).not.toHaveBeenCalled();
+      // 스캔한 라벨이 합격으로 갱신된다
+      const label = saved.find((v) => v.fgBarcode === 'FG-100' && v.inspectPassYn !== undefined);
+      expect(label?.inspectPassYn).toBe('Y');
+    });
+
+    it('스텝마다 INSPECT_RESULT 를 한 건씩 남긴다', async () => {
+      const saved = arrangeScannedLabel({
+        fgBarcode: 'FG-100', itemCode: 'ITEM-1', orderNo: 'JO-1', company: 'C1', plant: 'P1',
+      });
+
+      const res = await target.integratedInspect(
+        { orderNo: 'JO-1', itemCode: 'ITEM-1', fgBarcode: 'FG-100', steps } as any, 'C1', 'P1',
+      );
+
+      expect(res.inspectResultIds).toHaveLength(steps.length);
+      expect(res.stepResults.map((r) => r.inspectType)).toEqual(['CONTINUITY', 'LEAK']);
+      const inspectRows = saved.filter((v) => v.inspectType !== undefined);
+      expect(inspectRows.map((v) => v.inspectType)).toEqual(['CONTINUITY', 'LEAK']);
+      expect(inspectRows.every((v) => v.fgBarcode === 'FG-100')).toBe(true);
+    });
+
+    it('불합격이어도 스캔한 라벨에 판정을 남긴다 — 재검사·수리 흐름을 위해', async () => {
+      const saved = arrangeScannedLabel({
+        fgBarcode: 'FG-100', itemCode: 'ITEM-1', orderNo: 'JO-1', company: 'C1', plant: 'P1',
+      });
+
+      const res = await target.integratedInspect({
+        orderNo: 'JO-1', itemCode: 'ITEM-1', fgBarcode: 'FG-100',
+        steps: [{ inspectType: 'CONTINUITY', passYn: 'Y' }, { inspectType: 'LEAK', passYn: 'N', errorCode: 'E-LEAK' }],
+      } as any, 'C1', 'P1');
+
+      expect(res.overallPass).toBe(false);
+      const label = saved.find((v) => v.fgBarcode === 'FG-100' && v.inspectPassYn !== undefined);
+      expect(label?.inspectPassYn).toBe('N');
+    });
+
+    it('라벨의 작업지시·품목이 검사 대상과 다르면 거부한다', async () => {
+      arrangeScannedLabel({
+        fgBarcode: 'FG-100', itemCode: 'ITEM-1', orderNo: 'JO-OTHER', company: 'C1', plant: 'P1',
+      });
+      await expect(target.integratedInspect(
+        { orderNo: 'JO-1', itemCode: 'ITEM-1', fgBarcode: 'FG-100', steps } as any, 'C1', 'P1',
+      )).rejects.toThrow(/작업지시가 검사 작업지시와 일치하지 않습니다/);
+    });
+  });
 });

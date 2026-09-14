@@ -5427,6 +5427,7 @@
       "resultAll": "판정: 전체",
       "pass": "합격",
       "fail": "불합격",
+      "unjudged": "미판정",
       "judgement": "판정",
       "inspector": "검사원",
       "defectChecklist": "불량 체크리스트",
@@ -6259,7 +6260,8 @@
       "storageDays": "보관경과일",
       "storageDaysValue": "{{count}}일",
       "longStored": "장기보관",
-      "longStoredOnly": "장기보관만"    },
+      "longStoredOnly": "장기보관만"
+    },
     "pallet": {
       "title": "팔레트적재",
       "subtitle": "팔레트 적재를 관리합니다.",

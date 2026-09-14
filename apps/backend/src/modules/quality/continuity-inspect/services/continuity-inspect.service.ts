@@ -166,6 +166,8 @@ export class ContinuityInspectService {
     limit?: number;
     search?: string;
     status?: string;
+    /** 판정 필터 — 'Y' 합격 / 'N' 불합격 / 'NONE' 미판정(아직 검사 안 된 라벨). 미지정이면 전체 */
+    inspectPassYn?: string;
     company?: string;
     plant?: string;
   }) {
@@ -183,6 +185,12 @@ export class ContinuityInspectService {
     }
     if (query.status) {
       qb.andWhere('fg.status = :status', { status: query.status });
+    }
+    // 판정 필터는 DB 에서 거른다 — 페이지 캡(limit) 안에서 메모리로 거르면 건수가 왜곡된다.
+    if (query.inspectPassYn === 'NONE') {
+      qb.andWhere('fg.inspectPassYn IS NULL');
+    } else if (query.inspectPassYn) {
+      qb.andWhere('fg.inspectPassYn = :inspectPassYn', { inspectPassYn: query.inspectPassYn });
     }
     if (query.company) {
       qb.andWhere('fg.company = :company', { company: query.company });
@@ -819,9 +827,32 @@ export class ContinuityInspectService {
       /** 2. 종합 합부 판정 — 하나라도 N이면 전체 FAIL */
       const overallPass = steps.every((s) => s.passYn === 'Y');
 
-      /** 3. FG 바코드 발행 (ALL PASS 시에만) & 과발행 차단 */
+      /**
+       * 3. 검사 대상 FG 라벨 확정
+       *
+       * (가) 스캔·선택으로 들어온 라벨이 있으면 **그 라벨을 검사한다** — 새로 발행하지 않는다.
+       *     화면이 바코드를 스캔해 검사하는 흐름이라 여기서 라벨을 또 발행하면 기발행 수가
+       *     생산 양품수를 넘어 과발행 가드에 항상 걸린다(통합검사가 한 건도 저장되지 못했던 원인).
+       * (나) 라벨 없이 작업지시·품목만 수동 입력한 경우에만 전 스텝 합격 시 새로 발행하고,
+       *     그때는 과발행을 막는다.
+       */
       let fgBarcode: string | null = null;
-      if (overallPass) {
+      let scannedLabel: FgLabel | null = null;
+
+      if (dto.fgBarcode?.trim()) {
+        scannedLabel = await this.mutableLabelInTx(queryRunner, dto.fgBarcode.trim(), company, plant);
+        if (scannedLabel.orderNo && scannedLabel.orderNo !== dto.orderNo) {
+          throw new BadRequestException(
+            `FG 라벨의 작업지시가 검사 작업지시와 일치하지 않습니다. (라벨 ${scannedLabel.orderNo}, 검사 ${dto.orderNo})`,
+          );
+        }
+        if (scannedLabel.itemCode && scannedLabel.itemCode !== dto.itemCode) {
+          throw new BadRequestException(
+            `FG 라벨의 품목이 검사 품목과 일치하지 않습니다. (라벨 ${scannedLabel.itemCode}, 검사 ${dto.itemCode})`,
+          );
+        }
+        fgBarcode = scannedLabel.fgBarcode;
+      } else if (overallPass) {
         const producedRow = await queryRunner.manager
           .createQueryBuilder(ProdResult, 'pr')
           .select('COALESCE(SUM(pr.goodQty), 0)', 'sum')
@@ -887,17 +918,25 @@ export class ContinuityInspectService {
         stepResults.push({ inspectType: step.inspectType, passYn: step.passYn, resultNo: saved.resultNo });
       }
 
-      /** 5. ALL PASS 시 FG_LABEL 등록 */
-      if (overallPass && fgBarcode) {
-        // 첫 번째 스텝(CONTINUITY 우선) 결과를 inspectResultId로 연결
-        const continuityResult = steps.find((s) => s.inspectType === 'CONTINUITY');
-        const continuityId = continuityResult
-          ? inspectResultIds[steps.indexOf(continuityResult)]
-          : inspectResultIds[0];
+      /** 5. FG_LABEL 판정 기록 */
+      // 첫 번째 스텝(CONTINUITY 우선) 결과를 inspectResultId로 연결
+      const continuityResult = steps.find((s) => s.inspectType === 'CONTINUITY');
+      const continuityId = continuityResult
+        ? inspectResultIds[steps.indexOf(continuityResult)]
+        : inspectResultIds[0];
 
-        const structureResult = steps.find((s) => s.inspectType === 'STRUCTURE');
-        const structureIdx = structureResult ? steps.indexOf(structureResult) : -1;
+      const structureResult = steps.find((s) => s.inspectType === 'STRUCTURE');
+      const structureIdx = structureResult ? steps.indexOf(structureResult) : -1;
+      const structureYn = structureIdx >= 0 ? steps[structureIdx].passYn : null;
 
+      if (scannedLabel) {
+        // (가) 스캔한 라벨에 판정을 기록한다. 불합격도 기록해야 재검사·수리 흐름이 이어진다.
+        scannedLabel.inspectResultId = continuityId;
+        scannedLabel.inspectPassYn = overallPass ? 'Y' : 'N';
+        if (structureYn) scannedLabel.structureYn = structureYn;
+        await queryRunner.manager.save(FgLabel, scannedLabel);
+      } else if (overallPass && fgBarcode) {
+        // (나) 수동 입력 흐름에서 전 스텝 합격 시에만 라벨을 새로 발행한다.
         const fgLabel = queryRunner.manager.create(FgLabel, {
           fgBarcode,
           itemCode: dto.itemCode,
@@ -908,7 +947,7 @@ export class ContinuityInspectService {
           status: 'ISSUED',
           inspectResultId: continuityId,
           inspectPassYn: 'Y',
-          structureYn: structureIdx >= 0 ? steps[structureIdx].passYn : null,
+          structureYn,
           company: company ?? jobOrder.company,
           plant: plant ?? jobOrder.plant,
         });

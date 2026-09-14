@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle, XCircle, Zap } from "lucide-react";
 import { Button, Input } from "@/components/ui";
@@ -32,23 +32,36 @@ interface Props {
   onSave: () => void;
 }
 
+function makeBlankSteps(): IntegratedStepState[] {
+  return STEPS.map((s) => ({
+    inspectType: s.inspectType,
+    labelKey: s.labelKey,
+    passYn: null,
+    errorCode: "",
+    errorDetail: "",
+  }));
+}
+
 export default function IntegratedInspectPanel({ fgLabel, onClose, onSave }: Props) {
   const { t } = useTranslation();
 
   const [manualOrderNo, setManualOrderNo] = useState("");
   const [manualItemCode, setManualItemCode] = useState("");
 
-  const [steps, setSteps] = useState<IntegratedStepState[]>(() =>
-    STEPS.map((s) => ({
-      inspectType: s.inspectType,
-      labelKey: s.labelKey,
-      passYn: null,
-      errorCode: "",
-      errorDetail: "",
-    }))
-  );
+  const [steps, setSteps] = useState<IntegratedStepState[]>(makeBlankSteps);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<IntegratedInspectApiResponse | null>(null);
+
+  // 검사 대상이 바뀌면 판정을 반드시 비운다.
+  // 패널은 스캔 사이에 언마운트되지 않으므로(page 의 isPanelOpen 유지), 비우지 않으면
+  // 이전 제품의 합격 판정이 화면에 남고 그대로 새 제품에 저장될 수 있다.
+  const targetBarcode = fgLabel?.fgBarcode;
+  useEffect(() => {
+    setSteps(makeBlankSteps());
+    setResult(null);
+    setManualOrderNo("");
+    setManualItemCode("");
+  }, [targetBarcode]);
 
   const updateStep = useCallback(
     (inspectType: string, field: keyof IntegratedStepState, value: unknown) => {
@@ -75,6 +88,9 @@ export default function IntegratedInspectPanel({ fgLabel, onClose, onSave }: Pro
       const payload: Record<string, unknown> = {
         orderNo: orderNo.trim(),
         itemCode: itemCode.trim(),
+        // 스캔·선택한 라벨을 그대로 검사 대상으로 보낸다. 안 보내면 서버가 수동 입력 흐름으로 보고
+        // 합격 시 라벨을 새로 발행하려다 과발행 가드에 걸린다.
+        ...(fgLabel?.fgBarcode ? { fgBarcode: fgLabel.fgBarcode } : {}),
         steps: steps.map((s) => ({
           inspectType: s.inspectType,
           passYn: s.passYn,
@@ -103,13 +119,20 @@ export default function IntegratedInspectPanel({ fgLabel, onClose, onSave }: Pro
         toast.error(t("inspection.integrated.overallFailDesc", "하나 이상의 검사 스텝이 불합격입니다."));
       }
 
+      // 저장이 끝나면 판정 입력을 비운다(결과 배너는 남긴다).
+      // 같은 라벨을 다시 스캔하면 대상이 안 바뀌어 위 리셋이 돌지 않으므로 여기서도 비워야
+      // 방금 저장한 판정이 다음 건에 그대로 딸려가지 않는다.
+      setSteps(makeBlankSteps());
+      setManualOrderNo("");
+      setManualItemCode("");
+
       onSave();
     } catch {
       // Error handled by interceptor
     } finally {
       setSubmitting(false);
     }
-  }, [steps, canSubmit, orderNo, itemCode, t, onSave]);
+  }, [steps, canSubmit, orderNo, itemCode, fgLabel?.fgBarcode, t, onSave]);
 
   return (
     <div className="flex-shrink-0 rounded-xl border border-border bg-background shadow-sm animate-fade-in">

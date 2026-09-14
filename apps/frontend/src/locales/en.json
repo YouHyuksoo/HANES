@@ -4891,6 +4891,7 @@
       "resultAll": "Result: All",
       "pass": "Pass",
       "fail": "Fail",
+      "unjudged": "Unjudged",
       "judgement": "Judgement",
       "inspector": "Inspector",
       "defectChecklist": "Defect Checklist",
@@ -6239,7 +6240,8 @@
       "storageDays": "Storage Days",
       "storageDaysValue": "{{count}} d",
       "longStored": "Long Stored",
-      "longStoredOnly": "Long stored only"    },
+      "longStoredOnly": "Long stored only"
+    },
     "pallet": {
       "title": "Palletizing",
       "subtitle": "Manage pallet loading.",

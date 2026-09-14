@@ -4873,6 +4873,7 @@
       "resultAll": "Kết quả: Tất cả",
       "pass": "Đạt",
       "fail": "Không đạt",
+      "unjudged": "Chưa đánh giá",
       "judgement": "Phán định",
       "inspector": "Kiểm tra viên",
       "defectChecklist": "Danh sách lỗi",
@@ -6221,7 +6222,8 @@
       "storageDays": "Số ngày lưu kho",
       "storageDaysValue": "{{count}} ngày",
       "longStored": "Lưu kho lâu",
-      "longStoredOnly": "Chỉ lưu kho lâu"    },
+      "longStoredOnly": "Chỉ lưu kho lâu"
+    },
     "pallet": {
       "title": "Xếp pallet",
       "subtitle": "Quản lý xếp pallet.",
