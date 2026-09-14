@@ -215,28 +215,39 @@ async function runInspection(ctx: ActionContext, step: ScenarioStep): Promise<St
         .filter({ has: ctx.page.getByRole('button', { name: /^(입력|보기)$/ }) })
         .last();
   const text = (await card.innerText().catch(() => '')) ?? '';
+  const trigger = hasTestId ? openButton : card.getByRole('button', { name: /^(입력|보기)$/ }).first();
+  const triggerLabel = (await trigger.innerText().catch(() => '')).trim();
 
-  if (text.includes('완료(합격)') || /완료\s*\d{2}:\d{2}/.test(text)) {
+  // HeaderCheckItem 은 done 일 때만 '보기' 를 띄우고, done 은 inspectPassed 기준이다.
+  // 배지 문구는 화면마다 달라질 수 있으므로 버튼 문구를 1순위 판정으로 쓴다.
+  if (triggerLabel === '보기' || text.includes('완료(합격)') || /완료\s*\d{2}:\d{2}/.test(text)) {
     return 'ALREADY_DONE';
   }
-  if (text.includes('완료(불합격)')) {
+  if (text.includes('완료(불합격)') || text.includes('NG')) {
     throw new Error(`${badgeLabel} 종합판정이 불합격이다 — 설비 조치 후 사람이 재점검해야 한다 (규격서 7.1)`);
   }
-
-  const trigger = hasTestId ? openButton : card.getByRole('button', { name: '입력' }).first();
   if (await trigger.isDisabled().catch(() => false)) {
     throw new Error(`${badgeLabel} 입력 버튼이 비활성이다 — 선행 조건(설비/작업지시/작업자 선택)을 먼저 채워야 한다`);
   }
-  await trigger.click();
+
+  const stepTimeout = step.timeoutMs ?? ctx.scenario.defaultTimeoutMs ?? DEFAULT_TIMEOUT_MS;
+  await trigger.click({ timeout: stepTimeout });
   const dialog = ctx.page.getByRole('dialog').first();
   await dialog.waitFor({ state: 'visible', timeout: 5000 });
 
   // 선택형 항목을 전부 합격으로. 측정형은 건드리지 않는다(자동 판정).
   const passButtons = dialog.getByRole('button', { name: /^(OK|합격|PASS)$/ });
   const count = await passButtons.count();
-  for (let i = 0; i < count; i += 1) await passButtons.nth(i).click();
+  for (let i = 0; i < count; i += 1) await passButtons.nth(i).click({ timeout: stepTimeout });
 
-  await dialog.getByRole('button', { name: /저장/ }).first().click();
+  const saveButton = dialog.getByRole('button', { name: /저장/ }).first();
+  if (await saveButton.isDisabled().catch(() => false)) {
+    throw new Error(
+      `${badgeLabel} 저장 버튼이 비활성이다 — 점검자 선택이나 미응답 항목이 남아 있다`
+      + ` (버튼 안내: ${(await saveButton.getAttribute('aria-label')) ?? '-'})`,
+    );
+  }
+  await saveButton.click({ timeout: stepTimeout });
   await dialog.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
   return 'PASS';
 }

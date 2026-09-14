@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "id": "subprocess-kitting-basic",
+  "title": "실적입력(서브공정) — 이전 SFG 스캔 → 발행 → 확정 (전체 흐름)",
+  "startRoute": "/production/subprocess-kitting",
+  "dataPolicy": "consumes",
+  "reportSlug": "hanes-subprocess-kitting-basic",
+  "preconditions": [
+    "dev 서버 3002 / 백엔드 3003 기동",
+    "e2e 세션(storageState)이 유효할 것",
+    "입력 SFG(vars.inputSg)가 IN_STOCK·REMAIN_QTY>0 일 것 — 소모되면 vars 재조회 필요",
+    "작업지시(vars.orderNo)가 WAITING 또는 RUNNING 일 것",
+    "품목 N91H00-X9800-C2 는 도면 회로가 없어 회로 선택이 필요 없다(서버 가드 통과)"
+  ],
+  "onFailure": "abort",
+  "defaultTimeoutMs": 15000,
+  "settleMs": 700,
+  "vars": {
+    "equipCode": "EQ-SHDCT-HV-01",
+    "orderNo": "WO2609130411",
+    "itemCode": "N91H00-X9800-C2",
+    "inputSg": "SG-SEED-C2A-01",
+    "workerCode": "N91H00_WK03"
+  },
+  "steps": [
+    {
+      "action": "goto",
+      "value": "/production/subprocess-kitting",
+      "note": "실적입력(서브공정) 화면 진입",
+      "expect": {
+        "type": "API_CALL",
+        "method": "GET",
+        "pathIncludes": "/equipment/equips",
+        "status": 200
+      }
+    },
+    {
+      "action": "waitForText",
+      "value": "이전 공정 SFG 스캔",
+      "note": "화면 골격이 그려졌는지 확인"
+    },
+    {
+      "action": "screenshot",
+      "as": "01-initial.png",
+      "label": "01. 진입 직후",
+      "scope": "content"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "설비를 선택하세요"
+      },
+      "note": "설비 선택 모달 열기"
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-equip-{{equipCode}}"
+      },
+      "note": "실드절단 설비(고전압) #1 선택 — 공정 SHDCT-HV 도출",
+      "expect": {
+        "type": "API_CALL",
+        "method": "GET",
+        "pathIncludes": "/equipment/equips/{{equipCode}}",
+        "status": 200
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "작업자 선택"
+      },
+      "note": "작업자 선택 모달 열기"
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-worker-{{workerCode}}"
+      },
+      "note": "조립 작업자 선택"
+    },
+    {
+      "action": "click",
+      "target": {
+        "testId": "kiosk-worker-confirm"
+      },
+      "note": "작업자 사진 확인 후 완료 — 모달을 닫아야 뒤 스텝의 클릭이 오버레이에 막히지 않는다"
+    },
+    {
+      "action": "screenshot",
+      "as": "02-equip-worker.png",
+      "label": "02. 설비·작업자 선택 후",
+      "scope": "content"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "변경"
+      },
+      "optional": true,
+      "note": "설비에 복원된 기존 작업지시를 해제한다 — 선택된 지시가 있으면 입력창 대신 표시 영역이 뜬다. 복원된 지시가 없으면 SKIPPED"
+    },
+    {
+      "action": "scan",
+      "target": {
+        "ariaLabel": "작업지시번호 스캔 또는 입력 후 Enter"
+      },
+      "value": "{{orderNo}}",
+      "note": "반제품 작업지시 스캔 (OPERATION 지시, 공정 SHDCT-HV 일치)",
+      "expect": {
+        "type": "API_CALL",
+        "method": "GET",
+        "pathIncludes": "/production/subprocess-kitting/assembly-requirements/{{orderNo}}",
+        "status": 200
+      }
+    },
+    {
+      "action": "inspection",
+      "value": "DAILY",
+      "note": "설비 일상점검 — 이미 완료면 ALREADY_DONE"
+    },
+    {
+      "action": "waitMs",
+      "value": 2500,
+      "note": "작업지시를 바꾸면 작업자 점검 상태(orderNo 기준 check)가 다시 조회된다. 그 갱신 전에 배지를 읽으면 완료를 미완료로 오판하므로 잠시 기다린다"
+    },
+    {
+      "action": "inspection",
+      "value": "WORKER",
+      "note": "작업자 설비점검 — orderNo 기준이라 작업지시 선택 뒤에 확인해야 한다"
+    },
+    {
+      "action": "screenshot",
+      "as": "03-order-selected.png",
+      "label": "03. 작업지시 선택 후",
+      "scope": "content"
+    },
+    {
+      "action": "scan",
+      "target": {
+        "placeholder": "이전 공정 SFG 바코드 스캔 또는 입력 후 Enter"
+      },
+      "value": "{{inputSg}}",
+      "note": "이전 공정 SFG 스캔 — BOM 반제품 자식(N91H00-X9800-C2-A)이라 오투입 아님",
+      "expect": {
+        "type": "API_CALL",
+        "method": "GET",
+        "pathIncludes": "/production/subprocess-kitting/sg-label/{{inputSg}}",
+        "status": 200
+      }
+    },
+    {
+      "action": "screenshot",
+      "as": "04-sfg-scanned.png",
+      "label": "04. 이전 SFG 스캔 목록",
+      "scope": "content"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "양품"
+      },
+      "note": "확정 실적을 양품 1로 등록 — 발행 전에 선택해야 잠기지 않는다"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "SFG 라벨 발행"
+      },
+      "note": "키팅 실행 → 새 SFG 발행 (status=ISSUED)",
+      "expect": {
+        "type": "API_CALL",
+        "method": "POST",
+        "pathIncludes": "/production/subprocess-kitting/issue-sg-label",
+        "status": 200
+      }
+    },
+    {
+      "action": "capture",
+      "target": {
+        "testId": "subkit-issued-sg"
+      },
+      "as": "issuedSg",
+      "note": "발행된 새 SFG 바코드를 읽어 확정 스캔에 쓴다"
+    },
+    {
+      "action": "screenshot",
+      "as": "05-issued.png",
+      "label": "05. 새 SFG 발행 완료",
+      "scope": "content"
+    },
+    {
+      "action": "scan",
+      "target": {
+        "placeholder": "실물 SFG 라벨 스캔"
+      },
+      "value": "{{issuedSg}}",
+      "note": "실물 새 SFG 스캔 → 단일 트랜잭션 확정 (라벨 승격 + 계보 + 실적 + 재고)",
+      "expect": {
+        "type": "API_CALL",
+        "method": "POST",
+        "pathIncludes": "/production/subprocess-kitting/confirm-subkit",
+        "status": 200
+      }
+    },
+    {
+      "action": "waitForText",
+      "value": "확정",
+      "note": "확정 완료 문구 확인"
+    },
+    {
+      "action": "screenshot",
+      "as": "06-confirmed.png",
+      "label": "06. 키팅 확정 완료",
+      "scope": "content"
+    },
+    {
+      "action": "api",
+      "method": "GET",
+      "path": "/production/subprocess-kitting/sg-label/{{issuedSg}}",
+      "expectApi": {
+        "status": 200
+      },
+      "note": "확정 검증: 발행된 새 SFG 가 조회된다"
+    }
+  ]
+}
