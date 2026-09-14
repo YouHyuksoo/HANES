@@ -63,20 +63,20 @@ jobs:
         run: pnpm build
         shell: cmd
 
-      # 환경 의존 테스트(시리얼포트, 백업 ZIP 등)가 러너에서 튀어도 배포(PM2 기동)를 막지 않는다.
-      # 실패는 런 어노테이션으로 남으므로 방치하지 말고 확인할 것. 결정적 게이트는 typecheck가 담당.
+      # 배포 게이트. 실패하면 PM2 기동까지 가지 않는다(2026-09-15 정책 변경 —
+      # 이전에는 continue-on-error 로 통과시켰고, 그 사이 수리 기능이 통째로 죽어 있는 것을 놓쳤다).
+      # 환경 의존 테스트(시리얼포트, 백업 ZIP 등)가 러너에서 튀면 그 테스트를 고치거나 격리한다.
       - name: Backend Jest
         run: pnpm run test:backend:ci
         shell: cmd
-        continue-on-error: true
 
-      # 실 Oracle 스모크 — 단위 테스트(mock)로는 안 잡히는 부류를 잡는다.
-      # 읽기 전용이고 쓰기 검사는 롤백한다. 2026-09-14 에 이 부류로 수리 기능이 통째로
-      # 죽어 있던 것(ORA-02014)과 출하 통계 500 을 놓쳤다. 현재는 배포를 막지 않는다.
+      # 실 Oracle 스모크 — 단위 테스트(mock)로는 안 잡히는 부류를 잡는다. 배포 게이트다.
+      # 읽기 전용이고 쓰기 검사는 롤백한다. PM2 기동 전에 돌므로, 새 엔티티 코드가 실제
+      # 스키마와 맞지 않으면 앱이 뜨기 전에 막힌다. DB 에 닿지 못해도 실패로 본다 —
+      # DB 없이 배포해 봐야 의미가 없다.
       - name: Oracle smoke
         run: pnpm run test:oracle-smoke
         shell: cmd
-        continue-on-error: true
 
       - name: Backend typecheck
         run: pnpm run typecheck:backend
