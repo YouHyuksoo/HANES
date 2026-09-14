@@ -34,6 +34,7 @@ import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart } from '../../../shared/date.util';
 import { MAT_LOT_LIVE_STATUSES } from '@harness/shared';
 import { SysConfigService } from '../../system/services/sys-config.service';
+import { calcLotExpireDate } from '../rules/fifo.rules';
 
 @Injectable()
 export class ReceivingService {
@@ -473,11 +474,11 @@ export class ReceivingService {
           const lotTenantWhere = this.tenantWhere(lot.company, lot.plant);
           const part = await this.itemMasterRepository.findOne({ where: { itemCode: lot.itemCode, ...lotTenantWhere } });
           const mfgDate = parseDateStart(item.manufactureDate)!;
-          let expDate: Date | null = null;
-          if (part?.expiryDate && part.expiryDate > 0) {
-            expDate = new Date(mfgDate);
-            expDate.setDate(expDate.getDate() + part.expiryDate);
-          }
+          const expDate = calcLotExpireDate(
+            { manufactureDate: mfgDate, recvDate: lot.recvDate },
+            part?.expiryDate,
+            new Date(),
+          );
           await queryRunner.manager.update(MatLot, { matUid: lot.matUid, ...lotTenantWhere }, {
             manufactureDate: mfgDate,
             expireDate: expDate,

@@ -21,6 +21,7 @@ import { StockQueryDto, StockAdjustDto, StockTransferDto } from '../dto/mat-stoc
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { isMatLotIssuable } from '@harness/shared';
+import { resolveShelfLifeBaseDate } from '../rules/fifo.rules';
 
 @Injectable()
 export class MatStockService {
@@ -192,14 +193,14 @@ export class MatStockService {
       const part = partMap.get(stock.itemCode);
       const lot = stock.matUid ? lotMap.get(stock.matUid) : null;
 
-      // 제조일자 기반 경과일수/남은유효기간 계산
-      const manufactureDate = lot?.manufactureDate ? new Date(lot.manufactureDate) : null;
+      // 경과일수는 유효기간과 같은 기산점(제조일 우선, 없으면 입고일)을 쓴다
       const expireDate = lot?.expireDate ? new Date(lot.expireDate) : null;
       let elapsedDays: number | null = null;
       let remainingDays: number | null = null;
 
-      if (manufactureDate) {
-        elapsedDays = Math.floor((today.getTime() - manufactureDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (lot?.manufactureDate || lot?.recvDate) {
+        const baseDate = resolveShelfLifeBaseDate(lot, today);
+        elapsedDays = Math.floor((today.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
       }
       if (expireDate) {
         remainingDays = Math.floor((expireDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));

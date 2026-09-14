@@ -16,6 +16,7 @@ import { AqlService } from '../../quality/aql/services/aql.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
+import { calcLotExpireDate } from '../rules/fifo.rules';
 
 export interface DebugSql {
   sql: string;
@@ -306,9 +307,7 @@ export class IqcHistoryService {
 
     // IQC PASS + 품목에 유효기간이 설정된 경우 → expireDate 자동 계산
     if (finalResult === 'PASS' && part && (part.expiryDate ?? 0) > 0) {
-      const baseDate = lot.recvDate ? new Date(lot.recvDate) : new Date();
-      baseDate.setHours(0, 0, 0, 0);
-      const expireDate = new Date(baseDate.getTime() + part.expiryDate * 24 * 60 * 60 * 1000);
+      const expireDate = calcLotExpireDate(lot, part.expiryDate, new Date());
       await this.matLotRepository.update({ matUid: dto.matUid, ...lotTenantWhere }, { expireDate });
     }
 
@@ -606,9 +605,7 @@ export class IqcHistoryService {
     // 3) PASS + 품목에 유효기간 설정 시 → 각 시리얼 expireDate 자동 계산
     if (finalResult === 'PASS' && part && (part.expiryDate ?? 0) > 0) {
       for (const lot of lots) {
-        const baseDate = lot.recvDate ? new Date(lot.recvDate) : new Date();
-        baseDate.setHours(0, 0, 0, 0);
-        const expireDate = new Date(baseDate.getTime() + part.expiryDate * 24 * 60 * 60 * 1000);
+        const expireDate = calcLotExpireDate(lot, part.expiryDate, new Date());
         await this.matLotRepository.update(
           { matUid: lot.matUid, ...this.tenantWhere(lot.company, lot.plant) },
           { expireDate },

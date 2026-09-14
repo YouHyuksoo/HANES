@@ -5,6 +5,8 @@ import {
   normalizeFifoCriteria,
   toDayKey,
   isFifoApplicableToIssueType,
+  resolveShelfLifeBaseDate,
+  calcLotExpireDate,
 } from './fifo.rules';
 
 describe('fifo.rules', () => {
@@ -127,5 +129,68 @@ describe('isFifoApplicableToIssueType', () => {
     expect(isFifoApplicableToIssueType('PROD', false)).toBe(true);
     expect(isFifoApplicableToIssueType('OTHER', false)).toBe(true);
     expect(isFifoApplicableToIssueType(null, false)).toBe(true);
+  });
+});
+
+describe('resolveShelfLifeBaseDate', () => {
+  const fallback = new Date(2026, 8, 14, 10, 30);
+
+  it('제조일이 있으면 제조일을 기산점으로 한다', () => {
+    const base = resolveShelfLifeBaseDate(
+      { manufactureDate: new Date(2026, 0, 10), recvDate: new Date(2026, 2, 5) },
+      fallback,
+    );
+    expect(toDayKey(base)).toBe('2026-01-10');
+  });
+
+  it('제조일이 없으면 입고일을 기산점으로 한다', () => {
+    const base = resolveShelfLifeBaseDate({ manufactureDate: null, recvDate: new Date(2026, 2, 5) }, fallback);
+    expect(toDayKey(base)).toBe('2026-03-05');
+  });
+
+  it('제조일·입고일이 모두 없으면 fallback(오늘)을 쓴다', () => {
+    const base = resolveShelfLifeBaseDate({ manufactureDate: null, recvDate: null }, fallback);
+    expect(toDayKey(base)).toBe('2026-09-14');
+  });
+
+  it('문자열 날짜도 로컬 날짜로 해석한다(UTC 변환 금지)', () => {
+    const base = resolveShelfLifeBaseDate({ manufactureDate: '2026-01-10' }, fallback);
+    expect(toDayKey(base)).toBe('2026-01-10');
+  });
+
+  it('기산점은 항상 자정으로 정규화한다', () => {
+    const base = resolveShelfLifeBaseDate({ recvDate: new Date(2026, 2, 5, 17, 45) }, fallback);
+    expect(base.getHours()).toBe(0);
+    expect(base.getMinutes()).toBe(0);
+  });
+});
+
+describe('calcLotExpireDate', () => {
+  const today = new Date(2026, 8, 14, 10, 30);
+
+  it('제조일 기준으로 유효기간 일수를 더한다', () => {
+    const exp = calcLotExpireDate({ manufactureDate: new Date(2026, 0, 10), recvDate: new Date(2026, 2, 5) }, 30, today);
+    expect(toDayKey(exp)).toBe('2026-02-09');
+  });
+
+  it('제조일이 없으면 입고일 기준으로 더한다', () => {
+    const exp = calcLotExpireDate({ recvDate: new Date(2026, 2, 5) }, 30, today);
+    expect(toDayKey(exp)).toBe('2026-04-04');
+  });
+
+  it('유효기간이 0/null 이면 만료일을 만들지 않는다', () => {
+    expect(calcLotExpireDate({ recvDate: new Date(2026, 2, 5) }, 0, today)).toBeNull();
+    expect(calcLotExpireDate({ recvDate: new Date(2026, 2, 5) }, null, today)).toBeNull();
+    expect(calcLotExpireDate({ recvDate: new Date(2026, 2, 5) }, undefined, today)).toBeNull();
+  });
+
+  it('월을 넘기는 일수도 달력 기준으로 더한다', () => {
+    const exp = calcLotExpireDate({ manufactureDate: new Date(2026, 0, 31) }, 360, today);
+    expect(toDayKey(exp)).toBe('2027-01-26');
+  });
+
+  it('기산점이 모두 없으면 오늘 기준으로 더한다', () => {
+    const exp = calcLotExpireDate({}, 10, today);
+    expect(toDayKey(exp)).toBe('2026-09-24');
   });
 });

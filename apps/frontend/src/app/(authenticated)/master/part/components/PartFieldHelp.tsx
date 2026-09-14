@@ -38,7 +38,7 @@ export const PART_FIELD_HELP = {
   minPackQty: { db: "ITEM_MASTERS.MIN_PACK_QTY", description: "자재 불출 시 최소 단위로 취급할 수량입니다." },
   lotUnitQty: { db: "ITEM_MASTERS.LOT_UNIT_QTY", description: "생산 공정품을 묶음 단위로 처리할 기준 수량입니다." },
   safetyStock: { db: "ITEM_MASTERS.SAFETY_STOCK", description: "재고 부족 판단에 쓰는 기준 수량입니다." },
-  expiryDate: { db: "ITEM_MASTERS.EXPIRY_DATE", description: "입고 또는 제조 기준 유효기간 일수입니다." },
+  expiryDate: { db: "ITEM_MASTERS.EXPIRY_DATE", description: "제조일 기준 유효기간 일수입니다. 제조일이 없으면 입고일부터 계산합니다. 0이면 유효기간 관리를 하지 않습니다." },
   expiryExtDays: { db: "ITEM_MASTERS.EXPIRY_EXT_DAYS", description: "품질 판단 후 유효기간을 연장할 수 있는 최대 일수입니다." },
   packUnit: { db: "ITEM_MASTERS.PACK_UNIT", description: "팔레트 또는 상위 포장 단위 구성 기준입니다." },
   storageLocation: { db: "ITEM_MASTERS.STORAGE_LOCATION", description: "품목별로 고정해 둘 기본 적재 로케이션입니다." },

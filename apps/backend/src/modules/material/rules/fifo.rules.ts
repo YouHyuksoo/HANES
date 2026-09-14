@@ -96,3 +96,39 @@ export function isLotExpired(lot: { expireDate?: FifoDateValue }, today: Date): 
   if (!expireKey || !todayKey) return false;
   return expireKey < todayKey;
 }
+
+/** 유효기간 기산점 판단에 필요한 LOT 최소 형태 */
+export interface ShelfLifeLotLike {
+  recvDate?: FifoDateValue;
+  manufactureDate?: FifoDateValue;
+}
+
+/**
+ * 유효기간 기산점 — 제조일 우선, 없으면 입고일, 둘 다 없으면 fallback(호출 시점).
+ * 항상 로컬 자정으로 정규화한다(toISOString 금지: KST 오전에 전날이 된다).
+ */
+export function resolveShelfLifeBaseDate(lot: ShelfLifeLotLike, fallback: Date): Date {
+  const key = toDayKey(lot.manufactureDate) ?? toDayKey(lot.recvDate) ?? toDayKey(fallback);
+  if (!key) {
+    const base = new Date(fallback);
+    base.setHours(0, 0, 0, 0);
+    return base;
+  }
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d, 0, 0, 0, 0);
+}
+
+/**
+ * LOT 만료일 — resolveShelfLifeBaseDate 기산점 + 품목 유효기간(일).
+ * 유효기간이 0/null 이면 만료 관리 대상이 아니므로 null.
+ */
+export function calcLotExpireDate(
+  lot: ShelfLifeLotLike,
+  expiryDays: number | null | undefined,
+  fallback: Date,
+): Date | null {
+  if (!expiryDays || expiryDays <= 0) return null;
+  const expire = resolveShelfLifeBaseDate(lot, fallback);
+  expire.setDate(expire.getDate() + expiryDays);
+  return expire;
+}
