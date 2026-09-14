@@ -644,7 +644,7 @@ export class ConsumableService {
   // (2026-09 전환: 소모품 마스터 장착(OPER_STATUS / MOUNTED_EQUIP_ID) 경로 폐기)
 
   /** 해제 후 허용 상태 */
-  private static readonly UNMOUNT_RETURN_STATUSES = ['PROC_WAIT', 'ACTIVE', 'REPAIR'] as const;
+  private static readonly UNMOUNT_RETURN_STATUSES: readonly string[] = ['PROC_WAIT', 'ACTIVE', 'REPAIR'];
 
   /** 장착 이력 1건 기록 (MOUNT_DATE + SEQ 복합키) */
   private async writeMountLog(
@@ -701,7 +701,7 @@ export class ConsumableService {
     }
 
     const returnTo = dto.returnTo ?? 'PROC_WAIT';
-    if (!ConsumableService.UNMOUNT_RETURN_STATUSES.includes(returnTo as never)) {
+    if (!ConsumableService.UNMOUNT_RETURN_STATUSES.includes(returnTo)) {
       throw new BadRequestException(
         `해제 후 상태가 올바르지 않습니다: ${returnTo} (허용: ${ConsumableService.UNMOUNT_RETURN_STATUSES.join(', ')})`,
       );

@@ -77,7 +77,9 @@ export class KioskConsumableService {
         plant: row.plant,
       });
     } catch (err) {
-      this.logger.error(`소모품 장착이력 기록 실패: ${row.conUid} (${row.action})`, err as Error);
+      this.logger.error(
+        `소모품 장착이력 기록 실패: ${row.conUid} (${row.action}): ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 

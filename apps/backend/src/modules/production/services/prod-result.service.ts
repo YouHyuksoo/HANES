@@ -1385,7 +1385,9 @@ export class ProdResultService {
             `소모품 수명 초과로 설비 인터락: ${equipCode} ← ${lot.conUid}(${lot.consumableCode})`,
           );
         } catch (err) {
-          this.logger.error(`설비 인터락 설정 실패: ${equipCode}`, err as Error);
+          this.logger.error(
+            `설비 인터락 설정 실패: ${equipCode}: ${err instanceof Error ? err.message : String(err)}`,
+          );
         }
       }
     }
@@ -1423,7 +1425,7 @@ export class ProdResultService {
         updateData,
       );
 
-      // 2. 소모품 타수 누적 (금형 마스터 + 장착 롯트) — 트랜잭션 내, 실패 시 전체 롤백.
+      // 2. 소모품 타수 누적 (설비에 장착된 실물 롯트) — 트랜잭션 내, 실패 시 전체 롤백.
       //    create()에서 이미 누적된 실적은 status=DONE이라 여기(RUNNING→DONE)로 오지 않으므로 이중 누적 없음.
       if (prodResult.equipCode) {
         const totalQty = (dto.goodQty ?? prodResult.goodQty) + (dto.defectQty ?? prodResult.defectQty);

@@ -9,6 +9,7 @@ import { EquipMaster } from '../../../entities/equip-master.entity';
 import { EquipBomRel } from '../../../entities/equip-bom-rel.entity';
 import { EquipBomItem } from '../../../entities/equip-bom-item.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
+import { ConsumableStock } from '../../../entities/consumable-stock.entity';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { User } from '../../../entities/user.entity';
@@ -114,14 +115,26 @@ describe('ProdResultService complete workflow', () => {
     // 양품/불량 자동 적재(adsorb), 작업지시 자동 완료까지 findOne/find 호출이 늘어나
     // 순서 의존(mockResolvedValueOnce) 대신 엔티티 이름으로 분기한다.
     queryRunner.manager.find.mockImplementation(async (entity: any) => {
+      // 2026-09 전환: 타수는 실물 롯트(CONSUMABLE_STOCKS)에 누적된다.
+      // 마스터는 수명 임계(경고 타수/기대수명)를 읽는 용도로만 조회된다.
+      if (entity === ConsumableStock) {
+        return [
+          {
+            conUid: 'LOT-1',
+            consumableCode: 'MOLD-1',
+            currentCount: 2,
+            lifeStatus: 'NORMAL',
+            company: 'C1',
+            plantCd: 'P1',
+          },
+        ] as any;
+      }
       if (entity === ConsumableMaster) {
         return [
           {
             consumableCode: 'MOLD-1',
-            currentCount: 2,
             expectedLife: 100,
             warningCount: 80,
-            status: 'NORMAL',
             company: 'C1',
             plant: 'P1',
           },
@@ -171,21 +184,21 @@ describe('ProdResultService complete workflow', () => {
       expect.objectContaining({ status: 'DONE', goodQty: 10, defectQty: 1 }),
     );
     expect(queryRunner.manager.find).toHaveBeenCalledWith(
-      ConsumableMaster,
+      ConsumableStock,
       expect.objectContaining({
         where: expect.objectContaining({
           mountedEquipCode: 'EQ-1',
-          category: 'MOLD',
-          operStatus: 'MOUNTED',
+          status: 'MOUNTED',
           company: 'C1',
-          plant: 'P1',
+          plantCd: 'P1',
         }),
       }),
     );
+    // 양품 10 + 불량 1 = 11타, 소요량 미등록이라 1배 → 2 + 11 = 13
     expect(queryRunner.manager.update).toHaveBeenCalledWith(
-      ConsumableMaster,
-      expect.objectContaining({ consumableCode: 'MOLD-1', company: 'C1', plant: 'P1' }),
-      expect.objectContaining({ currentCount: 13, status: 'NORMAL' }),
+      ConsumableStock,
+      expect.objectContaining({ conUid: 'LOT-1' }),
+      expect.objectContaining({ currentCount: 13, lifeStatus: 'NORMAL' }),
     );
     expect(queryRunner.manager.update).toHaveBeenCalledWith(
       EquipMaster,

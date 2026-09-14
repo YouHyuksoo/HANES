@@ -11,6 +11,7 @@ import { EquipBomRel } from '../../../entities/equip-bom-rel.entity';
 import { EquipBomItem } from '../../../entities/equip-bom-item.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
+import { ConsumableStock as ConsumableStockEntity } from '../../../entities/consumable-stock.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -748,10 +749,14 @@ describe('ProdResultService', () => {
     autoIssueService.execute.mockResolvedValue({ issued: [], warnings: [], skipped: false } as any);
     prodResultRepo.findOne.mockResolvedValue({ resultNo: 'PR-1' } as any);
 
-    // 설비에 장착된 금형 마스터 1건(타수 2, 경고 80/교체 100) + 장착 롯트는 없음
+    // 설비에 장착된 금형 롯트 1건(타수 2) + 수명 임계는 마스터에서 읽는다
+    // (2026-09 전환: 타수 누적 대상이 마스터 → 실물 롯트로 바뀌었다)
     queryRunner.manager.find.mockImplementation(async (entity: any) => {
+      if (entity === ConsumableStockEntity) {
+        return [{ conUid: 'LOT-1', consumableCode: 'MOLD-1', currentCount: 2, lifeStatus: 'NORMAL', company: 'C1', plantCd: 'P1' }] as any;
+      }
       if (entity === ConsumableMaster) {
-        return [{ consumableCode: 'MOLD-1', currentCount: 2, warningCount: 80, expectedLife: 100, status: 'NORMAL' }] as any;
+        return [{ consumableCode: 'MOLD-1', warningCount: 80, expectedLife: 100 }] as any;
       }
       return [] as any;
     });
@@ -771,14 +776,14 @@ describe('ProdResultService', () => {
     );
 
     expect(queryRunner.manager.find).toHaveBeenCalledWith(
-      ConsumableMaster,
-      expect.objectContaining({ where: expect.objectContaining({ mountedEquipCode: 'EQ-001', category: 'MOLD', operStatus: 'MOUNTED' }) }),
+      ConsumableStockEntity,
+      expect.objectContaining({ where: expect.objectContaining({ mountedEquipCode: 'EQ-001', status: 'MOUNTED' }) }),
     );
     // 양품 7 + 불량 3 = 10타 누적 → 2 + 10 = 12
     expect(queryRunner.manager.update).toHaveBeenCalledWith(
-      ConsumableMaster,
-      expect.objectContaining({ consumableCode: 'MOLD-1' }),
-      expect.objectContaining({ currentCount: 12, status: 'NORMAL' }),
+      ConsumableStockEntity,
+      expect.objectContaining({ conUid: 'LOT-1' }),
+      expect.objectContaining({ currentCount: 12, lifeStatus: 'NORMAL' }),
     );
   });
 
@@ -818,7 +823,11 @@ describe('ProdResultService', () => {
     await service.create({ orderNo: 'JO-1', equipCode: 'EQ-001', goodQty: 10, defectQty: 0 } as any, 'C1', 'P1');
 
     // 5 + (usagePerUnit 2 × 10개) = 25
-    expect(queryRunner.manager.update).toHaveBeenCalledWith(ConsumableStock, { conUid: 'LOT-1' }, { currentCount: 25 });
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      ConsumableStock,
+      { conUid: 'LOT-1' },
+      { currentCount: 25, lifeStatus: 'NORMAL' },
+    );
     expect(queryRunner.manager.save).toHaveBeenCalledWith(
       ConsumableLog,
       expect.objectContaining({ conUid: 'LOT-1', consumableCode: 'CM-1', logType: 'USAGE', qty: 20, equipCode: 'EQ-001', seq: 7 }),
