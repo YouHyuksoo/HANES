@@ -556,36 +556,52 @@ export class ReworkService {
       const itemType = part?.itemType === 'FINISHED' ? 'FINISHED' : 'SEMI_PRODUCT';
 
       const wipWarehouse = itemType === 'FINISHED' ? 'FG_WIP' : 'SFG_WIP';
+      const finished = itemType === 'FINISHED';
       if ((dto.passQty ?? 0) > 0) {
-        const moved = await this.productInventoryService.transferStockByItemInTx(qr, {
-          fromWarehouseId: unusableCode!,
-          toWarehouseId: wipWarehouse,
+        // 불용창고의 불량(DEFECT) 재고를 출고하고 공정창고에 양품(GOOD)으로 입고한다.
+        // 한 번의 이동(transfer)은 품질상태를 유지해 합격품이 불량 상태로 남으므로 두 단계로 나눈다
+        // (수리실 인수/복귀 repair-stock.service 와 같은 방식). 출고는 가용재고가 부족하면
+        // 예외로 실패한다 — 신규 입고로 보충하지 않는다(이중계상 방지).
+        await this.productInventoryService.issueStockInTx(qr, {
+          warehouseId: unusableCode!,
           itemCode: order.itemCode,
           itemType,
+          qualityStatus: 'DEFECT',
           qty: dto.passQty,
-          transType: 'REWORK_IN',
+          transType: finished ? 'FG_OUT' : 'WIP_OUT',
           refType: 'REWORK',
           refId: order.reworkNo,
-          remark: `재작업 합격 (${order.reworkNo})`,
+          remark: `재작업 합격 출고 (${order.reworkNo})`,
           company,
           plant,
         });
-        if (moved < dto.passQty) {
-          throw new BadRequestException(
-            `불용창고 재고가 부족합니다. 요청 ${dto.passQty}, 이동 가능 ${moved}. 불량 재고를 먼저 불용창고에 입고해 주세요.`,
-          );
-        }
+        await this.productInventoryService.receiveStockInTx(qr, {
+          warehouseId: wipWarehouse,
+          itemCode: order.itemCode,
+          itemType,
+          qualityStatus: 'GOOD',
+          qty: dto.passQty,
+          transType: finished ? 'FG_IN' : 'WIP_IN',
+          refType: 'REWORK',
+          refId: order.reworkNo,
+          remark: `재작업 합격 입고 (${order.reworkNo})`,
+          company,
+          plant,
+        });
         this.logger.log(`재작업 합격 → ${wipWarehouse}: ${order.itemCode} × ${dto.passQty} (재작업 #${order.reworkNo})`);
       }
 
       if ((dto.failQty ?? 0) > 0) {
-        await this.productInventoryService.transferStockByItemInTx(qr, {
-          fromWarehouseId: unusableCode!,
+        // 폐기분은 불량 상태 그대로 폐기창고로 옮긴다. 출고 API 가 toWarehouseId 를 받으면
+        // 같은 품질상태로 도착창고에 적재하므로 한 호출로 끝난다. 부족하면 예외로 실패한다.
+        await this.productInventoryService.issueStockInTx(qr, {
+          warehouseId: unusableCode!,
           toWarehouseId: 'SCRAP',
           itemCode: order.itemCode,
           itemType,
+          qualityStatus: 'DEFECT',
           qty: dto.failQty,
-          transType: 'SCRAP_OUT',
+          transType: 'SCRAP',
           refType: 'REWORK',
           refId: order.reworkNo,
           remark: `재작업 폐기 (${order.reworkNo})`,

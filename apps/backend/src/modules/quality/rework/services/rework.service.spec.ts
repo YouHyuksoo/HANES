@@ -44,7 +44,6 @@ describe('ReworkService', () => {
     mockNumbering = createMock<NumberingService>();
     mockTx = createMock<TransactionService>();
     mockProductInventoryService = createMock<ProductInventoryService>();
-    mockProductInventoryService.transferStockByItemInTx.mockResolvedValue(1);
     mockWarehouseService = createMock<WarehouseService>();
     mockWarehouseService.getDefaultWarehouse.mockResolvedValue({ warehouseCode: 'WH-DEFECT' } as Warehouse);
     mockTx.run.mockImplementation(async (callback: any) => callback({

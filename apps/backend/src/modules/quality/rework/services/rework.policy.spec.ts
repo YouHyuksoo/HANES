@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -95,19 +96,22 @@ describe('ReworkService policy', () => {
   });
 
   describe('createInspect — 재작업 재고 이동 정책', () => {
-    it('재작업 합격분을 불용창고에서 공정창고로 이동한다', async () => {
-      mockReworkRepo.findOne.mockResolvedValue({
-        reworkNo: 'RW-300',
-        status: 'INSPECT_PENDING',
-        itemCode: 'IT-1',
-        resultQty: 5,
-        company: 'CO',
-        plant: 'P01',
-      } as any);
+    const inspectPending = (reworkNo: string) => ({
+      reworkNo,
+      status: 'INSPECT_PENDING',
+      itemCode: 'IT-1',
+      resultQty: 5,
+      company: 'CO',
+      plant: 'P01',
+    });
+
+    beforeEach(() => {
       mockProcessRepo.find.mockResolvedValue([]);
       mockReworkRepo.update.mockResolvedValue({ affected: 1 } as any);
-      mockWarehouseService.getDefaultWarehouse.mockResolvedValue({ warehouseCode: 'WH-DEFECT' } as Warehouse);
-      mockProductInventoryService.transferStockByItemInTx.mockResolvedValue(5);
+    });
+
+    it('합격분은 불용창고의 DEFECT 재고를 출고하고 공정창고에 GOOD 으로 입고한다', async () => {
+      mockReworkRepo.findOne.mockResolvedValue(inspectPending('RW-300') as any);
 
       await target.createInspect(
         { reworkNo: 'RW-300', inspectResult: 'PASS', passQty: 5, failQty: 0, inspectorCode: 'QC1', inspectMethod: 'VISUAL' } as any,
@@ -116,33 +120,69 @@ describe('ReworkService policy', () => {
         'user',
       );
 
-      expect(mockProductInventoryService.transferStockByItemInTx).toHaveBeenCalledWith(
+      expect(mockWarehouseService.getDefaultWarehouse).toHaveBeenCalledWith('UNUSABLE', 'CO', 'P01');
+      expect(mockProductInventoryService.issueStockInTx).toHaveBeenCalledTimes(1);
+      expect(mockProductInventoryService.issueStockInTx).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ fromWarehouseId: 'WH-DEFECT', toWarehouseId: 'SFG_WIP' }),
+        expect.objectContaining({ warehouseId: 'WH-DEFECT', qualityStatus: 'DEFECT', qty: 5, refType: 'REWORK', refId: 'RW-300' }),
       );
+      expect(mockProductInventoryService.receiveStockInTx).toHaveBeenCalledTimes(1);
+      expect(mockProductInventoryService.receiveStockInTx).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ warehouseId: 'SFG_WIP', qualityStatus: 'GOOD', qty: 5, refType: 'REWORK', refId: 'RW-300' }),
+      );
+      // 출고 수량과 입고 수량이 같아야 한다 — 이동이지 신규 생성이 아니다
+      const issued = mockProductInventoryService.issueStockInTx.mock.calls[0][1];
+      const received = mockProductInventoryService.receiveStockInTx.mock.calls[0][1];
+      expect(received.qty).toBe(issued.qty);
+    });
+
+    it('폐기분은 불량 상태 그대로 폐기창고로 옮기고 양품 입고는 하지 않는다', async () => {
+      mockReworkRepo.findOne.mockResolvedValue(inspectPending('RW-302') as any);
+
+      await target.createInspect(
+        { reworkNo: 'RW-302', inspectResult: 'SCRAP', passQty: 0, failQty: 5, inspectorCode: 'QC1', inspectMethod: 'VISUAL' } as any,
+        'CO',
+        'P01',
+        'user',
+      );
+
+      expect(mockProductInventoryService.issueStockInTx).toHaveBeenCalledTimes(1);
+      expect(mockProductInventoryService.issueStockInTx).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ warehouseId: 'WH-DEFECT', toWarehouseId: 'SCRAP', qualityStatus: 'DEFECT', qty: 5 }),
+      );
+      expect(mockProductInventoryService.receiveStockInTx).not.toHaveBeenCalled();
     });
 
     it('불용창고 재고가 부족하면 신규 입고로 보충하지 않고 실패한다', async () => {
-      mockReworkRepo.findOne.mockResolvedValue({
-        reworkNo: 'RW-301',
-        status: 'INSPECT_PENDING',
-        itemCode: 'IT-1',
-        resultQty: 5,
-        company: 'CO',
-        plant: 'P01',
-      } as any);
-      mockProcessRepo.find.mockResolvedValue([]);
-      mockReworkRepo.update.mockResolvedValue({ affected: 1 } as any);
-      mockWarehouseService.getDefaultWarehouse.mockResolvedValue({ warehouseCode: 'WH-DEFECT' } as Warehouse);
-      mockProductInventoryService.transferStockByItemInTx.mockResolvedValue(2);
+      mockReworkRepo.findOne.mockResolvedValue(inspectPending('RW-301') as any);
+      mockProductInventoryService.issueStockInTx.mockRejectedValue(
+        new BadRequestException('재고 부족으로 출고할 수 없습니다: IT-1 (가용 2, 요청 5)'),
+      );
 
       await expect(target.createInspect(
         { reworkNo: 'RW-301', inspectResult: 'PASS', passQty: 5, failQty: 0, inspectorCode: 'QC1', inspectMethod: 'VISUAL' } as any,
         'CO',
         'P01',
         'user',
-      )).rejects.toThrow(/재고가 부족/);
+      )).rejects.toThrow(/재고 부족/);
 
+      expect(mockProductInventoryService.receiveStockInTx).not.toHaveBeenCalled();
+    });
+
+    it('불용창고가 없으면 재고를 건드리지 않고 실패한다', async () => {
+      mockReworkRepo.findOne.mockResolvedValue(inspectPending('RW-303') as any);
+      mockWarehouseService.getDefaultWarehouse.mockResolvedValue(null);
+
+      await expect(target.createInspect(
+        { reworkNo: 'RW-303', inspectResult: 'PASS', passQty: 5, failQty: 0, inspectorCode: 'QC1', inspectMethod: 'VISUAL' } as any,
+        'CO',
+        'P01',
+        'user',
+      )).rejects.toThrow(/불용창고가 설정되어 있지 않습니다/);
+
+      expect(mockProductInventoryService.issueStockInTx).not.toHaveBeenCalled();
       expect(mockProductInventoryService.receiveStockInTx).not.toHaveBeenCalled();
     });
   });
