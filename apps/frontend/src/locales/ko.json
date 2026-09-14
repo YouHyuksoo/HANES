@@ -6253,7 +6253,11 @@
       "itemLoadError": "박스 내 개별제품을 불러오지 못했습니다.",
       "orderNo": "작업지시번호",
       "inspectPassYn": "검사",
-      "issuedAt": "발행일시"
+      "issuedAt": "발행일시",
+      "storageDays": "보관경과일",
+      "storageDaysValue": "{{count}}일",
+      "longStored": "장기보관",
+      "longStoredOnly": "장기보관만"
     },
     "pallet": {
       "title": "팔레트적재",

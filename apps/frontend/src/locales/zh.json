@@ -6215,7 +6215,11 @@
       "itemLoadError": "无法加载箱内产品。",
       "orderNo": "工单号",
       "inspectPassYn": "检验",
-      "issuedAt": "发行时间"
+      "issuedAt": "发行时间",
+      "storageDays": "库龄天数",
+      "storageDaysValue": "{{count}}天",
+      "longStored": "长期库存",
+      "longStoredOnly": "仅长期库存"
     },
     "pallet": {
       "title": "托盘装载",

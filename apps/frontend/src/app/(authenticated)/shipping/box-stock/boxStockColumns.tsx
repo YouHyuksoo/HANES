@@ -13,6 +13,10 @@ export interface StockBox {
   qty: number;
   orderNo: string | null;
   latestAt: string | null;
+  oldestAt: string | null;
+  storageDays: number | null;
+  longStoredYn: "Y" | "N";
+  longStockDays: number;
   inventoryState: InventoryState;
   warehouseCode: string | null;
   receivedAt: string | null;
@@ -30,6 +34,8 @@ export interface StockSerial {
   status: string | null;
   inspectPassYn: string | null;
   issuedAt: string | null;
+  storageDays: number | null;
+  longStoredYn: "Y" | "N";
   inventoryState: InventoryState;
   warehouseCode: string | null;
   receivedAt: string | null;
@@ -38,6 +44,21 @@ export interface StockSerial {
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return "-";
   return String(value).replace("T", " ").slice(0, 16);
+}
+
+/** 보관경과일 셀 — 장기보관이면 텍스트/테두리로만 강조한다(배경색 사용 금지) */
+function renderStorageDays(days: number | null, longStored: boolean, t: TFunction): ReactNode {
+  if (days === null || days === undefined) return "-";
+  const label = t("shipping.boxStock.storageDaysValue", { count: days, defaultValue: "{{count}}일" });
+  if (!longStored) return <span>{label}</span>;
+  return (
+    <span className="inline-flex items-center gap-1 font-medium text-red-600 dark:text-red-400">
+      {label}
+      <span className="rounded border border-red-600 px-1 text-[10px] leading-4 dark:border-red-400">
+        {t("shipping.boxStock.longStored", "장기보관")}
+      </span>
+    </span>
+  );
 }
 
 interface CreateBoxStockGridColumnsOptions {
@@ -71,6 +92,13 @@ export function createBoxStockGridColumns({
     { accessorKey: "orderNo", header: t("shipping.boxStock.orderNo"), size: 130, meta: { filterType: "text" as const }, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "latestAt", header: t("shipping.boxStock.issuedAt"), size: 130, meta: { filterType: "date" as const }, cell: ({ getValue }) => formatDateTime(getValue() as string | null) },
     { accessorKey: "receivedAt", header: t("shipping.boxStock.receivedAt"), size: 130, meta: { filterType: "date" as const }, cell: ({ getValue }) => formatDateTime(getValue() as string | null) },
+    {
+      accessorKey: "storageDays",
+      header: t("shipping.boxStock.storageDays"),
+      size: 120,
+      meta: { align: "right" as const, filterType: "number" as const },
+      cell: ({ row }) => renderStorageDays(row.original.storageDays, row.original.longStoredYn === "Y", t),
+    },
   ];
 }
 
@@ -98,5 +126,12 @@ export function createBoxStockSerialGridColumns({
     { accessorKey: "inspectPassYn", header: t("shipping.boxStock.inspectPassYn"), size: 80, meta: { align: "center" as const, filterType: "multi" as const }, cell: ({ getValue }) => getValue() || "-" },
     { accessorKey: "issuedAt", header: t("shipping.boxStock.issuedAt"), size: 130, meta: { filterType: "date" as const }, cell: ({ getValue }) => formatDateTime(getValue() as string | null) },
     { accessorKey: "receivedAt", header: t("shipping.boxStock.receivedAt"), size: 130, meta: { filterType: "date" as const }, cell: ({ getValue }) => formatDateTime(getValue() as string | null) },
+    {
+      accessorKey: "storageDays",
+      header: t("shipping.boxStock.storageDays"),
+      size: 120,
+      meta: { align: "right" as const, filterType: "number" as const },
+      cell: ({ row }) => renderStorageDays(row.original.storageDays, row.original.longStoredYn === "Y", t),
+    },
   ];
 }

@@ -6233,7 +6233,11 @@
       "itemLoadError": "Failed to load products in box.",
       "orderNo": "Job Order No.",
       "inspectPassYn": "Inspect",
-      "issuedAt": "Issued At"
+      "issuedAt": "Issued At",
+      "storageDays": "Storage Days",
+      "storageDaysValue": "{{count}} d",
+      "longStored": "Long Stored",
+      "longStoredOnly": "Long stored only"
     },
     "pallet": {
       "title": "Palletizing",

@@ -17,6 +17,8 @@ test("box stock page does not render information card frames", () => {
 test("box stock page keeps master-detail grids after removing cards", () => {
   assert.match(source, /api\.get\("\/shipping\/box-stock"/);
   assert.match(source, /api\.get\(`\/shipping\/box-stock\/\$\{encodeURIComponent\(boxNo\)\}\/serials`/);
-  assert.match(source, /<DataGrid[\s\S]*data=\{boxes\}/);
+  // 박스 그리드는 boxes 에서 파생된 목록(장기보관 필터 적용분)을 받는다
+  assert.match(source, /const visibleBoxes = useMemo\([\s\S]*boxes/);
+  assert.match(source, /<DataGrid[\s\S]*data=\{visibleBoxes\}/);
   assert.match(source, /<DataGrid[\s\S]*data=\{serials\}/);
 });

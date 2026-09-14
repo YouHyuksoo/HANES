@@ -42,6 +42,7 @@ export default function BoxStockPage() {
   const [loadingBoxes, setLoadingBoxes] = useState(false);
   const [loadingSerials, setLoadingSerials] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [longStoredOnly, setLongStoredOnly] = useState(false);
   const [pageError, setPageError] = useState("");
   const [serialError, setSerialError] = useState("");
 
@@ -106,6 +107,13 @@ export default function BoxStockPage() {
 
   const boxColumns = useMemo(() => createBoxStockGridColumns({ t, renderInventoryState }), [renderInventoryState, t]);
 
+  // 장기보관 판정은 서버(sys-config LONG_STOCK_CHECK/LONG_STOCK_DAYS)가 내린 결과를 그대로 쓴다
+  const visibleBoxes = useMemo(
+    () => (longStoredOnly ? boxes.filter((b) => b.longStoredYn === "Y") : boxes),
+    [boxes, longStoredOnly],
+  );
+  const longStoredCount = useMemo(() => boxes.filter((b) => b.longStoredYn === "Y").length, [boxes]);
+
   const serialColumns = useMemo(() => createBoxStockSerialGridColumns({ t, renderInventoryState }), [renderInventoryState, t]);
 
   return (
@@ -135,7 +143,7 @@ export default function BoxStockPage() {
         <div className="min-h-0 overflow-hidden">
           <div className="h-full">
             <DataGrid
-              data={boxes}
+              data={visibleBoxes}
               columns={boxColumns}
               isLoading={loadingBoxes}
               enableColumnFilter
@@ -149,6 +157,15 @@ export default function BoxStockPage() {
                   <div className="flex-1 min-w-0">
                     <Input placeholder={t("shipping.boxStock.searchPlaceholder")} value={searchText} onChange={(e) => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
                   </div>
+                  <Button
+                    variant={longStoredOnly ? "primary" : "secondary"}
+                    size="sm"
+                    onClick={() => setLongStoredOnly((v) => !v)}
+                    disabled={longStoredCount === 0 && !longStoredOnly}
+                  >
+                    {t("shipping.boxStock.longStoredOnly")}
+                    {longStoredCount > 0 ? ` (${longStoredCount})` : ""}
+                  </Button>
                 </div>
               }
               sqlQuery={`SELECT l.BOX_NO, l.ITEM_CODE, COUNT(*) AS QTY,\n       CASE WHEN MAX(tx.TRANS_NO) IS NULL THEN 'PACKED_WAITING' ELSE 'WAREHOUSE_RECEIVED' END AS INVENTORY_STATE,\n       MAX(COALESCE(tx.TO_WAREHOUSE_ID, tx.FROM_WAREHOUSE_ID)) AS WAREHOUSE_CODE,\n       MIN(l.ORDER_NO) AS ORDER_NO, MAX(l.ISSUED_AT) AS LATEST_AT, MAX(tx.TRANS_DATE) AS RECEIVED_AT\nFROM FG_LABELS l\nLEFT JOIN PRODUCT_TRANSACTIONS tx\n  ON tx.REF_TYPE = 'BOX'\n AND tx.REF_ID = l.BOX_NO\n AND tx.STATUS = 'DONE'\n AND tx.TRANS_TYPE IN ('WIP_OUT', 'FG_IN')\n AND tx.COMPANY = l.COMPANY\n AND tx.PLANT_CD = l.PLANT_CD\nWHERE l.COMPANY = '40'\n  AND l.PLANT_CD = '1000'\n  AND l.BOX_NO IS NOT NULL\n  AND l.STATUS <> 'SHIPPED'\nGROUP BY l.BOX_NO, l.ITEM_CODE\nORDER BY l.BOX_NO DESC`}

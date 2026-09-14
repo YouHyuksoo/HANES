@@ -28,6 +28,7 @@ import {
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
+import { calcStorageDays, isLongStored, resolveLongStockDays } from '../../inventory/rules/product-storage.rules';
 
 @Injectable()
 export class BoxService {
@@ -358,6 +359,7 @@ export class BoxService {
       .addSelect('COUNT(*)', 'qty')
       .addSelect('MIN(l.orderNo)', 'orderNo')
       .addSelect('MAX(l.issuedAt)', 'latestAt')
+      .addSelect('MIN(l.issuedAt)', 'oldestAt')
       .addSelect('MAX(CASE WHEN tx.transNo IS NOT NULL THEN 1 ELSE 0 END)', 'receivedFlag')
       .addSelect('MAX(tx.transDate)', 'receivedAt')
       .addSelect('MAX(COALESCE(tx.toWarehouseId, tx.fromWarehouseId))', 'warehouseCode')
@@ -393,6 +395,7 @@ export class BoxService {
       qty: string | number;
       orderNo: string | null;
       latestAt: Date | null;
+      oldestAt: Date | null;
       receivedFlag: string | number | null;
       receivedAt: Date | null;
       warehouseCode: string | null;
@@ -405,6 +408,12 @@ export class BoxService {
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p] as const));
 
+    // 장기보관 판정 — 박스 안에서 가장 오래된 제품라벨 발행일이 기준이다.
+    // LONG_STOCK_CHECK 가 N 이면 경과일만 보여주고 판정은 하지 않는다.
+    const longStockCheck = await this.sysConfig.isEnabled('LONG_STOCK_CHECK', company, plant);
+    const longStockDays = resolveLongStockDays(await this.sysConfig.getValue('LONG_STOCK_DAYS', company, plant));
+    const today = new Date();
+
     return rows.map((r) => ({
       boxNo: r.boxNo,
       itemCode: r.itemCode,
@@ -412,6 +421,10 @@ export class BoxService {
       qty: Number(r.qty) || 0,
       orderNo: r.orderNo ?? null,
       latestAt: r.latestAt ?? null,
+      oldestAt: r.oldestAt ?? null,
+      storageDays: calcStorageDays(r.oldestAt, today),
+      longStoredYn: longStockCheck && isLongStored(r.oldestAt, longStockDays, today) ? 'Y' : 'N',
+      longStockDays,
       inventoryState: Number(r.receivedFlag) > 0 ? 'WAREHOUSE_RECEIVED' : 'PACKED_WAITING',
       warehouseCode: r.warehouseCode ?? null,
       receivedAt: r.receivedAt ?? null,
@@ -491,6 +504,10 @@ export class BoxService {
       : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p] as const));
 
+    const longStockCheck = await this.sysConfig.isEnabled('LONG_STOCK_CHECK', company, plant);
+    const longStockDays = resolveLongStockDays(await this.sysConfig.getValue('LONG_STOCK_DAYS', company, plant));
+    const today = new Date();
+
     return labels.map((label, index) => ({
       seq: index + 1,
       fgBarcode: label.fgBarcode,
@@ -503,6 +520,8 @@ export class BoxService {
       status: label.status ?? null,
       inspectPassYn: label.inspectPassYn ?? null,
       issuedAt: label.issuedAt ?? null,
+      storageDays: calcStorageDays(label.issuedAt, today),
+      longStoredYn: longStockCheck && isLongStored(label.issuedAt, longStockDays, today) ? 'Y' : 'N',
       inventoryState: Number(label.receivedFlag) > 0 ? 'WAREHOUSE_RECEIVED' : 'PACKED_WAITING',
       warehouseCode: label.warehouseCode ?? null,
       receivedAt: label.receivedAt ?? null,

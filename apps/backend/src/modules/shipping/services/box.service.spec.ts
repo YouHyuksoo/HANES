@@ -130,6 +130,91 @@ describe('BoxService', () => {
     });
   });
 
+  it('findStockByBox 는 박스 안 가장 오래된 제품라벨 발행일로 장기보관을 판정한다', async () => {
+    const today = new Date();
+    const daysAgo = (n: number) => new Date(today.getTime() - n * 24 * 60 * 60 * 1000);
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([
+        {
+          // 최신 라벨은 어제지만 가장 오래된 라벨이 120일 전 → 장기보관
+          boxNo: 'BOX-OLD',
+          itemCode: 'ITEM-001',
+          qty: '2',
+          orderNo: 'WO-001',
+          latestAt: daysAgo(1),
+          oldestAt: daysAgo(120),
+          receivedFlag: '1',
+          receivedAt: daysAgo(1),
+          warehouseCode: 'FG_MAIN',
+        },
+        {
+          boxNo: 'BOX-FRESH',
+          itemCode: 'ITEM-001',
+          qty: '3',
+          orderNo: 'WO-002',
+          latestAt: daysAgo(1),
+          oldestAt: daysAgo(10),
+          receivedFlag: '1',
+          receivedAt: daysAgo(1),
+          warehouseCode: 'FG_MAIN',
+        },
+      ]),
+    };
+    mockFgLabelRepo.createQueryBuilder.mockReturnValue(qb as any);
+    mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Harness' } as ItemMaster]);
+    mockSysConfig.isEnabled.mockResolvedValue(true);
+    mockSysConfig.getValue.mockResolvedValue('90');
+
+    const rows = await target.findStockByBox(undefined, 'C1', 'P1');
+
+    expect(qb.addSelect).toHaveBeenCalledWith('MIN(l.issuedAt)', 'oldestAt');
+    expect(rows[0]).toEqual(expect.objectContaining({ boxNo: 'BOX-OLD', storageDays: 120, longStoredYn: 'Y', longStockDays: 90 }));
+    expect(rows[1]).toEqual(expect.objectContaining({ boxNo: 'BOX-FRESH', storageDays: 10, longStoredYn: 'N' }));
+  });
+
+  it('findStockByBox 는 LONG_STOCK_CHECK 가 꺼져 있으면 경과일만 주고 장기보관 판정은 하지 않는다', async () => {
+    const today = new Date();
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([
+        {
+          boxNo: 'BOX-OLD',
+          itemCode: 'ITEM-001',
+          qty: '2',
+          orderNo: 'WO-001',
+          latestAt: today,
+          oldestAt: new Date(today.getTime() - 200 * 24 * 60 * 60 * 1000),
+          receivedFlag: '1',
+          receivedAt: today,
+          warehouseCode: 'FG_MAIN',
+        },
+      ]),
+    };
+    mockFgLabelRepo.createQueryBuilder.mockReturnValue(qb as any);
+    mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Harness' } as ItemMaster]);
+    mockSysConfig.isEnabled.mockResolvedValue(false);
+    mockSysConfig.getValue.mockResolvedValue('90');
+
+    const rows = await target.findStockByBox(undefined, 'C1', 'P1');
+
+    expect(rows[0]).toEqual(expect.objectContaining({ storageDays: 200, longStoredYn: 'N' }));
+  });
+
   it('findStockByBox separates packed waiting boxes from warehouse received boxes', async () => {
     const qb = {
       select: jest.fn().mockReturnThis(),

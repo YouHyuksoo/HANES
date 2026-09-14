@@ -6215,7 +6215,11 @@
       "itemLoadError": "Không thể tải sản phẩm trong thùng.",
       "orderNo": "Mã lệnh SX",
       "inspectPassYn": "Kiểm tra",
-      "issuedAt": "Thời gian phát hành"
+      "issuedAt": "Thời gian phát hành",
+      "storageDays": "Số ngày lưu kho",
+      "storageDaysValue": "{{count}} ngày",
+      "longStored": "Lưu kho lâu",
+      "longStoredOnly": "Chỉ lưu kho lâu"
     },
     "pallet": {
       "title": "Xếp pallet",
