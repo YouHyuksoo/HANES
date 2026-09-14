@@ -285,7 +285,7 @@ describe('AiSqlService knowledge pipeline 연동', () => {
 
     const result = await service.process([{ role: 'user', content: '작업지시 다음엔 뭐 해?' }], undefined, { persona: 'user' } as any);
 
-    expect(pipeline.retrieve).toHaveBeenCalledWith('작업지시 다음엔 뭐 해?', { persona: 'user' });
+    expect(pipeline.retrieve).toHaveBeenCalledWith('작업지시 다음엔 뭐 해?', { persona: 'user' }, undefined);
     expect(result.sources?.[0].chunkId).toBe('c1');
     // generalChat system 프롬프트에 파이프라인 prompt가 포함되어야 한다
     const systemContent = aiService.complete.mock.calls[0][0][0].content as string;

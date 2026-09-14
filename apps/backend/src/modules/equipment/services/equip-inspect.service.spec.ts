@@ -398,6 +398,8 @@ describe('EquipInspectService', () => {
       const qb = {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue({
           equipCode: 'EQ-CUT-01',
           inspectType: 'DAILY',

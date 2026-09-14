@@ -15,7 +15,7 @@ import { ACTIVITY_EVENT_TYPES, ACTIVITY_ACTOR_KINDS } from '@harness/shared';
 export class CreateActivityLogDto {
   @ApiProperty({ description: '활동 유형', example: 'PAGE_ACCESS' })
   @IsString()
-  @IsIn(ACTIVITY_EVENT_TYPES as unknown as string[])
+  @IsIn([...ACTIVITY_EVENT_TYPES])
   activityType: string;
 
   @ApiPropertyOptional({ description: '토스트/에러 메시지 본문' })
@@ -27,7 +27,7 @@ export class CreateActivityLogDto {
   @ApiPropertyOptional({ description: '기록 주체', example: 'HUMAN' })
   @IsOptional()
   @IsString()
-  @IsIn(ACTIVITY_ACTOR_KINDS as unknown as string[])
+  @IsIn([...ACTIVITY_ACTOR_KINDS])
   actorKind?: string;
 
   @ApiPropertyOptional({ description: '페이지 경로', example: '/dashboard' })

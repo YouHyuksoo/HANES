@@ -111,15 +111,33 @@ describe('KnowledgePipelineService', () => {
 
   it('리랭크가 유효한 JSON을 주면 그 순서를 따른다 (강제 포함 청크는 유지)', async () => {
     const understanding = JSON.stringify({ intent: 'usage', queries: ['질의'], menus: [] });
+    // 후보가 FINAL_TOP_K(8) 이하면 리랭크를 건너뛰므로, 실제로 리랭크를 태우려면 9개가 필요하다.
+    const candidates = Array.from({ length: 9 }, (_, i) => chunk(`c${i + 1}`));
     const { service } = makeService({
       complete: jest
         .fn()
         .mockResolvedValueOnce(understanding)
         .mockResolvedValueOnce('[2, 1]'),
+      knowledge: { search: jest.fn().mockResolvedValue(candidates) },
+    });
+    const result = await service.retrieve('질문', {} as any);
+    const ids = result.chunks.map((c) => c.chunkId);
+    // LLM이 고른 2·1번이 앞으로 오고, 나머지는 RRF 순서 그대로 뒤에 붙는다.
+    expect(ids.slice(0, 2)).toEqual(['c2', 'c1']);
+    expect(ids).toEqual(['c2', 'c1', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8']);
+  });
+
+  it('후보가 FINAL_TOP_K 이하면 리랭크 LLM 을 부르지 않는다 (순서 유지)', async () => {
+    const understanding = JSON.stringify({ intent: 'usage', queries: ['질의'], menus: [] });
+    const complete = jest.fn().mockResolvedValueOnce(understanding);
+    const { service } = makeService({
+      complete,
       knowledge: { search: jest.fn().mockResolvedValue([chunk('first'), chunk('second')]) },
     });
     const result = await service.retrieve('질문', {} as any);
-    expect(result.chunks.map((c) => c.chunkId)).toEqual(['second', 'first']);
+    expect(result.chunks.map((c) => c.chunkId)).toEqual(['first', 'second']);
+    // 질의이해 1회뿐 — 리랭크 왕복이 없어야 한다.
+    expect(complete).toHaveBeenCalledTimes(1);
   });
 
   it('engineer 의도면 매칭 메뉴의 business-logics 청크를 강제 포함하고 비즈니스 로직 섹션을 만든다', async () => {

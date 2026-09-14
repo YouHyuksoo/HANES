@@ -11,6 +11,7 @@ import { ItemMaster } from '../../../../entities/item-master.entity';
 import { ProductInventoryService } from '../../../inventory/services/product-inventory.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { NumberingService } from '../../../../shared/numbering.service';
+import { TransactionService } from '../../../../shared/transaction.service';
 
 describe('ReworkService policy', () => {
   let target: ReworkService;
@@ -33,6 +34,7 @@ describe('ReworkService policy', () => {
         { provide: getRepositoryToken(ItemMaster), useValue: createMock<Repository<ItemMaster>>() },
         { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
         { provide: NumberingService, useValue: createMock<NumberingService>() },
+        { provide: TransactionService, useValue: createMock<TransactionService>() },
       ],
     })
       .setLogger(new MockLoggerService())

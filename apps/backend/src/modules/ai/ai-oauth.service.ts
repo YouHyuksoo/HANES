@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import * as crypto from 'node:crypto';
 import * as http from 'node:http';
 import { AiOauthToken } from '../../entities/ai-oauth-token.entity';
+import { parseJsonRecord } from '../../common/utils/json-record.util';
 
 /**
  * OpenAI OAuth 연결 (Authorization Code + PKCE).
@@ -205,7 +206,7 @@ export class AiOauthService {
       throw new BadRequestException(`OpenAI 토큰 교환에 실패했습니다 (${res.status}).`);
     }
     try {
-      return JSON.parse(text) as Record<string, unknown>;
+      return parseJsonRecord(text);
     } catch {
       throw new BadRequestException('OpenAI 토큰 응답을 해석하지 못했습니다.');
     }
@@ -228,7 +229,7 @@ export class AiOauthService {
   private decodeJwt(token?: string): Record<string, unknown> {
     if (!token || token.split('.').length !== 3) return {};
     try {
-      return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8')) as Record<string, unknown>;
+      return parseJsonRecord(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
     } catch {
       return {};
     }

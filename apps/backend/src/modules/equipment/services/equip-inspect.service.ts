@@ -275,10 +275,8 @@ export class EquipInspectService {
     }
     if (company) log.andWhere('log.company = :company', { company });
     if (plant) log.andWhere('log.plant = :plant', { plant });
-    // 운영 DB에서는 최신 재점검을 선택하고, 단순 조회 mock은 기존 체인도 지원한다.
-    if (typeof (log as any).orderBy === 'function') {
-      (log as any).orderBy('log.inspectAt', 'DESC').addOrderBy('log.createdAt', 'DESC');
-    }
+    // 같은 키에 재점검이 쌓이면 최신 것을 단건으로 돌려준다.
+    log.orderBy('log.inspectAt', 'DESC').addOrderBy('log.createdAt', 'DESC');
     const foundLog = await log.getOne();
 
     if (!foundLog) {

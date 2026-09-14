@@ -762,6 +762,11 @@ export class ContinuityInspectService {
       throw new BadRequestException('최소 1개 이상의 검사 스텝이 필요합니다.');
     }
     const workingSteps = steps.map((s) => ({ ...s }));
+    // 호출자가 직접 준 FAIL 은 DB 없이 판정되므로 트랜잭션을 열기 전에 막는다
+    // (structureInspect 와 같은 자리 — 측정값 자동판정분은 아래 루프에서 다시 검증한다).
+    for (const step of workingSteps) {
+      this.assertFailReason(step.passYn, step.errorCode, step.inspectType);
+    }
 
     return this.tx.run(async (queryRunner) => {
       const tenantCompany = company;

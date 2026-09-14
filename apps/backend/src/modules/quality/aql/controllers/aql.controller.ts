@@ -5,6 +5,7 @@ import { AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { AqlService } from '../services/aql.service';
 import { AqlQueryDto, CreateAqlDto, CreateIqcAqlPolicyDto, UpdateAqlDto, UpdateIqcAqlPolicyDto } from '../dto/aql.dto';
+import { parseJsonRecord } from '../../../../common/utils/json-record.util';
 
 @ApiTags('품질관리 - AQL 기준관리')
 @Controller('quality/aql')
@@ -129,9 +130,9 @@ export class AqlController {
     const parseCounts = (raw?: string): Record<number, number> => {
       if (!raw) return {};
       try {
-        const obj = JSON.parse(raw) as Record<string, unknown>;
+        const obj = parseJsonRecord(raw);
         const out: Record<number, number> = {};
-        for (const [k, v] of Object.entries(obj ?? {})) {
+        for (const [k, v] of Object.entries(obj)) {
           const seq = Number(k); const n = Number(v);
           if (Number.isFinite(seq) && Number.isFinite(n) && n >= 0) out[seq] = Math.floor(n);
         }
