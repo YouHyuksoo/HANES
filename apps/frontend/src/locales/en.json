@@ -769,7 +769,8 @@
       "consumable": "Consumable",
       "floor": "Floor WIP",
       "defect": "Defect",
-      "scrap": "Scrap"
+      "scrap": "Scrap",
+      "unusable": "Unusable"
     },
     "warehouse": {
       "title": "Warehouse Management",
@@ -3678,6 +3679,7 @@
       "confirmCancel": "Confirm Cancel",
       "searchPlaceholder": "Search transaction no., part name...",
       "defectStock": "Defect",
+      "targetWarehouse": "Destination: Unusable warehouse",
       "col": {
         "transNo": "Receipt No.",
         "transDate": "Receipt Date",
@@ -7836,6 +7838,7 @@
       "FG": "Finished Goods",
       "FLOOR": "Floor",
       "DEFECT": "Defect",
+      "UNUSABLE": "Unusable",
       "SCRAP": "Scrap",
       "SUBCON": "Subcontractor"
     },

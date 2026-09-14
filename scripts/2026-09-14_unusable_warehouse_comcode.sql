@@ -1,0 +1,29 @@
+-- 2026-09-14 불용창고(UNUSABLE) 창고유형 공통코드 추가
+--
+-- 주의: 이 SQL은 Task 2에서 작성만 하고 실행하지 않는다.
+-- COM_CODES에 UNUSABLE이 먼저 들어가면 창고등록 화면의
+-- useComCodeOptions('WAREHOUSE_TYPE_DTO')가 그 값을 즉시 노출하는데,
+-- 배포 서버의 구 백엔드는 @IsIn([...WAREHOUSE_TYPE_DTO_VALUES])에
+-- UNUSABLE이 없어 저장 시 400이 난다(설계 §5 "DB 먼저" 위험).
+-- Task 3에서 백엔드 배포와 함께 적용한다.
+--
+-- 적용 전 확인(Task 2 Step 2에서 실측 완료, 7행: RAW/WIP/FG/FLOOR/DEFECT/SCRAP/SUBCON):
+-- SELECT DETAIL_CODE, CODE_NAME, SORT_ORDER FROM COM_CODES
+--  WHERE GROUP_CODE='WAREHOUSE_TYPE_DTO' AND COMPANY='40' ORDER BY SORT_ORDER;
+--
+-- PK는 (GROUP_CODE, DETAIL_CODE) 2컬럼이라 ON 절도 2컬럼으로만 맞춘다.
+-- COMPANY/PLANT_CD까지 ON에 넣으면 다른 COMPANY에 같은 코드가 있을 때
+-- NOT MATCHED로 판정되어 INSERT 시 ORA-00001(PK 중복)이 날 수 있다.
+-- CREATED_AT/UPDATED_AT은 DEFAULT SYSTIMESTAMP라 생략한다(실측 확인).
+--
+-- 기존 SORT_ORDER: RAW=1, WIP=2, FG=3, FLOOR=4, DEFECT=5, SCRAP=6, SUBCON=7
+-- UNUSABLE은 DEFECT 바로 뒤가 자연스러우나 기존 값을 밀지 않도록 8을 쓴다.
+
+MERGE INTO COM_CODES t
+USING (SELECT 'WAREHOUSE_TYPE_DTO' GROUP_CODE, 'UNUSABLE' DETAIL_CODE, '40' COMPANY, '1000' PLANT_CD FROM DUAL) s
+ON (t.GROUP_CODE = s.GROUP_CODE AND t.DETAIL_CODE = s.DETAIL_CODE)
+WHEN NOT MATCHED THEN INSERT (GROUP_CODE, DETAIL_CODE, CODE_NAME, CODE_DESC, SORT_ORDER, USE_YN, COMPANY, PLANT_CD, CREATED_BY, UPDATED_BY)
+VALUES ('WAREHOUSE_TYPE_DTO', 'UNUSABLE', '불용', '반제품·완제품 불량 보관 창고', 8, 'Y', '40', '1000', 'unusable-wh', 'unusable-wh');
+/
+COMMIT;
+/

@@ -769,7 +769,8 @@
       "consumable": "耗材",
       "floor": "在制品",
       "defect": "不良品",
-      "scrap": "废品"
+      "scrap": "废品",
+      "unusable": "不可用仓库"
     },
     "warehouse": {
       "title": "仓库管理",
@@ -3660,6 +3661,7 @@
       "confirmCancel": "确认取消",
       "searchPlaceholder": "搜索交易编号、品目名...",
       "defectStock": "不良",
+      "targetWarehouse": "入库仓库：不可用仓库",
       "col": {
         "transNo": "入库号",
         "transDate": "入库日期",
@@ -7818,6 +7820,7 @@
       "FG": "成品",
       "FLOOR": "现场",
       "DEFECT": "不良",
+      "UNUSABLE": "不可用",
       "SCRAP": "废弃",
       "SUBCON": "外包"
     },

@@ -769,7 +769,8 @@
       "consumable": "Vật tư tiêu hao",
       "floor": "Hàng tại xưởng",
       "defect": "Hàng lỗi",
-      "scrap": "Phế phẩm"
+      "scrap": "Phế phẩm",
+      "unusable": "Kho không sử dụng được"
     },
     "warehouse": {
       "title": "Quản lý kho",
@@ -3660,6 +3661,7 @@
       "confirmCancel": "Xác nhận hủy",
       "searchPlaceholder": "Tìm mã giao dịch, tên sản phẩm...",
       "defectStock": "Lỗi",
+      "targetWarehouse": "Kho nhập: Kho không sử dụng được",
       "col": {
         "transNo": "Số nhập",
         "transDate": "Ngày nhập",
@@ -7818,6 +7820,7 @@
       "FG": "Thành phẩm",
       "FLOOR": "Hiện trường",
       "DEFECT": "Lỗi",
+      "UNUSABLE": "Không sử dụng được",
       "SCRAP": "Loại bỏ",
       "SUBCON": "Gia công"
     },

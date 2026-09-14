@@ -769,7 +769,8 @@
       "consumable": "소모품",
       "floor": "공정재공",
       "defect": "불량",
-      "scrap": "폐기"
+      "scrap": "폐기",
+      "unusable": "불용창고"
     },
     "warehouse": {
       "title": "창고관리",
@@ -4210,6 +4211,7 @@
       "confirmCancel": "취소확정",
       "searchPlaceholder": "트랜잭션번호, 품목명 검색...",
       "defectStock": "불량",
+      "targetWarehouse": "입고 창고: 불용창고",
       "col": {
         "transNo": "입고번호",
         "transDate": "입고일",
@@ -7857,6 +7859,7 @@
       "FG": "완제품",
       "FLOOR": "현장",
       "DEFECT": "불량",
+      "UNUSABLE": "불용",
       "SCRAP": "폐기",
       "SUBCON": "외주"
     },
