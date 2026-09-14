@@ -16,9 +16,10 @@
 
 1. **`packages/shared` 편집 후에는 반드시 재빌드한다.** 앱 tsconfig가 `dist`를 해석하므로
    재빌드 없이는 FE/BE 타입체크가 새 값을 보지 못한다. Task 1이 이걸 다룬다.
-2. **DB 마이그레이션(Task 3)은 코드 배포와 같은 창에서 한다.** JSHANES DB는
-   `hswbs.haengsung.com:3002` 배포 서버와 공유된다. Task 3을 먼저 적용하고 코드를 안 올리면
-   구 코드가 마이그레이션된 DB를 읽는다. **Task 1~2, 4~10을 먼저 끝내고 Task 3을 마지막 직전에** 적용한다.
+2. **DB에 쓰는 작업은 전부 코드 배포와 같은 창에서 한다.** JSHANES DB는
+   `hswbs.haengsung.com:3002` 배포 서버와 공유된다. 먼저 적용하면 구 코드가 바뀐 DB를 읽는다.
+   **DB에 쓰는 Step은 두 개다 — Task 2 Step 3(COM_CODES)과 Task 3(WAREHOUSES).**
+   둘 다 SQL 파일 작성까지만 선행하고, Task 1~2, 4~10을 끝낸 뒤 Task 3에서 함께 적용한다.
 3. i18n은 **ko·en·zh·vi 4개 파일을 동시에** 고친다. JSON에 UTF-8 BOM을 넣지 않는다(Turbopack 빌드 실패).
 4. dev 서버가 떠 있으면 `pnpm build` 대신 `pnpm run typecheck:backend` / `typecheck:frontend`를 쓴다.
 
@@ -39,8 +40,8 @@
 | `apps/backend/src/modules/ai-page-tools/registry/warehouse-tools.provider.ts:8` | AI 도구 창고유형 검증 | 수정 |
 | `apps/frontend/src/app/(authenticated)/product/defect-transfer/page.tsx` | 입고 창고 표시 | 수정 |
 | `apps/frontend/src/app/(authenticated)/inventory/stock/page.tsx:25-32` | 재고 화면 창고유형 필터 | 수정 |
-| `apps/frontend/src/app/(authenticated)/master/warehouse/types.ts:28-33` | 창고유형 배지 색 | 수정 |
-| `apps/frontend/src/locales/{ko,en,zh,vi}/translation.json` | 라벨 4종 | 수정 |
+| `apps/frontend/src/app/(authenticated)/master/warehouse/types.ts:28-36` | 창고유형 배지 색 | 수정 |
+| `apps/frontend/src/locales/{ko,en,zh,vi}.json` | 라벨 4종 | 수정 |
 | `scripts/2026-09-14_unusable_warehouse.sql` | DB 마이그레이션 | 생성 |
 | `scripts/migration/77_thn_gap_phase1_columns.sql:22` | 신규 DB 프로비저닝 | 수정 |
 
@@ -82,17 +83,21 @@ git commit -m "feat(shared): 창고유형에 UNUSABLE(불용) 값을 추가한�
 
 **Files:**
 - Create: `scripts/2026-09-14_unusable_warehouse_comcode.sql`
-- Modify: `apps/frontend/src/locales/{ko,en,zh,vi}/translation.json`
+- Modify: `apps/frontend/src/locales/{ko,en,zh,vi}.json`
 
 - [ ] **Step 1: 공통코드 MERGE SQL 작성**
 
 기존 `WAREHOUSE_TYPE_DTO` 정렬값은 RAW=1, WIP=2, FG=3, FLOOR=4, DEFECT=5, SCRAP=6, SUBCON=7 이다.
 `UNUSABLE`은 DEFECT 바로 뒤가 자연스러우나 기존 값을 밀지 않도록 **8**을 쓴다.
 
+`COM_CODES`의 PK는 `(GROUP_CODE, DETAIL_CODE)` 2컬럼이다. ON 절에 COMPANY/PLANT_CD까지 넣으면
+다른 COMPANY에 같은 코드가 있을 때 NOT MATCHED → INSERT → ORA-00001이 되므로 PK 2컬럼으로만 맞춘다.
+`CREATED_AT`/`UPDATED_AT`은 DEFAULT SYSTIMESTAMP라 생략해도 된다(실측 확인).
+
 ```sql
 MERGE INTO COM_CODES t
 USING (SELECT 'WAREHOUSE_TYPE_DTO' GROUP_CODE, 'UNUSABLE' DETAIL_CODE, '40' COMPANY, '1000' PLANT_CD FROM DUAL) s
-ON (t.GROUP_CODE = s.GROUP_CODE AND t.DETAIL_CODE = s.DETAIL_CODE AND t.COMPANY = s.COMPANY AND t.PLANT_CD = s.PLANT_CD)
+ON (t.GROUP_CODE = s.GROUP_CODE AND t.DETAIL_CODE = s.DETAIL_CODE)
 WHEN NOT MATCHED THEN INSERT (GROUP_CODE, DETAIL_CODE, CODE_NAME, CODE_DESC, SORT_ORDER, USE_YN, COMPANY, PLANT_CD, CREATED_BY, UPDATED_BY)
 VALUES ('WAREHOUSE_TYPE_DTO', 'UNUSABLE', '불용', '반제품·완제품 불량 보관 창고', 8, 'Y', '40', '1000', 'unusable-wh', 'unusable-wh');
 /
@@ -108,10 +113,12 @@ python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --sit
 ```
 Expected: 7행 (RAW/WIP/FG/FLOOR/DEFECT/SCRAP/SUBCON)
 
-- [ ] **Step 3: 적용**
+- [ ] **Step 3: 적용하지 않는다 — Task 3과 같은 창으로 미룬다**
 
-Run: `python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file scripts/2026-09-14_unusable_warehouse_comcode.sql`
-Expected: 성공. Step 2 쿼리 재실행 시 8행, `UNUSABLE/불용/8` 포함
+> ⚠ 이 SQL은 **여기서 실행하지 않는다.** COM_CODES에 `UNUSABLE`이 들어가면 창고등록 화면의
+> `useComCodeOptions('WAREHOUSE_TYPE_DTO')`가 그 값을 즉시 노출하는데, 배포 서버의 구 백엔드는
+> `@IsIn([...WAREHOUSE_TYPE_DTO_VALUES])`에 `UNUSABLE`이 없어 저장 시 400이 난다.
+> 설계 §5가 지목한 "DB 먼저" 위험 그대로다. **파일 작성까지만 하고 Task 3에서 함께 적용한다.**
 
 - [ ] **Step 4: i18n 4개 파일에 라벨 추가**
 
@@ -124,28 +131,29 @@ Expected: 성공. Step 2 쿼리 재실행 시 8행, `UNUSABLE/불용/8` 포함
 
 - [ ] **Step 5: 4개 파일에 키가 다 들어갔는지 검증**
 
-Run: `grep -c "UNUSABLE\|unusable\|targetWarehouse" apps/frontend/src/locales/ko/translation.json apps/frontend/src/locales/en/translation.json apps/frontend/src/locales/zh/translation.json apps/frontend/src/locales/vi/translation.json`
+Run: `grep -c "UNUSABLE\|unusable\|targetWarehouse" apps/frontend/src/locales/ko.json apps/frontend/src/locales/en.json apps/frontend/src/locales/zh.json apps/frontend/src/locales/vi.json`
 Expected: 4개 파일 모두 같은 개수
 
-BOM 검증 Run: `file apps/frontend/src/locales/*/translation.json`
+BOM 검증 Run: `file apps/frontend/src/locales/*.json`
 Expected: 어느 파일도 "with BOM"이 아니어야 한다
 
 - [ ] **Step 6: 커밋**
 
 ```bash
-git add scripts/2026-09-14_unusable_warehouse_comcode.sql apps/frontend/src/locales/ko/translation.json apps/frontend/src/locales/en/translation.json apps/frontend/src/locales/zh/translation.json apps/frontend/src/locales/vi/translation.json
+git add scripts/2026-09-14_unusable_warehouse_comcode.sql apps/frontend/src/locales/ko.json apps/frontend/src/locales/en.json apps/frontend/src/locales/zh.json apps/frontend/src/locales/vi.json
 git commit -m "feat(i18n): 불용창고 창고유형 공통코드와 4개 언어 라벨을 추가한다"
 ```
 
 ---
 
-## Task 3: DB 마이그레이션 — WH-DEFECT를 UNUSABLE로 (⚠ 배포와 같은 창에서)
+## Task 3: DB 적용 — COM_CODES + WAREHOUSES (⚠ 배포와 같은 창에서, 맨 마지막)
 
-> **이 Task는 Task 4~10을 모두 끝내고 배포 직전에 적용한다.** 먼저 적용하면 배포 서버의 구 코드가
-> 마이그레이션된 DB를 읽는다. SQL 파일 작성까지는 지금 해도 된다.
+> **이 Task는 Task 1~2, 4~10을 모두 끝내고 배포 직전에 적용한다.** 먼저 적용하면 배포 서버의
+> 구 코드가 바뀐 DB를 읽는다. Task 2 Step 3에서 미뤄둔 COM_CODES MERGE도 여기서 함께 실행한다.
 
 **Files:**
 - Create: `scripts/2026-09-14_unusable_warehouse.sql`
+- Apply: `scripts/2026-09-14_unusable_warehouse_comcode.sql` (Task 2에서 작성해 둔 것)
 
 - [ ] **Step 1: 적용 전 상태 기록**
 
@@ -177,7 +185,14 @@ COMMIT;
 /
 ```
 
-- [ ] **Step 3: 적용**
+- [ ] **Step 3: 두 SQL을 순서대로 적용**
+
+먼저 Task 2에서 만들어 둔 공통코드부터.
+
+Run: `python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file scripts/2026-09-14_unusable_warehouse_comcode.sql`
+Expected: 성공. `WAREHOUSE_TYPE_DTO`가 8행이 되고 `UNUSABLE/불용/8` 포함
+
+그다음 창고 유형 전환.
 
 Run: `python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file scripts/2026-09-14_unusable_warehouse.sql`
 Expected: 1행 갱신
@@ -201,29 +216,32 @@ git commit -m "chore(db): 불용창고를 UNUSABLE 유형으로 전환하는 마
 **Files:**
 - Modify: `apps/backend/src/modules/inventory/services/warehouse.service.ts:244-254`
 - Modify: `scripts/migration/77_thn_gap_phase1_columns.sql:22`
-- Test: `apps/backend/src/modules/inventory/services/warehouse.service.spec.ts` (없으면 생성)
+- Test: `apps/backend/src/modules/inventory/services/warehouse.service.spec.ts:228` (**이미 존재한다** — `initDefaultWarehouses` describe에 케이스를 추가한다)
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
+기존 `describe('initDefaultWarehouses')` 안에 케이스를 추가한다. **mock 변수명은 `mockWhRepo`다.**
+
 ```ts
-it('initDefaultWarehouses 가 불용창고를 UNUSABLE 유형 기본창고로 포함한다', async () => {
-  mockWarehouseRepo.findOne.mockResolvedValue(null);
-  mockWarehouseRepo.create.mockImplementation((v) => v as Warehouse);
-  mockWarehouseRepo.save.mockImplementation((v) => Promise.resolve(v as Warehouse));
+    it('불용창고를 UNUSABLE 유형 기본창고로 만든다', async () => {
+      mockWhRepo.find.mockResolvedValue([]);
+      mockWhRepo.create.mockImplementation((payload) => payload as Warehouse);
+      mockWhRepo.save.mockResolvedValue([] as any);
 
-  await target.initDefaultWarehouses('40', '1000');
+      await target.initDefaultWarehouses('C1', 'P1');
 
-  const saved = mockWarehouseRepo.save.mock.calls.map(([v]) => v as Warehouse);
-  const unusable = saved.find((w) => w.warehouseCode === 'WH-DEFECT');
-  expect(unusable).toBeDefined();
-  expect(unusable?.warehouseType).toBe('UNUSABLE');
-  expect(unusable?.isDefault).toBe('Y');
-});
+      expect(mockWhRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+        warehouseCode: 'WH-DEFECT',
+        warehouseType: 'UNUSABLE',
+        isDefault: 'Y',
+      }));
+    });
 ```
 
-> 기존 spec 파일이 없으면 같은 모듈의 다른 spec(예: `consumable.service.spec.ts`)의
-> `Test.createTestingModule` 구성을 본떠 만든다. `WarehouseService` 생성자 인자를 실제로 확인하고
-> 모든 의존성에 `createMock`을 넣는다 — 하나라도 빠지면 `Nest can't resolve dependencies`로 깨진다.
+> **구현 구조 주의:** `initDefaultWarehouses`는 `findOne`이 아니라 **`find`**로 기존 코드 집합을
+> 한 번에 읽고(`warehouse.service.ts:257-261`), 생성 대상을 모아 **`save(배열)`을 단 한 번** 호출한다
+> (`:288-290`). 그래서 `save.mock.calls`를 건별로 뒤지는 단언은 항상 실패한다 —
+> 위처럼 `create` 호출을 단언하는 것이 기존 테스트의 방식이다.
 
 - [ ] **Step 2: 실패 확인**
 
@@ -245,9 +263,15 @@ Expected: PASS
 
 - [ ] **Step 5: 프로비저닝 스크립트도 고친다**
 
-`scripts/migration/77_thn_gap_phase1_columns.sql:22`에서 `WH-DEFECT`를 생성할 때의
-`WAREHOUSE_TYPE`을 `'DEFECT'` → `'UNUSABLE'`로 바꾼다. `:24`의 `NOT EXISTS` 가드가 있어
-기존 DB 재실행은 무해하다.
+`scripts/migration/77_thn_gap_phase1_columns.sql:20-24`의 `SELECT 'WH-DEFECT', '불용창고', 'DEFECT', 'DEFECT', 'N', 'Y', ...`에서
+**두 값을 바꾼다**:
+- `WAREHOUSE_TYPE` `'DEFECT'` → `'UNUSABLE'`
+- `IS_DEFAULT` `'N'` → `'Y'`
+
+**`IS_DEFAULT`를 빠뜨리면 안 된다.** `getDefaultWarehouse('UNUSABLE')`이 `isDefault:'Y'`로 거르므로
+`'N'`인 채로는 신규 테넌트에서 창고를 못 찾는다 — 이 Step이 막으려는 실패가 그대로 재현된다.
+
+`:24`의 `NOT EXISTS` 가드가 있어 기존 DB 재실행은 무해하다.
 
 - [ ] **Step 6: 커밋**
 
@@ -270,15 +294,25 @@ git commit -m "fix(inventory): 신규 테넌트 기본창고에 불용창고를 
 
 - [ ] **Step 1: 기존 테스트를 새 계약으로 고쳐 실패시킨다**
 
-`product-inventory.service.spec.ts:562-564`의 단언을 바꾼다:
+**먼저 `:534`의 mock 반환 픽스처부터 고친다.** 이걸 놓치면 구현을 끝내도 새 가드
+(`warehouseType !== 'UNUSABLE'`)가 던져서 테스트가 계속 빨갛다.
+
+```ts
+      .mockResolvedValueOnce({ warehouseCode: 'WH-DEFECT', warehouseType: 'UNUSABLE', useYn: 'Y', company: 'C1', plant: 'P1' } as any)
+```
+
+그다음 `:563-565`의 단언을 바꾼다:
 
 ```ts
     expect(qrManagerFindOne).toHaveBeenNthCalledWith(1, Warehouse, {
-      where: { warehouseType: 'UNUSABLE', isDefault: 'Y', useYn: 'Y', company: '40', plant: '1000' },
+      where: { warehouseType: 'UNUSABLE', isDefault: 'Y', useYn: 'Y', company: 'C1', plant: 'P1' },
     });
 ```
 
 `:569`·`:581`의 `'DEFECT'` 기대값도 `'WH-DEFECT'`로 바꾼다.
+`:530`의 테스트 이름("into the defect warehouse")도 불용창고로 고친다.
+
+> 테넌트 값은 그 테스트가 쓰는 것을 그대로 쓴다 — 위 예시는 `C1`/`P1` 기준이다. 실제 파일을 열어 확인할 것.
 
 - [ ] **Step 2: 실패 확인**
 
@@ -287,9 +321,11 @@ Expected: FAIL — 1번째 호출이 `warehouseCode:'DEFECT'` 조회다
 
 - [ ] **Step 3: 구현**
 
-`transferDefectStockToWarehouse`의 창고 해석부를 교체한다.
+`transferDefectStockToWarehouse`의 **612~632행(창고 해석부 + 검증)** 을 아래로 교체한다.
+`itemType` 계산 줄(613)이 638행에서 쓰이므로 **반드시 함께 남긴다** — 빠뜨리면 TS 컴파일 에러다.
 
 ```ts
+    const itemType = dto.itemType || (dto.fromWarehouseId === 'FG_WIP' ? 'FINISHED' : 'SEMI_PRODUCT');
     const tenantWhere = this.tenantWhere(dto.company, dto.plant);
 
     return this.tx.run(async (qr) => {
@@ -307,8 +343,8 @@ Expected: FAIL — 1번째 호출이 `warehouseCode:'DEFECT'` 조회다
       }
 ```
 
-`itemType` 계산 줄은 그대로 두고, 아래 `issueStockInTx` 호출의 `toWarehouseId`가
-`defectWarehouse.warehouseCode`를 쓰는지 확인한다.
+아래 `issueStockInTx` 호출(634-647)은 이미 `toWarehouseId: defectWarehouse.warehouseCode`를
+쓰므로 그대로 맞물린다. `targetWarehouseCode` 지역변수는 더 이상 필요 없으니 함께 지운다.
 
 - [ ] **Step 4: 통과 확인**
 
@@ -329,13 +365,21 @@ git commit -m "feat(inventory): 제품 불량입고 목적지를 불용창고(UN
 **Files:**
 - Modify: `apps/backend/src/modules/quality/rework/services/rework.service.ts:535-595`
 - Test: `apps/backend/src/modules/quality/rework/services/rework.policy.spec.ts`
+- Test: `apps/backend/src/modules/quality/rework/services/rework.service.spec.ts` (**둘 다 고쳐야 한다**)
 
 설계 §1-1의 기존 결함을 함께 고친다. `fromWarehouseId: 'DEFECT'`는 지금도 틀렸다 —
 생산 불량은 `FG_WIP`/`SFG_WIP`에 `qualityStatus='DEFECT'`로 적재된다.
 
-**주의:** `WarehouseService`를 주입하면 생성자 인자가 하나 늘어난다.
-`rework.policy.spec.ts`의 `providers` 배열에 반드시 함께 추가해야 한다
-(빠뜨리면 `Nest can't resolve dependencies`로 깨진다 — 이 spec은 같은 이유로 이미 한 번 깨진 적이 있다).
+**주의 1 — spec이 두 개다.** `ReworkService`를 `Test.createTestingModule`로 조립하는 spec이
+`rework.policy.spec.ts:28-38`과 `rework.service.spec.ts:51-63` **둘** 있다. `WarehouseService`를
+주입하면 생성자 인자가 9개가 되므로 **두 파일의 `providers`에 모두** 추가해야 한다
+(빠뜨리면 `Nest can't resolve dependencies`로 깨진다 — `rework.policy.spec.ts`는 오늘 같은 이유로
+`TransactionService`를 추가한 이력이 있다. 기존 프로바이더를 지우지 말고 한 줄만 더한다).
+
+**주의 2 — 기존 통과 테스트가 빨개진다.** `rework.service.spec.ts:244-245`의 `it.each` PASS 행은
+`passQty=1`이라 새 코드 경로를 탄다. `createMock<WarehouseService>()`의 `getDefaultWarehouse`는
+`undefined`를 resolve하므로 새 예외가 던져진다. **프로바이더 추가만으로는 부족하고,
+`getDefaultWarehouse`가 창고를 반환하도록 mock 값을 세팅해야 한다.**
 
 - [ ] **Step 1: 실패하는 테스트 2개 작성**
 
@@ -368,16 +412,29 @@ Expected: FAIL
 - [ ] **Step 3: 구현 — 출발지 해석**
 
 생성자에 `private readonly warehouseService: WarehouseService,`를 추가하고,
-`:537` 주석을 실제 동작에 맞게 고친 뒤 출발지를 해석기로 바꾼다.
+`:537` 주석을 실제 동작에 맞게 고친다.
+
+해석기 호출은 **`if (dto.inspectResult !== 'FAIL')` 블록(539-591) 첫머리**에 놓는다 —
+passQty 분기(547-577)와 failQty 분기(579-590)가 모두 이 블록 안이라 한 번만 해석하면 둘 다 쓴다.
+단 이동할 수량이 아예 없으면 해석 자체가 불필요하므로 수량 가드를 함께 건다.
 
 ```ts
-      const unusable = await this.warehouseService.getDefaultWarehouse('UNUSABLE', company, plant);
-      if (!unusable) {
-        throw new BadRequestException('불용창고가 설정되어 있지 않습니다.');
+      const movingQty = (dto.passQty ?? 0) + (dto.failQty ?? 0);
+      let unusableCode: string | null = null;
+      if (movingQty > 0) {
+        const unusable = await this.warehouseService.getDefaultWarehouse('UNUSABLE', company, plant);
+        if (!unusable) {
+          throw new BadRequestException('불용창고가 설정되어 있지 않습니다.');
+        }
+        unusableCode = unusable.warehouseCode;
       }
 ```
 
-`:549`와 `:581`의 `fromWarehouseId: 'DEFECT'`를 `fromWarehouseId: unusable.warehouseCode`로 바꾼다.
+`ReworkModule`은 `InventoryModule`을 import하고 `InventoryModule`이 `WarehouseService`를
+export하므로(`inventory.module.ts:61`) 모듈 배선은 추가 작업이 없다.
+
+`:549`와 `:581`의 `fromWarehouseId: 'DEFECT'`를 `fromWarehouseId: unusableCode!`로 바꾼다
+(두 분기 모두 해당 수량이 0보다 클 때만 실행되므로 이 시점에 `unusableCode`는 채워져 있다).
 
 - [ ] **Step 4: 구현 — 보충 폴백 제거**
 
@@ -392,13 +449,23 @@ Expected: FAIL
         }
 ```
 
-- [ ] **Step 5: spec providers 갱신**
+- [ ] **Step 5: spec 두 개 갱신**
 
-`rework.policy.spec.ts`의 `providers` 배열에 추가:
+`rework.policy.spec.ts`와 `rework.service.spec.ts` **양쪽** `providers` 배열에 추가한다.
+반환값을 세팅해야 하므로 인라인이 아니라 **변수로 잡는다**:
 
 ```ts
-        { provide: WarehouseService, useValue: createMock<WarehouseService>() },
+  let mockWarehouseService: DeepMocked<WarehouseService>;
+  // beforeEach 안에서
+  mockWarehouseService = createMock<WarehouseService>();
+  mockWarehouseService.getDefaultWarehouse.mockResolvedValue({ warehouseCode: 'WH-DEFECT' } as Warehouse);
+  // providers 배열에
+        { provide: WarehouseService, useValue: mockWarehouseService },
 ```
+
+`rework.service.spec.ts`도 같은 mock 값을 세팅해야 `it.each`의 PASS 행이 계속 통과한다.
+같은 파일에서 `transferStockByItemInTx` mock이 요청 수량만큼 반환하는지도 확인한다 —
+0을 반환하면 새 부족 예외에 걸린다.
 
 - [ ] **Step 6: 통과 확인**
 
@@ -408,7 +475,7 @@ Expected: PASS (신규 2건 포함 전부)
 - [ ] **Step 7: 커밋**
 
 ```bash
-git add apps/backend/src/modules/quality/rework/services/rework.service.ts apps/backend/src/modules/quality/rework/services/rework.policy.spec.ts
+git add apps/backend/src/modules/quality/rework/services/rework.service.ts apps/backend/src/modules/quality/rework/services/rework.policy.spec.ts apps/backend/src/modules/quality/rework/services/rework.service.spec.ts
 git commit -m "fix(rework): 재작업 재고 출발지를 불용창고로 바로잡고 보충 폴백을 제거한다"
 ```
 
@@ -418,19 +485,26 @@ git commit -m "fix(rework): 재작업 재고 출발지를 불용창고로 바로
 
 **Files:**
 - Modify: `apps/backend/src/modules/production/services/repair-stock.service.ts:39`
-- Test: `apps/backend/src/modules/production/services/repair-stock.service.spec.ts` (없으면 생성)
+- Test: `apps/backend/src/modules/production/services/repair-stock.service.spec.ts` (**이미 존재한다**)
 
 `repair-lookup.service.ts:25`가 창고유형 필터 없이 `qualityStatus:'DEFECT'`로만 대상을 뽑으므로,
 추가하지 않으면 **수리 화면 목록에는 뜨는데 시작은 거부되는** 상태가 된다.
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
+이 spec은 Nest를 쓰지 않고 `new RepairStockService(product, material)`로 직접 생성하며(:40),
+`qr.manager.findOne`을 `mockImplementation`으로 엔티티별 분기 처리한다. 따라서
+`mockResolvedValueOnce`가 아니라 **공유 창고 픽스처(:47)를 바꾸는 형태**로 쓴다.
+메서드 이름은 `start`가 아니라 **`startInTx(qr, order, warehouseCode)`**(:34)다.
+
 ```ts
-it('불용창고 재고로 수리를 시작할 수 있다', async () => {
-  mockQr.manager.findOne.mockResolvedValueOnce({ warehouseCode: 'WH-DEFECT', warehouseType: 'UNUSABLE', useYn: 'Y' });
-  await expect(target.start(mockQr, order, 'WH-DEFECT')).resolves.not.toThrow();
-});
+    it('불용창고 재고로 수리를 인수할 수 있다', async () => {
+      warehouse.warehouseType = 'UNUSABLE';   // 공유 픽스처(기본 'WIP')를 이 테스트에서만 바꾼다
+      await expect(target.startInTx(qr, order, 'WH-DEFECT')).resolves.not.toThrow();
+    });
 ```
+
+> 실제 파일을 열어 픽스처 변수명과 `startInTx` 인자를 확인하고 맞춘다.
 
 - [ ] **Step 2: 실패 확인**
 
@@ -480,6 +554,12 @@ Expected: FAIL
 각 `findOne`의 `where`에 `isDefault: 'Y',`를 추가한다. `shelf-life-reinspect.service.ts:233`도
 같은 수정을 한다(해당 spec은 반환값 mock이라 깨지지 않는다).
 
+**같은 파일의 라벨 오기도 함께 고친다.** 두 곳 다 대상이 원자재용 `DEFECT` 창고인데 문자열이
+"불용창고"라고 되어 있다. 이번 변경으로 "불용"이 다른 창고의 공식 명칭이 되므로 혼선이 된다.
+- `iqc-history.service.ts:835` `assertSameTenant('불용창고', ...)` → `'불량창고'`
+- `iqc-history.service.ts` 의 `remark: 'IQC 불합격 자동이동 (불용창고)'` → `(불량창고)`
+- `shelf-life-reinspect.service.ts:229·235` 주석과 라벨 → `불량창고`
+
 - [ ] **Step 4: 통과 확인**
 
 Run: `pnpm --dir apps/backend run test:ci src/modules/material/services/iqc-history.service.spec.ts src/modules/material/services/shelf-life-reinspect.service.spec.ts`
@@ -503,7 +583,7 @@ git commit -m "fix(material): 불합격 자동이동 목적지를 기본 불량�
 - [ ] **Step 1: 배열 2곳에 값 추가**
 
 두 파일의 `WH_TYPES` / `WAREHOUSE_TYPES` 배열에 `'UNUSABLE'`을 `'DEFECT'` 뒤에 넣는다.
-후자는 `:61` `normalizeWhType`이 실제 검증에 쓴다.
+후자는 `:64` `normalizeWhType`이 실제 검증에 쓴다.
 
 - [ ] **Step 2: 프롬프트 문자열도 고친다**
 
@@ -526,7 +606,7 @@ git commit -m "feat(ai-tools): 창고유형 목록과 프롬프트에 불용을 
 **Files:**
 - Modify: `apps/frontend/src/app/(authenticated)/product/defect-transfer/page.tsx`
 - Modify: `apps/frontend/src/app/(authenticated)/inventory/stock/page.tsx:25-32`
-- Modify: `apps/frontend/src/app/(authenticated)/master/warehouse/types.ts:28-33`
+- Modify: `apps/frontend/src/app/(authenticated)/master/warehouse/types.ts:28-36`
 
 - [ ] **Step 1: 제품 불량입고 화면에 목적지 표시**
 
@@ -551,10 +631,10 @@ git commit -m "feat(ai-tools): 창고유형 목록과 프롬프트에 불용을 
 - [ ] **Step 3: 배지 색 지정**
 
 `master/warehouse/types.ts`의 `WAREHOUSE_TYPE_COLORS`에 `DEFECT` 줄 아래 추가.
-기존 항목들과 같은 형식을 따른다(이 맵은 기존 관행이므로 형식을 바꾸지 않는다):
+기존 항목들과 같은 형식을 따른다. **오렌지는 SUBCON 이 이미 쓰므로 피한다** — 배지가 구분되지 않는다:
 
 ```ts
-  UNUSABLE: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+  UNUSABLE: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300',
 ```
 
 - [ ] **Step 4: 타입체크 후 커밋**
@@ -609,7 +689,23 @@ python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --sit
 ```
 Expected: Step 5에서 넣은 건이 보인다
 
-- [ ] **Step 7: 미완료 기록 또는 완료 보고**
+- [ ] **Step 7: 재작업 경로 회귀 (설계 §6)**
+
+Step 5에서 불용창고에 넣은 제품으로 재작업 합격 처리를 하고, 이동만 일어나고 보충 입고가
+생기지 않는지 확인한다.
+
+Run:
+```bash
+python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --query "SELECT TRANS_TYPE, FROM_WAREHOUSE_ID, TO_WAREHOUSE_ID, QTY FROM PRODUCT_TRANSACTIONS WHERE REF_TYPE='REWORK' AND COMPANY='40' ORDER BY CREATED_AT DESC FETCH FIRST 10 ROWS ONLY"
+```
+Expected: `REWORK_IN` 이 `WH-DEFECT` → 공정창고로 1건. **보충 `WIP_IN` 이 있으면 폴백 제거가 안 된 것이다.**
+
+- [ ] **Step 8: 수리 인수 경로 (설계 §6)**
+
+불용창고 재고로 수리 시작이 되는지 확인한다(Task 7 미적용 시
+`처리 가능한 사용 중 창고가 아닙니다: WH-DEFECT`로 거부된다).
+
+- [ ] **Step 9: 미완료 기록 또는 완료 보고**
 
 검증 중 끝내지 못한 항목이 있으면 `docs/standards/unfinished-work-record.md` 기준으로
 `docs/reports/unfinished-work/`에 기록한다.
