@@ -6648,7 +6648,7 @@
       }
     },
     "life": {
-      "title": "Tình trạng tuổi thọ",
+      "title": "Tra cứu tuổi thọ vật tư tiêu hao",
       "subtitle": "Xem tình trạng tuổi thọ vật tư tiêu hao.",
       "description": "Xem tình trạng tuổi thọ vật tư tiêu hao.",
       "sortedByUsage": "Sắp xếp theo sử dụng",
@@ -6733,7 +6733,7 @@
       "placeholder": "Nhập mã hoặc tên vật tư..."
     },
     "mount": {
-      "title": "Quản lý lắp đặt",
+      "title": "Quản lý lắp đặt vật tư tiêu hao",
       "description": "Quản lý lắp đặt/tháo gỡ vật tư tiêu hao (khuôn/jig/dụng cụ) trên thiết bị.",
       "operStatus": "Trạng thái vận hành",
       "statusWarehouse": "Kho",

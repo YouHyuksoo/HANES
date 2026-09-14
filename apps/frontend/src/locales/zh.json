@@ -6648,7 +6648,7 @@
       }
     },
     "life": {
-      "title": "寿命状况",
+      "title": "耗材寿命状况查询",
       "subtitle": "查看耗材寿命状况。",
       "description": "查看耗材寿命状况。",
       "sortedByUsage": "按使用量排序",
@@ -6733,7 +6733,7 @@
       "placeholder": "输入耗材代码或名称..."
     },
     "mount": {
-      "title": "装卸管理",
+      "title": "耗材装卸管理",
       "description": "管理耗材(模具/治具/工具)的设备装卸。",
       "operStatus": "运行状态",
       "statusWarehouse": "仓库",

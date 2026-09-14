@@ -6666,7 +6666,7 @@
       }
     },
     "life": {
-      "title": "Life Status",
+      "title": "Consumable Lifespan Status",
       "subtitle": "View consumable life status.",
       "description": "View consumable life status.",
       "sortedByUsage": "Sort by Usage",
@@ -6751,7 +6751,7 @@
       "placeholder": "Enter consumable code or name..."
     },
     "mount": {
-      "title": "Mount Management",
+      "title": "Consumable Mount Management",
       "description": "Manage equipment mounting/unmounting of consumables (molds/jigs/tools).",
       "operStatus": "Oper. Status",
       "statusWarehouse": "Warehouse",

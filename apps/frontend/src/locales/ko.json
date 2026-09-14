@@ -6687,7 +6687,7 @@
       }
     },
     "life": {
-      "title": "수명현황",
+      "title": "소모품 수명현황조회",
       "subtitle": "소모품 수명 현황을 조회합니다.",
       "description": "소모품 수명 현황을 조회합니다.",
       "sortedByUsage": "사용량순 정렬",
@@ -6772,7 +6772,7 @@
       "placeholder": "소모품코드 또는 소모품명 입력..."
     },
     "mount": {
-      "title": "장착관리",
+      "title": "소모품 장착관리",
       "description": "소모품(금형/지그/공구)의 설비 장착/분리를 관리합니다.",
       "operStatus": "운용상태",
       "statusWarehouse": "창고",
