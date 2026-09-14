@@ -31,6 +31,7 @@ import { DefectLog } from '../../../../entities/defect-log.entity';
 import { RepairOrder } from '../../../../entities/repair-order.entity';
 import { ReworkOrder } from '../../../../entities/rework-order.entity';
 import { Warehouse } from '../../../../entities/warehouse.entity';
+import { toDateOnly } from '../../../../common/utils/date-only.util';
 import {
   MaterialTrace,
   ProcessStep,
@@ -395,7 +396,7 @@ export class ProductTraceabilityService {
     if (productionDate) {
       dailyLogs = dailyLogs.filter((log) => {
         if (!log.workDate) return false;
-        const wd = log.workDate instanceof Date ? log.workDate.toISOString().slice(0, 10) : String(log.workDate).slice(0, 10);
+        const wd = toDateOnly(log.workDate);
         return wd === productionDate.slice(0, 10);
       });
     }
@@ -528,7 +529,7 @@ export class ProductTraceabilityService {
     const repairRows = await this.repairOrderRepo.find({ where: repairConditions });
 
     const repairRecords: RepairRecord[] = repairRows.map((r) => {
-      const repairDateStr = r.repairDate instanceof Date ? r.repairDate.toISOString().slice(0, 10) : String(r.repairDate).slice(0, 10);
+      const repairDateStr = toDateOnly(r.repairDate) ?? '';
       return {
         source: 'REPAIR' as const,
         refNo: `${repairDateStr}-${r.seq}`,

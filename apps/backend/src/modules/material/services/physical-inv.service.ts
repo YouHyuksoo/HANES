@@ -23,6 +23,7 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { parseDateStart } from '../../../shared/date.util';
+import { toDateOnly } from '../../../common/utils/date-only.util';
 import {
   CreatePhysicalInvDto,
   PhysicalInvQueryDto,
@@ -331,10 +332,8 @@ export class PhysicalInvService {
       warehouseName = '전체 창고';
     }
 
-    // sessionDate를 YYYY-MM-DD 문자열로 변환 (타임존 이슈 방지)
-    const dateStr = session.sessionDate instanceof Date
-      ? session.sessionDate.toISOString().split('T')[0]
-      : String(session.sessionDate).split('T')[0];
+    // sessionDate를 YYYY-MM-DD 로 변환. toISOString 은 UTC 라 KST 오전에 전날이 된다 — toDateOnly 는 로컬 기준.
+    const dateStr = toDateOnly(session.sessionDate) ?? '';
 
     return {
       sessionDate: dateStr,

@@ -436,4 +436,46 @@ describe('module repository boundaries', () => {
 
     expect(offenders).toEqual([]);
   });
+
+  it('does not use TypeORM row locking that Oracle rejects (ORA-02014)', () => {
+    // findOne/find 의 lock 옵션은 take:1 과 함께 `FETCH FIRST 1 ROWS ONLY FOR UPDATE` 를 만들고
+    // Oracle 이 이를 거부한다. 행 잠금은 common/utils/row-lock.util 의 lockRowsForUpdate 로 한다.
+    const allowedLockFiles = new Set(['common/utils/row-lock.util.ts']);
+    const lockPattern = /lock:\s*\{\s*mode:|\.setLock\(/;
+    const offenders = runtimeSourceFiles()
+      .filter((filePath) => !allowedLockFiles.has(relative(filePath)))
+      .filter((filePath) => lockPattern.test(read(filePath)))
+      .map(relative);
+
+    expect(offenders).toEqual([]);
+  });
+
+  it('does not call Date methods on date-typed entity columns', () => {
+    // `type: 'date'` 컬럼은 프로퍼티 타입이 Date 여도 Oracle 하이드레이션 결과가 'YYYY-MM-DD' 문자열이라
+    // .toISOString()/.getFullYear() 를 바로 부르면 런타임에 죽는다(출하 통계·수리 시작 500 이 이것이었다).
+    // 날짜 문자열이 필요하면 common/utils/date-only.util 의 toDateOnly 를 쓴다(UTC 가 아닌 로컬 기준).
+    const dateProperties = new Set<string>();
+    const datePropertyPattern = /type:\s*'date'[^\r\n]*\r?\n\s*([A-Za-z_][A-Za-z0-9_]*)\??:/g;
+    for (const filePath of walk(path.join(srcRoot, 'entities')).filter((f) => f.endsWith('.ts'))) {
+      const source = read(filePath);
+      let match: RegExpExecArray | null;
+      while ((match = datePropertyPattern.exec(source)) !== null) dateProperties.add(match[1]);
+    }
+    expect(dateProperties.size).toBeGreaterThan(0);
+
+    // 예외: 인터페이스 로그 id 는 날짜가 아니라 전체 타임스탬프 문자열이라 의미가 다르다(자체 방어 있음).
+    const allowedDateFiles = new Set(['modules/interface/services/interface.service.ts']);
+    const dateMethods = 'getFullYear|getMonth|getDate|getTime|getHours|toISOString|toJSON|toLocaleDateString|toLocaleString';
+    const offenders = runtimeSourceFiles()
+      .filter((filePath) => !allowedDateFiles.has(relative(filePath)))
+      .filter((filePath) => {
+        const source = read(filePath);
+        return [...dateProperties].some((property) =>
+          new RegExp(`\\.${property}\\s*\\.\\s*(${dateMethods})\\s*\\(`).test(source),
+        );
+      })
+      .map(relative);
+
+    expect(offenders).toEqual([]);
+  });
 });
