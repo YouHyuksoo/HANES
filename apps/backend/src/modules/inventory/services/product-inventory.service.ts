@@ -609,26 +609,21 @@ export class ProductInventoryService {
       throw new BadRequestException('불량창고 입고는 공정 WIP 제품재고에서만 처리할 수 있습니다.');
     }
 
-    const targetWarehouseCode = dto.toWarehouseId || 'DEFECT';
     const itemType = dto.itemType || (dto.fromWarehouseId === 'FG_WIP' ? 'FINISHED' : 'SEMI_PRODUCT');
     const tenantWhere = this.tenantWhere(dto.company, dto.plant);
 
     return this.tx.run(async (qr) => {
-      let defectWarehouse = await qr.manager.findOne(Warehouse, {
-        where: { warehouseCode: targetWarehouseCode, ...tenantWhere },
-      });
-
-      if (!defectWarehouse && !dto.toWarehouseId) {
-        defectWarehouse = await qr.manager.findOne(Warehouse, {
-          where: { warehouseType: 'DEFECT', isDefault: 'Y', ...tenantWhere },
-        });
-      }
+      // 목적지 불용창고는 유형으로 찾는다 — 창고코드에 의존하지 않는다.
+      // 호출자가 창고를 지정했으면 그것을 쓰되, 유형 검증은 아래에서 동일하게 건다.
+      const defectWarehouse = dto.toWarehouseId
+        ? await qr.manager.findOne(Warehouse, { where: { warehouseCode: dto.toWarehouseId, ...tenantWhere } })
+        : await qr.manager.findOne(Warehouse, { where: { warehouseType: 'UNUSABLE', isDefault: 'Y', useYn: 'Y', ...tenantWhere } });
 
       if (!defectWarehouse) {
-        throw new BadRequestException('불량창고가 설정되어 있지 않습니다.');
+        throw new BadRequestException('불용창고가 설정되어 있지 않습니다.');
       }
-      if (defectWarehouse.warehouseType !== 'DEFECT' && defectWarehouse.warehouseCode !== 'DEFECT') {
-        throw new BadRequestException('도착 창고는 불량창고여야 합니다.');
+      if (defectWarehouse.warehouseType !== 'UNUSABLE') {
+        throw new BadRequestException('도착 창고는 불용창고여야 합니다.');
       }
 
       return this.issueStockInTx(qr, {

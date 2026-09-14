@@ -527,11 +527,11 @@ describe('ProductInventoryService', () => {
   });
 
   describe('transferDefectStockToWarehouse', () => {
-    it('moves only DEFECT WIP product stock into the defect warehouse', async () => {
+    it('moves only DEFECT WIP product stock into the unusable warehouse', async () => {
       const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
       mockTransRepo.createQueryBuilder.mockReturnValue(qb);
       mockQueryRunner.manager.findOne
-        .mockResolvedValueOnce({ warehouseCode: 'DEFECT', warehouseType: 'DEFECT', useYn: 'Y', company: 'C1', plant: 'P1' } as any)
+        .mockResolvedValueOnce({ warehouseCode: 'WH-DEFECT', warehouseType: 'UNUSABLE', useYn: 'Y', company: 'C1', plant: 'P1' } as any)
         .mockResolvedValueOnce({
           warehouseCode: 'SFG_WIP',
           itemCode: 'SFG-001',
@@ -561,12 +561,12 @@ describe('ProductInventoryService', () => {
       });
 
       expect(mockQueryRunner.manager.findOne).toHaveBeenNthCalledWith(1, Warehouse, {
-        where: { warehouseCode: 'DEFECT', company: 'C1', plant: 'P1' },
+        where: { warehouseType: 'UNUSABLE', isDefault: 'Y', useYn: 'Y', company: 'C1', plant: 'P1' },
       });
       expect(mockQueryRunner.manager.create).toHaveBeenCalledWith(ProductTransaction, expect.objectContaining({
         transType: 'DEFECT_IN',
         fromWarehouseId: 'SFG_WIP',
-        toWarehouseId: 'DEFECT',
+        toWarehouseId: 'WH-DEFECT',
         itemCode: 'SFG-001',
         itemType: 'SEMI_PRODUCT',
         qualityStatus: 'DEFECT',
@@ -578,7 +578,7 @@ describe('ProductInventoryService', () => {
       expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
         ProductStock,
         expect.objectContaining({
-          warehouseCode: 'DEFECT',
+          warehouseCode: 'WH-DEFECT',
           itemCode: 'SFG-001',
           qualityStatus: 'DEFECT',
           qty: 2,
