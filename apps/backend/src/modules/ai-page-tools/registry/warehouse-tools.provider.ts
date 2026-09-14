@@ -5,7 +5,7 @@ import { TransferRuleService } from '../../master/services/transfer-rule.service
 import { AiPageToolWriteResult, PageToolContext, PageToolProvider } from '../types';
 import { WAREHOUSE_MASTER_TOOL_MANIFEST } from './warehouse-master.tools';
 
-const WAREHOUSE_TYPES = ['RAW', 'WIP', 'FG', 'FLOOR', 'DEFECT', 'SCRAP', 'SUBCON'];
+const WAREHOUSE_TYPES = ['RAW', 'WIP', 'FG', 'FLOOR', 'DEFECT', 'UNUSABLE', 'SCRAP', 'SUBCON'];
 
 /**
  * 창고관리(/master/warehouse) 도구 Provider — 창고·로케이션·이동규칙 CRUD.

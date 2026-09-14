@@ -1,9 +1,9 @@
 import { AiPageToolManifest } from '../types';
 
-const WH_TYPES = ['RAW', 'WIP', 'FG', 'FLOOR', 'DEFECT', 'SCRAP', 'SUBCON'];
+const WH_TYPES = ['RAW', 'WIP', 'FG', 'FLOOR', 'DEFECT', 'UNUSABLE', 'SCRAP', 'SUBCON'];
 const WH_TYPE_HINT =
-  '창고유형 값: RAW(원자재), WIP(재공), FG(완제품), FLOOR(생산현장), DEFECT(불량), SCRAP(폐기), SUBCON(외주). ' +
-  '사용자 문구를 위 코드로 매핑(예: "원자재"→RAW, "완제품"→FG, "불량"→DEFECT).';
+  '창고유형 값: RAW(원자재), WIP(재공), FG(완제품), FLOOR(생산현장), DEFECT(불량·원자재), UNUSABLE(불용·반제품/완제품 불량), SCRAP(폐기), SUBCON(외주). ' +
+  '사용자 문구를 위 코드로 매핑(예: "원자재"→RAW, "완제품"→FG, "불량"→DEFECT, "불용"→UNUSABLE).';
 
 /**
  * 창고관리(/master/warehouse) AI 페이지 도구 — 창고·로케이션·이동규칙 CRUD.
