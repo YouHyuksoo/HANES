@@ -30,12 +30,16 @@ describe('product-storage.rules', () => {
   });
 
   describe('resolveLongStockDays', () => {
+    it('기본 기준일수는 운영 설정값(LONG_STOCK_DAYS)과 같은 60 이다', () => {
+      expect(LONG_STOCK_DEFAULT_DAYS).toBe(60);
+    });
+
     it('설정값 문자열을 숫자로 읽는다', () => {
       expect(resolveLongStockDays('90')).toBe(90);
       expect(resolveLongStockDays('30')).toBe(30);
     });
 
-    it('값이 없거나 숫자가 아니거나 0 이하면 기본값 90을 쓴다', () => {
+    it('값이 없거나 숫자가 아니거나 0 이하면 기본값을 쓴다', () => {
       expect(resolveLongStockDays(null)).toBe(LONG_STOCK_DEFAULT_DAYS);
       expect(resolveLongStockDays('')).toBe(LONG_STOCK_DEFAULT_DAYS);
       expect(resolveLongStockDays('abc')).toBe(LONG_STOCK_DEFAULT_DAYS);
@@ -56,7 +60,7 @@ describe('product-storage.rules', () => {
       expect(isLongStored(null, 90, today)).toBe(false);
     });
 
-    it('기준일수가 유효하지 않으면 기본값 90으로 판정한다', () => {
+    it('기준일수가 유효하지 않으면 기본값으로 판정한다', () => {
       expect(isLongStored(new Date(2026, 0, 1), 0, today)).toBe(true);
     });
   });

@@ -6,15 +6,15 @@
  * 1. 기산점은 제품라벨 발행일(FG_LABELS.ISSUED_AT = 생산 시점)이다.
  *    PRODUCT_STOCKS 는 품목×창고 집계행이라 현물 단위 체류일이 없고,
  *    PRODUCT_TRANSACTIONS.FG_IN 은 데이터가 사실상 없어 기산점으로 쓰지 않는다.
- * 2. 기준일수는 sys-config LONG_STOCK_DAYS(기본 90), 표시 여부는 LONG_STOCK_CHECK 가 정한다.
+ * 2. 기준일수는 sys-config LONG_STOCK_DAYS(기본 60), 표시 여부는 LONG_STOCK_CHECK 가 정한다.
  * 3. 자재 유효기간(calcLotExpireDate)과는 다른 개념이다. 만료가 아니라 임계 체류일 비교다.
  * 4. 날짜 비교는 로컬 날짜 키(YYYY-MM-DD)로 한다. toISOString 은 UTC 라서 KST 오전에 전날이 되므로 쓰지 않는다.
  */
 
 import { toDayKey, FifoDateValue } from '../../material/rules/fifo.rules';
 
-/** LONG_STOCK_DAYS 미설정·비정상값일 때 쓰는 기본 기준일수 */
-export const LONG_STOCK_DEFAULT_DAYS = 90;
+/** LONG_STOCK_DAYS 미설정·비정상값일 때 쓰는 기본 기준일수(운영 기준값과 같게 유지한다) */
+export const LONG_STOCK_DEFAULT_DAYS = 60;
 
 /** 하루를 밀리초로 */
 const DAY_MS = 24 * 60 * 60 * 1000;
