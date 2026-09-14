@@ -5,7 +5,7 @@
  * 초보자 가이드:
  * 1. create(): IqcLog에 inspectType='RETEST'로 기록 + 합격/불합격 후속 처리
  * 2. 합격: 새 만료일 = 검사일 + 적용연장일(item.expiryExtDays 상한)
- * 3. 불합격: 불용창고 이동 + MatLot.status = 'DISCARDED'
+ * 3. 불합격: 불량창고 이동 + MatLot.status = 'DISCARDED'
  * 4. 회차: 해당 시리얼의 이전 RETEST IqcLog 수 + 1
  * 5. findAll(): 이력성 조회 — 검사일 구간/결과/품목/검색어를 전부 DB 조건으로 처리
  */
@@ -218,7 +218,7 @@ export class ShelfLifeReInspectService {
       await this.matLotRepo.update({ matUid: lot.matUid, ...lotTenant }, { expireDate: newExpiry });
     }
 
-    // 불합격: 불용창고 이동 + DISCARDED 처리
+    // 불합격: 불량창고 이동 + DISCARDED 처리
     if (dto.result === 'FAIL') {
       await this.handleFail(lot.matUid, lot.itemCode, lot.company, lot.plant);
     }
@@ -226,14 +226,14 @@ export class ShelfLifeReInspectService {
     return { ...saved, matUid: dto.matUid, retestRound };
   }
 
-  /** 불합격 처리: 불용창고 자동이동 + status = DISCARDED */
+  /** 불합격 처리: 불량창고 자동이동 + status = DISCARDED */
   private async handleFail(matUid: string, itemCode: string, company?: string | null, plant?: string | null) {
     const tenantWhere = this.tenantWhere(company, plant);
     const defectWh = await this.warehouseRepo.findOne({
-      where: { warehouseType: 'DEFECT', useYn: 'Y', ...tenantWhere },
+      where: { warehouseType: 'DEFECT', useYn: 'Y', isDefault: 'Y', ...tenantWhere },
     });
     if (!defectWh) return;
-    this.assertSameTenant(defectWh, company, plant, '불용창고');
+    this.assertSameTenant(defectWh, company, plant, '불량창고');
 
     const stock = await this.matStockRepo.findOne({
       where: { matUid, itemCode, ...tenantWhere },
@@ -252,7 +252,7 @@ export class ShelfLifeReInspectService {
     }
 
     await this.tx.run(async (queryRunner) => {
-      // 양품창고 출고(-) / 불용창고 입고(+) 각각 별도 채번 (수불이력에 창고별 +/- 2건으로 표기)
+      // 양품창고 출고(-) / 불량창고 입고(+) 각각 별도 채번 (수불이력에 창고별 +/- 2건으로 표기)
       const transNoOut = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
       const transNoIn = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
 
@@ -290,7 +290,7 @@ export class ShelfLifeReInspectService {
         refType: 'REINSPECT_FAIL',
         company, plant,
       });
-      // 불용창고 입고(+): from=null, to=불용창고, 양수 수량
+      // 불량창고 입고(+): from=null, to=불량창고, 양수 수량
       await queryRunner.manager.save(StockTransaction, {
         transNo: transNoIn,
         transType: 'MAT_MOVE_IN',
@@ -298,7 +298,7 @@ export class ShelfLifeReInspectService {
         toWarehouseId: defectWh.warehouseCode,
         itemCode, matUid,
         qty: stock.qty,
-        remark: '유수명 재검 불합격 입고 (불용창고)',
+        remark: '유수명 재검 불합격 입고 (불량창고)',
         refType: 'REINSPECT_FAIL',
         company, plant,
       });

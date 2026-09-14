@@ -933,7 +933,7 @@ describe('IqcHistoryService cancel policy', () => {
     await target.createResult({ matUid: 'MAT-001', result: 'FAIL' } as any);
 
     expect(mockWarehouseRepo.findOne).toHaveBeenCalledWith({
-      where: { warehouseType: 'DEFECT', useYn: 'Y', company: 'HANES', plant: 'P01' },
+      where: { warehouseType: 'DEFECT', useYn: 'Y', isDefault: 'Y', company: 'HANES', plant: 'P01' },
     });
     expect(mockMatStockRepo.findOne).toHaveBeenCalledWith({
       where: { matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' },

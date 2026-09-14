@@ -497,7 +497,7 @@ export class IqcHistoryService {
    * 입하단위 IQC 검사결과 등록
    * - 입하번호 + 품목에 속한 PENDING 시리얼 전체를 일괄 판정 (전수검사 아님, 샘플검사)
    * - PASS → 전체 시리얼 iqcStatus=PASS
-   * - FAIL → 전체 시리얼 iqcStatus=FAIL + 각 시리얼 불용창고 이동
+   * - FAIL → 전체 시리얼 iqcStatus=FAIL + 각 시리얼 불량창고 이동
    * - 검사 이력(IqcLog)은 입하건당 1건 (matUid=null, arrivalNo+itemCode 기준)
    */
   async createArrivalResult(dto: CreateArrivalIqcResultDto, company?: string, plant?: string) {
@@ -613,7 +613,7 @@ export class IqcHistoryService {
       }
     }
 
-    // 4) FAIL → 입하건 전체 시리얼을 불용창고로 이동
+    // 4) FAIL → 입하건 전체 시리얼을 불량창고로 이동
     if (finalResult === 'FAIL') {
       for (const lot of lots) {
         await this.handleIqcFail(lot.matUid, lot.itemCode, lot.company, lot.plant);
@@ -829,13 +829,13 @@ export class IqcHistoryService {
     const mode = (await this.sysConfigService.getValue(IQC_FAIL_DEFECT_MOVE_MODE_KEY, company ?? undefined, plant ?? undefined)) ?? 'MANUAL';
     if (String(mode).toUpperCase() !== 'AUTO') return;
     const defectWarehouse = await this.warehouseRepository.findOne({
-      where: { warehouseType: 'DEFECT', useYn: 'Y', ...this.tenantWhere(company, plant) },
+      where: { warehouseType: 'DEFECT', useYn: 'Y', isDefault: 'Y', ...this.tenantWhere(company, plant) },
     });
     if (!defectWarehouse) return;
-    this.assertSameTenant('불용창고', { company, plant }, defectWarehouse);
+    this.assertSameTenant('불량창고', { company, plant }, defectWarehouse);
     await this.moveLotToDefectWarehouse({
       matUid, itemCode, defectWarehouseCode: defectWarehouse.warehouseCode,
-      refType: 'IQC_FAIL', remark: 'IQC 불합격 자동이동 (불용창고)', workerId: null, company, plant,
+      refType: 'IQC_FAIL', remark: 'IQC 불합격 자동이동 (불량창고)', workerId: null, company, plant,
     });
   }
 
@@ -858,7 +858,7 @@ export class IqcHistoryService {
       where: { warehouseCode: p.defectWarehouseCode, ...this.tenantWhere(company, plant) },
     });
     if (!defectWarehouse) throw new NotFoundException(`불량창고를 찾을 수 없습니다: ${p.defectWarehouseCode}`);
-    this.assertSameTenant('불용창고', { company, plant }, defectWarehouse);
+    this.assertSameTenant('불량창고', { company, plant }, defectWarehouse);
 
     const stock = await this.matStockRepository.findOne({
       where: { matUid, itemCode, ...this.tenantWhere(company, plant) },
@@ -1131,7 +1131,7 @@ export class IqcHistoryService {
         await this.reverseIqcFailMove(queryRunner, log.matUid, log.itemCode, log.company, log.plant);
       }
 
-      // 입하단위 검사(matUid=null) FAIL → 입하건 전체 시리얼의 불용창고 이동을 원복
+      // 입하단위 검사(matUid=null) FAIL → 입하건 전체 시리얼의 불량창고 이동을 원복
       if (!log.matUid && log.arrivalNo && log.itemCode && log.result === 'FAIL') {
         const failedLots = await queryRunner.manager.find(MatLot, {
           where: {
