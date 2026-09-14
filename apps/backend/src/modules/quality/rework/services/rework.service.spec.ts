@@ -13,7 +13,9 @@ import { ReworkInspect } from '../../../../entities/rework-inspect.entity';
 import { ReworkProcess } from '../../../../entities/rework-process.entity';
 import { DefectLog } from '../../../../entities/defect-log.entity';
 import { ItemMaster } from '../../../../entities/item-master.entity';
+import { Warehouse } from '../../../../entities/warehouse.entity';
 import { ProductInventoryService } from '../../../inventory/services/product-inventory.service';
+import { WarehouseService } from '../../../inventory/services/warehouse.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { NumberingService } from '../../../../shared/numbering.service';
 import { TransactionService } from '../../../../shared/transaction.service';
@@ -31,6 +33,8 @@ describe('ReworkService', () => {
   let mockDefectLogRepo: DeepMocked<Repository<DefectLog>>;
   let mockNumbering: DeepMocked<NumberingService>;
   let mockTx: DeepMocked<TransactionService>;
+  let mockProductInventoryService: DeepMocked<ProductInventoryService>;
+  let mockWarehouseService: DeepMocked<WarehouseService>;
 
   beforeEach(async () => {
     mockReworkRepo = createMock<Repository<ReworkOrder>>();
@@ -39,6 +43,10 @@ describe('ReworkService', () => {
     mockDefectLogRepo = createMock<Repository<DefectLog>>();
     mockNumbering = createMock<NumberingService>();
     mockTx = createMock<TransactionService>();
+    mockProductInventoryService = createMock<ProductInventoryService>();
+    mockProductInventoryService.transferStockByItemInTx.mockResolvedValue(1);
+    mockWarehouseService = createMock<WarehouseService>();
+    mockWarehouseService.getDefaultWarehouse.mockResolvedValue({ warehouseCode: 'WH-DEFECT' } as Warehouse);
     mockTx.run.mockImplementation(async (callback: any) => callback({
       query: jest.fn().mockResolvedValue([{ NEXT_SEQ: 1 }]),
       manager: {
@@ -56,9 +64,10 @@ describe('ReworkService', () => {
         { provide: getRepositoryToken(ReworkProcess), useValue: mockProcessRepo },
         { provide: getRepositoryToken(DefectLog), useValue: mockDefectLogRepo },
         { provide: getRepositoryToken(ItemMaster), useValue: createMock<Repository<ItemMaster>>() },
-        { provide: ProductInventoryService, useValue: createMock<ProductInventoryService>() },
+        { provide: ProductInventoryService, useValue: mockProductInventoryService },
         { provide: NumberingService, useValue: mockNumbering },
         { provide: TransactionService, useValue: mockTx },
+        { provide: WarehouseService, useValue: mockWarehouseService },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<ReworkService>(ReworkService);

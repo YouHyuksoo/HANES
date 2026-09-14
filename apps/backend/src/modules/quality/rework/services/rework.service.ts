@@ -33,6 +33,7 @@ import { ReworkProcess } from '../../../../entities/rework-process.entity';
 import { DefectLog } from '../../../../entities/defect-log.entity';
 import { ItemMaster } from '../../../../entities/item-master.entity';
 import { ProductInventoryService } from '../../../inventory/services/product-inventory.service';
+import { WarehouseService } from '../../../inventory/services/warehouse.service';
 import { NumberingService } from '../../../../shared/numbering.service';
 import { TransactionService } from '../../../../shared/transaction.service';
 import { DEFECT_LOG_STATUS, deriveDefectLogStatusFromReworkInspect } from '@harness/shared';
@@ -63,6 +64,7 @@ export class ReworkService {
     private readonly productInventoryService: ProductInventoryService,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
+    private readonly warehouseService: WarehouseService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -530,13 +532,23 @@ export class ReworkService {
       }
     }
 
-    // 재작업 결과에 따라 불량재고(DEFECT창고)를 정리한다.
-    //  - 합격분(passQty): DEFECT → WIP_MAIN 공정창고로 이동(다시 정상 재고화)
-    //  - 폐기분(failQty): DEFECT → SCRAP 폐기창고로 이동
-    //  - FAIL(재재작업)은 DEFECT창고에 그대로 둔다.
-    // 격리 시점에 실적이 불량을 DEFECT창고에 적재해 두므로, 합격해도 양품이 새로 생기는 게 아니라
-    // 불량재고가 정상재고로 '이동'한다(이중계상 방지).
+    // 재작업 결과에 따라 불량재고(불용창고)를 정리한다.
+    //  - 합격분(passQty): 불용창고 → 공정창고로 이동(다시 정상 재고화)
+    //  - 폐기분(failQty): 불용창고 → SCRAP 폐기창고로 이동
+    //  - FAIL(재재작업)은 불용창고에 그대로 둔다.
+    // 생산실적이 불량을 불용창고(UNUSABLE 유형 기본창고)에 적재해 두므로, 합격해도 양품이 새로 생기는 게 아니라
+    // 불량재고가 정상재고로 '이동'한다. 이동 가능한 재고가 부족하면 신규 입고로 보충하지 않고 실패한다(이중계상 방지).
     if (dto.inspectResult !== 'FAIL') {
+      const movingQty = (dto.passQty ?? 0) + (dto.failQty ?? 0);
+      let unusableCode: string | null = null;
+      if (movingQty > 0) {
+        const unusable = await this.warehouseService.getDefaultWarehouse('UNUSABLE', company, plant);
+        if (!unusable) {
+          throw new BadRequestException('불용창고가 설정되어 있지 않습니다.');
+        }
+        unusableCode = unusable.warehouseCode;
+      }
+
       const part = await qr.manager.findOne(ItemMaster, {
         where: { itemCode: order.itemCode, ...this.tenantWhere(company, plant) },
         select: ['itemCode', 'itemType'],
@@ -546,7 +558,7 @@ export class ReworkService {
       const wipWarehouse = itemType === 'FINISHED' ? 'FG_WIP' : 'SFG_WIP';
       if ((dto.passQty ?? 0) > 0) {
         const moved = await this.productInventoryService.transferStockByItemInTx(qr, {
-          fromWarehouseId: 'DEFECT',
+          fromWarehouseId: unusableCode!,
           toWarehouseId: wipWarehouse,
           itemCode: order.itemCode,
           itemType,
@@ -558,27 +570,17 @@ export class ReworkService {
           company,
           plant,
         });
-        // 불량재고가 부족하면(불량재고 도입 전 데이터 등) 부족분만 신규 입고로 보충
         if (moved < dto.passQty) {
-          await this.productInventoryService.receiveStockInTx(qr, {
-            warehouseId: wipWarehouse,
-            itemCode: order.itemCode,
-            itemType,
-            qty: dto.passQty - moved,
-            transType: 'WIP_IN',
-            refType: 'REWORK',
-            refId: order.reworkNo,
-            remark: `재작업 합격 재고 복원(보충) (${order.reworkNo})`,
-            company,
-            plant,
-          });
+          throw new BadRequestException(
+            `불용창고 재고가 부족합니다. 요청 ${dto.passQty}, 이동 가능 ${moved}. 불량 재고를 먼저 불용창고에 입고해 주세요.`,
+          );
         }
         this.logger.log(`재작업 합격 → ${wipWarehouse}: ${order.itemCode} × ${dto.passQty} (재작업 #${order.reworkNo})`);
       }
 
       if ((dto.failQty ?? 0) > 0) {
         await this.productInventoryService.transferStockByItemInTx(qr, {
-          fromWarehouseId: 'DEFECT',
+          fromWarehouseId: unusableCode!,
           toWarehouseId: 'SCRAP',
           itemCode: order.itemCode,
           itemType,
