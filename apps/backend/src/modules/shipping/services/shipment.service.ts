@@ -48,6 +48,7 @@ import {
   ShipmentStatus,
 } from '../dto/shipment.dto';
 import { parseDateStart } from '../../../shared/date.util';
+import { toDateOnly } from '../../../common/utils/date-only.util';
 
 @Injectable()
 export class ShipmentService {
@@ -944,7 +945,8 @@ export class ShipmentService {
     }>();
 
     shipments.forEach(s => {
-      const dateKey = s.shipDate ? s.shipDate.toISOString().split('T')[0] : 'unknown';
+      // type:'date' 컬럼은 Oracle 에서 문자열로 하이드레이션된다 — toISOString 을 바로 부르면 500
+      const dateKey = toDateOnly(s.shipDate) ?? 'unknown';
       const existing = dailyStats.get(dateKey) || {
         date: dateKey,
         shipmentCount: 0,
