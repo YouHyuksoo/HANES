@@ -6219,8 +6219,7 @@
       "storageDays": "Số ngày lưu kho",
       "storageDaysValue": "{{count}} ngày",
       "longStored": "Lưu kho lâu",
-      "longStoredOnly": "Chỉ lưu kho lâu"
-    },
+      "longStoredOnly": "Chỉ lưu kho lâu"    },
     "pallet": {
       "title": "Xếp pallet",
       "subtitle": "Quản lý xếp pallet.",
@@ -6734,20 +6733,15 @@
     },
     "mount": {
       "title": "Quản lý lắp đặt vật tư tiêu hao",
-      "description": "Quản lý lắp đặt/tháo gỡ vật tư tiêu hao (khuôn/jig/dụng cụ) trên thiết bị.",
-      "operStatus": "Trạng thái vận hành",
-      "statusWarehouse": "Kho",
+      "description": "Tra cứu vật tư tiêu hao (UID) đang lắp trên thiết bị và xử lý tháo cưỡng chế / chuyển sửa chữa.",
       "statusMounted": "Đã lắp",
       "statusRepair": "Đang sửa",
       "mountedEquip": "Thiết bị lắp đặt",
       "lifeStatus": "Trạng thái tuổi thọ",
-      "targetEquip": "Thiết bị mục tiêu",
-      "mountAction": "Lắp đặt",
-      "unmountAction": "Tháo gỡ",
+      "unmountAction": "Tháo cưỡng chế",
       "repairAction": "Sửa chữa",
       "historyAction": "Lịch sử",
-      "mountTitle": "Lắp đặt vào thiết bị",
-      "unmountTitle": "Tháo gỡ khỏi thiết bị",
+      "unmountTitle": "Tháo lắp cưỡng chế",
       "repairTitle": "Chuyển sang sửa chữa",
       "historyTitle": "Lịch sử lắp/tháo",
       "logDate": "Ngày",
@@ -6756,7 +6750,7 @@
       "actionUnmount": "Tháo gỡ",
       "worker": "Công nhân",
       "remarkPlaceholder": "Nhập ghi chú",
-      "searchPlaceholder": "Tìm theo mã, tên...",
+      "searchPlaceholder": "Tìm UID, mã, tên...",
       "completeRepairAction": "Hoàn thành sửa chữa",
       "completeRepairTitle": "Xử lý hoàn thành sửa chữa",
       "fieldHelp": {
@@ -6767,8 +6761,21 @@
         "lifeProgress": "Tỷ lệ tiêu hao tuổi thọ (%) theo master. Từ 100% thiết bị đang lắp có thể bị khóa liên động.",
         "location": "Vị trí khi lưu trong kho. Tham khảo khi đi lấy vật tư để lắp.",
         "equipCode": "Thiết bị để lắp vật tư. Khi lưu, thiết bị lắp trên master thay đổi và lưu lịch sử lắp.",
-        "remark": "Lý do hoặc ghi chú cho thao tác lắp/tháo/sửa. Hiển thị cùng trong tra cứu lịch sử."
-      }
+        "remark": "Lý do hoặc ghi chú cho thao tác lắp/tháo/sửa. Hiển thị cùng trong tra cứu lịch sử.",
+        "conUid": "UID vật tư",
+        "status": "Trạng thái lô",
+        "processCode": "Công đoạn xuất",
+        "lifeStatus": "Trạng thái tuổi thọ",
+        "returnTo": "Trạng thái sau khi tháo"
+      },
+      "conUid": "UID vật tư",
+      "lotStatus": "Trạng thái lô",
+      "processCode": "Công đoạn xuất",
+      "returnTo": "Trạng thái sau khi tháo",
+      "returnTo_PROC_WAIT": "Chờ công đoạn (lắp lại cùng công đoạn)",
+      "returnTo_ACTIVE": "Trả về kho (hủy phân bổ công đoạn)",
+      "returnTo_REPAIR": "Đang sửa chữa",
+      "mountHint": "Việc lắp đặt chỉ được thực hiện bằng quét mã tại kiosk hiện trường"
     }
   },
   "outsourcing": {

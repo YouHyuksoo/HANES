@@ -35,7 +35,7 @@ import { Repository, DataSource, In, QueryRunner } from 'typeorm';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { ConsumableMountLog } from '../../../entities/consumable-mount-log.entity';
-import { EquipMaster } from '../../../entities/equip-master.entity';
+import { ConsumableStock } from '../../../entities/consumable-stock.entity';
 import { User } from '../../../entities/user.entity';
 import {
   EquipCreateConsumableDto,
@@ -45,7 +45,6 @@ import {
   ConsumableLogQueryDto,
   IncreaseCountDto,
   RegisterReplacementDto,
-  MountToEquipDto,
   UnmountFromEquipDto,
   SetRepairDto,
 } from '../dto/consumable.dto';
@@ -64,10 +63,10 @@ export class ConsumableService {
     private readonly consumableLogRepository: Repository<ConsumableLog>,
     @InjectRepository(ConsumableMountLog)
     private readonly mountLogRepository: Repository<ConsumableMountLog>,
+    @InjectRepository(ConsumableStock)
+    private readonly consumableStockRepository: Repository<ConsumableStock>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(EquipMaster)
-    private readonly equipMasterRepository: Repository<EquipMaster>,
     private readonly dataSource: DataSource,
     private readonly tx: TransactionService,
   ) {}
@@ -410,23 +409,8 @@ export class ConsumableService {
         `소모품 상태 자동 변경: ${consumable.consumableCode} (${consumable.status} -> ${newStatus})`
       );
 
-      // 소모품이 REPLACE 상태이고 설비에 장착되어 있으면 설비 상태를 INTERLOCK으로 변경
-      if (newStatus === 'REPLACE' && consumable.mountedEquipCode) {
-        try {
-          await this.equipMasterRepository.update(
-            {
-              equipCode: consumable.mountedEquipCode,
-              ...this.tenantWhere(company, plant),
-            },
-            { status: 'INTERLOCK' },
-          );
-          this.logger.warn(
-            `소모품 수명 초과로 설비 인터락: ${consumable.mountedEquipCode} ← ${consumable.consumableCode}`,
-          );
-        } catch (err) {
-          this.logger.error(`설비 인터락 설정 실패: ${consumable.mountedEquipCode}`, err);
-        }
-      }
+      // 설비 인터락은 실물 롯트(CONSUMABLE_STOCKS) 기준으로 생산실적 저장 시 처리한다.
+      // (ProdResultService.accrueConsumableUsageInTx — 2026-09 인스턴스 전환)
     }
   }
 
@@ -651,216 +635,185 @@ export class ConsumableService {
   // =============================================
 
   // =============================================
-  // 금형 장착/해제/수리 관리
+  // 소모품 장착현황 / 강제해제 / 수리 관리 — 실물 롯트(conUid) 기준
   // =============================================
+  //
+  // 장착(MOUNT)은 현장 키오스크 바코드 스캔에서만 일어난다(KioskConsumableService.scanMount).
+  // 이 서비스는 장착된 롯트를 조회하고, 현장에서 내리지 못한 건을 강제 해제하거나
+  // 수리 상태로 전환하는 예외 창구 역할만 한다.
+  // (2026-09 전환: 소모품 마스터 장착(OPER_STATUS / MOUNTED_EQUIP_ID) 경로 폐기)
 
-  /**
-   * 금형을 설비에 장착
-   */
-  async mountToEquip(consumableCode: string, dto: MountToEquipDto, company?: string, plant?: string) {
-    const consumable = await this.consumableMasterRepository.findOne({
-      where: { consumableCode, ...this.tenantWhere(company, plant) },
+  /** 해제 후 허용 상태 */
+  private static readonly UNMOUNT_RETURN_STATUSES = ['PROC_WAIT', 'ACTIVE', 'REPAIR'] as const;
+
+  /** 장착 이력 1건 기록 (MOUNT_DATE + SEQ 복합키) */
+  private async writeMountLog(
+    queryRunner: QueryRunner,
+    row: {
+      conUid: string;
+      consumableCode: string;
+      equipCode: string;
+      action: 'MOUNT' | 'UNMOUNT';
+      workerId?: string | null;
+      remark?: string | null;
+      company: string;
+      plant: string;
+    },
+  ) {
+    const mountDate = new Date();
+    mountDate.setHours(0, 0, 0, 0);
+    const seq = await this.getNextMountSeq(queryRunner);
+    await queryRunner.manager.save(ConsumableMountLog, {
+      mountDate,
+      seq,
+      conUid: row.conUid,
+      consumableCode: row.consumableCode,
+      equipCode: row.equipCode,
+      action: row.action,
+      workerId: row.workerId ?? null,
+      remark: row.remark ?? null,
+      company: row.company,
+      plant: row.plant,
     });
+  }
 
-    if (!consumable) {
-      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${consumableCode}`);
-    }
-    this.assertSameTenant('소모품', { company, plant }, consumable);
-
-    if (consumable.operStatus === 'MOUNTED') {
-      throw new ConflictException(
-        `이미 설비에 장착된 금형입니다. 현재 장착 설비: ${consumable.mountedEquipCode}`,
-      );
-    }
-
-    await this.tx.run(async (queryRunner) => {
-      await queryRunner.manager.update(
-        ConsumableMaster,
-        { consumableCode, ...this.tenantWhere(company, plant) },
-        {
-          operStatus: 'MOUNTED',
-          mountedEquipCode: dto.equipCode,
-        },
-      );
-
-      const mountDate = new Date();
-      mountDate.setHours(0, 0, 0, 0);
-      const mountSeq = await this.getNextMountSeq(queryRunner);
-      await queryRunner.manager.save(ConsumableMountLog, {
-        mountDate,
-        seq: mountSeq,
-        consumableCode: consumableCode,
-        equipCode: dto.equipCode,
-        action: 'MOUNT',
-        workerId: dto.workerId ?? null,
-        remark: dto.remark ?? null,
-        company: consumable.company,
-        plant: consumable.plant,
-      });
+  private async findStockOrFail(conUid: string, company?: string, plant?: string) {
+    const stock = await this.consumableStockRepository.findOne({
+      where: { conUid, ...(company ? { company } : {}), ...(plant ? { plantCd: plant } : {}) },
     });
-
-    this.logger.log(
-      `금형 장착: ${consumable.consumableCode} → 설비 ${dto.equipCode}`,
-    );
-
-    return this.findById(consumableCode, company, plant);
+    if (!stock) {
+      throw new NotFoundException(`소모품 롯트를 찾을 수 없습니다: ${conUid}`);
+    }
+    return stock;
   }
 
   /**
-   * 금형을 설비에서 해제
+   * 장착 강제 해제 — 현장에서 내리지 못한 롯트를 관리자가 해제한다.
+   * returnTo: PROC_WAIT(공정대기, 기본) / ACTIVE(창고 반납) / REPAIR(수리중)
    */
-  async unmountFromEquip(consumableCode: string, dto: UnmountFromEquipDto, company?: string, plant?: string) {
-    const consumable = await this.consumableMasterRepository.findOne({
-      where: { consumableCode, ...this.tenantWhere(company, plant) },
-    });
+  async forceUnmount(conUid: string, dto: UnmountFromEquipDto, company?: string, plant?: string) {
+    const stock = await this.findStockOrFail(conUid, company, plant);
 
-    if (!consumable) {
-      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${consumableCode}`);
-    }
-    this.assertSameTenant('소모품', { company, plant }, consumable);
-
-    if (consumable.operStatus !== 'MOUNTED') {
+    if (stock.status !== 'MOUNTED') {
       throw new BadRequestException(
-        `장착 상태가 아닌 금형은 해제할 수 없습니다. 현재 상태: ${consumable.operStatus}`,
+        `장착 상태가 아닌 롯트는 해제할 수 없습니다. 현재 상태: ${stock.status}`,
       );
     }
 
-    const previousEquipCode = consumable.mountedEquipCode;
+    const returnTo = dto.returnTo ?? 'PROC_WAIT';
+    if (!ConsumableService.UNMOUNT_RETURN_STATUSES.includes(returnTo as never)) {
+      throw new BadRequestException(
+        `해제 후 상태가 올바르지 않습니다: ${returnTo} (허용: ${ConsumableService.UNMOUNT_RETURN_STATUSES.join(', ')})`,
+      );
+    }
+
+    const previousEquipCode = stock.mountedEquipCode;
 
     await this.tx.run(async (queryRunner) => {
       await queryRunner.manager.update(
-        ConsumableMaster,
-        { consumableCode, ...this.tenantWhere(company, plant) },
+        ConsumableStock,
+        { conUid },
         {
-          operStatus: 'WAREHOUSE',
+          status: returnTo,
           mountedEquipCode: null,
+          // 창고 반납·수리 전환은 공정 배정도 함께 해제한다(공정대기 복귀는 공정 유지)
+          ...(returnTo === 'PROC_WAIT' ? {} : { processCode: null }),
         },
       );
 
-      const mountDate = new Date();
-      mountDate.setHours(0, 0, 0, 0);
-      const mountSeq = await this.getNextMountSeq(queryRunner);
-      await queryRunner.manager.save(ConsumableMountLog, {
-        mountDate,
-        seq: mountSeq,
-        consumableCode: consumableCode,
-        equipCode: previousEquipCode,
+      await this.writeMountLog(queryRunner, {
+        conUid,
+        consumableCode: stock.consumableCode,
+        equipCode: previousEquipCode ?? '-',
         action: 'UNMOUNT',
-        workerId: dto.workerId ?? null,
-        remark: dto.remark ?? null,
-        company: consumable.company,
-        plant: consumable.plant,
+        workerId: dto.workerId,
+        remark: dto.remark ?? `강제 해제 → ${returnTo}`,
+        company: stock.company,
+        plant: stock.plantCd,
       });
     });
 
     this.logger.log(
-      `금형 해제: ${consumable.consumableCode} ← 설비 ${previousEquipCode}`,
+      `소모품 강제 해제: ${conUid}(${stock.consumableCode}) ← 설비 ${previousEquipCode ?? '-'} → ${returnTo}`,
     );
 
-    return this.findById(consumableCode, company, plant);
+    return this.findStockOrFail(conUid, company, plant);
   }
 
-  /**
-   * 금형을 수리 상태로 전환 (장착 상태면 자동 해제)
-   */
-  async setRepairStatus(consumableCode: string, dto: SetRepairDto, company?: string, plant?: string) {
-    const consumable = await this.consumableMasterRepository.findOne({
-      where: { consumableCode, ...this.tenantWhere(company, plant) },
-    });
+  /** 수리 상태로 전환 (장착 중이면 자동 해제) */
+  async setRepairStatus(conUid: string, dto: SetRepairDto, company?: string, plant?: string) {
+    const stock = await this.findStockOrFail(conUid, company, plant);
 
-    if (!consumable) {
-      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${consumableCode}`);
+    if (stock.status === 'REPAIR') {
+      throw new BadRequestException('이미 수리중인 롯트입니다.');
     }
-    this.assertSameTenant('소모품', { company, plant }, consumable);
 
     await this.tx.run(async (queryRunner) => {
-      // 장착 상태면 먼저 해제 로그 기록
-      if (consumable.operStatus === 'MOUNTED' && consumable.mountedEquipCode) {
-        const mountDate = new Date();
-        mountDate.setHours(0, 0, 0, 0);
-        const mountSeq = await this.getNextMountSeq(queryRunner);
-        await queryRunner.manager.save(ConsumableMountLog, {
-          mountDate,
-          seq: mountSeq,
-          consumableCode: consumableCode,
-          equipCode: consumable.mountedEquipCode,
+      if (stock.status === 'MOUNTED' && stock.mountedEquipCode) {
+        await this.writeMountLog(queryRunner, {
+          conUid,
+          consumableCode: stock.consumableCode,
+          equipCode: stock.mountedEquipCode,
           action: 'UNMOUNT',
-          workerId: dto.workerId ?? null,
+          workerId: dto.workerId,
           remark: '수리 전환으로 인한 자동 해제',
-          company: consumable.company,
-          plant: consumable.plant,
+          company: stock.company,
+          plant: stock.plantCd,
         });
       }
 
       await queryRunner.manager.update(
-        ConsumableMaster,
-        { consumableCode, ...this.tenantWhere(company, plant) },
-        {
-          operStatus: 'REPAIR',
-          mountedEquipCode: null,
-        },
+        ConsumableStock,
+        { conUid },
+        { status: 'REPAIR', mountedEquipCode: null, processCode: null },
       );
     });
 
     this.logger.log(
-      `금형 수리 전환: ${consumable.consumableCode} (이전 상태: ${consumable.operStatus})`,
+      `소모품 수리 전환: ${conUid}(${stock.consumableCode}) (이전 상태: ${stock.status})`,
     );
 
-    return this.findById(consumableCode, company, plant);
+    return this.findStockOrFail(conUid, company, plant);
   }
 
-  /**
-   * 수리 완료 → WAREHOUSE 복귀
-   */
-  async completeRepair(consumableCode: string, dto: SetRepairDto, company?: string, plant?: string) {
-    const consumable = await this.consumableMasterRepository.findOne({
-      where: { consumableCode, ...this.tenantWhere(company, plant) },
-    });
+  /** 수리 완료 → 창고(ACTIVE) 복귀 */
+  async completeRepair(conUid: string, dto: SetRepairDto, company?: string, plant?: string) {
+    const stock = await this.findStockOrFail(conUid, company, plant);
 
-    if (!consumable) {
-      throw new NotFoundException(`소모품을 찾을 수 없습니다: ${consumableCode}`);
-    }
-    this.assertSameTenant('소모품', { company, plant }, consumable);
-
-    if (consumable.operStatus !== 'REPAIR') {
+    if (stock.status !== 'REPAIR') {
       throw new BadRequestException(
-        `수리 상태가 아닌 소모품은 복귀할 수 없습니다. 현재 상태: ${consumable.operStatus}`,
+        `수리 상태가 아닌 롯트는 복귀할 수 없습니다. 현재 상태: ${stock.status}`,
       );
     }
 
-    await this.consumableMasterRepository.update(
-      { consumableCode, ...this.tenantWhere(company, plant) },
-      { operStatus: 'WAREHOUSE' },
+    await this.consumableStockRepository.update(
+      { conUid },
+      { status: 'ACTIVE', ...(dto.remark ? { remark: dto.remark } : {}) },
     );
 
-    this.logger.log(
-      `금형 수리 완료 복귀: ${consumable.consumableCode} → WAREHOUSE`,
-    );
+    this.logger.log(`소모품 수리 완료 복귀: ${conUid}(${stock.consumableCode}) → ACTIVE`);
 
-    return this.findById(consumableCode, company, plant);
+    return this.findStockOrFail(conUid, company, plant);
   }
 
-  /**
-   * 금형 장착/해제 이력 조회
-   */
-  async getMountHistory(consumableCode: string, company?: string, plant?: string) {
-    await this.findById(consumableCode, company, plant);
+  /** 장착/해제 이력 조회 — 실물 롯트 기준 */
+  async getMountHistory(conUid: string, company?: string, plant?: string) {
+    await this.findStockOrFail(conUid, company, plant);
 
     return this.mountLogRepository.find({
-      where: { consumableCode, ...this.tenantWhere(company, plant) },
+      where: { conUid, ...this.tenantWhere(company, plant) },
       order: { createdAt: 'DESC' },
     });
   }
 
-  /**
-   * 특정 설비에 장착된 금형 목록 조회
-   */
+  /** 특정 설비에 장착된 소모품 롯트 목록 */
   async findMountedByEquip(equipCode: string, company?: string, plant?: string) {
-    return this.consumableMasterRepository.find({
+    return this.consumableStockRepository.find({
       where: {
         mountedEquipCode: equipCode,
-        operStatus: 'MOUNTED',
-        ...this.tenantWhere(company, plant),
+        status: 'MOUNTED',
+        ...(company ? { company } : {}),
+        ...(plant ? { plantCd: plant } : {}),
       },
       order: { consumableCode: 'ASC' },
     });

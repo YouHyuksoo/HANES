@@ -2,34 +2,39 @@
 
 /**
  * @file src/app/(authenticated)/consumables/mount/page.tsx
- * @description 소모품 장착/분리 관리 페이지
+ * @description 소모품 장착관리 페이지 — 실물 롯트(conUid) 단위 장착현황 조회 + 강제해제/수리 처리
  *
  * 초보자 가이드:
- * 1. **장착**: 소모품(금형/지그/공구)을 설비에 장착 등록
- * 2. **해제**: 장착된 소모품을 설비에서 분리
- * 3. **수리전환**: 소모품을 수리 상태로 전환 (장착중이면 자동 해제)
- * 4. **이력조회**: 개별 소모품의 장착/해제 이력 확인
- * 5. API: /equipment/consumables 경로 사용
+ * 1. **장착은 여기서 하지 않는다.** 현장 키오스크(실적입력) 소모품 스캔에서만 장착된다.
+ *    이 화면은 "지금 무엇이 어느 설비에 붙어 있는가"를 보고, 현장에서 내리지 못한 건을
+ *    관리자가 강제로 해제하는 예외 창구다.
+ * 2. **강제해제**: 장착중 롯트를 설비에서 내린다. 해제 후 상태(공정대기/창고반납/수리중)를 고른다.
+ * 3. **수리전환 / 수리완료**: 정비가 필요한 실물을 수리중으로 돌리고, 끝나면 창고로 복귀시킨다.
+ * 4. **이력조회**: 행을 클릭하면 우측 패널에 그 실물 UID의 장착/해제 이력(CONSUMABLE_MOUNT_LOGS)이
+ *    전건 열린다. 다른 행을 클릭하면 패널을 다시 만들지 않고 내용만 교체한다(기준정보 우측패널 표준).
+ * 5. API: 목록 GET /consumables/stocks, 액션 POST /equipment/consumables/{conUid}/...
+ *    (2026-09 전환: 마스터 코드 단위 → 실물 롯트 conUid 단위)
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  RefreshCw, Search,
-  Settings2,
-} from "lucide-react";
-import {
-  Card, CardContent, Button, Input,
-} from "@/components/ui";
-import { ComCodeSelect, EquipSelect } from "@/components/shared";
+import { History, RefreshCw, Search, Settings2 } from "lucide-react";
+import { Card, CardContent, Button, Input, Select } from "@/components/ui";
+import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import Modal from "@/components/ui/Modal";
 import api from "@/services/api";
-import { createConsumableMountGridColumns, type ConsumableItem } from "./consumableMountColumns";
+import StatusBadge from "@/components/shared/StatusBadge";
+import {
+  createConsumableMountGridColumns,
+  type ConsumableItem,
+  type ActionType,
+} from "./consumableMountColumns";
 import { Field, FieldInput } from "./consumableMountFieldHelp";
 
 interface MountLog {
   mountDate: string;
   seq: number;
+  conUid: string | null;
   consumableCode: string;
   equipCode: string;
   action: string;
@@ -38,7 +43,8 @@ interface MountLog {
   createdAt: string;
 }
 
-type ActionType = "mount" | "unmount" | "repair" | "completeRepair" | null;
+/** 강제 해제 후 되돌릴 상태 */
+const RETURN_TO_OPTIONS = ["PROC_WAIT", "ACTIVE", "REPAIR"] as const;
 
 export default function ConsumableMountPage() {
   const { t } = useTranslation();
@@ -46,16 +52,16 @@ export default function ConsumableMountPage() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
-  const [operStatusFilter, setOperStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   /* action modal */
   const [actionType, setActionType] = useState<ActionType>(null);
   const [selectedItem, setSelectedItem] = useState<ConsumableItem | null>(null);
-  const [equipCode, setEquipCode] = useState("");
+  const [returnTo, setReturnTo] = useState<string>("PROC_WAIT");
   const [remark, setRemark] = useState("");
   const [saving, setSaving] = useState(false);
 
-  /* history modal */
+  /* history panel — 행 선택 시 우측에서 열리고, 다른 행을 고르면 내용만 교체된다 */
   const [historyItem, setHistoryItem] = useState<ConsumableItem | null>(null);
   const [historyData, setHistoryData] = useState<MountLog[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -63,18 +69,18 @@ export default function ConsumableMountPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "5000" };
+      const params: Record<string, string> = {};
       if (searchTerm) params.search = searchTerm;
       if (categoryFilter) params.category = categoryFilter;
-      if (operStatusFilter) params.operStatus = operStatusFilter;
-      const res = await api.get("/equipment/consumables", { params });
+      if (statusFilter) params.status = statusFilter;
+      const res = await api.get("/consumables/stocks", { params });
       setData(res.data?.data ?? []);
     } catch {
       setData([]);
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, categoryFilter, operStatusFilter]);
+  }, [searchTerm, categoryFilter, statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -82,7 +88,7 @@ export default function ConsumableMountPage() {
   const openAction = (type: ActionType, item: ConsumableItem) => {
     setActionType(type);
     setSelectedItem(item);
-    setEquipCode("");
+    setReturnTo("PROC_WAIT");
     setRemark("");
   };
 
@@ -95,15 +101,13 @@ export default function ConsumableMountPage() {
     if (!selectedItem || !actionType) return;
     setSaving(true);
     try {
-      const code = selectedItem.consumableCode;
-      if (actionType === "mount") {
-        await api.post(`/equipment/consumables/${code}/mount`, { equipCode, remark: remark || undefined });
-      } else if (actionType === "unmount") {
-        await api.post(`/equipment/consumables/${code}/unmount`, { remark: remark || undefined });
+      const uid = encodeURIComponent(selectedItem.conUid);
+      if (actionType === "unmount") {
+        await api.post(`/equipment/consumables/${uid}/unmount`, { returnTo, remark: remark || undefined });
       } else if (actionType === "repair") {
-        await api.post(`/equipment/consumables/${code}/repair`, { remark: remark || undefined });
+        await api.post(`/equipment/consumables/${uid}/repair`, { remark: remark || undefined });
       } else if (actionType === "completeRepair") {
-        await api.post(`/equipment/consumables/${code}/complete-repair`, { remark: remark || undefined });
+        await api.post(`/equipment/consumables/${uid}/complete-repair`, { remark: remark || undefined });
       }
       closeAction();
       fetchData();
@@ -112,43 +116,33 @@ export default function ConsumableMountPage() {
     }
   };
 
-  /* history */
-  const openHistory = async (item: ConsumableItem) => {
-    setHistoryItem(item);
+  /* history — 우측 패널 내용 교체 (같은 행을 다시 누르면 닫는다) */
+  const openHistory = useCallback(async (item: ConsumableItem) => {
+    setHistoryItem((prev) => (prev?.conUid === item.conUid ? null : item));
+    if (historyItem?.conUid === item.conUid) return;
+    setHistoryData([]);
     setHistoryLoading(true);
     try {
-      const res = await api.get(`/equipment/consumables/${item.consumableCode}/mount-logs`);
+      const res = await api.get(`/equipment/consumables/${encodeURIComponent(item.conUid)}/mount-logs`);
       setHistoryData(res.data?.data ?? []);
     } catch {
       setHistoryData([]);
     } finally {
       setHistoryLoading(false);
     }
-  };
-
-  const getOperStatusBadge = (status: string) => {
-    const map: Record<string, { bg: string; text: string; label: string }> = {
-      WAREHOUSE: { bg: "bg-slate-100 dark:bg-slate-800", text: "text-slate-700 dark:text-slate-300", label: t("consumables.mount.statusWarehouse") },
-      MOUNTED: { bg: "bg-green-100 dark:bg-green-900/30", text: "text-green-700 dark:text-green-400", label: t("consumables.mount.statusMounted") },
-      REPAIR: { bg: "bg-orange-100 dark:bg-orange-900/30", text: "text-orange-700 dark:text-orange-400", label: t("consumables.mount.statusRepair") },
-    };
-    const s = map[status] ?? map.WAREHOUSE;
-    return <span className={`inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded ${s.bg} ${s.text}`}>{s.label}</span>;
-  };
+  }, [historyItem]);
 
   const columns = useMemo(() => createConsumableMountGridColumns({
     t,
     onAction: openAction,
     onHistory: openHistory,
-  }), [t]);
+  }), [t, openHistory]);
 
-  const actionTitle = actionType === "mount"
-    ? t("consumables.mount.mountTitle")
-    : actionType === "unmount"
-      ? t("consumables.mount.unmountTitle")
-      : actionType === "completeRepair"
-        ? t("consumables.mount.completeRepairTitle")
-        : t("consumables.mount.repairTitle");
+  const actionTitle = actionType === "unmount"
+    ? t("consumables.mount.unmountTitle")
+    : actionType === "completeRepair"
+      ? t("consumables.mount.completeRepairTitle")
+      : t("consumables.mount.repairTitle");
 
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
@@ -157,19 +151,24 @@ export default function ConsumableMountPage() {
         <div className="flex items-center gap-2">
           <Settings2 className="w-5 h-5 text-primary" />
           <h1 className="text-lg font-bold text-text">{t("consumables.mount.title")}</h1>
+          <span className="text-xs text-text-muted">{t("consumables.mount.mountHint")}</span>
         </div>
         <Button variant="secondary" size="sm" onClick={fetchData}>
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
         </Button>
       </div>
 
-      {/* Grid */}
-      <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
+      {/* Body: 목록 + 우측 이력 패널 */}
+      <div className="flex-1 min-h-0 flex gap-4 overflow-hidden">
+      <Card className="flex-1 min-w-0 overflow-hidden" padding="none">
         <CardContent className="h-full p-4">
           <DataGrid
             data={data}
             columns={columns}
             isLoading={loading}
+            onRowClick={openHistory}
+            getRowId={(row) => row.conUid}
+            selectedRowId={historyItem?.conUid}
             enableColumnFilter
             enableExport
             exportFileName={t("consumables.mount.title")}
@@ -181,15 +180,78 @@ export default function ConsumableMountPage() {
                 <div className="w-28 flex-shrink-0">
                   <ComCodeSelect groupCode="CONSUMABLE_CATEGORY" value={categoryFilter} onChange={setCategoryFilter} labelPrefix={t("consumables.comp.category")} fullWidth />
                 </div>
-                <div className="w-28 flex-shrink-0">
-                  <ComCodeSelect groupCode="CONSUMABLE_OPER_STATUS" value={operStatusFilter} onChange={setOperStatusFilter} labelPrefix={t("consumables.mount.operStatus")} fullWidth />
+                <div className="w-32 flex-shrink-0">
+                  <ComCodeSelect groupCode="CON_STOCK_STATUS" value={statusFilter} onChange={setStatusFilter} labelPrefix={t("consumables.mount.lotStatus")} fullWidth />
                 </div>
               </div>
             }
-          
-          sqlQuery={`SELECT *\nFROM CONSUMABLE_MASTERS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\n  AND CATEGORY = :category\n  AND (CONSUMABLE_CODE LIKE '%' || UPPER(:search) || '%'\n       OR NAME LIKE '%' || :search || '%')\nORDER BY CONSUMABLE_CODE ASC\nOFFSET 0 ROWS FETCH NEXT 5000 ROWS ONLY`}/>
+            sqlQuery={`SELECT s.*, m.NAME, m.CATEGORY, m.EXPECTED_LIFE\nFROM CONSUMABLE_STOCKS s\nJOIN CONSUMABLE_MASTERS m ON m.CONSUMABLE_CODE = s.CONSUMABLE_CODE\nWHERE s.COMPANY = '40'\n  AND s.PLANT_CD = '1000'\n  AND s.STATUS = :status\n  AND m.CATEGORY = :category\nORDER BY s.CREATED_AT DESC`}
+          />
         </CardContent>
       </Card>
+
+      {/* 우측 이력 패널 — 선택한 실물 롯트의 장착/해제 이력 전건 */}
+      {historyItem && (
+        <Card className="w-[420px] flex-shrink-0 overflow-hidden animate-slide-in-right" padding="none">
+          <div className="h-full flex flex-col">
+            {/* 액션은 상단에 둔다(우측 패널 표준) */}
+            <div className="flex items-start justify-between gap-2 px-4 py-3 border-b border-border flex-shrink-0">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4 text-primary flex-shrink-0" />
+                  <h2 className="text-sm font-bold text-text truncate">{t("consumables.mount.historyTitle")}</h2>
+                  <span className="text-xs text-text-muted flex-shrink-0">
+                    {t("common.total")} {historyData.length}{t("common.count")}
+                  </span>
+                </div>
+                <p className="mt-1 font-mono text-xs text-text truncate">{historyItem.conUid}</p>
+                <p className="text-xs text-text-muted truncate">
+                  {historyItem.consumableName} ({historyItem.consumableCode})
+                </p>
+              </div>
+              <Button variant="secondary" size="sm" onClick={() => setHistoryItem(null)}>
+                {t("common.close")}
+              </Button>
+            </div>
+
+            {/* 이력 본문 — 잘라내지 않고 전건을 스크롤로 보여준다 */}
+            <div className="flex-1 min-h-0 overflow-auto px-4 py-3">
+              {historyLoading ? (
+                <p className="text-center py-8 text-xs text-text-muted">{t("common.loading")}</p>
+              ) : historyData.length === 0 ? (
+                <p className="text-center py-8 text-xs text-text-muted">{t("common.noData")}</p>
+              ) : (
+                <ul className="space-y-2">
+                  {historyData.map((log, i) => {
+                    const isMount = log.action === "MOUNT";
+                    return (
+                      <li
+                        key={`${log.mountDate}-${log.seq}-${i}`}
+                        className={`border-l-2 pl-3 py-1 ${isMount ? "border-l-primary" : "border-l-border"}`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`text-xs font-semibold ${isMount ? "text-primary" : "text-text-muted"}`}>
+                            {isMount ? t("consumables.mount.actionMount") : t("consumables.mount.actionUnmount")}
+                          </span>
+                          <span className="text-xs text-text-muted font-mono">
+                            {log.createdAt?.replace("T", " ").slice(0, 16)}
+                          </span>
+                        </div>
+                        <div className="mt-0.5 text-xs text-text">
+                          {t("consumables.comp.equipment")}: {log.equipCode || "-"}
+                          <span className="text-text-muted"> · {t("consumables.mount.worker")}: {log.workerId || "-"}</span>
+                        </div>
+                        {log.remark && <p className="mt-0.5 text-xs text-text-muted break-words">{log.remark}</p>}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+      </div>
 
       {/* Action Modal */}
       {actionType && selectedItem && (
@@ -197,16 +259,16 @@ export default function ConsumableMountPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="text-text-muted">{t("consumables.comp.consumableCode")}</span>
-                <p className="font-medium text-text">{selectedItem.consumableCode}</p>
+                <span className="text-text-muted">{t("consumables.mount.conUid")}</span>
+                <p className="font-mono font-medium text-text">{selectedItem.conUid}</p>
               </div>
               <div>
                 <span className="text-text-muted">{t("consumables.comp.consumableName")}</span>
-                <p className="font-medium text-text">{selectedItem.consumableName}</p>
+                <p className="font-medium text-text">{selectedItem.consumableName} ({selectedItem.consumableCode})</p>
               </div>
               <div>
-                <span className="text-text-muted">{t("consumables.mount.operStatus")}</span>
-                <p>{getOperStatusBadge(selectedItem.operStatus)}</p>
+                <span className="text-text-muted">{t("consumables.mount.lotStatus")}</span>
+                <p><StatusBadge codeType="CON_STOCK_STATUS" value={selectedItem.status} /></p>
               </div>
               {selectedItem.mountedEquipCode && (
                 <div>
@@ -216,13 +278,16 @@ export default function ConsumableMountPage() {
               )}
             </div>
 
-            {actionType === "mount" && (
-              <Field field="equipCode" label={t("consumables.mount.targetEquip")} required>
-                <EquipSelect
-                  value={equipCode}
-                  onChange={setEquipCode}
+            {actionType === "unmount" && (
+              <Field field="returnTo" label={t("consumables.mount.returnTo")} required>
+                <Select
+                  value={returnTo}
+                  onChange={setReturnTo}
                   fullWidth
-                  required
+                  options={RETURN_TO_OPTIONS.map((v) => ({
+                    value: v,
+                    label: t(`consumables.mount.returnTo_${v}`),
+                  }))}
                 />
               </Field>
             )}
@@ -238,10 +303,7 @@ export default function ConsumableMountPage() {
 
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="secondary" onClick={closeAction}>{t("common.cancel")}</Button>
-              <Button
-                onClick={handleSubmitAction}
-                disabled={saving || (actionType === "mount" && !equipCode)}
-              >
+              <Button onClick={handleSubmitAction} disabled={saving}>
                 {saving ? t("common.saving") : actionTitle}
               </Button>
             </div>
@@ -249,51 +311,6 @@ export default function ConsumableMountPage() {
         </Modal>
       )}
 
-      {/* History Modal */}
-      {historyItem && (
-        <Modal isOpen onClose={() => setHistoryItem(null)} title={`${t("consumables.mount.historyTitle")} - ${historyItem.consumableCode}`} size="lg">
-          <div className="max-h-[400px] overflow-auto">
-            {historyLoading ? (
-              <p className="text-center py-8 text-text-muted">{t("common.loading")}</p>
-            ) : historyData.length === 0 ? (
-              <p className="text-center py-8 text-text-muted">{t("common.noData")}</p>
-            ) : (
-              <table className="w-full text-sm">
-                <thead className="sticky top-0">
-                  <tr className="border-b border-border bg-surface dark:bg-slate-800">
-                    <th className="px-3 py-2 text-left font-medium text-text-muted">{t("consumables.mount.logDate")}</th>
-                    <th className="px-3 py-2 text-left font-medium text-text-muted">{t("consumables.mount.logAction")}</th>
-                    <th className="px-3 py-2 text-left font-medium text-text-muted">{t("consumables.comp.equipment")}</th>
-                    <th className="px-3 py-2 text-left font-medium text-text-muted">{t("consumables.mount.worker")}</th>
-                    <th className="px-3 py-2 text-left font-medium text-text-muted">{t("common.remark")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {historyData.map((log, i) => (
-                    <tr key={i} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
-                      <td className="px-3 py-2 text-text">{log.createdAt?.split("T")[0]}</td>
-                      <td className="px-3 py-2">
-                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
-                          log.action === "MOUNT" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                            : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                        }`}>
-                          {log.action === "MOUNT" ? t("consumables.mount.actionMount") : t("consumables.mount.actionUnmount")}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-text">{log.equipCode || "-"}</td>
-                      <td className="px-3 py-2 text-text">{log.workerId || "-"}</td>
-                      <td className="px-3 py-2 text-text-muted">{log.remark || "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-          <div className="flex justify-end pt-4">
-            <Button variant="secondary" onClick={() => setHistoryItem(null)}>{t("common.close")}</Button>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }

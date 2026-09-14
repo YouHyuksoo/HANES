@@ -1,9 +1,10 @@
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { DataSource, Repository } from 'typeorm';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { ConsumableMountLog } from '../../../entities/consumable-mount-log.entity';
-import { EquipMaster } from '../../../entities/equip-master.entity';
+import { ConsumableStock } from '../../../entities/consumable-stock.entity';
 import { User } from '../../../entities/user.entity';
 import { TransactionService } from '../../../shared/transaction.service';
 import { ConsumableService } from './consumable.service';
@@ -13,8 +14,8 @@ describe('Equipment ConsumableService', () => {
   let masterRepo: DeepMocked<Repository<ConsumableMaster>>;
   let logRepo: DeepMocked<Repository<ConsumableLog>>;
   let mountLogRepo: DeepMocked<Repository<ConsumableMountLog>>;
+  let stockRepo: DeepMocked<Repository<ConsumableStock>>;
   let userRepo: DeepMocked<Repository<User>>;
-  let equipRepo: DeepMocked<Repository<EquipMaster>>;
   let dataSource: DeepMocked<DataSource>;
   let tx: DeepMocked<TransactionService>;
 
@@ -22,8 +23,8 @@ describe('Equipment ConsumableService', () => {
     masterRepo = createMock<Repository<ConsumableMaster>>();
     logRepo = createMock<Repository<ConsumableLog>>();
     mountLogRepo = createMock<Repository<ConsumableMountLog>>();
+    stockRepo = createMock<Repository<ConsumableStock>>();
     userRepo = createMock<Repository<User>>();
-    equipRepo = createMock<Repository<EquipMaster>>();
     dataSource = createMock<DataSource>();
     tx = createMock<TransactionService>();
 
@@ -31,8 +32,8 @@ describe('Equipment ConsumableService', () => {
       masterRepo,
       logRepo,
       mountLogRepo,
+      stockRepo,
       userRepo,
-      equipRepo,
       dataSource,
       tx,
     );
@@ -151,24 +152,139 @@ describe('Equipment ConsumableService', () => {
     expect(masterRepo.update).not.toHaveBeenCalled();
   });
 
-  it('allocates CONSUMABLE_MOUNT_LOGS seq from Oracle sequence', async () => {
-    masterRepo.findOne.mockResolvedValue({
+  // ------------------------------------------------------------------
+  // 실물 롯트(conUid) 단위 예외 창구 — 강제 해제 / 수리 전환 / 수리 완료
+  // 2026-09 전환으로 마스터 장착(mountToEquip/unmountFromEquip)은 폐기됐고,
+  // 장착(MOUNT)은 키오스크 스캔에서만 일어난다.
+  // ------------------------------------------------------------------
+
+  const buildStock = (overrides: Partial<ConsumableStock> = {}) =>
+    ({
+      conUid: 'C26091400001',
       consumableCode: 'CON-1',
-      operStatus: 'WAREHOUSE',
+      status: 'MOUNTED',
+      mountedEquipCode: 'EQ-1',
+      processCode: 'P10',
       company: 'COMP',
-      plant: 'PLANT',
-    } as ConsumableMaster);
-    const manager = {
-      update: jest.fn().mockResolvedValue({ affected: 1 }),
-      save: jest.fn().mockResolvedValue({}),
-      query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
-    };
+      plantCd: 'PLANT',
+      ...overrides,
+    }) as ConsumableStock;
+
+  const buildMountTxManager = () => ({
+    update: jest.fn().mockResolvedValue({ affected: 1 }),
+    save: jest.fn().mockResolvedValue({}),
+    query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
+  });
+
+  it('forceUnmount 는 UNMOUNT 이력 SEQ 를 Oracle 시퀀스에서 채번한다', async () => {
+    // 이력 SEQ 를 앱에서 MAX+1 로 계산하면 동시 해제 시 PK 충돌이 난다.
+    stockRepo.findOne.mockResolvedValue(buildStock());
+    const manager = buildMountTxManager();
     tx.run.mockImplementationOnce(async (callback) => callback({ manager } as any));
 
-    await service.mountToEquip('CON-1', { equipCode: 'EQ-1' } as any, 'COMP', 'PLANT');
+    await service.forceUnmount('C26091400001', { returnTo: 'PROC_WAIT' } as any, 'COMP', 'PLANT');
 
     expect(manager.query).toHaveBeenCalledWith(
       'SELECT SEQ_CONSUMABLE_MOUNT_LOGS.NEXTVAL AS "nextSeq" FROM DUAL',
     );
+    expect(manager.save).toHaveBeenCalledWith(
+      ConsumableMountLog,
+      expect.objectContaining({
+        conUid: 'C26091400001',
+        consumableCode: 'CON-1',
+        equipCode: 'EQ-1',
+        action: 'UNMOUNT',
+      }),
+    );
+  });
+
+  it('forceUnmount 는 반환처에 따라 공정 배정을 유지/해제한다', async () => {
+    // 공정대기 복귀는 공정 배정을 유지해야 하고, 창고 반납·수리는 유령 배정이 남으면 안 된다.
+    stockRepo.findOne.mockResolvedValue(buildStock());
+
+    const procWaitManager = buildMountTxManager();
+    tx.run.mockImplementationOnce(async (callback) => callback({ manager: procWaitManager } as any));
+    await service.forceUnmount('C26091400001', { returnTo: 'PROC_WAIT' } as any, 'COMP', 'PLANT');
+    expect(procWaitManager.update).toHaveBeenCalledWith(
+      ConsumableStock,
+      { conUid: 'C26091400001' },
+      { status: 'PROC_WAIT', mountedEquipCode: null },
+    );
+
+    const activeManager = buildMountTxManager();
+    tx.run.mockImplementationOnce(async (callback) => callback({ manager: activeManager } as any));
+    await service.forceUnmount('C26091400001', { returnTo: 'ACTIVE' } as any, 'COMP', 'PLANT');
+    expect(activeManager.update).toHaveBeenCalledWith(
+      ConsumableStock,
+      { conUid: 'C26091400001' },
+      { status: 'ACTIVE', mountedEquipCode: null, processCode: null },
+    );
+  });
+
+  it('forceUnmount 는 장착 상태가 아니거나 허용되지 않은 반환처면 거부한다', async () => {
+    // 상태 검증 없이 해제하면 창고 재고에 해제 이력만 남고 상태가 뒤집힌다.
+    stockRepo.findOne.mockResolvedValueOnce(buildStock({ status: 'ACTIVE' }));
+    await expect(
+      service.forceUnmount('C26091400001', {} as any, 'COMP', 'PLANT'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    stockRepo.findOne.mockResolvedValueOnce(buildStock());
+    await expect(
+      service.forceUnmount('C26091400001', { returnTo: 'SCRAPPED' } as any, 'COMP', 'PLANT'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(tx.run).not.toHaveBeenCalled();
+  });
+
+  it('없는 롯트를 해제하면 404 를 던진다', async () => {
+    stockRepo.findOne.mockResolvedValueOnce(null);
+    await expect(
+      service.forceUnmount('NOPE', {} as any, 'COMP', 'PLANT'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('setRepairStatus 는 장착 중이면 UNMOUNT 이력을 남기고 수리로 전환한다', async () => {
+    // 이력 없이 상태만 바꾸면 설비에서 언제 내려왔는지 추적이 끊긴다.
+    stockRepo.findOne.mockResolvedValue(buildStock());
+    const manager = buildMountTxManager();
+    tx.run.mockImplementationOnce(async (callback) => callback({ manager } as any));
+
+    await service.setRepairStatus('C26091400001', {} as any, 'COMP', 'PLANT');
+
+    expect(manager.save).toHaveBeenCalledWith(
+      ConsumableMountLog,
+      expect.objectContaining({ action: 'UNMOUNT', equipCode: 'EQ-1' }),
+    );
+    expect(manager.update).toHaveBeenCalledWith(
+      ConsumableStock,
+      { conUid: 'C26091400001' },
+      { status: 'REPAIR', mountedEquipCode: null, processCode: null },
+    );
+  });
+
+  it('이미 수리중인 롯트는 중복 수리 전환을 거부한다', async () => {
+    stockRepo.findOne.mockResolvedValueOnce(buildStock({ status: 'REPAIR' }));
+
+    await expect(
+      service.setRepairStatus('C26091400001', {} as any, 'COMP', 'PLANT'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(tx.run).not.toHaveBeenCalled();
+  });
+
+  it('completeRepair 는 수리 상태만 ACTIVE 로 복귀시킨다', async () => {
+    stockRepo.findOne.mockResolvedValue(buildStock({ status: 'REPAIR', mountedEquipCode: null }));
+
+    await service.completeRepair('C26091400001', { remark: '날 교체' } as any, 'COMP', 'PLANT');
+    expect(stockRepo.update).toHaveBeenCalledWith(
+      { conUid: 'C26091400001' },
+      { status: 'ACTIVE', remark: '날 교체' },
+    );
+
+    stockRepo.update.mockClear();
+    stockRepo.findOne.mockResolvedValueOnce(buildStock());
+    await expect(
+      service.completeRepair('C26091400001', {} as any, 'COMP', 'PLANT'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(stockRepo.update).not.toHaveBeenCalled();
   });
 });

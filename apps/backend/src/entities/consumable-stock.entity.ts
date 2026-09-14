@@ -4,9 +4,9 @@
  *              ConsumableMaster 1 : N ConsumableStock 관계
  *
  * 초보자 가이드:
- * 1. conUid가 PK — Oracle DB Function(F_GET_CON_UID)으로 채번
+ * 1. conUid가 PK — PKG_SEQ_GENERATOR.GET_NO('CON_UID') 로 채번
  * 2. consumableCode: 소모품 마스터(CONSUMABLE_MASTERS) FK
- * 3. status: PENDING(미입고) → ACTIVE(창고) → PROC_WAIT(공정대기) → MOUNTED(장착중) 등
+ * 3. status: PENDING(미입고) → ACTIVE(창고) → PROC_WAIT(공정대기) → MOUNTED(장착중) → REPAIR(수리중) / SCRAPPED(폐기)
  * 4. 같은 금형 3개를 입고하면 conUid 3개가 생성됨 (개별 추적)
  */
 import {
@@ -40,6 +40,14 @@ export class ConsumableStock {
 
   @Column({ name: 'CURRENT_COUNT', type: 'int', default: 0 })
   currentCount: number;
+
+  /**
+   * 수명 상태 — NORMAL / WARNING / REPLACE (CONSUMABLE_STATUS 공통코드)
+   * 누적 타수(currentCount)와 마스터의 warningCount/expectedLife 로 생산실적 저장 시 재판정한다.
+   * 개체별로 마모도가 다르므로 마스터가 아닌 인스턴스에서 관리한다.
+   */
+  @Column({ type: 'varchar2', name: 'LIFE_STATUS', length: 20, default: 'NORMAL' })
+  lifeStatus: string;
 
   @Column({ type: 'varchar2', name: 'LOCATION', length: 100, nullable: true })
   location: string | null;

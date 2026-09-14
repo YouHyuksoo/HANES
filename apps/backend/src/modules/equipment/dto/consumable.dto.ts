@@ -267,6 +267,14 @@ export class MountToEquipDto {
  * 금형 설비 해제 DTO
  */
 export class UnmountFromEquipDto {
+  @ApiPropertyOptional({
+    description: '해제 후 상태 — PROC_WAIT(공정대기, 기본) / ACTIVE(창고 반납) / REPAIR(수리중)',
+    enum: ['PROC_WAIT', 'ACTIVE', 'REPAIR'],
+  })
+  @IsOptional()
+  @IsString()
+  returnTo?: string;
+
   @ApiPropertyOptional({ description: '작업자 ID' })
   @IsOptional()
   @IsString()

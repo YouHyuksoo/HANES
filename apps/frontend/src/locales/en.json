@@ -6237,8 +6237,7 @@
       "storageDays": "Storage Days",
       "storageDaysValue": "{{count}} d",
       "longStored": "Long Stored",
-      "longStoredOnly": "Long stored only"
-    },
+      "longStoredOnly": "Long stored only"    },
     "pallet": {
       "title": "Palletizing",
       "subtitle": "Manage pallet loading.",
@@ -6752,20 +6751,15 @@
     },
     "mount": {
       "title": "Consumable Mount Management",
-      "description": "Manage equipment mounting/unmounting of consumables (molds/jigs/tools).",
-      "operStatus": "Oper. Status",
-      "statusWarehouse": "Warehouse",
+      "description": "Review consumable units (UID) mounted on equipment and handle force unmount / repair transitions.",
       "statusMounted": "Mounted",
       "statusRepair": "In Repair",
       "mountedEquip": "Mounted Equip.",
       "lifeStatus": "Life Status",
-      "targetEquip": "Target Equipment",
-      "mountAction": "Mount",
-      "unmountAction": "Unmount",
+      "unmountAction": "Force Unmount",
       "repairAction": "Repair",
       "historyAction": "History",
-      "mountTitle": "Mount to Equipment",
-      "unmountTitle": "Unmount from Equipment",
+      "unmountTitle": "Force Unmount",
       "repairTitle": "Set Repair Status",
       "historyTitle": "Mount/Unmount History",
       "logDate": "Date",
@@ -6774,7 +6768,7 @@
       "actionUnmount": "Unmount",
       "worker": "Worker",
       "remarkPlaceholder": "Enter remark",
-      "searchPlaceholder": "Search by code, name...",
+      "searchPlaceholder": "Search UID, code, name...",
       "completeRepairAction": "Complete Repair",
       "completeRepairTitle": "Complete Repair",
       "fieldHelp": {
@@ -6785,8 +6779,21 @@
         "lifeProgress": "Life consumption rate (%) on the master. At 100% or more the mounted equipment may be interlocked.",
         "location": "Location while stored in the warehouse. Reference when fetching a consumable to mount.",
         "equipCode": "Equipment to mount the consumable on. Saving updates the master's mounted equipment and records a mount log.",
-        "remark": "Reason or note for the mount, unmount or repair action. Shown in the history view."
-      }
+        "remark": "Reason or note for the mount, unmount or repair action. Shown in the history view.",
+        "conUid": "Consumable UID",
+        "status": "Lot Status",
+        "processCode": "Issued Process",
+        "lifeStatus": "Life Status",
+        "returnTo": "Status After Unmount"
+      },
+      "conUid": "Consumable UID",
+      "lotStatus": "Lot Status",
+      "processCode": "Issued Process",
+      "returnTo": "Status After Unmount",
+      "returnTo_PROC_WAIT": "Awaiting Process (remount in same process)",
+      "returnTo_ACTIVE": "Return to Warehouse (clear process)",
+      "returnTo_REPAIR": "Under Repair",
+      "mountHint": "Mounting is done only by barcode scan at the shop-floor kiosk"
     }
   },
   "outsourcing": {

@@ -11,11 +11,10 @@
  * 이 컨트롤러의 CRUD는 설비 모듈 내부 편의용(레거시 호환)으로 유지.
  *
  * 주요 API 경로:
- * - POST   /equipment/consumables/:id/mount            설비 장착
- * - POST   /equipment/consumables/:id/unmount          설비 해제
- * - POST   /equipment/consumables/:id/repair           수리 전환
- * - POST   /equipment/consumables/:id/complete-repair   수리 완료 복귀
- * - GET    /equipment/consumables/:id/mount-logs       장착/해제 이력
+ * - POST   /equipment/consumables/:conUid/unmount           장착 강제 해제(롯트)
+ * - POST   /equipment/consumables/:conUid/repair            수리 전환(롯트)
+ * - POST   /equipment/consumables/:conUid/complete-repair   수리 완료 복귀(롯트)
+ * - GET    /equipment/consumables/:conUid/mount-logs        장착/해제 이력(롯트)
  * - POST   /equipment/consumables/:id/increase         사용 횟수 증가
  * - POST   /equipment/consumables/:id/replace          교체 등록
  * - GET    /equipment/consumables/warnings             경고 상태 목록
@@ -55,7 +54,6 @@ import {
   ConsumableLogQueryDto,
   IncreaseCountDto,
   RegisterReplacementDto,
-  MountToEquipDto,
   UnmountFromEquipDto,
   SetRepairDto,
   PmCalendarQueryDto,
@@ -148,59 +146,52 @@ export class ConsumableController {
   }
 
   // =============================================
-  // 금형 장착/해제/수리 관리
+  // 소모품 장착현황 / 강제해제 / 수리 관리 — 실물 롯트(conUid) 기준
   // =============================================
+  //
+  // 장착(MOUNT)은 현장 키오스크 스캔(POST /production/job-orders/:orderNo/consumables/scan)에서만 일어난다.
+  // 여기의 :conUid 는 소모품 코드가 아니라 실물 롯트 UID 다. (2026-09 인스턴스 전환)
 
   @Get('mounted/:equipCode')
-  @ApiOperation({ summary: '설비별 장착된 금형 조회' })
-  @ApiParam({ name: 'equipCode', description: '설비 ID' })
+  @ApiOperation({ summary: '설비에 장착된 소모품 롯트 조회' })
+  @ApiParam({ name: 'equipCode', description: '설비 코드' })
   async findMountedByEquip(@Param('equipCode') equipCode: string, @Company() company: string, @Plant() plant: string) {
     const data = await this.consumableService.findMountedByEquip(equipCode, company, plant);
     return ResponseUtil.success(data);
   }
 
-  @Post(':id/mount')
-  @ApiOperation({ summary: '금형 설비 장착' })
-  @ApiParam({ name: 'id', description: '소모품(금형) ID' })
-  @SwaggerResponse({ status: 200, description: '금형 장착 성공' })
-  @SwaggerResponse({ status: 409, description: '이미 장착된 금형' })
-  async mountToEquip(@Param('id') id: string, @Body() dto: MountToEquipDto, @Company() company: string, @Plant() plant: string) {
-    const data = await this.consumableService.mountToEquip(id, dto, company, plant);
-    return ResponseUtil.success(data, '금형이 설비에 장착되었습니다.');
+  @Post(':conUid/unmount')
+  @ApiOperation({ summary: '소모품 롯트 장착 강제 해제' })
+  @ApiParam({ name: 'conUid', description: '소모품 실물 롯트 UID' })
+  @SwaggerResponse({ status: 200, description: '해제 성공' })
+  async forceUnmount(@Param('conUid') conUid: string, @Body() dto: UnmountFromEquipDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.consumableService.forceUnmount(conUid, dto, company, plant);
+    return ResponseUtil.success(data, '소모품이 설비에서 해제되었습니다.');
   }
 
-  @Post(':id/unmount')
-  @ApiOperation({ summary: '금형 설비 해제' })
-  @ApiParam({ name: 'id', description: '소모품(금형) ID' })
-  @SwaggerResponse({ status: 200, description: '금형 해제 성공' })
-  async unmountFromEquip(@Param('id') id: string, @Body() dto: UnmountFromEquipDto, @Company() company: string, @Plant() plant: string) {
-    const data = await this.consumableService.unmountFromEquip(id, dto, company, plant);
-    return ResponseUtil.success(data, '금형이 설비에서 해제되었습니다.');
-  }
-
-  @Post(':id/repair')
-  @ApiOperation({ summary: '금형 수리 전환' })
-  @ApiParam({ name: 'id', description: '소모품(금형) ID' })
+  @Post(':conUid/repair')
+  @ApiOperation({ summary: '소모품 롯트 수리 전환 (장착 중이면 자동 해제)' })
+  @ApiParam({ name: 'conUid', description: '소모품 실물 롯트 UID' })
   @SwaggerResponse({ status: 200, description: '수리 전환 성공' })
-  async setRepairStatus(@Param('id') id: string, @Body() dto: SetRepairDto, @Company() company: string, @Plant() plant: string) {
-    const data = await this.consumableService.setRepairStatus(id, dto, company, plant);
-    return ResponseUtil.success(data, '금형이 수리 상태로 전환되었습니다.');
+  async setRepairStatus(@Param('conUid') conUid: string, @Body() dto: SetRepairDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.consumableService.setRepairStatus(conUid, dto, company, plant);
+    return ResponseUtil.success(data, '소모품이 수리 상태로 전환되었습니다.');
   }
 
-  @Post(':id/complete-repair')
+  @Post(':conUid/complete-repair')
   @ApiOperation({ summary: '수리 완료 → 창고 복귀' })
-  @ApiParam({ name: 'id', description: '소모품(금형) ID' })
+  @ApiParam({ name: 'conUid', description: '소모품 실물 롯트 UID' })
   @SwaggerResponse({ status: 200, description: '수리 완료 처리 성공' })
-  async completeRepair(@Param('id') id: string, @Body() dto: SetRepairDto, @Company() company: string, @Plant() plant: string) {
-    const data = await this.consumableService.completeRepair(id, dto, company, plant);
+  async completeRepair(@Param('conUid') conUid: string, @Body() dto: SetRepairDto, @Company() company: string, @Plant() plant: string) {
+    const data = await this.consumableService.completeRepair(conUid, dto, company, plant);
     return ResponseUtil.success(data, '수리가 완료되어 창고로 복귀되었습니다.');
   }
 
-  @Get(':id/mount-logs')
-  @ApiOperation({ summary: '금형 장착/해제 이력 조회' })
-  @ApiParam({ name: 'id', description: '소모품(금형) ID' })
-  async getMountHistory(@Param('id') id: string, @Company() company: string, @Plant() plant: string) {
-    const data = await this.consumableService.getMountHistory(id, company, plant);
+  @Get(':conUid/mount-logs')
+  @ApiOperation({ summary: '소모품 롯트 장착/해제 이력 조회' })
+  @ApiParam({ name: 'conUid', description: '소모품 실물 롯트 UID' })
+  async getMountHistory(@Param('conUid') conUid: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.consumableService.getMountHistory(conUid, company, plant);
     return ResponseUtil.success(data);
   }
 

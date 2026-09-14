@@ -77,23 +77,28 @@ test("CONS_MOUNT is registered in help manifest.json", () => {
 test("consumables.mount locale keys are present in every locale", () => {
   const requiredKeys = [
     "consumables.mount.title",
-    "consumables.mount.operStatus",
-    "consumables.mount.statusWarehouse",
+    // 2026-09 전환: 마스터 운용상태(operStatus/statusWarehouse/mountAction/mountTitle/targetEquip)는
+    // 실물 롯트 단위로 바뀌면서 화면에서 사라졌다. 장착은 키오스크 스캔에서만 일어난다.
+    "consumables.mount.conUid",
+    "consumables.mount.lotStatus",
+    "consumables.mount.processCode",
     "consumables.mount.statusMounted",
     "consumables.mount.statusRepair",
     "consumables.mount.mountedEquip",
     "consumables.mount.lifeStatus",
+    "consumables.mount.mountHint",
     "consumables.mount.searchPlaceholder",
-    "consumables.mount.mountAction",
     "consumables.mount.unmountAction",
     "consumables.mount.repairAction",
     "consumables.mount.completeRepairAction",
     "consumables.mount.historyAction",
-    "consumables.mount.mountTitle",
     "consumables.mount.unmountTitle",
     "consumables.mount.repairTitle",
     "consumables.mount.completeRepairTitle",
-    "consumables.mount.targetEquip",
+    "consumables.mount.returnTo",
+    "consumables.mount.returnTo_PROC_WAIT",
+    "consumables.mount.returnTo_ACTIVE",
+    "consumables.mount.returnTo_REPAIR",
     "consumables.mount.remarkPlaceholder",
     "consumables.mount.historyTitle",
     "consumables.mount.logDate",
@@ -121,7 +126,8 @@ test("consumables mount page uses translated keys", () => {
   const columnsPath = resolve(repoRoot, "apps/frontend/src/app/(authenticated)/consumables/mount/consumableMountColumns.tsx");
   const source = readFileSync(pagePath, "utf8") + readFileSync(columnsPath, "utf8");
   assert.match(source, /t\("consumables\.mount\.title"\)/, "page title should use translation key");
-  assert.match(source, /t\("consumables\.mount\.operStatus"\)/, "operStatus should use translation key");
+  assert.match(source, /t\("consumables\.mount\.lotStatus"\)/, "lotStatus should use translation key");
+  assert.match(source, /t\("consumables\.mount\.conUid"\)/, "conUid should use translation key");
   assert.match(source, /t\("consumables\.mount\.mountedEquip"\)/, "mountedEquip should use translation key");
   assert.match(source, /t\("consumables\.mount\.lifeStatus"\)/, "lifeStatus should use translation key");
   assert.match(source, /t\("consumables\.mount\.searchPlaceholder"\)/, "searchPlaceholder should use translation key");

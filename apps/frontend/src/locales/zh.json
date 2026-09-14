@@ -6219,8 +6219,7 @@
       "storageDays": "库龄天数",
       "storageDaysValue": "{{count}}天",
       "longStored": "长期库存",
-      "longStoredOnly": "仅长期库存"
-    },
+      "longStoredOnly": "仅长期库存"    },
     "pallet": {
       "title": "托盘装载",
       "subtitle": "管理托盘装载。",
@@ -6734,20 +6733,15 @@
     },
     "mount": {
       "title": "耗材装卸管理",
-      "description": "管理耗材(模具/治具/工具)的设备装卸。",
-      "operStatus": "运行状态",
-      "statusWarehouse": "仓库",
+      "description": "查询设备上已装载的耗材实物（UID），并处理强制卸载・转维修。",
       "statusMounted": "已装载",
       "statusRepair": "维修中",
       "mountedEquip": "装载设备",
       "lifeStatus": "寿命状态",
-      "targetEquip": "目标设备",
-      "mountAction": "装载",
-      "unmountAction": "卸载",
+      "unmountAction": "强制卸载",
       "repairAction": "维修",
       "historyAction": "历史",
-      "mountTitle": "装载到设备",
-      "unmountTitle": "从设备卸载",
+      "unmountTitle": "强制卸载",
       "repairTitle": "转为维修状态",
       "historyTitle": "装卸历史",
       "logDate": "日期",
@@ -6756,7 +6750,7 @@
       "actionUnmount": "卸载",
       "worker": "操作员",
       "remarkPlaceholder": "输入备注",
-      "searchPlaceholder": "搜索代码、名称...",
+      "searchPlaceholder": "搜索UID、编码、名称...",
       "completeRepairAction": "维修完成",
       "completeRepairTitle": "维修完成处理",
       "fieldHelp": {
@@ -6767,8 +6761,21 @@
         "lifeProgress": "主数据寿命消耗率（%）。100%以上时装配设备可能被联锁。",
         "location": "仓库保管时的位置。寻找待装配耗材时参考。",
         "equipCode": "要装配耗材的设备。保存后主数据的装配设备变更并留下装配记录。",
-        "remark": "装配/拆卸/维修处理的原因或备注。在履历查询中一并显示。"
-      }
+        "remark": "装配/拆卸/维修处理的原因或备注。在履历查询中一并显示。",
+        "conUid": "耗材UID",
+        "status": "批次状态",
+        "processCode": "出库工序",
+        "lifeStatus": "寿命状态",
+        "returnTo": "卸载后状态"
+      },
+      "conUid": "耗材UID",
+      "lotStatus": "批次状态",
+      "processCode": "出库工序",
+      "returnTo": "卸载后状态",
+      "returnTo_PROC_WAIT": "待工序（同工序重新装载）",
+      "returnTo_ACTIVE": "退回仓库（解除工序分配）",
+      "returnTo_REPAIR": "维修中",
+      "mountHint": "装载仅通过现场终端扫码处理"
     }
   },
   "outsourcing": {

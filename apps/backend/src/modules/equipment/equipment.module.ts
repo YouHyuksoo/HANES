@@ -29,6 +29,7 @@ import { EquipInspectLog } from '../../entities/equip-inspect-log.entity';
 import { ConsumableMaster } from '../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../entities/consumable-log.entity';
 import { ConsumableMountLog } from '../../entities/consumable-mount-log.entity';
+import { ConsumableStock } from '../../entities/consumable-stock.entity';
 import { PmPlan } from '../../entities/pm-plan.entity';
 import { PmPlanItem } from '../../entities/pm-plan-item.entity';
 import { PmWorkOrder } from '../../entities/pm-work-order.entity';
@@ -69,6 +70,7 @@ import { SensorMonitorController } from './controllers/sensor-monitor.controller
       ConsumableMaster,
       ConsumableLog,
       ConsumableMountLog,
+      ConsumableStock,
       PmPlan,
       PmPlanItem,
       PmWorkOrder,

@@ -1289,10 +1289,16 @@ export class ProdResultService {
   }
 
   /**
-   * 소모품 타수 누적 — 실적 수량(양품+불량)만큼 설비에 장착된 소모품의 사용횟수를 올린다(음수면 되돌림).
-   * 두 장착 모델을 모두 처리한다:
-   *  (1) 금형 마스터 장착(CONSUMABLE_MASTERS.OPER_STATUS=MOUNTED, MOUNTED_EQUIP_CODE) — MOLD 카테고리, 1회당 1타
-   *  (2) 롯트 장착(CONSUMABLE_STOCKS.STATUS=MOUNTED) — 모델×설비 매핑(CONSUMABLE_USAGE_MAP)의 USAGE_PER_UNIT × 수량
+   * 소모품 타수 누적 — 실적 수량(양품+불량)만큼 설비에 장착된 소모품 롯트의 누적 타수를 올린다(음수면 되돌림).
+   *
+   * 장착 기준은 실물 롯트 단위(CONSUMABLE_STOCKS.STATUS='MOUNTED' + MOUNTED_EQUIP_CODE)로 일원화한다.
+   * (2026-09 전환: 소모품 마스터 장착(OPER_STATUS/MOUNTED_EQUIP_ID) 경로는 폐기)
+   *
+   * 누적 타수 = 소요량 × 실적수량
+   *  - 소요량은 모델×설비 매핑(CONSUMABLE_USAGE_MAP.USAGE_PER_UNIT)에서 읽는다.
+   *  - 매핑이 없으면 1타로 본다. 금형·지그·공구는 1실행당 1타이므로 별도 등록이 필요 없고,
+   *    1이 아닌 소모품만 매핑에 등록하면 된다.
+   *
    * 재고 차감/수불은 없다(수명 관리 카운터). create()·complete()·실적 취소(음수)에서 호출한다.
    */
   private async accrueConsumableUsageInTx(
@@ -1305,65 +1311,82 @@ export class ProdResultService {
     if (!equipCode || !totalQty) return;
     const tenant = { ...(company ? { company } : {}), ...(plant ? { plant } : {}) };
 
-    // (1) 금형 마스터
-    const mountedMolds = await queryRunner.manager.find(ConsumableMaster, {
-      where: { mountedEquipCode: equipCode, category: 'MOLD', operStatus: 'MOUNTED', ...tenant },
-    });
-    for (const mold of mountedMolds) {
-      const newCount = Math.max(0, mold.currentCount + totalQty);
-      await queryRunner.manager.update(
-        ConsumableMaster,
-        { consumableCode: mold.consumableCode, ...tenant },
-        { currentCount: newCount, status: resolveConsumableLifeStatus(newCount, mold.warningCount, mold.expectedLife, mold.status) },
-      );
-      this.logger.log(`금형 타수 누적: ${mold.consumableCode} (${mold.currentCount} → ${newCount})`);
-    }
-
-    // (2) 장착 롯트 — 모델(작업지시 품목)+설비 매핑으로 대상 소모품을 찾는다
-    const consumJobOrder = await queryRunner.manager.findOne(JobOrder, { where: { orderNo, ...tenant } });
-    if (!consumJobOrder?.itemCode) return;
-    const consumMaps = await queryRunner.manager.find(ConsumableUsageMap, {
-      where: { ...tenant, productItemCode: consumJobOrder.itemCode, equipCode, useYn: 'Y' },
-    });
-    const consumableCodes = [...new Set(consumMaps.map((c) => c.consumableCode))];
-    if (consumableCodes.length === 0) return;
-    const allLots = await queryRunner.manager.find(ConsumableStock, {
+    // 설비에 장착된 모든 소모품 롯트 (금형·지그·공구 공통)
+    const lots = await queryRunner.manager.find(ConsumableStock, {
       where: {
-        consumableCode: In(consumableCodes),
         mountedEquipCode: equipCode,
         status: 'MOUNTED',
         ...(company ? { company } : {}),
         ...(plant ? { plantCd: plant } : {}),
       },
     });
-    const lotsByCode = new Map<string, ConsumableStock[]>();
-    for (const lot of allLots) {
-      const bucket = lotsByCode.get(lot.consumableCode);
-      if (bucket) bucket.push(lot);
-      else lotsByCode.set(lot.consumableCode, [lot]);
+    if (lots.length === 0) return;
+
+    // 소요량(타수 배수) — 매핑에 등록된 값만 사용하고, 미등록은 1타로 처리
+    const consumJobOrder = await queryRunner.manager.findOne(JobOrder, { where: { orderNo, ...tenant } });
+    const usagePerUnitByCode = new Map<string, number>();
+    if (consumJobOrder?.itemCode) {
+      const consumMaps = await queryRunner.manager.find(ConsumableUsageMap, {
+        where: { ...tenant, productItemCode: consumJobOrder.itemCode, equipCode, useYn: 'Y' },
+      });
+      for (const cmap of consumMaps) usagePerUnitByCode.set(cmap.consumableCode, cmap.usagePerUnit);
     }
+
+    // 수명 임계(경고 타수/기대수명)는 마스터에 등록돼 있다
+    const masters = await queryRunner.manager.find(ConsumableMaster, {
+      where: { consumableCode: In([...new Set(lots.map((l) => l.consumableCode))]), ...tenant },
+    });
+    const masterByCode = new Map(masters.map((m) => [m.consumableCode, m]));
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    for (const cmap of consumMaps) {
-      for (const lot of lotsByCode.get(cmap.consumableCode) ?? []) {
-        const delta = cmap.usagePerUnit * totalQty;
-        const newCount = Math.max(0, lot.currentCount + delta);
-        await queryRunner.manager.update(ConsumableStock, { conUid: lot.conUid }, { currentCount: newCount });
-        // 누적 이력 — 실적 단위로 남겨 "언제 얼마나 올랐는지" 추적 가능하게 (현장 요청 2026-09-03)
-        const seqRow = await queryRunner.manager.query(`SELECT SEQ_CONSUMABLE_LOGS.NEXTVAL AS "nextSeq" FROM DUAL`);
-        await queryRunner.manager.save(ConsumableLog, queryRunner.manager.create(ConsumableLog, {
-          transDate: today,
-          seq: Number(seqRow[0]?.nextSeq),
-          consumableCode: lot.consumableCode,
-          conUid: lot.conUid,
-          logType: 'USAGE',
-          qty: delta,
-          equipCode,
-          remark: `${delta >= 0 ? '타수 누적' : '타수 되돌림'} ${lot.currentCount} → ${newCount} (실적 ${refId ?? '-'}, 지시 ${orderNo})`,
-          company: consumJobOrder.company,
-          plant: consumJobOrder.plant,
-        }));
-        this.logger.log(`소모품 롯트 사용횟수 누적: ${lot.conUid} (${lot.currentCount} → ${newCount})`);
+
+    for (const lot of lots) {
+      const usagePerUnit = usagePerUnitByCode.get(lot.consumableCode) ?? 1;
+      const delta = usagePerUnit * totalQty;
+      if (!delta) continue;
+
+      const newCount = Math.max(0, lot.currentCount + delta);
+      const master = masterByCode.get(lot.consumableCode);
+      const prevLifeStatus = lot.lifeStatus ?? 'NORMAL';
+      const newLifeStatus = resolveConsumableLifeStatus(
+        newCount, master?.warningCount, master?.expectedLife, prevLifeStatus,
+      );
+
+      await queryRunner.manager.update(
+        ConsumableStock,
+        { conUid: lot.conUid },
+        { currentCount: newCount, lifeStatus: newLifeStatus },
+      );
+
+      // 누적 이력 — 실적 단위로 남겨 "언제 얼마나 올랐는지" 추적 가능하게 (현장 요청 2026-09-03)
+      const seqRow = await queryRunner.manager.query(`SELECT SEQ_CONSUMABLE_LOGS.NEXTVAL AS "nextSeq" FROM DUAL`);
+      await queryRunner.manager.save(ConsumableLog, queryRunner.manager.create(ConsumableLog, {
+        transDate: today,
+        seq: Number(seqRow[0]?.nextSeq),
+        consumableCode: lot.consumableCode,
+        conUid: lot.conUid,
+        logType: 'USAGE',
+        qty: delta,
+        equipCode,
+        remark: `${delta >= 0 ? '타수 누적' : '타수 되돌림'} ${lot.currentCount} → ${newCount} (소요량 ${usagePerUnit}, 실적 ${refId ?? '-'}, 지시 ${orderNo})`,
+        company: lot.company,
+        plant: lot.plantCd,
+      }));
+      this.logger.log(
+        `소모품 타수 누적: ${lot.conUid}(${lot.consumableCode}) ${lot.currentCount} → ${newCount} [소요량 ${usagePerUnit}]`,
+      );
+
+      // 수명 초과로 새로 REPLACE 가 된 경우에만 설비 인터락 (이미 REPLACE 였으면 재설정하지 않음)
+      if (newLifeStatus === 'REPLACE' && prevLifeStatus !== 'REPLACE') {
+        try {
+          await queryRunner.manager.update(EquipMaster, { equipCode, ...tenant }, { status: 'INTERLOCK' });
+          this.logger.warn(
+            `소모품 수명 초과로 설비 인터락: ${equipCode} ← ${lot.conUid}(${lot.consumableCode})`,
+          );
+        } catch (err) {
+          this.logger.error(`설비 인터락 설정 실패: ${equipCode}`, err as Error);
+        }
       }
     }
   }
@@ -1435,7 +1458,7 @@ export class ProdResultService {
         }
       }
 
-      // 4-2. (소모품 롯트 타수 누적은 위 2번 accrueConsumableUsageInTx 에서 금형 마스터와 함께 처리)
+      // 4-2. (소모품 타수 되돌림은 위 2번 accrueConsumableUsageInTx 에서 장착 롯트 기준으로 처리)
 
       // 5. 공정창고(WIP_MAIN) 자동 적재 — 양품만 재고화
       //    create() 시점에 이미 적재됐으면 멱등 가드로 건너뛴다(이중적재 방지).
