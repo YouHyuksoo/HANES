@@ -315,7 +315,7 @@ export const REWORK_INSPECT_RESULT_VALUES = ['PASS', 'FAIL', 'SCRAP'] as const;
 export type ReworkInspectResultValue = typeof REWORK_INSPECT_RESULT_VALUES[number];
 
 // ===== 창고 유형 (DTO) =====
-export const WAREHOUSE_TYPE_DTO_VALUES = ['RAW', 'WIP', 'FG', 'FLOOR', 'DEFECT', 'SCRAP', 'SUBCON'] as const;
+export const WAREHOUSE_TYPE_DTO_VALUES = ['RAW', 'WIP', 'FG', 'FLOOR', 'DEFECT', 'UNUSABLE', 'SCRAP', 'SUBCON'] as const;
 export type WarehouseTypeDtoValue = typeof WAREHOUSE_TYPE_DTO_VALUES[number];
 
 // ===== 재고 트랜잭션 유형 =====
