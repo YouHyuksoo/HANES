@@ -37,6 +37,12 @@ export interface InspectAidRow {
   status: InspectAidStatus;
   remark: string | null;
   useYn: string;
+  /** 적용 검사유형 — null이면 전 검사유형 공통 */
+  inspectType: string | null;
+  /** 검사 전 대조 필수 여부 */
+  requiredYn: string;
+  /** 대조 모달 표시 순서 */
+  sortOrder: number;
   expiryState: InspectAidExpiryState;
   daysToExpiry: number | null;
   updatedAt: string;
@@ -110,6 +116,33 @@ export function createInspectAidGridColumns({
     {
       accessorKey: "aidName", header: t("master.inspectAid.aidName"), size: 200,
       meta: { filterType: "text" as const },
+    },
+    {
+      accessorKey: "inspectType",
+      header: () => <StatusHeaderHelp label={t("master.inspectAid.inspectType")} codeType="INSPECT_TYPE" align="center" />,
+      size: 120,
+      meta: { filterType: "multi" as const },
+      cell: ({ getValue }) => {
+        const code = getValue() as string | null;
+        if (!code) return <span className="text-text-muted">{t("master.inspectAid.inspectTypeAll")}</span>;
+        return <ComCodeBadge groupCode="INSPECT_TYPE" code={code} />;
+      },
+    },
+    {
+      accessorKey: "requiredYn", header: t("master.inspectAid.requiredYn"), size: 90,
+      meta: { align: "center" as const, filterType: "multi" as const },
+      cell: ({ getValue }) => (getValue() === "Y"
+        ? (
+          <span className="inline-flex items-center rounded border border-primary px-1.5 py-0.5 text-[11px] font-semibold text-primary">
+            {t("master.inspectAid.required")}
+          </span>
+        )
+        : <span className="text-text-muted">-</span>),
+    },
+    {
+      accessorKey: "sortOrder", header: t("master.inspectAid.sortOrder"), size: 80,
+      meta: { align: "right" as const },
+      cell: ({ getValue }) => <span className="tabular-nums">{(getValue() as number) ?? 0}</span>,
     },
     {
       accessorKey: "itemCode", header: t("master.inspectAid.itemCode"), size: 130,

@@ -32,6 +32,12 @@ export interface InspectAidForm {
   status: string;
   remark: string;
   useYn: string;
+  /** 적용 검사유형 — 빈 값이면 전 검사유형 공통 */
+  inspectType: string;
+  /** 검사 전 대조 필수 여부 (홀더·지그는 N 고정) */
+  requiredYn: string;
+  /** 대조 모달 표시 순서 */
+  sortOrder: string;
 }
 
 export const emptyInspectAidForm = (): InspectAidForm => ({
@@ -49,6 +55,9 @@ export const emptyInspectAidForm = (): InspectAidForm => ({
   status: "ACTIVE",
   remark: "",
   useYn: "Y",
+  inspectType: "",
+  requiredYn: "Y",
+  sortOrder: "0",
 });
 
 /** 저장 가능 조건: 코드·유형·명칭 필수, 유효기간 시작 ≤ 종료 */
@@ -81,6 +90,8 @@ export default function InspectAidFormPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canSave = !saving && validateInspectAidForm(form);
   const isNgSample = form.aidType === "LIMIT_NG";
+  /** 홀더·지그는 대조 대상이 아니므로 필수 플래그를 잠근다. */
+  const isHolder = form.aidType === "HOLDER";
 
   return (
     <div className="w-[480px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs animate-slide-in-right">
@@ -118,6 +129,21 @@ export default function InspectAidFormPanel({
             {!isNgSample && (
               <p className="col-span-2 text-text-muted">{t("master.inspectAid.defectCodeHint")}</p>
             )}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.inspectAid.sectionSampleCheck")}</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <ComCodeSelect groupCode="INSPECT_TYPE" includeAll={false} label={t("master.inspectAid.inspectType")}
+              placeholder={t("master.inspectAid.inspectTypeAll")}
+              value={form.inspectType} onChange={v => onChange("inspectType", v)} fullWidth />
+            <UseYnSelect includeAll={false} label={t("master.inspectAid.requiredYn")}
+              value={isHolder ? "N" : form.requiredYn} onChange={v => onChange("requiredYn", v)}
+              disabled={isHolder} fullWidth />
+            <Input label={t("master.inspectAid.sortOrder")} type="number" min={0} value={form.sortOrder}
+              onChange={e => onChange("sortOrder", e.target.value)} fullWidth />
+            <p className="col-span-2 text-text-muted">{t("master.inspectAid.requiredHint")}</p>
           </div>
         </div>
 

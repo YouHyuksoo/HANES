@@ -158,6 +158,9 @@ export default function InspectAidPage() {
       status: row.status || "ACTIVE",
       remark: row.remark ?? "",
       useYn: row.useYn || "Y",
+      inspectType: row.inspectType ?? "",
+      requiredYn: row.requiredYn || "Y",
+      sortOrder: String(row.sortOrder ?? 0),
     };
     setForm(next);
     initialFormRef.current = next;
@@ -220,6 +223,10 @@ export default function InspectAidPage() {
       status: form.status,
       remark: form.remark.trim() || null,
       useYn: form.useYn,
+      inspectType: form.inspectType || null,
+      // 홀더·지그는 대조 대상이 아니므로 필수 플래그를 항상 내려보낸다(서버도 같은 규칙).
+      requiredYn: form.aidType === "HOLDER" ? "N" : form.requiredYn,
+      sortOrder: Number(form.sortOrder) || 0,
     };
     try {
       const aidCode = editing?.aidCode ?? payload.aidCode;
