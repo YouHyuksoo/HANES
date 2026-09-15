@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { IqcLog } from '../../../entities/iqc-log.entity';
+import { IqcRequestLot } from '../../../entities/iqc-request-lot.entity';
+import { IqcRequestLotLine } from '../../../entities/iqc-request-lot-line.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
@@ -23,12 +25,14 @@ import { ArrivalController } from '../controllers/arrival.controller';
 import { ConcessionController } from '../controllers/concession.controller';
 import { IqcHistoryController } from '../controllers/iqc-history.controller';
 import { IqcDefectReceiveController } from '../controllers/iqc-defect-receive.controller';
+import { IqcRequestLotController } from '../controllers/iqc-request-lot.controller';
 import { ReceiptCancelController } from '../controllers/receipt-cancel.controller';
 import { ReceivingController } from '../controllers/receiving.controller';
 import { ArrivalService } from '../services/arrival.service';
 import { ConcessionService } from '../services/concession.service';
 import { IqcHistoryService } from '../services/iqc-history.service';
 import { IqcDefectReceiveService } from '../services/iqc-defect-receive.service';
+import { IqcRequestLotService } from '../services/iqc-request-lot.service';
 import { ReceiptCancelService } from '../services/receipt-cancel.service';
 import { ReceivingService } from '../services/receiving.service';
 
@@ -38,6 +42,8 @@ import { ReceivingService } from '../services/receiving.service';
     AqlModule,
     TypeOrmModule.forFeature([
       IqcLog,
+      IqcRequestLot,
+      IqcRequestLotLine,
       LabelPrintLog,
       MatArrival,
       MatArrivalStock,
@@ -61,6 +67,7 @@ import { ReceivingService } from '../services/receiving.service';
     ReceivingController,
     IqcHistoryController,
     IqcDefectReceiveController,
+    IqcRequestLotController,
     ReceiptCancelController,
     ConcessionController,
   ],
@@ -69,6 +76,7 @@ import { ReceivingService } from '../services/receiving.service';
     ReceivingService,
     IqcHistoryService,
     IqcDefectReceiveService,
+    IqcRequestLotService,
     ReceiptCancelService,
     ConcessionService,
   ],
