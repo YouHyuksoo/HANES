@@ -3,15 +3,14 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { ScanLine, RefreshCw, Search, Maximize2, Minimize2 } from "lucide-react";
+import { ScanLine, RefreshCw, Search } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import { ComCodeBadge } from "@/components/ui";
 import api from "@/services/api";
 import type { JobOrderRow } from "../types";
 import InspectPanel from "./InspectPanel";
 import ConsumablePanel from "./ConsumablePanel";
-import InspectStationBar from "./InspectStationBar";
-import InspectPrepCheckBar from "./InspectPrepCheckBar";
+import InspectStationHeader from "./InspectStationHeader";
 import SampleCheckModal from "./SampleCheckModal";
 import SampleCheckHistoryModal from "./SampleCheckHistoryModal";
 import { DailyInspectModal, WorkerInspectModal } from "@/components/inspect";
@@ -83,8 +82,9 @@ export default function InspectionResultWorkflow({
   const [sampleHistoryOpen, setSampleHistoryOpen] = useState(false);
   /** 전체화면(chromeless) 모드 — view=full 쿼리 + 브라우저 Fullscreen API */
   const isFullView = searchParams.get("view") === "full";
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** 헤더의 소모품 카드에서 좌측 소모품 패널로 이동 */
+  const consumableRef = useRef<HTMLDivElement>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   /** 검사기(TESTER) 목록 로드 + 저장된 선택 복원 */
@@ -115,14 +115,6 @@ export default function InspectionResultWorkflow({
       })
       .catch(() => setTesters([]));
   }, [equipStorageKey]);
-
-  /** 브라우저 전체화면 상태 추적 */
-  useEffect(() => {
-    const handle = () => setIsFullscreen(Boolean(document.fullscreenElement));
-    handle();
-    document.addEventListener("fullscreenchange", handle);
-    return () => document.removeEventListener("fullscreenchange", handle);
-  }, []);
 
   /** 전체화면 토글 — view=full 라우팅 + Fullscreen API (키오스크와 동일 패턴) */
   const toggleFullscreen = useCallback(() => {
@@ -210,42 +202,29 @@ export default function InspectionResultWorkflow({
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
             {t("common.refresh")}
           </Button>
-          {/* 전체화면 토글 */}
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            title={isFullView || isFullscreen ? t("inspection.result.exitFullscreen") : t("inspection.result.fullscreen")}
-            aria-label={isFullView || isFullscreen ? t("inspection.result.exitFullscreen") : t("inspection.result.fullscreen")}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-text-muted transition-colors hover:border-primary hover:text-primary"
-          >
-            {isFullView || isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </button>
         </div>
       </div>
 
-      {/* 준비 4단계 체크바 — 모두 완료해야 합격·불합격 버튼이 열린다 */}
-      <InspectPrepCheckBar
+      {/* 상단 스테이션 헤더 — 실적입력(가공)과 같은 형식으로 검사기·작업지시·작업자·준비점검을 한 줄에 모은다 */}
+      <InspectStationHeader
+        testers={testers}
+        equipCode={selectedEquipCode}
+        onSelectEquip={handleSelectEquip}
+        order={selected}
         prep={prep}
-        hasEquip={Boolean(selectedEquipCode)}
-        hasOrder={Boolean(selected)}
         onOpenDailyInspect={() => setDailyInspectOpen(true)}
         onOpenWorkerInspect={() => setWorkerInspectOpen(true)}
         onOpenSampleCheck={() => setSampleCheckOpen(true)}
         onOpenSampleCheckHistory={() => setSampleHistoryOpen(true)}
+        onOpenConsumable={() => consumableRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })}
+        isFullView={isFullView}
+        onToggleFullscreen={toggleFullscreen}
       />
 
       <div className="grid grid-cols-12 gap-4 flex-1 min-h-0 overflow-hidden">
         <div className="col-span-4 flex flex-col gap-4 min-h-0 overflow-hidden">
           <Card className="flex-1 min-h-0 overflow-hidden flex flex-col" padding="none">
             <CardContent className="flex flex-col h-full p-3 gap-2">
-              {/* 검사기(TESTER) + 작업자 선택 — 실적입력(가공)과 같은 방식 */}
-              <InspectStationBar
-                testers={testers}
-                equipCode={selectedEquipCode}
-                onSelectEquip={handleSelectEquip}
-                workers={prep.workers}
-                onWorkersChange={prep.setWorkers}
-              />
               <Input
                 placeholder={t(searchPlaceholderKey)}
                 value={searchText}
@@ -294,7 +273,7 @@ export default function InspectionResultWorkflow({
 
           {/* 소모성 설비부품 (좌측 하단) — 매핑 표시 + conUid 스캔 장착 */}
           {selected && (
-            <div className="shrink-0">
+            <div className="shrink-0" ref={consumableRef}>
               <ConsumablePanel
                 key={`${selected.orderNo}::${selectedEquipCode}`}
                 orderNo={selected.orderNo}

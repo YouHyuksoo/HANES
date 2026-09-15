@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const checkItem = readFileSync(join(here, 'HeaderCheckItem.tsx'), 'utf8');
+const checkItem = readFileSync(join(here, '../../../../../components/inspect/HeaderCheckItem.tsx'), 'utf8');
 const header = readFileSync(join(here, 'EquipHeader.tsx'), 'utf8');
 
 test('점검 카드는 상태축 하나로 테두리·문구색·버튼톤을 함께 정한다', () => {

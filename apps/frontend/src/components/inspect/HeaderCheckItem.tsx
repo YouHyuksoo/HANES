@@ -1,8 +1,10 @@
 "use client";
 
 /**
- * @file components/HeaderCheckItem.tsx
- * @description 헤더 점검 상태 카드 — 라벨 + 완료/미완료 상태 + 입력 버튼
+ * @file components/inspect/HeaderCheckItem.tsx
+ * @description 헤더 점검 상태 카드 (공용) — 라벨 + 완료/미완료 상태 + 입력 버튼
+ *
+ * 실적입력(가공) 키오스크와 통전·단자검사가 같은 카드를 쓴다. 두 화면의 점검 UI를 갈라놓지 않는다.
  *
  * 초보자 가이드:
  * - 설비일일검사 / 작업자설비검사 헤더 표시에 공통 사용

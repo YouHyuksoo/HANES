@@ -24,7 +24,7 @@ import WorkerSelectModal from "@/components/worker/WorkerSelectModal";
 import type { Worker } from "@/components/worker/WorkerSelector";
 import DailyInspectModal from "../input-kiosk/components/DailyInspectModal";
 import WorkerInspectModal from "../input-kiosk/components/WorkerInspectModal";
-import HeaderCheckItem from "../input-kiosk/components/HeaderCheckItem";
+import { HeaderCheckItem } from "@/components/inspect";
 import { inspectStatusDetail, isInspectNg } from "../input-kiosk/utils/inspectStatus";
 import { normalizeScannedOrderNo } from "@/utils/scanned-order-no";
 

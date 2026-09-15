@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useKioskStore } from '@/stores/kioskStore';
 import EquipSelectModal from './EquipSelectModal';
-import HeaderCheckItem from './HeaderCheckItem';
+import { HeaderCheckItem } from '@/components/inspect';
 import type { EquipOption } from '../utils/equipOptions';
 import { inspectStatusDetail, isInspectNg } from '../utils/inspectStatus';
 

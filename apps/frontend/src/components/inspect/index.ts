@@ -4,6 +4,7 @@
  */
 export { default as DailyInspectModal } from './DailyInspectModal';
 export { default as WorkerInspectModal } from './WorkerInspectModal';
+export { default as HeaderCheckItem } from './HeaderCheckItem';
 export type {
   InspectModalContext,
   InspectModalEquip,
