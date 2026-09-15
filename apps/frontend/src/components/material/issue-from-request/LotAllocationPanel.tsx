@@ -35,6 +35,11 @@ export default function LotAllocationPanel({
   const { t } = useTranslation();
   const qtyOf = (matUid: string) => slices.find((s) => s.matUid === matUid)?.qty ?? 0;
   const fifoCriteria = fifoCriteriaOf(lots);
+  /**
+   * 첫 행이 정말 "선입"인지 — 기준일이 비어 있으면 순서를 만든 근거가 없다(NULLS LAST 로
+   * 전부 NULL 이면 계보/시리얼 타이브레이크만 남는다). 근거 없이 선입이라고 말하지 않는다.
+   */
+  const firstIsFifoFirst = lots.length > 0 && fifoDateOf(lots[0], fifoCriteria) != null;
 
   if (!row) {
     return (
@@ -110,7 +115,7 @@ export default function LotAllocationPanel({
                       <div className="font-mono font-medium text-text truncate">{lot.matUid}</div>
                       <div className="text-[10px] text-text-muted truncate">
                         {lot.warehouseName ?? lot.warehouseCode}
-                        {i === 0 && (
+                        {i === 0 && firstIsFifoFirst && (
                           <span className="ml-1 px-1 rounded border border-primary/40 text-primary">
                             {t('material.issue.fifoFirst', { defaultValue: '선입' })}
                           </span>
