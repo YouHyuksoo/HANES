@@ -2507,7 +2507,8 @@
       "defaultDesign": "Default Design",
       "labelTemplate": "Arrival Label Template",
       "invoiceNoPlaceholder": "e.g. INV-2026-0001",
-      "invoiceNoNote": "Supplier invoice number. Used as the material search key in traceability."
+      "invoiceNoNote": "Supplier invoice number. Used as the material search key in traceability.",
+      "manufactureDateNote": "Enter only if printed on the supplier label. If blank, shelf life is counted from the receipt date."
     },
     "iqc": {
       "title": "IQC Inspection",

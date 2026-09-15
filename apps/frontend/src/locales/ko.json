@@ -3039,7 +3039,8 @@
       "labelTemplate": "입하 라벨 템플릿",
       "labelDesignSelection": "입하 라벨 디자인 선택",
       "invoiceNoPlaceholder": "예: INV-2026-0001",
-      "invoiceNoNote": "업체 송장번호. 추적성 조회의 원자재 검색 키가 된다."
+      "invoiceNoNote": "업체 송장번호. 추적성 조회의 원자재 검색 키가 된다.",
+      "manufactureDateNote": "업체 라벨에 있는 경우만 입력한다. 비우면 유효기간은 입고일 기준으로 계산된다."
     },
     "iqc": {
       "title": "수입검사(IQC)",

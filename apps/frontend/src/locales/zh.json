@@ -2489,7 +2489,8 @@
       "defaultDesign": "默认设计",
       "labelTemplate": "入库标签模板",
       "invoiceNoPlaceholder": "例: INV-2026-0001",
-      "invoiceNoNote": "供应商发票号。作为追溯查询的原材料检索键。"
+      "invoiceNoNote": "供应商发票号。作为追溯查询的原材料检索键。",
+      "manufactureDateNote": "仅当供应商标签上有时填写。留空则有效期以入库日期为准计算。"
     },
     "iqc": {
       "title": "来料检验(IQC)",

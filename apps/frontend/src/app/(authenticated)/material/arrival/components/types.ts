@@ -113,6 +113,10 @@ export interface PoLineRow {
   partnerName: string;
   useType: string;
   lineStatus: 'OPEN' | 'PARTIAL' | 'CLOSE';
+  /** 이 라인으로 실제 입하된 인보이스 번호. 나눠 받으면 여러 건이 된다 */
+  invoiceNos?: string[];
+  /** 이 라인으로 실제 입하된 제조일자(YYYY-MM-DD). 미입력 입하는 빠진다 */
+  manufactureDates?: string[];
 }
 
 /** PO 라인 입하 등록 입력 (POST /material/arrivals/po-line) */
@@ -126,6 +130,8 @@ export interface PoLineReceiptInput {
   warehouseCode: string;
   /** 인보이스 번호(업체 송장번호) — 추적성 조회 진입키. 입하 화면에서 필수 입력 */
   invoiceNo: string;
+  /** 업체 표기 제조일자. 라벨에 없으면 비워 둔다(유효기간 기산점은 입고일로 넘어간다) */
+  manufactureDate?: string;
   remark?: string;
 }
 

@@ -40,6 +40,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
   const [receivedDate, setReceivedDate] = useState<string>(() => getTodayLocal());
   const [remark, setRemark] = useState('');
   const [invoiceNo, setInvoiceNo] = useState('');
+  const [manufactureDate, setManufactureDate] = useState('');
   const [warehouseCode, setWarehouseCode] = useState('');
   const [lotUnitQty, setLotUnitQty] = useState<number | null>(null);
 
@@ -50,6 +51,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
       setReceivedDate(getTodayLocal());
       setRemark('');
       setInvoiceNo('');
+      setManufactureDate('');
       setWarehouseCode(warehouses[0]?.value ?? '');
       api.get(`/master/parts/code/${encodeURIComponent(line.itemCode)}`, { suppressErrorModal: true })
         .then((res) => setLotUnitQty(res.data?.data?.lotUnitQty ?? null))
@@ -82,6 +84,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
       mfgPartnerCode,
       receivedDate,
       invoiceNo: invoiceNo.trim(),
+      manufactureDate: manufactureDate || undefined,
       remark: remark || undefined,
       warehouseCode,
     }, expectedCount);
@@ -187,6 +190,18 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
               data-testid="mat-arrival-invoice"
             />
             <span className="text-xs text-slate-500">{t('material.arrival.invoiceNoNote')}</span>
+          </label>
+
+          <label className="text-sm flex flex-col gap-1">
+            <span>{t('material.arrival.col.manufactureDate')}</span>
+            <Input
+              type="date"
+              max={today}
+              value={manufactureDate}
+              onChange={(e) => setManufactureDate(e.target.value)}
+              data-testid="mat-arrival-mfg-date"
+            />
+            <span className="text-xs text-slate-500">{t('material.arrival.manufactureDateNote')}</span>
           </label>
 
           <label className="text-sm flex flex-col gap-1">

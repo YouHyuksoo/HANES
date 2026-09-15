@@ -266,6 +266,15 @@ export class PoLineReceiptDto {
   @MaxLength(100)
   invoiceNo?: string;
 
+  /**
+   * 업체가 표기한 제조일자. 라벨에 없으면 비워 둔다.
+   * 비어 있으면 유효기간 기산점은 입고일로 넘어간다(fifo.rules resolveShelfLifeBaseDate).
+   */
+  @ApiPropertyOptional({ description: '제조일자 (YYYY-MM-DD, 오늘 이하)' })
+  @IsOptional()
+  @IsDateString()
+  manufactureDate?: string;
+
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
   @IsString()

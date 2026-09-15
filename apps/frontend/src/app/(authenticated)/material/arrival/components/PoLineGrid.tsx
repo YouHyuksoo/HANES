@@ -111,6 +111,39 @@ export default function PoLineGrid({ data, isLoading, toolbarLeft, onSelectLine 
       cell: ({ getValue }) => <div className="text-right text-blue-700 dark:text-blue-400 font-bold">{((getValue() as number) ?? 0).toLocaleString()}</div>,
     },
     {
+      // 인보이스·제조일자는 발주가 아니라 입하 시점 값이라 라인마다 없을 수 있다(입하 전 = '-')
+      id: 'invoiceNos',
+      accessorFn: (row) => row.invoiceNos?.join(', ') ?? '',
+      header: t('material.arrival.col.invoiceNo'),
+      size: 170,
+      meta: { filterType: 'text' as const },
+      cell: ({ row }) => {
+        const list = row.original.invoiceNos ?? [];
+        if (list.length === 0) return <span className="text-text-muted">-</span>;
+        return (
+          <span className="font-mono text-xs" title={list.join(', ')}>
+            {list.join(', ')}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'manufactureDates',
+      accessorFn: (row) => row.manufactureDates?.join(', ') ?? '',
+      header: t('material.arrival.col.manufactureDate'),
+      size: 130,
+      meta: { filterType: 'text' as const },
+      cell: ({ row }) => {
+        const list = row.original.manufactureDates ?? [];
+        if (list.length === 0) return <span className="text-text-muted">-</span>;
+        return (
+          <span className="text-xs tabular-nums" title={list.join(', ')}>
+            {list.join(', ')}
+          </span>
+        );
+      },
+    },
+    {
       accessorKey: 'orderDate',
       header: t('material.arrival.col.orderDate'),
       size: 110,

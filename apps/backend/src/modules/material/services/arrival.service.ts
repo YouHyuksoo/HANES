@@ -18,6 +18,7 @@ import { Repository, In, DataSource, EntityManager, FindOptionsWhere, QueryRunne
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
+import { toDateOnly } from '../../../common/utils/date-only.util';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
@@ -1387,7 +1388,17 @@ export class ArrivalService {
     qb.orderBy('po.ORDER_DATE', 'DESC').addOrderBy('NVL(pi.LINE_NO, pi.SEQ)', 'ASC');
 
     const rows = await qb.getRawMany();
+
+    // 라인별 인보이스/제조일자 — 입하 시점 값이라 PO 라인에는 없다.
+    // 라인 수만큼 조회하지 않고 한 번에 모아 온다(N+1 금지).
+    const receipts = await this.loadPoLineReceiptInfo(
+      rows.map((r) => `${r.poNo}#${r.poSeq}`),
+      company,
+      plant,
+    );
+
     return rows.map((r) => ({
+      ...(receipts.get(`${r.poNo}#${r.poSeq}`) ?? { invoiceNos: [], manufactureDates: [] }),
       poNo: r.poNo,
       poSeq: Number(r.poSeq),
       lineNo: Number(r.lineNo),
@@ -1405,6 +1416,57 @@ export class ArrivalService {
         : r.lineStatus === 'PARTIAL' ? 'PARTIAL'
         : 'OPEN',
     }));
+  }
+
+  /**
+   * PO 라인별로 실제 입하된 인보이스 번호와 제조일자를 모아온다.
+   *
+   * 초보자 가이드:
+   * 1. 인보이스와 제조일자는 발주가 아니라 입하 시점에 입력된다. PO 라인에는 없다.
+   * 2. 한 라인을 여러 번에 나눠 받으면 인보이스도 제조일자도 여러 건이 된다.
+   * 3. MAT_ARRIVALS.PO_ITEM_ID 가 'PO번호#SEQ' 라 라인과 연결되고,
+   *    SUP_UID 가 그때 발급한 시리얼이라 MAT_LOTS 의 제조일자로 이어진다.
+   */
+  private async loadPoLineReceiptInfo(
+    poItemIds: string[],
+    company?: string | null,
+    plant?: string | null,
+  ): Promise<Map<string, { invoiceNos: string[]; manufactureDates: string[] }>> {
+    const result = new Map<string, { invoiceNos: string[]; manufactureDates: string[] }>();
+    const ids = [...new Set(poItemIds.filter(Boolean))];
+    if (ids.length === 0) return result;
+
+    const qb = this.matArrivalRepository
+      .createQueryBuilder('a')
+      .leftJoin(MatLot, 'l', 'l.MAT_UID = a.SUP_UID')
+      .select('a.PO_ITEM_ID', 'poItemId')
+      .addSelect('a.INVOICE_NO', 'invoiceNo')
+      .addSelect('l.MANUFACTURE_DATE', 'manufactureDate')
+      .distinct(true)
+      .where('a.PO_ITEM_ID IN (:...ids)', { ids });
+    if (company) qb.andWhere('a.COMPANY = :co', { co: company });
+    if (plant) qb.andWhere('a.PLANT_CD = :pl', { pl: plant });
+
+    const rows = await qb.getRawMany<{
+      poItemId: string;
+      invoiceNo: string | null;
+      manufactureDate: Date | string | null;
+    }>();
+
+    for (const row of rows) {
+      const entry = result.get(row.poItemId) ?? { invoiceNos: [], manufactureDates: [] };
+      if (row.invoiceNo && !entry.invoiceNos.includes(row.invoiceNo)) {
+        entry.invoiceNos.push(row.invoiceNo);
+      }
+      const mfg = row.manufactureDate ? toDateOnly(row.manufactureDate) : null;
+      if (mfg && !entry.manufactureDates.includes(mfg)) entry.manufactureDates.push(mfg);
+      result.set(row.poItemId, entry);
+    }
+    for (const entry of result.values()) {
+      entry.invoiceNos.sort();
+      entry.manufactureDates.sort();
+    }
+    return result;
   }
 
   /**
@@ -1492,6 +1554,9 @@ export class ArrivalService {
 
       // 인보이스 번호 — 빈 문자열은 추적 진입키로 쓸 수 없으므로 null로 정규화한다.
       const invoiceNo = dto.invoiceNo?.trim() || null;
+      // 업체 라벨에 제조일자가 없으면 비워 둔다. 임의로 입고일을 넣지 않는다 —
+      // 유효기간 기산점은 규칙(resolveShelfLifeBaseDate)이 알아서 입고일로 넘긴다.
+      const manufactureDate = parseDateStart(dto.manufactureDate);
 
       // 6. MAT_LOTS N건 생성 (자투리 포함)
       const lots: MatLot[] = [];
@@ -1505,7 +1570,7 @@ export class ArrivalService {
           initQty: qty,
           currentQty: qty,
           recvDate: txDate,
-          manufactureDate: null,
+          manufactureDate,
           expireDate: null,
           arrivalNo,
           arrivalSeq: i + 1,

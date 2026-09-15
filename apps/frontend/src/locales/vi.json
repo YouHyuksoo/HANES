@@ -2489,7 +2489,8 @@
       "defaultDesign": "Thiết kế mặc định",
       "labelTemplate": "Mẫu nhãn nhập kho",
       "invoiceNoPlaceholder": "VD: INV-2026-0001",
-      "invoiceNoNote": "Số hóa đơn nhà cung cấp. Dùng làm khóa tìm kiếm nguyên vật liệu khi truy xuất nguồn gốc."
+      "invoiceNoNote": "Số hóa đơn nhà cung cấp. Dùng làm khóa tìm kiếm nguyên vật liệu khi truy xuất nguồn gốc.",
+      "manufactureDateNote": "Chỉ nhập nếu có trên nhãn nhà cung cấp. Để trống thì hạn sử dụng tính từ ngày nhập kho."
     },
     "iqc": {
       "title": "Kiểm tra đầu vào (IQC)",

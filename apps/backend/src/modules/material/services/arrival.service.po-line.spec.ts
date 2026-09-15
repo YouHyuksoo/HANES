@@ -239,6 +239,30 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
     expect((arrivalRows[0] as any).invoiceNo).toBeNull();
   });
 
+  it('제조일자를 입력하면 MAT_LOTS 에 저장하고, 비우면 null 로 둔다', async () => {
+    setupFindOne({ lotUnitQty: null, orderQty: 1000, receivedQty: 0, mfgFound: true });
+    mockNumbering.nextArrivalNoV2.mockResolvedValue('R26091600001');
+    mockNumbering.nextMatSerial.mockResolvedValueOnce('VH1-RM260916-00001');
+    mockNumbering.next.mockResolvedValue('STX0000030');
+
+    const withDate = await target.receivePoLine(
+      { ...baseDto, receivedQty: 10, manufactureDate: '2026-09-10' },
+      user,
+    );
+    expect(withDate.serials[0].manufactureDate).toEqual(new Date(2026, 8, 10));
+
+    jest.clearAllMocks();
+    setupFindOne({ lotUnitQty: null, orderQty: 1000, receivedQty: 0, mfgFound: true });
+    mockNumbering.nextArrivalNoV2.mockResolvedValue('R26091600002');
+    mockNumbering.nextMatSerial.mockResolvedValueOnce('VH1-RM260916-00002');
+    mockNumbering.next.mockResolvedValue('STX0000031');
+
+    // 업체 라벨에 없으면 비운다. 임의로 입고일을 넣지 않는다 —
+    // 유효기간 기산점은 resolveShelfLifeBaseDate 가 입고일로 넘긴다.
+    const without = await target.receivePoLine({ ...baseDto, receivedQty: 10 }, user);
+    expect(without.serials[0].manufactureDate).toBeNull();
+  });
+
   it('case 4: receivedQty가 잔량 초과 → BadRequestException', async () => {
     setupFindOne({ lotUnitQty: 50, orderQty: 100, receivedQty: 50, mfgFound: true });
 
