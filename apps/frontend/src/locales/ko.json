@@ -399,6 +399,7 @@
     "material.po": "PO관리",
     "material.poStatus": "PO현황조회",
     "material.iqcHistory": "수입검사이력조회",
+    "quality.iqcRequestLot": "IQC 검사의뢰(LOT)",
     "material.lotSplit": "자재분할관리",
     "material.lotMerge": "자재병합관리",
     "material.shelfLife": "자재유수명관리",
@@ -539,6 +540,7 @@
     "root": "최상위",
     "system.improvementRequests": "개선요청 관리",
     "material.arrivalResult": "입하실적조회",
+    "quality.iqcRequestLot": "IQC 검사의뢰 LOT",
     "quality.ncr": "부적합 보고서",
     "production.labelReprint": "라벨 재발행"
   },

@@ -398,6 +398,7 @@
     "material.po": "Quản lý PO",
     "material.poStatus": "Tra cứu tình trạng PO",
     "material.iqcHistory": "Tra cứu lịch sử kiểm tra đầu vào",
+    "quality.iqcRequestLot": "Yêu cầu kiểm tra IQC (LOT)",
     "material.lotSplit": "Quản lý phân tách lô",
     "material.lotMerge": "Gộp LOT",
     "material.shelfLife": "Hạn sử dụng vật tư",
@@ -539,6 +540,7 @@
     "system.improvementRequests": "Quản lý yêu cầu cải tiến",
     "material.arrivalResult": "Kết quả nhập hàng",
     "material.receiveLabel": "Phát hành nhãn nhập kho",
+    "quality.iqcRequestLot": "LOT yêu cầu kiểm tra IQC",
     "quality.ncr": "Báo cáo không phù hợp",
     "production.labelReprint": "In lại nhãn"
   },

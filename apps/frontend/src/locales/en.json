@@ -398,6 +398,7 @@
     "material.po": "Purchase Order",
     "material.poStatus": "PO Status Inquiry",
     "material.iqcHistory": "IQC History Inquiry",
+    "quality.iqcRequestLot": "IQC Inspection Request (LOT)",
     "material.lotSplit": "Lot Split Mgmt",
     "material.lotMerge": "Lot Merge",
     "material.shelfLife": "Material Shelf Life",
@@ -539,6 +540,7 @@
     "system.improvementRequests": "Improvement Requests",
     "material.arrivalResult": "Arrival Results",
     "material.receiveLabel": "Receiving Label",
+    "quality.iqcRequestLot": "IQC Inspection Request LOT",
     "quality.ncr": "Nonconformance Report",
     "production.labelReprint": "Label Reprint"
   },

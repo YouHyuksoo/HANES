@@ -398,6 +398,7 @@
     "material.po": "PO管理",
     "material.poStatus": "PO现况查询",
     "material.iqcHistory": "进料检验历史查询",
+    "quality.iqcRequestLot": "IQC 检验委托(LOT)",
     "material.lotSplit": "物料分割管理",
     "material.lotMerge": "物料合并",
     "material.shelfLife": "物料保质期管理",
@@ -539,6 +540,7 @@
     "system.improvementRequests": "改善申请管理",
     "material.arrivalResult": "到货实绩查询",
     "material.receiveLabel": "入库标签发行",
+    "quality.iqcRequestLot": "IQC 检验委托批次",
     "quality.ncr": "不合格报告",
     "production.labelReprint": "标签重新打印"
   },
