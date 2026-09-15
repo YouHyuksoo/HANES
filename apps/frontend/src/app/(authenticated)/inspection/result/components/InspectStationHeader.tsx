@@ -11,6 +11,7 @@
  * - 4개가 모두 완료돼야 우측 합격·불합격 버튼이 열린다(서버도 같은 규칙으로 차단).
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import {
@@ -64,6 +65,10 @@ export default function InspectStationHeader({
   const [workerModalOpen, setWorkerModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const equipBoxRef = useRef<HTMLDivElement>(null);
+  const equipBtnRef = useRef<HTMLButtonElement>(null);
+  const equipMenuRef = useRef<HTMLDivElement>(null);
+  /** 드롭다운 위치 — 헤더가 overflow-x-auto 라 absolute 메뉴가 잘린다. body 로 portal 하고 좌표를 직접 준다 */
+  const [equipMenuPos, setEquipMenuPos] = useState<{ left: number; top: number } | null>(null);
 
   useEffect(() => {
     const handle = () => setIsFullscreen(Boolean(document.fullscreenElement));
@@ -72,14 +77,37 @@ export default function InspectStationHeader({
     return () => document.removeEventListener("fullscreenchange", handle);
   }, []);
 
-  /** 검사기 목록 바깥 클릭 시 닫기 */
+  /** 검사기 목록 바깥 클릭 시 닫기 — 메뉴는 body 로 portal 되므로 메뉴 자신도 안쪽으로 친다 */
   useEffect(() => {
     if (!equipOpen) return;
     const onDown = (e: MouseEvent) => {
-      if (!equipBoxRef.current?.contains(e.target as Node)) setEquipOpen(false);
+      const target = e.target as Node;
+      if (equipBoxRef.current?.contains(target)) return;
+      if (equipMenuRef.current?.contains(target)) return;
+      setEquipOpen(false);
     };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
+  }, [equipOpen]);
+
+  /** 버튼 위치를 따라다닌다 — 헤더 가로 스크롤/창 크기 변경에도 메뉴가 버튼에 붙어 있게 한다 */
+  useEffect(() => {
+    if (!equipOpen) {
+      setEquipMenuPos(null);
+      return;
+    }
+    const sync = () => {
+      const rect = equipBtnRef.current?.getBoundingClientRect();
+      if (rect) setEquipMenuPos({ left: rect.left, top: rect.bottom + 4 });
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    // 헤더 가로 스크롤을 포함해 어느 조상이 스크롤되든 잡으려면 capture 가 필요하다
+    window.addEventListener("scroll", sync, true);
+    return () => {
+      window.removeEventListener("resize", sync);
+      window.removeEventListener("scroll", sync, true);
+    };
   }, [equipOpen]);
 
   const selectedTester = testers.find((e) => e.equipCode === equipCode) ?? null;
@@ -135,6 +163,7 @@ export default function InspectStationHeader({
           {/* 검사기 선택 */}
           <div ref={equipBoxRef} className="relative shrink-0">
             <button
+              ref={equipBtnRef}
               type="button"
               data-testid="inspect-equip-open"
               onClick={() => setEquipOpen((v) => !v)}
@@ -159,8 +188,13 @@ export default function InspectStationHeader({
               </div>
               <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
             </button>
-            {equipOpen && (
-              <div className="absolute left-0 top-12 z-30 max-h-72 w-72 overflow-y-auto rounded-lg border border-border bg-background py-1 shadow-xl">
+            {equipOpen && equipMenuPos && createPortal(
+              <div
+                ref={equipMenuRef}
+                data-testid="inspect-equip-menu"
+                className="fixed z-50 max-h-72 w-72 overflow-y-auto rounded-lg border border-border bg-background py-1 shadow-xl"
+                style={{ left: equipMenuPos.left, top: equipMenuPos.top }}
+              >
                 {testers.length === 0 && (
                   <p className="px-3 py-2 text-xs text-text-muted">{t("common.noData")}</p>
                 )}
@@ -177,7 +211,8 @@ export default function InspectStationHeader({
                     <span className="font-mono text-[11px] text-text-muted">{tester.equipCode}</span>
                   </button>
                 ))}
-              </div>
+              </div>,
+              document.body,
             )}
           </div>
 
