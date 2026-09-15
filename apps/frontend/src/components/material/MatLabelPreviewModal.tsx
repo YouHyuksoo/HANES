@@ -18,9 +18,9 @@ import { printAgentPng, PrintAgentUnavailableError } from "@/services/print-agen
 import { printPngLabelsInBrowser, renderLabelNodeToPngBase64, type LabelPrintMethod } from "@/services/label-print";
 import LabelPrintMethodSelect, { useLabelPrintMethod } from "@/components/shared/LabelPrintMethodSelect";
 import type { SelectOption } from "@/components/ui";
-import { LabelDesign, createDefaultLabelDesign } from "../../../master/label/types";
-import { LabelDesignRenderer, LabelPrintRenderer } from "../../../master/label/components/LabelDesignRenderer";
-import type { PoLineReceiptResponse } from "./types";
+import { LabelDesign, createDefaultLabelDesign } from "@/app/(authenticated)/master/label/types";
+import { LabelDesignRenderer, LabelPrintRenderer } from "@/app/(authenticated)/master/label/components/LabelDesignRenderer";
+import type { PoLineReceiptResponse } from "@/app/(authenticated)/material/arrival/components/types";
 
 interface Props {
   isOpen: boolean;

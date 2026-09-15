@@ -22,7 +22,7 @@ import { getTodayLocal } from '@/utils/date';
 import PoLineGrid from './components/PoLineGrid';
 import PoLineReceiptModal from './components/PoLineReceiptModal';
 import SerialIssueConfirmModal from './components/SerialIssueConfirmModal';
-import MatLabelPreviewModal from './components/MatLabelPreviewModal';
+import MatLabelPreviewModal from '@/components/material/MatLabelPreviewModal';
 import IqcRequestPrintModal from '@/components/material/IqcRequestPrintModal';
 import { BarcodeScanInput } from '@/components/shared';
 import { useIqcRequestPrint } from '@/hooks/material/useIqcRequestPrint';

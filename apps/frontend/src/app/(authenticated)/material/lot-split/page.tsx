@@ -23,7 +23,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import ServerPager from "@/components/shared/ServerPager";
 import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
-import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
+import MatLabelPreviewModal from "@/components/material/MatLabelPreviewModal";
 import type { PoLineReceiptResponse } from "../arrival/components/types";
 import { createLotSplitGridColumns, type SplittableLot } from "./lotSplitColumns";
 

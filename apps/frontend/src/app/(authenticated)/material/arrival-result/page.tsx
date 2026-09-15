@@ -27,7 +27,7 @@ import { createArrivalResultGridColumns, type ArrivalResultRow } from "./arrival
 import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import { getTodayLocal, formatDateOnly } from "@/utils/date";
-import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
+import MatLabelPreviewModal from "@/components/material/MatLabelPreviewModal";
 import IqcRequestPrintModal from "@/components/material/IqcRequestPrintModal";
 import { useIqcRequestPrint } from "@/hooks/material/useIqcRequestPrint";
 import { getReprintHintKey } from "./reprintHint";

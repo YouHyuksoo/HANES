@@ -12,6 +12,8 @@ export {
   IssueRequestStatusBadge,
 } from './StatusBadge';
 
+export { default as MatLabelPreviewModal } from './MatLabelPreviewModal';
+
 export type {
   ArrivalStatus,
   IqcStatus,
