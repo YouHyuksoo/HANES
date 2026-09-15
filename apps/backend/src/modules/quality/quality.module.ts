@@ -40,6 +40,7 @@ import { FaiModule } from './fai/fai.module';
 import { ContinuityInspectModule } from './continuity-inspect/continuity-inspect.module';
 import { AqlModule } from './aql/aql.module';
 import { DefectCodesModule } from './defect-codes/defect-codes.module';
+import { ControlPlanDocumentModule } from './control-plan/control-plan.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { DefectCodesModule } from './defect-codes/defect-codes.module';
     ContinuityInspectModule,
     AqlModule,
     DefectCodesModule,
+    ControlPlanDocumentModule,
   ],
   controllers: [],
   providers: [],
@@ -73,6 +75,7 @@ import { DefectCodesModule } from './defect-codes/defect-codes.module';
     ContinuityInspectModule,
     AqlModule,
     DefectCodesModule,
+    ControlPlanDocumentModule,
   ],
 })
 export class QualityModule {}

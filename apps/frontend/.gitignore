@@ -37,6 +37,7 @@ coverage
 
 # Playwright
 test-results
+.tmp-quality-plan-print
 playwright-report
 blob-report
 .playwright

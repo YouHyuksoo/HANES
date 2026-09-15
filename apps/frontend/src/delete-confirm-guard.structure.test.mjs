@@ -20,7 +20,7 @@ const filesThatMustUseConfirmModal = [
   "apps/frontend/src/app/(authenticated)/master/iqc-item/components/IqcTemplatePickerModal.tsx",
   "apps/frontend/src/app/(authenticated)/master/routing/components/SelfInspectConfigEditor.tsx",
   "apps/frontend/src/app/(authenticated)/quality/audit/components/AuditFindingList.tsx",
-  "apps/frontend/src/app/(authenticated)/quality/control-plan/components/ControlPlanItemList.tsx",
+  "apps/frontend/src/app/(authenticated)/quality/control-plan/components/RowDeleteButton.tsx",
 ];
 
 const forbiddenDirectDeleteClicks = [

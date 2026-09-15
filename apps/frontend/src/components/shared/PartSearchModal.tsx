@@ -19,7 +19,7 @@
 
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
@@ -71,12 +71,14 @@ export default function PartSearchModal({
   const [itemType, setItemType] = useState(defaultItemType ?? "");
   const [data, setData] = useState<PartItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const requestSequence = useRef(0);
   const [selectedItemCodes, setSelectedItemCodes] = useState<Set<string>>(() => new Set());
 
   const allowedKey = (allowedItemTypes ?? []).join(",");
 
   /** API 호출 */
   const fetchParts = useCallback(async (search: string, type: string) => {
+    const requestId = ++requestSequence.current;
     setLoading(true);
     try {
       const params: Record<string, string | number> = { limit: 200 };
@@ -90,11 +92,13 @@ export default function PartSearchModal({
       }
       const res = await api.get("/master/parts", { params });
       const raw = res.data?.data;
-      setData(Array.isArray(raw) ? raw : raw?.data ?? []);
+      if (requestId === requestSequence.current) {
+        setData(Array.isArray(raw) ? raw : raw?.data ?? []);
+      }
     } catch {
-      setData([]);
+      if (requestId === requestSequence.current) setData([]);
     } finally {
-      setLoading(false);
+      if (requestId === requestSequence.current) setLoading(false);
     }
   }, [allowedKey]);
 

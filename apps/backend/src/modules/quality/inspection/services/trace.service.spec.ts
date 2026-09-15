@@ -156,7 +156,7 @@ describe('TraceService', () => {
     expect(workerQb.andWhere).toHaveBeenCalledWith('wm.plant = :plant', { plant: 'P1' });
   });
 
-  it('joins control plan items to control plans by tenant-scoped plan key', async () => {
+  it('uses only the latest published versioned Control Plan for the traced item', async () => {
     const {
       service,
       fgLabelRepo,
@@ -182,10 +182,11 @@ describe('TraceService', () => {
 
     await service.findBySerial('FG-001', 'C1', 'P1');
 
-    expect(controlPlanQb.innerJoin).toHaveBeenCalledWith(
-      expect.anything(),
-      'cp',
-      'cp.planNo = cpi.controlPlanId AND cp.company = cpi.company AND cp.plant = cpi.plant',
-    );
+    expect(controlPlanQb.innerJoin).toHaveBeenCalledWith(expect.anything(), 'qpr', expect.stringContaining('qpr.revisionId = cpr.revisionId'));
+    expect(controlPlanQb.innerJoin).toHaveBeenCalledWith(expect.anything(), 'qpd', expect.stringContaining('qpd.documentId = qpr.documentId'));
+    expect(controlPlanQb.innerJoin).toHaveBeenCalledWith(expect.anything(), 'qpp', expect.stringContaining('qpp.packageId = qpd.packageId'));
+    expect(controlPlanQb.andWhere).toHaveBeenCalledWith("qpr.status = 'PUBLISHED'");
+    expect(controlPlanQb.andWhere).toHaveBeenCalledWith('qpp.itemCode = :itemCode', { itemCode: 'FG-001' });
+    expect(controlPlanQb.andWhere).toHaveBeenCalledWith(expect.stringContaining('qpr.revisionId = ('));
   });
 });

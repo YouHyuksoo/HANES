@@ -22,13 +22,16 @@ import {
   Injectable,
   Logger,
   BadRequestException,
+  GoneException,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ControlPlan } from '../../../../entities/control-plan.entity';
 import { ControlPlanItem } from '../../../../entities/control-plan-item.entity';
 import { NumberingService } from '../../../../shared/numbering.service';
+import { TransactionService } from '../../../../shared/transaction.service';
 import {
   CreateControlPlanDto,
   UpdateControlPlanDto,
@@ -46,6 +49,7 @@ export class ControlPlanService {
     @InjectRepository(ControlPlanItem)
     private readonly itemRepo: Repository<ControlPlanItem>,
     private readonly numbering: NumberingService,
+    @Optional() private readonly compatibilityTx?: TransactionService,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -93,6 +97,7 @@ export class ControlPlanService {
     company?: string,
     plant?: string,
   ) {
+    if (this.compatibilityTx) return this.findAllFromVersionedDocuments(query, company, plant);
     const {
       page = 1,
       limit = 50,
@@ -138,6 +143,7 @@ export class ControlPlanService {
    * 관리계획서 단건 조회 (항목 포함)
    */
   async findById(planNo: string, company?: string, plant?: string) {
+    if (this.compatibilityTx) return this.findOneFromVersionedDocuments(planNo, company, plant);
     const plan = await this.planRepo.findOne({ where: { planNo, ...this.tenantWhere(company, plant) } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
@@ -163,6 +169,7 @@ export class ControlPlanService {
     plant: string,
     userId: string,
   ) {
+    this.assertVersionedWriteApi();
     const planNo = await this.generatePlanNo();
     const { items, ...planData } = dto;
 
@@ -190,6 +197,7 @@ export class ControlPlanService {
    * 관리계획서 수정 (DRAFT 상태에서만 가능)
    */
   async update(planNo: string, dto: UpdateControlPlanDto, userId: string, company?: string, plant?: string) {
+    this.assertVersionedWriteApi();
     const plan = await this.planRepo.findOne({ where: { planNo, ...this.tenantWhere(company, plant) } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
@@ -223,6 +231,7 @@ export class ControlPlanService {
    * 관리계획서 삭제 (DRAFT 상태에서만 가능)
    */
   async delete(planNo: string, company?: string, plant?: string) {
+    this.assertVersionedWriteApi();
     const plan = await this.planRepo.findOne({ where: { planNo, ...this.tenantWhere(company, plant) } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
@@ -250,6 +259,7 @@ export class ControlPlanService {
    * 승인 (DRAFT/REVIEW → APPROVED)
    */
   async approve(planNo: string, userId: string, company?: string, plant?: string) {
+    this.assertVersionedWriteApi();
     const plan = await this.planRepo.findOne({ where: { planNo, ...this.tenantWhere(company, plant) } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
@@ -273,6 +283,7 @@ export class ControlPlanService {
    * 개정 (기존 OBSOLETE, 새 버전 생성)
    */
   async revise(planNo: string, userId: string, company?: string, plant?: string) {
+    this.assertVersionedWriteApi();
     const plan = await this.planRepo.findOne({ where: { planNo, ...this.tenantWhere(company, plant) } });
     if (!plan) {
       throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
@@ -359,6 +370,17 @@ export class ControlPlanService {
     company?: string,
     plant?: string,
   ) {
+    if (this.compatibilityTx) {
+      const rows = await this.compatibilityTx.run((qr) => qr.query(
+        `SELECT D.DOCUMENT_NO AS "planNo" FROM QUALITY_PLAN_PACKAGES P JOIN QUALITY_PLAN_DOCUMENTS D
+           ON D.COMPANY=P.COMPANY AND D.PLANT_CD=P.PLANT_CD AND D.PACKAGE_ID=P.PACKAGE_ID
+          JOIN QUALITY_PLAN_REVISIONS R ON R.COMPANY=D.COMPANY AND R.PLANT_CD=D.PLANT_CD AND R.DOCUMENT_ID=D.DOCUMENT_ID
+          WHERE P.ITEM_CODE=:1 AND P.COMPANY=:2 AND P.PLANT_CD=:3 AND D.DOCUMENT_TYPE='CONTROL_PLAN' AND R.STATUS='PUBLISHED'
+          ORDER BY R.REVISION_CODE DESC FETCH FIRST 1 ROW ONLY`, [itemCode, company, plant],
+      ));
+      if (!rows.length) return null;
+      return this.findOneFromVersionedDocuments(rows[0].planNo ?? rows[0].PLANNO, company, plant);
+    }
     const qb = this.planRepo
       .createQueryBuilder('cp')
       .where('cp.itemCode = :itemCode', { itemCode })
@@ -378,6 +400,51 @@ export class ControlPlanService {
       .orderBy('i.seq', 'ASC')
       .getMany();
 
+    return { ...plan, items };
+  }
+
+  private async findAllFromVersionedDocuments(query: ControlPlanFilterDto, company?: string, plant?: string) {
+    const rows = await this.compatibilityTx!.run((qr) => qr.query(
+      `SELECT D.DOCUMENT_NO AS "planNo",P.ITEM_CODE AS "itemCode",P.ITEM_NAME AS "itemName",P.PHASE AS "phase",
+              TO_NUMBER(R.REVISION_CODE) AS "revisionNo",R.REVISION_DATE AS "revisionDate",
+              CASE R.STATUS WHEN 'PUBLISHED' THEN 'APPROVED' WHEN 'SUPERSEDED' THEN 'OBSOLETE' ELSE 'DRAFT' END AS "status",
+              R.AUTHOR_ID AS "createdBy",R.PUBLISHER_ID AS "approvedBy",R.PUBLISHED_AT AS "approvedAt"
+         FROM QUALITY_PLAN_PACKAGES P JOIN QUALITY_PLAN_DOCUMENTS D
+           ON D.COMPANY=P.COMPANY AND D.PLANT_CD=P.PLANT_CD AND D.PACKAGE_ID=P.PACKAGE_ID
+         JOIN QUALITY_PLAN_REVISIONS R ON R.COMPANY=D.COMPANY AND R.PLANT_CD=D.PLANT_CD AND R.DOCUMENT_ID=D.DOCUMENT_ID
+        WHERE P.COMPANY=:1 AND P.PLANT_CD=:2 AND D.DOCUMENT_TYPE='CONTROL_PLAN' AND R.STATUS IN ('DRAFT','PUBLISHED')
+        ORDER BY R.UPDATED_AT DESC`, [company, plant],
+    ));
+    const filtered = rows.filter((row: any) => (!query.status || row.status === query.status)
+      && (!query.phase || row.phase === query.phase) && (!query.itemCode || row.itemCode === query.itemCode)
+      && (!query.search || `${row.planNo} ${row.itemName}`.toUpperCase().includes(query.search.toUpperCase())));
+    const page = query.page ?? 1; const limit = query.limit ?? 50;
+    return { data: filtered.slice((page - 1) * limit, page * limit), total: filtered.length, page, limit };
+  }
+
+  private async findOneFromVersionedDocuments(planNo: string, company?: string, plant?: string) {
+    const rows = await this.compatibilityTx!.run((qr) => qr.query(
+      `SELECT D.DOCUMENT_NO AS "planNo",P.ITEM_CODE AS "itemCode",P.ITEM_NAME AS "itemName",P.PHASE AS "phase",
+              TO_NUMBER(R.REVISION_CODE) AS "revisionNo",R.REVISION_DATE AS "revisionDate",
+              CASE R.STATUS WHEN 'PUBLISHED' THEN 'APPROVED' WHEN 'SUPERSEDED' THEN 'OBSOLETE' ELSE 'DRAFT' END AS "status",
+              R.REVISION_ID AS "revisionId",R.AUTHOR_ID AS "createdBy",R.PUBLISHER_ID AS "approvedBy",R.PUBLISHED_AT AS "approvedAt"
+         FROM QUALITY_PLAN_PACKAGES P JOIN QUALITY_PLAN_DOCUMENTS D ON D.COMPANY=P.COMPANY AND D.PLANT_CD=P.PLANT_CD AND D.PACKAGE_ID=P.PACKAGE_ID
+         JOIN QUALITY_PLAN_REVISIONS R ON R.COMPANY=D.COMPANY AND R.PLANT_CD=D.PLANT_CD AND R.DOCUMENT_ID=D.DOCUMENT_ID
+        WHERE D.DOCUMENT_NO=:1 AND P.COMPANY=:2 AND P.PLANT_CD=:3 AND D.DOCUMENT_TYPE='CONTROL_PLAN'
+          AND R.STATUS IN ('DRAFT','PUBLISHED') ORDER BY CASE R.STATUS WHEN 'DRAFT' THEN 0 ELSE 1 END,R.REVISION_CODE DESC FETCH FIRST 1 ROW ONLY`,
+      [planNo, company, plant],
+    ));
+    if (!rows.length) throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
+    const plan = rows[0];
+    const items = await this.compatibilityTx!.run((qr) => qr.query(
+      `SELECT ROW_SEQ AS "seq",PROCESS_NO AS "processCode",PROCESS_NAME AS "processName",CHARACTERISTIC_NO AS "characteristicNo",
+              PRODUCT_CHARACTERISTIC AS "productCharacteristic",PROCESS_CHARACTERISTIC AS "processCharacteristic",
+              SPECIAL_CHAR_CODE AS "specialCharClass",SPECIFICATION AS "specification",EVALUATION_METHOD AS "evalMethod",
+              SAMPLE_SIZE AS "sampleSize",SAMPLE_FREQUENCY AS "sampleFreq",CONTROL_METHOD AS "controlMethod",
+              REACTION_PLAN AS "reactionPlan",RECORD_FORM AS "remark"
+         FROM QUALITY_CONTROL_PLAN_ROWS WHERE REVISION_ID=:1 AND COMPANY=:2 AND PLANT_CD=:3 ORDER BY ROW_SEQ`,
+      [plan.revisionId, company, plant],
+    ));
     return { ...plan, items };
   }
 
@@ -405,5 +472,11 @@ export class ControlPlanService {
       }),
     );
     await this.itemRepo.save(entities);
+  }
+
+  private assertVersionedWriteApi() {
+    if (this.compatibilityTx) {
+      throw new GoneException('구 관리계획 쓰기 API는 종료되었습니다. /quality/plan-packages 및 Revision 행 API를 사용하세요.');
+    }
   }
 }

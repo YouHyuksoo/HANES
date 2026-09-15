@@ -9,7 +9,7 @@
  * 2. URL/상태코드/응답 전문/복사 버튼을 두지 않는다. 사용자가 "장애"로 오해하는 원인이므로.
  * 3. 원인 추적이 필요할 때만 "상세 보기"를 펼쳐 개발자용 정보를 확인한다.
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Info, X } from "lucide-react";
 import type { ApiErrorDetail } from "@/stores/errorStore";
@@ -23,6 +23,7 @@ interface ApiNoticeModalProps {
 export default function ApiNoticeModal({ notice, onClose }: ApiNoticeModalProps) {
   const { t } = useTranslation();
   const [showDetail, setShowDetail] = useState(false);
+  const titleId = useId();
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
@@ -30,12 +31,17 @@ export default function ApiNoticeModal({ notice, onClose }: ApiNoticeModalProps)
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
 
       {/* 모달 - 파스텔 배경 없이 테두리/텍스트 색으로만 구분 */}
-      <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-amber-400 dark:border-amber-600 w-full max-w-[520px] mx-4 overflow-hidden">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-amber-400 dark:border-amber-600 w-full max-w-[520px] mx-4 overflow-hidden"
+      >
         {/* 헤더 */}
         <div className="flex items-start gap-3 px-5 py-4 border-b border-slate-200 dark:border-slate-700">
           <Info className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+            <h3 id={titleId} className="text-sm font-bold text-slate-900 dark:text-slate-100">
               {t(getNoticeTitleKey(notice.status))}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">

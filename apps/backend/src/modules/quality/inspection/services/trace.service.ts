@@ -23,8 +23,10 @@ import { EquipMaster } from '../../../../entities/equip-master.entity';
 import { WorkerMaster } from '../../../../entities/worker-master.entity';
 import { ProcessMaster } from '../../../../entities/process-master.entity';
 import { MatLot } from '../../../../entities/mat-lot.entity';
-import { ControlPlanItem } from '../../../../entities/control-plan-item.entity';
-import { ControlPlan } from '../../../../entities/control-plan.entity';
+import { QualityControlPlanRowEntity } from '../../../../entities/quality-control-plan-row.entity';
+import { QualityPlanRevisionEntity } from '../../../../entities/quality-plan-revision.entity';
+import { QualityPlanDocumentEntity } from '../../../../entities/quality-plan-document.entity';
+import { QualityPlanPackageEntity } from '../../../../entities/quality-plan-package.entity';
 import { PartnerMaster } from '../../../../entities/partner-master.entity';
 import { BoxMaster } from '../../../../entities/box-master.entity';
 import { PalletMaster } from '../../../../entities/pallet-master.entity';
@@ -96,8 +98,8 @@ export class TraceService {
     private readonly processMasterRepo: Repository<ProcessMaster>,
     @InjectRepository(MatLot)
     private readonly matLotRepo: Repository<MatLot>,
-    @InjectRepository(ControlPlanItem)
-    private readonly controlPlanItemRepo: Repository<ControlPlanItem>,
+    @InjectRepository(QualityControlPlanRowEntity)
+    private readonly controlPlanItemRepo: Repository<QualityControlPlanRowEntity>,
     @InjectRepository(PartnerMaster)
     private readonly partnerMasterRepo: Repository<PartnerMaster>,
     @InjectRepository(BoxMaster)
@@ -383,21 +385,34 @@ export class TraceService {
       }
     }
 
-    // Method: 관리계획서 항목 (ControlPlanItem 기반 — 품목코드로 연결)
+    // Method: 최신 발행 Control Plan Revision snapshot (품목코드로 연결)
     const methodData: FourMData['method'] = [];
     if (fgLabel.itemCode) {
       const controlPlanItems = await this.controlPlanItemRepo
-        .createQueryBuilder('cpi')
-        .innerJoin(ControlPlan, 'cp', 'cp.planNo = cpi.controlPlanId AND cp.company = cpi.company AND cp.plant = cpi.plant')
-        .where('cp.itemCode = :itemCode', { itemCode: fgLabel.itemCode })
-        .andWhere('cp.company = :company', { company })
-        .andWhere('cp.plant = :plant', { plant })
-        .orderBy('cpi.seq', 'ASC')
+        .createQueryBuilder('cpr')
+        .innerJoin(QualityPlanRevisionEntity, 'qpr', 'qpr.revisionId = cpr.revisionId AND qpr.company = cpr.company AND qpr.plant = cpr.plant')
+        .innerJoin(QualityPlanDocumentEntity, 'qpd', 'qpd.documentId = qpr.documentId AND qpd.company = qpr.company AND qpd.plant = qpr.plant')
+        .innerJoin(QualityPlanPackageEntity, 'qpp', 'qpp.packageId = qpd.packageId AND qpp.company = qpd.company AND qpp.plant = qpd.plant')
+        .where('cpr.company = :company', { company })
+        .andWhere('cpr.plant = :plant', { plant })
+        .andWhere("qpr.status = 'PUBLISHED'")
+        .andWhere("qpd.documentType = 'CONTROL_PLAN'")
+        .andWhere('qpp.itemCode = :itemCode', { itemCode: fgLabel.itemCode })
+        .andWhere(`qpr.revisionId = (
+          SELECT MAX(r2.REVISION_ID)
+            FROM QUALITY_PLAN_REVISIONS r2
+            JOIN QUALITY_PLAN_DOCUMENTS d2 ON d2.COMPANY=r2.COMPANY AND d2.PLANT_CD=r2.PLANT_CD AND d2.DOCUMENT_ID=r2.DOCUMENT_ID
+            JOIN QUALITY_PLAN_PACKAGES p2 ON p2.COMPANY=d2.COMPANY AND p2.PLANT_CD=d2.PLANT_CD AND p2.PACKAGE_ID=d2.PACKAGE_ID
+           WHERE r2.COMPANY=:company AND r2.PLANT_CD=:plant AND r2.STATUS='PUBLISHED'
+             AND d2.DOCUMENT_TYPE='CONTROL_PLAN' AND p2.ITEM_CODE=:itemCode
+        )`)
+        .orderBy('qpr.publishedAt', 'DESC')
+        .addOrderBy('cpr.rowSeq', 'ASC')
         .getMany();
 
       for (const cpi of controlPlanItems) {
         methodData.push({
-          process: cpi.processCode ?? '',
+          process: cpi.processNo ?? '',
           processName: cpi.processName ?? '',
           specName: cpi.productCharacteristic ?? cpi.processCharacteristic ?? '',
           specValue: cpi.specification ?? '',

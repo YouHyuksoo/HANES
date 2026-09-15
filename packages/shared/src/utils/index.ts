@@ -24,3 +24,4 @@ export * from './mat-lot-rules';
 export * from './repair-rules';
 export * from './assembly-sg-rules';
 export * from './inspect-measurement-spec';
+export * from './quality-control-plan.rules';

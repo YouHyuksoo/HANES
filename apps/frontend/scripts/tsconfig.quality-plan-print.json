@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "../.tmp-quality-plan-print",
+    "rootDir": "../src/app/(authenticated)/quality/control-plan/print"
+  },
+  "include": [
+    "../src/app/(authenticated)/quality/control-plan/print/controlPlanPrintModel.ts",
+    "../src/app/(authenticated)/quality/control-plan/print/pdf/**/*.ts",
+    "../src/app/(authenticated)/quality/control-plan/print/excel/**/*.ts"
+  ]
+}

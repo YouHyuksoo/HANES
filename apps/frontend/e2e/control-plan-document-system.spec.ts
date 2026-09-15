@@ -1,0 +1,201 @@
+import { expect as playwrightExpect, test } from '@playwright/test';
+
+const expect = playwrightExpect.configure({ timeout: 30_000 });
+
+const itemCode = process.env.E2E_CONTROL_PLAN_ITEM_CODE ?? 'N91H00-X9800-R-S';
+
+test('QREKA-PR-025 문서 묶음 생성부터 발행·개정·출력까지', async ({ page }) => {
+  // 원격 JSHANES 응답이 느린 날에도 3종 발행·4개 PDF·Excel·3종 REV.01 계보를 끝까지 검증한다.
+  test.setTimeout(900_000);
+  await page.goto('/quality/control-plan');
+  expect(page.url(), '로그인 세션이 필요합니다.').not.toContain('/login');
+  await expect(page.getByRole('heading', { name: '관리계획서', exact: true })).toBeVisible({ timeout: 90_000 });
+
+  await page.getByRole('button', { name: '신규' }).click();
+  await page.getByRole('button', { name: '품목마스터에서 선택' }).click();
+  const partDialog = page.getByRole('dialog', { name: '품목 검색' });
+  const search = partDialog.getByPlaceholder('품목코드 또는 품목명 입력');
+  await search.fill(itemCode);
+  await search.press('Enter');
+  const partRow = partDialog.getByRole('row').filter({ hasText: itemCode });
+  await expect(partRow).toHaveCount(1, { timeout: 30_000 });
+  await partRow.click();
+  await page.getByLabel('프로젝트명').fill('E2E 품질계획 검증');
+  await page.getByRole('button', { name: /PFD · PFMEA · CP 생성/ }).click();
+  await expect(page.getByText(itemCode, { exact: true }).first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'PFD', exact: true }).click();
+  await page.getByRole('button', { name: '발행', exact: true }).click();
+  const publishNotice = page.getByRole('dialog').filter({ hasText: /행이 없는 문서는 발행할 수 없습니다|발행 검증 오류/ });
+  await expect(publishNotice).toBeVisible();
+  await publishNotice.getByRole('button', { name: '확인', exact: true }).click();
+
+  await page.getByRole('button', { name: '자동 초안' }).click();
+  await expect(page.getByRole('cell', { name: /압착|조립|검사|포장/ }).first()).toBeVisible();
+  await page.getByRole('button', { name: '검증' }).click();
+  await page.getByRole('button', { name: '발행', exact: true }).click();
+  await expect(page.getByRole('button', { name: '개정 생성' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'PFMEA', exact: true }).click();
+  await page.getByLabel('조직').fill('품질보증팀');
+  await page.getByLabel('참여자명').fill('E2E CFT 담당자');
+  const participantCreate = page.waitForResponse((response) => /\/api\/quality\/revisions\/\d+\/participants$/.test(response.url()) && response.request().method() === 'POST');
+  await page.getByRole('button', { name: '참여자 추가' }).click();
+  expect((await participantCreate).ok()).toBe(true);
+  await expect(page.getByRole('region', { name: 'PFMEA CFT 참여자' }).getByText('E2E CFT 담당자')).toBeVisible();
+  await page.getByLabel('PFD 공정').selectOption({ index: 1 });
+  await page.getByPlaceholder('공정 기능').fill('라우팅 공정 품질 확보');
+  await page.getByPlaceholder('요구사항').fill('표준 작업조건 준수');
+  await page.getByPlaceholder('잠재 고장형태').fill('작업조건 이탈');
+  await page.getByPlaceholder('잠재 영향').fill('제품 규격 부적합');
+  await page.getByPlaceholder('잠재 원인').fill('조건 설정 오류');
+  await page.getByPlaceholder('예방 관리').fill('작업조건 사전점검');
+  await page.getByPlaceholder('검출 관리').fill('초중종 확인');
+  await page.getByPlaceholder('권고 조치').fill('조건 설정 이중 확인');
+  await page.getByPlaceholder('책임 조직').fill('생산기술팀');
+  await page.getByPlaceholder('책임자').fill('E2E 책임자');
+  await page.getByLabel('목표일').fill('2026-10-01');
+  await page.getByPlaceholder('완료 조치').fill('체크리스트 개정 완료');
+  await page.getByLabel('완료일').fill('2026-10-02');
+  await page.getByLabel('조치 후 S').fill('7');
+  await page.getByLabel('조치 후 O').fill('2');
+  await page.getByLabel('조치 후 D').fill('3');
+  await expect(page.getByText('42', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '행 추가' }).click();
+  await expect(page.getByRole('cell', { name: '작업조건 이탈' })).toBeVisible();
+  await page.getByRole('button', { name: '검증' }).click();
+  await page.getByRole('button', { name: '발행', exact: true }).click();
+  await expect(page.getByRole('button', { name: '개정 생성' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Control Plan', exact: true }).click();
+  await page.getByLabel('PFD 공정').selectOption({ index: 1 });
+  await page.getByLabel('PFMEA 연결').selectOption({ index: 1 });
+  await page.getByPlaceholder('공정특성').fill('작업조건');
+  await page.getByLabel('규격·공차').fill('승인된 표준조건 이내');
+  await page.getByPlaceholder('평가방법').fill('작업표준 확인');
+  await page.getByPlaceholder('시료수').fill('1EA');
+  await page.getByPlaceholder('검사주기').fill('초/중/종');
+  await page.getByLabel('관리방법').fill('작업조건 점검표 기록');
+  await page.getByLabel('이상 발생 반응계획').fill('공정 정지 후 품질부서 통보');
+  await page.getByRole('button', { name: '행 추가' }).click();
+  await expect(page.getByRole('cell', { name: '작업조건', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '검증' }).click();
+  const controlPlanPublish = page.waitForResponse((response) => /\/api\/quality\/revisions\/\d+\/publish$/.test(response.url()) && response.request().method() === 'POST');
+  await page.getByRole('button', { name: '발행', exact: true }).click();
+  expect((await controlPlanPublish).ok()).toBe(true);
+  await expect(page.getByRole('button', { name: '개정 생성' })).toBeVisible({ timeout: 15_000 });
+
+  await page.getByRole('button', { name: '개정 생성' }).click();
+  await page.getByLabel('개정 사유').fill('E2E 개정 검증');
+  await page.getByLabel('변경 내용').fill('발행본 불변성과 REV.01 생성 확인');
+  await page.getByRole('button', { name: '생성', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: '새 Revision 생성' })).not.toBeVisible();
+  await expect(page.getByRole('button', { name: '발행', exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: '개정이력' }).click();
+  await expect(page.getByText('Revision 비교')).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'REV.00', exact: true }).first()).toBeVisible();
+
+  await page.getByRole('button', { name: '출력', exact: true }).click();
+  await expect(page.getByRole('article', { name: 'Control Plan A3 출력 미리보기' })).toBeVisible();
+  await expect(page.getByText('QREKA-PR-025 출력 세트')).toBeVisible();
+  const openPageCount = page.context().pages().length;
+  await page.getByRole('button', { name: '미리보기', exact: true }).first().click();
+  await expect(page.getByRole('article', { name: 'PFD A4 출력 미리보기' })).toBeVisible();
+  expect(page.context().pages()).toHaveLength(openPageCount);
+  await page.getByRole('button', { name: '미리보기 크게 보기' }).click();
+  const expandedPreview = page.getByRole('dialog', { name: 'PFD 크게 보기' });
+  await expect(expandedPreview).toBeVisible();
+  const expandedScroller = expandedPreview.getByRole('article', { name: 'PFD A4 출력 미리보기' }).locator('..');
+  const expandedMetrics = await expandedScroller.evaluate((element) => ({ clientHeight: element.clientHeight, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth, overflowX: getComputedStyle(element).overflowX, overflowY: getComputedStyle(element).overflowY }));
+  expect(expandedMetrics.clientHeight).toBeGreaterThan(450);
+  expect(expandedMetrics.scrollWidth).toBeGreaterThanOrEqual(expandedMetrics.clientWidth);
+  expect(expandedMetrics.overflowX).toBe('scroll');
+  expect(expandedMetrics.overflowY).toBe('scroll');
+  expect(page.context().pages()).toHaveLength(openPageCount);
+  await expandedPreview.getByRole('button', { name: '닫기' }).click();
+  await expect(expandedPreview).not.toBeVisible();
+  const pdfButtons = page.getByRole('button', { name: 'PDF', exact: true });
+  await expect(pdfButtons).toHaveCount(4);
+  for (let index = 0; index < 4; index += 1) {
+    const download = page.waitForEvent('download');
+    await pdfButtons.nth(index).click();
+    expect((await download).suggestedFilename()).toMatch(/QREKA-PR-025-0[1-4]\.pdf$/);
+  }
+  const excelDownload = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Excel 다운로드' }).click();
+  expect((await excelDownload).suggestedFilename()).toMatch(/QualityPlan\.xlsx$/);
+
+  // REV.01은 각 하위 문서의 발행 snapshot을 명시적으로 다시 참조해야 한다.
+  await page.getByRole('button', { name: 'PFD', exact: true }).click();
+  await page.getByRole('button', { name: '개정 생성' }).click();
+  await page.getByLabel('개정 사유').fill('PFD 공정 개정');
+  await page.getByLabel('변경 내용').fill('REV.01 참조 계보 검증용 PFD 개정');
+  await page.getByRole('button', { name: '생성', exact: true }).click();
+  await expect(page.getByRole('button', { name: '발행', exact: true })).toBeVisible();
+  const pfdValidation = page.waitForResponse((response) => /\/api\/quality\/revisions\/\d+\/validate$/.test(response.url()) && response.request().method() === 'POST');
+  await page.getByRole('button', { name: '검증' }).click();
+  expect((await pfdValidation).ok()).toBe(true);
+  const pfdPublish = page.waitForResponse((response) => /\/api\/quality\/revisions\/\d+\/publish$/.test(response.url()) && response.request().method() === 'POST');
+  await page.getByRole('button', { name: '발행', exact: true }).click();
+  expect((await pfdPublish).ok()).toBe(true);
+  await expect(page.getByRole('button', { name: '개정 생성' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'PFMEA', exact: true }).click();
+  await page.getByRole('button', { name: '개정 생성' }).click();
+  await page.getByLabel('개정 사유').fill('PFMEA 공정 참조 개정');
+  await page.getByLabel('변경 내용').fill('PFD REV.01 참조로 변경');
+  await page.getByRole('button', { name: '생성', exact: true }).click();
+  const pfdReference = page.getByLabel('참조 PFD Revision');
+  await expect(pfdReference).toBeVisible();
+  const pfdRev01Value = await pfdReference.locator('option').filter({ hasText: 'REV.01' }).getAttribute('value');
+  expect(pfdRev01Value).toBeTruthy();
+  await pfdReference.selectOption(pfdRev01Value!);
+  const pfmeaReferenceUpdate = page.waitForResponse((response) => /\/api\/quality\/revisions\/\d+$/.test(response.url()) && response.request().method() === 'PUT');
+  const referenceButton = page.getByRole('button', { name: '참조 변경' });
+  await referenceButton.click();
+  expect((await pfmeaReferenceUpdate).ok()).toBe(true);
+  await expect(referenceButton).toBeEnabled();
+  await expect.poll(() => page.getByLabel('PFD 공정').locator('option').count()).toBeGreaterThan(1);
+  await page.getByRole('button', { name: '수정', exact: true }).first().click();
+  await expect(page.getByLabel('목표일')).toHaveValue('2026-10-01');
+  await expect(page.getByLabel('완료일')).toHaveValue('2026-10-02');
+  await page.getByLabel('PFD 공정').selectOption({ index: 1 });
+  const pfmeaRowUpdate = page.waitForResponse((response) => /\/api\/quality\/pfmea-rows\/\d+$/.test(response.url()) && response.request().method() === 'PUT');
+  await page.getByRole('button', { name: '행 수정' }).click();
+  expect((await pfmeaRowUpdate).ok()).toBe(true);
+  const pfmeaValidation = page.waitForResponse((response) => /\/api\/quality\/revisions\/\d+\/validate$/.test(response.url()) && response.request().method() === 'POST');
+  await page.getByRole('button', { name: '검증' }).click();
+  expect((await pfmeaValidation).ok()).toBe(true);
+  const pfmeaPublish = page.waitForResponse((response) => /\/api\/quality\/revisions\/\d+\/publish$/.test(response.url()) && response.request().method() === 'POST');
+  await page.getByRole('button', { name: '발행', exact: true }).click();
+  expect((await pfmeaPublish).ok()).toBe(true);
+  await expect(page.getByRole('button', { name: '개정 생성' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Control Plan', exact: true }).click();
+  const pfmeaReference = page.getByLabel('참조 PFMEA Revision');
+  await expect(pfmeaReference).toBeVisible();
+  const pfmeaRev01Value = await pfmeaReference.locator('option').filter({ hasText: 'REV.01' }).getAttribute('value');
+  expect(pfmeaRev01Value).toBeTruthy();
+  await pfmeaReference.selectOption(pfmeaRev01Value!);
+  const controlPlanReferenceUpdate = page.waitForResponse((response) => /\/api\/quality\/revisions\/\d+$/.test(response.url()) && response.request().method() === 'PUT');
+  await referenceButton.click();
+  expect((await controlPlanReferenceUpdate).ok()).toBe(true);
+  await expect(referenceButton).toBeEnabled();
+  await expect.poll(() => page.getByLabel('PFD 공정').locator('option').count()).toBeGreaterThan(1);
+  await page.getByRole('button', { name: '수정', exact: true }).first().click();
+  await page.getByLabel('PFD 공정').selectOption({ index: 1 });
+  await expect.poll(() => page.getByLabel('PFMEA 연결').locator('option').count()).toBeGreaterThan(1);
+  await page.getByLabel('PFMEA 연결').selectOption({ index: 1 });
+  const controlPlanRowUpdate = page.waitForResponse((response) => /\/api\/quality\/control-plan-rows\/\d+$/.test(response.url()) && response.request().method() === 'PUT');
+  await page.getByRole('button', { name: '행 수정' }).click();
+  expect((await controlPlanRowUpdate).ok()).toBe(true);
+  const controlPlanValidation = page.waitForResponse((response) => /\/api\/quality\/revisions\/\d+\/validate$/.test(response.url()) && response.request().method() === 'POST');
+  await page.getByRole('button', { name: '검증' }).click();
+  expect((await controlPlanValidation).ok()).toBe(true);
+  const revisionPublish = page.waitForResponse((response) => /\/api\/quality\/revisions\/\d+\/publish$/.test(response.url()) && response.request().method() === 'POST');
+  await page.getByRole('button', { name: '발행', exact: true }).click();
+  expect((await revisionPublish).ok()).toBe(true);
+  await page.getByRole('button', { name: '개정이력' }).click();
+  await expect(page.getByRole('cell', { name: 'REV.01', exact: true }).first()).toBeVisible();
+});

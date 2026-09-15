@@ -14,6 +14,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DataSource, QueryRunner } from 'typeorm';
 import { SeqGeneratorService } from './seq-generator.service';
+import type { QualityDocumentType } from '@harness/shared';
 
 /** PKG_SEQ_GENERATOR로 처리되는 채번 유형 */
 const SEQ_TYPES = new Set([
@@ -100,6 +101,27 @@ export class NumberingService {
   async nextSubconNo(qr?: QueryRunner): Promise<string> { return this.next('SUBCON', qr); }
   async nextShipmentNo(qr?: QueryRunner): Promise<string> { return this.next('SHIPMENT', qr); }
   async nextTrainingPlanNo(qr?: QueryRunner): Promise<string> { return this.next('TRAINING_PLAN', qr); }
+
+  /**
+   * 품질 문서번호 채번. 날짜는 가독성용이며 유일성은 일별 리셋 없는 전역 Sequence가 보장한다.
+   */
+  async nextQualityDocumentNo(
+    qr: QueryRunner,
+    type: QualityDocumentType,
+    documentDate: Date = new Date(),
+  ): Promise<string> {
+    const formats: Record<QualityDocumentType, { sequence: string; prefix: string }> = {
+      PFD: { sequence: 'SEQ_QUALITY_PFD_NO', prefix: 'PFD' },
+      PFMEA: { sequence: 'SEQ_QUALITY_PFMEA_NO', prefix: 'PFMEA' },
+      CONTROL_PLAN: { sequence: 'SEQ_QUALITY_CP_NO', prefix: 'CP' },
+    };
+    const format = formats[type];
+    const rows = await qr.query(
+      `SELECT ${format.sequence}.NEXTVAL AS "NEXT_SEQ" FROM DUAL`,
+    );
+    const seq = Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq ?? 0);
+    return `${format.prefix}-${this.yyyyMMdd(documentDate)}-${String(seq).padStart(3, '0')}`;
+  }
 
   // ─────────────────────────────────────────────
   // IQC005 Phase A — application-level format channels
@@ -255,6 +277,13 @@ export class NumberingService {
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
     return `${yy}${mm}${dd}`;
+  }
+
+  private yyyyMMdd(d: Date): string {
+    const yyyy = String(d.getFullYear());
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}${mm}${dd}`;
   }
 
   private pad5(n: number): string {
