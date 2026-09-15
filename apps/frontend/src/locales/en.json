@@ -2967,7 +2967,10 @@
       "fifoFirst": "First In",
       "splitAndPrint": "Split & Print Labels",
       "reprintLabel": "Reprint Labels",
-      "splitNotice": "Attach the two printed labels to the issued and remaining lots."
+      "splitNotice": "Attach the two printed labels to the issued and remaining lots.",
+      "splitCommittedReloadFailed": "The split is already committed. If the labels were not printed, use [Reprint Labels], attach them, then reload.",
+      "splitLabelLoadFailed": "Could not load the split label history. Reopen the dialog if you need to reprint labels.",
+      "fractionUnusable": "Below 1 · not allocatable"
     },
     "stock": {
       "title": "Material Stock",

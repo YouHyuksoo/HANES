@@ -204,6 +204,33 @@ export default function IssueFromRequestModal({
     void reloadLots();
   }, [isOpen, reloadLots]);
 
+  /**
+   * 이미 커밋된 분할의 라벨 그룹을 서버에서 복원한다.
+   *
+   * 분할은 커밋되는데 라벨 출력은 실패하거나 건너뛸 수 있다. 분할 결과를 컴포넌트 state 로만
+   * 들고 있으면 모달을 닫는 순간(부모가 조건부 마운트한다) 재출력 경로가 사라져, 라벨 없는
+   * 신규 시리얼 2건이 창고에 남고 원본은 SPLIT(재고 0)이라 실물을 식별할 수 없게 된다.
+   * 그래서 열 때마다 분할 수불에서 다시 읽는다(설계 §10.2 — 분할했으면 항상 재출력 가능).
+   */
+  useEffect(() => {
+    if (!isOpen || !requestId) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const res = await api.get(`/material/issue-requests/${requestId}/split-labels`);
+        if (!alive || !isMountedRef.current) return;
+        setSplitGroups((res.data?.data?.splits ?? []) as SplitGroup[]);
+      } catch (error: unknown) {
+        if (!alive) return;
+        const axiosErr = error as { response?: { data?: { message?: string } } };
+        // 조용히 넘기면 "재출력 버튼이 없는 이유"를 현장에서 알 수 없다
+        toast.error(axiosErr.response?.data?.message
+          || t('material.issue.splitLabelLoadFailed', { defaultValue: '분할 라벨 이력을 불러오지 못했습니다. 라벨 재출력이 필요하면 다시 열어 주세요.' }));
+      }
+    })();
+    return () => { alive = false; };
+  }, [isOpen, requestId, t]);
+
   // 선택된 요청 품목
   const selectedRow = useMemo(
     () => issueRows.find((row) => row.rowKey === selectedRowKey) ?? null,
@@ -216,17 +243,23 @@ export default function IssueFromRequestModal({
     [issueRows, allocation],
   );
 
-  /** 부분 사용 롯트만 분할 대상이다 — 전량 사용 롯트는 그대로 출고한다 */
+  /**
+   * 부분 사용 롯트만 분할 대상이다 — 전량 사용 롯트는 그대로 출고한다.
+   * rowKey 를 함께 담는 이유: 분할 후 초기화할 행을 그 행들로만 좁히기 위해서다(다른 행의
+   * 수동 배분까지 지우면 사용자가 일부러 건너뛴 롯트가 자동배분으로 되살아난다).
+   */
   const splitTargets = useMemo(() => {
-    const targets: Array<{ sourceMatUid: string; issueQty: number }> = [];
+    const targets: Array<{ rowKey: string; sourceMatUid: string; issueQty: number }> = [];
     for (const row of issueRows) {
       const stocks = availableStocksByItem[row.itemCode] ?? [];
       for (const slice of allocation[row.rowKey] ?? []) {
         const stock = stocks.find((s) => s.matUid === slice.matUid);
         if (!stock) continue;
         const available = stockAvailableQty(stock);
-        if (slice.qty > 0 && slice.qty < available) {
-          targets.push({ sourceMatUid: slice.matUid, issueQty: slice.qty });
+        // 잔량이 1 미만이면 분할하지 않는다. 자식 LOT 의 INIT_QTY 는 정수 컬럼이라
+        // 0.725 같은 잔량 조각을 만들 수 없다. 이런 롯트는 배분분만 현행 방식으로 나간다.
+        if (slice.qty > 0 && slice.qty < available && available - slice.qty >= 1) {
+          targets.push({ rowKey: row.rowKey, sourceMatUid: slice.matUid, issueQty: slice.qty });
         }
       }
     }
@@ -282,23 +315,43 @@ export default function IssueFromRequestModal({
     if (splitTargets.length === 0) return;
     setIsSplitting(true);
     setErrorMsg(null);
+    // 분할 커밋 이후에 실패한 것인지 구분한다 — 커밋 뒤 실패는 "조회 실패"가 아니라
+    // "라벨 없는 신규 시리얼이 창고에 있다"는 뜻이라 안내 문구가 달라야 한다.
+    let committed = false;
     try {
+      // rowKey 는 화면 전용 필드다. 백엔드 ValidationPipe 가 forbidNonWhitelisted 라 그대로 보내면 400 이다.
       const res = await api.post(`/material/issue-requests/${requestId}/split-for-issue`, {
-        splits: splitTargets,
+        splits: splitTargets.map(({ sourceMatUid, issueQty }) => ({ sourceMatUid, issueQty })),
       });
+      committed = true;
       const groups = (res.data?.data?.splits ?? []) as SplitGroup[];
       setSplitGroups(groups);
       setIsLabelOpen(true);
       toast.success(t('material.issue.splitNotice', {
         defaultValue: '분할 후 라벨 2장을 출고분과 잔량분에 각각 부착하세요.',
       }));
-      // 분할로 생긴 신규 시리얼을 반영한다. 클라이언트 배분 상태는 버리고 다시 계산한다.
-      setManualRowKeys(new Set());
-      setAllocation({});
+      // 분할에 참여한 행만 초기화한다. 옛 matUid 를 가리키는 배분은 버려야 하지만(원본은
+      // SPLIT 되어 재고 0), 참여하지 않은 행의 수동 배분까지 지우면 사용자가 품질 문제로
+      // 일부러 건너뛴 선입 롯트를 자동배분이 다시 집어간다.
+      const splitRowKeys = new Set(splitTargets.map((target) => target.rowKey));
+      setManualRowKeys((prev) => {
+        const next = new Set(prev);
+        for (const rowKey of splitRowKeys) next.delete(rowKey);
+        return next;
+      });
+      setAllocation((prev) => {
+        const next = { ...prev };
+        for (const rowKey of splitRowKeys) delete next[rowKey];
+        return next;
+      });
       await reloadLots();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
-      setErrorMsg(axiosErr.response?.data?.message || 'LOT 분할에 실패했습니다.');
+      setErrorMsg(committed
+        ? t('material.issue.splitCommittedReloadFailed', {
+          defaultValue: '분할은 이미 완료됐습니다. 라벨이 아직 출력되지 않았다면 [라벨 재출력]으로 뽑아 부착한 뒤 다시 조회하세요.',
+        })
+        : axiosErr.response?.data?.message || 'LOT 분할에 실패했습니다.');
     } finally {
       setIsSplitting(false);
     }
@@ -420,22 +473,33 @@ export default function IssueFromRequestModal({
             <Button variant="secondary" onClick={onClose}>
               {t('common.cancel')}
             </Button>
-            {splitTargets.length > 0 ? (
-              <Button onClick={handleSplit} isLoading={isSplitting}>
+            {/*
+              분할 대상이 있으면 [분할 및 라벨발행] 이 기본 동작이지만 [출고] 도 항상 남겨 둔다.
+              분할 불가 롯트(IS_SPLITTABLE='N', 예약 보유, 재고실사 freeze)는 서버가 400 으로
+              막는데, 그때 출고 버튼이 아예 없으면 화면이 막다른 길이 된다. 설계 §9 는 그런
+              롯트도 현행 방식으로 부분 출고하고 "출고는 막지 않는다"로 정한다.
+            */}
+            {splitTargets.length > 0 && (
+              <Button
+                onClick={handleSplit}
+                isLoading={isSplitting}
+                disabled={isLoadingLots}
+                disabledReason={t('material.disabledHelp.lotLoading', '출고 가능한 자재 LOT을 조회하고 있습니다.')}
+              >
                 <Scissors className="w-4 h-4 mr-1" />
                 {t('material.issue.splitAndPrint', { defaultValue: '분할 및 라벨발행' })}
                 <span className="ml-1 opacity-70">({splitTargets.length})</span>
               </Button>
-            ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={totalIssueQty <= 0 || isLoadingLots || processMissing} disabledReason={isLoadingLots ? t('material.disabledHelp.lotLoading', '출고 가능한 자재 LOT을 조회하고 있습니다.') : processMissing ? t('material.disabledHelp.selectProcess', '출고 대상 공정을 선택하세요.') : t('material.disabledHelp.selectIssueQty', '출고할 LOT을 선택하고 출고수량을 0보다 크게 입력하세요.')}
-                isLoading={isSubmitting}
-              >
-                <Package className="w-4 h-4 mr-1" />
-                {t('material.issue.issueAction')}
-              </Button>
             )}
+            <Button
+              variant={splitTargets.length > 0 ? 'secondary' : 'primary'}
+              onClick={handleSubmit}
+              disabled={totalIssueQty <= 0 || isLoadingLots || processMissing} disabledReason={isLoadingLots ? t('material.disabledHelp.lotLoading', '출고 가능한 자재 LOT을 조회하고 있습니다.') : processMissing ? t('material.disabledHelp.selectProcess', '출고 대상 공정을 선택하세요.') : t('material.disabledHelp.selectIssueQty', '출고할 LOT을 선택하고 출고수량을 0보다 크게 입력하세요.')}
+              isLoading={isSubmitting}
+            >
+              <Package className="w-4 h-4 mr-1" />
+              {t('material.issue.issueAction')}
+            </Button>
             {splitGroups.length > 0 && (
               <Button variant="secondary" onClick={() => setIsLabelOpen(true)}>
                 <Printer className="w-4 h-4 mr-1" />

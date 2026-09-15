@@ -5,7 +5,11 @@
  * @description 분할 결과 라벨을 원본 LOT 그룹 단위로 순차 미리보기/출력한다.
  *
  * MatLabelPreviewModal 은 단일 arrivalNo / itemName 만 받으므로 여러 품목의 분할 결과를
- * 하나로 합칠 수 없다. 그래서 그룹을 하나씩 넘기고 진행 상황을 표시한다.
+ * 하나로 합칠 수 없다. 그래서 그룹을 하나씩 순서대로 넘긴다.
+ *
+ * 진행 표시("1/2" 등)는 의도적으로 하지 않는다. 미리보기 모달에 넘길 수 있는 문자열
+ * 슬롯은 itemName 뿐인데 그 값이 실제 자재 라벨에 그대로 인쇄되므로, 진행 표시를 붙이면
+ * 현장에 붙는 라벨의 품목명이 "(1/2)" 로 오염된다.
  */
 import { useState } from 'react';
 import MatLabelPreviewModal from '@/components/material/MatLabelPreviewModal';

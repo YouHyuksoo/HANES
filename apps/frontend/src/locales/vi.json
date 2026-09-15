@@ -2949,7 +2949,10 @@
       "fifoFirst": "Vào trước",
       "splitAndPrint": "Tách & In nhãn",
       "reprintLabel": "In lại nhãn",
-      "splitNotice": "Dán hai nhãn lên phần xuất và phần còn lại."
+      "splitNotice": "Dán hai nhãn lên phần xuất và phần còn lại.",
+      "splitCommittedReloadFailed": "Việc tách đã được lưu. Nếu nhãn chưa in, hãy dùng [In lại nhãn], dán nhãn rồi tải lại danh sách.",
+      "splitLabelLoadFailed": "Không tải được lịch sử nhãn tách. Hãy mở lại nếu cần in lại nhãn.",
+      "fractionUnusable": "Dưới 1 · không phân bổ"
     },
     "stock": {
       "title": "Tồn kho vật tư",

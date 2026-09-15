@@ -3499,7 +3499,10 @@
       "fifoFirst": "선입",
       "splitAndPrint": "분할 및 라벨발행",
       "reprintLabel": "라벨 재출력",
-      "splitNotice": "분할 후 라벨 2장을 출고분과 잔량분에 각각 부착하세요."
+      "splitNotice": "분할 후 라벨 2장을 출고분과 잔량분에 각각 부착하세요.",
+      "splitCommittedReloadFailed": "분할은 이미 완료됐습니다. 라벨이 아직 출력되지 않았다면 [라벨 재출력]으로 뽑아 부착한 뒤 다시 조회하세요.",
+      "splitLabelLoadFailed": "분할 라벨 이력을 불러오지 못했습니다. 라벨 재출력이 필요하면 다시 열어 주세요.",
+      "fractionUnusable": "1 미만 · 배분 불가"
     },
     "stock": {
       "title": "자재재고현황",

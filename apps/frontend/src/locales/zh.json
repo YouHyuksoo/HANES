@@ -2949,7 +2949,10 @@
       "fifoFirst": "先入",
       "splitAndPrint": "分割并打印标签",
       "reprintLabel": "重新打印标签",
-      "splitNotice": "分割后请将两张标签分别贴在出库分和余量分上。"
+      "splitNotice": "分割后请将两张标签分别贴在出库分和余量分上。",
+      "splitCommittedReloadFailed": "分割已提交。若标签尚未打印，请用[重新打印标签]打印并贴好后重新查询。",
+      "splitLabelLoadFailed": "无法加载分割标签记录。如需重新打印标签，请重新打开。",
+      "fractionUnusable": "不足 1 · 无法分配"
     },
     "stock": {
       "title": "物料库存",

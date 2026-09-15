@@ -110,7 +110,15 @@ export default function LotAllocationPanel({
                       </div>
                     </td>
                     <td className="px-2 py-1.5 text-text-muted whitespace-nowrap">{fmtRecvDate(lot.recvDate)}</td>
-                    <td className="px-2 py-1.5 text-right text-text whitespace-nowrap">{available.toLocaleString()}</td>
+                    <td className="px-2 py-1.5 text-right text-text whitespace-nowrap">
+                      {available.toLocaleString()}
+                      {/* 소수 가용분은 배분하지 않는다(출고 수량은 정수만 허용). 왜 0 으로 남는지 보여준다 */}
+                      {available < 1 && (
+                        <span className="ml-1 text-[10px] text-text-muted">
+                          {t('material.issue.fractionUnusable', { defaultValue: '1 미만 · 배분 불가' })}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-2 py-1.5">
                       <QtyInput
                         value={qty}
