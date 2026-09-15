@@ -84,11 +84,19 @@ export default function NcrFormPanel({ editData, onClose, onSave }: Props) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  /** 대상구분에 맞는 불량코드 그룹 — 완제품·반제품은 통전, 그 외는 외관 계열을 먼저 쓴다 */
+  /**
+   * 발견단계에 맞는 불량코드 그룹 — 수입검사는 외관 계열, 그 외 공정은 통전 계열을 쓴다.
+   * 그룹이 바뀌면 이전 그룹의 코드는 옵션에 없으므로 handleFoundStageChange 가 값을 비운다.
+   */
   const defectCodeGroup = useMemo(
     () => (form.foundStage === "IQC" ? "VISUAL_DEFECT" : "CONTINUITY_DEFECT"),
     [form.foundStage],
   );
+
+  /** 발견단계를 바꾸면 불량코드 그룹이 바뀐다 — 다른 그룹의 코드가 그대로 저장되지 않게 비운다 */
+  const handleFoundStageChange = useCallback((value: string) => {
+    setForm((prev) => (prev.foundStage === value ? prev : { ...prev, foundStage: value, defectCode: "" }));
+  }, []);
 
   const canSave = form.itemCode.trim() && form.targetType && form.foundStage;
 
@@ -173,7 +181,7 @@ export default function NcrFormPanel({ editData, onClose, onSave }: Props) {
             includeAll={false}
             label={t("quality.ncr.foundStage", "발견단계")}
             value={form.foundStage}
-            onChange={(v) => set("foundStage", v)}
+            onChange={handleFoundStageChange}
             fullWidth
           />
         </div>

@@ -167,7 +167,7 @@ export default function NcrPrintModal({ record, onClose }: Props) {
                 </td>
               </tr>
               <tr>
-                <th className={TH}>{t("quality.ncr.dispositionDetail", "세부내용")}</th>
+                <th className={TH}>{t("quality.ncr.dispositionDetail", "세부내용 및 사유")}</th>
                 <td className={`${TD} whitespace-pre-wrap align-top h-[60px]`} colSpan={3}>
                   {record.dispositionDetail || ""}
                 </td>

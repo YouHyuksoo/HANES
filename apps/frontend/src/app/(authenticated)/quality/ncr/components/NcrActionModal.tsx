@@ -127,7 +127,7 @@ export default function NcrActionModal({ mode, record, onClose, onDone }: Props)
 
   const title =
     mode === "disposition" ? t("quality.ncr.setDisposition", "처리방안 확정")
-      : mode === "cause" ? t("quality.ncr.setCause", "원인분석·재발방지")
+      : mode === "cause" ? t("quality.ncr.setCause", "원인분석")
         : t("quality.ncr.closeTitle", "부적합 종결");
 
   return (
