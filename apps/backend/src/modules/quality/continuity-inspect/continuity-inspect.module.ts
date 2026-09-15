@@ -25,6 +25,12 @@ import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipProtocol } from '../../../entities/equip-protocol.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { InspectItemSpec } from '../../../entities/inspect-item-spec.entity';
+import { InspectAid } from '../../../entities/inspect-aid.entity';
+import { InspectSampleCheck } from '../../../entities/inspect-sample-check.entity';
+import { InspectSampleCheckItem } from '../../../entities/inspect-sample-check-item.entity';
+import { ShiftPattern } from '../../../entities/shift-pattern.entity';
+import { InspectSampleCheckService } from './services/inspect-sample-check.service';
+import { EquipmentModule } from '../../equipment/equipment.module';
 import { SharedModule } from '../../../shared/shared.module';
 import { SystemModule } from '../../system/system.module';
 
@@ -37,12 +43,17 @@ import { SystemModule } from '../../system/system.module';
       EquipProtocol,
       ProdResult,
       InspectItemSpec,
+      InspectAid,
+      InspectSampleCheck,
+      InspectSampleCheckItem,
+      ShiftPattern,
     ]),
     SharedModule,
     SystemModule,
+    EquipmentModule,
   ],
   controllers: [ContinuityInspectController],
-  providers: [ContinuityInspectService],
-  exports: [ContinuityInspectService],
+  providers: [ContinuityInspectService, InspectSampleCheckService],
+  exports: [ContinuityInspectService, InspectSampleCheckService],
 })
 export class ContinuityInspectModule {}

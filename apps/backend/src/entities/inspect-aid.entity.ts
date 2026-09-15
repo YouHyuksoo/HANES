@@ -58,6 +58,18 @@ export class InspectAid {
   @Column({ name: 'STATUS', length: 20, default: 'ACTIVE' })
   status: string;
 
+  /** 적용 검사유형 (COM_CODES INSPECT_TYPE). NULL = 전 검사유형 공통 */
+  @Column({ type: 'varchar2', name: 'INSPECT_TYPE', length: 30, nullable: true })
+  inspectType: string | null;
+
+  /** 검사 시작 전 대조 필수 여부 (Y=필수, N=참고용). HOLDER는 항상 N */
+  @Column({ name: 'REQUIRED_YN', length: 1, default: 'Y' })
+  requiredYn: string;
+
+  /** 대조 모달 표시 순서 */
+  @Column({ name: 'SORT_ORDER', type: 'number', default: 0 })
+  sortOrder: number;
+
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;
 
