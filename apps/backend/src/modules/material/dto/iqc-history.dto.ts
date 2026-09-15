@@ -28,6 +28,13 @@ export class PendingSerialsQueryDto {
   @IsString()
   @IsNotEmpty()
   itemCode: string;
+
+  @ApiPropertyOptional({
+    description: '검사의뢰 LOT 번호. 주면 의뢰에 담긴 (ARRIVAL_NO, ARRIVAL_SEQ) 행의 시리얼만 돌려준다.',
+  })
+  @IsOptional()
+  @IsString()
+  requestNo?: string;
 }
 
 export class CreateIqcResultDto {

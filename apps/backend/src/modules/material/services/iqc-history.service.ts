@@ -10,6 +10,8 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
+import { IqcRequestLot } from '../../../entities/iqc-request-lot.entity';
+import { IqcRequestLotLine } from '../../../entities/iqc-request-lot-line.entity';
 import { IqcHistoryQueryDto, CreateIqcResultDto, CreateArrivalIqcResultDto, PendingArrivalQueryDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { AqlService } from '../../quality/aql/services/aql.service';
@@ -69,6 +71,10 @@ export class IqcHistoryService {
     private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(PartnerMaster)
     private readonly partnerMasterRepository: Repository<PartnerMaster>,
+    @InjectRepository(IqcRequestLot)
+    private readonly iqcRequestLotRepository: Repository<IqcRequestLot>,
+    @InjectRepository(IqcRequestLotLine)
+    private readonly iqcRequestLotLineRepository: Repository<IqcRequestLotLine>,
     private readonly dataSource: DataSource,
     private readonly sysConfigService: SysConfigService,
     private readonly aqlService: AqlService,
@@ -338,12 +344,23 @@ export class IqcHistoryService {
 
   /**
    * 입하+품목의 PENDING(검사대기) 시리얼 목록 조회 — 시리얼별 개별 판정용
+   *
+   * requestNo가 오면 검사의뢰 LOT에 담긴 (ARRIVAL_NO, ARRIVAL_SEQ) 행으로 한정한다.
+   * 같은 ARRIVAL_NO에 수십 행이 붙을 수 있어 입하번호만으로는 모집단을 특정할 수 없다.
    */
-  async findPendingSerials(arrivalNo: string, itemCode: string, company?: string, plant?: string) {
-    const lots = await this.matLotRepository.find({
-      where: { arrivalNo, itemCode, iqcStatus: 'PENDING', ...this.tenantWhere(company, plant) },
-      order: { matUid: 'ASC' },
-    });
+  async findPendingSerials(
+    arrivalNo: string,
+    itemCode: string,
+    company?: string,
+    plant?: string,
+    requestNo?: string,
+  ) {
+    const lots = requestNo
+      ? await this.findRequestLotPendingSerials(requestNo, company, plant)
+      : await this.matLotRepository.find({
+          where: { arrivalNo, itemCode, iqcStatus: 'PENDING', ...this.tenantWhere(company, plant) },
+          order: { matUid: 'ASC' },
+        });
     return lots.map((l) => ({
       matUid: l.matUid,
       itemCode: l.itemCode,
@@ -352,6 +369,29 @@ export class IqcHistoryService {
       recvDate: l.recvDate,
       vendor: l.vendor,
     }));
+  }
+
+  /** 의뢰 LOT에 담긴 입하 행의 PENDING 시리얼 */
+  private async findRequestLotPendingSerials(requestNo: string, company?: string, plant?: string) {
+    const header = await this.iqcRequestLotRepository.findOne({
+      where: { requestNo, ...this.tenantWhere(company, plant) },
+    });
+    if (!header) return [];
+    const lines = await this.iqcRequestLotLineRepository.find({
+      where: { requestNo, ...this.tenantWhere(company, plant) },
+    });
+    if (lines.length === 0) return [];
+    const lineKeys = new Set(lines.map((l) => `${l.arrivalNo}#${l.arrivalSeq}`));
+    const candidates = await this.matLotRepository.find({
+      where: {
+        arrivalNo: In([...new Set(lines.map((l) => l.arrivalNo))]),
+        itemCode: header.itemCode,
+        iqcStatus: 'PENDING',
+        ...this.tenantWhere(company, plant),
+      },
+      order: { matUid: 'ASC' },
+    });
+    return candidates.filter((lot) => lineKeys.has(`${lot.arrivalNo}#${lot.arrivalSeq}`));
   }
 
 
@@ -405,6 +445,9 @@ export class IqcHistoryService {
    */
   async findPendingArrivals(query: PendingArrivalQueryDto, company?: string, plant?: string): Promise<PendingArrivalsResult> {
     const iqcStatus = query.iqcStatus || 'PENDING';
+    // IQC_INSPECT_LOT_MODE=REQUEST 일 때만 의뢰 LOT 묶음 행을 섮는다. 기본값 ARRIVAL은 기존 동작 그대로다.
+    const lotMode = (await this.sysConfigService.getValue('IQC_INSPECT_LOT_MODE')) || 'ARRIVAL';
+    const requestMode = lotMode === 'REQUEST' && iqcStatus === 'PENDING';
 
     const qb = this.matLotRepository
       .createQueryBuilder('lot')
@@ -441,6 +484,24 @@ export class IqcHistoryService {
         search: `%${query.search}%`,
       });
     }
+    if (requestMode) {
+      // 의뢰에 담긴 입하 행은 개별 행에서 뺀다. 아래에서 의뢰 LOT 묶음 행으로 대신 내려간다.
+      // 외부 alias를 참조하는 상관 서브쿼리는 TypeORM이 alias를 물리 컬럼명으로 풀지 못해 ORA-00904가 난다.
+      // 좌변만 엔티티 속성(lot.matUid)으로 두고, 서브쿼리는 외부 참조 없는 독립 raw SQL로 쓴다.
+      qb.andWhere(`lot.matUid NOT IN (
+        SELECT taken.MAT_UID
+          FROM MAT_LOTS taken
+          JOIN IQC_REQUEST_LOT_LINES ln
+            ON ln.ARRIVAL_NO = taken.ARRIVAL_NO
+           AND ln.ARRIVAL_SEQ = taken.ARRIVAL_SEQ
+           AND ln.ITEM_CODE = taken.ITEM_CODE
+           AND ln.COMPANY = taken.COMPANY
+           AND ln.PLANT_CD = taken.PLANT_CD
+          JOIN IQC_REQUEST_LOTS rq
+            ON rq.REQUEST_NO = ln.REQUEST_NO
+         WHERE rq.STATUS = 'REQUESTED'
+      )`);
+    }
 
     qb.groupBy('lot.arrivalNo')
       .addGroupBy('lot.itemCode')
@@ -472,25 +533,115 @@ export class IqcHistoryService {
       createdAt: Date | null;
     }>();
 
-    return {
-      data: rows.map((r) => ({
-        arrivalNo: r.arrivalNo,
-        itemCode: r.itemCode,
-        itemName: r.itemName ?? null,
-        unit: r.unit ?? null,
-        inspectMethod: r.inspectMethod ?? null,
-        defectModelGroup: r.defectModelGroup ?? null,
-        vendor: r.vendor,
-        vendorName: r.vendorName ?? null,
-        poNo: r.poNo ?? null,
-        totalQty: Number(r.totalQty) || 0,
-        serialCount: Number(r.serialCount) || 0,
-        recvDate: r.recvDate,
-        createdAt: r.createdAt,
-        iqcStatus,
-      })),
-      debugSql,
-    };
+    const arrivalRows = rows.map((r) => ({
+      requestNo: null as string | null,
+      arrivalNo: r.arrivalNo,
+      itemCode: r.itemCode,
+      itemName: r.itemName ?? null,
+      unit: r.unit ?? null,
+      inspectMethod: r.inspectMethod ?? null,
+      defectModelGroup: r.defectModelGroup ?? null,
+      vendor: r.vendor,
+      vendorName: r.vendorName ?? null,
+      poNo: r.poNo ?? null,
+      totalQty: Number(r.totalQty) || 0,
+      serialCount: Number(r.serialCount) || 0,
+      recvDate: r.recvDate,
+      createdAt: r.createdAt,
+      iqcStatus,
+    }));
+
+    if (!requestMode) {
+      return { data: arrivalRows, debugSql };
+    }
+    const requestRows = await this.findPendingRequestLots(query, company, plant);
+    return { data: [...requestRows, ...arrivalRows], debugSql };
+  }
+
+  /**
+   * REQUEST 모드에서 검사대기 목록에 섮을 의뢰 LOT 묶음 행.
+   * 수량은 의뢰 확정 시 합의된 모집단(LOT_QTY)이 아니라 실제 PENDING 시리얼 기준으로 집계한다.
+   */
+  private async findPendingRequestLots(query: PendingArrivalQueryDto, company?: string, plant?: string) {
+    const qb = this.iqcRequestLotRepository
+      .createQueryBuilder('rq')
+      .innerJoin(IqcRequestLotLine, 'ln', 'ln.requestNo = rq.requestNo AND ln.company = rq.company AND ln.plant = rq.plant')
+      // 주의: 조인 조건은 한 줄로 쓴다. 줄바꿈이 들어가면 TypeORM이 alias.프로퍼티를
+      // 실제 컬럼명으로 치환하지 못해 ORA-00904(예: "LN"."ITEMCODE")가 난다.
+      .innerJoin(
+        MatLot,
+        'lot',
+        "lot.arrivalNo = ln.arrivalNo AND lot.arrivalSeq = ln.arrivalSeq AND lot.itemCode = ln.itemCode AND lot.company = ln.company AND lot.plant = ln.plant AND lot.iqcStatus = 'PENDING'",
+      )
+      .leftJoin(ItemMaster, 'part', 'part.itemCode = rq.itemCode AND part.company = rq.company AND part.plant = rq.plant')
+      .leftJoin(PartnerMaster, 'partner', 'partner.partnerCode = rq.vendorCode AND partner.company = rq.company AND partner.plant = rq.plant')
+      .select('rq.requestNo', 'requestNo')
+      .addSelect('rq.itemCode', 'itemCode')
+      .addSelect('rq.lotQty', 'lotQty')
+      .addSelect('part.itemName', 'itemName')
+      .addSelect('part.unit', 'unit')
+      .addSelect('part.inspectMethod', 'inspectMethod')
+      .addSelect('part.defectModelGroup', 'defectModelGroup')
+      .addSelect('rq.vendorCode', 'vendor')
+      .addSelect('partner.partnerName', 'vendorName')
+      .addSelect('MIN(lot.poNo)', 'poNo')
+      .addSelect('SUM(lot.initQty)', 'totalQty')
+      .addSelect('COUNT(*)', 'serialCount')
+      .addSelect('MIN(lot.recvDate)', 'recvDate')
+      .addSelect('MIN(rq.createdAt)', 'createdAt')
+      .where("rq.status = 'REQUESTED'");
+
+    if (company) qb.andWhere('rq.company = :company', { company });
+    if (plant) qb.andWhere('rq.plant = :plant', { plant });
+    if (query.search) {
+      qb.andWhere('(rq.requestNo LIKE :search OR rq.itemCode LIKE :search)', { search: `%${query.search}%` });
+    }
+
+    qb.groupBy('rq.requestNo')
+      .addGroupBy('rq.itemCode')
+      .addGroupBy('rq.lotQty')
+      .addGroupBy('rq.vendorCode')
+      .addGroupBy('partner.partnerName')
+      .addGroupBy('part.itemName')
+      .addGroupBy('part.unit')
+      .addGroupBy('part.inspectMethod')
+      .addGroupBy('part.defectModelGroup')
+      .orderBy('MIN(rq.createdAt)', 'DESC');
+
+    const raw = await qb.getRawMany<{
+      requestNo: string;
+      itemCode: string;
+      lotQty: string;
+      itemName: string | null;
+      unit: string | null;
+      inspectMethod: string | null;
+      defectModelGroup: string | null;
+      vendor: string | null;
+      vendorName: string | null;
+      poNo: string | null;
+      totalQty: string;
+      serialCount: string;
+      recvDate: Date | null;
+      createdAt: Date | null;
+    }>();
+
+    return raw.map((r) => ({
+      requestNo: r.requestNo,
+      arrivalNo: r.requestNo,
+      itemCode: r.itemCode,
+      itemName: r.itemName ?? null,
+      unit: r.unit ?? null,
+      inspectMethod: r.inspectMethod ?? null,
+      defectModelGroup: r.defectModelGroup ?? null,
+      vendor: r.vendor ?? '',
+      vendorName: r.vendorName ?? null,
+      poNo: r.poNo ?? null,
+      totalQty: Number(r.totalQty) || 0,
+      serialCount: Number(r.serialCount) || 0,
+      recvDate: r.recvDate,
+      createdAt: r.createdAt,
+      iqcStatus: 'PENDING',
+    }));
   }
 
   /**
@@ -515,10 +666,128 @@ export class IqcHistoryService {
       );
     }
 
+    return this.judgeLotsWithAql({
+      lots,
+      itemCode: dto.itemCode,
+      representativeArrivalNo: dto.arrivalNo,
+      dto,
+      applyArrivalStatus: async (status, tenantCompany, tenantPlant) => {
+        await this.matArrivalRepository.update(
+          {
+            arrivalNo: dto.arrivalNo,
+            itemCode: dto.itemCode,
+            iqcStatus: 'PENDING',
+            ...this.tenantWhere(tenantCompany, tenantPlant),
+          },
+          { iqcStatus: status },
+        );
+      },
+    });
+  }
+
+  /**
+   * 검사의뢰 LOT(여러 입하 행을 한 모집단으로 묶은 단위) IQC 판정.
+   *
+   * 입하단위 판정(createArrivalResult)과 동일하게 'AqlService.resolveIqcPolicyByItem' 결과로
+   * 합불을 결정한다. 차이는 두 가지다.
+   * 1. 판정 대상이 의뢰에 담긴 (ARRIVAL_NO, ARRIVAL_SEQ) 행으로 한정된다.
+   * 2. AQL 모집단 수량이 의뢰 확정 시 합의된 LOT_QTY다.
+   */
+  async createRequestLotResult(
+    requestNo: string,
+    dto: CreateArrivalIqcResultDto,
+    company?: string,
+    plant?: string,
+  ) {
+    const header = await this.iqcRequestLotRepository.findOne({
+      where: { requestNo, ...this.tenantWhere(company, plant) },
+    });
+    if (!header) throw new NotFoundException(`의뢰 LOT이 없습니다: ${requestNo}`);
+    if (header.status !== 'REQUESTED') {
+      throw new BadRequestException('이미 판정되었거나 취소된 의뢰입니다.');
+    }
+    const lines = await this.iqcRequestLotLineRepository.find({
+      where: { requestNo, ...this.tenantWhere(company, plant) },
+      order: { seq: 'ASC' },
+    });
+    if (lines.length === 0) {
+      throw new BadRequestException('의뢰 LOT에 구성 입하가 없습니다.');
+    }
+
+    // MAT_ARRIVALS/MAT_LOT 모두 입하 행 식별은 (ARRIVAL_NO, SEQ) 복합키다. ARRIVAL_NO만으로 좌허지 않는다.
+    const lineKeys = new Set(lines.map((l) => `${l.arrivalNo}#${l.arrivalSeq}`));
+    const candidates = await this.matLotRepository.find({
+      where: {
+        arrivalNo: In([...new Set(lines.map((l) => l.arrivalNo))]),
+        itemCode: header.itemCode,
+        iqcStatus: 'PENDING',
+        ...this.tenantWhere(company, plant),
+      },
+    });
+    const lots = candidates.filter((lot) => lineKeys.has(`${lot.arrivalNo}#${lot.arrivalSeq}`));
+    if (lots.length === 0) {
+      throw new NotFoundException(`검사 대상(PENDING) 시리얼이 없습니다: 의뢰 ${requestNo}`);
+    }
+
+    const sampleLine = lines.find((l) => l.lineRole === 'SAMPLE') ?? lines[0];
+    const judged = await this.judgeLotsWithAql({
+      lots,
+      itemCode: header.itemCode,
+      representativeArrivalNo: sampleLine.arrivalNo,
+      dto,
+      lotQtyOverride: Number(header.lotQty) || null,
+      logRemarkPrefix: `[IQL:${requestNo}]`,
+      applyArrivalStatus: async (status, tenantCompany, tenantPlant) => {
+        for (const line of lines) {
+          await this.matArrivalRepository.update(
+            {
+              arrivalNo: line.arrivalNo,
+              seq: line.arrivalSeq,
+              itemCode: header.itemCode,
+              iqcStatus: 'PENDING',
+              ...this.tenantWhere(tenantCompany, tenantPlant),
+            },
+            { iqcStatus: status },
+          );
+        }
+      },
+    });
+
+    header.status = judged.result;
+    header.sampleQty = judged.aql?.sampleQty ?? header.sampleQty;
+    await this.iqcRequestLotRepository.save(header);
+    return { ...judged, requestNo };
+  }
+
+  /**
+   * IQC 판정 공통 코어. 입하단위와 의뢰 LOT 단위가 같은 AQL 경로를 타도록 한 곳에 모은다.
+   *
+   * 프론트가 보낸 판정을 그대로 쓰지 않는다. 항상 aqlPolicy.result로 재정의한다.
+   */
+  private async judgeLotsWithAql(input: {
+    lots: MatLot[];
+    itemCode: string;
+    /** IQC_LOGS에 남길 대표 입하번호 */
+    representativeArrivalNo: string;
+    dto: CreateArrivalIqcResultDto;
+    /** 모집단 수량. 없으면 lots의 INIT_QTY 합을 쓴다. */
+    lotQtyOverride?: number | null;
+    /** IQC_LOGS.REMARK 접두어 (의뢰 LOT 추적용) */
+    logRemarkPrefix?: string | null;
+    applyArrivalStatus: (
+      status: 'PASS' | 'FAIL',
+      tenantCompany: string,
+      tenantPlant: string,
+    ) => Promise<void>;
+  }) {
+    const { lots, itemCode, dto } = input;
     const tenantCompany = lots[0].company;
     const tenantPlant = lots[0].plant;
     const vendorCode = lots[0].vendor ?? null;
-    const lotQty = lots.reduce((sum, lot) => sum + (Number(lot.initQty) || 0), 0);
+    const lotQty =
+      Number(input.lotQtyOverride) > 0
+        ? Number(input.lotQtyOverride)
+        : lots.reduce((sum, lot) => sum + (Number(lot.initQty) || 0), 0);
     const defectCounts = this.resolveDefectCounts(dto);
     const itemDefectCounts = this.countFailByInspItem(dto.details);
     const destructive = this.parseDestructive(dto.details);
@@ -531,7 +800,7 @@ export class IqcHistoryService {
     const attributedDefectCounts = this.aqlService.attributeDefectQtyToFailedItems(itemDefectCounts, defectQtyTotal);
     // 검사항목별(각 항목 검사수준/등급/AQL) 판정. 등급 설정 항목이 없으면 내부에서 품목 단일로 폴백.
     const aqlPolicy = await this.aqlService.resolveIqcPolicyByItem({
-      itemCode: dto.itemCode,
+      itemCode,
       vendorCode,
       lotQty,
       itemDefectCounts: attributedDefectCounts,
@@ -543,31 +812,22 @@ export class IqcHistoryService {
     });
     const finalResult = aqlPolicy.result;
 
-    // 1) 입하건의 PENDING 시리얼 전체 일괄 판정
+    // 1) 판정 대상 시리얼 전체 일괄 판정. 입하단위는 입하건 전체, 의뢰 LOT은 담긴 행만 대상이다.
     await this.matLotRepository.update(
       {
-        arrivalNo: dto.arrivalNo,
-        itemCode: dto.itemCode,
+        matUid: In(lots.map((lot) => lot.matUid)),
         iqcStatus: 'PENDING',
         ...this.tenantWhere(tenantCompany, tenantPlant),
       },
       { iqcStatus: finalResult },
     );
-    await this.matArrivalRepository.update(
-      {
-        arrivalNo: dto.arrivalNo,
-        itemCode: dto.itemCode,
-        iqcStatus: 'PENDING',
-        ...this.tenantWhere(tenantCompany, tenantPlant),
-      },
-      { iqcStatus: finalResult },
-    );
+    await input.applyArrivalStatus(finalResult, tenantCompany, tenantPlant);
 
     // 2) 검사 이력 1건 생성 (matUid=null → 입하단위 검사 표식)
     const log = this.iqcLogRepository.create({
-      arrivalNo: dto.arrivalNo,
+      arrivalNo: input.representativeArrivalNo,
       matUid: null,
-      itemCode: dto.itemCode,
+      itemCode,
       vendorCode,
       inspectType: dto.inspectType || 'INITIAL',
       result: finalResult,
@@ -591,7 +851,7 @@ export class IqcHistoryService {
       defectMinor: aqlPolicy.defectMinor,
       aqlJudgeReason: aqlPolicy.judgeReason,
       itemResults: aqlPolicy.itemResults?.length ? JSON.stringify(aqlPolicy.itemResults) : null,
-      remark: dto.remark || null,
+      remark: [input.logRemarkPrefix, dto.remark].filter(Boolean).join(' ').trim() || null,
       inspectDate: new Date(),
       company: tenantCompany,
       plant: tenantPlant,
@@ -599,7 +859,7 @@ export class IqcHistoryService {
     const saved = await this.iqcLogRepository.save(log);
 
     const part = await this.itemMasterRepository.findOne({
-      where: { itemCode: dto.itemCode, ...this.tenantWhere(tenantCompany, tenantPlant) },
+      where: { itemCode, ...this.tenantWhere(tenantCompany, tenantPlant) },
     });
 
     // 3) PASS + 품목에 유효기간 설정 시 → 각 시리얼 expireDate 자동 계산
@@ -641,16 +901,16 @@ export class IqcHistoryService {
 
     await this.aqlService.updateVendorInspectionModeAfterLot({
       vendorCode,
-      arrivalNo: dto.arrivalNo,
-      itemCode: dto.itemCode,
+      arrivalNo: input.representativeArrivalNo,
+      itemCode,
       company: tenantCompany,
       plant: tenantPlant,
     });
 
     return {
       ...saved,
-      arrivalNo: dto.arrivalNo,
-      itemCode: dto.itemCode,
+      arrivalNo: input.representativeArrivalNo,
+      itemCode,
       itemName: part?.itemName ?? null,
       affectedSerials: lots.length,
       result: finalResult,
@@ -658,131 +918,6 @@ export class IqcHistoryService {
     };
   }
 
-  /**
-   * 의뢰 LOT(여러 입하건을 한 검사 LOT으로 묶은 단위)의 판정을 해당 입하건 전체에 적용한다.
-   *
-   * 초보자 가이드:
-   * 1. createArrivalResult는 입하 1건 단위 + AQL 자동판정이고, 이쪽은 검사자가 내린 판정(result)을
-   *    의뢰에 묶인 입하건 전부에 그대로 전파한다. 판정 근거는 의뢰 화면에서 이미 확정된다.
-   * 2. 검사 이력(IQC_LOGS)은 대표 입하번호로 1건만 남긴다. 입하건마다 남기면 LOT 하나가
-   *    여러 번 검사된 것처럼 보인다.
-   * 3. PASS 유효기간 계산 / FAIL 불량창고 이동은 입하 단위 판정과 동일 규칙을 따른다.
-   */
-  async applyIqcVerdictToArrivals(
-    input: {
-      arrivalNo: string;
-      arrivalNos: string[];
-      itemCode: string;
-      lotQty?: number | null;
-      result: string;
-      inspectorName?: string;
-      remark?: string;
-      details?: string;
-      sampleQty?: number;
-      inspectType?: string;
-      logRemark?: string;
-    },
-    company?: string,
-    plant?: string,
-  ) {
-    const arrivalNos = [...new Set([input.arrivalNo, ...input.arrivalNos].filter(Boolean))];
-    if (arrivalNos.length === 0) {
-      throw new BadRequestException('판정할 입하건이 없습니다.');
-    }
-
-    const lots = await this.matLotRepository.find({
-      where: {
-        arrivalNo: In(arrivalNos),
-        itemCode: input.itemCode,
-        iqcStatus: 'PENDING',
-        ...this.tenantWhere(company, plant),
-      },
-    });
-    if (lots.length === 0) {
-      throw new NotFoundException(
-        `검사 대상(PENDING) 시리얼이 없습니다: 입하 ${arrivalNos.join(', ')} / 품목 ${input.itemCode}`,
-      );
-    }
-
-    const tenantCompany = lots[0].company;
-    const tenantPlant = lots[0].plant;
-    const vendorCode = lots[0].vendor ?? null;
-    const finalResult = input.result === 'FAIL' ? 'FAIL' : 'PASS';
-    const lotQty = Number(input.lotQty) > 0
-      ? Number(input.lotQty)
-      : lots.reduce((sum, lot) => sum + (Number(lot.initQty) || 0), 0);
-
-    // 1) 의뢰에 묶인 입하건의 PENDING 시리얼 전체를 한 번에 판정
-    const verdictWhere = {
-      arrivalNo: In(arrivalNos),
-      itemCode: input.itemCode,
-      iqcStatus: 'PENDING',
-      ...this.tenantWhere(tenantCompany, tenantPlant),
-    };
-    await this.matLotRepository.update(verdictWhere, { iqcStatus: finalResult });
-    await this.matArrivalRepository.update(verdictWhere, { iqcStatus: finalResult });
-
-    // 2) 검사 이력 1건 (대표 입하번호, matUid=null → 입하단위 검사 표식)
-    const log = this.iqcLogRepository.create({
-      arrivalNo: input.arrivalNo,
-      matUid: null,
-      itemCode: input.itemCode,
-      vendorCode,
-      inspectType: input.inspectType || 'INITIAL',
-      result: finalResult,
-      details: input.details || null,
-      inspectorName: input.inspectorName || null,
-      destructSampleQty: input.sampleQty || null,
-      lotQty,
-      remark: input.logRemark || input.remark || null,
-      inspectDate: new Date(),
-      company: tenantCompany,
-      plant: tenantPlant,
-    });
-    const saved = await this.iqcLogRepository.save(log);
-
-    const part = await this.itemMasterRepository.findOne({
-      where: { itemCode: input.itemCode, ...this.tenantWhere(tenantCompany, tenantPlant) },
-    });
-
-    // 3) PASS + 품목 유효기간 설정 → 시리얼별 expireDate 계산
-    if (finalResult === 'PASS' && part && (part.expiryDate ?? 0) > 0) {
-      for (const lot of lots) {
-        const expireDate = calcLotExpireDate(lot, part.expiryDate, new Date());
-        await this.matLotRepository.update(
-          { matUid: lot.matUid, ...this.tenantWhere(lot.company, lot.plant) },
-          { expireDate },
-        );
-      }
-    }
-
-    // 4) FAIL → 묶인 시리얼 전체를 불량창고로 이동
-    if (finalResult === 'FAIL') {
-      for (const lot of lots) {
-        await this.handleIqcFail(lot.matUid, lot.itemCode, lot.company, lot.plant);
-      }
-    }
-
-    // 5) 공급사 검사모드(까다로운/보통/수월한) 갱신 — 대표 입하번호 기준
-    await this.aqlService.updateVendorInspectionModeAfterLot({
-      vendorCode,
-      arrivalNo: input.arrivalNo,
-      itemCode: input.itemCode,
-      company: tenantCompany,
-      plant: tenantPlant,
-    });
-
-    return {
-      ...saved,
-      arrivalNo: input.arrivalNo,
-      arrivalNos,
-      itemCode: input.itemCode,
-      itemName: part?.itemName ?? null,
-      affectedSerials: lots.length,
-      lotQty,
-      result: finalResult,
-    };
-  }
 
   private resolveDefectCounts(dto: CreateArrivalIqcResultDto) {
     const providedMajor = dto.defectMajor != null;

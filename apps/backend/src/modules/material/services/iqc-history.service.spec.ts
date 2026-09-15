@@ -13,6 +13,8 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
+import { IqcRequestLot } from '../../../entities/iqc-request-lot.entity';
+import { IqcRequestLotLine } from '../../../entities/iqc-request-lot-line.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { AqlService } from '../../quality/aql/services/aql.service';
 import { NumberingService } from '../../../shared/numbering.service';
@@ -95,6 +97,8 @@ describe('IqcHistoryService cancel policy', () => {
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
         { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
+        { provide: getRepositoryToken(IqcRequestLot), useValue: createMock<Repository<IqcRequestLot>>() },
+        { provide: getRepositoryToken(IqcRequestLotLine), useValue: createMock<Repository<IqcRequestLotLine>>() },
         { provide: DataSource, useValue: mockDataSource },
         { provide: SysConfigService, useValue: mockSysConfigService },
         { provide: AqlService, useValue: mockAqlService },
@@ -434,10 +438,12 @@ describe('IqcHistoryService cancel policy', () => {
         result: 'PASS',
       } as any, 'HANES', 'P01');
 
+      // LOT 갱신은 조회된 시리얼(matUid)로 한정한다. 의뢰 LOT 판정과 같은 코어를 쓰기 때문이다.
       expect(mockMatLotRepo.update).toHaveBeenCalledWith(
-        { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', iqcStatus: 'PENDING', company: 'HANES', plant: 'P01' },
+        expect.objectContaining({ iqcStatus: 'PENDING', company: 'HANES', plant: 'P01' }),
         { iqcStatus: 'PASS' },
       );
+      expect(mockMatLotRepo.update.mock.calls[0][0]).toHaveProperty('matUid');
       expect(mockMatArrivalRepo.update).toHaveBeenCalledWith(
         { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', iqcStatus: 'PENDING', company: 'HANES', plant: 'P01' },
         { iqcStatus: 'PASS' },
@@ -516,6 +522,10 @@ describe('IqcHistoryService cancel policy', () => {
       } as any, 'HANES', 'P01');
 
       expect(mockMatLotRepo.update).toHaveBeenCalledWith(
+        expect.objectContaining({ iqcStatus: 'PENDING', company: 'HANES', plant: 'P01' }),
+        { iqcStatus: 'FAIL' },
+      );
+      expect(mockMatArrivalRepo.update).toHaveBeenCalledWith(
         { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', iqcStatus: 'PENDING', company: 'HANES', plant: 'P01' },
         { iqcStatus: 'FAIL' },
       );

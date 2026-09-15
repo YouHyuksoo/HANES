@@ -53,7 +53,13 @@ export class IqcHistoryController {
   @Get('pending-serials')
   @ApiOperation({ summary: 'IQC 검사대기 시리얼 목록 (입하번호+품목 단위)' })
   async findPendingSerials(@Query() query: PendingSerialsQueryDto, @Company() company: string, @Plant() plant: string) {
-    const data = await this.iqcHistoryService.findPendingSerials(query.arrivalNo, query.itemCode, company, plant);
+    const data = await this.iqcHistoryService.findPendingSerials(
+      query.arrivalNo,
+      query.itemCode,
+      company,
+      plant,
+      query.requestNo,
+    );
     return ResponseUtil.success(data);
   }
 
@@ -71,6 +77,22 @@ export class IqcHistoryController {
   async createArrivalResult(@Body() dto: CreateArrivalIqcResultDto, @Company() company: string, @Plant() plant: string) {
     const data = await this.iqcHistoryService.createArrivalResult(dto, company, plant);
     return ResponseUtil.success(data, '입하단위 IQC 검사결과가 등록되었습니다.');
+  }
+
+  @Post('request-lot/:requestNo')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: '검사의뢰 LOT IQC 검사결과 등록 (의뢰 모집단 기준 AQL 판정)',
+    description: '입하단위와 동일한 AQL 경로로 판정하며 대상은 의뢰에 담긴 (ARRIVAL_NO, ARRIVAL_SEQ) 행만이다.',
+  })
+  async createRequestLotResult(
+    @Param('requestNo') requestNo: string,
+    @Body() dto: CreateArrivalIqcResultDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.iqcHistoryService.createRequestLotResult(requestNo, dto, company, plant);
+    return ResponseUtil.success(data, '검사의뢰 LOT IQC 검사결과가 등록되었습니다.');
   }
 
   @Post('cancel')

@@ -266,7 +266,12 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
     if (!isOpen || !selectedItem) return;
 
     api.get("/material/iqc-history/pending-serials", {
-      params: { arrivalNo: selectedItem.arrivalNo, itemCode: selectedItem.itemCode },
+      // 의뢰 LOT 행은 입하번호만으로 모집단을 특정할 수 없다. requestNo를 함께 보낸다.
+      params: {
+        arrivalNo: selectedItem.arrivalNo,
+        itemCode: selectedItem.itemCode,
+        ...(selectedItem.requestNo ? { requestNo: selectedItem.requestNo } : {}),
+      },
     })
       .then((res) => setPendingSerials(res.data?.data ?? []))
       .catch(() => setPendingSerials([]));

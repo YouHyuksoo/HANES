@@ -88,7 +88,25 @@ export default function IqcTable({ data, onInspect, onPrintRequest, toolbarLeft,
           );
         },
       },
-      { accessorKey: 'arrivalNo', header: t('material.col.arrivalNo'), size: 160, meta: { filterType: 'text' as const } },
+      {
+        accessorKey: 'arrivalNo',
+        header: t('material.col.arrivalNo'),
+        size: 190,
+        meta: { filterType: 'text' as const },
+        // 의뢰 LOT 묶음 행은 입하 여러 건을 한 모집단으로 검사하므로 한눈에 구분되게 표시한다.
+        cell: ({ row, getValue }) => {
+          const value = (getValue() as string | null) || '-';
+          if (!row.original.requestNo) return <span>{value}</span>;
+          return (
+            <span className="flex items-center gap-1.5 min-w-0">
+              <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary">
+                {t('material.iqc.requestLotTag', '의뢰LOT')}
+              </span>
+              <span className="truncate">{value}</span>
+            </span>
+          );
+        },
+      },
       {
         accessorKey: 'poNo',
         header: t('material.col.poNo'),

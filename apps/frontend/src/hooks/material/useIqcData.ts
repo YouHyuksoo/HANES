@@ -13,10 +13,15 @@ import { useTranslation } from 'react-i18next';
 import type { IqcStatus } from '@/components/material';
 import api from '@/services/api';
 
-/** IQC 검사 대상 (입하번호 + 품목 단위 그룹) */
+/** IQC 검사 대상 (입하번호 + 품목 단위 그룹, 또는 검사의뢰 LOT 묶음) */
 export interface IqcItem {
   /** `${arrivalNo}::${itemCode}` */
   id: string;
+  /**
+   * 검사의뢰 LOT 묶음 행이면 의뢰번호. 입하단위 행이면 null.
+   * `IQC_INSPECT_LOT_MODE=REQUEST` 일 때만 묶음 행이 내려온다.
+   */
+  requestNo: string | null;
   arrivalNo: string;
   itemCode: string;
   itemName: string;
@@ -61,6 +66,7 @@ export function mapPendingGroupToIqcItem(g: Record<string, unknown>): IqcItem {
   const num = (v: unknown) => (typeof v === 'number' ? v : Number(v) || 0);
   return {
     id: `${str(g.arrivalNo)}::${str(g.itemCode)}`,
+    requestNo: g.requestNo == null ? null : str(g.requestNo),
     arrivalNo: str(g.arrivalNo) || '-',
     itemCode: str(g.itemCode),
     itemName: str(g.itemName),
@@ -161,7 +167,11 @@ export function useIqcData() {
     if (!selectedItem || !finalResult) return;
     try {
       const result = finalResult === 'PASSED' ? 'PASS' : 'FAIL';
-      const res = await api.post('/material/iqc-history/arrival', {
+      // 의뢰 LOT 묶음 행은 의뢰 모집단 기준으로 판정한다. 둘 다 서버에서 AQL로 재판정된다.
+      const endpoint = selectedItem.requestNo
+        ? `/material/iqc-history/request-lot/${encodeURIComponent(selectedItem.requestNo)}`
+        : '/material/iqc-history/arrival';
+      const res = await api.post(endpoint, {
         arrivalNo: selectedItem.arrivalNo,
         itemCode: selectedItem.itemCode,
         result,
