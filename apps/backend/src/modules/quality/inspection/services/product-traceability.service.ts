@@ -51,6 +51,9 @@ import {
 
 const TRACE_CANDIDATE_CONFIRM_LIMIT = 500;
 
+/** 자재 1건의 투입 맥락 — 어느 작업지시에 얼마를 언제 썼는지 */
+type MaterialTraceCtx = { usedQty: number; orderNo: string | null; issueQty: number; issueDate: Date | null };
+
 @Injectable()
 export class ProductTraceabilityService {
   private readonly logger = new Logger(ProductTraceabilityService.name);
@@ -96,39 +99,69 @@ export class ProductTraceabilityService {
    * @param matUidToCtx matUid → { usedQty, orderNo(투입 작업지시) }
    */
   private async resolveMaterialTraces(
-    matUidToCtx: Map<string, { usedQty: number; orderNo: string | null; issueQty: number; issueDate: Date | null }>,
+    matUidToCtx: Map<string, MaterialTraceCtx>,
     company: string,
     plant: string,
   ): Promise<MaterialTrace[]> {
-    const matUids = [...matUidToCtx.keys()];
-    if (matUids.length === 0) return [];
+    const [only] = await this.resolveMaterialTracesBatch([matUidToCtx], company, plant);
+    return only ?? [];
+  }
 
+  /**
+   * 여러 추적 대상(제품 1건 + 반제품 N건 등)의 자재 이력을 한 번의 쿼리 세트로 조립한다.
+   *
+   * 초보자 가이드:
+   * 1. 대상마다 resolveMaterialTraces 를 부르면 대상 수만큼 같은 쿼리 세트가 반복 발행된다.
+   *    원격 DB 왕복이 수백 ms 라 이 반복이 응답시간을 그대로 지배한다.
+   * 2. 그래서 모든 대상의 matUid 를 합쳐 한 번만 조회하고, 조립 단계에서 대상별로 나눈다.
+   * 3. 조회는 3라운드다. lots → (lots 에서 파생되는 것 전부 병렬) → warehouses(수불 의존).
+   */
+  private async resolveMaterialTracesBatch(
+    ctxList: Array<Map<string, MaterialTraceCtx>>,
+    company: string,
+    plant: string,
+  ): Promise<MaterialTrace[][]> {
+    const matUids = [...new Set(ctxList.flatMap((ctx) => [...ctx.keys()]))];
+    if (matUids.length === 0) return ctxList.map(() => []);
+
+    // 1라운드: 나머지 조회의 기준이 되는 LOT
     const lots = await this.matLotRepo.find({ where: { matUid: In(matUids), company, plant } });
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
 
     const itemCodes = [...new Set(lots.map((l) => l.itemCode).filter(Boolean))];
-    const parts = itemCodes.length
-      ? await this.itemMasterRepo.find({ where: { itemCode: In(itemCodes), company, plant } })
-      : [];
-    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
-
     // 공급사 코드 → 거래처명 매핑 (vendor는 PARTNER_MASTERS.partnerCode)
     const vendorCodes = [...new Set(lots.map((l) => l.vendor).filter(Boolean))];
-    const partners = vendorCodes.length
-      ? await this.partnerMasterRepo.find({ where: { partnerCode: In(vendorCodes), company, plant } })
-      : [];
-    const partnerNameMap = new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
-
     const poNos = [...new Set(lots.map((l) => l.poNo).filter((v): v is string => !!v))];
-    const pos = poNos.length
-      ? await this.poRepo.find({ where: { poNo: In(poNos), company, plant } })
-      : [];
-    const poMap = new Map(pos.map((p) => [p.poNo, p]));
-
     const arrivalNos = [...new Set(lots.map((l) => l.arrivalNo).filter((v): v is string => !!v))];
-    const arrivals = arrivalNos.length
-      ? await this.arrivalRepo.find({ where: { arrivalNo: In(arrivalNos), company, plant } })
-      : [];
+
+    // 2라운드: LOT 에서 파생되는 조회는 서로 독립이라 한 번에 던진다
+    const [parts, partners, pos, arrivals, iqcs, receivings, stockTx] = await Promise.all([
+      itemCodes.length
+        ? this.itemMasterRepo.find({ where: { itemCode: In(itemCodes), company, plant } })
+        : Promise.resolve([]),
+      vendorCodes.length
+        ? this.partnerMasterRepo.find({ where: { partnerCode: In(vendorCodes), company, plant } })
+        : Promise.resolve([]),
+      poNos.length
+        ? this.poRepo.find({ where: { poNo: In(poNos), company, plant } })
+        : Promise.resolve([]),
+      arrivalNos.length
+        ? this.arrivalRepo.find({ where: { arrivalNo: In(arrivalNos), company, plant } })
+        : Promise.resolve([]),
+      this.iqcRepo.find({
+        where: [
+          { matUid: In(matUids), company, plant },
+          ...(arrivalNos.length ? [{ arrivalNo: In(arrivalNos), company, plant }] : []),
+        ],
+        order: { inspectDate: 'DESC' },
+      }),
+      this.receivingRepo.find({ where: { matUid: In(matUids), company, plant }, order: { receiveDate: 'ASC' } }),
+      this.stockTransactionRepo.find({ where: { matUid: In(matUids), company, plant }, order: { transDate: 'ASC' } }),
+    ]);
+
+    const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+    const partnerNameMap = new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
+    const poMap = new Map(pos.map((p) => [p.poNo, p]));
     // arrivalNo+seq 매칭: lot.arrivalSeq 우선, 없으면 첫 행
     const arrivalMap = new Map<string, MatArrival>();
     for (const a of arrivals) arrivalMap.set(`${a.arrivalNo}#${a.seq}`, a);
@@ -138,27 +171,15 @@ export class ProductTraceabilityService {
     // IQC: matUid 우선, 없으면 arrivalNo
     const iqcByMat = new Map<string, IqcLog>();
     const iqcByArrival = new Map<string, IqcLog>();
-    const iqcs = await this.iqcRepo.find({
-      where: [
-        { matUid: In(matUids), company, plant },
-        ...(arrivalNos.length ? [{ arrivalNo: In(arrivalNos), company, plant }] : []),
-      ],
-      order: { inspectDate: 'DESC' },
-    });
     for (const q of iqcs) {
       if (q.matUid && !iqcByMat.has(q.matUid)) iqcByMat.set(q.matUid, q);
       if (q.arrivalNo && !iqcByArrival.has(q.arrivalNo)) iqcByArrival.set(q.arrivalNo, q);
     }
 
-    const receivings = await this.receivingRepo.find({ where: { matUid: In(matUids), company, plant }, order: { receiveDate: 'ASC' } });
     const recvMap = new Map<string, MatReceiving>();
     for (const r of receivings) if (!recvMap.has(r.matUid)) recvMap.set(r.matUid, r);
 
-    // 수불이력: matUids 일괄 조회 → matUid별 그룹 Map
-    const stockTx = matUids.length
-      ? await this.stockTransactionRepo.find({ where: { matUid: In(matUids), company, plant }, order: { transDate: 'ASC' } })
-      : [];
-    // 창고 코드 → 창고명 매핑 (수불 from/to 창고)
+    // 3라운드: 창고 코드 → 창고명 매핑 (수불 결과에 의존)
     const whCodes = [...new Set(stockTx.flatMap((tx) => [tx.fromWarehouseId, tx.toWarehouseId]).filter((v): v is string => !!v))];
     const warehouses = whCodes.length
       ? await this.warehouseRepo.find({ where: { warehouseCode: In(whCodes), company, plant } })
@@ -184,10 +205,10 @@ export class ProductTraceabilityService {
       stockByMat.set(tx.matUid, arr);
     }
 
-    const result: MaterialTrace[] = [];
-    for (const matUid of matUids) {
+    return ctxList.map((matUidToCtx) => {
+      const result: MaterialTrace[] = [];
+      for (const [matUid, ctx] of matUidToCtx) {
       const lot = lotMap.get(matUid);
-      const ctx = matUidToCtx.get(matUid)!;
       const part = lot ? partMap.get(lot.itemCode) : undefined;
       const po = lot?.poNo ? poMap.get(lot.poNo) : undefined;
       const arrival = lot?.arrivalNo
@@ -211,8 +232,9 @@ export class ProductTraceabilityService {
         issue: { orderNo: ctx.orderNo, issueQty: ctx.issueQty, issueDate: this.fmtDate(ctx.issueDate) },
         stockHistory: stockByMat.get(matUid) ?? [],
       });
-    }
-    return result;
+      }
+      return result;
+    });
   }
 
   // ─── Step 1: 마스터 캐시 + 헬퍼 ────────────────────────────────────────────
@@ -849,15 +871,32 @@ export class ProductTraceabilityService {
     const fg = await this.fgLabelRepo.findOne({ where: { fgBarcode: serial, company, plant } });
     if (!fg) { this.logger.debug(`FgLabel not found: ${serial}`); return null; }
 
-    const part = await this.itemMasterRepo.findOne({ where: { itemCode: fg.itemCode, company, plant } });
-    const jobOrder = fg.orderNo ? await this.jobOrderRepo.findOne({ where: { orderNo: fg.orderNo, company, plant } }) : null;
+    // 아래 조회들은 서로 의존하지 않는다. 원격 DB 왕복이 수백 ms 라
+    // 순차로 await 하면 그 합이 그대로 응답시간이 되므로 한 번에 던진다.
+    const [part, jobOrder, processHistory, inspections, matCtx, semiProducts, box, orderResults] =
+      await Promise.all([
+        this.itemMasterRepo.findOne({ where: { itemCode: fg.itemCode, company, plant } }),
+        fg.orderNo
+          ? this.jobOrderRepo.findOne({ where: { orderNo: fg.orderNo, company, plant } })
+          : Promise.resolve(null),
+        this.resolveProcessHistory(fg.orderNo, serial, company, plant),
+        this.resolveInspections(serial, company, plant),
+        // 직접투입 자재
+        this.collectMaterialCtx(fg.orderNo, 'FG', serial, company, plant),
+        // 반제품 (Task 4)
+        this.resolveSemiProducts(serial, company, plant),
+        // 포장/출하 — 박스만 선행 조회. 팔레트/출하지시는 박스 결과에 의존한다.
+        fg.boxNo
+          ? this.boxMasterRepo.findOne({ where: { boxNo: fg.boxNo, company, plant } })
+          : Promise.resolve(null),
+        fg.orderNo
+          ? this.prodResultRepo.find({ where: { orderNo: fg.orderNo, company, plant } })
+          : Promise.resolve([]),
+      ]);
 
-    const processHistory = await this.resolveProcessHistory(fg.orderNo, serial, company, plant);
-    const inspections = await this.resolveInspections(serial, company, plant);
-
-    // 포장/출하
-    const box = fg.boxNo ? await this.boxMasterRepo.findOne({ where: { boxNo: fg.boxNo, company, plant } }) : null;
-    const pallet = box?.palletNo ? await this.palletMasterRepo.findOne({ where: { palletNo: box.palletNo, company, plant } }) : null;
+    const pallet = box?.palletNo
+      ? await this.palletMasterRepo.findOne({ where: { palletNo: box.palletNo, company, plant } })
+      : null;
 
     // 출하지시 조회
     const shipOrderNo = box?.shipOrderNo ?? pallet?.shipOrderNo ?? null;
@@ -865,20 +904,12 @@ export class ProductTraceabilityService {
       ? await this.shipmentOrderRepo.findOne({ where: { shipOrderNo, company, plant } })
       : null;
 
-    // 직접투입 자재
-    const matCtx = await this.collectMaterialCtx(fg.orderNo, 'FG', serial, company, plant);
     const materials = await this.resolveMaterialTraces(matCtx, company, plant);
-
-    // 반제품 (Task 4)
-    const semiProducts = await this.resolveSemiProducts(serial, company, plant);
 
     // jobOrder.planDate 존재 확인: job-order.entity.ts 실측 결과 planDate: Date | null 존재함
     const productionDate = this.fmtDate(jobOrder?.planDate ?? null) ?? this.fmtDate(fg.issuedAt);
 
-    // 제품 생산에 사용된 작업지시 + 설비 코드 수집
-    const orderResults = fg.orderNo
-      ? await this.prodResultRepo.find({ where: { orderNo: fg.orderNo, company, plant } })
-      : [];
+    // 제품 생산에 사용된 작업지시 + 설비 코드 수집 (orderResults 는 위에서 함께 조회했다)
     const matchedResults = orderResults.filter((result) => result.prdUid === serial);
     const prodResults = matchedResults.length > 0
       ? matchedResults
@@ -943,29 +974,41 @@ export class ProductTraceabilityService {
     const consumedBySg = new Map<string, number>();
     for (const g of sgLinks) consumedBySg.set(g.childKey, (consumedBySg.get(g.childKey) ?? 0) + g.qty);
 
-    // SG별 추적은 서로 독립적이므로 병렬 실행한다(순차 await로 인한 O(N) 직렬 왕복 회피).
-    return Promise.all(
+    // SG별 생산이력·검사는 서로 독립이라 병렬로 던진다.
+    // 자재 이력은 SG마다 같은 쿼리 세트를 반복 발행하게 되므로 뒤에서 한 번에 모아 푼다.
+    const perSg = await Promise.all(
       sgBarcodes.map(async (sgBarcode) => {
         const sg = sgMap.get(sgBarcode);
-        const part = sg ? partMap.get(sg.itemCode) : undefined;
         const [processHistory, inspections, matCtx] = await Promise.all([
           this.resolveProcessHistory(sg?.orderNo ?? null, sgBarcode, company, plant),
           this.resolveInspections(sgBarcode, company, plant),
           this.collectMaterialCtx(sg?.orderNo ?? null, 'SG', sgBarcode, company, plant),
         ]);
-        const materials = await this.resolveMaterialTraces(matCtx, company, plant);
-
-        return {
-          sgBarcode,
-          itemCode: sg?.itemCode ?? '',
-          itemName: part?.itemName ?? '',
-          consumedQty: consumedBySg.get(sgBarcode) ?? 0,
-          status: sg?.status ?? '',
-          warehouseCode: sg?.warehouseCode ?? null,
-          issueProcessCode: sg?.issueProcessCode ?? null,
-          processHistory, inspections, materials,
-        };
+        return { sgBarcode, sg, processHistory, inspections, matCtx };
       }),
     );
+
+    // SG 전체의 자재를 쿼리 세트 1회로 해결한다(SG N건이면 N배 왕복이던 구간).
+    const materialsPerSg = await this.resolveMaterialTracesBatch(
+      perSg.map((row) => row.matCtx),
+      company,
+      plant,
+    );
+
+    return perSg.map((row, idx) => {
+      const part = row.sg ? partMap.get(row.sg.itemCode) : undefined;
+      return {
+        sgBarcode: row.sgBarcode,
+        itemCode: row.sg?.itemCode ?? '',
+        itemName: part?.itemName ?? '',
+        consumedQty: consumedBySg.get(row.sgBarcode) ?? 0,
+        status: row.sg?.status ?? '',
+        warehouseCode: row.sg?.warehouseCode ?? null,
+        issueProcessCode: row.sg?.issueProcessCode ?? null,
+        processHistory: row.processHistory,
+        inspections: row.inspections,
+        materials: materialsPerSg[idx] ?? [],
+      };
+    });
   }
 }
