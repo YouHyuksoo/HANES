@@ -537,7 +537,8 @@
     "root": "Cấp cao nhất",
     "system.improvementRequests": "Quản lý yêu cầu cải tiến",
     "material.arrivalResult": "Kết quả nhập hàng",
-    "material.receiveLabel": "Phát hành nhãn nhập kho"
+    "material.receiveLabel": "Phát hành nhãn nhập kho",
+    "quality.ncr": "Báo cáo không phù hợp"
   },
   "header": {
     "theme": "Giao diện",
@@ -5489,6 +5490,66 @@
     },
     "iqcHistory": {
       "inspectorName": "Người kiểm tra"
+    },
+    "ncr": {
+      "pageTitle": "Báo cáo không phù hợp",
+      "subtitle": "Phát hành không phù hợp cho nguyên vật liệu, bán thành phẩm, thành phẩm, hàng dở dang và ghi nhận xử lý, nguyên nhân, kết thúc.",
+      "issue": "Phát hành NCR",
+      "edit": "Sửa báo cáo không phù hợp",
+      "closedReadonly": "Báo cáo đã kết thúc không thể sửa. Nếu cần hãy phát hành mới.",
+      "ncrNo": "Số NCR",
+      "issuedAt": "Ngày phát hành",
+      "targetType": "Phân loại đối tượng",
+      "foundStage": "Công đoạn phát hiện",
+      "lotNo": "Số lô",
+      "serialNo": "Serial",
+      "poNo": "P/O No",
+      "vendorCode": "Nhà cung cấp",
+      "inspectQty": "Số lượng kiểm tra",
+      "defectQty": "Số lượng lỗi",
+      "defectCode": "Tên không phù hợp",
+      "defectGrade": "Cấp độ lỗi",
+      "description": "Hiện tượng không phù hợp",
+      "descriptionPlaceholder": "VD: Chân số 3 connector CN1 bấm cắn vỏ, đứt khi kéo (2EA)",
+      "dueDate": "Hạn phản hồi",
+      "issueDept": "Bộ phận phát hành",
+      "disposition": "Phương án xử lý",
+      "dispositionDetail": "Nội dung chi tiết và lý do",
+      "dueActionDate": "Hạn xử lý",
+      "responsibleCode": "Người phụ trách xử lý",
+      "causeCategory": "Phân loại nguyên nhân",
+      "causeCategoryLabel": "Phân loại nguyên nhân (4M1E)",
+      "rootCause": "Nguyên nhân phát sinh",
+      "rootCausePlaceholder": "VD: Dụng cụ bấm mòn làm giảm lực bấm",
+      "preventiveAction": "Biện pháp ngăn ngừa tái phát",
+      "capaNo": "Hành động khắc phục (CAPA)",
+      "approverCode": "Người phê duyệt",
+      "setDisposition": "Xác định phương án xử lý",
+      "setCause": "Phân tích nguyên nhân",
+      "close": "Kết thúc",
+      "closeTitle": "Kết thúc không phù hợp",
+      "closeNeedDisposition": "Phải xác định phương án xử lý trước khi kết thúc.",
+      "closeNeedCause": "Phải ghi nguyên nhân phát sinh trước khi kết thúc.",
+      "closeNotice": "Sau khi kết thúc không thể sửa. Được lưu làm hồ sơ chất lượng.",
+      "dispositionHint": "Phương án xử lý được chỉ định tại danh sách sau khi phát hành.",
+      "dispositionSuggest": "Thứ tự đề xuất",
+      "statsTotal": "Tổng",
+      "statsOpen": "Đã phát hành",
+      "statsInProgress": "Đang xử lý",
+      "statsClosed": "Đã kết thúc",
+      "statsCritical": "Nghiêm trọng",
+      "print": {
+        "modalTitle": "In báo cáo không phù hợp",
+        "title": "BÁO CÁO KHÔNG PHÙ HỢP",
+        "printedAt": "Thời điểm in",
+        "targetSection": "Đối tượng không phù hợp",
+        "contentSection": "Nội dung không phù hợp",
+        "dispositionSection": "Phương án xử lý",
+        "causeSection": "Nguyên nhân phát sinh và biện pháp ngăn ngừa tái phát",
+        "writer": "Người lập",
+        "reviewer": "Người kiểm tra",
+        "approver": "Người phê duyệt"
+      }
     }
   },
   "equipment": {
@@ -8296,6 +8357,38 @@
       "ACTIVE": "Đang dùng",
       "EXPIRED": "Hết hạn",
       "RETIRED": "Loại bỏ"
+    },
+    "NCR_TARGET_TYPE": {
+      "RAW_MATERIAL": "Nguyên vật liệu",
+      "SEMI_PRODUCT": "Bán thành phẩm",
+      "FINISHED": "Thành phẩm",
+      "WIP": "Hàng dở dang"
+    },
+    "NCR_FOUND_STAGE": {
+      "IQC": "Kiểm tra đầu vào",
+      "PROCESS": "Kiểm tra công đoạn",
+      "FINAL": "Kiểm tra cuối",
+      "OQC": "Kiểm tra xuất hàng",
+      "CUSTOMER": "Khiếu nại khách hàng"
+    },
+    "NCR_DISPOSITION": {
+      "CONCESSION": "Đặc cách",
+      "REPAIR": "Sửa chữa",
+      "REWORK": "Làm lại",
+      "SCRAP": "Hủy bỏ",
+      "RETURN": "Trả hàng"
+    },
+    "NCR_CAUSE_CATEGORY": {
+      "MAN": "Con người (Man)",
+      "MACHINE": "Thiết bị (Machine)",
+      "METHOD": "Phương pháp (Method)",
+      "MEASUREMENT": "Đo lường (Measurement)",
+      "ENVIRONMENT": "Môi trường (Environment)"
+    },
+    "NCR_STATUS": {
+      "OPEN": "Đã phát hành",
+      "IN_PROGRESS": "Đang xử lý",
+      "CLOSED": "Đã kết thúc"
     }
   },
   "comCodeGroup": {

@@ -537,7 +537,8 @@
     "system.menuCategory": "메뉴 카테고리 관리",
     "root": "최상위",
     "system.improvementRequests": "개선요청 관리",
-    "material.arrivalResult": "입하실적조회"
+    "material.arrivalResult": "입하실적조회",
+    "quality.ncr": "부적합 보고서"
   },
   "header": {
     "theme": "테마",
@@ -6043,6 +6044,66 @@
     },
     "iqcHistory": {
       "inspectorName": "검사자"
+    },
+    "ncr": {
+      "pageTitle": "부적합 보고서",
+      "subtitle": "원자재·반제품·완제품·재공품 부적합을 발행하고 처리·원인·종결까지 기록합니다.",
+      "issue": "부적합 발행",
+      "edit": "부적합 보고서 수정",
+      "closedReadonly": "종결된 보고서는 수정할 수 없습니다. 필요하면 새로 발행하세요.",
+      "ncrNo": "NCR 번호",
+      "issuedAt": "발행일",
+      "targetType": "대상구분",
+      "foundStage": "발견단계",
+      "lotNo": "로트번호",
+      "serialNo": "시리얼",
+      "poNo": "P/O No",
+      "vendorCode": "공급업체",
+      "inspectQty": "검사수량",
+      "defectQty": "불량수량",
+      "defectCode": "부적합명",
+      "defectGrade": "결함구분",
+      "description": "부적합 현상",
+      "descriptionPlaceholder": "예: CN1 커넥터 3번 핀 압착 부위 피복 물림, 인장 시 단선 (2EA)",
+      "dueDate": "회신요구일",
+      "issueDept": "발행부서",
+      "disposition": "처리방안",
+      "dispositionDetail": "세부내용 및 사유",
+      "dueActionDate": "처리기한",
+      "responsibleCode": "처리 책임자",
+      "causeCategory": "원인분류",
+      "causeCategoryLabel": "원인분류(4M1E)",
+      "rootCause": "발생 원인",
+      "rootCausePlaceholder": "예: 압착 치공구 마모로 압착력 저하",
+      "preventiveAction": "재발방지 대책",
+      "capaNo": "시정조치(CAPA)",
+      "approverCode": "승인자",
+      "setDisposition": "처리방안 확정",
+      "setCause": "원인분석",
+      "close": "종결",
+      "closeTitle": "부적합 종결",
+      "closeNeedDisposition": "처리방안을 먼저 확정해야 종결할 수 있습니다.",
+      "closeNeedCause": "발생 원인을 먼저 기재해야 종결할 수 있습니다.",
+      "closeNotice": "종결하면 수정할 수 없습니다. 품질기록으로 보존됩니다.",
+      "dispositionHint": "처리방안은 발행 후 목록에서 지정합니다.",
+      "dispositionSuggest": "권장 순서",
+      "statsTotal": "전체",
+      "statsOpen": "발행",
+      "statsInProgress": "처리중",
+      "statsClosed": "종결",
+      "statsCritical": "치명",
+      "print": {
+        "modalTitle": "부적합 보고서 출력",
+        "title": "부적합 보고서",
+        "printedAt": "출력일시",
+        "targetSection": "부적합 대상",
+        "contentSection": "부적합 내용",
+        "dispositionSection": "처리방안",
+        "causeSection": "발생 원인 및 재발방지 대책",
+        "writer": "작성자",
+        "reviewer": "검토자",
+        "approver": "승인자"
+      }
     }
   },
   "shipping": {
@@ -8336,6 +8397,38 @@
       "ACTIVE": "사용중",
       "EXPIRED": "만료",
       "RETIRED": "폐기"
+    },
+    "NCR_TARGET_TYPE": {
+      "RAW_MATERIAL": "원자재",
+      "SEMI_PRODUCT": "반제품",
+      "FINISHED": "완제품",
+      "WIP": "재공품"
+    },
+    "NCR_FOUND_STAGE": {
+      "IQC": "수입검사",
+      "PROCESS": "공정검사",
+      "FINAL": "최종검사",
+      "OQC": "출하검사",
+      "CUSTOMER": "고객클레임"
+    },
+    "NCR_DISPOSITION": {
+      "CONCESSION": "특채(진행)",
+      "REPAIR": "수리",
+      "REWORK": "재작업",
+      "SCRAP": "폐기",
+      "RETURN": "반품"
+    },
+    "NCR_CAUSE_CATEGORY": {
+      "MAN": "사람(Man)",
+      "MACHINE": "설비(Machine)",
+      "METHOD": "방법(Method)",
+      "MEASUREMENT": "측정(Measurement)",
+      "ENVIRONMENT": "환경(Environment)"
+    },
+    "NCR_STATUS": {
+      "OPEN": "발행",
+      "IN_PROGRESS": "조치중",
+      "CLOSED": "종결"
     }
   },
   "comCodeGroup": {

@@ -537,7 +537,8 @@
     "root": "顶级",
     "system.improvementRequests": "改善申请管理",
     "material.arrivalResult": "到货实绩查询",
-    "material.receiveLabel": "入库标签发行"
+    "material.receiveLabel": "入库标签发行",
+    "quality.ncr": "不合格报告"
   },
   "header": {
     "theme": "主题",
@@ -5489,6 +5490,66 @@
     },
     "iqcHistory": {
       "inspectorName": "检验员"
+    },
+    "ncr": {
+      "pageTitle": "不合格报告",
+      "subtitle": "对原材料、半成品、成品、在制品的不合格进行开立，并记录处置、原因与关闭。",
+      "issue": "开立不合格",
+      "edit": "修改不合格报告",
+      "closedReadonly": "已关闭的报告不可修改。如有需要请重新开立。",
+      "ncrNo": "NCR 编号",
+      "issuedAt": "开立日期",
+      "targetType": "对象区分",
+      "foundStage": "发现阶段",
+      "lotNo": "批号",
+      "serialNo": "序列号",
+      "poNo": "P/O No",
+      "vendorCode": "供应商",
+      "inspectQty": "检验数量",
+      "defectQty": "不良数量",
+      "defectCode": "不合格项",
+      "defectGrade": "缺陷等级",
+      "description": "不合格现象",
+      "descriptionPlaceholder": "例：CN1 连接器第 3 针压接咬皮，拉力测试断线（2EA）",
+      "dueDate": "回复期限",
+      "issueDept": "开立部门",
+      "disposition": "处置方案",
+      "dispositionDetail": "详细内容及理由",
+      "dueActionDate": "处理期限",
+      "responsibleCode": "处理责任人",
+      "causeCategory": "原因分类",
+      "causeCategoryLabel": "原因分类（4M1E）",
+      "rootCause": "发生原因",
+      "rootCausePlaceholder": "例：压接工具磨损导致压接力下降",
+      "preventiveAction": "再发防止对策",
+      "capaNo": "纠正措施(CAPA)",
+      "approverCode": "批准人",
+      "setDisposition": "确定处置方案",
+      "setCause": "原因分析",
+      "close": "关闭",
+      "closeTitle": "关闭不合格",
+      "closeNeedDisposition": "请先确定处置方案后再关闭。",
+      "closeNeedCause": "请先填写发生原因后再关闭。",
+      "closeNotice": "关闭后不可修改，将作为质量记录保存。",
+      "dispositionHint": "处置方案在开立后于列表中指定。",
+      "dispositionSuggest": "建议顺序",
+      "statsTotal": "全部",
+      "statsOpen": "已开立",
+      "statsInProgress": "处理中",
+      "statsClosed": "已关闭",
+      "statsCritical": "致命",
+      "print": {
+        "modalTitle": "打印不合格报告",
+        "title": "不合格报告",
+        "printedAt": "打印时间",
+        "targetSection": "不合格对象",
+        "contentSection": "不合格内容",
+        "dispositionSection": "处置方案",
+        "causeSection": "发生原因及再发防止对策",
+        "writer": "编制",
+        "reviewer": "审核",
+        "approver": "批准"
+      }
     }
   },
   "equipment": {
@@ -8296,6 +8357,38 @@
       "ACTIVE": "使用中",
       "EXPIRED": "已过期",
       "RETIRED": "报废"
+    },
+    "NCR_TARGET_TYPE": {
+      "RAW_MATERIAL": "原材料",
+      "SEMI_PRODUCT": "半成品",
+      "FINISHED": "成品",
+      "WIP": "在制品"
+    },
+    "NCR_FOUND_STAGE": {
+      "IQC": "来料检验",
+      "PROCESS": "过程检验",
+      "FINAL": "最终检验",
+      "OQC": "出货检验",
+      "CUSTOMER": "客户投诉"
+    },
+    "NCR_DISPOSITION": {
+      "CONCESSION": "特采(放行)",
+      "REPAIR": "修理",
+      "REWORK": "返工",
+      "SCRAP": "报废",
+      "RETURN": "退货"
+    },
+    "NCR_CAUSE_CATEGORY": {
+      "MAN": "人(Man)",
+      "MACHINE": "设备(Machine)",
+      "METHOD": "方法(Method)",
+      "MEASUREMENT": "测量(Measurement)",
+      "ENVIRONMENT": "环境(Environment)"
+    },
+    "NCR_STATUS": {
+      "OPEN": "已开立",
+      "IN_PROGRESS": "处理中",
+      "CLOSED": "已关闭"
     }
   },
   "comCodeGroup": {

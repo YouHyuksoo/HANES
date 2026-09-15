@@ -537,7 +537,8 @@
     "root": "Root",
     "system.improvementRequests": "Improvement Requests",
     "material.arrivalResult": "Arrival Results",
-    "material.receiveLabel": "Receiving Label"
+    "material.receiveLabel": "Receiving Label",
+    "quality.ncr": "Nonconformance Report"
   },
   "header": {
     "theme": "Theme",
@@ -5507,6 +5508,66 @@
     },
     "iqcHistory": {
       "inspectorName": "Inspector"
+    },
+    "ncr": {
+      "pageTitle": "Nonconformance Report",
+      "subtitle": "Issue nonconformances for raw materials, semi-finished, finished and WIP items, and record disposition, cause and closure.",
+      "issue": "Issue NCR",
+      "edit": "Edit NCR",
+      "closedReadonly": "A closed report cannot be edited. Issue a new one if needed.",
+      "ncrNo": "NCR No.",
+      "issuedAt": "Issued",
+      "targetType": "Target Type",
+      "foundStage": "Found Stage",
+      "lotNo": "Lot No.",
+      "serialNo": "Serial",
+      "poNo": "P/O No",
+      "vendorCode": "Vendor",
+      "inspectQty": "Inspected Qty",
+      "defectQty": "Defect Qty",
+      "defectCode": "Nonconformance",
+      "defectGrade": "Defect Grade",
+      "description": "Description",
+      "descriptionPlaceholder": "e.g. CN1 connector pin 3 crimped over insulation, breaks under tension (2EA)",
+      "dueDate": "Reply Due",
+      "issueDept": "Issuing Dept.",
+      "disposition": "Disposition",
+      "dispositionDetail": "Details and Reason",
+      "dueActionDate": "Action Due",
+      "responsibleCode": "Responsible",
+      "causeCategory": "Cause Category",
+      "causeCategoryLabel": "Cause Category (4M1E)",
+      "rootCause": "Root Cause",
+      "rootCausePlaceholder": "e.g. Crimping tool wear reduced crimp force",
+      "preventiveAction": "Preventive Action",
+      "capaNo": "CAPA",
+      "approverCode": "Approver",
+      "setDisposition": "Set Disposition",
+      "setCause": "Root Cause Analysis",
+      "close": "Close",
+      "closeTitle": "Close NCR",
+      "closeNeedDisposition": "Set the disposition before closing.",
+      "closeNeedCause": "Record the root cause before closing.",
+      "closeNotice": "Once closed, the report cannot be edited. It is kept as a quality record.",
+      "dispositionHint": "Disposition is set from the list after issuing.",
+      "dispositionSuggest": "Suggested order",
+      "statsTotal": "Total",
+      "statsOpen": "Open",
+      "statsInProgress": "In Progress",
+      "statsClosed": "Closed",
+      "statsCritical": "Critical",
+      "print": {
+        "modalTitle": "Print Nonconformance Report",
+        "title": "NONCONFORMANCE REPORT",
+        "printedAt": "Printed",
+        "targetSection": "Nonconforming Item",
+        "contentSection": "Nonconformance Details",
+        "dispositionSection": "Disposition",
+        "causeSection": "Root Cause and Preventive Action",
+        "writer": "Prepared by",
+        "reviewer": "Reviewed by",
+        "approver": "Approved by"
+      }
     }
   },
   "equipment": {
@@ -8314,6 +8375,38 @@
       "ACTIVE": "Active",
       "EXPIRED": "Expired",
       "RETIRED": "Retired"
+    },
+    "NCR_TARGET_TYPE": {
+      "RAW_MATERIAL": "Raw Material",
+      "SEMI_PRODUCT": "Semi-finished",
+      "FINISHED": "Finished",
+      "WIP": "WIP"
+    },
+    "NCR_FOUND_STAGE": {
+      "IQC": "Incoming",
+      "PROCESS": "In-process",
+      "FINAL": "Final",
+      "OQC": "Outgoing",
+      "CUSTOMER": "Customer Claim"
+    },
+    "NCR_DISPOSITION": {
+      "CONCESSION": "Concession",
+      "REPAIR": "Repair",
+      "REWORK": "Rework",
+      "SCRAP": "Scrap",
+      "RETURN": "Return"
+    },
+    "NCR_CAUSE_CATEGORY": {
+      "MAN": "Man",
+      "MACHINE": "Machine",
+      "METHOD": "Method",
+      "MEASUREMENT": "Measurement",
+      "ENVIRONMENT": "Environment"
+    },
+    "NCR_STATUS": {
+      "OPEN": "Open",
+      "IN_PROGRESS": "In Progress",
+      "CLOSED": "Closed"
     }
   },
   "comCodeGroup": {

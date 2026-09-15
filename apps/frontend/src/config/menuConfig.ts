@@ -217,6 +217,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "QC_TRACE", labelKey: "menu.quality.trace", path: "/quality/trace" },
       { code: "QC_CHANGE", labelKey: "menu.quality.changeControl", path: "/quality/change-control" },
       { code: "QC_COMPLAINT", labelKey: "menu.quality.complaint", path: "/quality/complaint" },
+      { code: "QC_NCR", labelKey: "menu.quality.ncr", path: "/quality/ncr" },
       { code: "QC_CAPA", labelKey: "menu.quality.capa", path: "/quality/capa" },
       { code: "QC_FAI", labelKey: "menu.quality.fai", path: "/quality/fai" },
       { code: "QC_PPAP", labelKey: "menu.quality.ppap", path: "/quality/ppap" },

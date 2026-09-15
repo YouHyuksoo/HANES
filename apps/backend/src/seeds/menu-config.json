@@ -153,6 +153,7 @@
       "QC_TRACE",
       "QC_CHANGE",
       "QC_COMPLAINT",
+      "QC_NCR",
       "QC_CAPA",
       "QC_FAI",
       "QC_PPAP",
