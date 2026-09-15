@@ -21,6 +21,7 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { IssueRequestService } from '../services/issue-request.service';
@@ -33,6 +34,7 @@ import {
 } from '../dto/issue-request.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
+import { InventoryFreezeGuard } from '../../../common/guards/inventory-freeze.guard';
 
 @ApiTags('자재관리 - 출고요청')
 @Controller('material/issue-requests')
@@ -100,6 +102,7 @@ export class IssueRequestController {
 
   @Post(':requestNo/split-for-issue')
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(InventoryFreezeGuard)
   @ApiOperation({ summary: '출고 준비 분할 — 부분 사용 롯트를 출고분/잔량분으로 분할하고 라벨 데이터를 반환' })
   @ApiParam({ name: 'requestNo', description: '출고요청 번호' })
   async splitForIssue(
