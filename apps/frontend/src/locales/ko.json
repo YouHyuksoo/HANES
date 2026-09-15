@@ -2030,7 +2030,11 @@
       "bomItemTypePart": "부품",
       "bomItemTypeConsumable": "소모품",
       "deleteBomLinkConfirm": "'{{name}}' 연결을 삭제하시겠습니까?",
-      "commTypeShort": "통신"
+      "commTypeShort": "통신",
+      "qrLabelTitle": "설비 QR 라벨",
+      "qrLabelHeader": "설비",
+      "printQrLabel": "QR 라벨 출력",
+      "printQrLabelAria": "{{equipCode}} QR 라벨 출력"
     },
     "code": {
       "title": "코드관리",
@@ -5087,6 +5091,19 @@
     "inspect": {
       "dailyNgBlock": "설비 일상점검 종합판정이 NG입니다. 조치 후 재점검하세요.",
       "workerNgBlock": "작업자 설비점검 종합판정이 NG입니다. 조치 후 재점검하세요."
+    },
+    "labelReprint": {
+      "title": "반제품·완제품 라벨 재발행",
+      "description": "훼손·분실된 SG/FG 라벨을 다시 출력합니다. 재발행 이력이 기록됩니다.",
+      "labelType": "라벨 유형",
+      "sg": "반제품(SG)",
+      "fg": "완제품(FG)",
+      "barcode": "라벨 바코드",
+      "issuedAt": "발행일시",
+      "reprintCount": "재발행",
+      "reprint": "재발행",
+      "searchPlaceholder": "바코드·품번·작업지시 검색...",
+      "selectRow": "{{barcode}} 선택"
     }
   },
   "inspection": {
@@ -9355,7 +9372,11 @@
       "assignError": "작업지시 할당에 실패했습니다",
       "thisEquip": "현재 설비",
       "allEquips": "전체",
-      "otherEquipNote": "다른 설비에 배당된 작업지시는 조회만 가능하며 선택할 수 없습니다."
+      "otherEquipNote": "다른 설비에 배당된 작업지시는 조회만 가능하며 선택할 수 없습니다.",
+      "scanLabel": "작업지시서 QR 스캔",
+      "scanPlaceholder": "작업지시서 QR을 스캔하세요",
+      "scanNotFound": "목록에 없는 작업지시입니다: {{orderNo}}",
+      "scanNotSelectable": "이 설비에서 선택할 수 없는 작업지시입니다: {{orderNo}}"
     },
     "prep": {
       "allDone": "준비완료",

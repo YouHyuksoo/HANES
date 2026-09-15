@@ -13,6 +13,8 @@ import { useTranslation } from 'react-i18next';
 import { Search, Check } from 'lucide-react';
 import { Modal, Input, Button } from '@/components/ui';
 import DataGrid from '@/components/data-grid/DataGrid';
+import BarcodeScanInput from '@/components/shared/BarcodeScanInput';
+import { normalizeScannedOrderNo } from '@/utils/scanned-order-no';
 import { ColumnDef } from '@tanstack/react-table';
 import { ComCodeBadge } from '@/components/ui';
 import api from '@/services/api';
@@ -63,6 +65,8 @@ export default function JobOrderSelectModal({
   const [rawData, setRawData] = useState<JobOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [scanError, setScanError] = useState('');
+  const [scanText, setScanText] = useState('');
 
   // filterStatus가 매 렌더 새 배열(기본값)이어도 useCallback이 재생성되지 않도록 문자열 키로 안정화.
   // (배열 참조를 deps에 직접 두면 모달 fetch→리렌더→재생성→fetch 무한 루프가 발생한다.)
@@ -128,6 +132,8 @@ export default function JobOrderSelectModal({
     if (isOpen) {
       setSelectedJobOrder(null);
       setSearchText('');
+      setScanText('');
+      setScanError('');
       setShowAll(false);
       fetchJobOrders();
     }
@@ -157,18 +163,45 @@ export default function JobOrderSelectModal({
     return isCurrentOrUnassigned(item);
   };
 
-  const handleConfirm = () => {
-    if (selectedJobOrder) {
-      onConfirm(selectedJobOrder);
-      showJobOrderHud({
-        orderNo: selectedJobOrder.orderNo,
-        itemCode: selectedJobOrder.itemCode,
-        itemName: selectedJobOrder.itemName,
-        processCode: selectedJobOrder.processCode,
-      });
-      setSelectedJobOrder(null);
-      setSearchText('');
+  /** 확정 경로 — 버튼 선택과 QR 스캔이 같은 처리를 타도록 한 곳에 모은다. */
+  const confirmJobOrder = useCallback((jobOrder: JobOrder) => {
+    onConfirm(jobOrder);
+    showJobOrderHud({
+      orderNo: jobOrder.orderNo,
+      itemCode: jobOrder.itemCode,
+      itemName: jobOrder.itemName,
+      processCode: jobOrder.processCode,
+    });
+    setSelectedJobOrder(null);
+    setSearchText('');
+    setScanError('');
+  }, [onConfirm]);
+
+  /**
+   * 작업지시서 QR 스캔 → 해당 지시를 바로 확정한다.
+   * 지시서 QR 은 작업지시번호를 담지만, 예전 출력물은 조회 URL 이라 번호만 뽑아 쓴다.
+   * 목록(displayData)이 아니라 rawData 에서 찾는다 — 검색어·필터 때문에 가려져 있어도 스캔은 되어야 한다.
+   */
+  const handleOrderScan = useCallback((raw: string) => {
+    const orderNo = normalizeScannedOrderNo(raw);
+    if (!orderNo) return;
+    setScanError('');
+
+    const found = rawData.find((item) => item.orderNo.toUpperCase() === orderNo.toUpperCase());
+    if (!found) {
+      setScanError(t('kiosk.jobOrder.scanNotFound', '목록에 없는 작업지시입니다: {{orderNo}}', { orderNo }));
+      return;
     }
+    if (!isSelectable(found)) {
+      setScanError(t('kiosk.jobOrder.scanNotSelectable', '이 설비에서 선택할 수 없는 작업지시입니다: {{orderNo}}', { orderNo }));
+      return;
+    }
+    setSelectedJobOrder(found);
+    confirmJobOrder(found);
+  }, [rawData, t, confirmJobOrder, isSelectable]);
+
+  const handleConfirm = () => {
+    if (selectedJobOrder) confirmJobOrder(selectedJobOrder);
   };
 
   const handleClose = () => {
@@ -345,6 +378,22 @@ export default function JobOrderSelectModal({
       }
     >
       <div className="space-y-3">
+        {/* 작업지시서 QR 스캔 — 찍으면 곧바로 확정한다 */}
+        <div>
+          <BarcodeScanInput
+            data-testid="kiosk-joborder-scan"
+            aria-label={t('kiosk.jobOrder.scanLabel', '작업지시서 QR 스캔')}
+            placeholder={t('kiosk.jobOrder.scanPlaceholder', '작업지시서 QR을 스캔하세요')}
+            value={scanText}
+            onChange={(value) => { setScanText(value); setScanError(''); }}
+            onScan={(raw) => { handleOrderScan(raw); setScanText(''); }}
+            fullWidth
+          />
+          {scanError && (
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{scanError}</p>
+          )}
+        </div>
+
         {/* 검색 + 필터 토글 */}
         <div className="flex items-center gap-3">
           <div className="flex-1">

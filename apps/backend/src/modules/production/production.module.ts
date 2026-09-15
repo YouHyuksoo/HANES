@@ -109,6 +109,8 @@ import { HarnessDrawingMaster } from '../../entities/harness-drawing-master.enti
 import { HarnessDrawingRevision } from '../../entities/harness-drawing-revision.entity';
 import { HarnessCircuitSpec } from '../../entities/harness-circuit-spec.entity';
 import { SgLabel } from '../../entities/sg-label.entity';
+import { LabelReprintController } from './controllers/label-reprint.controller';
+import { LabelReprintService } from './services/label-reprint.service';
 import { ProductGenealogy } from '../../entities/product-genealogy.entity';
 import { SubprocessKittingController } from './controllers/subprocess-kitting.controller';
 import { SubprocessKittingService } from './services/subprocess-kitting.service';
@@ -141,8 +143,10 @@ import { KioskMaterialService } from './services/kiosk-material.service';
     SubprocessKittingController,
     EquipMaterialController,
     KioskMaterialController,
+    LabelReprintController,
   ],
   providers: [RepairTargetService, RepairStockService, RepairWorkflowService, RepairLookupService,
+    LabelReprintService,
     JobOrderService,
     ProdResultService,
     ProductionViewsService,

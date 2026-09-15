@@ -167,6 +167,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "PROD_INPUT_INSPECT", labelKey: "menu.production.inputInspect", path: "/production/input-inspect" },
       { code: "PROD_INPUT_EQUIP", labelKey: "menu.production.inputEquip", path: "/production/input-equip" },
       { code: "PROD_RESULT_SUMMARY", labelKey: "menu.production.resultSummary", path: "/production/result-summary" },
+      { code: "PROD_LABEL_REPRINT", labelKey: "menu.production.labelReprint", path: "/production/label-reprint" },
       { code: "PROD_WIP_STOCK", labelKey: "menu.production.wipSemiStock", path: "/production/wip-stock" },
       { code: "PROD_FG_STOCK", labelKey: "menu.production.fgStock", path: "/production/fg-stock" },
       { code: "PROD_WIP_MAT_STOCK", labelKey: "menu.production.wipMaterialStock", path: "/production/wip-material-stock" },

@@ -1514,7 +1514,11 @@
       "bomItemTypePart": "Part",
       "bomItemTypeConsumable": "Consumable",
       "deleteBomLinkConfirm": "Delete the link to '{{name}}'?",
-      "commTypeShort": "Comm"
+      "commTypeShort": "Comm",
+      "qrLabelTitle": "Equipment QR label",
+      "qrLabelHeader": "Equipment",
+      "printQrLabel": "Print QR label",
+      "printQrLabelAria": "Print QR label for {{equipCode}}"
     },
     "code": {
       "title": "Code Management",
@@ -4555,6 +4559,19 @@
     "inspect": {
       "dailyNgBlock": "Equipment daily inspection was judged NG. Fix the issue and inspect again.",
       "workerNgBlock": "Worker equipment inspection was judged NG. Fix the issue and inspect again."
+    },
+    "labelReprint": {
+      "title": "SG/FG Label Reprint",
+      "description": "Reprint damaged or lost SG/FG labels. Each reprint is recorded.",
+      "labelType": "Label type",
+      "sg": "Semi-product (SG)",
+      "fg": "Finished (FG)",
+      "barcode": "Label barcode",
+      "issuedAt": "Issued at",
+      "reprintCount": "Reprints",
+      "reprint": "Reprint",
+      "searchPlaceholder": "Search barcode, part, work order...",
+      "selectRow": "Select {{barcode}}"
     }
   },
   "inspection": {
@@ -9333,7 +9350,11 @@
       "assignError": "Failed to assign job order",
       "thisEquip": "This Equipment",
       "allEquips": "All",
-      "otherEquipNote": "Work orders assigned to other equipment are view-only and cannot be selected."
+      "otherEquipNote": "Work orders assigned to other equipment are view-only and cannot be selected.",
+      "scanLabel": "Scan work order QR",
+      "scanPlaceholder": "Scan the work order QR",
+      "scanNotFound": "Work order not in the list: {{orderNo}}",
+      "scanNotSelectable": "This work order cannot be selected on this equipment: {{orderNo}}"
     },
     "prep": {
       "allDone": "Ready",

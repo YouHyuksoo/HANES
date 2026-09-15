@@ -622,6 +622,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/production/label-reprint": {
+      const mod = await import("./page-registries/production__label-reprint.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/production/monthly-plan": {
       const mod = await import("./page-registries/production__monthly-plan.generated");
       component = mod.getPageComponent();

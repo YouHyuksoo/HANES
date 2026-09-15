@@ -1514,7 +1514,11 @@
       "bomItemTypePart": "Linh kiện",
       "bomItemTypeConsumable": "Vật tư tiêu hao",
       "deleteBomLinkConfirm": "Xóa liên kết '{{name}}'?",
-      "commTypeShort": "Giao tiếp"
+      "commTypeShort": "Giao tiếp",
+      "qrLabelTitle": "Nhãn QR thiết bị",
+      "qrLabelHeader": "Thiết bị",
+      "printQrLabel": "In nhãn QR",
+      "printQrLabelAria": "In nhãn QR cho {{equipCode}}"
     },
     "code": {
       "title": "Quản lý mã",
@@ -4537,6 +4541,19 @@
     "inspect": {
       "dailyNgBlock": "Kiểm tra thiết bị hàng ngày bị đánh giá NG. Hãy khắc phục rồi kiểm tra lại.",
       "workerNgBlock": "Kiểm tra thiết bị người vận hành bị đánh giá NG. Hãy khắc phục rồi kiểm tra lại."
+    },
+    "labelReprint": {
+      "title": "In lại nhãn bán thành phẩm·thành phẩm",
+      "description": "In lại nhãn SG/FG bị hỏng hoặc thất lạc. Lịch sử in lại được ghi nhận.",
+      "labelType": "Loại nhãn",
+      "sg": "Bán thành phẩm (SG)",
+      "fg": "Thành phẩm (FG)",
+      "barcode": "Mã vạch nhãn",
+      "issuedAt": "Thời điểm phát hành",
+      "reprintCount": "Số lần in lại",
+      "reprint": "In lại",
+      "searchPlaceholder": "Tìm mã vạch, mã hàng, lệnh SX...",
+      "selectRow": "Chọn {{barcode}}"
     }
   },
   "inspection": {
@@ -9315,7 +9332,11 @@
       "assignError": "Gán lệnh sản xuất thất bại",
       "thisEquip": "Thiết bị hiện tại",
       "allEquips": "Tất cả",
-      "otherEquipNote": "Lệnh sản xuất được phân cho thiết bị khác chỉ xem được, không thể chọn."
+      "otherEquipNote": "Lệnh sản xuất được phân cho thiết bị khác chỉ xem được, không thể chọn.",
+      "scanLabel": "Quét QR lệnh sản xuất",
+      "scanPlaceholder": "Hãy quét QR lệnh sản xuất",
+      "scanNotFound": "Lệnh sản xuất không có trong danh sách: {{orderNo}}",
+      "scanNotSelectable": "Không thể chọn lệnh này trên thiết bị này: {{orderNo}}"
     },
     "prep": {
       "allDone": "Sẵn sàng",

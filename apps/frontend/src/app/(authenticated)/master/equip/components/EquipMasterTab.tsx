@@ -15,7 +15,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ColumnDef } from "@tanstack/react-table";
 import {
-  Plus, Edit2, Trash2, Search, RefreshCw, Settings, ImageIcon, Upload,
+  Plus, Edit2, Trash2, Search, RefreshCw, Settings, ImageIcon, Upload, QrCode,
   Wifi, Boxes, Monitor,
 } from "lucide-react";
 import { Card, CardContent, Button, Input, Modal, ConfirmModal } from "@/components/ui";
@@ -28,6 +28,7 @@ import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import { ComCodeSelect, LineSelect } from '@/components/shared';
 import { FieldInput, FieldComCodeSelect, FieldLineSelect } from "./EquipFieldHelp";
 import EquipBomPanel from "./EquipBomPanel";
+import EquipLabelModal from "./EquipLabelModal";
 
 function EquipImageThumb({ src, alt }: { src: string; alt: string }) {
   const [errored, setErrored] = useState(false);
@@ -88,6 +89,7 @@ export default function EquipMasterTab() {
   const [editing, setEditing] = useState<EquipMaster | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [bomTarget, setBomTarget] = useState<EquipMaster | null>(null);
+  const [labelTarget, setLabelTarget] = useState<EquipMaster | null>(null);
   const initialFormRef = useRef<FormState>(EMPTY_FORM);
   const { markDirty, guard, guardModalProps } = useUnsavedGuard();
   const [deleteTarget, setDeleteTarget] = useState<EquipMaster | null>(null);
@@ -270,7 +272,7 @@ export default function EquipMasterTab() {
 
   const columns = useMemo<ColumnDef<EquipMaster>[]>(() => [
     {
-      id: "actions", header: t("common.actions", "작업"), size: 110,
+      id: "actions", header: t("common.actions", "작업"), size: 140,
       meta: { align: "center" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
@@ -279,6 +281,15 @@ export default function EquipMasterTab() {
           </button>
           <button onClick={() => guard(() => openBom(row.original))} className="p-1 hover:bg-surface rounded" title={t("master.equip.manageBom", "BOM 관리")}>
             <Boxes className="w-4 h-4 text-text-muted" />
+          </button>
+          <button
+            onClick={() => setLabelTarget(row.original)}
+            className="p-1 hover:bg-surface rounded"
+            title={t("master.equip.printQrLabel", "QR 라벨 출력")}
+            aria-label={t("master.equip.printQrLabelAria", "{{equipCode}} QR 라벨 출력", { equipCode: row.original.equipCode })}
+            data-testid="equip-label-open"
+          >
+            <QrCode className="w-4 h-4 text-text-muted" />
           </button>
           <button onClick={() => setDeleteTarget(row.original)} className="p-1 hover:bg-surface rounded" title={t("common.delete", "삭제")}>
             <Trash2 className="w-4 h-4 text-red-500" />
@@ -519,6 +530,12 @@ export default function EquipMasterTab() {
           </div>
         </div>
       )}
+
+      <EquipLabelModal
+        isOpen={labelTarget !== null}
+        equip={labelTarget}
+        onClose={() => setLabelTarget(null)}
+      />
 
       {bomTarget && (
         <EquipBomPanel

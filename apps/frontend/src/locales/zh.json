@@ -1514,7 +1514,11 @@
       "bomItemTypePart": "零件",
       "bomItemTypeConsumable": "耗材",
       "deleteBomLinkConfirm": "确定删除“{{name}}”的关联吗？",
-      "commTypeShort": "通信"
+      "commTypeShort": "通信",
+      "qrLabelTitle": "设备二维码标签",
+      "qrLabelHeader": "设备",
+      "printQrLabel": "打印二维码标签",
+      "printQrLabelAria": "打印 {{equipCode}} 二维码标签"
     },
     "code": {
       "title": "代码管理",
@@ -4537,6 +4541,19 @@
     "inspect": {
       "dailyNgBlock": "设备日常点检综合判定为NG。请处理后重新点检。",
       "workerNgBlock": "作业者设备点检综合判定为NG。请处理后重新点检。"
+    },
+    "labelReprint": {
+      "title": "半成品·成品标签补打",
+      "description": "补打损坏或遗失的半成品/成品标签，补打记录会被保存。",
+      "labelType": "标签类型",
+      "sg": "半成品(SG)",
+      "fg": "成品(FG)",
+      "barcode": "标签条码",
+      "issuedAt": "发行日期",
+      "reprintCount": "补打次数",
+      "reprint": "补打",
+      "searchPlaceholder": "搜索条码·品号·工单...",
+      "selectRow": "选择 {{barcode}}"
     }
   },
   "inspection": {
@@ -9315,7 +9332,11 @@
       "assignError": "作业指示分配失败",
       "thisEquip": "当前设备",
       "allEquips": "全部",
-      "otherEquipNote": "分配给其他设备的工单仅可查看，无法选择。"
+      "otherEquipNote": "分配给其他设备的工单仅可查看，无法选择。",
+      "scanLabel": "扫描工单二维码",
+      "scanPlaceholder": "请扫描工单二维码",
+      "scanNotFound": "列表中没有该工单：{{orderNo}}",
+      "scanNotSelectable": "该工单无法在此设备选择：{{orderNo}}"
     },
     "prep": {
       "allDone": "准备完成",
