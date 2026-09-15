@@ -251,6 +251,12 @@ export class LotSplitService {
     // 비교는 `>=` 가 아니라 `=` 다. 차감(mat-issue)은 남은 수량만 확인하면 되지만 분할은
     // 읽은 totalQty 를 그대로 조각 합으로 쓰므로, 그 사이 수량이 늘어난 경우(병합 IN 등)에도
     // 나머지가 증발한다.
+    //
+    // QTY 뿐 아니라 AVAILABLE_QTY 도 고정한다. 예약(RESERVED_QTY)이 붙으면 QTY 는 그대로이고
+    // AVAILABLE_QTY 만 줄어드는데, QTY 만 보면 이 UPDATE 가 통과해 버린다. 자식은
+    // reservedQty=0 으로 생성되므로 남의 예약이 조용히 사라진다. (분할 직전 예약 0 검사는
+    // 읽은 시점의 값이라 그 뒤에 커밋된 예약을 막지 못한다.)
+    const expectedAvailableQty = sourceStock.availableQty ?? totalQty;
     const stockZeroResult = await queryRunner.manager
       .createQueryBuilder()
       .update(MatStock)
@@ -261,12 +267,13 @@ export class LotSplitService {
         matUid: sourceStock.matUid,
         ...tenantWhere,
       })
-      .andWhere('QTY = :expectedQty')
-      .setParameters({ expectedQty: totalQty })
+      .andWhere('QTY = :expectedQty AND NVL(AVAILABLE_QTY, QTY) = :expectedAvailableQty')
+      .setParameters({ expectedQty: totalQty, expectedAvailableQty })
       .execute();
     if (stockZeroResult.affected !== 1) {
       throw new BadRequestException(
-        `분할하는 사이 재고가 변경되었습니다(조회 당시 ${totalQty}). 다시 조회한 뒤 분할해 주세요: ${sourceLot.matUid}`,
+        `분할하는 사이 재고 또는 예약이 변경되었습니다(조회 당시 재고 ${totalQty}, 가용 ${expectedAvailableQty}). ` +
+        `다시 조회한 뒤 분할해 주세요: ${sourceLot.matUid}`,
       );
     }
 

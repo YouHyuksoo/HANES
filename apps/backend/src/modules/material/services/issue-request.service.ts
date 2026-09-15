@@ -772,7 +772,15 @@ export class IssueRequestService {
       else bySource.set(tx.refId, [tx]);
     }
 
-    const splits = [...bySource.entries()].map(([sourceMatUid, group]) => {
+    const splits = [...bySource.entries()].filter(([, group]) => {
+      // 이미 소진되거나 다시 쪼개진 세대는 뺀다.
+      //
+      // 자식이 다시 분할되면 그 시리얼은 status='SPLIT', 재고 0 이 되어 실물이 없다.
+      // 그 라벨을 다시 뽑아 붙이면 "존재하지 않는 시리얼" 라벨이 현장 물건에 붙는다.
+      // 정상 흐름(분할 → 출고분 전량 출고)에서는 출고분만 DEPLETED 가 되고 잔량분은
+      // NORMAL 로 남으므로 재출력 경로는 그대로 살아 있다.
+      return group.some((tx) => lotMap.get(tx.matUid ?? '')?.status === MAT_LOT_STATUS.NORMAL);
+    }).map(([sourceMatUid, group]) => {
       const part = partMap.get(group[0].itemCode);
       const arrivalNo = lotMap.get(group[0].matUid ?? '')?.arrivalNo ?? null;
       const results = group.map((tx) => ({ matUid: tx.matUid as string, qty: Number(tx.qty) }));

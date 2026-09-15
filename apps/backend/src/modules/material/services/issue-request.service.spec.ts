@@ -1400,8 +1400,8 @@ describe('IssueRequestService', () => {
         { transNo: 'TX-2', itemCode: 'ITEM-1', matUid: 'NEW-2', qty: 300, refId: 'LOT-A' } as StockTransaction,
       ]);
       matLotRepo.find.mockResolvedValue([
-        { matUid: 'NEW-1', initQty: 700, arrivalNo: 'AR-1' } as MatLot,
-        { matUid: 'NEW-2', initQty: 300, arrivalNo: 'AR-1' } as MatLot,
+        { matUid: 'NEW-1', initQty: 700, arrivalNo: 'AR-1', status: 'DEPLETED' } as MatLot,
+        { matUid: 'NEW-2', initQty: 300, arrivalNo: 'AR-1', status: 'NORMAL' } as MatLot,
       ]);
       itemMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-1', itemName: '와이어' } as ItemMaster]);
 
@@ -1418,10 +1418,49 @@ describe('IssueRequestService', () => {
         { matUid: 'NEW-2', qty: 300 },
       ]);
       expect(result.splits[0].label.serials.map((s) => s.initQty)).toEqual([700, 300]);
-      expect(stockTxRepo.find).toHaveBeenCalledWith(expect.objectContaining({
-        where: expect.objectContaining({ transType: 'LOT_SPLIT_IN', refType: 'LOT_SPLIT' }),
-        order: { transNo: 'ASC' },
-      }));
+    });
+
+    it('분할 수불 조회에 유형·상태·기간·테넌트 조건을 모두 건다', async () => {
+      wireRequest();
+      stockTxRepo.find.mockResolvedValue([]);
+
+      await service.findSplitLabelGroups('MR-1', 'C1', 'P1');
+
+      const [options] = stockTxRepo.find.mock.calls[0] as [{ where: Record<string, unknown>; order: unknown }];
+      const where = options.where;
+      expect(where.transType).toBe('LOT_SPLIT_IN');
+      expect(where.refType).toBe('LOT_SPLIT');
+      // 취소된 분할 수불을 되살려 라벨을 뽑으면 안 된다
+      expect(where.status).toBe('DONE');
+      expect(where.itemCode).toEqual(In(['ITEM-1']));
+      // 테넌트 조건이 빠지면 다른 회사/사업장의 분할 라벨이 이 화면으로 복원된다
+      expect(where.company).toBe('C1');
+      expect(where.plant).toBe('P1');
+      // 조회 기간 하한(최근 N일)
+      const transDate = where.transDate as { type: string; value: Date };
+      expect(transDate.type).toBe('moreThanOrEqual');
+      expect(transDate.value.getTime()).toBeLessThanOrEqual(Date.now());
+      expect(transDate.value.getTime()).toBeGreaterThan(Date.now() - 31 * 24 * 60 * 60 * 1000);
+      expect(options.order).toEqual({ transNo: 'ASC' });
+    });
+
+    it('다시 분할되거나 모두 소진된 세대는 재출력 목록에서 뺀다', async () => {
+      wireRequest();
+      stockTxRepo.find.mockResolvedValue([
+        { transNo: 'TX-1', itemCode: 'ITEM-1', matUid: 'OLD-1', qty: 700, refId: 'LOT-A' } as StockTransaction,
+        { transNo: 'TX-2', itemCode: 'ITEM-1', matUid: 'OLD-2', qty: 300, refId: 'LOT-A' } as StockTransaction,
+      ]);
+      // OLD-2 를 다시 쪼갠 뒤라 두 자식 모두 실물이 없다(SPLIT=재고 0, DEPLETED=소진)
+      matLotRepo.find.mockResolvedValue([
+        { matUid: 'OLD-1', initQty: 700, arrivalNo: 'AR-1', status: 'DEPLETED' } as MatLot,
+        { matUid: 'OLD-2', initQty: 300, arrivalNo: 'AR-1', status: 'SPLIT' } as MatLot,
+      ]);
+      itemMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-1', itemName: '와이어' } as ItemMaster]);
+
+      const result = await service.findSplitLabelGroups('MR-1', 'C1', 'P1');
+
+      // 없는 시리얼 라벨을 뽑아 실물에 붙이면 추적이 끊긴다
+      expect(result.splits).toEqual([]);
     });
 
     it('분할 이력이 없으면 빈 목록을 돌려준다', async () => {

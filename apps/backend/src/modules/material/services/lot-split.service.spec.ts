@@ -276,8 +276,8 @@ describe('LotSplitService', () => {
       // 원본 MAT_STOCKS 잔량 0 (종결 LOT 재고 잔존 방지) — 조건부 UPDATE 로 나간다
       expect(stockZeroQb.update).toHaveBeenCalledWith(MatStock);
       expect(stockZeroQb.set).toHaveBeenCalledWith(expect.objectContaining({ qty: 0, availableQty: 0 }));
-      expect(stockZeroQb.andWhere).toHaveBeenCalledWith('QTY = :expectedQty');
-      expect(stockZeroQb.setParameters).toHaveBeenCalledWith({ expectedQty: 10 });
+      expect(stockZeroQb.andWhere).toHaveBeenCalledWith(expect.stringContaining('QTY = :expectedQty'));
+      expect(stockZeroQb.setParameters).toHaveBeenCalledWith({ expectedQty: 10, expectedAvailableQty: 10 });
       expect(stockZeroQb.execute).toHaveBeenCalledTimes(1);
 
       const children = (mockQueryRunner.manager.create as jest.Mock).mock.calls
@@ -308,8 +308,23 @@ describe('LotSplitService', () => {
 
       // 비교가 '>=' 가 아니라 '=' 인 이유: 분할은 차감이 아니라 조회 수량을 두 조각으로
       // 나누는 연산이라, 그 사이 수량이 늘어난 경우(병합 IN 등)에도 증가분이 증발한다.
-      expect(stockZeroQb.andWhere).toHaveBeenCalledWith('QTY = :expectedQty');
-      expect(stockZeroQb.setParameters).toHaveBeenCalledWith({ expectedQty: 10 });
+      const predicate = (stockZeroQb.andWhere as jest.Mock).mock.calls[0][0] as string;
+      expect(predicate).toContain('QTY = :expectedQty');
+      expect(stockZeroQb.setParameters).toHaveBeenCalledWith({ expectedQty: 10, expectedAvailableQty: 10 });
+    });
+
+    it('가용수량(AVAILABLE_QTY)도 함께 고정한다 — 그 사이 붙은 예약이 사라지지 않게', async () => {
+      wire();
+
+      await target.split({ sourceLotId: 'MAT-001', splitQty: 3 }, 'C1', 'P1');
+
+      // 예약이 붙으면 QTY 는 그대로고 AVAILABLE_QTY 만 준다. QTY 만 보면 UPDATE 가 통과하고
+      // 자식은 reservedQty=0 으로 생성되어 남의 예약이 조용히 사라진다.
+      const predicate = (stockZeroQb.andWhere as jest.Mock).mock.calls[0][0] as string;
+      expect(predicate).toMatch(/NVL\(AVAILABLE_QTY, QTY\) = :expectedAvailableQty/);
+      expect(stockZeroQb.setParameters).toHaveBeenCalledWith(
+        expect.objectContaining({ expectedAvailableQty: 10 }),
+      );
     });
 
     it('그 사이 다른 트랜잭션이 재고를 바꿨으면(affected 0) 분할을 중단한다', async () => {
@@ -318,7 +333,7 @@ describe('LotSplitService', () => {
       (mockQueryRunner.manager.createQueryBuilder as unknown as jest.Mock) = jest.fn(() => stockZeroQb);
 
       await expect(target.split({ sourceLotId: 'MAT-001', splitQty: 3 }, 'C1', 'P1'))
-        .rejects.toThrow(/재고가 변경되었습니다/);
+        .rejects.toThrow(/재고 또는 예약이 변경되었습니다/);
 
       // 가드가 없으면 두 세션이 각각 자식 2조각을 발번해 실물 없는 재고가 생긴다
       expect(mockNumbering.nextMatSerial).not.toHaveBeenCalled();
