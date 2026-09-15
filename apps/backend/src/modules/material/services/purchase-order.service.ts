@@ -117,6 +117,10 @@ export class PurchaseOrderService {
     const parts = itemCodes.length > 0 ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : [];
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
 
+    // PO별 인보이스 번호 — 입하 시점에 각인된 값을 PO 목록에서 읽기 전용으로 보여준다.
+    // 한 PO가 여러 선적으로 나뉘어 들어오면 인보이스도 여러 건이 된다.
+    const invoiceMap = await this.loadInvoiceNosByPoNo(poNos, company, plant);
+
     // PO별 아이템 그룹화
     const itemsByPoNo = new Map<string, typeof items>();
     for (const item of items) {
@@ -141,11 +145,46 @@ export class PurchaseOrderService {
 
       return {
         ...this.withClientId(po),
+        invoiceNos: invoiceMap.get(po.poNo) ?? [],
         items: enrichedItems,
       };
     });
 
     return { data: result, total, page, limit };
+  }
+
+  /**
+   * PO 번호 목록에 대한 입하 인보이스 번호를 한 번의 쿼리로 모아온다. (N+1 금지)
+   * INVOICE_NO는 PO가 아니라 입하 시점에 입력되므로 PURCHASE_ORDERS에는 저장하지 않는다.
+   */
+  private async loadInvoiceNosByPoNo(
+    poNos: string[],
+    company?: string,
+    plant?: string,
+  ): Promise<Map<string, string[]>> {
+    const map = new Map<string, string[]>();
+    if (poNos.length === 0) return map;
+
+    const qb = this.matArrivalRepository
+      .createQueryBuilder('a')
+      .select('a.poNo', 'PO_NO')
+      .addSelect('a.invoiceNo', 'INVOICE_NO')
+      .where('a.poNo IN (:...poNos)', { poNos })
+      .andWhere('a.invoiceNo IS NOT NULL')
+      .groupBy('a.poNo')
+      .addGroupBy('a.invoiceNo')
+      .orderBy('a.poNo')
+      .addOrderBy('a.invoiceNo');
+    if (company) qb.andWhere('a.company = :company', { company });
+    if (plant) qb.andWhere('a.plant = :plant', { plant });
+
+    const rows = await qb.getRawMany<{ PO_NO: string; INVOICE_NO: string }>();
+    for (const row of rows) {
+      const list = map.get(row.PO_NO) ?? [];
+      list.push(row.INVOICE_NO);
+      map.set(row.PO_NO, list);
+    }
+    return map;
   }
 
   async findById(poNo: string, company?: string, plant?: string) {

@@ -61,7 +61,7 @@ export class MatLot {
   @Column({ type: 'varchar2', name: 'MFG_PARTNER_CODE', length: 50, nullable: true })
   mfgPartnerCode: string | null;
 
-  @Column({ type: 'varchar2', name: 'INVOICE_NO', length: 50, nullable: true })
+  @Column({ type: 'varchar2', name: 'INVOICE_NO', length: 100, nullable: true })
   invoiceNo: string | null;
 
   @Column({ type: 'varchar2', name: 'PO_NO', length: 50, nullable: true })

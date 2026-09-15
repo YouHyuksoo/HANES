@@ -25,6 +25,8 @@ test('드라이버가 PO 라인을 찾아 입하를 등록한다', async ({ page
 
   const itemCode = process.env.ARRIVAL_ITEM ?? '6TBE11A000';
   const qty = process.env.ARRIVAL_QTY ?? '100';
+  // 인보이스는 입하 시점 입력값이라 실행마다 달라야 추적 결과가 섞이지 않는다
+  const invoiceNo = process.env.ARRIVAL_INVOICE ?? `INV-E2E-${Date.now()}`;
 
   // 다른 화면에서 시작한다 — 드라이버가 스스로 이동해야 한다
   await page.goto('/dashboard');
@@ -53,7 +55,7 @@ test('드라이버가 PO 라인을 찾아 입하를 등록한다', async ({ page
       const w = window as unknown as { __SCENARIO_RUN__?: (s: unknown, v: unknown) => void };
       w.__SCENARIO_RUN__!(s, vars);
     },
-    [scenario, { itemCode, qty }] as [unknown, unknown],
+    [scenario, { itemCode, qty, invoiceNo }] as [unknown, unknown],
   );
 
   const overlay = page.getByRole('dialog', { name: '시나리오 실행' });

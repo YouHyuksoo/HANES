@@ -2442,7 +2442,8 @@
         "mfgPartner": "Nhà sản xuất",
         "serialUnitQty": "Đơn vị số serial",
         "expectedSerialCount": "Số serial dự kiến",
-        "receivedDate": "Ngày nhập"
+        "receivedDate": "Ngày nhập",
+        "invoiceNo": "Số hóa đơn"
       },
       "iqc005Title": "Quản lý nhập kho vật tư",
       "fillRemaining": "Nhập số còn lại",
@@ -2486,7 +2487,9 @@
       "cancelReasonPlaceholder": "Nhập lý do hủy",
       "confirmCancel": "Xác nhận hủy",
       "defaultDesign": "Thiết kế mặc định",
-      "labelTemplate": "Mẫu nhãn nhập kho"
+      "labelTemplate": "Mẫu nhãn nhập kho",
+      "invoiceNoPlaceholder": "VD: INV-2026-0001",
+      "invoiceNoNote": "Số hóa đơn nhà cung cấp. Dùng làm khóa tìm kiếm nguyên vật liệu khi truy xuất nguồn gốc."
     },
     "iqc": {
       "title": "Kiểm tra đầu vào (IQC)",
@@ -3084,7 +3087,8 @@
       "itemList": "Mặt hàng đặt",
       "lineNo": "Số dòng",
       "noItems": "Vui lòng thêm mặt hàng",
-      "revNo": "Số phát hành"
+      "revNo": "Số phát hành",
+      "invoiceNotYet": "Chưa nhập hàng"
     },
     "poStatus": {
       "title": "Tình trạng PO",
@@ -3550,6 +3554,10 @@
         "reference": "Tham chiếu",
         "worker": "Người thao tác"
       }
+    },
+    "disabledHelp": {
+      "arrivalInvoiceNo": "Vui lòng nhập số hóa đơn.",
+      "arrivalRequiredManual": "Chọn mặt hàng, kho nhập, nhà cung cấp và số hóa đơn, rồi nhập số lượng lớn hơn 0."
     }
   },
   "productMgmt": {

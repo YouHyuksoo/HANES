@@ -199,6 +199,46 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
     expect(result.serials[0].initQty).toBe(200);
   });
 
+  it('인보이스 번호를 입력하면 MAT_LOTS·MAT_ARRIVALS 양쪽에 각인한다 (추적성 진입키)', async () => {
+    setupFindOne({ lotUnitQty: 50, orderQty: 1000, receivedQty: 0, mfgFound: true });
+    mockNumbering.nextArrivalNoV2.mockResolvedValue('R26091500001');
+    let counter = 300;
+    mockNumbering.nextMatSerial.mockImplementation(() =>
+      Promise.resolve(`VH1-RM260915-${String(++counter).padStart(5, '0')}`),
+    );
+    mockNumbering.next.mockResolvedValue('STX0000020');
+
+    const result = await target.receivePoLine(
+      { ...baseDto, receivedQty: 100, invoiceNo: 'INV-2026-0001' },
+      user,
+    );
+
+    expect(result.serials.every((s) => s.invoiceNo === 'INV-2026-0001')).toBe(true);
+    const arrivalRows = mockManager.create.mock.calls
+      .filter(([entity]) => entity === MatArrival)
+      .map(([, payload]) => payload);
+    expect(arrivalRows).toHaveLength(2);
+    expect(arrivalRows.every((row: any) => row.invoiceNo === 'INV-2026-0001')).toBe(true);
+  });
+
+  it('인보이스 번호가 없거나 공백이면 빈 문자열이 아니라 null로 저장한다', async () => {
+    setupFindOne({ lotUnitQty: null, orderQty: 1000, receivedQty: 0, mfgFound: true });
+    mockNumbering.nextArrivalNoV2.mockResolvedValue('R26091500002');
+    mockNumbering.nextMatSerial.mockResolvedValueOnce('VH1-RM260915-00400');
+    mockNumbering.next.mockResolvedValue('STX0000021');
+
+    const result = await target.receivePoLine(
+      { ...baseDto, receivedQty: 10, invoiceNo: '   ' },
+      user,
+    );
+
+    expect(result.serials[0].invoiceNo).toBeNull();
+    const arrivalRows = mockManager.create.mock.calls
+      .filter(([entity]) => entity === MatArrival)
+      .map(([, payload]) => payload);
+    expect((arrivalRows[0] as any).invoiceNo).toBeNull();
+  });
+
   it('case 4: receivedQty가 잔량 초과 → BadRequestException', async () => {
     setupFindOne({ lotUnitQty: 50, orderQty: 100, receivedQty: 50, mfgFound: true });
 

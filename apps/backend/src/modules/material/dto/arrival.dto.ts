@@ -255,6 +255,17 @@ export class PoLineReceiptDto {
   @IsString()
   warehouseCode!: string;
 
+  /**
+   * 인보이스 번호(업체 송장번호). 입하 시점에 입력받아 MAT_ARRIVALS/MAT_LOTS에 각인되며
+   * 추적성 조회(원자재 송장번호 모드)의 진입키가 된다.
+   * 서버는 기존 자동화 도구 호환을 위해 optional이지만 입하 화면에서는 필수 입력이다.
+   */
+  @ApiPropertyOptional({ description: '인보이스 번호 (업체 송장번호)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  invoiceNo?: string;
+
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
   @IsString()

@@ -39,6 +39,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
   const [mfgPartnerCode, setMfgPartnerCode] = useState('');
   const [receivedDate, setReceivedDate] = useState<string>(() => getTodayLocal());
   const [remark, setRemark] = useState('');
+  const [invoiceNo, setInvoiceNo] = useState('');
   const [warehouseCode, setWarehouseCode] = useState('');
   const [lotUnitQty, setLotUnitQty] = useState<number | null>(null);
 
@@ -48,6 +49,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
       setMfgPartnerCode('');
       setReceivedDate(getTodayLocal());
       setRemark('');
+      setInvoiceNo('');
       setWarehouseCode(warehouses[0]?.value ?? '');
       api.get(`/master/parts/code/${encodeURIComponent(line.itemCode)}`, { suppressErrorModal: true })
         .then((res) => setLotUnitQty(res.data?.data?.lotUnitQty ?? null))
@@ -67,6 +69,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
     && receivedQty <= (line?.remainingQty ?? 0)
     && !!mfgPartnerCode
     && !!warehouseCode
+    && !!invoiceNo.trim()
     && receivedDate <= today;
 
   const handleSave = () => {
@@ -78,6 +81,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
       receivedQty,
       mfgPartnerCode,
       receivedDate,
+      invoiceNo: invoiceNo.trim(),
       remark: remark || undefined,
       warehouseCode,
     }, expectedCount);
@@ -173,6 +177,19 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
           </label>
 
           <label className="text-sm flex flex-col gap-1">
+            <span>{t('material.arrival.col.invoiceNo')}<span className="text-red-500 ml-0.5">*</span></span>
+            <Input
+              type="text"
+              maxLength={100}
+              value={invoiceNo}
+              onChange={(e) => setInvoiceNo(e.target.value)}
+              placeholder={t('material.arrival.invoiceNoPlaceholder')}
+              data-testid="mat-arrival-invoice"
+            />
+            <span className="text-xs text-slate-500">{t('material.arrival.invoiceNoNote')}</span>
+          </label>
+
+          <label className="text-sm flex flex-col gap-1">
             <span>{t('material.arrival.col.serialUnitQty')}</span>
             <Input
               type="text"
@@ -214,7 +231,7 @@ export default function PoLineReceiptModal({ isOpen, line, onClose, onConfirm }:
         <span className="text-xs text-slate-500">{t('common.requiredMark')}</span>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button onClick={handleSave} disabled={!canSave} data-testid="mat-arrival-save" disabledReason={!line ? t('material.disabledHelp.selectPoLine', '입하할 PO 라인을 선택하세요.') : receivedQty <= 0 || receivedQty > (line?.remainingQty ?? 0) ? t('material.disabledHelp.arrivalQty', '입하수량은 0보다 크고 PO 라인 잔량 이하여야 합니다.') : !mfgPartnerCode ? t('material.disabledHelp.manufacturer', '제조사를 선택하세요.') : !warehouseCode ? t('material.disabledHelp.arrivalWarehouse', '입하창고를 선택하세요.') : t('material.disabledHelp.arrivalDate', '입하일은 오늘 이후로 지정할 수 없습니다.')}>{t('common.save')}</Button>
+          <Button onClick={handleSave} disabled={!canSave} data-testid="mat-arrival-save" disabledReason={!line ? t('material.disabledHelp.selectPoLine', '입하할 PO 라인을 선택하세요.') : receivedQty <= 0 || receivedQty > (line?.remainingQty ?? 0) ? t('material.disabledHelp.arrivalQty', '입하수량은 0보다 크고 PO 라인 잔량 이하여야 합니다.') : !mfgPartnerCode ? t('material.disabledHelp.manufacturer', '제조사를 선택하세요.') : !warehouseCode ? t('material.disabledHelp.arrivalWarehouse', '입하창고를 선택하세요.') : !invoiceNo.trim() ? t('material.disabledHelp.arrivalInvoiceNo', '인보이스 번호를 입력하세요.') : t('material.disabledHelp.arrivalDate', '입하일은 오늘 이후로 지정할 수 없습니다.')}>{t('common.save')}</Button>
         </div>
       </div>
     </Modal>

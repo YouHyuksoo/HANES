@@ -2460,7 +2460,8 @@
         "mfgPartner": "Manufacturer",
         "serialUnitQty": "Serial Unit Qty",
         "expectedSerialCount": "Expected Serials",
-        "receivedDate": "Receive Date"
+        "receivedDate": "Receive Date",
+        "invoiceNo": "Invoice No."
       },
       "iqc005Title": "Material Receiving",
       "fillRemaining": "Receive Remaining",
@@ -2504,7 +2505,9 @@
       "cancelReasonPlaceholder": "Enter cancel reason",
       "confirmCancel": "Confirm Cancel",
       "defaultDesign": "Default Design",
-      "labelTemplate": "Arrival Label Template"
+      "labelTemplate": "Arrival Label Template",
+      "invoiceNoPlaceholder": "e.g. INV-2026-0001",
+      "invoiceNoNote": "Supplier invoice number. Used as the material search key in traceability."
     },
     "iqc": {
       "title": "IQC Inspection",
@@ -3102,7 +3105,8 @@
       "itemList": "Order Items",
       "lineNo": "Line No.",
       "noItems": "Please add items",
-      "revNo": "Release No."
+      "revNo": "Release No.",
+      "invoiceNotYet": "Not received"
     },
     "poStatus": {
       "title": "PO Status",
@@ -3568,6 +3572,10 @@
         "reference": "Reference",
         "worker": "Worker"
       }
+    },
+    "disabledHelp": {
+      "arrivalInvoiceNo": "Enter the invoice number.",
+      "arrivalRequiredManual": "Select item, warehouse, supplier and invoice number, and enter a quantity greater than 0."
     }
   },
   "productMgmt": {

@@ -124,6 +124,8 @@ export interface PoLineReceiptInput {
   mfgPartnerCode: string;
   receivedDate: string;
   warehouseCode: string;
+  /** 인보이스 번호(업체 송장번호) — 추적성 조회 진입키. 입하 화면에서 필수 입력 */
+  invoiceNo: string;
   remark?: string;
 }
 

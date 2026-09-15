@@ -2442,7 +2442,8 @@
         "mfgPartner": "制造商",
         "serialUnitQty": "序列号单位数量",
         "expectedSerialCount": "预计发行序列号",
-        "receivedDate": "到货日期"
+        "receivedDate": "到货日期",
+        "invoiceNo": "发票号"
       },
       "iqc005Title": "材料入库管理",
       "fillRemaining": "剩余入库",
@@ -2486,7 +2487,9 @@
       "cancelReasonPlaceholder": "请输入取消原因",
       "confirmCancel": "确认取消",
       "defaultDesign": "默认设计",
-      "labelTemplate": "入库标签模板"
+      "labelTemplate": "入库标签模板",
+      "invoiceNoPlaceholder": "例: INV-2026-0001",
+      "invoiceNoNote": "供应商发票号。作为追溯查询的原材料检索键。"
     },
     "iqc": {
       "title": "来料检验(IQC)",
@@ -3084,7 +3087,8 @@
       "itemList": "采购品目",
       "lineNo": "行号",
       "noItems": "请添加品目",
-      "revNo": "发布号"
+      "revNo": "发布号",
+      "invoiceNotYet": "未到货"
     },
     "poStatus": {
       "title": "PO现况",
@@ -3550,6 +3554,10 @@
         "reference": "参照",
         "worker": "作业者"
       }
+    },
+    "disabledHelp": {
+      "arrivalInvoiceNo": "请输入发票号。",
+      "arrivalRequiredManual": "请选择品目、入库仓库、供应商和发票号，并输入大于0的入库数量。"
     }
   },
   "productMgmt": {

@@ -2989,7 +2989,8 @@
         "mfgPartner": "제조사",
         "serialUnitQty": "시리얼수량단위",
         "expectedSerialCount": "예상 발급 시리얼수",
-        "receivedDate": "입하일"
+        "receivedDate": "입하일",
+        "invoiceNo": "인보이스 번호"
       },
       "iqc005Title": "입하관리",
       "iqc005Description": "PO를 조회하여 자재를 입하 등록합니다.",
@@ -3034,7 +3035,9 @@
       "confirmCancel": "취소 확인",
       "defaultDesign": "기본 디자인",
       "labelTemplate": "입하 라벨 템플릿",
-      "labelDesignSelection": "입하 라벨 디자인 선택"
+      "labelDesignSelection": "입하 라벨 디자인 선택",
+      "invoiceNoPlaceholder": "예: INV-2026-0001",
+      "invoiceNoNote": "업체 송장번호. 추적성 조회의 원자재 검색 키가 된다."
     },
     "iqc": {
       "title": "수입검사(IQC)",
@@ -3634,7 +3637,8 @@
       "itemList": "발주 품목",
       "lineNo": "라인번호",
       "noItems": "품목을 추가하세요",
-      "revNo": "릴리즈번호"
+      "revNo": "릴리즈번호",
+      "invoiceNotYet": "입하 전"
     },
     "poStatus": {
       "title": "PO현황",
@@ -4100,6 +4104,10 @@
         "reference": "참조",
         "worker": "작업자"
       }
+    },
+    "disabledHelp": {
+      "arrivalInvoiceNo": "인보이스 번호를 입력하세요.",
+      "arrivalRequiredManual": "품목·입하창고·공급업체·인보이스 번호를 지정하고 입하수량을 0보다 크게 입력하세요."
     }
   },
   "productMgmt": {

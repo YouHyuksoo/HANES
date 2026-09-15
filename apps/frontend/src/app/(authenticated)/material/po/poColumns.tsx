@@ -57,6 +57,25 @@ export function createPoGridColumns({
       meta: { filterType: "date" as const },
     },
     {
+      // 인보이스는 PO가 아니라 입하 시점에 입력된다. 여기서는 읽기 전용 표시.
+      id: "invoiceNos",
+      accessorFn: (row) => row.invoiceNos?.join(", ") ?? "",
+      header: t("material.arrival.col.invoiceNo"),
+      size: 170,
+      meta: { filterType: "text" as const },
+      cell: ({ row }) => {
+        const list = row.original.invoiceNos ?? [];
+        if (list.length === 0) {
+          return <span className="text-text-muted">{t("material.po.invoiceNotYet")}</span>;
+        }
+        return (
+          <span className="font-mono text-xs" title={list.join(", ")}>
+            {list.join(", ")}
+          </span>
+        );
+      },
+    },
+    {
       id: "itemCount", accessorFn: (row) => row.items?.length ?? 0, header: t("material.po.itemCount", "품목수"), size: 70,
       meta: { summary: "sum" as const, align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (

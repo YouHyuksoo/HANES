@@ -1490,6 +1490,9 @@ export class ArrivalService {
         serialNos.push(await this.numbering.nextMatSerial(qr, txDate));
       }
 
+      // 인보이스 번호 — 빈 문자열은 추적 진입키로 쓸 수 없으므로 null로 정규화한다.
+      const invoiceNo = dto.invoiceNo?.trim() || null;
+
       // 6. MAT_LOTS N건 생성 (자투리 포함)
       const lots: MatLot[] = [];
       let qtyLeft = dto.receivedQty;
@@ -1508,7 +1511,7 @@ export class ArrivalService {
           arrivalSeq: i + 1,
           origin: serialNos[i],
           vendor: po.partnerCode ?? '',
-          invoiceNo: '',
+          invoiceNo,
           poNo: po.poNo,
           mfgPartnerCode: dto.mfgPartnerCode,
           iqcStatus,
@@ -1541,7 +1544,7 @@ export class ArrivalService {
         const arrivalRow = qr.manager.create(MatArrival, {
           arrivalNo,
           seq: arrivalSeqCounter++,
-          invoiceNo: '',
+          invoiceNo,
           poId: po.poNo,
           poItemId: `${po.poNo}#${poItem.seq}`,
           poNo: po.poNo,

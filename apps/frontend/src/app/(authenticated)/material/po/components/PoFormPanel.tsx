@@ -47,6 +47,8 @@ export interface PurchaseOrder {
   status: string;
   totalAmount: number | null;
   remark: string | null;
+  /** 입하 시점에 각인된 인보이스 번호 목록(읽기 전용). PO에는 저장하지 않는다. */
+  invoiceNos?: string[];
   items: {
     lineNo: number;
     revNo: number;

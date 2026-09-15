@@ -15,6 +15,11 @@
       "label": "입하수량",
       "required": true,
       "type": "number"
+    },
+    "invoiceNo": {
+      "label": "인보이스 번호",
+      "required": true,
+      "type": "string"
     }
   },
   "steps": [
@@ -45,6 +50,12 @@
       "target": { "testId": "mat-arrival-warehouse" },
       "value": "W001",
       "note": "입하창고 원자재창고(W001) 선택 — 기존 입하 408건이 모두 쓰는 창고다(2026-09-14 실측). 모달 기본값은 목록 첫 항목이라 명시한다"
+    },
+    {
+      "action": "fill",
+      "target": { "testId": "mat-arrival-invoice" },
+      "value": "{{invoiceNo}}",
+      "note": "인보이스 번호 입력 — 업체 송장번호이며 추적성 조회의 원자재 검색 키가 된다. 비우면 저장 버튼이 잠긴다"
     },
     {
       "action": "click",

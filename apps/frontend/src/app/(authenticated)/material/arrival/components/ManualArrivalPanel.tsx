@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, X } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 import { WarehouseSelect, PartnerSelect, PartSearchModal, QtyInput } from "@/components/shared";
 import type { PartItem } from "@/components/shared";
+import { usePartnerOptions } from "@/hooks/useMasterOptions";
 import api from "@/services/api";
 
 interface ManualArrivalPanelProps {
@@ -21,6 +22,8 @@ interface FormState {
   supUid: string;
   manufactureDate: string;
   vendor: string;
+  /** 인보이스 번호(업체 송장번호) — 추적성 조회 진입키 */
+  invoiceNo: string;
   remark: string;
 }
 
@@ -32,6 +35,7 @@ const INITIAL_FORM: FormState = {
   supUid: "",
   manufactureDate: "",
   vendor: "",
+  invoiceNo: "",
   remark: "",
 };
 
@@ -40,6 +44,7 @@ export default function ManualArrivalPanel({ onClose, onSuccess }: ManualArrival
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [partSearchOpen, setPartSearchOpen] = useState(false);
+  const { options: partnerOptions } = usePartnerOptions("SUPPLIER");
 
   useEffect(() => {
     setForm(INITIAL_FORM);
@@ -53,6 +58,14 @@ export default function ManualArrivalPanel({ onClose, onSuccess }: ManualArrival
     setForm((prev) => ({ ...prev, itemCode: part.itemCode, itemName: part.itemName }));
   };
 
+  // 서버는 vendorCode(코드)와 vendor(업체명)를 모두 요구한다. 옵션 label이 "코드 - 이름" 형식이라 이름만 떼어 쓴다.
+  const vendorName = useMemo(() => {
+    const option = partnerOptions.find((o) => o.value === form.vendor);
+    if (!option) return form.vendor;
+    const sep = option.label.indexOf(" - ");
+    return sep >= 0 ? option.label.slice(sep + 3) : option.label;
+  }, [partnerOptions, form.vendor]);
+
   const handleSubmit = async () => {
     if (!form.itemCode || !form.warehouseCode || !form.qty) return;
     setSubmitting(true);
@@ -63,7 +76,9 @@ export default function ManualArrivalPanel({ onClose, onSuccess }: ManualArrival
         qty: Number(form.qty),
         supUid: form.supUid || undefined,
         manufactureDate: form.manufactureDate || undefined,
-        vendor: form.vendor || undefined,
+        vendorCode: form.vendor,
+        vendor: vendorName,
+        invoiceNo: form.invoiceNo.trim(),
         remark: form.remark || undefined,
       });
       onSuccess();
@@ -73,7 +88,12 @@ export default function ManualArrivalPanel({ onClose, onSuccess }: ManualArrival
     setSubmitting(false);
   };
 
-  const isValid = form.itemCode && form.warehouseCode && Number(form.qty) > 0;
+  const isValid =
+    !!form.itemCode
+    && !!form.warehouseCode
+    && Number(form.qty) > 0
+    && !!form.vendor
+    && !!form.invoiceNo.trim();
 
   return (
     <>
@@ -97,7 +117,7 @@ export default function ManualArrivalPanel({ onClose, onSuccess }: ManualArrival
           <Button variant="secondary" size="sm" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={!isValid || submitting} disabledReason={submitting ? t('material.disabledHelp.arrivalSaving', '입하를 저장하고 있습니다.') : t('material.disabledHelp.arrivalRequired', '품목과 입하창고를 선택하고 입하수량을 0보다 크게 입력하세요.')}>
+          <Button size="sm" onClick={handleSubmit} disabled={!isValid || submitting} disabledReason={submitting ? t('material.disabledHelp.arrivalSaving', '입하를 저장하고 있습니다.') : t('material.disabledHelp.arrivalRequiredManual', '품목·입하창고·공급업체·인보이스 번호를 지정하고 입하수량을 0보다 크게 입력하세요.')}>
             {submitting ? t("common.processing") : t("common.save", "저장")}
           </Button>
         </div>
@@ -163,6 +183,15 @@ export default function ManualArrivalPanel({ onClose, onSuccess }: ManualArrival
             label={t("material.arrival.col.vendor")}
             value={form.vendor}
             onChange={(v) => handleChange("vendor", v)}
+            fullWidth
+          />
+
+          <Input
+            label={t("material.arrival.col.invoiceNo")}
+            placeholder={t("material.arrival.invoiceNoPlaceholder")}
+            maxLength={100}
+            value={form.invoiceNo}
+            onChange={(e) => handleChange("invoiceNo", e.target.value)}
             fullWidth
           />
 
