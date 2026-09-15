@@ -21,7 +21,9 @@ import { StockQueryDto, StockAdjustDto, StockTransferDto } from '../dto/mat-stoc
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { isMatLotIssuable } from '@harness/shared';
-import { resolveShelfLifeBaseDate } from '../rules/fifo.rules';
+import { normalizeFifoCriteria, resolveShelfLifeBaseDate } from '../rules/fifo.rules';
+import type { FifoCriteria } from '../rules/fifo.rules';
+import { SysConfigService } from '../../system/services/sys-config.service';
 
 @Injectable()
 export class MatStockService {
@@ -40,6 +42,7 @@ export class MatStockService {
     private readonly warehouseRepository: Repository<Warehouse>,
     private readonly dataSource: DataSource,
     private readonly tx: TransactionService,
+    private readonly sysConfigService: SysConfigService,
   ) {}
 
   private async changeStockAtomically(
@@ -235,6 +238,13 @@ export class MatStockService {
   /** 출고 가능 재고 조회 (IQC PASS + 잔량 > 0 인 LOT만) */
   async findAvailable(query: StockQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, itemCode, warehouseCode, search } = query;
+    // 정렬 기준일은 출고 정책이 FIFO 위반을 판정할 때 쓰는 기준과 같아야 한다.
+    // 입고일로 배분해 놓고 정책이 제조일로 판정하면, 엄격히 FIFO 로 배분해도
+    // FIFO_ACTION=BLOCK 에 막힌다(설계 §FIFO). 기준 판정은 fifo.rules 단일 출처.
+    const fifoCriteria: FifoCriteria = normalizeFifoCriteria(
+      await this.sysConfigService.getValue('FIFO_CRITERIA', company, plant),
+    );
+    const fifoDateColumn = fifoCriteria === 'MFG_DATE' ? 'lot.manufactureDate' : 'lot.recvDate';
     // FIFO(선입선출)는 DB ORDER BY 로 건다. 페이징 후 메모리 정렬하면 페이지 밖으로 밀린
     // 오래된 LOT 가 누락된다. 분할 자식 시리얼은 RECV_DATE 를 계승하지만 UPDATED_AT 은
     // 방금 시각이라, updatedAt 기준 페이징에서는 분할할수록 FIFO 가 무너진다.
@@ -251,8 +261,14 @@ export class MatStockService {
     // 이 래퍼는 조인 컬럼(lot.recvDate) 정렬을 내부 서브쿼리의 select alias로 요구해
     // 실제 Oracle에서 ORA-00904로 거부된다(2026-09-15 실측). MAT_LOTS.matUid 가 유일 PK라
     // 이 조인은 1:0..1 로 row fan-out이 없으므로 DISTINCT 래퍼가 필요 없는 offset/limit 을 쓴다.
+    // 2차 키는 계보(ORIGIN, 최초 시리얼)다. 분할 자식 시리얼은 nextMatSerial 이 "오늘 날짜"로
+    // 발번해 같은 기준일 그룹에서 항상 맨 뒤로 밀리는데(finding #6), ORIGIN 으로 묶으면
+    // 자식이 부모 슬롯 그대로 들어오고 형제 롯트 간 상대 순서도 유지된다.
+    // 실측(2026-09-15) MAT_LOTS.ORIGIN 은 423건 전부 채워져 있으나, 미래의 NULL 이
+    // 순서를 흩뜨리지 않도록 COALESCE 로 자기 시리얼을 기본값으로 둔다.
     const stocks = await qb
-      .orderBy('lot.recvDate', 'ASC', 'NULLS LAST')
+      .orderBy(fifoDateColumn, 'ASC', 'NULLS LAST')
+      .addOrderBy('COALESCE(lot.origin, stock.matUid)', 'ASC')
       .addOrderBy('stock.matUid', 'ASC')
       .offset((page - 1) * limit)
       .limit(limit)
@@ -279,6 +295,9 @@ export class MatStockService {
         itemCode: stock.itemCode, itemName: part?.itemName ?? null,
         unit: part?.unit ?? null, matUid: stock.matUid,
         recvDate: lot?.recvDate ?? null,
+        // 프론트가 "어떤 날짜로 정렬됐는지"를 추측하지 않도록 기준과 두 날짜를 모두 내려준다
+        manufactureDate: lot?.manufactureDate ?? null,
+        fifoCriteria,
         iqcStatus: lot?.iqcStatus ?? null, lotStatus: lot?.status ?? null,
         specialAcceptYn: lot?.specialAcceptYn ?? null,
       };

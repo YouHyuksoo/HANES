@@ -20,6 +20,7 @@ import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { TransactionService } from '../../../shared/transaction.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('MatStockService', () => {
@@ -33,6 +34,7 @@ describe('MatStockService', () => {
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockTx: DeepMocked<TransactionService>;
+  let mockSysConfig: DeepMocked<SysConfigService>;
   let stockQb: any;
 
   const createStock = (overrides: Partial<MatStock> = {}): MatStock =>
@@ -77,6 +79,10 @@ describe('MatStockService', () => {
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockTx = createMock<TransactionService>();
+    mockSysConfig = createMock<SysConfigService>();
+    // 실 DB(company 40 / plant 1000) 기본값은 RCV_DATE 계열이 아니라 MFG_DATE 지만,
+    // 키가 없을 때의 정규화 기본(RECEIVE_DATE)이 기존 계약이라 여기서는 null 을 돌려준다.
+    mockSysConfig.getValue.mockResolvedValue(null);
     stockQb = {
       update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }),
@@ -102,6 +108,7 @@ describe('MatStockService', () => {
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
+        { provide: SysConfigService, useValue: mockSysConfig },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -343,12 +350,69 @@ describe('MatStockService', () => {
       expect(qb.andWhere).toHaveBeenCalledWith('stock.company = :company', { company: 'C1' });
       expect(qb.andWhere).toHaveBeenCalledWith('stock.plant = :plant', { plant: 'P1' });
       expect(qb.orderBy).toHaveBeenCalledWith('lot.recvDate', 'ASC', 'NULLS LAST');
+      // 2차 키는 계보(ORIGIN). 이게 빠지면 분할 자식이 오늘 발번된 시리얼 때문에 같은
+      // 입고일 그룹 맨 뒤로 밀려 방금 라벨 붙인 LOT 를 다시 분할하게 된다(finding #6).
+      expect(qb.addOrderBy).toHaveBeenCalledWith('COALESCE(lot.origin, stock.matUid)', 'ASC');
       expect(qb.addOrderBy).toHaveBeenCalledWith('stock.matUid', 'ASC');
+      // 정렬 키 순서까지 계약이다 — 계보 키가 시리얼 키보다 먼저 와야 한다.
+      expect(qb.addOrderBy.mock.calls.map((call) => call[0])).toEqual([
+        'COALESCE(lot.origin, stock.matUid)',
+        'stock.matUid',
+      ]);
       // page=2, limit=20 → offset = (2-1)*20 = 20. skip/take 는 leftJoin 조인 컬럼 정렬과
       // 함께 쓰면 distinctAlias 페이징 래퍼를 타 ORA-00904 로 거부된다(2026-09-15 실측,
       // oracle-smoke.e2e-spec.ts 회귀 테스트 참조). offset/limit 으로만 페이징해야 한다.
       expect(qb.offset).toHaveBeenCalledWith(20);
       expect(qb.limit).toHaveBeenCalledWith(20);
+    });
+
+    // finding #10 — 모달은 입고일로 배분하는데 출고 정책은 FIFO_CRITERIA 로 위반을 판정했다.
+    // 두 기준이 어긋나면 엄격히 FIFO 로 배분해도 FIFO_ACTION=BLOCK 에 막힌다.
+    it('FIFO_CRITERIA=MFG_DATE 면 제조일자로 정렬한다', async () => {
+      mockSysConfig.getValue.mockResolvedValue('MFG_DATE');
+      const qb = mockAvailableStocksQb([]);
+
+      await target.findAvailable({ page: 1, limit: 10 } as never, 'C1', 'P1');
+
+      expect(mockSysConfig.getValue).toHaveBeenCalledWith('FIFO_CRITERIA', 'C1', 'P1');
+      expect(qb.orderBy).toHaveBeenCalledWith('lot.manufactureDate', 'ASC', 'NULLS LAST');
+      expect(qb.orderBy).not.toHaveBeenCalledWith('lot.recvDate', 'ASC', 'NULLS LAST');
+    });
+
+    it.each([
+      ['RCV_DATE', 'lot.recvDate'],
+      ['RECEIVE_DATE', 'lot.recvDate'],
+      [null, 'lot.recvDate'],
+      ['ALIEN_VALUE', 'lot.recvDate'],
+    ])('FIFO_CRITERIA=%s 면 %s 로 정렬한다', async (configValue, expectedColumn) => {
+      mockSysConfig.getValue.mockResolvedValue(configValue as never);
+      const qb = mockAvailableStocksQb([]);
+
+      await target.findAvailable({ page: 1, limit: 10 } as never, 'C1', 'P1');
+
+      expect(qb.orderBy).toHaveBeenCalledWith(expectedColumn, 'ASC', 'NULLS LAST');
+    });
+
+    it('응답 행에 정렬 기준(fifoCriteria)과 제조일자를 함께 내려준다 — 프론트가 기준을 추측하지 않는다', async () => {
+      mockSysConfig.getValue.mockResolvedValue('MFG_DATE');
+      mockAvailableStocksQb([createStock()]);
+      mockMatLotRepo.find.mockResolvedValue([
+        {
+          matUid: 'MAT-001', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001',
+          recvDate: new Date('2026-07-03'), manufactureDate: new Date('2026-06-01'),
+        } as MatLot,
+      ]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAvailable({ page: 1, limit: 10 } as never, 'C1', 'P1');
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          fifoCriteria: 'MFG_DATE',
+          manufactureDate: new Date('2026-06-01'),
+          recvDate: new Date('2026-07-03'),
+        }),
+      );
     });
   });
 

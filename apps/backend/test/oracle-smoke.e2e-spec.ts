@@ -121,6 +121,7 @@ describeOrSkip('Oracle smoke (실 DB)', () => {
       .leftJoin(MatLot, 'lot', 'lot.matUid = stock.matUid')
       .where('stock.qty > 0')
       .orderBy('lot.recvDate', 'ASC', 'NULLS LAST')
+      .addOrderBy('COALESCE(lot.origin, stock.matUid)', 'ASC')
       .addOrderBy('stock.matUid', 'ASC')
       .offset(0)
       .limit(5)
@@ -140,6 +141,77 @@ describeOrSkip('Oracle smoke (실 DB)', () => {
       const prev = new Date(recvDates[i - 1]).getTime();
       const curr = new Date(recvDates[i]).getTime();
       expect(curr).toBeGreaterThanOrEqual(prev);
+    }
+  });
+
+  // MatStockService.findAvailable 이 FIFO_CRITERIA 에 따라 두 날짜 컬럼 중 하나로 정렬한다.
+  // COALESCE 식은 alias.property 꼴이 아니라 TypeORM 이 원문으로 내보내므로, 식별자 인용이
+  // 어긋나면 ORA-00904 로 거부된다. 두 기준 모두 실 Oracle 에서 실행되는지 본다.
+  it.each([
+    ['RECEIVE_DATE', 'lot.recvDate'],
+    ['MFG_DATE', 'lot.manufactureDate'],
+  ])('FIFO_CRITERIA=%s 정렬(%s + COALESCE 계보 키)이 실 Oracle 에서 실행된다', async (_criteria, dateColumn) => {
+    const rows = await ds
+      .getRepository(MatStock)
+      .createQueryBuilder('stock')
+      .leftJoin(MatLot, 'lot', 'lot.matUid = stock.matUid')
+      .where('stock.qty > 0')
+      .orderBy(dateColumn, 'ASC', 'NULLS LAST')
+      .addOrderBy('COALESCE(lot.origin, stock.matUid)', 'ASC')
+      .addOrderBy('stock.matUid', 'ASC')
+      .offset(0)
+      .limit(5)
+      .getMany();
+
+    expect(Array.isArray(rows)).toBe(true);
+  });
+
+  it('분할 자식 LOT 이 부모 슬롯(ORIGIN)으로 정렬돼 들어온다 — finding #6 회귀', async () => {
+    // 분할 계보가 실제로 있는 품목을 먼저 찾는다. 계보가 없는 품목으로 정렬을 단언하면
+    // 늘 참이라 아무것도 증명하지 못한다. 데이터가 사라지면 이 기대에서 먼저 실패해야 한다.
+    const lineage: { ITEM_CODE: string }[] = await ds.query(
+      `SELECT l."ITEM_CODE" AS "ITEM_CODE"
+         FROM "MAT_LOTS" l JOIN "MAT_STOCKS" s ON s."MAT_UID" = l."MAT_UID"
+        WHERE s."QTY" > 0 AND l."ORIGIN" IS NOT NULL AND l."ORIGIN" <> l."MAT_UID"
+        GROUP BY l."ITEM_CODE"
+       HAVING COUNT(DISTINCT l."ORIGIN") >= 2
+        ORDER BY COUNT(*) DESC FETCH FIRST 1 ROWS ONLY`,
+    );
+    expect(lineage.length).toBe(1);
+    const itemCode = lineage[0].ITEM_CODE;
+
+    const rows = await ds
+      .getRepository(MatStock)
+      .createQueryBuilder('stock')
+      .leftJoin(MatLot, 'lot', 'lot.matUid = stock.matUid')
+      .where('stock.qty > 0')
+      .andWhere('stock.itemCode = :itemCode', { itemCode })
+      .orderBy('lot.recvDate', 'ASC', 'NULLS LAST')
+      .addOrderBy('COALESCE(lot.origin, stock.matUid)', 'ASC')
+      .addOrderBy('stock.matUid', 'ASC')
+      .offset(0)
+      .limit(100)
+      .getMany();
+    expect(rows.length).toBeGreaterThan(1);
+
+    const matUids = rows.map((row) => row.matUid).filter(Boolean) as string[];
+    const lots = await ds.getRepository(MatLot).find({ where: { matUid: In(matUids) } });
+    const lotMap = new Map(lots.map((lot) => [lot.matUid, lot]));
+    const keys = rows.map((row) => {
+      const lot = lotMap.get(row.matUid as string);
+      return {
+        recvDay: lot?.recvDate ? String(lot.recvDate).slice(0, 10) : '￿',
+        origin: lot?.origin || (row.matUid as string),
+      };
+    });
+    // 같은 자식이 여럿 섞여 있어야 finding #6 을 실제로 덮는다.
+    expect(new Set(keys.map((key) => key.origin)).size).toBeLessThan(keys.length);
+
+    // (입고일, ORIGIN) 이 비내림차순이면 계보가 흩어지지 않고 부모 슬롯에 모여 있다는 뜻이다.
+    for (let i = 1; i < keys.length; i++) {
+      const prev = `${keys[i - 1].recvDay}|${keys[i - 1].origin}`;
+      const curr = `${keys[i].recvDay}|${keys[i].origin}`;
+      expect(curr >= prev).toBe(true);
     }
   });
 });
