@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { Button, Input } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import api from "@/services/api";
+import { formatDateOnly } from "@/utils/date";
 import { DISPOSITION_PRIORITY, type NcrReport, type NcrTargetType } from "../types";
 
 interface Props {
@@ -74,7 +75,7 @@ export default function NcrFormPanel({ editData, onClose, onSave }: Props) {
       defectCode: editData.defectCode ?? "",
       defectGrade: editData.defectGrade ?? "",
       description: editData.description ?? "",
-      dueDate: editData.dueDate?.slice(0, 10) ?? "",
+      dueDate: formatDateOnly(editData.dueDate, ""),
       issueDept: editData.issueDept ?? "",
       remark: editData.remark ?? "",
     });

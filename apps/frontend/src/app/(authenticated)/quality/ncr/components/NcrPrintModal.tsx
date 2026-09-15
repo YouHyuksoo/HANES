@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { Printer } from "lucide-react";
 import { Modal, Button } from "@/components/ui";
 import { useComCodeLabel } from "@/hooks/useComCode";
+import { formatDateOnly } from "@/utils/date";
 import { NCR_DISPOSITION_CODES, type NcrReport } from "../types";
 
 interface Props {
@@ -26,7 +27,8 @@ const PRINT_AREA_ID = "ncr-print-area";
 const TH = "border border-black bg-gray-100 px-2 py-1 text-left font-semibold";
 const TD = "border border-black px-2 py-1";
 
-const fmtDate = (v?: string | null) => (v ? String(v).slice(0, 10) : "-");
+/** ISSUED_AT 같은 TIMESTAMP 는 UTC ISO 로 오므로 로컬 기준으로 포맷한다(앞 10자리 자르기 금지) */
+const fmtDate = (v?: string | null) => formatDateOnly(v, "-");
 const fmtNum = (v?: number | null) => (v === null || v === undefined ? "-" : v.toLocaleString());
 
 export default function NcrPrintModal({ record, onClose }: Props) {

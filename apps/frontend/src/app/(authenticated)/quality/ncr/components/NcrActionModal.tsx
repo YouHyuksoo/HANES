@@ -15,6 +15,7 @@ import { Modal, Button, Input, Select } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import api from "@/services/api";
+import { formatDateOnly } from "@/utils/date";
 import { DISPOSITION_PRIORITY, type NcrReport } from "../types";
 
 export type NcrActionMode = "disposition" | "cause" | "close";
@@ -51,7 +52,7 @@ export default function NcrActionModal({ mode, record, onClose, onDone }: Props)
     if (!record) return;
     setDisposition(record.disposition ?? "");
     setDispositionDetail(record.dispositionDetail ?? "");
-    setDueActionDate(record.dueActionDate?.slice(0, 10) ?? "");
+    setDueActionDate(formatDateOnly(record.dueActionDate, ""));
     setResponsibleCode(record.responsibleCode ?? "");
     setCauseCategory(record.causeCategory ?? "");
     setRootCause(record.rootCause ?? "");

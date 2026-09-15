@@ -8,6 +8,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import type { TFunction } from "i18next";
 import ComCodeBadge from "@/components/ui/ComCodeBadge";
 import StatusBadge from "@/components/shared/StatusBadge";
+import { formatDateOnly } from "@/utils/date";
 import type { NcrReport } from "./types";
 
 export function createNcrGridColumns({ t }: { t: TFunction }): ColumnDef<NcrReport>[] {
@@ -18,7 +19,9 @@ export function createNcrGridColumns({ t }: { t: TFunction }): ColumnDef<NcrRepo
     },
     {
       accessorKey: "issuedAt", header: t("quality.ncr.issuedAt", "발행일"), size: 110,
-      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
+      // ISSUED_AT 은 TIMESTAMP 라 UTC ISO 로 내려온다. 앞 10자리를 자르면 KST 오전 9시
+      // 이전 발행 건이 전날로 표시되므로 로컬 기준으로 포맷한다.
+      cell: ({ getValue }) => formatDateOnly(getValue() as string, "-"),
     },
     {
       accessorKey: "targetType", header: t("quality.ncr.targetType", "대상구분"), size: 100,
@@ -57,7 +60,7 @@ export function createNcrGridColumns({ t }: { t: TFunction }): ColumnDef<NcrRepo
     },
     {
       accessorKey: "dueDate", header: t("quality.ncr.dueDate", "회신요구일"), size: 110,
-      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10) || "-",
+      cell: ({ getValue }) => formatDateOnly(getValue() as string, "-"),
     },
     {
       accessorKey: "status", header: t("common.status", "상태"), size: 100,
