@@ -22,6 +22,7 @@ import { BarcodeScanInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import type { JobOrderRow, InspectHistoryRow } from "../types";
+import type { InspectPrepState } from "../hooks/useInspectPrepStatus";
 import FailModal from "./FailModal";
 
 interface Props {
@@ -29,18 +30,15 @@ interface Props {
   inspectType?: "CONTINUITY" | "TERMINAL";
   /** 선택된 검사기(설비) 코드 — 검사 실적 기록 + 미선택 시 검사 차단 */
   equipCode?: string;
-  /** 소모성 설비부품 장착 완료 여부(상위에서 주입, 매핑 0건이면 true) */
-  consumablesReady?: boolean;
-  /** 미장착 소모품 수량(인터락 안내 메시지용) */
-  unmountedConsumCount?: number;
+  /** 준비 상태 단일 객체 — 작업자/설비점검/양불대조/소모품을 모두 포함한다 */
+  prep: InspectPrepState;
 }
 
 export default function InspectPanel({
   order,
   inspectType = "CONTINUITY",
   equipCode,
-  consumablesReady = true,
-  unmountedConsumCount = 0,
+  prep,
 }: Props) {
   const { t } = useTranslation();
   const [history, setHistory] = useState<InspectHistoryRow[]>([]);
@@ -93,6 +91,7 @@ export default function InspectPanel({
       const payload: Record<string, unknown> = {
         orderNo: order.orderNo, itemCode: order.itemCode, lineCode: order.lineCode, passYn: "Y", inspectType,
         ...(equipCode ? { equipCode } : {}),
+        ...(prep.workers[0]?.id ? { workerId: prep.workers[0].id } : {}),
       };
       if (isScanMode && scannedBarcode) {
         payload.fgBarcode = scannedBarcode;
@@ -106,7 +105,7 @@ export default function InspectPanel({
       if (isScanMode) scanInputRef.current?.focus();
     } catch { /* 에러 무시 */ }
     finally { setInspecting(false); }
-  }, [order, refresh, fetchPending, isScanMode, scannedBarcode, circuitLabel, inspectType, equipCode]);
+  }, [order, refresh, fetchPending, isScanMode, scannedBarcode, circuitLabel, inspectType, equipCode, prep.workers]);
 
   /** FAIL 검사 등록 (모달에서 호출) */
   const handleFailSubmit = useCallback(async (errorCode: string, errorDetail: string) => {
@@ -116,6 +115,7 @@ export default function InspectPanel({
         orderNo: order.orderNo, itemCode: order.itemCode, lineCode: order.lineCode,
         passYn: "N", inspectType, errorCode: errorCode || undefined, errorDetail: errorDetail || undefined,
         ...(equipCode ? { equipCode } : {}),
+        ...(prep.workers[0]?.id ? { workerId: prep.workers[0].id } : {}),
       };
       if (isScanMode && scannedBarcode) {
         payload.fgBarcode = scannedBarcode;
@@ -128,7 +128,7 @@ export default function InspectPanel({
       if (isScanMode) scanInputRef.current?.focus();
     } catch { /* 에러 무시 */ }
     finally { setInspecting(false); }
-  }, [order, refresh, fetchPending, isScanMode, scannedBarcode, inspectType, equipCode]);
+  }, [order, refresh, fetchPending, isScanMode, scannedBarcode, inspectType, equipCode, prep.workers]);
 
   /** 제품 바코드 입력 Enter → 회로라벨 입력칸으로 포커스 이동 */
   const handleFgBarcodeScan = useCallback((rawBarcode: string) => {
@@ -181,9 +181,14 @@ export default function InspectPanel({
   /** 검사기 미선택 시 검사 차단(인터락) — 소모품보다 우선 */
   const equipRequired = !equipCode;
   /** 소모성 설비부품 미장착 시 검사 차단(인터락) */
-  const consumableBlocked = !equipRequired && !consumablesReady;
+  const consumableBlocked = !equipRequired && !prep.consumablesReady;
+  /**
+   * 준비 4단계(설비일상점검/작업자설비점검/양불마스터 대조/소모품) 미완료 시 판정 차단.
+   * 서버도 같은 규칙으로 등록을 막는다(화면 우회 호출 방지).
+   */
+  const prepBlocked = !prep.ready;
   /** 스캔 모드에서 제품 바코드 미입력 시 PASS/FAIL 비활성화 */
-  const scanDisabled = (isScanMode && !scannedBarcode.trim()) || equipRequired || consumableBlocked;
+  const scanDisabled = (isScanMode && !scannedBarcode.trim()) || equipRequired || consumableBlocked || prepBlocked;
   /** 스캔 모드 PASS는 회로라벨까지 필수 */
   const passDisabled = scanDisabled || (isScanMode && !circuitLabel.trim());
   const scanDisabledReason = t(
@@ -195,11 +200,17 @@ export default function InspectPanel({
     "합격하려면 회로라벨을 스캔해주세요."
   );
   const consumableRequiredReason = t("inspection.result.consumableMountRequired", {
-    count: unmountedConsumCount,
+    count: prep.unmountedConsumCount,
   });
   const equipRequiredReason = t("inspection.result.equipRequired");
-  /** 인터락 안내 — 검사기 미선택 우선, 다음 소모품 미장착 */
-  const interlockReason = equipRequired ? equipRequiredReason : consumableBlocked ? consumableRequiredReason : "";
+  /** 인터락 안내 — 검사기 미선택 > 소모품 미장착 > 준비 미완료(점검·대조) 순 */
+  const interlockReason = equipRequired
+    ? equipRequiredReason
+    : consumableBlocked
+      ? consumableRequiredReason
+      : prepBlocked
+        ? (prep.blockReason ?? t("inspection.result.prep.notReady"))
+        : "";
 
   return (
     <div className="flex flex-col gap-4 h-full overflow-auto">

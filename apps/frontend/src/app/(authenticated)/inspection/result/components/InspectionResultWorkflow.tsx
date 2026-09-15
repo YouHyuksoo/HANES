@@ -3,13 +3,19 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { ScanLine, RefreshCw, Search, Cpu, Maximize2, Minimize2 } from "lucide-react";
-import { Card, CardContent, Button, Input, Select } from "@/components/ui";
+import { ScanLine, RefreshCw, Search, Maximize2, Minimize2 } from "lucide-react";
+import { Card, CardContent, Button, Input } from "@/components/ui";
 import { ComCodeBadge } from "@/components/ui";
 import api from "@/services/api";
 import type { JobOrderRow } from "../types";
 import InspectPanel from "./InspectPanel";
 import ConsumablePanel from "./ConsumablePanel";
+import InspectStationBar from "./InspectStationBar";
+import InspectPrepCheckBar from "./InspectPrepCheckBar";
+import SampleCheckModal from "./SampleCheckModal";
+import SampleCheckHistoryModal from "./SampleCheckHistoryModal";
+import { DailyInspectModal, WorkerInspectModal } from "@/components/inspect";
+import useInspectPrepStatus from "../hooks/useInspectPrepStatus";
 
 interface TesterEquip {
   equipCode: string;
@@ -70,13 +76,11 @@ export default function InspectionResultWorkflow({
       // localStorage 비가용 시 무시(세션 한정 동작)
     }
   }, [equipStorageKey]);
-  /** 소모성 설비부품 장착 인터락 상태 — ConsumablePanel(좌측 하단)이 보고, InspectPanel(우측 버튼)이 사용 */
-  const [consumablesReady, setConsumablesReady] = useState(true);
-  const [unmountedConsumCount, setUnmountedConsumCount] = useState(0);
-  const handleConsumableStatus = useCallback((allMounted: boolean, unmounted: number) => {
-    setConsumablesReady(allMounted);
-    setUnmountedConsumCount(unmounted);
-  }, []);
+  /** 점검·대조 모달 열림 상태 */
+  const [dailyInspectOpen, setDailyInspectOpen] = useState(false);
+  const [workerInspectOpen, setWorkerInspectOpen] = useState(false);
+  const [sampleCheckOpen, setSampleCheckOpen] = useState(false);
+  const [sampleHistoryOpen, setSampleHistoryOpen] = useState(false);
   /** 전체화면(chromeless) 모드 — view=full 쿼리 + 브라우저 Fullscreen API */
   const isFullView = searchParams.get("view") === "full";
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -169,6 +173,28 @@ export default function InspectionResultWorkflow({
     );
   }, [orders, debouncedSearch]);
 
+  /** 준비 상태(작업자·설비점검·양불대조·소모품) 단일 소스 */
+  const prep = useInspectPrepStatus({
+    orderNo: selected?.orderNo,
+    itemCode: selected?.itemCode,
+    inspectType,
+    equipCode: selectedEquipCode || undefined,
+    noWorkerMessage: t("inspection.result.prep.selectWorkerFirst"),
+    noEquipMessage: t("inspection.result.prep.selectEquipFirst"),
+    consumableMessage: t("inspection.result.prep.consumableNotReady"),
+  });
+
+  const inspectContext = useMemo(() => ({
+    equip: selectedEquipCode
+      ? {
+        equipCode: selectedEquipCode,
+        equipName: testers.find((e) => e.equipCode === selectedEquipCode)?.equipName ?? selectedEquipCode,
+      }
+      : null,
+    jobOrder: selected ? { orderNo: selected.orderNo, itemName: selected.itemName } : null,
+    workers: prep.workers.map((w) => ({ id: w.id, workerName: w.workerName })),
+  }), [selectedEquipCode, testers, selected, prep.workers]);
+
   return (
     <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
       <div className="flex justify-between items-center flex-shrink-0">
@@ -197,21 +223,29 @@ export default function InspectionResultWorkflow({
         </div>
       </div>
 
+      {/* 준비 4단계 체크바 — 모두 완료해야 합격·불합격 버튼이 열린다 */}
+      <InspectPrepCheckBar
+        prep={prep}
+        hasEquip={Boolean(selectedEquipCode)}
+        hasOrder={Boolean(selected)}
+        onOpenDailyInspect={() => setDailyInspectOpen(true)}
+        onOpenWorkerInspect={() => setWorkerInspectOpen(true)}
+        onOpenSampleCheck={() => setSampleCheckOpen(true)}
+        onOpenSampleCheckHistory={() => setSampleHistoryOpen(true)}
+      />
+
       <div className="grid grid-cols-12 gap-4 flex-1 min-h-0 overflow-hidden">
         <div className="col-span-4 flex flex-col gap-4 min-h-0 overflow-hidden">
           <Card className="flex-1 min-h-0 overflow-hidden flex flex-col" padding="none">
             <CardContent className="flex flex-col h-full p-3 gap-2">
-              {/* 검사기(TESTER) 선택 */}
-              <div className="flex items-center gap-1.5">
-                <Cpu className="w-4 h-4 text-primary shrink-0" />
-                <Select
-                  value={selectedEquipCode}
-                  onChange={handleSelectEquip}
-                  placeholder={t("inspection.result.selectEquip")}
-                  options={testers.map((e) => ({ value: e.equipCode, label: `${e.equipName} (${e.equipCode})` }))}
-                  className="flex-1"
-                />
-              </div>
+              {/* 검사기(TESTER) + 작업자 선택 — 실적입력(가공)과 같은 방식 */}
+              <InspectStationBar
+                testers={testers}
+                equipCode={selectedEquipCode}
+                onSelectEquip={handleSelectEquip}
+                workers={prep.workers}
+                onWorkersChange={prep.setWorkers}
+              />
               <Input
                 placeholder={t(searchPlaceholderKey)}
                 value={searchText}
@@ -265,7 +299,7 @@ export default function InspectionResultWorkflow({
                 key={`${selected.orderNo}::${selectedEquipCode}`}
                 orderNo={selected.orderNo}
                 equipCode={selectedEquipCode || undefined}
-                onStatusChange={handleConsumableStatus}
+                onStatusChange={prep.setConsumableStatus}
               />
             </div>
           )}
@@ -278,8 +312,7 @@ export default function InspectionResultWorkflow({
               order={selected}
               inspectType={inspectType}
               equipCode={selectedEquipCode || undefined}
-              consumablesReady={consumablesReady}
-              unmountedConsumCount={unmountedConsumCount}
+              prep={prep}
             />
           ) : (
             <Card className="flex-1 flex items-center justify-center">
@@ -293,6 +326,39 @@ export default function InspectionResultWorkflow({
           )}
         </div>
       </div>
+
+      <DailyInspectModal
+        isOpen={dailyInspectOpen}
+        onClose={() => setDailyInspectOpen(false)}
+        onDone={() => { setDailyInspectOpen(false); void prep.refresh(); }}
+        context={inspectContext}
+      />
+      <WorkerInspectModal
+        isOpen={workerInspectOpen}
+        onClose={() => setWorkerInspectOpen(false)}
+        onDone={() => { setWorkerInspectOpen(false); void prep.refresh(); }}
+        context={inspectContext}
+      />
+      {selected && selectedEquipCode && (
+        <SampleCheckModal
+          isOpen={sampleCheckOpen}
+          onClose={() => setSampleCheckOpen(false)}
+          onDone={() => { void prep.refresh(); }}
+          orderNo={selected.orderNo}
+          itemCode={selected.itemCode}
+          equipCode={selectedEquipCode}
+          inspectType={inspectType}
+          workerId={prep.workers[0]?.id ?? null}
+        />
+      )}
+      {selected && (
+        <SampleCheckHistoryModal
+          isOpen={sampleHistoryOpen}
+          onClose={() => setSampleHistoryOpen(false)}
+          orderNo={selected.orderNo}
+          inspectType={inspectType}
+        />
+      )}
     </div>
   );
 }
