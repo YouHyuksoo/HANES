@@ -14,9 +14,13 @@ interface Props {
   allocation: AllocationMap;
   selectedRowKey: string | null;
   onSelect: (rowKey: string) => void;
+  /** 요청 상세 조회 중(초기 진입) — true 면 빈 표 대신 로딩 안내를 보여준다 */
+  isLoading?: boolean;
 }
 
-export default function RequestItemList({ rows, allocation, selectedRowKey, onSelect }: Props) {
+const COLUMN_COUNT = 9;
+
+export default function RequestItemList({ rows, allocation, selectedRowKey, onSelect, isLoading }: Props) {
   const { t } = useTranslation();
 
   return (
@@ -43,7 +47,13 @@ export default function RequestItemList({ rows, allocation, selectedRowKey, onSe
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => {
+            {isLoading ? (
+              <tr>
+                <td colSpan={COLUMN_COUNT} className="px-3 py-8 text-center text-text-muted">
+                  {t('common.loading', { defaultValue: '로딩 중...' })}
+                </td>
+              </tr>
+            ) : rows.map((row) => {
               const allocated = sumSlices(allocation[row.rowKey]);
               const shortage = row.packRemainQty - allocated;
               const isSelected = row.rowKey === selectedRowKey;

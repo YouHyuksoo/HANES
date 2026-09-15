@@ -61,8 +61,13 @@ test('출고요청 항목 그리드에 가용(IQC합격)·미검사 컬럼을 �
 test('IssueFromRequestModal 의 FIFO 권장 표시는 유지한다', () => {
   // 롯트 선택 Select 의 ⭐ 접두 라벨은 우측 LotAllocationPanel 의 선입 LOT 뱃지로 이어졌다
   // (여러 LOT 를 동시에 보여주는 2단 구조라 셀렉트 라벨 접두어 방식은 더 이상 맞지 않는다).
-  assert.match(lotAllocationPanel, /i === 0 &&/);
-  assert.match(lotAllocationPanel, /material\.issue\.fifoFirst/);
+  // i === 0 && ... fifoFirst 를 하나의 표현식으로 묶어서 확인해야 한다 — 각각 따로 매치하면
+  // 파일 어딘가에 있는 아무 index-0 분기와 아무 fifoFirst 참조만으로도 통과해버린다.
+  assert.match(
+    lotAllocationPanel,
+    /i === 0 &&[\s\S]{0,200}material\.issue\.fifoFirst/,
+    '첫 번째(선입) LOT 행에만 fifoFirst 뱃지가 나와야 한다',
+  );
 });
 
 test('백엔드 계약: 출고 행·승인·생성 응답에 warnings, 상세 항목에 issuableQty/pendingIqcQty', () => {

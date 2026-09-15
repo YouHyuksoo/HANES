@@ -10,7 +10,7 @@
  * 3. **일괄 출고**: POST /material/issue-requests/:id/issue 호출
  * 4. **성공 시**: 모달 닫기 + 쿼리 무효화 (목록 자동 새로고침)
  */
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Package, AlertTriangle, Info } from 'lucide-react';
 import { isProductionIssueType, allocateFifo, roundUpToPack, type FifoLot } from '@harness/shared';
@@ -60,6 +60,17 @@ export default function IssueFromRequestModal({
   const [selectedRowKey, setSelectedRowKey] = useState<string | null>(null);
   /** 사용자가 직접 수량을 고친 품목 — 자동배분이 덮어쓰지 않는다 */
   const [manualRowKeys, setManualRowKeys] = useState<Set<string>>(new Set());
+  /**
+   * manualRowKeys 를 async 콜백(loadAvailableLots) 안에서 읽기 위한 ref.
+   * effect 의 deps 에 manualRowKeys 를 넣지 않는 이상 클로저가 effect 실행 시점의
+   * 값을 캡처하므로, LOT 조회가 진행되는 동안 사용자가 수동 배분을 하면
+   * 응답 도착 시 그 캡처된(오래된) Set 기준으로 덮어써버린다.
+   * ref 는 항상 최신값을 들고 있어 "쓰는 시점"에 최신 manualRowKeys 를 읽게 한다.
+   */
+  const manualRowKeysRef = useRef(manualRowKeys);
+  useEffect(() => {
+    manualRowKeysRef.current = manualRowKeys;
+  }, [manualRowKeys]);
   const [isLoadingLots, setIsLoadingLots] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -149,7 +160,7 @@ export default function IssueFromRequestModal({
         setAllocation((prev) => {
           const next = { ...prev };
           for (const row of issueRows) {
-            if (manualRowKeys.has(row.rowKey)) continue;
+            if (manualRowKeysRef.current.has(row.rowKey)) continue;
             next[row.rowKey] = allocateRow(row, nextByItem[row.itemCode] ?? []);
           }
           return next;
@@ -295,6 +306,7 @@ export default function IssueFromRequestModal({
               allocation={allocation}
               selectedRowKey={selectedRowKey}
               onSelect={setSelectedRowKey}
+              isLoading={isLoading}
             />
           </div>
           <div className="flex-1 min-w-0">
