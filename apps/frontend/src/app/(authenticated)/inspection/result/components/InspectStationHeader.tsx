@@ -5,7 +5,7 @@
  * @description 통전·단자검사 상단 헤더 — 실적입력(가공) 키오스크 EquipHeader와 같은 형식
  *
  * 초보자 가이드:
- * - Row1: 검사기 / 작업지시 + 작업자 / 준비 점검 4종 / 전체화면
+ * - Row1: 검사기 / 작업자 / 준비 점검 4종 / 전체화면 (작업지시는 좌측 목록이 단일 출처라 헤더에 넣지 않는다)
  * - 점검 카드는 키오스크와 같은 공용 HeaderCheckItem을 쓴다(라벨 + 상태 + 입력/보기 버튼).
  * - 상태 구분은 왼쪽 굵은 세로 보더 + 문구 색 + 버튼 톤. 카드 배경에 파스텔을 깔지 않는다.
  * - 4개가 모두 완료돼야 우측 합격·불합격 버튼이 열린다(서버도 같은 규칙으로 차단).
@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import {
-  AlertTriangle, CheckCircle, ChevronDown, ClipboardList, Cpu,
+  AlertTriangle, CheckCircle, ChevronDown, Cpu,
   History, Maximize2, Minimize2, UserPlus, X,
 } from "lucide-react";
 import { HeaderCheckItem } from "@/components/inspect";
@@ -33,6 +33,7 @@ interface InspectStationHeaderProps {
   testers: TesterEquip[];
   equipCode: string;
   onSelectEquip: (equipCode: string) => void;
+  /** 좌측 목록에서 고른 작업지시 — 헤더에 표시하지는 않고 점검 활성 조건 판단에만 쓴다 */
   order: JobOrderRow | null;
   prep: InspectPrepState;
   onOpenDailyInspect: () => void;
@@ -180,21 +181,6 @@ export default function InspectStationHeader({
             )}
           </div>
 
-          {/* 작업지시 (좌측 목록에서 선택) */}
-          <div className="flex h-11 min-w-[16rem] flex-1 items-center gap-2 rounded-lg border border-border bg-card px-3">
-            <ClipboardList className="h-4 w-4 shrink-0 text-primary" />
-            {order ? (
-              <div className="flex min-w-0 flex-1 items-center gap-2">
-                <span className="shrink-0 font-mono text-sm font-bold text-black dark:text-white">{order.orderNo}</span>
-                <span className="min-w-0 flex-1 truncate text-xs text-black/60 dark:text-white/60">
-                  {order.itemName ?? order.itemCode}
-                </span>
-              </div>
-            ) : (
-              <span className="text-xs font-semibold text-black/60 dark:text-white/60">{orderReason}</span>
-            )}
-          </div>
-
           {/* 작업자 */}
           <div className={`flex h-11 shrink-0 items-center gap-1.5 overflow-hidden rounded-lg border border-border bg-card pl-2 pr-2 ${
             hasWorker
@@ -237,8 +223,8 @@ export default function InspectStationHeader({
             )}
           </div>
 
-          {/* 준비 점검 4종 — 키오스크와 같은 카드 */}
-          <div className="flex shrink-0 items-center gap-2">
+          {/* 준비 점검 4종 — 키오스크와 같은 카드 (작업지시는 좌측 목록이 단일 출처라 헤더에 두지 않는다) */}
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             <HeaderCheckItem
               label={t("inspection.result.prep.dailyInspect")}
               done={hasEquip && (!prep.gate.dailyRequired || prep.gate.dailyDone)}
