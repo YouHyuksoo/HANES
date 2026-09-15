@@ -2946,7 +2946,10 @@
       "resetAllocation": "重置分配",
       "allocateQty": "分配数量",
       "lotRemainQty": "余量",
-      "fifoFirst": "先入"
+      "fifoFirst": "先入",
+      "splitAndPrint": "分割并打印标签",
+      "reprintLabel": "重新打印标签",
+      "splitNotice": "分割后请将两张标签分别贴在出库分和余量分上。"
     },
     "stock": {
       "title": "物料库存",

@@ -2946,7 +2946,10 @@
       "resetAllocation": "Đặt lại",
       "allocateQty": "SL phân bổ",
       "lotRemainQty": "Còn lại",
-      "fifoFirst": "Vào trước"
+      "fifoFirst": "Vào trước",
+      "splitAndPrint": "Tách & In nhãn",
+      "reprintLabel": "In lại nhãn",
+      "splitNotice": "Dán hai nhãn lên phần xuất và phần còn lại."
     },
     "stock": {
       "title": "Tồn kho vật tư",

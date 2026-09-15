@@ -3496,7 +3496,10 @@
       "resetAllocation": "배분 초기화",
       "allocateQty": "배분수량",
       "lotRemainQty": "잔량",
-      "fifoFirst": "선입"
+      "fifoFirst": "선입",
+      "splitAndPrint": "분할 및 라벨발행",
+      "reprintLabel": "라벨 재출력",
+      "splitNotice": "분할 후 라벨 2장을 출고분과 잔량분에 각각 부착하세요."
     },
     "stock": {
       "title": "자재재고현황",

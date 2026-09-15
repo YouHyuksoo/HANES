@@ -12,7 +12,8 @@
  */
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Package, AlertTriangle, Info } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Package, AlertTriangle, Info, Scissors, Printer } from 'lucide-react';
 import { isProductionIssueType, allocateFifo, roundUpToPack, type FifoLot } from '@harness/shared';
 import { Modal, Button, Select } from '@/components/ui';
 import ProcessSelect from '@/components/shared/ProcessSelect';
@@ -22,6 +23,7 @@ import { useComCodeOptions } from '@/hooks/useComCode';
 import { notifyIssueWarnings } from '@/components/material/issue-warnings';
 import RequestItemList from './issue-from-request/RequestItemList';
 import LotAllocationPanel from './issue-from-request/LotAllocationPanel';
+import SplitLabelSequence, { type SplitGroup } from './issue-from-request/SplitLabelSequence';
 import type { AllocationMap, AvailableStock, IssueRow, RequestDetailItem } from './issue-from-request/types';
 import { stockAvailableQty, sumSlices } from './issue-from-request/types';
 
@@ -74,6 +76,25 @@ export default function IssueFromRequestModal({
   const [isLoadingLots, setIsLoadingLots] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  /** 부분 사용 롯트를 출고분/잔량분으로 분할한 결과 — 라벨 재출력에 대비해 보관한다 */
+  const [splitGroups, setSplitGroups] = useState<SplitGroup[]>([]);
+  const [isLabelOpen, setIsLabelOpen] = useState(false);
+  const [isSplitting, setIsSplitting] = useState(false);
+  /** 언마운트 후 비동기 응답이 setState 하지 않도록 방지 */
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+  /**
+   * reloadLots 는 최초 진입 effect 와 handleSplit 양쪽에서 겹쳐 호출될 수 있다
+   * (예: 조회 응답을 기다리는 동안 상세 refetch 로 issueRows 참조가 바뀌어 effect 가
+   * 다시 돈다). isMountedRef 는 "언마운트"만 막을 뿐 "더 오래된 응답이 나중에 도착"하는
+   * 건 못 막으므로, 호출마다 증가하는 실행 토큰으로 최신 호출만 반영한다.
+   */
+  const lotsRunRef = useRef(0);
 
   /** 한 품목을 FIFO 자동배분한다 */
   const allocateRow = useCallback((row: IssueRow, stocks: AvailableStock[]) => {
@@ -137,49 +158,51 @@ export default function IssueFromRequestModal({
   const isProductionIssue = isProductionIssueType(issueType);
   const processMissing = isProductionIssue && !processCode;
 
-  useEffect(() => {
-    if (!isOpen || issueRows.length === 0) return;
-    let isMounted = true;
+  /**
+   * 품목별 출고 가능 LOT 을 다시 읽는다. 최초 진입 시의 useEffect 뿐 아니라
+   * 분할(handleSplit) 성공 후에도 신규 시리얼을 반영하려면 다시 호출해야 한다.
+   */
+  const reloadLots = useCallback(async () => {
+    if (issueRows.length === 0) return;
+    const runId = ++lotsRunRef.current;
+    const isStale = () => !isMountedRef.current || runId !== lotsRunRef.current;
     const itemCodes = [...new Set(issueRows.map((row) => row.itemCode).filter(Boolean))];
-
-    const loadAvailableLots = async () => {
-      setIsLoadingLots(true);
-      setErrorMsg(null);
-      try {
-        const entries = await Promise.all(itemCodes.map(async (itemCode) => {
-          const res = await api.get('/material/stocks/available', {
-            params: { itemCode, limit: 100 },
-          });
-          const raw = res.data?.data;
-          const rows = (Array.isArray(raw) ? raw : raw?.data ?? []) as AvailableStock[];
-          return [itemCode, rows.filter((row) => row.matUid && (row.availableQty ?? row.qty ?? 0) > 0)] as const;
-        }));
-        if (!isMounted) return;
-        const nextByItem = Object.fromEntries(entries);
-        setAvailableStocksByItem(nextByItem);
-        setAllocation((prev) => {
-          const next = { ...prev };
-          for (const row of issueRows) {
-            if (manualRowKeysRef.current.has(row.rowKey)) continue;
-            next[row.rowKey] = allocateRow(row, nextByItem[row.itemCode] ?? []);
-          }
-          return next;
+    setIsLoadingLots(true);
+    setErrorMsg(null);
+    try {
+      const entries = await Promise.all(itemCodes.map(async (itemCode) => {
+        const res = await api.get('/material/stocks/available', {
+          params: { itemCode, limit: 100 },
         });
-        setSelectedRowKey((prev) => prev ?? issueRows[0]?.rowKey ?? null);
-      } catch (err: unknown) {
-        if (!isMounted) return;
-        const axiosErr = err as { response?: { data?: { message?: string } } };
-        setErrorMsg(axiosErr.response?.data?.message || '출고 가능 LOT 조회에 실패했습니다.');
-      } finally {
-        if (isMounted) setIsLoadingLots(false);
-      }
-    };
+        const raw = res.data?.data;
+        const rows = (Array.isArray(raw) ? raw : raw?.data ?? []) as AvailableStock[];
+        return [itemCode, rows.filter((row) => row.matUid && (row.availableQty ?? row.qty ?? 0) > 0)] as const;
+      }));
+      if (isStale()) return;
+      const nextByItem = Object.fromEntries(entries);
+      setAvailableStocksByItem(nextByItem);
+      setAllocation((prev) => {
+        const next = { ...prev };
+        for (const row of issueRows) {
+          if (manualRowKeysRef.current.has(row.rowKey)) continue;
+          next[row.rowKey] = allocateRow(row, nextByItem[row.itemCode] ?? []);
+        }
+        return next;
+      });
+      setSelectedRowKey((prev) => prev ?? issueRows[0]?.rowKey ?? null);
+    } catch (err: unknown) {
+      if (isStale()) return;
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      setErrorMsg(axiosErr.response?.data?.message || '출고 가능 LOT 조회에 실패했습니다.');
+    } finally {
+      if (!isStale()) setIsLoadingLots(false);
+    }
+  }, [issueRows, allocateRow]);
 
-    void loadAvailableLots();
-    return () => {
-      isMounted = false;
-    };
-  }, [isOpen, issueRows]);
+  useEffect(() => {
+    if (!isOpen) return;
+    void reloadLots();
+  }, [isOpen, reloadLots]);
 
   // 선택된 요청 품목
   const selectedRow = useMemo(
@@ -192,6 +215,23 @@ export default function IssueFromRequestModal({
     () => issueRows.reduce((sum, row) => sum + sumSlices(allocation[row.rowKey]), 0),
     [issueRows, allocation],
   );
+
+  /** 부분 사용 롯트만 분할 대상이다 — 전량 사용 롯트는 그대로 출고한다 */
+  const splitTargets = useMemo(() => {
+    const targets: Array<{ sourceMatUid: string; issueQty: number }> = [];
+    for (const row of issueRows) {
+      const stocks = availableStocksByItem[row.itemCode] ?? [];
+      for (const slice of allocation[row.rowKey] ?? []) {
+        const stock = stocks.find((s) => s.matUid === slice.matUid);
+        if (!stock) continue;
+        const available = stockAvailableQty(stock);
+        if (slice.qty > 0 && slice.qty < available) {
+          targets.push({ sourceMatUid: slice.matUid, issueQty: slice.qty });
+        }
+      }
+    }
+    return targets;
+  }, [issueRows, allocation, availableStocksByItem]);
 
   // 일괄 출고 처리
   const handleSubmit = useCallback(async () => {
@@ -231,6 +271,38 @@ export default function IssueFromRequestModal({
       setIsSubmitting(false);
     }
   }, [issueRows, requestId, issueType, processCode, processMissing, allocation, invalidate, onClose, t]);
+
+  /**
+   * 부분 사용 롯트를 출고분/잔량분 신규 시리얼로 분할하고 라벨을 발행한다.
+   * 성공 후에는 옛 matUid 를 참조하던 클라이언트 배분 상태를 그대로 재사용하면
+   * 백엔드에서 실패하므로(원본 시리얼은 SPLIT 처리되어 재고가 0) 버리고
+   * LOT 목록을 다시 읽어 FIFO 자동배분이 새 시리얼 기준으로 다시 돌게 한다.
+   */
+  const handleSplit = useCallback(async () => {
+    if (splitTargets.length === 0) return;
+    setIsSplitting(true);
+    setErrorMsg(null);
+    try {
+      const res = await api.post(`/material/issue-requests/${requestId}/split-for-issue`, {
+        splits: splitTargets,
+      });
+      const groups = (res.data?.data?.splits ?? []) as SplitGroup[];
+      setSplitGroups(groups);
+      setIsLabelOpen(true);
+      toast.success(t('material.issue.splitNotice', {
+        defaultValue: '분할 후 라벨 2장을 출고분과 잔량분에 각각 부착하세요.',
+      }));
+      // 분할로 생긴 신규 시리얼을 반영한다. 클라이언트 배분 상태는 버리고 다시 계산한다.
+      setManualRowKeys(new Set());
+      setAllocation({});
+      await reloadLots();
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      setErrorMsg(axiosErr.response?.data?.message || 'LOT 분할에 실패했습니다.');
+    } finally {
+      setIsSplitting(false);
+    }
+  }, [splitTargets, requestId, reloadLots, t]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('material.issue.processAction')} size="full">
@@ -315,6 +387,7 @@ export default function IssueFromRequestModal({
               lots={selectedRow ? (availableStocksByItem[selectedRow.itemCode] ?? []) : []}
               slices={selectedRow ? (allocation[selectedRow.rowKey] ?? []) : []}
               isLoading={isLoadingLots}
+              warning={errorMsg}
               onChange={(matUid, qty) => selectedRow && handleSliceChange(selectedRow.rowKey, matUid, qty)}
               onAutoAllocate={() => {
                 if (!selectedRow) return;
@@ -347,17 +420,35 @@ export default function IssueFromRequestModal({
             <Button variant="secondary" onClick={onClose}>
               {t('common.cancel')}
             </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={totalIssueQty <= 0 || isLoadingLots || processMissing} disabledReason={isLoadingLots ? t('material.disabledHelp.lotLoading', '출고 가능한 자재 LOT을 조회하고 있습니다.') : processMissing ? t('material.disabledHelp.selectProcess', '출고 대상 공정을 선택하세요.') : t('material.disabledHelp.selectIssueQty', '출고할 LOT을 선택하고 출고수량을 0보다 크게 입력하세요.')}
-              isLoading={isSubmitting}
-            >
-              <Package className="w-4 h-4 mr-1" />
-              {t('material.issue.issueAction')}
-            </Button>
+            {splitTargets.length > 0 ? (
+              <Button onClick={handleSplit} isLoading={isSplitting}>
+                <Scissors className="w-4 h-4 mr-1" />
+                {t('material.issue.splitAndPrint', { defaultValue: '분할 및 라벨발행' })}
+                <span className="ml-1 opacity-70">({splitTargets.length})</span>
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSubmit}
+                disabled={totalIssueQty <= 0 || isLoadingLots || processMissing} disabledReason={isLoadingLots ? t('material.disabledHelp.lotLoading', '출고 가능한 자재 LOT을 조회하고 있습니다.') : processMissing ? t('material.disabledHelp.selectProcess', '출고 대상 공정을 선택하세요.') : t('material.disabledHelp.selectIssueQty', '출고할 LOT을 선택하고 출고수량을 0보다 크게 입력하세요.')}
+                isLoading={isSubmitting}
+              >
+                <Package className="w-4 h-4 mr-1" />
+                {t('material.issue.issueAction')}
+              </Button>
+            )}
+            {splitGroups.length > 0 && (
+              <Button variant="secondary" onClick={() => setIsLabelOpen(true)}>
+                <Printer className="w-4 h-4 mr-1" />
+                {t('material.issue.reprintLabel', { defaultValue: '라벨 재출력' })}
+              </Button>
+            )}
           </div>
         </div>
       </div>
+
+      {isLabelOpen && (
+        <SplitLabelSequence groups={splitGroups} onClose={() => setIsLabelOpen(false)} />
+      )}
     </Modal>
   );
 }

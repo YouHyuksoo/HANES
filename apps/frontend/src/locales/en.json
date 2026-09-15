@@ -2964,7 +2964,10 @@
       "resetAllocation": "Reset",
       "allocateQty": "Allocate Qty",
       "lotRemainQty": "Remaining",
-      "fifoFirst": "First In"
+      "fifoFirst": "First In",
+      "splitAndPrint": "Split & Print Labels",
+      "reprintLabel": "Reprint Labels",
+      "splitNotice": "Attach the two printed labels to the issued and remaining lots."
     },
     "stock": {
       "title": "Material Stock",

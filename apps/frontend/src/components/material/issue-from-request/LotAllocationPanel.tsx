@@ -19,13 +19,15 @@ interface Props {
   lots: AvailableStock[];
   slices: AllocationSlice[];
   isLoading: boolean;
+  /** 분할/조회 시도 실패 메시지 — 분할 가능 여부는 서버가 판정하므로 그 메시지를 그대로 노출한다 */
+  warning?: string | null;
   onChange: (matUid: string, qty: number) => void;
   onAutoAllocate: () => void;
   onReset: () => void;
 }
 
 export default function LotAllocationPanel({
-  row, lots, slices, isLoading, onChange, onAutoAllocate, onReset,
+  row, lots, slices, isLoading, warning, onChange, onAutoAllocate, onReset,
 }: Props) {
   const { t } = useTranslation();
   const qtyOf = (matUid: string) => slices.find((s) => s.matUid === matUid)?.qty ?? 0;
@@ -58,6 +60,13 @@ export default function LotAllocationPanel({
           </Button>
         </div>
       </div>
+
+      {warning && (
+        <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-amber-600 dark:text-amber-400 border-b border-border">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+          {warning}
+        </div>
+      )}
 
       <div className="flex-1 min-h-0 overflow-y-auto">
         {isLoading ? (
