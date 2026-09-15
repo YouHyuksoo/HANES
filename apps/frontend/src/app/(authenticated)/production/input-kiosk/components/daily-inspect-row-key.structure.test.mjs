@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const src = readFileSync(new URL('./DailyInspectModal.tsx', import.meta.url), 'utf8');
+const src = readFileSync(new URL('../../../../../components/inspect/DailyInspectModal.tsx', import.meta.url), 'utf8');
 
 test('DailyInspectModal keys rows by list index, not by duplicated seq/sortSeq (defect 13, 2026-09-09)', () => {
   assert.match(src, /rowKey: number;/);
@@ -18,7 +18,7 @@ test('DailyInspectModal keys rows by list index, not by duplicated seq/sortSeq (
 });
 
 test('WorkerInspectModal uses the same rowKey scheme (same defect type as 13)', () => {
-  const w = readFileSync(new URL('./WorkerInspectModal.tsx', import.meta.url), 'utf8');
+  const w = readFileSync(new URL('../../../../../components/inspect/WorkerInspectModal.tsx', import.meta.url), 'utf8');
   assert.match(w, /rowKey: index,/);
   assert.match(w, /key=\{item\.rowKey\}/);
   assert.doesNotMatch(w, /results\[(item|i)\.seq\]/);
