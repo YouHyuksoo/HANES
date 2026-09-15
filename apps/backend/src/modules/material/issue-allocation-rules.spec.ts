@@ -71,7 +71,14 @@ describe('allocateFifo', () => {
     });
   });
 
-  it('배열 순서를 FIFO로 신뢰하며 입력 배열을 변형하지 않는다', () => {
+  it('배열 순서만을 FIFO 로 신뢰한다 — availableQty 나 matUid 로 재정렬하지 않는다', () => {
+    // 선입 롯트가 더 크고 matUid 도 뒤 순서인 픽스처 — 재정렬 오구현이면 A 부터 채워 실패한다
+    const result = allocateFifo(300, lots(['Z', 1000], ['A', 100]));
+    expect(result.slices).toEqual([{ matUid: 'Z', qty: 300 }]);
+    expect(result.shortageQty).toBe(0);
+  });
+
+  it('입력 배열을 변형하지 않는다', () => {
     const input = lots(['A', 200], ['B', 1000]);
     const snapshot = JSON.parse(JSON.stringify(input));
     allocateFifo(900, input);
