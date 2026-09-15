@@ -9,6 +9,7 @@
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -20,7 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
-import { JwtAuthGuard } from '../../../../common/guards/jwt-auth.guard';
+import { AuthenticatedRequest, JwtAuthGuard } from '../../../../common/guards/jwt-auth.guard';
 import {
   AutoInspectDto,
   ContinuityInspectDto,
@@ -31,11 +32,91 @@ import {
   IntegratedInspectDto,
 } from '../dto/continuity-inspect.dto';
 import { ContinuityInspectService } from '../services/continuity-inspect.service';
+import { InspectSampleCheckService } from '../services/inspect-sample-check.service';
+import { CreateSampleCheckDto } from '../dto/inspect-sample-check.dto';
 
 @ApiTags('Quality - Continuity Inspect')
 @Controller('quality/continuity-inspect')
 export class ContinuityInspectController {
-  constructor(private readonly continuityInspectService: ContinuityInspectService) {}
+  constructor(
+    private readonly continuityInspectService: ContinuityInspectService,
+    private readonly inspectSampleCheckService: InspectSampleCheckService,
+  ) {}
+
+  @Get('prep-status')
+  @ApiOperation({ summary: '검사 준비 상태(설비점검 + 양불마스터 대조) 조회' })
+  @ApiQuery({ name: 'orderNo', required: true })
+  @ApiQuery({ name: 'inspectType', required: true, description: 'CONTINUITY | TERMINAL' })
+  @ApiQuery({ name: 'itemCode', required: true })
+  @ApiQuery({ name: 'equipCode', required: false, description: '미선택이면 준비 미완료로 본다' })
+  @ApiResponse({ status: 200, description: 'Success' })
+  async getPrepStatus(
+    @Company() company: string,
+    @Plant() plant: string,
+    @Query('orderNo') orderNo: string,
+    @Query('inspectType') inspectType: string,
+    @Query('itemCode') itemCode: string,
+    @Query('equipCode') equipCode?: string,
+  ) {
+    const data = await this.continuityInspectService.getPrepStatus(
+      { orderNo, inspectType, itemCode, equipCode },
+      company,
+      plant,
+    );
+    return ResponseUtil.success(data);
+  }
+
+  @Get('sample-check/candidates')
+  @ApiOperation({ summary: '양불마스터 대조 대상 한도견본 조회' })
+  @ApiQuery({ name: 'itemCode', required: true })
+  @ApiQuery({ name: 'inspectType', required: true })
+  @ApiResponse({ status: 200, description: 'Success' })
+  async getSampleCheckCandidates(
+    @Company() company: string,
+    @Plant() plant: string,
+    @Query('itemCode') itemCode: string,
+    @Query('inspectType') inspectType: string,
+  ) {
+    const data = await this.inspectSampleCheckService.getCandidates(itemCode, inspectType, { company, plant });
+    return ResponseUtil.success(data);
+  }
+
+  @Get('sample-check/history')
+  @ApiOperation({ summary: '양불마스터 대조 이력 조회' })
+  @ApiQuery({ name: 'orderNo', required: true })
+  @ApiQuery({ name: 'inspectType', required: true })
+  @ApiResponse({ status: 200, description: 'Success' })
+  async getSampleCheckHistory(
+    @Company() company: string,
+    @Plant() plant: string,
+    @Query('orderNo') orderNo: string,
+    @Query('inspectType') inspectType: string,
+  ) {
+    const data = await this.inspectSampleCheckService.findHistory({ orderNo, inspectType }, { company, plant });
+    return ResponseUtil.success(data);
+  }
+
+  @Post('sample-check')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '양불마스터 대조 결과 등록 (견본별 검사기 결과, OK/NG는 서버 산출)' })
+  @ApiResponse({ status: 201, description: 'Created' })
+  async createSampleCheck(
+    @Body() dto: CreateSampleCheckDto,
+    @Company() company: string,
+    @Plant() plant: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const userId = req.user?.id ?? 'SYSTEM';
+    const data = await this.inspectSampleCheckService.create(
+      dto,
+      { userId, workerId: dto.workerId ?? null },
+      { company, plant },
+    );
+    const message = data.overallResult === 'PASS'
+      ? '양불마스터 대조가 등록되었습니다.'
+      : '양불마스터 대조 결과가 불합격입니다 — 검사기 점검 후 재대조하세요.';
+    return ResponseUtil.success(data, message);
+  }
 
   @Get('job-orders')
   @ApiOperation({ summary: 'List continuity-inspectable job orders' })

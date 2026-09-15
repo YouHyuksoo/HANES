@@ -34,6 +34,10 @@ import { judgeInspectMeasurement } from '@harness/shared';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
 import { TransactionService } from '../../../../shared/transaction.service';
 import { SysConfigService } from '../../../system/services/sys-config.service';
+import { EquipInspectGateService } from '../../../equipment/services/equip-inspect-gate.service';
+import { InspectSampleCheckService } from './inspect-sample-check.service';
+import { EquipMaster } from '../../../../entities/equip-master.entity';
+import { parseCsvList } from '../../../../common/utils/csv-list.util';
 import {
   ContinuityInspectDto,
   AutoInspectDto,
@@ -59,10 +63,100 @@ export class ContinuityInspectService {
     private readonly equipProtocolRepo: Repository<EquipProtocol>,
     @InjectRepository(ProdResult)
     private readonly prodResultRepo: Repository<ProdResult>,
+    @InjectRepository(EquipMaster)
+    private readonly equipMasterRepo: Repository<EquipMaster>,
     private readonly seqGenerator: SeqGeneratorService,
     private readonly sysConfigService: SysConfigService,
     private readonly tx: TransactionService,
+    private readonly equipInspectGateService: EquipInspectGateService,
+    private readonly inspectSampleCheckService: InspectSampleCheckService,
   ) {}
+
+  /**
+   * 검사자(작업자) 확인 — 검사기에 배정된 현재 작업자가 없거나 요청 작업자가 그 목록에 없으면 막는다.
+   * 현재 작업자는 실적입력(가공)과 같은 EQUIP_MASTERS.CURRENT_WORKER_CODES를 쓴다.
+   */
+  private async assertWorkerAssigned(
+    equipCode: string,
+    workerId: string | null,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    const equip = await this.equipMasterRepo.findOne({
+      where: { equipCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+    });
+    if (!equip) {
+      throw new NotFoundException(`설비를 찾을 수 없습니다: ${equipCode}`);
+    }
+    const currentWorkers = parseCsvList(equip.currentWorkerCodes);
+    if (currentWorkers.length === 0) {
+      throw new BadRequestException(`작업자를 1명 이상 선택해야 검사를 등록할 수 있습니다: ${equipCode}`);
+    }
+    if (workerId && !currentWorkers.includes(workerId)) {
+      throw new BadRequestException(`선택된 작업자가 검사기의 현재 작업자가 아닙니다: ${workerId}`);
+    }
+  }
+
+  /**
+   * 검사 등록 준비 게이트 — 화면 우회 호출(API 직접 호출)도 같은 규칙으로 막는다.
+   * 1. 설비일상점검(DAILY) / 작업자설비점검(WORKER): EquipInspectGateService 단일 출처
+   * 2. 양불마스터 대조: 작업지시 x 검사기 x 조업일 x 교대 기준 최신 기록이 PASS 여야 한다
+   * equipCode가 없으면(검사기 미선택 경로) 게이트를 적용하지 않는다.
+   */
+  async assertInspectPrepGate(
+    dto: {
+      equipCode?: string | null;
+      orderNo?: string | null;
+      inspectType?: string | null;
+      itemCode?: string | null;
+      workerId?: string | null;
+    },
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    const equipCode = dto.equipCode?.trim();
+    if (!equipCode) return;
+    await this.assertWorkerAssigned(equipCode, dto.workerId ?? null, company, plant);
+    await this.equipInspectGateService.assertGate(
+      { equipCode, orderNo: dto.orderNo ?? undefined, scope: 'INSPECTION' },
+      { company, plant },
+      '검사',
+    );
+    if (dto.orderNo && dto.itemCode && dto.inspectType) {
+      await this.inspectSampleCheckService.assertReady(
+        { orderNo: dto.orderNo, inspectType: dto.inspectType, equipCode, itemCode: dto.itemCode },
+        { company, plant },
+      );
+    }
+  }
+
+  /** 검사 준비 상태(설비점검 + 양불대조)를 화면이 한 번에 읽는다. */
+  async getPrepStatus(
+    args: { orderNo: string; inspectType: string; itemCode: string; equipCode?: string },
+    company: string,
+    plant: string,
+  ) {
+    const equipCode = args.equipCode?.trim() || null;
+    const gate = await this.equipInspectGateService.getGateStatus(
+      { equipCode: equipCode ?? undefined, orderNo: args.orderNo, scope: 'INSPECTION' },
+      { company, plant },
+      '검사',
+    );
+    const sampleCheck = equipCode
+      ? await this.inspectSampleCheckService.getStatus(
+        { orderNo: args.orderNo, inspectType: args.inspectType, equipCode, itemCode: args.itemCode },
+        { company, plant },
+      )
+      : null;
+    const blockReason = gate.blockReason ?? sampleCheck?.blockReason ?? null;
+    return {
+      equipCode,
+      gate,
+      sampleCheck,
+      ready: Boolean(equipCode) && !gate.blocked && (sampleCheck?.done ?? false),
+      blockReason,
+    };
+  }
 
   private async resolveProdResult(
     orderNo: string,
@@ -514,6 +608,18 @@ export class ContinuityInspectService {
     if (options.requireFailReason !== false) {
       this.assertFailReason(dto.passYn, dto.errorCode);
     }
+    // 준비 게이트 — 설비일상점검/작업자설비점검/양불마스터 대조가 끝나야 판정을 등록한다.
+    await this.assertInspectPrepGate(
+      {
+        equipCode: dto.equipCode,
+        orderNo: dto.orderNo,
+        inspectType: dto.inspectType ?? 'CONTINUITY',
+        itemCode: dto.itemCode,
+        workerId: dto.workerId,
+      },
+      company,
+      plant,
+    );
     const result = await this.tx.run(async (queryRunner) => {
       /** 1. 작업지시 존재 확인 */
       const jobOrder = await queryRunner.manager.findOne(JobOrder, {

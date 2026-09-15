@@ -29,6 +29,7 @@ import { InspectAid } from '../../../entities/inspect-aid.entity';
 import { InspectSampleCheck } from '../../../entities/inspect-sample-check.entity';
 import { InspectSampleCheckItem } from '../../../entities/inspect-sample-check-item.entity';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
+import { EquipMaster } from '../../../entities/equip-master.entity';
 import { InspectSampleCheckService } from './services/inspect-sample-check.service';
 import { EquipmentModule } from '../../equipment/equipment.module';
 import { SharedModule } from '../../../shared/shared.module';
@@ -47,6 +48,7 @@ import { SystemModule } from '../../system/system.module';
       InspectSampleCheck,
       InspectSampleCheckItem,
       ShiftPattern,
+      EquipMaster,
     ]),
     SharedModule,
     SystemModule,

@@ -10,6 +10,9 @@ import { RepairOrder } from '../../../../entities/repair-order.entity';
 import { JobOrder } from '../../../../entities/job-order.entity';
 import { EquipProtocol } from '../../../../entities/equip-protocol.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
+import { EquipMaster } from '../../../../entities/equip-master.entity';
+import { EquipInspectGateService } from '../../../equipment/services/equip-inspect-gate.service';
+import { InspectSampleCheckService } from './inspect-sample-check.service';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
 import { SysConfigService } from '../../../system/services/sys-config.service';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -27,6 +30,9 @@ describe('ContinuityInspectService', () => {
   let mockDataSource: DeepMocked<DataSource>;
   let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
+  let mockEquipMasterRepo: DeepMocked<Repository<EquipMaster>>;
+  let mockEquipInspectGate: DeepMocked<EquipInspectGateService>;
+  let mockSampleCheckService: DeepMocked<InspectSampleCheckService>;
 
   beforeEach(async () => {
     mockInspectRepo = createMock<Repository<InspectResult>>();
@@ -39,9 +45,15 @@ describe('ContinuityInspectService', () => {
     mockDataSource = createMock<DataSource>();
     mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
+    mockEquipMasterRepo = createMock<Repository<EquipMaster>>();
+    mockEquipInspectGate = createMock<EquipInspectGateService>();
+    mockSampleCheckService = createMock<InspectSampleCheckService>();
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockTx.run.mockImplementation(async (callback) => callback(mockQueryRunner));
+    mockEquipMasterRepo.findOne.mockResolvedValue({ equipCode: 'EQ-1', currentWorkerCodes: 'W-100' });
+    mockEquipInspectGate.assertGate.mockResolvedValue(undefined);
+    mockSampleCheckService.assertReady.mockResolvedValue(undefined);
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -56,10 +68,13 @@ describe('ContinuityInspectService', () => {
         { provide: getRepositoryToken(JobOrder), useValue: mockJobOrderRepo },
         { provide: getRepositoryToken(EquipProtocol), useValue: mockProtocolRepo },
         { provide: getRepositoryToken(ProdResult), useValue: mockProdResultRepo },
+        { provide: getRepositoryToken(EquipMaster), useValue: mockEquipMasterRepo },
         { provide: SeqGeneratorService, useValue: mockSeqGen },
         { provide: SysConfigService, useValue: mockSysConfigService },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
+        { provide: EquipInspectGateService, useValue: mockEquipInspectGate },
+        { provide: InspectSampleCheckService, useValue: mockSampleCheckService },
       ],
     })
       .setLogger(new MockLoggerService())
