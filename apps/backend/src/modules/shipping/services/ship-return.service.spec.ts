@@ -77,14 +77,17 @@ describe('ShipReturnService', () => {
       mockReturnItemRepo.find.mockResolvedValue([
         { returnNo: 'SR-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' } as ShipmentReturnItem,
       ]);
-      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part A' } as ItemMaster);
+      mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Part A' } as ItemMaster]);
 
-      await target.findById('SR-001', 'C1', 'P1');
+      const result = await target.findById('SR-001', 'C1', 'P1');
 
-      expect(mockPartRepo.findOne).toHaveBeenCalledWith({
-        where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+      // 품목명은 품목코드를 모아 한 번에 조회한다(품목마다 findOne 금지)
+      expect(mockPartRepo.find).toHaveBeenCalledWith({
+        where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
         select: ['itemCode', 'itemName'],
       });
+      expect(mockPartRepo.findOne).not.toHaveBeenCalled();
+      expect(result.items[0].itemName).toBe('Part A');
     });
   });
 

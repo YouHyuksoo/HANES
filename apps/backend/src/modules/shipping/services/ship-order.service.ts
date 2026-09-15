@@ -303,19 +303,24 @@ export class ShipOrderService {
       where: { shipOrderNo: order.shipOrderNo, ...this.tenantWhere(company, plant) },
     });
 
-    const itemsWithPart = await Promise.all(
-      items.map(async (item) => {
-        const part = await this.partRepository.findOne({
-          where: { itemCode: item.itemCode, ...this.tenantWhere(company, plant) },
+    // 품목명은 품목코드를 모아 한 번에 조회한다. 품목마다 findOne 하면 품목 수만큼 왕복한다.
+    const itemCodes = [...new Set(items.map((item) => item.itemCode).filter(Boolean))];
+    const parts = itemCodes.length
+      ? await this.partRepository.find({
+          where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) },
           select: ['itemCode', 'itemName'],
-        });
-        return {
-          ...item,
-          itemCode: part?.itemCode ?? item.itemCode,
-          itemName: part?.itemName,
-        };
-      })
-    );
+        })
+      : [];
+    const partMap = new Map(parts.map((part) => [part.itemCode, part]));
+
+    const itemsWithPart = items.map((item) => {
+      const part = partMap.get(item.itemCode);
+      return {
+        ...item,
+        itemCode: part?.itemCode ?? item.itemCode,
+        itemName: part?.itemName,
+      };
+    });
 
     return {
       ...order,

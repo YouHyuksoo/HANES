@@ -1043,19 +1043,29 @@ export class ShipmentService {
       order: { palletNo: 'ASC' },
     });
 
-    // 각 팔레트의 박스 목록도 조회
-    const result = await Promise.all(
-      pallets.map(async (pallet) => {
-        const boxes = await this.boxRepository.find({
-          where: { palletNo: In([pallet.palletNo]), ...this.tenantWhere(company, plant) },
+    // 박스는 팔레트 번호를 모아 한 번에 조회하고 메모리에서 묶는다.
+    // 팔레트마다 IN 절 1건짜리 조회를 반복하면 팔레트 수만큼 왕복한다.
+    const palletNos = pallets.map((pallet) => pallet.palletNo);
+    const boxes = palletNos.length
+      ? await this.boxRepository.find({
+          where: { palletNo: In(palletNos), ...this.tenantWhere(company, plant) },
           order: { boxNo: 'ASC' },
-          select: ['boxNo', 'itemCode', 'qty', 'status'],
-        });
-        return { ...pallet, boxes };
-      }),
-    );
+          select: ['boxNo', 'itemCode', 'qty', 'status', 'palletNo'],
+        })
+      : [];
+    const boxesByPallet = new Map<string, typeof boxes>();
+    for (const box of boxes) {
+      if (!box.palletNo) continue;
+      const list = boxesByPallet.get(box.palletNo) ?? [];
+      list.push(box);
+      boxesByPallet.set(box.palletNo, list);
+    }
 
-    return result;
+    // 응답 형태 유지: 기존 select 에 없던 palletNo 는 그룹핑용이라 박스에서 뺀다
+    return pallets.map((pallet) => ({
+      ...pallet,
+      boxes: (boxesByPallet.get(pallet.palletNo) ?? []).map(({ palletNo: _palletNo, ...box }) => box),
+    }));
   }
 
   /**

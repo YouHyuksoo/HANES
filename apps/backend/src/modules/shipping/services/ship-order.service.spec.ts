@@ -101,14 +101,17 @@ describe('ShipOrderService', () => {
     it('should enrich order items with part names within tenant only', async () => {
       mockOrderRepo.findOne.mockResolvedValue({ shipOrderNo: 'SO-001', company: 'C1', plant: 'P1' } as any);
       mockItemRepo.find.mockResolvedValue([{ shipOrderNo: 'SO-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' }] as any);
-      mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Part A' } as any);
+      mockPartRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Part A' }] as any);
 
-      await target.findById('SO-001', 'C1', 'P1');
+      const result = await target.findById('SO-001', 'C1', 'P1');
 
-      expect(mockPartRepo.findOne).toHaveBeenCalledWith({
-        where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+      // 품목명은 품목코드를 모아 한 번에 조회한다(품목마다 findOne 금지)
+      expect(mockPartRepo.find).toHaveBeenCalledWith({
+        where: { itemCode: expect.anything(), company: 'C1', plant: 'P1' },
         select: ['itemCode', 'itemName'],
       });
+      expect(mockPartRepo.findOne).not.toHaveBeenCalled();
+      expect(result.items[0].itemName).toBe('Part A');
     });
   });
 

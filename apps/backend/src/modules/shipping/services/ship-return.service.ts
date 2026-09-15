@@ -15,7 +15,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike } from 'typeorm';
+import { Repository, ILike, In } from 'typeorm';
 import { ShipmentReturn } from '../../../entities/shipment-return.entity';
 import { ShipmentReturnItem } from '../../../entities/shipment-return-item.entity';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
@@ -62,28 +62,50 @@ export class ShipReturnService {
     company?: string,
     plant?: string,
   ): Promise<ShipmentReturn & { items: Array<ShipmentReturnItem & { itemName?: string }> }> {
-    const items = await this.shipReturnItemRepository.find({
-      where: { returnNo: data.returnNo, ...this.tenantWhere(company, plant) },
-    });
+    const [only] = await this.flattenItemsBatch([data], company, plant);
+    return only;
+  }
 
-    const itemsWithPart = await Promise.all(
-      items.map(async (item) => {
-        const part = await this.partRepository.findOne({
-          where: { itemCode: item.itemCode, ...this.tenantWhere(company, plant) },
+  /**
+   * 반품 여러 건의 품목을 한 번의 쿼리 세트로 채운다.
+   *
+   * 초보자 가이드:
+   * 1. 반품마다 flattenItems 를 부르면 반품 수 × (품목 조회 + 품목명 조회) 만큼 왕복한다.
+   * 2. 그래서 반품번호와 품목코드를 각각 모아 두 번만 조회하고 메모리에서 묶는다.
+   */
+  private async flattenItemsBatch(
+    dataList: ShipmentReturn[],
+    company?: string,
+    plant?: string,
+  ): Promise<Array<ShipmentReturn & { items: Array<ShipmentReturnItem & { itemName?: string }> }>> {
+    const returnNos = [...new Set(dataList.map((data) => data.returnNo).filter(Boolean))];
+    const items = returnNos.length
+      ? await this.shipReturnItemRepository.find({
+          where: { returnNo: In(returnNos), ...this.tenantWhere(company, plant) },
+        })
+      : [];
+
+    const itemCodes = [...new Set(items.map((item) => item.itemCode).filter(Boolean))];
+    const parts = itemCodes.length
+      ? await this.partRepository.find({
+          where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) },
           select: ['itemCode', 'itemName'],
-        });
-        return {
-          ...item,
-          itemCode: part?.itemCode ?? item.itemCode,
-          itemName: part?.itemName,
-        };
-      })
-    );
+        })
+      : [];
+    const partMap = new Map(parts.map((part) => [part.itemCode, part]));
 
-    return {
+    const itemsByReturnNo = new Map<string, Array<ShipmentReturnItem & { itemName?: string }>>();
+    for (const item of items) {
+      const part = partMap.get(item.itemCode);
+      const list = itemsByReturnNo.get(item.returnNo) ?? [];
+      list.push({ ...item, itemCode: part?.itemCode ?? item.itemCode, itemName: part?.itemName });
+      itemsByReturnNo.set(item.returnNo, list);
+    }
+
+    return dataList.map((data) => ({
       ...data,
-      items: itemsWithPart,
-    };
+      items: itemsByReturnNo.get(data.returnNo) ?? [],
+    }));
   }
 
   /** 반품 목록 조회 */
@@ -106,23 +128,23 @@ export class ShipReturnService {
 
     const [data, total] = await qb.getManyAndCount();
 
-    // 품목 및 출하지시 정보 병합
-    const resultData = await Promise.all(
-      data.map(async (item) => {
-        const shipOrder = item.shipmentId
-          ? await this.shipOrderRepository.findOne({
-              where: { shipOrderNo: item.shipmentId, ...this.tenantWhere(company, plant) },
-              select: ['shipOrderNo', 'customerName'],
-            })
-          : null;
+    // 품목 및 출하지시 정보 병합 — 목록 건수만큼 반복 조회하지 않고 한 번에 모아 온다
+    const shipmentIds = [...new Set(data.map((item) => item.shipmentId).filter((v): v is string => !!v))];
+    const [shipOrders, flattenedList] = await Promise.all([
+      shipmentIds.length
+        ? this.shipOrderRepository.find({
+            where: { shipOrderNo: In(shipmentIds), ...this.tenantWhere(company, plant) },
+            select: ['shipOrderNo', 'customerName'],
+          })
+        : Promise.resolve([]),
+      this.flattenItemsBatch(data, company, plant),
+    ]);
+    const shipOrderMap = new Map(shipOrders.map((order) => [order.shipOrderNo, order]));
 
-        const flattened = await this.flattenItems(item, company, plant);
-        return {
-          ...flattened,
-          shipOrder,
-        };
-      })
-    );
+    const resultData = flattenedList.map((flattened) => ({
+      ...flattened,
+      shipOrder: flattened.shipmentId ? (shipOrderMap.get(flattened.shipmentId) ?? null) : null,
+    }));
 
     return { data: resultData, total, page, limit };
   }
