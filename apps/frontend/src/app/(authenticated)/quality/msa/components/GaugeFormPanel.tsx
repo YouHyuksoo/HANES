@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { Button, Input } from "@/components/ui";
 import { ComCodeSelect, QtyInput } from "@/components/shared";
 import api from "@/services/api";
+import { formatDateOnly } from "@/utils/date";
 
 /** 폼 데이터 타입 */
 interface GaugeFormData {
@@ -169,9 +170,9 @@ export default function GaugeFormPanel({ editData, onClose, onSave }: Props) {
         {isEdit && editData && (
           <div className="grid grid-cols-2 gap-3">
             <Input label={t("quality.msa.lastCalibration")} readOnly
-              value={editData.lastCalibrationDate?.slice(0, 10) ?? "-"} fullWidth />
+              value={formatDateOnly(editData.lastCalibrationDate, "-")} fullWidth />
             <Input label={t("quality.msa.nextCalibration")} readOnly
-              value={editData.nextCalibrationDate?.slice(0, 10) ?? "-"} fullWidth />
+              value={formatDateOnly(editData.nextCalibrationDate, "-")} fullWidth />
           </div>
         )}
       </div>

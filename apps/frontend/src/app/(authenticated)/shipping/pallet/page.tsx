@@ -26,7 +26,7 @@ import { Card, CardContent, Button, ConfirmModal, Input, Modal, Select } from "@
 import { BarcodeScanInput } from "@/components/shared";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import OpenIncludedNotice from "@/components/shared/OpenIncludedNotice";
-import { getTodayLocal } from "@/utils/date";
+import { getTodayLocal, formatDateOnly } from "@/utils/date";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
@@ -419,7 +419,7 @@ export default function PalletPage() {
     const set = new Set<string>();
     if (statusFilter) return set; // 상태 명시 시 includeOpen 미적용
     for (const p of data) {
-      const d = (p.createdAt || "").slice(0, 10);
+      const d = formatDateOnly(p.createdAt);
       const inRange = !!d && !!createdFrom && !!createdTo && d >= createdFrom && d <= createdTo;
       if (!inRange && p.status !== "SHIPPED") set.add(p.palletNo);
     }

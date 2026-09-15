@@ -16,6 +16,7 @@ import { Plus, Trash2, Link } from "lucide-react";
 import { Card, CardContent, Button, ConfirmModal, Input, ComCodeBadge } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
+import { formatDateOnly } from "@/utils/date";
 
 /** 발견사항 데이터 타입 */
 interface Finding {
@@ -238,7 +239,7 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
                     <ComCodeBadge groupCode="FINDING_CATEGORY" code={f.category} />
                   </td>
                   <td className="px-3 py-2 text-text max-w-[200px] truncate">{f.description}</td>
-                  <td className="px-3 py-2 text-text-muted">{f.dueDate?.slice(0, 10) || "-"}</td>
+                  <td className="px-3 py-2 text-text-muted">{formatDateOnly(f.dueDate, "-")}</td>
                   <td className="px-3 py-2">
                     <ComCodeBadge groupCode="FINDING_STATUS" code={f.status} />
                   </td>

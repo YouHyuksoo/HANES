@@ -16,7 +16,7 @@ import { Plus, Trash2, Users } from "lucide-react";
 import { Card, CardContent, Button, ConfirmModal, Input } from "@/components/ui";
 import { WorkerAvatar } from "@/components/worker/WorkerSelector";
 import api from "@/services/api";
-import { getTodayLocal } from "@/utils/date";
+import { getTodayLocal, formatDateOnly } from "@/utils/date";
 
 /** 교육 결과 행 데이터 */
 interface TrainingResult {
@@ -151,8 +151,8 @@ export default function TrainingResultList({ planId, planNo, status, onRefresh }
                         </div>
                       </td>
                       <td className="px-3 py-2 text-text-muted">
-                        {isReadonly ? (row.attendDate?.slice(0, 10) || "-") : (
-                          <input type="date" value={row.attendDate?.slice(0, 10) ?? ""} onChange={e => edt("attendDate", e.target.value)} className={inCls} />
+                        {isReadonly ? (formatDateOnly(row.attendDate, "-")) : (
+                          <input type="date" value={formatDateOnly(row.attendDate, "")} onChange={e => edt("attendDate", e.target.value)} className={inCls} />
                         )}
                       </td>
                       <td className="px-3 py-2 text-center">
@@ -169,8 +169,8 @@ export default function TrainingResultList({ planId, planNo, status, onRefresh }
                         )}
                       </td>
                       <td className="px-3 py-2 text-text-muted">
-                        {isReadonly ? (row.validUntil?.slice(0, 10) || "-") : (
-                          <input type="date" value={row.validUntil?.slice(0, 10) ?? ""} onChange={e => edt("validUntil", e.target.value)} className={inCls} />
+                        {isReadonly ? (formatDateOnly(row.validUntil, "-")) : (
+                          <input type="date" value={formatDateOnly(row.validUntil, "")} onChange={e => edt("validUntil", e.target.value)} className={inCls} />
                         )}
                       </td>
                       {!isReadonly && (

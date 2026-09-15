@@ -5,6 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { AlertTriangle, Pencil } from "lucide-react";
 import { ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { formatDateOnly } from "@/utils/date";
 
 /** 문서 데이터 타입 */
 export interface Document {
@@ -70,7 +71,7 @@ export function createDocumentGridColumns({
       cell: ({ getValue }) => <span className="font-mono text-center block">Rev.{getValue() as number}</span> },
     { accessorKey: "revisionDate", header: t("system.document.revisionDate"), size: 110,
       meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
+      cell: ({ getValue }) => formatDateOnly(getValue() as string) },
     { accessorKey: "status",
       header: () => <StatusHeaderHelp label={t("common.status")} codeType="DOC_STATUS" align="center" />,
       size: 110,
@@ -87,7 +88,7 @@ export function createDocumentGridColumns({
         return (
           <span className={soon ? "text-amber-600 dark:text-amber-400 font-medium" : ""}>
             {soon && <AlertTriangle className="w-3 h-3 inline mr-1" />}
-            {v.slice(0, 10)}
+            {formatDateOnly(v)}
           </span>
         );
       },

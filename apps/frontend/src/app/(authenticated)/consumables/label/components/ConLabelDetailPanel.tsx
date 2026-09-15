@@ -12,6 +12,7 @@ import { X, MapPin, Box, Activity, Printer, Eye } from "lucide-react";
 import { Button, ComCodeBadge } from "@/components/ui";
 import { api } from "@/services/api";
 import type { LabelableMaster } from "./ConLabelColumns";
+import { formatDateOnly } from "@/utils/date";
 
 export interface InstanceItem {
   conUid: string;
@@ -144,7 +145,7 @@ export default function ConLabelDetailPanel({ master, onClose, onReprint, onPrev
                   </div>
                   <div className="min-w-0 text-right">
                     <span>{t("consumables.stock.recvDate")}: </span>
-                    <span className="text-text">{inst.recvDate ? inst.recvDate.slice(0, 10) : "-"}</span>
+                    <span className="text-text">{formatDateOnly(inst.recvDate, "-")}</span>
                   </div>
                 </div>
               </div>

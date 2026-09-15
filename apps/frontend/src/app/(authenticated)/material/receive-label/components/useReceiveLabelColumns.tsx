@@ -13,6 +13,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
+import { formatDateOnly } from "@/utils/date";
 
 /** IQC 합격 입하 건 (API 응답과 일치하는 flat 구조) */
 export interface LabelableArrival {
@@ -112,7 +113,7 @@ export function useReceiveLabelColumns({
         id: 'arrivalDate', accessorKey: 'arrivalDate',
         header: t('material.col.arrivalDate'), size: 100,
         meta: { filterType: 'date' as const },
-        cell: ({ row }) => row.original.arrivalDate?.toString().slice(0, 10) || '-',
+        cell: ({ row }) => formatDateOnly(row.original.arrivalDate, '-'),
       },
       {
         id: 'labelPrinted', accessorKey: 'labelPrinted',

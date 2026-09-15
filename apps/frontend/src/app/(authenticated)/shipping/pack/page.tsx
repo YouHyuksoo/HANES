@@ -24,7 +24,7 @@ import { BarcodeScanInput } from "@/components/shared";
 import PartSelect from "@/components/shared/PartSelect";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import OpenIncludedNotice from "@/components/shared/OpenIncludedNotice";
-import { getTodayLocal } from "@/utils/date";
+import { getTodayLocal, formatDateOnly } from "@/utils/date";
 import { useComCodeOptions } from "@/hooks/useComCode";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { BoxStatusBadge } from "@/components/shipping";
@@ -300,7 +300,7 @@ export default function PackPage() {
     const set = new Set<string>();
     if (statusFilter) return set; // 상태 명시 시 includeOpen 미적용
     for (const b of data) {
-      const d = (b.createdAt || "").slice(0, 10);
+      const d = formatDateOnly(b.createdAt);
       const inRange = !!d && !!createdFrom && !!createdTo && d >= createdFrom && d <= createdTo;
       if (!inRange && b.status === "OPEN") set.add(b.boxNo);
     }
@@ -537,7 +537,7 @@ export default function PackPage() {
                           <li key={s.fgBarcode} className="flex items-baseline gap-3 text-xs py-1 border-b border-border/40 last:border-0">
                             <span className="font-mono text-text w-44 shrink-0">{s.fgBarcode}</span>
                             {s.orderNo && <span className="text-text-muted truncate">{s.orderNo}</span>}
-                            {s.issuedAt && <span className="text-text-muted/60 shrink-0 ml-auto">{String(s.issuedAt).slice(0, 10)}</span>}
+                            {s.issuedAt && <span className="text-text-muted/60 shrink-0 ml-auto">{formatDateOnly(s.issuedAt)}</span>}
                           </li>
                         ))}
                       </ul>

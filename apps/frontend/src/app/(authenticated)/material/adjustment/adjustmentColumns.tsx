@@ -2,6 +2,7 @@
 
 import type { TFunction } from "i18next";
 import type { ColumnDef } from "@tanstack/react-table";
+import { formatDateOnly } from "@/utils/date";
 
 export interface AdjustmentRecord {
   id: string;
@@ -28,7 +29,7 @@ export function createAdjustmentGridColumns({
     {
       accessorKey: "createdAt", header: t("material.adjustment.createdAt"), size: 100,
       meta: { filterType: "date" as const },
-      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
+      cell: ({ getValue }) => formatDateOnly(getValue() as string),
     },
     {
       accessorKey: "warehouseCode", header: t("material.adjustment.warehouse"), size: 100,

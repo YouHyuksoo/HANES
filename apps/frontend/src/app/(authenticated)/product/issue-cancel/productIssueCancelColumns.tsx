@@ -7,6 +7,7 @@ import { Button } from "@/components/ui";
 import ComCodeBadge from "@/components/ui/ComCodeBadge";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import StatusBadge from "@/components/shared/StatusBadge";
+import { formatDateOnly } from "@/utils/date";
 
 export interface ProductIssueTx {
   id: string;
@@ -57,7 +58,7 @@ export function createProductIssueCancelGridColumns({
     {
       accessorKey: "transDate", header: t("productMgmt.issueCancel.transDate"), size: 100,
       meta: { filterType: "text" as const },
-      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
+      cell: ({ getValue }) => formatDateOnly(getValue() as string),
     },
     {
       accessorKey: "transNo", header: t("productMgmt.issueCancel.transNo"), size: 160,

@@ -5,6 +5,7 @@ import { FileSearch } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { formatDateOnly } from "@/utils/date";
 
 export interface FaiRequest {
   faiNo: string; triggerType: string; triggerRef: string;
@@ -49,6 +50,6 @@ export function createFaiGridColumns({
       cell: ({ getValue }) => { const v = getValue() as string; return v ? <ComCodeBadge groupCode="FAI_RESULT" code={v} /> : "-"; } },
     { accessorKey: "inspectorCode", header: t("quality.fai.inspectorCode"), size: 100 },
     { accessorKey: "createdAt", header: t("common.date"), size: 110, meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
+      cell: ({ getValue }) => formatDateOnly(getValue() as string) },
   ];
 }

@@ -3,6 +3,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import StatusBadge from '@/components/shared/StatusBadge';
 import StatusHeaderHelp from '@/components/shared/StatusHeaderHelp';
 import type { PackResult } from './types';
+import { formatDateOnly } from "@/utils/date";
 
 export function createPackResultGridColumns(t: TFunction): ColumnDef<PackResult>[] {
   return [
@@ -11,7 +12,8 @@ export function createPackResultGridColumns(t: TFunction): ColumnDef<PackResult>
       header: t('production.packResult.packDate'),
       size: 120,
       meta: { filterType: 'date' as const },
-      cell: ({ getValue }) => getValue<string | null>()?.slice(0, 10) ?? '-',
+      // packDate 는 BOX_MASTERS.CREATED_AT(TIMESTAMP) 이라 UTC ISO 로 내려온다
+      cell: ({ getValue }) => formatDateOnly(getValue<string | null>(), '-'),
     },
     {
       accessorKey: 'boxNo',

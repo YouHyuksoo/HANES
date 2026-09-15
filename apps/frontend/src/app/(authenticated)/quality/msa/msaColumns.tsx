@@ -5,6 +5,7 @@ import { FileSearch } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { formatDateOnly } from "@/utils/date";
 
 /** 계측기 데이터 타입 */
 export interface Gauge {
@@ -60,10 +61,10 @@ export function createMsaGridColumns({
       cell: ({ getValue }) => `${getValue()}${t("master.gauge.months")}` },
     { accessorKey: "lastCalibrationDate", header: t("quality.msa.lastCalibration"), size: 120,
       meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) ?? "-" },
+      cell: ({ getValue }) => formatDateOnly(getValue() as string, "-") },
     { accessorKey: "nextCalibrationDate", header: t("quality.msa.nextCalibration"), size: 120,
       meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) ?? "-" },
+      cell: ({ getValue }) => formatDateOnly(getValue() as string, "-") },
     { accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="GAUGE_STATUS" align="center" />, size: 100,
       meta: { filterType: "multi" as const },
       cell: ({ getValue }) => (

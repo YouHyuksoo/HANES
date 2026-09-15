@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { Button, Input, ComCodeBadge, Modal } from "@/components/ui";
 import { ComCodeSelect, WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
+import { formatDateOnly } from "@/utils/date";
 
 /** 심사 폼 데이터 */
 interface AuditFormData {
@@ -67,7 +68,7 @@ export default function AuditFormPanel({ isOpen, editData, onClose, onSave }: Pr
         targetDept: editData.targetDept ?? "",
         auditor: editData.auditor ?? "",
         coAuditor: editData.coAuditor ?? "",
-        scheduledDate: editData.scheduledDate?.slice(0, 10) ?? "",
+        scheduledDate: formatDateOnly(editData.scheduledDate, ""),
         summary: editData.summary ?? "",
       });
     } else {

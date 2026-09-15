@@ -19,7 +19,7 @@ import {
 import { Card, CardContent, Button, Input, StatCard } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
-import { getTodayLocal } from "@/utils/date";
+import { getTodayLocal, formatDateOnly } from "@/utils/date";
 import DateRangeFilter from "@/components/shared/DateRangeFilter";
 import IssueFormPanel, { IssueFormValues } from "./components/IssueFormPanel";
 import { ProductIssueTx, createProductIssueGridColumns } from "./productIssueColumns";
@@ -90,7 +90,7 @@ export default function ProductIssuePage() {
     const today = getTodayLocal();
     const todayDone = data.filter(
       (d) => (d.transType === "WIP_OUT" || d.transType === "FG_OUT") &&
-        d.status === "DONE" && String(d.transDate).slice(0, 10) === today,
+        d.status === "DONE" && formatDateOnly(d.transDate) === today,
     );
     return {
       todayCount: todayDone.length,

@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReceivingStatus } from '@/components/material';
 import { api } from '@/services/api';
 import { getTodayLocal } from '@/utils/date';
+import { formatDateOnly } from "@/utils/date";
 
 /** 입고 대상 항목 인터페이스 */
 export interface ReceivingItem {
@@ -103,7 +104,7 @@ export function useReceivingData() {
         const receivableRows = (receivableResponse.data?.data ?? []).map((row, index) => ({
           id: row.matUid ?? `receivable-${index}`,
           receiveNo: row.matUid ?? '',
-          arrivalDate: row.createdAt ? String(row.createdAt).slice(0, 10) : '',
+          arrivalDate: row.createdAt ? formatDateOnly(row.createdAt) : '',
           supplierName: '',
           itemCode: row.itemCode ?? row.part?.itemName ?? '',
           itemName: row.part?.itemName ?? row.itemCode ?? '',
@@ -120,7 +121,7 @@ export function useReceivingData() {
         const historyRows = (historyResponse.data?.data ?? []).map((row, index) => ({
           id: `${row.receiveNo ?? row.transNo ?? 'received'}-${index}`,
           receiveNo: row.receiveNo ?? row.transNo ?? '',
-          arrivalDate: row.transDate ? String(row.transDate).slice(0, 10) : '',
+          arrivalDate: row.transDate ? formatDateOnly(row.transDate) : '',
           supplierName: '',
           itemCode: row.part?.itemCode ?? '',
           itemName: row.part?.itemName ?? row.part?.itemCode ?? '',

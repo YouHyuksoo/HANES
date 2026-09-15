@@ -15,6 +15,7 @@ import { Button, Input, ComCodeBadge, Modal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import QtyInput from "@/components/shared/QtyInput";
 import api from "@/services/api";
+import { formatDateOnly } from "@/utils/date";
 
 /** 교육 계획 폼 데이터 */
 interface TrainingFormData {
@@ -67,7 +68,7 @@ export default function TrainingFormPanel({ isOpen, editData, onClose, onSave }:
         trainingType: editData.trainingType ?? "",
         targetRole: editData.targetRole ?? "",
         instructor: editData.instructor ?? "",
-        scheduledDate: editData.scheduledDate?.slice(0, 10) ?? "",
+        scheduledDate: formatDateOnly(editData.scheduledDate, ""),
         duration: String(editData.duration ?? ""),
         maxParticipants: String(editData.maxParticipants ?? ""),
         description: editData.description ?? "",

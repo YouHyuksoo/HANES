@@ -538,7 +538,8 @@
     "system.improvementRequests": "Improvement Requests",
     "material.arrivalResult": "Arrival Results",
     "material.receiveLabel": "Receiving Label",
-    "quality.ncr": "Nonconformance Report"
+    "quality.ncr": "Nonconformance Report",
+    "production.labelReprint": "Label Reprint"
   },
   "header": {
     "theme": "Theme",

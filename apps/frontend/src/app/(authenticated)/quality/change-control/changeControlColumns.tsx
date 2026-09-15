@@ -10,6 +10,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { FileSearch } from "lucide-react";
 import { ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { formatDateOnly } from "@/utils/date";
 
 /** 변경점 데이터 타입 */
 export interface ChangeOrder {
@@ -77,6 +78,6 @@ export function createChangeControlGridColumns({
       cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) ?? "-" },
     { accessorKey: "createdAt", header: t("common.createdAt"), size: 120,
       meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
+      cell: ({ getValue }) => formatDateOnly(getValue() as string) },
   ];
 }

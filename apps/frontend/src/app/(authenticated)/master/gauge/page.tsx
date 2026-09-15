@@ -21,6 +21,7 @@ import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
 import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import { createGaugeGridColumns, type Gauge } from "./gaugeColumns";
+import { formatDateOnly } from "@/utils/date";
 
 /** 폼 데이터 */
 interface FormState {
@@ -99,8 +100,8 @@ export default function GaugeMasterPage() {
       resolution: gauge.resolution?.toString() ?? "",
       measureRange: gauge.measureRange ?? "",
       calibrationCycle: gauge.calibrationCycle?.toString() ?? "12",
-      lastCalibrationDate: gauge.lastCalibrationDate?.slice(0, 10) ?? "",
-      nextCalibrationDate: gauge.nextCalibrationDate?.slice(0, 10) ?? "",
+      lastCalibrationDate: formatDateOnly(gauge.lastCalibrationDate, ""),
+      nextCalibrationDate: formatDateOnly(gauge.nextCalibrationDate, ""),
       status: gauge.status ?? "ACTIVE",
       location: gauge.location ?? "",
       responsiblePerson: gauge.responsiblePerson ?? "",

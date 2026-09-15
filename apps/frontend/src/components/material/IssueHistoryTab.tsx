@@ -20,6 +20,7 @@ import ComCodeBadge from '@/components/ui/ComCodeBadge';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import api from '@/services/api';
 import { getTodayLocal } from '@/utils/date';
+import { formatDateOnly } from "@/utils/date";
 
 /** 출고 이력 레코드 타입 */
 interface IssueRecord {
@@ -123,7 +124,7 @@ export default function IssueHistoryTab() {
       header: t('material.issue.history.issueDate'),
       size: 100,
       meta: { filterType: 'date' as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10),
+      cell: ({ getValue }) => formatDateOnly(getValue() as string),
     },
     { accessorKey: 'itemCode', header: t('common.partCode'), size: 120, meta: { filterType: 'text' as const } },
     { accessorKey: 'itemName', header: t('common.partName'), size: 150, meta: { filterType: 'text' as const } },

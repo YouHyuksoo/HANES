@@ -538,7 +538,8 @@
     "system.improvementRequests": "改善申请管理",
     "material.arrivalResult": "到货实绩查询",
     "material.receiveLabel": "入库标签发行",
-    "quality.ncr": "不合格报告"
+    "quality.ncr": "不合格报告",
+    "production.labelReprint": "标签重新打印"
   },
   "header": {
     "theme": "主题",

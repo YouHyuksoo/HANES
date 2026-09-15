@@ -4,6 +4,7 @@ import type { TFunction } from "i18next";
 import { XCircle } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui";
+import { formatDateOnly } from "@/utils/date";
 
 export interface ReceiptTransaction {
   id: string;
@@ -58,7 +59,7 @@ export function createReceiptCancelGridColumns({
     {
       accessorKey: "transDate", header: t("material.receiptCancel.transDate"), size: 100,
       meta: { filterType: "text" as const },
-      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
+      cell: ({ getValue }) => formatDateOnly(getValue() as string),
     },
     {
       accessorKey: "transNo", header: t("material.receiptCancel.transNo"), size: 150,

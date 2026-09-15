@@ -18,6 +18,7 @@ import PartSearchModal from "@/components/shared/PartSearchModal";
 import { Field, FieldHelpIcon, FieldInput, FieldComCodeSelect, FieldQtyInput } from "../moldMgmtFieldHelp";
 import type { PartItem } from "@/components/shared/PartSearchModal";
 import api from "@/services/api";
+import { formatDateOnly } from "@/utils/date";
 
 interface MoldEditData {
   moldCode: string; moldName: string; moldType: string;
@@ -63,7 +64,7 @@ export default function MoldFormPanel({ editData, onClose, onSave }: Props) {
         cavity: String(editData.cavity ?? ""), guaranteedShots: String(editData.guaranteedShots ?? ""),
         maintenanceCycle: String(editData.maintenanceCycle ?? ""),
         location: editData.location ?? "", maker: editData.maker ?? "",
-        purchaseDate: editData.purchaseDate?.slice(0, 10) ?? "", remark: editData.remark ?? "",
+        purchaseDate: formatDateOnly(editData.purchaseDate, ""), remark: editData.remark ?? "",
       });
     } else { setForm(INIT); }
   }, [editData]);
@@ -177,11 +178,11 @@ export default function MoldFormPanel({ editData, onClose, onSave }: Props) {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="flex items-center gap-1 text-xs text-text-muted mb-1">{t("equipment.mold.lastMaint")}<FieldHelpIcon field="lastMaintenanceDate" /></label>
-                <p className="text-sm text-text">{editData.lastMaintenanceDate?.slice(0, 10) ?? "-"}</p>
+                <p className="text-sm text-text">{formatDateOnly(editData.lastMaintenanceDate, "-")}</p>
               </div>
               <div>
                 <label className="flex items-center gap-1 text-xs text-text-muted mb-1">{t("equipment.mold.nextMaint")}<FieldHelpIcon field="nextMaintenanceDate" /></label>
-                <p className="text-sm text-text">{editData.nextMaintenanceDate?.slice(0, 10) ?? "-"}</p>
+                <p className="text-sm text-text">{formatDateOnly(editData.nextMaintenanceDate, "-")}</p>
               </div>
             </div>
           </div>

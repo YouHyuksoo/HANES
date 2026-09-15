@@ -4,6 +4,7 @@ import StatusHeaderHelp from '@/components/shared/StatusHeaderHelp';
 import StatusBadge from '@/components/shared/StatusBadge';
 import type { WoRow } from './types';
 import { headerWithHelp } from './pmResultFieldHelp';
+import { formatDateOnly } from "@/utils/date";
 
 const resultColors: Record<string, string> = {
   PASS: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
@@ -78,7 +79,7 @@ export function createPmResultGridColumns(t: TFunction): ColumnDef<WoRow>[] {
       size: 100,
       cell: ({ getValue }) => {
         const completedAt = getValue<string | null>();
-        return completedAt ? <span className="text-xs">{completedAt.split('T')[0]}</span> : '-';
+        return completedAt ? <span className="text-xs">{formatDateOnly(completedAt)}</span> : '-';
       },
     },
     {

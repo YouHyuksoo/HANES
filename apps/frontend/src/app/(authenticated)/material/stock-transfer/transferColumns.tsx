@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { TransferRecord } from './types';
+import { formatDateOnly } from "@/utils/date";
 
 export function createTransferGridColumns(t: TFunction): ColumnDef<TransferRecord>[] {
   return [
@@ -9,7 +10,7 @@ export function createTransferGridColumns(t: TFunction): ColumnDef<TransferRecor
       header: t('material.transfer.transDate'),
       size: 100,
       meta: { filterType: 'text' as const },
-      cell: ({ getValue }) => String(getValue() ?? '').slice(0, 10),
+      cell: ({ getValue }) => formatDateOnly(getValue() as string),
     },
     {
       accessorKey: 'transNo',

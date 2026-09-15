@@ -6,6 +6,7 @@ import StatusHeaderHelp from '@/components/shared/StatusHeaderHelp';
 import type { MoldMaster } from './types';
 
 import { headerWithHelp } from './moldMgmtFieldHelp';
+import { formatDateOnly } from "@/utils/date";
 interface CreateMoldMgmtGridColumnsOptions {
   t: TFunction;
   onEditMold: (mold: MoldMaster) => void;
@@ -124,7 +125,8 @@ export function createMoldMgmtGridColumns({
       header: headerWithHelp('nextMaintenanceDate', t('equipment.mold.nextMaint')),
       size: 110,
       meta: { filterType: 'date' as const },
-      cell: ({ getValue }) => getValue<string | null>()?.slice(0, 10) ?? '-',
+      // NEXT_MAINTENANCE_DATE 는 TIMESTAMP(UTC ISO) — 로컬 기준으로 포맷한다
+      cell: ({ getValue }) => formatDateOnly(getValue<string | null>(), '-'),
     },
   ];
 }

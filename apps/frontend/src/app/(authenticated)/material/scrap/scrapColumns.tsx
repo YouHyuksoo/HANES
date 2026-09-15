@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { ScrapRecord } from './types';
+import { formatDateOnly } from "@/utils/date";
 
 export function createScrapGridColumns(t: TFunction): ColumnDef<ScrapRecord>[] {
   return [
@@ -9,7 +10,7 @@ export function createScrapGridColumns(t: TFunction): ColumnDef<ScrapRecord>[] {
       header: t('material.scrap.transDate'),
       size: 100,
       meta: { filterType: 'text' as const },
-      cell: ({ getValue }) => String(getValue() ?? '').slice(0, 10),
+      cell: ({ getValue }) => formatDateOnly(getValue() as string),
     },
     {
       accessorKey: 'transNo',

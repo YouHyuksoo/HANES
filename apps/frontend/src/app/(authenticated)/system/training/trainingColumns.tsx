@@ -5,6 +5,7 @@ import { FileSearch } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { formatDateOnly } from "@/utils/date";
 
 /** 교육 계획 데이터 타입 */
 export interface TrainingPlan {
@@ -68,7 +69,7 @@ export function createTrainingGridColumns({
     {
       accessorKey: "scheduledDate", header: t("system.training.scheduledDate"), size: 120,
       meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10),
+      cell: ({ getValue }) => formatDateOnly(getValue() as string),
     },
     {
       accessorKey: "duration", header: t("system.training.duration"), size: 80,
@@ -89,7 +90,7 @@ export function createTrainingGridColumns({
     {
       accessorKey: "createdAt", header: t("common.createdAt"), size: 120,
       meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10),
+      cell: ({ getValue }) => formatDateOnly(getValue() as string),
     },
   ];
 }

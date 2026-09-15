@@ -538,7 +538,8 @@
     "system.improvementRequests": "Quản lý yêu cầu cải tiến",
     "material.arrivalResult": "Kết quả nhập hàng",
     "material.receiveLabel": "Phát hành nhãn nhập kho",
-    "quality.ncr": "Báo cáo không phù hợp"
+    "quality.ncr": "Báo cáo không phù hợp",
+    "production.labelReprint": "In lại nhãn"
   },
   "header": {
     "theme": "Giao diện",

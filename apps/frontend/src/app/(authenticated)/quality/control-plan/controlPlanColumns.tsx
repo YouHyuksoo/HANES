@@ -5,6 +5,7 @@ import { FileSearch } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { formatDateOnly } from "@/utils/date";
 
 /** 관리계획서 데이터 타입 */
 export interface ControlPlan {
@@ -60,6 +61,6 @@ export function createControlPlanGridColumns({
       meta: { filterType: "text" as const } },
     { accessorKey: "createdAt", header: t("common.createdAt"), size: 120,
       meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
+      cell: ({ getValue }) => formatDateOnly(getValue() as string) },
   ];
 }

@@ -538,7 +538,8 @@
     "root": "최상위",
     "system.improvementRequests": "개선요청 관리",
     "material.arrivalResult": "입하실적조회",
-    "quality.ncr": "부적합 보고서"
+    "quality.ncr": "부적합 보고서",
+    "production.labelReprint": "라벨 재발행"
   },
   "header": {
     "theme": "테마",

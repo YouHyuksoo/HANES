@@ -6,6 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import StatusBadge from "@/components/shared/StatusBadge";
+import { formatDateOnly } from "@/utils/date";
 
 export interface ProductDefectStock {
   itemCode: string;
@@ -137,7 +138,7 @@ export function createProductDefectHistoryGridColumns({
       header: t("productMgmt.defectTransfer.col.transDate"),
       size: 100,
       meta: { filterType: "text" as const },
-      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
+      cell: ({ getValue }) => formatDateOnly(getValue() as string),
     },
     {
       accessorKey: "transNo",

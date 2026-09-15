@@ -5,6 +5,7 @@ import { Edit2, Trash2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { formatDateOnly } from "@/utils/date";
 
 /** 계측기 데이터 타입 */
 export interface Gauge {
@@ -88,7 +89,7 @@ export function createGaugeGridColumns({
     {
       accessorKey: "nextCalibrationDate", header: t("master.gauge.nextCalibrationDate"), size: 120,
       meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) ?? "-",
+      cell: ({ getValue }) => formatDateOnly(getValue() as string, "-"),
     },
     {
       accessorKey: "status", header: () => <StatusHeaderHelp label={t("common.status")} codeType="GAUGE_STATUS" align="center" />, size: 110,

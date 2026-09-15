@@ -2,6 +2,7 @@
 
 import type { TFunction } from "i18next";
 import type { ColumnDef } from "@tanstack/react-table";
+import { formatDateOnly } from "@/utils/date";
 
 export interface MiscReceiptRecord {
   id: string;
@@ -26,7 +27,7 @@ export function createMiscReceiptGridColumns({
     {
       accessorKey: "transDate", header: t("material.miscReceipt.transDate"), size: 100,
       meta: { filterType: "text" as const },
-      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
+      cell: ({ getValue }) => formatDateOnly(getValue() as string),
     },
     {
       accessorKey: "transNo", header: t("material.miscReceipt.transNo"), size: 150,

@@ -6,6 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import ComCodeBadge from "@/components/ui/ComCodeBadge";
 import HelpTooltip from "@/components/shared/HelpTooltip";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { formatDateOnly } from "@/utils/date";
 
 export interface ArrivalResultRow {
   arrivalNo: string;
@@ -30,7 +31,8 @@ export interface ArrivalResultRow {
   cancelable: boolean;
 }
 
-const fmtDate = (v: string | null) => (v ? String(v).slice(0, 10) : "-");
+/** ARRIVAL_DATE·CREATED_AT 은 TIMESTAMP(UTC ISO) — 앞 10자리를 자르면 KST 오전 9시 이전 건이 전날로 나온다 */
+const fmtDate = (v: string | null) => formatDateOnly(v, "-");
 
 export interface CreateArrivalResultGridColumnsOptions {
   t: TFunction;

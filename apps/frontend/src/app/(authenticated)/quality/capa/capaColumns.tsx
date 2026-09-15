@@ -5,6 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { FileSearch } from "lucide-react";
 import { ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { formatDateOnly } from "@/utils/date";
 
 export interface CapaRequest {
   [key: string]: unknown;
@@ -51,6 +52,6 @@ export function createCapaGridColumns({
     { accessorKey: "targetDate", header: t("quality.capa.targetDate"), size: 110,
       cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) ?? "-" },
     { accessorKey: "createdAt", header: t("common.createdAt"), size: 110, meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
+      cell: ({ getValue }) => formatDateOnly(getValue() as string) },
   ];
 }

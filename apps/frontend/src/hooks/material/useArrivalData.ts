@@ -15,6 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ArrivalStatus } from '@/components/material';
 import { api } from '@/services/api';
 import { getTodayLocal } from '@/utils/date';
+import { formatDateOnly } from "@/utils/date";
 
 /** 입하 자재 인터페이스 */
 export interface ArrivalItem {
@@ -119,7 +120,7 @@ export function useArrivalData() {
         const rows = (response.data?.data ?? []).map((row, index) => ({
           id: row.transNo ?? row.arrivalNo ?? String(index),
           arrivalNo: row.arrivalNo ?? row.transNo ?? '',
-          arrivalDate: row.transDate ? String(row.transDate).slice(0, 10) : '',
+          arrivalDate: row.transDate ? formatDateOnly(row.transDate) : '',
           supplierName: row.vendorName ?? '',
           itemCode: row.itemCode ?? '',
           itemName: row.itemName ?? row.itemCode ?? '',

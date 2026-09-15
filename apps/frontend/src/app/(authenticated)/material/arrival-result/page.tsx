@@ -26,7 +26,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { createArrivalResultGridColumns, type ArrivalResultRow } from "./arrivalResultColumns";
 import api from "@/services/api";
 import { usePartnerOptions } from "@/hooks/useMasterOptions";
-import { getTodayLocal } from "@/utils/date";
+import { getTodayLocal, formatDateOnly } from "@/utils/date";
 import MatLabelPreviewModal from "../arrival/components/MatLabelPreviewModal";
 import IqcRequestPrintModal from "@/components/material/IqcRequestPrintModal";
 import { useIqcRequestPrint } from "@/hooks/material/useIqcRequestPrint";
@@ -57,7 +57,8 @@ interface TemplateInfo {
   isDefault?: boolean;
 }
 
-const fmtDate = (v: string | null) => (v ? String(v).slice(0, 10) : "-");
+/** ARRIVAL_DATE 는 TIMESTAMP(UTC ISO) — 로컬 기준으로 포맷한다 */
+const fmtDate = (v: string | null) => formatDateOnly(v, "-");
 const DEFAULT_TEMPLATE_KEY = "__default__";
 
 export default function ArrivalResultPage() {

@@ -5,6 +5,7 @@ import { FileSearch } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { formatDateOnly } from "@/utils/date";
 
 /** 내부심사 데이터 타입 */
 export interface Audit {
@@ -77,7 +78,7 @@ export function createAuditGridColumns({
         header: t("quality.audit.scheduledDate"),
         size: 120,
         meta: { filterType: "date" as const },
-        cell: ({ getValue }) => (getValue() as string)?.slice(0, 10),
+        cell: ({ getValue }) => formatDateOnly(getValue() as string),
       },
       {
         accessorKey: "status",

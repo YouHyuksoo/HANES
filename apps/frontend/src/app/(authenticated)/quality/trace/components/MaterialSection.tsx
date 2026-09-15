@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import type { MaterialTrace } from "../types";
+import { formatDateOnly } from "@/utils/date";
 
 export default function MaterialSection({ materials, title }: { materials: MaterialTrace[]; title?: string }) {
   const { t } = useTranslation();
@@ -95,7 +96,7 @@ export default function MaterialSection({ materials, title }: { materials: Mater
                     <div className="space-y-1">
                       {m.stockHistory.map((s, i) => (
                         <div key={`${i}-${s.transNo}`} className="flex items-center gap-3 text-xs">
-                          <span className="font-mono text-text-muted shrink-0">{s.transDate.slice(0, 10)}</span>
+                          <span className="font-mono text-text-muted shrink-0">{formatDateOnly(s.transDate)}</span>
                           <span className="font-medium text-text shrink-0">{s.transType}</span>
                           <span className="text-text-muted">{s.qty.toLocaleString()}</span>
                           <span className="text-text-muted truncate">{s.fromWarehouse ? (s.fromWarehouseName ?? s.fromWarehouse) : ""}{s.fromWarehouse && s.toWarehouse ? " → " : ""}{s.toWarehouse ? (s.toWarehouseName ?? s.toWarehouse) : ""}</span>

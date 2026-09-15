@@ -19,6 +19,7 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import api from "@/services/api";
+import { formatDateOnly } from "@/utils/date";
 
 /** 교정 로그 타입 */
 interface CalibrationLog {
@@ -96,7 +97,7 @@ export default function CalibrationList({ gaugeId, onCalibrationAdded }: Props) 
   const columns = useMemo<ColumnDef<CalibrationLog>[]>(() => [
     { accessorKey: "calibrationNo", header: t("quality.msa.calibrationNo"), size: 140 },
     { accessorKey: "calibrationDate", header: t("quality.msa.calibrationDate"), size: 110,
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
+      cell: ({ getValue }) => formatDateOnly(getValue() as string) },
     { accessorKey: "calibrationType", header: t("quality.msa.calibrationType"), size: 100,
       cell: ({ getValue }) => <ComCodeBadge groupCode="CAL_TYPE" code={getValue() as string} /> },
     { accessorKey: "calibrator", header: t("quality.msa.calibrator"), size: 100 },

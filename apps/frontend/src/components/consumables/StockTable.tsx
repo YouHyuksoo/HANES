@@ -16,6 +16,7 @@ import DataGrid from '@/components/data-grid/DataGrid';
 import { ComCodeBadge } from '@/components/ui';
 import type { ConsumableStock } from '@/hooks/consumables/useStockData';
 import { headerWithHelp } from './stockFieldHelp';
+import { formatDateOnly } from '@/utils/date';
 
 interface StockTableProps {
   data: ConsumableStock[];
@@ -124,10 +125,9 @@ function StockTable({ data, toolbarLeft, isLoading }: StockTableProps) {
         header: headerWithHelp('recvDate', t('consumables.stock.recvDate')),
         size: 110,
         meta: { filterType: 'date' as const },
-        cell: ({ getValue }) => {
-          const val = getValue() as string | null;
-          return val ? val.toString().slice(0, 10) : '-';
-        },
+        // CONSUMABLE_STOCKS.RECV_DATE 는 TIMESTAMP(UTC ISO) 라 앞 10자리를 자르면
+        // KST 오전 9시 이전 입고 건이 전날로 표시된다
+        cell: ({ getValue }) => formatDateOnly(getValue() as string | null, '-'),
       },
       {
         accessorKey: 'vendorName',

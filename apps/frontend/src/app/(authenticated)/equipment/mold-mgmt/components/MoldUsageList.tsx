@@ -15,7 +15,7 @@ import { Plus, History, X } from "lucide-react";
 import { Card, CardContent, Button } from "@/components/ui";
 import { EquipSelect, WorkerSelect } from "@/components/shared";
 import api from "@/services/api";
-import { getTodayLocal } from "@/utils/date";
+import { getTodayLocal, formatDateOnly } from "@/utils/date";
 import { Field, FieldInput, FieldQtyInput, HeaderHelp } from "../moldMgmtFieldHelp";
 
 interface UsageRecord {
@@ -167,7 +167,7 @@ export default function MoldUsageList({ mold }: Props) {
                 <tr><td colSpan={6} className="text-center py-4 text-text-muted">{t("common.noData")}</td></tr>
               ) : records.map(r => (
                 <tr key={`${r.usageDate}-${r.orderNo}`} className="border-b border-border/50 hover:bg-surface/50 dark:hover:bg-slate-800/50">
-                  <td className="px-3 py-1.5 text-text">{r.usageDate?.slice(0, 10)}</td>
+                  <td className="px-3 py-1.5 text-text">{formatDateOnly(r.usageDate)}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-text">{r.shotCount.toLocaleString()}</td>
                   <td className="px-3 py-1.5 text-text">{r.orderNo || "-"}</td>
                   <td className="px-3 py-1.5 text-text">{r.equipCode || "-"}</td>

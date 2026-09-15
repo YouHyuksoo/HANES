@@ -6,6 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui";
 import StatusBadge from "@/components/shared/StatusBadge";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { formatDateOnly } from "@/utils/date";
 
 export interface ProductReceiptTx {
   id: string;
@@ -59,7 +60,7 @@ export function createProductReceiptCancelGridColumns({
     {
       accessorKey: "transDate", header: t("productMgmt.receiptCancel.transDate"), size: 100,
       meta: { filterType: "text" as const },
-      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
+      cell: ({ getValue }) => formatDateOnly(getValue() as string),
     },
     {
       accessorKey: "transNo", header: t("productMgmt.receiptCancel.transNo"), size: 160,

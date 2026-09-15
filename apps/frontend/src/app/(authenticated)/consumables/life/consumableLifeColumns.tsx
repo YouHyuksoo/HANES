@@ -7,6 +7,7 @@ import { Button, ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { headerWithHelp } from "./consumableLifeFieldHelp";
+import { formatDateOnly } from "@/utils/date";
 
 export interface LifeInstance {
   conUid: string;
@@ -81,7 +82,8 @@ export function createConsumableLifeGridColumns({
       accessorKey: "lastReplaceAt", header: headerWithHelp("lastReplaceAt", t("consumables.life.lastReplaced")), size: 90, meta: { filterType: "date" as const },
       cell: ({ getValue }) => {
         const v = getValue() as string | null;
-        return v ? <span className="text-xs text-text-muted">{v.split("T")[0]}</span> : "-";
+        // LAST_REPLACE 는 TIMESTAMP(UTC ISO) 라 앞 10자리를 자르면 KST 오전 9시 이전 건이 전날로 나온다
+        return v ? <span className="text-xs text-text-muted">{formatDateOnly(v)}</span> : "-";
       },
     },
   ];

@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { IssueStatus } from '@/components/material';
 import { api } from '@/services/api';
+import { formatDateOnly } from "@/utils/date";
 
 /** 출고 처리 대상 레코드 */
 export interface IssueRecord {
@@ -65,7 +66,7 @@ export function useIssueData() {
           id: `${row.issueNo ?? 'issue'}-${row.seq ?? index}`,
           requestNo: row.jobOrderNo ?? row.orderNo ?? '',
           issueNo: row.issueNo ?? null,
-          requestDate: row.issueDate ? String(row.issueDate).slice(0, 10) : '',
+          requestDate: row.issueDate ? formatDateOnly(row.issueDate) : '',
           workOrderNo: row.jobOrderNo ?? row.orderNo ?? '',
           itemCode: row.itemCode ?? '',
           itemName: row.itemName ?? row.itemCode ?? '',

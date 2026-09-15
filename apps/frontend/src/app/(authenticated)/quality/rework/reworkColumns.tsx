@@ -6,6 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import type { ReworkEditData } from "./components/ReworkFormPanel";
+import { formatDateOnly } from "@/utils/date";
 
 /** 재작업 지시 데이터 타입 */
 export interface ReworkOrder extends ReworkEditData {
@@ -50,6 +51,6 @@ export function createReworkGridColumns({
       cell: ({ getValue }) => <ComCodeBadge groupCode="REWORK_STATUS" code={getValue() as string} /> },
     { accessorKey: "workerId", header: t("quality.rework.worker"), size: 100, meta: { filterType: "text" as const } },
     { accessorKey: "createdAt", header: t("common.createdAt"), size: 140, meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string)?.slice(0, 10) },
+      cell: ({ getValue }) => formatDateOnly(getValue() as string) },
   ];
 }

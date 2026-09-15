@@ -4,6 +4,7 @@ import type { TFunction } from "i18next";
 import type { ColumnDef } from "@tanstack/react-table";
 import StatusBadge from "@/components/shared/StatusBadge";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { formatDateOnly } from "@/utils/date";
 
 export interface ProductTransaction {
   id: string;
@@ -33,7 +34,7 @@ export function createProductReceiveGridColumns({
   return [
     {
       accessorKey: "transDate", header: t("productMgmt.receive.col.transDate"), size: 100,
-      cell: ({ getValue }) => String(getValue() ?? "").slice(0, 10),
+      cell: ({ getValue }) => formatDateOnly(getValue() as string),
     },
     {
       accessorKey: "transNo", header: t("productMgmt.receive.col.transNo"), size: 160,

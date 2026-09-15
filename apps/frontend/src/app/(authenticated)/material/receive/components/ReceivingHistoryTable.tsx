@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import DataGrid from '@/components/data-grid/DataGrid';
 import type { ReceivingRecord } from './types';
+import { formatDateOnly } from "@/utils/date";
 
 interface ReceivingHistoryTableProps {
   data: ReceivingRecord[];
@@ -27,7 +28,7 @@ export default function ReceivingHistoryTable({ data, isLoading, toolbarLeft }: 
       header: t('material.receive.col.receivedDate'),
       size: 100,
       meta: { filterType: "date" as const },
-      cell: ({ getValue }) => (getValue() as string).slice(0, 10),
+      cell: ({ getValue }) => formatDateOnly(getValue() as string),
     },
     { id: 'matUid', header: t('material.col.matUid'), size: 150, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.lot?.matUid || '-' },
     { accessorKey: 'vendorBarcode', header: t('material.receive.col.vendorBarcode', '거래처 바코드'), size: 180, meta: { filterType: 'text' as const }, cell: ({ getValue }) => (getValue() as string) || '-' },
