@@ -59,6 +59,18 @@ export class ActivityLogService {
         if (!isEnabled) return;
       }
 
+      // COMPANY / PLANT_CD 는 DB NOT NULL 이다. 호출부가 테넌트를 안 넘기면
+      // insert 가 ORA-01400 으로 죽고 아래 catch 에서 warn 으로 묻혀 원인을 놓친다.
+      // 임의 기본값으로 채우면 남의 사업장 기록이 되므로, 호출부를 지목하고 남기지 않는다.
+      const company = params.company?.trim();
+      const plant = params.plant?.trim();
+      if (!company || !plant) {
+        this.logger.warn(
+          `활동 로그 생략 — 테넌트 누락 (company=${params.company ?? 'null'}, plant=${params.plant ?? 'null'}, type=${params.activityType}, user=${params.userId})`,
+        );
+        return;
+      }
+
       // PK가 (ACTIVITY_DATE, SEQ)인데 SEQ 기본값이 1이라 채번하지 않으면
       // 같은 날 2번째 insert가 ORA-00001로 죽는다. 시퀀스로 채번한다(MAX+1 금지).
       const [{ SEQ: nextSeq }] = await this.activityLogRepository.query(
@@ -77,8 +89,8 @@ export class ActivityLogService {
         ipAddress: params.ipAddress ?? null,
         userAgent: params.userAgent ?? null,
         deviceType: params.deviceType ?? null,
-        company: params.company ?? null,
-        plant: params.plant ?? null,
+        company,
+        plant,
       });
 
       await this.activityLogRepository.save(log);

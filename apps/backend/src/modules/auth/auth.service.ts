@@ -91,7 +91,7 @@ export class AuthService {
       activityType: 'LOGIN',
       deviceType: null,
       company: selectedCompany,
-      plant: null,
+      plant: selectedPlant,
     }).catch((err) => this.logger.warn(`로그인 활동 로그 기록 실패: ${err.message}`));
 
     // RBAC: 역할별 허용 메뉴 조회 (ADMIN이면 빈 배열 → 프론트에서 전체 허용)

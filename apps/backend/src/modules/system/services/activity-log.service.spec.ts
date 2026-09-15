@@ -59,10 +59,13 @@ describe('ActivityLogService', () => {
 
   // ─── logActivity ───
   describe('logActivity', () => {
+    // COMPANY / PLANT_CD 는 DB NOT NULL 이라 테넌트 없이는 저장되지 않는다
     const params = {
       userId: 'user@test.com',
       activityType: 'LOGIN',
       pagePath: '/dashboard',
+      company: 'C1',
+      plant: 'P1',
     };
 
     it('should save log when activity logging is enabled', async () => {
@@ -119,6 +122,20 @@ describe('ActivityLogService', () => {
         expect(mockRepo.save).toHaveBeenCalled();
       },
     );
+
+    it.each([
+      ['company 누락', { company: null, plant: 'P1' }],
+      ['plant 누락', { company: 'C1', plant: null }],
+      ['둘 다 누락', { company: null, plant: null }],
+    ])('테넌트가 %s 이면 저장하지 않는다 (COMPANY/PLANT_CD 는 NOT NULL)', async (_label, tenant) => {
+      mockSysConfigService.isEnabled.mockResolvedValue(true);
+
+      await target.logActivity({ ...params, ...tenant });
+
+      // 임의 기본값으로 채우면 남의 사업장 기록이 된다. 저장하지 않고 호출부를 지목한다.
+      expect(mockRepo.save).not.toHaveBeenCalled();
+      expect(mockRepo.query).not.toHaveBeenCalled();
+    });
 
     it('SEQ 를 시퀀스로 채번해 넣는다 (기본값 1 의존 시 같은 날 2건째가 ORA-00001)', async () => {
       mockSysConfigService.isEnabled.mockResolvedValue(true);
