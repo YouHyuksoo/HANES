@@ -176,7 +176,14 @@ export class LabelReprintService {
     company?: string,
     plant?: string,
   ): Promise<void> {
+    // PRINTED_AT + SEQ 가 복합 PK 다 — 엔티티에 default 가 있어도 INSERT 시 값을 채워야 한다.
+    // 같은 타임스탬프에 여러 건이 들어올 수 있으므로 SEQ 로 분리한다.
+    const printedAt = new Date();
+    const sameInstant = await this.printLogRepo.count({ where: { printedAt } });
+
     const log = this.printLogRepo.create({
+      printedAt,
+      seq: sameInstant + 1,
       category,
       printMode: 'REPRINT',
       uidList: barcodes.join(','),

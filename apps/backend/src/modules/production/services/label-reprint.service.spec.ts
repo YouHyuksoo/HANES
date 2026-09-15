@@ -53,6 +53,19 @@ describe('LabelReprintService', () => {
       );
     });
 
+    it('인쇄 이력에 복합 PK(PRINTED_AT+SEQ)를 채운다', async () => {
+      // LABEL_PRINT_LOGS 는 PRINTED_AT + SEQ 가 복합 PK 다. 엔티티에 default 가 있어도
+      // TypeORM 이 INSERT 에 채워주지 않아, 비워두면 실제 Oracle 에서 PK 위반으로 500 이 난다.
+      mockSgRepo.find.mockResolvedValue([{ sgBarcode: 'SG-1', status: 'IN_STOCK' }] as SgLabel[]);
+      mockLogRepo.count.mockResolvedValue(2);
+
+      await target.reprint('SG', ['SG-1'], undefined, 'CO', 'P01');
+
+      const saved = mockLogRepo.save.mock.calls[0][0] as { printedAt?: Date; seq?: number };
+      expect(saved.printedAt).toBeInstanceOf(Date);
+      expect(saved.seq).toBe(3); // 같은 시각 기존 2건 뒤
+    });
+
     it('취소된 라벨은 거부한다', async () => {
       mockSgRepo.find.mockResolvedValue([{ sgBarcode: 'SG-1', status: 'VOIDED' }] as SgLabel[]);
       await expect(target.reprint('SG', ['SG-1'], undefined, 'CO', 'P01'))
