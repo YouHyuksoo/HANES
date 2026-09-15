@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { Button, Input, Modal } from "@/components/ui";
 import { ComCodeSelect, PartSearchModal, PartnerSelect } from "@/components/shared";
 import api from "@/services/api";
+import { formatDateOnly } from "@/utils/date";
 import PpapElementChecklist from "./PpapElementChecklist";
 
 /** 폼 데이터 타입 */
@@ -114,11 +115,11 @@ export default function PpapFormPanel({ isOpen, editData, onClose, onSave }: Pro
             </div>
             <div>
               <label className="block text-xs font-medium text-text-muted mb-0.5">{t("quality.ppap.submittedAt")}</label>
-              <span className="text-xs text-text">{editData.submittedAt?.slice(0, 10) ?? "-"}</span>
+              <span className="text-xs text-text">{formatDateOnly(editData.submittedAt, "-")}</span>
             </div>
             <div>
               <label className="block text-xs font-medium text-text-muted mb-0.5">{t("quality.ppap.approvedAt")}</label>
-              <span className="text-xs text-text">{editData.approvedAt?.slice(0, 10) ?? "-"}</span>
+              <span className="text-xs text-text">{formatDateOnly(editData.approvedAt, "-")}</span>
             </div>
           </div>
         )}

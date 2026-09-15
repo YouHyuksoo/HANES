@@ -20,6 +20,7 @@ import { ComCodeSelect, UseYnSelect } from "@/components/shared";
 import ServerPager from "@/components/shared/ServerPager";
 import api from "@/services/api";
 import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
+import { formatDateOnly } from "@/utils/date";
 import { createInspectAidGridColumns, type InspectAidRow, type InspectAidType } from "./inspectAidColumns";
 import InspectAidFormPanel, {
   emptyInspectAidForm,
@@ -152,7 +153,8 @@ export default function InspectAidPage() {
       validFrom: row.validFrom ?? "",
       validTo: row.validTo ?? "",
       approvedBy: row.approvedBy ?? "",
-      approvedAt: row.approvedAt?.slice(0, 10) ?? "",
+      // APPROVED_AT 은 TIMESTAMP(UTC ISO) 라 앞 10자리를 자르면 KST 오전 9시 이전 건이 전날로 나온다
+      approvedAt: formatDateOnly(row.approvedAt, ""),
       status: row.status || "ACTIVE",
       remark: row.remark ?? "",
       useYn: row.useYn || "Y",
