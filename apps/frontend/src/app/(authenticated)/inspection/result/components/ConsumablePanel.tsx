@@ -10,7 +10,7 @@
  * - input-kiosk와 동일한 키오스크 소모품 API 3종을 그대로 재사용한다(백엔드 변경 없음).
  * - 매핑 소모품이 모두 장착되어야 검사(PASS/FAIL)가 가능하도록 onStatusChange로 부모에 보고한다.
  */
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { AlertTriangle, AlertCircle, CheckCircle2, ScanLine, X } from "lucide-react";
@@ -38,7 +38,15 @@ interface Props {
   onStatusChange: (allMounted: boolean, unmountedCount: number) => void;
 }
 
-export default function ConsumablePanel({ orderNo, equipCode, onStatusChange }: Props) {
+/** 부모(헤더의 소모품 장착 버튼)가 스캔 입력으로 포커스를 넘길 때 쓰는 핸들 */
+export interface ConsumablePanelHandle {
+  focusScan: () => void;
+}
+
+const ConsumablePanel = forwardRef<ConsumablePanelHandle, Props>(function ConsumablePanel(
+  { orderNo, equipCode, onStatusChange }: Props,
+  ref,
+) {
   const { t } = useTranslation();
   const [items, setItems] = useState<ConsumableMapRow[]>([]);
   const [scanInput, setScanInput] = useState("");
@@ -46,6 +54,11 @@ export default function ConsumablePanel({ orderNo, equipCode, onStatusChange }: 
   /** 강제 장착 해제 확인 대상 */
   const [unmountTarget, setUnmountTarget] = useState<ConsumableMapRow | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // 소모품 장착은 바코드 스캔으로만 이루어진다. 헤더 버튼은 이 입력칸으로 포커스를 넘긴다.
+  useImperativeHandle(ref, () => ({
+    focusScan: () => inputRef.current?.focus(),
+  }), []);
 
   useEffect(() => {
     // 검사기 미선택 시 소모품 조회하지 않음(설비 기준 조회이므로)
@@ -227,4 +240,6 @@ export default function ConsumablePanel({ orderNo, equipCode, onStatusChange }: 
       />
     </Card>
   );
-}
+});
+
+export default ConsumablePanel;

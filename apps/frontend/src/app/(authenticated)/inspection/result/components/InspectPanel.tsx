@@ -218,38 +218,46 @@ export default function InspectPanel({
       {isScanMode && (
         <Card padding="sm" className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
           <CardContent>
-            <div className="flex items-center gap-2 mb-2">
-              <ScanBarcode className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                {t("inspection.result.scanBarcode")}
-              </span>
+            {/* 제품 라벨과 회로라벨을 한 줄에 나란히 둔다. 좁은 화면에서는 자동으로 접힌다 */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <ScanBarcode className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 truncate">
+                    {t("inspection.result.scanBarcode")}
+                  </span>
+                </div>
+                <BarcodeScanInput
+                  ref={scanInputRef}
+                  value={scannedBarcode}
+                  onChange={setScannedBarcode}
+                  onScan={handleFgBarcodeScan}
+                  placeholder={t("inspection.result.scanBarcode")}
+                  refocusAfterScan={false}
+                  fullWidth
+                  autoFocus
+                />
+              </div>
+
+              {/* 회로라벨 스캔 (합격 시 필수) */}
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <ScanBarcode className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 truncate">
+                    {t("inspection.result.scanCircuitLabel")}
+                  </span>
+                </div>
+                <BarcodeScanInput
+                  ref={circuitInputRef}
+                  value={circuitLabel}
+                  onChange={setCircuitLabel}
+                  onScan={handleCircuitLabelScan}
+                  placeholder={t("inspection.result.scanCircuitLabel")}
+                  fullWidth
+                />
+              </div>
             </div>
-            <BarcodeScanInput
-              ref={scanInputRef}
-              value={scannedBarcode}
-              onChange={setScannedBarcode}
-              onScan={handleFgBarcodeScan}
-              placeholder={t("inspection.result.scanBarcode")}
-              refocusAfterScan={false}
-              fullWidth
-              autoFocus
-            />
-            {/* 회로라벨 스캔 (합격 시 필수) */}
-            <div className="flex items-center gap-2 mt-3 mb-2">
-              <ScanBarcode className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                {t("inspection.result.scanCircuitLabel")}
-              </span>
-            </div>
-            <BarcodeScanInput
-              ref={circuitInputRef}
-              value={circuitLabel}
-              onChange={setCircuitLabel}
-              onScan={handleCircuitLabelScan}
-              placeholder={t("inspection.result.scanCircuitLabel")}
-              fullWidth
-            />
-            <p className="mt-1 text-xs text-text-muted">
+            <p className="mt-1.5 text-xs text-text-muted">
               {t("inspection.result.circuitSourceHelp", "현장 회로라벨 바코드를 스캔하세요. 이미 사용한 라벨은 중복 등록되지 않습니다.")}
             </p>
           </CardContent>

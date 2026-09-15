@@ -6,10 +6,12 @@ import { useTranslation } from "react-i18next";
 import { ScanLine, RefreshCw, Search } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import { ComCodeBadge } from "@/components/ui";
+import toast from "react-hot-toast";
 import api from "@/services/api";
 import type { JobOrderRow } from "../types";
 import InspectPanel from "./InspectPanel";
 import ConsumablePanel from "./ConsumablePanel";
+import type { ConsumablePanelHandle } from "./ConsumablePanel";
 import InspectStationHeader from "./InspectStationHeader";
 import SampleCheckModal from "./SampleCheckModal";
 import SampleCheckHistoryModal from "./SampleCheckHistoryModal";
@@ -85,6 +87,21 @@ export default function InspectionResultWorkflow({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** 헤더의 소모품 카드에서 좌측 소모품 패널로 이동 */
   const consumableRef = useRef<HTMLDivElement>(null);
+  const consumablePanelRef = useRef<ConsumablePanelHandle>(null);
+
+  /**
+   * 헤더의 소모품 장착 버튼 — 패널로 스크롤한 뒤 스캔 입력에 포커스를 준다.
+   * 스크롤만 하면 패널이 이미 보이는 경우 아무 반응이 없어 버튼이 죽은 것처럼 보인다.
+   * 장착은 스캔으로만 이루어지므로 포커스가 실제 다음 행동이다.
+   */
+  const handleOpenConsumable = useCallback(() => {
+    consumableRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (!selectedEquipCode) {
+      toast.error(t("inspection.result.selectEquipFirst"));
+      return;
+    }
+    consumablePanelRef.current?.focusScan();
+  }, [selectedEquipCode, t]);
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   /** 검사기(TESTER) 목록 로드 + 저장된 선택 복원 */
@@ -216,7 +233,7 @@ export default function InspectionResultWorkflow({
         onOpenWorkerInspect={() => setWorkerInspectOpen(true)}
         onOpenSampleCheck={() => setSampleCheckOpen(true)}
         onOpenSampleCheckHistory={() => setSampleHistoryOpen(true)}
-        onOpenConsumable={() => consumableRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })}
+        onOpenConsumable={handleOpenConsumable}
         isFullView={isFullView}
         onToggleFullscreen={toggleFullscreen}
       />
@@ -275,6 +292,7 @@ export default function InspectionResultWorkflow({
           {selected && (
             <div className="shrink-0" ref={consumableRef}>
               <ConsumablePanel
+                ref={consumablePanelRef}
                 key={`${selected.orderNo}::${selectedEquipCode}`}
                 orderNo={selected.orderNo}
                 equipCode={selectedEquipCode || undefined}
