@@ -111,12 +111,15 @@ export default function LotAllocationPanel({
                 return (
                   <tr key={lot.matUid} className="border-t border-border">
                     <td className="px-2 py-1.5 text-text-muted">{i + 1}</td>
+                    {/* 시리얼과 창고를 한 줄에 둔다. 행이 두 줄이면 한 화면에 보이는 LOT 수가 절반이 된다 */}
                     <td className="px-2 py-1.5">
-                      <div className="font-mono font-medium text-text truncate">{lot.matUid}</div>
-                      <div className="text-[10px] text-text-muted truncate">
-                        {lot.warehouseName ?? lot.warehouseCode}
+                      <div className="flex min-w-0 items-baseline gap-1.5">
+                        <span className="truncate font-mono font-medium text-text">{lot.matUid}</span>
+                        <span className="shrink-0 text-[10px] text-text-muted">
+                          {lot.warehouseName ?? lot.warehouseCode}
+                        </span>
                         {i === 0 && firstIsFifoFirst && (
-                          <span className="ml-1 px-1 rounded border border-primary/40 text-primary">
+                          <span className="shrink-0 rounded border border-primary/40 px-1 text-[10px] text-primary">
                             {t('material.issue.fifoFirst', { defaultValue: '선입' })}
                           </span>
                         )}
