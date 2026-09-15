@@ -29,7 +29,12 @@ interface HeaderCheckItemProps {
   notTargetDetail?: string;
   disabled?: boolean;
   disabledReason?: string;
-  onInput: () => void;
+  /**
+   * 입력/보기 버튼 클릭 핸들러.
+   * 생략하면 버튼을 그리지 않고 상태만 보여준다 — 헤더에서 할 일이 없는 항목용
+   * (예: 소모품 장착은 패널에서 바코드를 스캔해 처리한다).
+   */
+  onInput?: () => void;
   wide?: boolean;
   /** 시나리오 드라이버가 입력 버튼을 집는다 */
   testId?: string;
@@ -94,6 +99,7 @@ export default function HeaderCheckItem({
           </div>
         )}
       </div>
+      {onInput && (
       <button
         onClick={onInput}
         disabled={isDisabled}
@@ -110,6 +116,7 @@ export default function HeaderCheckItem({
       >
         {done ? t('common.view', '보기') : t('common.input', '입력')}
       </button>
+      )}
     </div>
   );
 }

@@ -41,7 +41,6 @@ interface InspectStationHeaderProps {
   onOpenWorkerInspect: () => void;
   onOpenSampleCheck: () => void;
   onOpenSampleCheckHistory: () => void;
-  onOpenConsumable: () => void;
   isFullView: boolean;
   onToggleFullscreen: () => void;
 }
@@ -56,7 +55,6 @@ export default function InspectStationHeader({
   onOpenWorkerInspect,
   onOpenSampleCheck,
   onOpenSampleCheckHistory,
-  onOpenConsumable,
   isFullView,
   onToggleFullscreen,
 }: InspectStationHeaderProps) {
@@ -313,8 +311,6 @@ export default function InspectStationHeader({
               notDoneDetail={prep.unmountedConsumCount ? String(prep.unmountedConsumCount) : undefined}
               disabled={!hasEquip}
               disabledReason={equipReason}
-              onInput={onOpenConsumable}
-              testId="inspect-consumable-open"
               wide
             />
           </div>
