@@ -29,6 +29,7 @@ import {
   IssueRequestQueryDto,
   RejectIssueRequestDto,
   RequestIssueDto,
+  SplitForIssueDto,
 } from '../dto/issue-request.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
@@ -95,6 +96,20 @@ export class IssueRequestController {
   ) {
     const data = await this.issueRequestService.reject(requestNo, dto, company, plant);
     return ResponseUtil.success(data, '출고요청이 반려되었습니다.');
+  }
+
+  @Post(':requestNo/split-for-issue')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '출고 준비 분할 — 부분 사용 롯트를 출고분/잔량분으로 분할하고 라벨 데이터를 반환' })
+  @ApiParam({ name: 'requestNo', description: '출고요청 번호' })
+  async splitForIssue(
+    @Param('requestNo') requestNo: string,
+    @Body() dto: SplitForIssueDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.issueRequestService.splitForIssue(requestNo, dto, company, plant);
+    return ResponseUtil.success(data, 'LOT이 분할되었습니다. 라벨을 출력해 부착하세요.');
   }
 
   @Post(':requestNo/issue')

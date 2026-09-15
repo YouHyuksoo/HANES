@@ -15,6 +15,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatIssueService } from './mat-issue.service';
+import { LotSplitService } from './lot-split.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -45,6 +46,7 @@ describe('IssueRequestService', () => {
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
   let routingProcessRepo: DeepMocked<Repository<RoutingProcess>>;
   let matIssueService: DeepMocked<MatIssueService>;
+  let lotSplitService: DeepMocked<LotSplitService>;
   let numbering: DeepMocked<NumberingService>;
   let dataSource: DeepMocked<DataSource>;
   let tx: DeepMocked<TransactionService>;
@@ -62,6 +64,7 @@ describe('IssueRequestService', () => {
     warehouseRepo = createMock<Repository<Warehouse>>();
     routingProcessRepo = createMock<Repository<RoutingProcess>>();
     matIssueService = createMock<MatIssueService>();
+    lotSplitService = createMock<LotSplitService>();
     numbering = createMock<NumberingService>();
     dataSource = createMock<DataSource>();
     tx = createMock<TransactionService>();
@@ -96,6 +99,7 @@ describe('IssueRequestService', () => {
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
         { provide: getRepositoryToken(RoutingProcess), useValue: routingProcessRepo },
         { provide: MatIssueService, useValue: matIssueService },
+        { provide: LotSplitService, useValue: lotSplitService },
         { provide: NumberingService, useValue: numbering },
         { provide: DataSource, useValue: dataSource },
         { provide: TransactionService, useValue: tx },
@@ -1306,6 +1310,69 @@ describe('IssueRequestService', () => {
         { requestNo: 'REQ-001', company: 'C1', plant: 'P1' },
         { status: 'COMPLETED' },
       );
+    });
+  });
+
+  describe('splitForIssue', () => {
+    it('모든 분할을 한 트랜잭션에서 처리하고 allowIssuedSource 로 호출한다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'MR-1', status: 'APPROVED', company: 'C1', plant: 'P1',
+      } as MatIssueRequest);
+      lotSplitService.splitInTx
+        .mockResolvedValueOnce({
+          sourceLotNo: 'LOT-A', itemCode: 'ITEM-1', itemName: 'A', arrivalNo: 'AR-1',
+          results: [{ matUid: 'NEW-1', qty: 700 }, { matUid: 'NEW-2', qty: 300 }],
+          label: { arrivalNo: 'AR-1', serials: [] },
+        } as never)
+        .mockResolvedValueOnce({
+          sourceLotNo: 'LOT-B', itemCode: 'ITEM-2', itemName: 'B', arrivalNo: 'AR-2',
+          results: [{ matUid: 'NEW-3', qty: 50 }, { matUid: 'NEW-4', qty: 20 }],
+          label: { arrivalNo: 'AR-2', serials: [] },
+        } as never);
+
+      const result = await service.splitForIssue('MR-1', {
+        splits: [
+          { sourceMatUid: 'LOT-A', issueQty: 700 },
+          { sourceMatUid: 'LOT-B', issueQty: 50 },
+        ],
+      } as any, 'C1', 'P1');
+
+      expect(tx.run).toHaveBeenCalledTimes(1);
+      expect(lotSplitService.splitInTx).toHaveBeenCalledTimes(2);
+      expect(lotSplitService.splitInTx).toHaveBeenCalledWith(
+        queryRunner,
+        { sourceLotId: 'LOT-A', splitQty: 700, remark: expect.any(String) },
+        { allowIssuedSource: true },
+        'C1', 'P1', undefined,
+      );
+      expect(result.splits).toHaveLength(2);
+      expect(result.splits[0].sourceMatUid).toBe('LOT-A');
+    });
+
+    it('중간 분할이 실패하면 예외를 그대로 올려 트랜잭션 전체를 롤백시킨다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'MR-1', status: 'APPROVED', company: 'C1', plant: 'P1',
+      } as MatIssueRequest);
+      lotSplitService.splitInTx
+        .mockResolvedValueOnce({ results: [], label: { serials: [] } } as never)
+        .mockRejectedValueOnce(new BadRequestException('해당 품목은 분할할 수 없습니다.'));
+
+      await expect(service.splitForIssue('MR-1', {
+        splits: [
+          { sourceMatUid: 'LOT-A', issueQty: 700 },
+          { sourceMatUid: 'LOT-B', issueQty: 50 },
+        ],
+      } as any, 'C1', 'P1')).rejects.toThrow('해당 품목은 분할할 수 없습니다.');
+    });
+
+    it('APPROVED/PARTIAL 이 아닌 요청은 거절한다', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'MR-1', status: 'COMPLETED', company: 'C1', plant: 'P1',
+      } as MatIssueRequest);
+
+      await expect(service.splitForIssue('MR-1', {
+        splits: [{ sourceMatUid: 'LOT-A', issueQty: 1 }],
+      } as any, 'C1', 'P1')).rejects.toThrow('출고할 수 없는 상태입니다');
     });
   });
 });

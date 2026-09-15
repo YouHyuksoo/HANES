@@ -203,3 +203,30 @@ export class RequestIssueDto {
   @MaxLength(500)
   remark?: string;
 }
+
+/** 출고 준비 분할 — 부분 사용 롯트 1건 */
+export class SplitForIssueItemDto {
+  @ApiProperty({ description: '분할할 원본 LOT 시리얼(MAT_UID)' })
+  @IsString()
+  sourceMatUid: string;
+
+  @ApiProperty({ description: '출고분 수량. 원본 현재고보다 작아야 한다' })
+  @IsInt()
+  @Min(1)
+  issueQty: number;
+}
+
+/** 출고요청 기반 출고 준비 분할 DTO */
+export class SplitForIssueDto {
+  @ApiProperty({ description: '분할 대상 목록', type: [SplitForIssueItemDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SplitForIssueItemDto)
+  splits: SplitForIssueItemDto[];
+
+  @ApiPropertyOptional({ description: '비고' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  remark?: string;
+}

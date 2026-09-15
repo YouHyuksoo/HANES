@@ -26,6 +26,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatIssueService } from './mat-issue.service';
+import { LotSplitService } from './lot-split.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
@@ -46,6 +47,7 @@ import {
   IssueRequestQueryDto,
   RejectIssueRequestDto,
   RequestIssueDto,
+  SplitForIssueDto,
 } from '../dto/issue-request.dto';
 
 @Injectable()
@@ -68,6 +70,7 @@ export class IssueRequestService {
     @InjectRepository(RoutingProcess)
     private readonly routingProcessRepository: Repository<RoutingProcess>,
     private readonly matIssueService: MatIssueService,
+    private readonly lotSplitService: LotSplitService,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
     private readonly sysConfigService: SysConfigService,
@@ -670,6 +673,38 @@ export class IssueRequestService {
     const requestTenantWhere = this.tenantWhere(effectiveCompany, effectivePlant);
     await this.requestRepository.update({ requestNo, ...requestTenantWhere }, { status: 'REJECTED', rejectReason: dto.reason });
     return this.findByRequestNo(requestNo, effectiveCompany ?? undefined, effectivePlant ?? undefined);
+  }
+
+  /**
+   * 출고 준비 분할 — 부분 사용 롯트를 실물 분할해 출고분/잔량분 시리얼과 라벨을 만든다.
+   *
+   * 이 단계를 거치면 이어지는 출고(issueFromRequest)는 전부 전량 출고가 된다.
+   * 여러 롯트를 한 트랜잭션으로 묶는다 — 일부만 쪼개져 라벨 없이 남는 상황을 막는다.
+   */
+  async splitForIssue(requestNo: string, dto: SplitForIssueDto, company?: string, plant?: string) {
+    const request = await this.getRequestOrFail(requestNo, company, plant);
+    if (request.status !== 'APPROVED' && request.status !== 'PARTIAL') {
+      throw new BadRequestException(`출고할 수 없는 상태입니다 (APPROVED/PARTIAL만 가능): ${request.status}`);
+    }
+    const effectiveCompany = request.company ?? company;
+    const effectivePlant = request.plant ?? plant;
+    const remark = dto.remark ?? `출고요청 ${request.requestNo} 출고 준비 분할`;
+
+    return this.tx.run(async (queryRunner) => {
+      const splits = [];
+      for (const item of dto.splits) {
+        const result = await this.lotSplitService.splitInTx(
+          queryRunner,
+          { sourceLotId: item.sourceMatUid, splitQty: item.issueQty, remark },
+          { allowIssuedSource: true },
+          effectiveCompany ?? undefined,
+          effectivePlant ?? undefined,
+          undefined,
+        );
+        splits.push({ sourceMatUid: item.sourceMatUid, ...result });
+      }
+      return { splits };
+    });
   }
 
   /**
