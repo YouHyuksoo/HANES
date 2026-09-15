@@ -49,6 +49,23 @@ describe('MatStockService', () => {
       ...overrides,
     }) as MatStock;
 
+  // findAvailable 은 repository.find 가 아니라 createQueryBuilder 로 조회한다(DB ORDER BY FIFO).
+  // getMany 가 반환하는 순서는 "DB가 이미 정렬해 돌려준 순서"를 흉내낸다.
+  const mockAvailableStocksQb = (stocks: MatStock[]) => {
+    const qb = {
+      leftJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue(stocks),
+    };
+    mockMatStockRepo.createQueryBuilder.mockReturnValue(qb as never);
+    return qb;
+  };
+
   beforeEach(async () => {
     mockMatStockRepo = createMock<Repository<MatStock>>();
     mockMatLotRepo = createMock<Repository<MatLot>>();
@@ -225,7 +242,7 @@ describe('MatStockService', () => {
   describe('findAvailable', () => {
     it('IQC PASS + 잔량 > 0인 재고만 반환한다', async () => {
       const stock = createStock();
-      mockMatStockRepo.find.mockResolvedValue([stock]);
+      mockAvailableStocksQb([stock]);
       mockMatLotRepo.find.mockResolvedValue([
         { matUid: 'MAT-001', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001' } as MatLot,
       ]);
@@ -239,7 +256,7 @@ describe('MatStockService', () => {
     });
 
     it('HOLD LOT 은 재고가 있어도 출고 가능 목록에서 제외한다', async () => {
-      mockMatStockRepo.find.mockResolvedValue([createStock()]);
+      mockAvailableStocksQb([createStock()]);
       mockMatLotRepo.find.mockResolvedValue([
         { matUid: 'MAT-001', iqcStatus: 'PASS', status: 'HOLD', itemCode: 'ITEM-001' } as MatLot,
       ]);
@@ -253,7 +270,7 @@ describe('MatStockService', () => {
     it.each(['MERGED', 'SPLIT', 'DISCARDED', 'DEPLETED'])(
       '종결 LOT(%s)은 MAT_STOCKS 잔량이 남아 있어도 출고 가능 목록에서 제외한다',
       async (status) => {
-        mockMatStockRepo.find.mockResolvedValue([createStock({ qty: 10, availableQty: 10 })]);
+        mockAvailableStocksQb([createStock({ qty: 10, availableQty: 10 })]);
         mockMatLotRepo.find.mockResolvedValue([
           { matUid: 'MAT-001', iqcStatus: 'PASS', status, itemCode: 'ITEM-001' } as MatLot,
         ]);
@@ -268,7 +285,7 @@ describe('MatStockService', () => {
 
     it('품목 마스터가 누락되어도 출고 가능 재고의 원본 itemCode와 matUid는 유지한다', async () => {
       const stock = createStock({ itemCode: 'ITEM-MISSING', matUid: 'MAT-001' });
-      mockMatStockRepo.find.mockResolvedValue([stock]);
+      mockAvailableStocksQb([stock]);
       mockMatLotRepo.find.mockResolvedValue([
         { matUid: 'MAT-001', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-MISSING' } as MatLot,
       ]);
@@ -288,7 +305,7 @@ describe('MatStockService', () => {
 
     it('출고 가능 재고 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
       const stock = createStock({ company: 'C1', plant: 'P1' });
-      mockMatStockRepo.find.mockResolvedValue([stock]);
+      mockAvailableStocksQb([stock]);
       mockMatLotRepo.find.mockResolvedValue([
         { matUid: 'MAT-001', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001' } as MatLot,
       ]);
@@ -304,27 +321,31 @@ describe('MatStockService', () => {
       });
     });
 
-    it('출고 가능 재고를 입고일(recvDate) 오름차순(FIFO)으로 정렬한다', async () => {
-      const newer = createStock({ matUid: 'MAT-NEW', itemCode: 'ITEM-001' });
+    it('출고 가능 재고를 입고일(recvDate) 오름차순(FIFO)으로 DB ORDER BY 결과 순서 그대로 반환한다', async () => {
       const older = createStock({ matUid: 'MAT-OLD', itemCode: 'ITEM-001' });
-      // repository는 임의 순서로 반환(최신 입고가 먼저)
-      mockMatStockRepo.find.mockResolvedValue([newer, older]);
+      const newer = createStock({ matUid: 'MAT-NEW', itemCode: 'ITEM-001' });
+      // FIFO는 DB ORDER BY 로 건다(Task 2) — getMany 는 DB가 이미 RECV_DATE ASC 로
+      // 정렬해 돌려준 순서(가장 오래 보관된 LOT 먼저)를 흉내낸다. 서비스가 이 순서를
+      // 메모리에서 다시 뒤섞지 않는지 검증한다.
+      const qb = mockAvailableStocksQb([older, newer]);
       mockMatLotRepo.find.mockResolvedValue([
-        { matUid: 'MAT-NEW', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001', recvDate: new Date('2026-06-20') } as MatLot,
         { matUid: 'MAT-OLD', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001', recvDate: new Date('2026-06-10') } as MatLot,
+        { matUid: 'MAT-NEW', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001', recvDate: new Date('2026-06-20') } as MatLot,
       ]);
       mockItemMasterRepo.find.mockResolvedValue([]);
 
       const result = await target.findAvailable({ page: 1, limit: 10 });
 
+      expect(qb.orderBy).toHaveBeenCalledWith('lot.recvDate', 'ASC', 'NULLS LAST');
       // 가장 오래 보관된 LOT(MAT-OLD)이 먼저 와야 한다
       expect(result.data.map((d) => d.matUid)).toEqual(['MAT-OLD', 'MAT-NEW']);
     });
 
-    it('입고일이 없는(null) LOT은 FIFO 정렬에서 뒤로 보낸다', async () => {
+    it('입고일이 없는(null) LOT은 DB의 NULLS LAST 정렬 결과대로 뒤에 남는다', async () => {
       const dated = createStock({ matUid: 'MAT-DATED', itemCode: 'ITEM-001' });
       const undated = createStock({ matUid: 'MAT-NULL', itemCode: 'ITEM-001' });
-      mockMatStockRepo.find.mockResolvedValue([undated, dated]);
+      // NULLS LAST 이므로 DB가 돌려주는 순서는 입고일 있는 LOT 먼저, null 은 뒤
+      const qb = mockAvailableStocksQb([dated, undated]);
       mockMatLotRepo.find.mockResolvedValue([
         { matUid: 'MAT-DATED', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001', recvDate: new Date('2026-06-15') } as MatLot,
         { matUid: 'MAT-NULL', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001', recvDate: null } as unknown as MatLot,
@@ -333,7 +354,19 @@ describe('MatStockService', () => {
 
       const result = await target.findAvailable({ page: 1, limit: 10 });
 
+      expect(qb.orderBy).toHaveBeenCalledWith('lot.recvDate', 'ASC', 'NULLS LAST');
       expect(result.data.map((d) => d.matUid)).toEqual(['MAT-DATED', 'MAT-NULL']);
+    });
+  });
+
+  describe('findAvailable FIFO 정렬', () => {
+    it('메모리 정렬이 아니라 DB ORDER BY 로 RECV_DATE 오름차순을 건다', async () => {
+      const qb = mockAvailableStocksQb([]);
+
+      await target.findAvailable({ page: 1, limit: 10, itemCode: 'ITEM-001' } as never, 'C1', 'P1');
+
+      expect(qb.orderBy).toHaveBeenCalledWith('lot.recvDate', 'ASC', 'NULLS LAST');
+      expect(mockMatStockRepo.find).not.toHaveBeenCalled();
     });
   });
 

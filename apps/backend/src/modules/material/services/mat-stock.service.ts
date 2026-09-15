@@ -235,16 +235,24 @@ export class MatStockService {
   /** 출고 가능 재고 조회 (IQC PASS + 잔량 > 0 인 LOT만) */
   async findAvailable(query: StockQueryDto, company?: string, plant?: string) {
     const { page = 1, limit = 10, itemCode, warehouseCode, search } = query;
-    // 소진(QTY=0) 행은 DB에서 제외한다 — 페이지(take)를 먼저 자른 뒤 메모리에서 거르면
-    // 소진 LOT가 많은 품목에서 실제 가용 LOT가 페이지 밖으로 밀려 "출고 가능 LOT 없음"으로 보인다.
-    const where: FindOptionsWhere<MatStock> = {
-      qty: MoreThan(0),
-      ...(itemCode && { itemCode }), ...(warehouseCode && { warehouseCode }), ...(company && { company }), ...(plant && { plant }),
-    };
+    // FIFO(선입선출)는 DB ORDER BY 로 건다. 페이징 후 메모리 정렬하면 페이지 밖으로 밀린
+    // 오래된 LOT 가 누락된다. 분할 자식 시리얼은 RECV_DATE 를 계승하지만 UPDATED_AT 은
+    // 방금 시각이라, updatedAt 기준 페이징에서는 분할할수록 FIFO 가 무너진다.
+    const qb = this.matStockRepository
+      .createQueryBuilder('stock')
+      .leftJoin(MatLot, 'lot', 'lot.matUid = stock.matUid')
+      .where('stock.qty > 0');
+    if (itemCode) qb.andWhere('stock.itemCode = :itemCode', { itemCode });
+    if (warehouseCode) qb.andWhere('stock.warehouseCode = :warehouseCode', { warehouseCode });
+    if (company) qb.andWhere('stock.company = :company', { company });
+    if (plant) qb.andWhere('stock.plant = :plant', { plant });
 
-    const stocks = await this.matStockRepository.find({
-      where, skip: (page - 1) * limit, take: limit, order: { updatedAt: 'DESC' },
-    });
+    const stocks = await qb
+      .orderBy('lot.recvDate', 'ASC', 'NULLS LAST')
+      .addOrderBy('stock.matUid', 'ASC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
 
     const matUids = stocks.map((s) => s.matUid).filter(Boolean) as string[];
     const itemCodes = stocks.map((s) => s.itemCode).filter(Boolean);
@@ -284,12 +292,6 @@ export class MatStockService {
         r.matUid?.toLowerCase().includes(s));
     }
 
-    // FIFO(선입선출): 입고일(RECV_DATE) 오름차순, 입고일 미상(null)은 뒤로
-    result.sort((a, b) => {
-      const at = a.recvDate ? new Date(a.recvDate).getTime() : Number.POSITIVE_INFINITY;
-      const bt = b.recvDate ? new Date(b.recvDate).getTime() : Number.POSITIVE_INFINITY;
-      return at - bt;
-    });
     return { data: result, total: result.length, page, limit };
   }
 
