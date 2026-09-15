@@ -2,15 +2,18 @@
 
 /**
  * @file IQC 검사의뢰 LOT 구성. 모집단은 담당자가 담은 입하 수량 합.
+ *
+ * 이 화면은 LOT 구성과 검사의뢰까지만 담당한다. 합불 판정은 AQL Ac/Re를 타는 IQC 검사 화면에서 한다.
+ * 여기에 PASS/FAIL 버튼이나 시료수 자유입력을 다시 추가하지 말 것. AQL 산출값은 참고 표시만 한다.
  */
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ClipboardList, RefreshCw, Search } from "lucide-react";
-import { Button, Card, CardContent, Input, Modal } from "@/components/ui";
+import { Button, Card, CardContent, Input } from "@/components/ui";
 import { PartSearchModal } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
-import { useIqcRequestLot, type RequestCandidate, type RequestRow } from "@/hooks/material/useIqcRequestLot";
+import { arrivalRowKey, useIqcRequestLot, type RequestCandidate, type RequestRow } from "@/hooks/material/useIqcRequestLot";
 
 export default function IqcRequestLotPage() {
   const { t } = useTranslation();
@@ -19,6 +22,7 @@ export default function IqcRequestLotPage() {
   const candidateCols = useMemo<ColumnDef<RequestCandidate>[]>(
     () => [
       { accessorKey: "arrivalNo", header: t("material.iqc.arrivalNoLabel", "입하번호"), size: 140 },
+      { accessorKey: "seq", header: t("material.iqcRequestLot.arrivalSeq", "행번호"), size: 70 },
       { accessorKey: "invoiceNo", header: t("material.arrival.invoiceNo", "인보이스"), size: 120 },
       { accessorKey: "qty", header: t("common.qty"), size: 80 },
       { accessorKey: "vendorName", header: t("material.iqc.supplierLabel", "공급업체"), size: 140 },
@@ -50,21 +54,16 @@ export default function IqcRequestLotPage() {
       {
         id: "act",
         header: t("common.actions"),
-        size: 180,
+        size: 120,
         cell: ({ row }) =>
           row.original.status === "REQUESTED" ? (
-            <div className="flex gap-1">
-              <Button size="sm" onClick={() => h.setInspectTarget(row.original)}>
-                {t("material.iqc.iqcInspect", "IQC 검사")}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => void h.cancelRequest(row.original.requestNo)}>
-                {t("common.cancel")}
-              </Button>
-            </div>
+            <Button size="sm" variant="ghost" onClick={() => void h.cancelRequest(row.original.requestNo)}>
+              {t("common.cancel")}
+            </Button>
           ) : null,
       },
     ],
-    [h.setInspectTarget, h.cancelRequest, t],
+    [h.cancelRequest, t],
   );
 
   return (
@@ -130,7 +129,7 @@ export default function IqcRequestLotPage() {
                 data={h.candidates}
                 columns={candidateCols}
                 isLoading={h.loading}
-                getRowId={(row) => row.arrivalNo}
+                getRowId={(row) => arrivalRowKey(row)}
                 emptyMessage={t("material.iqcRequestLot.noCandidates", "품목을 조회한 뒤 입하를 고르세요.")}
               />
             </div>
@@ -143,29 +142,31 @@ export default function IqcRequestLotPage() {
             </div>
             {h.aql ? (
               <p className="text-sm text-text-muted">
-                AQL {h.aql.inspectionLevel}/{h.aql.inspectionMode} · {t("material.iqcRequestLot.aqlSample", "권고 시료수")} {h.aql.sampleQty ?? "-"}
+                AQL {h.aql.inspectionLevel}/{h.aql.inspectionMode} ·{" "}
+                {t("material.iqcRequestLot.aqlSample", "예상 시료수")} {h.aql.sampleQty ?? "-"}
               </p>
             ) : null}
             <ul className="flex-1 min-h-0 overflow-auto text-sm space-y-1">
               {h.basket.map((row) => (
-                <li key={row.arrivalNo} className="flex justify-between border-b border-border py-1 gap-2">
+                <li key={arrivalRowKey(row)} className="flex justify-between border-b border-border py-1 gap-2">
                   <span>
-                    {row.arrivalNo} / {row.qty.toLocaleString()} / {row.invoiceNo ?? "-"} /{" "}
+                    {row.arrivalNo} #{row.seq} / {row.qty.toLocaleString()} / {row.invoiceNo ?? "-"} /{" "}
                     {row.lineRole === "SAMPLE"
                       ? t("material.iqcRequestLot.sample", "시료")
                       : t("material.iqcRequestLot.represented", "대표")}
                   </span>
-                  <button className="text-text-muted shrink-0" onClick={() => h.setBasket((p) => p.filter((x) => x.arrivalNo !== row.arrivalNo))}>
+                  <button className="text-text-muted shrink-0" onClick={() => h.removeFromBasket(row)}>
                     {t("common.delete")}
                   </button>
                 </li>
               ))}
             </ul>
-            <Input
-              label={t("material.iqcRequestLot.sampleQty", "시료수량")}
-              value={h.sampleQty}
-              onChange={(e) => h.setSampleQty(e.target.value)}
-            />
+            <p className="text-xs text-text-muted">
+              {t(
+                "material.iqcRequestLot.sampleHint",
+                "시료수는 검사 시점에 AQL이 모집단수량으로 산출합니다. 합불 판정은 IQC 검사 화면에서 합니다.",
+              )}
+            </p>
             <Button onClick={() => void h.confirmRequest()}>{t("material.iqcRequestLot.confirm", "의뢰 확정")}</Button>
           </CardContent>
         </Card>
@@ -186,33 +187,6 @@ export default function IqcRequestLotPage() {
           h.setPartOpen(false);
         }}
       />
-
-      <Modal
-        isOpen={!!h.inspectTarget}
-        onClose={() => h.setInspectTarget(null)}
-        title={t("material.iqcRequestLot.inspectTitle", "의뢰 LOT 일괄 판정")}
-      >
-        {h.inspectTarget && (
-          <div className="space-y-3">
-            <p>
-              {h.inspectTarget.requestNo} / {h.inspectTarget.itemCode} / {t("material.iqcRequestLot.lotQty", "모집단수량")}{" "}
-              {h.inspectTarget.lotQty.toLocaleString()}
-            </p>
-            <ul className="text-sm max-h-40 overflow-auto">
-              {(h.inspectTarget.lines ?? []).map((line) => (
-                <li key={line.arrivalNo}>
-                  {line.arrivalNo} {line.qty.toLocaleString()} {line.lineRole}
-                </li>
-              ))}
-            </ul>
-            <Input label={t("material.iqc.inspectorLabel", "검사자")} value={h.inspector} onChange={(e) => h.setInspector(e.target.value)} fullWidth />
-            <div className="flex gap-2 justify-end">
-              <Button variant="secondary" onClick={() => void h.inspect("FAIL")}>FAIL</Button>
-              <Button onClick={() => void h.inspect("PASS")}>PASS</Button>
-            </div>
-          </div>
-        )}
-      </Modal>
     </div>
   );
 }

@@ -1,5 +1,8 @@
 /**
  * IQC 검사의뢰 LOT 구성 훅. 모집단은 담당자가 담은 PENDING 입하 수량 합이다.
+ *
+ * 이 훅은 LOT 구성과 검사의뢰까지만 다룬다. 합불 판정은 AQL 정책을 타는 IQC 검사 화면에서 한다.
+ * AQL 산출값은 모집단 크기 판단을 돕는 참고 표시용이며 입력값이 아니다.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
@@ -8,6 +11,8 @@ import api from "@/services/api";
 
 export interface RequestCandidate {
   arrivalNo: string;
+  /** MAT_ARRIVALS.SEQ. arrivalNo 단독으로는 입하 행이 유일하지 않다. */
+  seq: number;
   itemCode: string;
   qty: number;
   invoiceNo: string | null;
@@ -18,6 +23,7 @@ export interface RequestCandidate {
 
 export interface RequestLine {
   arrivalNo: string;
+  arrivalSeq: number;
   qty: number;
   lineRole: "SAMPLE" | "REPRESENTED";
   invoiceNo: string | null;
@@ -31,10 +37,14 @@ export interface RequestRow {
   lotQty: number;
   sampleQty: number | null;
   status: string;
+  /** 검사 시점에 AQL이 채운다. 의뢰 시점에는 null이다. */
   lines: RequestLine[];
 }
 
 export type BasketRow = RequestCandidate & { lineRole: "SAMPLE" | "REPRESENTED" };
+
+/** 입하 행 식별 키. MAT_ARRIVALS PK가 (ARRIVAL_NO, SEQ) 복합키라 둘을 묶어야 행이 구분된다. */
+export const arrivalRowKey = (row: { arrivalNo: string; seq: number }) => `${row.arrivalNo}#${row.seq}`;
 
 interface AqlPreview {
   sampleQty?: number | null;
@@ -52,9 +62,6 @@ export function useIqcRequestLot() {
   const [basket, setBasket] = useState<BasketRow[]>([]);
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [inspectTarget, setInspectTarget] = useState<RequestRow | null>(null);
-  const [inspector, setInspector] = useState("");
-  const [sampleQty, setSampleQty] = useState("");
   const [aql, setAql] = useState<AqlPreview | null>(null);
   const [partOpen, setPartOpen] = useState(false);
 
@@ -106,13 +113,7 @@ export function useIqcRequestLot() {
         .get("/quality/aql/resolve-iqc-items", {
           params: { itemCode: itemCode.trim(), vendorCode, lotQty },
         })
-        .then((res) => {
-          const data = res.data?.data ?? null;
-          setAql(data);
-          if (data?.sampleQty != null) {
-            setSampleQty((prev) => prev || String(data.sampleQty));
-          }
-        })
+        .then((res) => setAql(res.data?.data ?? null))
         .catch(() => setAql(null));
     }, 250);
     return () => window.clearTimeout(timer);
@@ -120,16 +121,23 @@ export function useIqcRequestLot() {
 
   const addToBasket = (row: RequestCandidate, role: "SAMPLE" | "REPRESENTED") => {
     setBasket((prev) => {
-      const rest = prev.filter((x) => x.arrivalNo !== row.arrivalNo);
+      const key = arrivalRowKey(row);
+      const rest = prev.filter((x) => arrivalRowKey(x) !== key);
       return [...rest, { ...row, lineRole: role }];
     });
   };
 
+  const removeFromBasket = (row: { arrivalNo: string; seq: number }) => {
+    const key = arrivalRowKey(row);
+    setBasket((prev) => prev.filter((x) => arrivalRowKey(x) !== key));
+  };
+
   const addVisible = (role: "SAMPLE" | "REPRESENTED") => {
     setBasket((prev) => {
-      const map = new Map(prev.map((row) => [row.arrivalNo, row]));
+      const map = new Map(prev.map((row) => [arrivalRowKey(row), row]));
       for (const row of visibleCandidates) {
-        map.set(row.arrivalNo, { ...row, lineRole: map.get(row.arrivalNo)?.lineRole ?? role });
+        const key = arrivalRowKey(row);
+        map.set(key, { ...row, lineRole: map.get(key)?.lineRole ?? role });
       }
       const next = [...map.values()];
       if (!next.some((row) => row.lineRole === "SAMPLE") && next[0]) {
@@ -156,8 +164,7 @@ export function useIqcRequestLot() {
       await api.post("/quality/iqc-request-lots", {
         itemCode: itemCode.trim(),
         invoiceNo: invoiceFilter.trim() || undefined,
-        sampleQty: sampleQty ? Number(sampleQty) : undefined,
-        lines: basket.map((row) => ({ arrivalNo: row.arrivalNo, lineRole: row.lineRole })),
+        lines: basket.map((row) => ({ arrivalNo: row.arrivalNo, arrivalSeq: row.seq, lineRole: row.lineRole })),
       });
       toast.success(t("material.iqcRequestLot.created", "검사의뢰 LOT을 등록했습니다."));
       setBasket([]);
@@ -177,22 +184,6 @@ export function useIqcRequestLot() {
     }
   };
 
-  const inspect = async (result: "PASS" | "FAIL") => {
-    if (!inspectTarget) return;
-    try {
-      await api.post(`/quality/iqc-request-lots/${encodeURIComponent(inspectTarget.requestNo)}/inspect`, {
-        result,
-        inspectorName: inspector || undefined,
-        sampleQty: sampleQty ? Number(sampleQty) : inspectTarget.sampleQty,
-      });
-      toast.success(t("material.iqcRequestLot.judged", "의뢰 LOT을 일괄 판정했습니다."));
-      setInspectTarget(null);
-      await refresh();
-    } catch {
-      toast.error(t("common.saveFailed"));
-    }
-  };
-
   return {
     itemCode,
     setItemCode,
@@ -206,21 +197,15 @@ export function useIqcRequestLot() {
     setBasket,
     requests,
     loading,
-    inspectTarget,
-    setInspectTarget,
-    inspector,
-    setInspector,
-    sampleQty,
-    setSampleQty,
     aql,
     partOpen,
     setPartOpen,
     lotQty,
     refresh,
     addToBasket,
+    removeFromBasket,
     addVisible,
     confirmRequest,
     cancelRequest,
-    inspect,
   };
 }

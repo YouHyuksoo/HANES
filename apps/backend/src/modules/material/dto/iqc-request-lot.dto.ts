@@ -9,6 +9,12 @@ export class IqcRequestLotLineInputDto {
   @IsNotEmpty()
   arrivalNo: string;
 
+  @ApiProperty({ description: '입하 행 순번(MAT_ARRIVALS.SEQ). ARRIVAL_NO 단독으로는 입하 행이 유일하지 않다.' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  arrivalSeq: number;
+
   @ApiProperty({ enum: ['SAMPLE', 'REPRESENTED'] })
   @IsString()
   @IsIn(['SAMPLE', 'REPRESENTED'])
@@ -31,13 +37,6 @@ export class CreateIqcRequestLotDto {
   @IsString()
   remark?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  sampleQty?: number;
-
   @ApiProperty({ type: [IqcRequestLotLineInputDto] })
   @IsArray()
   @ValidateNested({ each: true })
@@ -55,38 +54,4 @@ export class IqcRequestLotQueryDto {
   @IsOptional()
   @IsString()
   status?: string;
-}
-
-export class InspectIqcRequestLotDto {
-  @ApiProperty({ enum: ['PASS', 'FAIL'] })
-  @IsString()
-  @IsIn(['PASS', 'FAIL'])
-  result: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  inspectorName?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  remark?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  details?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  sampleQty?: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  inspectType?: string;
 }

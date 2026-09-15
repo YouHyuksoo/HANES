@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 import { ResponseUtil } from '../../../common/dto/response.dto';
-import { CreateIqcRequestLotDto, InspectIqcRequestLotDto, IqcRequestLotQueryDto } from '../dto/iqc-request-lot.dto';
+import { CreateIqcRequestLotDto, IqcRequestLotQueryDto } from '../dto/iqc-request-lot.dto';
 import { IqcRequestLotService } from '../services/iqc-request-lot.service';
 
 @ApiTags('품질 - IQC 검사의뢰 LOT')
@@ -40,17 +40,5 @@ export class IqcRequestLotController {
   async cancel(@Param('requestNo') requestNo: string, @Company() company: string, @Plant() plant: string) {
     const data = await this.service.cancel(requestNo, company, plant);
     return ResponseUtil.success(data, '의뢰를 취소했습니다.');
-  }
-
-  @Post(':requestNo/inspect')
-  @ApiOperation({ summary: '의뢰 LOT 일괄 판정(시료 AQL → 모집단 입하 전체)' })
-  async inspect(
-    @Param('requestNo') requestNo: string,
-    @Body() dto: InspectIqcRequestLotDto,
-    @Company() company: string,
-    @Plant() plant: string,
-  ) {
-    const data = await this.service.inspect(requestNo, dto, company, plant);
-    return ResponseUtil.success(data, '검사의뢰 LOT이 판정되었습니다.');
   }
 }
