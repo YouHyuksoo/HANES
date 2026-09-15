@@ -50,6 +50,7 @@ import { PmPlanController, PmWorkOrderController } from './controllers/pm-plan.c
 import { EquipMasterService } from './services/equip-master.service';
 import { ConsumableService } from './services/consumable.service';
 import { EquipInspectService } from './services/equip-inspect.service';
+import { EquipInspectGateService } from './services/equip-inspect-gate.service';
 import { PmPlanService } from './services/pm-plan.service';
 import { MoldController } from './controllers/mold.controller';
 import { MoldService } from './services/mold.service';
@@ -59,6 +60,7 @@ import { SensorDataLog } from '../../entities/sensor-data-log.entity';
 import { EquipConditionRule } from '../../entities/equip-condition-rule.entity';
 import { SensorMonitorService } from './services/sensor-monitor.service';
 import { SensorMonitorController } from './controllers/sensor-monitor.controller';
+import { SystemModule } from '../system/system.module';
 
 @Module({
   imports: [
@@ -87,6 +89,7 @@ import { SensorMonitorController } from './controllers/sensor-monitor.controller
       SensorDataLog,
       EquipConditionRule,
     ]),
+    SystemModule,
   ],
   controllers: [
     EquipMasterController,
@@ -104,6 +107,7 @@ import { SensorMonitorController } from './controllers/sensor-monitor.controller
     EquipMasterService,
     ConsumableService,
     EquipInspectService,
+    EquipInspectGateService,
     PmPlanService,
     MoldService,
     SensorMonitorService,
@@ -112,6 +116,7 @@ import { SensorMonitorController } from './controllers/sensor-monitor.controller
     EquipMasterService,
     ConsumableService,
     EquipInspectService,
+    EquipInspectGateService,
     PmPlanService,
     MoldService,
     SensorMonitorService,

@@ -67,22 +67,12 @@ import { parseCsvList } from '../../../common/utils/csv-list.util';
 import { resolveConsumableLifeStatus } from '@harness/shared';
 import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
 import { EquipInspectService } from '../../equipment/services/equip-inspect.service';
+import { EquipInspectGateService, type InspectGateScope } from '../../equipment/services/equip-inspect-gate.service';
 import { formatYmdLocal } from '../../../shared/date.util';
 
 const SELF_INSPECT_BATCH_WINDOW_MS = 10_000;
-/** 설비점검 인터록 sys-config 키. 값이 없으면(null) 켜진 것으로 본다(기본 Y). 'N'일 때만 끈다. */
-const EQUIP_INSPECT_INTERLOCK_KEY = 'EQUIP_INSPECT_INTERLOCK';
-type ProductionInspectScope = 'ASSEMBLY' | 'SUBASSEMBLY';
-const INSPECT_REQUIRED_KEYS: Record<ProductionInspectScope, { daily: string; worker: string }> = {
-  ASSEMBLY: {
-    daily: 'ASSEMBLY_DAILY_INSPECT_REQUIRED',
-    worker: 'ASSEMBLY_WORKER_INSPECT_REQUIRED',
-  },
-  SUBASSEMBLY: {
-    daily: 'SUBASSEMBLY_DAILY_INSPECT_REQUIRED',
-    worker: 'SUBASSEMBLY_WORKER_INSPECT_REQUIRED',
-  },
-};
+/** 설비점검 인터록 판정은 EquipInspectGateService 단일 출처를 쓴다(sys-config 키·매핑 규칙 포함). */
+type ProductionInspectScope = Extract<InspectGateScope, 'ASSEMBLY' | 'SUBASSEMBLY'>;
 
 @Injectable()
 export class ProdResultService {
@@ -122,6 +112,7 @@ export class ProdResultService {
     @InjectRepository(EquipInspectItemPool)
     private readonly equipInspectItemPoolRepository: Repository<EquipInspectItemPool>,
     private readonly equipInspectService: EquipInspectService,
+    private readonly equipInspectGateService: EquipInspectGateService,
   ) {
     this.shiftResolver = new ShiftResolver(this.shiftPatternRepo);
   }
@@ -753,6 +744,7 @@ export class ProdResultService {
    * - DAILY 항목이 있으면 오늘(조업일 window는 EquipInspectService가 판정) 일상점검 완료 필수
    * - WORKER 항목이 있으면 작업지시(orderNo) 기준 작업자설비점검 완료 필수
    * ProdResult를 create() 밖에서 저장하는 경로(서브공정 키팅 confirmAssembly/confirmSubKit)도 이 게이트를 호출한다.
+   * 판정 규칙 자체는 EquipInspectGateService가 단일 출처다. 검사 화면(통전·단자)도 같은 함수를 호출한다.
    */
   async assertEquipInspectGate(
     dto: Pick<CreateProdResultDto, 'equipCode' | 'orderNo'>,
@@ -760,71 +752,10 @@ export class ProdResultService {
     plant?: string,
     scope?: ProductionInspectScope,
   ): Promise<void> {
-    const equipCode = dto.equipCode?.trim();
-    if (!equipCode) return;
-
-    const configValue = await this.sysConfigService.getValue(EQUIP_INSPECT_INTERLOCK_KEY, company, plant);
-    if (typeof configValue === 'string' && configValue.trim().toUpperCase() === 'N') return;
-
-    const requiredKeys = scope ? INSPECT_REQUIRED_KEYS[scope] : undefined;
-    const [dailyRequiredValue, workerRequiredValue] = requiredKeys
-      ? await Promise.all([
-        this.sysConfigService.getValue(requiredKeys.daily, company, plant),
-        this.sysConfigService.getValue(requiredKeys.worker, company, plant),
-      ])
-      : [null, null];
-    const dailyRequired = !requiredKeys || dailyRequiredValue == null || dailyRequiredValue.trim().toUpperCase() !== 'N';
-    const workerRequired = !requiredKeys || workerRequiredValue == null || workerRequiredValue.trim().toUpperCase() !== 'N';
-
-    const poolItems = await this.equipInspectItemPoolRepository.find({
-      where: {
-        equipCode,
-        useYn: 'Y',
-        inspectType: In(['DAILY', 'WORKER']),
-        ...(company ? { company } : {}),
-        ...(plant ? { plant } : {}),
-      },
-    });
-    const hasDaily = dailyRequired && poolItems.some((item) => item.inspectType === 'DAILY');
-    const hasWorker = workerRequired && poolItems.some((item) => item.inspectType === 'WORKER');
-    if (!hasDaily && !hasWorker) return;
-
-    const today = formatYmdLocal(new Date());
-    if (hasDaily) {
-      const status = await this.equipInspectService.getInspectionStatus(
-        { equipCode, inspectType: 'DAILY', inspectDate: today },
-        { company, plant },
-      );
-      if (!status.alreadyInspected) {
-        throw new BadRequestException(`설비 일상점검을 완료해야 실적을 등록할 수 있습니다: ${equipCode}`);
-      }
-      // 완료됐어도 종합판정이 PASS가 아니면 차단한다 (재점검으로 PASS가 되어야 진행).
-      if (!status.inspectPassed) {
-        throw new BadRequestException(
-          `설비 일상점검 종합판정이 불합격(${status.overallResult ?? '미판정'})이므로 실적을 등록할 수 없습니다: ${equipCode} — 조치 후 재점검하세요.`,
-        );
-      }
-    }
-
-    if (hasWorker) {
-      if (!dto.orderNo) {
-        throw new BadRequestException(`작업자 설비점검 확인에는 작업지시번호가 필요합니다: ${equipCode}`);
-      }
-      const status = await this.equipInspectService.getInspectionStatus(
-        { equipCode, inspectType: 'WORKER', inspectDate: today, orderNo: dto.orderNo },
-        { company, plant },
-      );
-      if (!status.alreadyInspected) {
-        throw new BadRequestException(
-          `작업자 설비점검을 완료해야 실적을 등록할 수 있습니다: ${equipCode} (작업지시 ${dto.orderNo})`,
-        );
-      }
-      if (!status.inspectPassed) {
-        throw new BadRequestException(
-          `작업자 설비점검 종합판정이 불합격(${status.overallResult ?? '미판정'})이므로 실적을 등록할 수 없습니다: ${equipCode} (작업지시 ${dto.orderNo}) — 조치 후 재점검하세요.`,
-        );
-      }
-    }
+    await this.equipInspectGateService.assertGate(
+      { equipCode: dto.equipCode, orderNo: dto.orderNo, scope },
+      { company, plant },
+    );
   }
 
   /**

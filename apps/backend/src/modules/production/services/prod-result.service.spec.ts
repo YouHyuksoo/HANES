@@ -33,6 +33,7 @@ import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
 import { EquipInspectService } from '../../equipment/services/equip-inspect.service';
+import { EquipInspectGateService } from '../../equipment/services/equip-inspect-gate.service';
 
 describe('ProdResultService', () => {
   let service: ProdResultService;
@@ -122,6 +123,15 @@ describe('ProdResultService', () => {
         { provide: TransactionService, useValue: tx },
         { provide: getRepositoryToken(EquipInspectItemPool), useValue: equipInspectItemPoolRepo },
         { provide: EquipInspectService, useValue: equipInspectService },
+        {
+          // 인터락 판정은 실제 게이트 서비스를 써서 기존 회귀 케이스를 그대로 검증한다.
+          provide: EquipInspectGateService,
+          useFactory: () => new EquipInspectGateService(
+            equipInspectItemPoolRepo,
+            equipInspectService as unknown as EquipInspectService,
+            sysConfigService as unknown as SysConfigService,
+          ),
+        },
       ],
     })
       .setLogger(new MockLoggerService())
