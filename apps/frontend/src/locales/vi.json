@@ -3182,7 +3182,9 @@
         "serialItems": "Giá trị đo theo từng serial",
         "reviewer": "Người xem xét",
         "approver": "Người phê duyệt"
-      }
+      },
+      "issueNcr": "Phát hành báo cáo không phù hợp (NCR)",
+      "issueNcrPrefix": "Kiểm tra đầu vào không đạt"
     },
     "lotSplit": {
       "title": "Chia tách vật tư",
@@ -5549,8 +5551,15 @@
         "causeSection": "Nguyên nhân phát sinh và biện pháp ngăn ngừa tái phát",
         "writer": "Người lập",
         "reviewer": "Người kiểm tra",
-        "approver": "Người phê duyệt"
-      }
+        "approver": "Người phê duyệt",
+        "attachSection": "Bằng chứng đính kèm"
+      },
+      "attachments": "Tệp đính kèm (Ảnh/Tài liệu)",
+      "attachAdd": "Thêm tệp",
+      "attachNone": "Chưa có tệp đính kèm.",
+      "attachHint": "Đính kèm ảnh hiện tượng lỗi và báo cáo đo giúp phân tích nguyên nhân nhanh hơn.",
+      "attachPending": "Tải lên khi lưu",
+      "attachUploadFailed": "Tải tệp đính kèm thất bại"
     }
   },
   "equipment": {

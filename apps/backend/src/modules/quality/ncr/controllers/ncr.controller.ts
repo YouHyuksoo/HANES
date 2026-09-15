@@ -11,12 +11,20 @@
  * - PATCH  /quality/ncr/:ncrNo/close       : 종결
  * - PATCH  /quality/ncr/:ncrNo/capa        : 시정조치(CAPA) 연결
  */
-import { Body, Controller, Get, Param, Patch, Post, Put, Query, Req } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put,
+  Query, Req, UploadedFile, UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { diskStorage } from 'multer';
+import { existsSync, mkdirSync } from 'fs';
+import { extname } from 'path';
 import { Company, Plant } from '../../../../common/decorators/tenant.decorator';
 import { ResponseUtil } from '../../../../common/dto/response.dto';
 import { AuthenticatedRequest } from '../../../../common/guards/jwt-auth.guard';
 import { NcrService } from '../services/ncr.service';
+import { NcrAttachmentService, type UploadedFileInfo } from '../services/ncr-attachment.service';
 import {
   CloseNcrDto, CreateNcrDto, NcrCauseDto, NcrDispositionDto, NcrQueryDto, UpdateNcrDto,
 } from '../dto/ncr.dto';
@@ -24,7 +32,10 @@ import {
 @ApiTags('quality')
 @Controller('quality/ncr')
 export class NcrController {
-  constructor(private readonly svc: NcrService) {}
+  constructor(
+    private readonly svc: NcrService,
+    private readonly attachSvc: NcrAttachmentService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: '부적합 보고서 목록', description: '발행일 구간·대상구분·발견공정·등급·상태 필터' })
@@ -122,5 +133,77 @@ export class NcrController {
   ) {
     const data = await this.svc.linkCapa(ncrNo, capaNo, req.user?.id ?? 'system', company, plant);
     return ResponseUtil.success(data, '시정조치가 연결되었습니다.');
+  }
+
+  // ── 첨부파일 (문서·이미지) ────────────────────────────────────────────────
+
+  @Get(':ncrNo/attachments')
+  @ApiOperation({ summary: '첨부파일 목록' })
+  @ApiParam({ name: 'ncrNo' })
+  async listAttachments(
+    @Param('ncrNo') ncrNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    return ResponseUtil.success(await this.attachSvc.findAll(ncrNo, company, plant));
+  }
+
+  @Post(':ncrNo/attachments')
+  @ApiOperation({
+    summary: '첨부파일 등록',
+    description: '현상 사진·측정 성적서·고객 클레임 문서 등. 종결된 건에는 올릴 수 없다.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, callback) => {
+          const uploadPath = './uploads/ncr-attachments';
+          if (!existsSync(uploadPath)) mkdirSync(uploadPath, { recursive: true });
+          callback(null, uploadPath);
+        },
+        filename: (_req, file, callback) => {
+          const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+          callback(null, `ncr-${unique}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (_req, file, callback) => {
+        // 확장자를 우선 본다 — pptx/ppsx 등은 브라우저가 mimetype 을 비우거나 제각각으로 보낸다
+        const okByExt = /\.(jpe?g|png|gif|bmp|webp|pdf|pptx?|ppsx?|docx?|xlsx?|csv|txt)$/i
+          .test(file.originalname);
+        const okByMime = /(^image\/|\/pdf$|officedocument|ms-?powerpoint|msword|ms-excel|\/plain$|\/csv$)/i
+          .test(file.mimetype);
+        if (okByExt || okByMime) return callback(null, true);
+        callback(new BadRequestException('이미지·PDF·오피스 문서만 첨부할 수 있습니다.'), false);
+      },
+      limits: { fileSize: 20 * 1024 * 1024 },
+    }),
+  )
+  async uploadAttachment(
+    @Param('ncrNo') ncrNo: string,
+    @UploadedFile() file: UploadedFileInfo | undefined,
+    @Body('remark') remark: string | undefined,
+    @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    if (!file) throw new BadRequestException('첨부할 파일이 없습니다.');
+    const data = await this.attachSvc.create(
+      ncrNo, file, remark, req.user?.id ?? 'system', company, plant,
+    );
+    return ResponseUtil.success(data, '첨부파일이 등록되었습니다.');
+  }
+
+  @Delete(':ncrNo/attachments/:seq')
+  @ApiOperation({ summary: '첨부파일 삭제', description: '종결된 건에서는 삭제할 수 없다.' })
+  async removeAttachment(
+    @Param('ncrNo') ncrNo: string,
+    @Param('seq', ParseIntPipe) seq: number,
+    @Req() req: AuthenticatedRequest,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    await this.attachSvc.remove(ncrNo, seq, req.user?.id ?? 'system', company, plant);
+    return ResponseUtil.success(null, '첨부파일이 삭제되었습니다.');
   }
 }

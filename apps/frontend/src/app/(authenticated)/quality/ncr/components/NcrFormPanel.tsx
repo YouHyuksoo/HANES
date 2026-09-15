@@ -18,10 +18,31 @@ import { Button, Input } from "@/components/ui";
 import ComCodeSelect from "@/components/shared/ComCodeSelect";
 import api from "@/services/api";
 import { formatDateOnly } from "@/utils/date";
+import NcrAttachmentSection from "./NcrAttachmentSection";
 import { DISPOSITION_PRIORITY, type NcrReport, type NcrTargetType } from "../types";
+
+/** 다른 화면(예: IQC 검사이력)에서 넘겨받는 초기값 + 출처 */
+export interface NcrPrefill {
+  targetType?: string;
+  foundStage?: string;
+  itemCode?: string;
+  lotNo?: string;
+  orderNo?: string;
+  vendorCode?: string;
+  inspectQty?: string;
+  defectQty?: string;
+  defectCode?: string;
+  defectGrade?: string;
+  description?: string;
+  /** 중복 발행 차단 키 — 같은 검사 불합격에 NCR 이 둘 생기지 않게 한다 */
+  sourceType?: string;
+  sourceId?: string;
+}
 
 interface Props {
   editData: NcrReport | null;
+  /** 신규 발행 시 채워둘 값 (수정 모드에서는 무시한다) */
+  prefill?: NcrPrefill | null;
   onClose: () => void;
   onSave: () => void;
 }
@@ -51,16 +72,22 @@ const EMPTY: FormState = {
   defectCode: "", defectGrade: "", description: "", dueDate: "", issueDept: "", remark: "",
 };
 
-export default function NcrFormPanel({ editData, onClose, onSave }: Props) {
+export default function NcrFormPanel({ editData, prefill, onClose, onSave }: Props) {
   const { t } = useTranslation();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [saving, setSaving] = useState(false);
+  /** 신규 발행일 때, 저장 성공 후 올릴 파일들 */
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
 
   const isEdit = Boolean(editData);
   const isClosed = editData?.status === "CLOSED";
 
   useEffect(() => {
-    if (!editData) { setForm(EMPTY); return; }
+    if (!editData) {
+      // 다른 화면에서 넘어온 초기값을 얹는다 (없으면 빈 폼)
+      setForm({ ...EMPTY, ...(prefill ?? {}) });
+      return;
+    }
     setForm({
       targetType: editData.targetType,
       foundStage: editData.foundStage,
@@ -79,7 +106,7 @@ export default function NcrFormPanel({ editData, onClose, onSave }: Props) {
       issueDept: editData.issueDept ?? "",
       remark: editData.remark ?? "",
     });
-  }, [editData]);
+  }, [editData, prefill]);
 
   const set = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -127,7 +154,35 @@ export default function NcrFormPanel({ editData, onClose, onSave }: Props) {
       if (isEdit && editData) {
         await api.put(`/quality/ncr/${encodeURIComponent(editData.ncrNo)}`, payload);
       } else {
-        await api.post("/quality/ncr", payload);
+        const res = await api.post("/quality/ncr", {
+          ...payload,
+          // 출처는 발행 시점에만 박는다 — 중복 발행 차단 키다
+          ...(prefill?.sourceType ? { sourceType: prefill.sourceType } : {}),
+          ...(prefill?.sourceId ? { sourceId: prefill.sourceId } : {}),
+        });
+        const newNo: string | undefined = res.data?.data?.ncrNo;
+        // 번호가 생긴 뒤에야 첨부를 올릴 수 있다. 실패한 파일은 이름으로 알린다 —
+        // 증빙이 빠진 채 "저장됨"으로 보이면 나중에 아무도 모른다.
+        if (newNo && stagedFiles.length > 0) {
+          const failed: string[] = [];
+          for (const file of stagedFiles) {
+            try {
+              const fd = new FormData();
+              fd.append("file", file);
+              await api.post(`/quality/ncr/${encodeURIComponent(newNo)}/attachments`, fd, {
+                headers: { "Content-Type": "multipart/form-data" },
+              });
+            } catch {
+              failed.push(file.name);
+            }
+          }
+          if (failed.length > 0) {
+            const { default: toast } = await import("react-hot-toast");
+            toast.error(
+              `${newNo} ${t("quality.ncr.attachUploadFailed", "첨부 업로드 실패")}: ${failed.join(", ")}`,
+            );
+          }
+        }
       }
       onSave();
       onClose();
@@ -136,7 +191,7 @@ export default function NcrFormPanel({ editData, onClose, onSave }: Props) {
     } finally {
       setSaving(false);
     }
-  }, [canSave, isClosed, form, isEdit, editData, onSave, onClose]);
+  }, [canSave, isClosed, form, isEdit, editData, prefill, stagedFiles, onSave, onClose, t]);
 
   return (
     <div className="w-[480px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs animate-slide-in-right">
@@ -264,6 +319,13 @@ export default function NcrFormPanel({ editData, onClose, onSave }: Props) {
             onChange={(e) => set("remark", e.target.value)}
           />
         </div>
+
+        {/* 첨부 — 현상 사진·측정 성적서·클레임 문서 */}
+        <NcrAttachmentSection
+          ncrNo={editData?.ncrNo ?? null}
+          readOnly={isClosed}
+          onStagedChange={setStagedFiles}
+        />
 
         {/* 처리방안 힌트 — 대상구분에 맞는 순서를 보여준다(강제 아님) */}
         <p className="text-[11px] text-text-muted leading-relaxed">

@@ -8,13 +8,15 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { NcrReport } from '../../../entities/ncr-report.entity';
+import { NcrAttachment } from '../../../entities/ncr-attachment.entity';
 import { NcrController } from './controllers/ncr.controller';
 import { NcrService } from './services/ncr.service';
+import { NcrAttachmentService } from './services/ncr-attachment.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([NcrReport])],
+  imports: [TypeOrmModule.forFeature([NcrReport, NcrAttachment])],
   controllers: [NcrController],
-  providers: [NcrService],
-  exports: [NcrService],
+  providers: [NcrService, NcrAttachmentService],
+  exports: [NcrService, NcrAttachmentService],
 })
 export class NcrModule {}

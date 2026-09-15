@@ -3182,7 +3182,9 @@
         "serialItems": "各序列号检验项目测量值",
         "reviewer": "审核人",
         "approver": "批准人"
-      }
+      },
+      "issueNcr": "开立不合格报告(NCR)",
+      "issueNcrPrefix": "来料检验不合格"
     },
     "lotSplit": {
       "title": "物料分割",
@@ -5549,8 +5551,15 @@
         "causeSection": "发生原因及再发防止对策",
         "writer": "编制",
         "reviewer": "审核",
-        "approver": "批准"
-      }
+        "approver": "批准",
+        "attachSection": "附件证据"
+      },
+      "attachments": "附件（照片·文件）",
+      "attachAdd": "添加文件",
+      "attachNone": "没有附件。",
+      "attachHint": "同时上传不良现象照片和测量报告可加快原因分析。",
+      "attachPending": "保存时上传",
+      "attachUploadFailed": "附件上传失败"
     }
   },
   "equipment": {

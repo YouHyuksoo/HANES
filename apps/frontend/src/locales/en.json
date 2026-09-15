@@ -3200,7 +3200,9 @@
         "serialItems": "Measured Values by Serial",
         "reviewer": "Reviewer",
         "approver": "Approver"
-      }
+      },
+      "issueNcr": "Issue Nonconformance Report (NCR)",
+      "issueNcrPrefix": "Incoming inspection rejected"
     },
     "lotSplit": {
       "title": "Lot Split",
@@ -5567,8 +5569,15 @@
         "causeSection": "Root Cause and Preventive Action",
         "writer": "Prepared by",
         "reviewer": "Reviewed by",
-        "approver": "Approved by"
-      }
+        "approver": "Approved by",
+        "attachSection": "Attached Evidence"
+      },
+      "attachments": "Attachments (Photos/Docs)",
+      "attachAdd": "Add File",
+      "attachNone": "No attachments.",
+      "attachHint": "Attaching defect photos and measurement reports speeds up root cause analysis.",
+      "attachPending": "Uploads on save",
+      "attachUploadFailed": "Attachment upload failed"
     }
   },
   "equipment": {

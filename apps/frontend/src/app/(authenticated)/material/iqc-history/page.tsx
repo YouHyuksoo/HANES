@@ -24,6 +24,8 @@ import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
 import { createIqcHistoryGridColumns, getLotNoDisplay, type IqcHistoryItem } from "./iqcHistoryColumns";
+import NcrFormPanel, { type NcrPrefill } from "@/app/(authenticated)/quality/ncr/components/NcrFormPanel";
+import { iqcSourceId } from "@/app/(authenticated)/quality/ncr/types";
 
 const resultColors: Record<string, string> = {
   PASS: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
@@ -53,6 +55,8 @@ export default function IqcHistoryPage() {
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+  /* 부적합 보고서 발행 — 불합격 건에서 열고, 출처를 박아 중복 발행을 막는다 */
+  const [ncrPrefill, setNcrPrefill] = useState<NcrPrefill | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -116,6 +120,36 @@ export default function IqcHistoryPage() {
     }
   }, [fetchData]);
 
+  /**
+   * 불합격 IQC 1건 → 부적합 보고서 초기값.
+   * 원자재 수입검사에서 발견된 건이므로 대상구분/발견단계는 고정이고,
+   * 출처(sourceType+sourceId)를 박아 같은 검사에 NCR 이 둘 생기지 않게 한다.
+   */
+  const handleIssueNcr = useCallback((record: IqcHistoryItem) => {
+    const inspected = record.aqlSampleQty ?? record.lotQty ?? null;
+    const defects =
+      (record.defectCritical ?? 0) + (record.defectMajor ?? 0) + (record.defectMinor ?? 0);
+    const grade = record.defectCritical ? "CRITICAL" : record.defectMajor ? "MAJOR"
+      : record.defectMinor ? "MINOR" : "";
+    setNcrPrefill({
+      targetType: "RAW_MATERIAL",
+      foundStage: "IQC",
+      itemCode: record.itemCode ?? "",
+      lotNo: getLotNoDisplay(record) === "-" ? "" : getLotNoDisplay(record),
+      vendorCode: record.vendorCode ?? "",
+      inspectQty: inspected !== null ? String(inspected) : "",
+      defectQty: defects > 0 ? String(defects) : "",
+      defectGrade: grade,
+      description: [
+        t("material.iqcHistory.issueNcrPrefix", "수입검사 불합격"),
+        record.arrivalNo ? `(${record.arrivalNo})` : "",
+        record.aqlJudgeReason ?? record.remark ?? "",
+      ].filter(Boolean).join(" "),
+      sourceType: "IQC_LOG",
+      sourceId: iqcSourceId(record.inspectDate, record.seq ?? 1),
+    });
+  }, [t]);
+
   const resultOptions = useMemo(() => [
     { value: "PASS", label: t("material.iqcHistory.pass") },
     { value: "FAIL", label: t("material.iqcHistory.fail") },
@@ -128,10 +162,12 @@ export default function IqcHistoryPage() {
     onPrintReport: setPrintRecord,
     onCancel: setCancelTarget,
     onCertUpload: handleCertUpload,
-  }), [t, handleCertUpload, uploadingKey]);
+    onIssueNcr: handleIssueNcr,
+  }), [t, handleCertUpload, handleIssueNcr, uploadingKey]);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in">
+    <div className="flex h-full">
+    <div className="flex-1 h-full flex flex-col overflow-hidden p-6 gap-4 animate-fade-in min-w-0">
       <div className="flex justify-between items-center flex-shrink-0">
         <div>
           <h1 className="text-xl font-bold text-text flex items-center gap-2">
@@ -236,6 +272,17 @@ export default function IqcHistoryPage() {
           </div>
         </div>
       </Modal>
+    </div>
+
+      {/* 부적합 보고서 발행 — 불합격 건에서 열린다 */}
+      {ncrPrefill && (
+        <NcrFormPanel
+          editData={null}
+          prefill={ncrPrefill}
+          onClose={() => setNcrPrefill(null)}
+          onSave={fetchData}
+        />
+      )}
     </div>
   );
 }

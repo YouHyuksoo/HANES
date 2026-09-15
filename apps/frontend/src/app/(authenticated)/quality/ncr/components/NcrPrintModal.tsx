@@ -9,13 +9,14 @@
  * 1. 인쇄는 화면 전체를 숨기고 ncr-print-area 영역만 보이게 하는 방식이다(IQC 성적서와 동일).
  * 2. 처리방안은 5종을 모두 찍고 확정된 것에만 채운다 — 종이 양식 그대로 읽히게 하려는 것.
  */
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Printer } from "lucide-react";
 import { Modal, Button } from "@/components/ui";
 import { useComCodeLabel } from "@/hooks/useComCode";
 import { formatDateOnly } from "@/utils/date";
-import { NCR_DISPOSITION_CODES, type NcrReport } from "../types";
+import api from "@/services/api";
+import { NCR_DISPOSITION_CODES, attachmentUrl, type NcrAttachment, type NcrReport } from "../types";
 
 interface Props {
   record: NcrReport | null;
@@ -42,6 +43,22 @@ export default function NcrPrintModal({ record, onClose }: Props) {
 
   // 출력일시는 모달이 열릴 때(레코드가 바뀔 때) 고정한다
   const printedAt = useMemo(() => (record ? new Date().toLocaleString() : ""), [record]);
+
+  /* 첨부 — 사진은 양식에 싣고, 문서는 목록으로만 적는다(종이에 링크는 의미가 없어 파일명을 쓴다) */
+  const [attachments, setAttachments] = useState<NcrAttachment[]>([]);
+  const loadAttachments = useCallback(async () => {
+    if (!record) { setAttachments([]); return; }
+    try {
+      const res = await api.get(`/quality/ncr/${encodeURIComponent(record.ncrNo)}/attachments`);
+      setAttachments(res.data?.data ?? []);
+    } catch {
+      setAttachments([]);
+    }
+  }, [record]);
+  useEffect(() => { loadAttachments(); }, [loadAttachments]);
+
+  const images = attachments.filter((a) => a.kind === "IMAGE");
+  const docs = attachments.filter((a) => a.kind !== "IMAGE");
 
   return (
     <Modal
@@ -211,6 +228,40 @@ export default function NcrPrintModal({ record, onClose }: Props) {
               </tr>
             </tbody>
           </table>
+
+          {/* 첨부 — 현상 사진은 증빙이라 양식에 같이 나가야 한다 */}
+          {attachments.length > 0 && (
+            <>
+              <div className="font-bold mb-1 text-[13px]">
+                ■ {t("quality.ncr.print.attachSection", "첨부 증빙")}
+              </div>
+              {images.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {images.map((a) => (
+                    <div key={a.seq} className="border border-black p-1 break-inside-avoid">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={attachmentUrl(a.filePath)} alt={a.fileName}
+                        className="w-full max-h-[240px] object-contain" />
+                      <div className="text-[10px] text-gray-700 mt-0.5 truncate">{a.fileName}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {docs.length > 0 && (
+                <table className="w-full border-collapse mb-3 text-[11px]">
+                  <tbody>
+                    {docs.map((a, i) => (
+                      <tr key={a.seq}>
+                        <td className={`${TD} w-[32px] text-center`}>{i + 1}</td>
+                        <td className={TD}>{a.fileName}</td>
+                        <td className={`${TD} w-[110px]`}>{a.remark || ""}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </>
+          )}
 
           {/* 결재란 */}
           <table className="w-full border-collapse mt-6 text-[11px] break-inside-avoid">

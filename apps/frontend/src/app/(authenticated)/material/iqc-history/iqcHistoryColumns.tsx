@@ -1,7 +1,7 @@
 "use client";
 
 import type { TFunction } from "i18next";
-import { Upload, ExternalLink, Eye, XCircle, Printer } from "lucide-react";
+import { Upload, ExternalLink, Eye, XCircle, Printer, FileWarning } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@/components/ui";
 import StatusBadge from "@/components/shared/StatusBadge";
@@ -71,6 +71,8 @@ interface CreateIqcHistoryGridColumnsOptions {
   onPrintReport: (record: IqcDetailRecord) => void;
   onCancel: (record: IqcHistoryItem) => void;
   onCertUpload: (record: IqcHistoryItem, file: File | null) => void;
+  /** 불합격 건에서 부적합 보고서(NCR)를 발행한다 */
+  onIssueNcr: (record: IqcHistoryItem) => void;
 }
 
 export function createIqcHistoryGridColumns({
@@ -80,12 +82,13 @@ export function createIqcHistoryGridColumns({
   onPrintReport,
   onCancel,
   onCertUpload,
+  onIssueNcr,
 }: CreateIqcHistoryGridColumnsOptions): ColumnDef<IqcHistoryItem>[] {
   return [
     {
       id: "actions",
       header: t("common.actions"),
-      size: 170,
+      size: 200,
       meta: { filterType: "none" as const },
       cell: ({ row }) => {
         const record = row.original;
@@ -109,6 +112,16 @@ export function createIqcHistoryGridColumns({
             >
               <Printer className="w-4 h-4" />
             </button>
+            {record.result === "FAIL" && (
+              <button
+                type="button"
+                className="inline-flex h-8 w-8 items-center justify-center rounded text-amber-600 hover:bg-surface hover:text-amber-700"
+                title={t("material.iqcHistory.issueNcr", "부적합 보고서(NCR) 발행")}
+                onClick={(e) => { e.stopPropagation(); onIssueNcr(record); }}
+              >
+                <FileWarning className="w-4 h-4" />
+              </button>
+            )}
             {certUrl && (
               <a
                 href={certUrl}
