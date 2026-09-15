@@ -93,12 +93,9 @@ export default function JobOrderPrintModal({ isOpen, orderNo, onClose }: Props) 
     [boms],
   );
 
-  // QR: 작업지시 조회 deep-link URL (모바일 카메라 스캔 시 해당 작업지시 자동 조회)
-  const qrValue = useMemo(() => {
-    if (!order) return "";
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    return `${origin}/production/order?orderNo=${encodeURIComponent(order.orderNo)}`;
-  }, [order]);
+  // QR: 작업지시번호 그대로. 키오스크 스캔칸(작업지시번호 입력)에 그대로 들어가야 하므로
+  // URL 딥링크를 쓰지 않는다 — URL 이면 스캔 시 주소 전체가 입력돼 조회에 실패한다.
+  const qrValue = useMemo(() => order?.orderNo ?? "", [order]);
 
   const handlePrint = () => window.print();
 

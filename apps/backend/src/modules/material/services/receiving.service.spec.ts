@@ -53,6 +53,8 @@ describe('ReceivingService', () => {
     mockMatStockRepo = createMock<Repository<MatStock>>();
     mockMatArrivalRepo = createMock<Repository<MatArrival>>();
     mockMatReceivingRepo = createMock<Repository<MatReceiving>>();
+    // 업체바코드 중복 검사는 기본적으로 '미사용'으로 둔다 — 중복 차단은 전용 테스트에서 검증한다.
+    mockMatReceivingRepo.findOne.mockResolvedValue(null);
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
     mockItemMasterRepo = createMock<Repository<ItemMaster>>();
     mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
@@ -753,5 +755,40 @@ describe('ReceivingService', () => {
       refType: 'RECEIVE_CONCESSION',
     }));
     expect((manager as any).createQueryBuilder).toHaveBeenCalled();
+  });
+
+  describe('업체바코드 중복 차단', () => {
+    const items = (pairs: Array<[string, string]>) =>
+      pairs.map(([matUid, vendorBarcode]) => ({ matUid, vendorBarcode, qty: 1, warehouseCode: 'W1' }));
+
+    it('같은 요청 안에서 같은 업체바코드를 두 LOT 에 매핑하면 거부한다', async () => {
+      await expect(
+        target.createBulkReceive({ items: items([['MAT-A', 'V-1'], ['MAT-B', 'V-1']]) } as never, 'CO', 'P01'),
+      ).rejects.toThrow(/같은 업체 바코드를 두 LOT 에 매핑할 수 없습니다/);
+    });
+
+    it('이미 입고에 쓰인 업체바코드는 거부한다', async () => {
+      mockMatReceivingRepo.findOne.mockResolvedValue({ matUid: 'MAT-OLD', vendorBarcode: 'V-1' } as MatReceiving);
+      await expect(
+        target.createBulkReceive({ items: items([['MAT-A', 'V-1']]) } as never, 'CO', 'P01'),
+      ).rejects.toThrow(/이미 입고에 사용된 업체 바코드입니다/);
+    });
+
+    it('취소된 입고분의 업체바코드는 다시 쓸 수 있다', async () => {
+      // 서비스가 status != CANCELED 로만 조회하므로, 취소분만 있으면 findOne 이 null 이다
+      mockMatReceivingRepo.findOne.mockResolvedValue(null);
+      mockMatLotRepo.findOne.mockResolvedValue(null);
+      await expect(
+        target.createBulkReceive({ items: items([['MAT-A', 'V-1']]) } as never, 'CO', 'P01'),
+      ).rejects.toThrow(/LOT을 찾을 수 없습니다/); // 중복이 아니라 그다음 검증에서 걸린다
+    });
+
+    it('업체바코드가 없으면 중복 검사를 건너뛴다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue(null);
+      await expect(
+        target.createBulkReceive({ items: [{ matUid: 'MAT-A', qty: 1, warehouseCode: 'W1' }] } as never, 'CO', 'P01'),
+      ).rejects.toThrow(/LOT을 찾을 수 없습니다/);
+      expect(mockMatReceivingRepo.findOne).not.toHaveBeenCalled();
+    });
   });
 });

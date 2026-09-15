@@ -49,6 +49,11 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
     [receivable],
   );
   const scannedOwnBarcodes = useMemo(() => new Set(pairs.map((p) => p.matUid)), [pairs]);
+  /** 업체바코드도 자체바코드처럼 중복을 막는다 — 같은 라벨을 두 LOT 에 매핑하면 추적이 깨진다. */
+  const scannedVendorBarcodes = useMemo(
+    () => new Set(pairs.map((p) => p.vendorBarcode).filter(Boolean)),
+    [pairs],
+  );
   const totalQty = pairs.reduce(
     (sum, p) => sum + (receivableByUid.get(p.matUid)?.remainingQty || 0),
     0,
@@ -62,11 +67,27 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
 
+  /** 입고대기 목록에 없는 이유를 서버에 물어 사유까지 보여준다. */
+  const showNotReceivableReason = useCallback(async (matUid: string) => {
+    setError(t("material.receive.scan.notReceivable", "입고대기 대상이 아닙니다: {{matUid}}", { matUid }));
+    try {
+      const res = await api.get(`/material/receiving/reject-reason/${encodeURIComponent(matUid)}`);
+      const reason = res.data?.data?.reason;
+      if (reason) {
+        setError(
+          t("material.receive.scan.notReceivableReason", "입고대기 대상이 아닙니다(사유: {{reason}}): {{matUid}}", { reason, matUid }),
+        );
+      }
+    } catch {
+      // 사유 조회는 부가 정보다 — 실패해도 기본 메시지는 이미 떠 있다
+    }
+  }, [t]);
+
   const handleOwnScan = useCallback(
     (matUid: string) => {
       const lot = receivableByUid.get(matUid);
       if (!lot) {
-        setError(t("material.receive.scan.notReceivable", "입고대기 대상이 아닙니다: {{matUid}}", { matUid }));
+        void showNotReceivableReason(matUid);
         setInput("");
         focusInput();
         return;
@@ -94,6 +115,19 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
 
   const handleVendorScan = useCallback(
     (barcode: string) => {
+      if (scannedVendorBarcodes.has(barcode)) {
+        const mapped = pairs.find((p) => p.vendorBarcode === barcode)?.matUid ?? "";
+        setError(
+          t(
+            "material.receive.scan.vendorDuplicate",
+            "이미 스캔한 업체 바코드입니다: {{barcode}} (매핑: {{matUid}})",
+            { barcode, matUid: mapped },
+          ),
+        );
+        setInput("");
+        focusInput();
+        return;
+      }
       setPairs((prev) => [{ vendorBarcode: barcode, matUid: pendingMatUid }, ...prev]);
       setPendingMatUid("");
       setPhase("own");
@@ -101,7 +135,7 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
       setError("");
       focusInput();
     },
-    [focusInput, pendingMatUid],
+    [focusInput, pendingMatUid, scannedVendorBarcodes, pairs, t],
   );
 
   const handleScan = useCallback((rawBarcode?: string) => {
@@ -328,6 +362,7 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
             <thead className="bg-muted dark:bg-slate-800 sticky top-8 z-10 text-left text-text-muted">
               <tr>
                 <th className="px-2.5 py-1.5">{t("material.receive.scan.ownBarcode", "자체바코드")}</th>
+                <th className="px-2.5 py-1.5">{t("material.receive.scan.vendorBarcode", "업체바코드")}</th>
                 <th className="px-2.5 py-1.5">{t("common.partCode", "품번")}</th>
                 <th className="px-2.5 py-1.5 text-right">{t("material.receive.col.inputQty", "수량")}</th>
                 <th className="w-8 px-2.5 py-1.5" />
@@ -338,10 +373,17 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
                 const lot = receivableByUid.get(pair.matUid);
                 return (
                   <tr key={pair.matUid} className="border-t border-border hover:bg-muted/50">
-                    <td className="px-2.5 py-1.5 font-mono truncate max-w-0" style={{ maxWidth: 100 }}>
+                    <td className="px-2.5 py-1.5 font-mono truncate max-w-0" style={{ maxWidth: 150 }}>
                       {pair.matUid}
                     </td>
-                    <td className="px-2.5 py-1.5 truncate max-w-0" style={{ maxWidth: 80 }}>
+                    <td
+                      className="px-2.5 py-1.5 font-mono truncate max-w-0"
+                      style={{ maxWidth: 150 }}
+                      title={pair.vendorBarcode || undefined}
+                    >
+                      {pair.vendorBarcode || "-"}
+                    </td>
+                    <td className="px-2.5 py-1.5 truncate max-w-0" style={{ maxWidth: 110 }}>
                       {lot?.part?.itemCode || lot?.itemCode || "-"}
                     </td>
                     <td className="px-2.5 py-1.5 text-right font-medium text-text whitespace-nowrap">

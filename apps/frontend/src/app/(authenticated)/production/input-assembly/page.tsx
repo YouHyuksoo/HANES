@@ -26,6 +26,7 @@ import DailyInspectModal from "../input-kiosk/components/DailyInspectModal";
 import WorkerInspectModal from "../input-kiosk/components/WorkerInspectModal";
 import HeaderCheckItem from "../input-kiosk/components/HeaderCheckItem";
 import { inspectStatusDetail, isInspectNg } from "../input-kiosk/utils/inspectStatus";
+import { normalizeScannedOrderNo } from "@/utils/scanned-order-no";
 
 interface AssemblyComponent {
   itemCode: string;
@@ -277,7 +278,8 @@ export default function InputAssemblyPage() {
 
   const fetchOrderByNo = useCallback(
     async (no: string) => {
-      const trimmed = no.trim();
+      // 예전 출력물의 QR 은 조회 URL 이라 그대로 찍으면 주소가 통째로 들어온다 — 번호만 뽑는다.
+      const trimmed = normalizeScannedOrderNo(no);
       if (!trimmed) return;
       if (!equipCode) {
         toast.error(t("production.subprocess.requireEquipFirst", "설비를 먼저 선택하세요."));

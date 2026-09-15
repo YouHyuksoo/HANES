@@ -2710,7 +2710,9 @@
         "partNo": "Part No.",
         "noMapping": "No scanned barcode mappings.",
         "removeMapping": "Remove scan mapping",
-        "footerNotice": "Only scanned mappings are received, regardless of the pending grid selection."
+        "footerNotice": "Only scanned mappings are received, regardless of the pending grid selection.",
+        "vendorDuplicate": "Vendor barcode already scanned: {{barcode}} (mapped to {{matUid}})",
+        "notReceivableReason": "Not pending receipt (reason: {{reason}}): {{matUid}}"
       },
       "warehouseLabel": "Warehouse",
       "locationLabel": "Storage Location",
@@ -9259,7 +9261,10 @@
       "remaining": "{{count}} remaining",
       "cancelAll": "Cancel Input",
       "cancelAllTitle": "Cancel Material Input",
-      "cancelAllConfirm": "Cancel all {{count}} input material lot(s)?"
+      "cancelAllConfirm": "Cancel all {{count}} input material lot(s)?",
+      "reverting": "Reverting...",
+      "reverted": "Materials mounted in this session were unmounted.",
+      "revertFailed": "Some materials could not be unmounted: {{list}}"
     },
     "sgLabel": {
       "prepareFailed": "Failed to prepare the SFG label print view.",
@@ -9494,6 +9499,10 @@
       "empty": "No defects registered (will save as no defects)",
       "saveHint": "Defects above will be saved together when you click Save Result.",
       "confirm": "Confirm ({{count}} ea)"
+    },
+    "consumable": {
+      "reverted": "Consumables mounted in this session were unmounted.",
+      "revertFailed": "Some consumables could not be unmounted: {{list}}"
     }
   },
   "requestInspect": {

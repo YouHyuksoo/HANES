@@ -46,6 +46,10 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
   const unmountedCount = items.filter(c => c.mountedConUid == null).length;
   const completeDisabledReason = allMounted ? '' : t('kiosk.material.remaining', { count: unmountedCount });
 
+  /** 이번 모달에서 장착한 conUid — 취소 시 이것만 되돌린다. */
+  const mountedHereRef = useRef<string[]>([]);
+  const [reverting, setReverting] = useState(false);
+
   const handleScan = useCallback(async (rawConUid?: string) => {
     const conUid = (rawConUid ?? scanInput).replace(/\r?\n|\r/g, '').trim();
     if (!conUid || !selectedJobOrder?.orderNo) return;
@@ -57,6 +61,7 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
         { conUid, equipCode: selectedEquip?.equipCode },
       );
       const lot = res.data?.data as { consumableCode: string };
+      mountedHereRef.current.push(conUid);
       toast.success(`✓ ${lot.consumableCode}`, { duration: 1000 });
       bumpConsumableRefresh();
     } catch (err: unknown) {
@@ -70,8 +75,37 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
     setTimeout(() => inputRef.current?.focus(), 50);
   }, [scanInput, selectedJobOrder, selectedEquip?.equipCode, bumpConsumableRefresh, t]);
 
+  /**
+   * 취소 — 이번 모달에서 장착한 소모품을 되돌린 뒤 닫는다(자재 스캔 모달과 같은 규칙).
+   * 열기 전부터 장착돼 있던 소모품은 건드리지 않는다.
+   */
+  const handleCancel = useCallback(async () => {
+    const targets = [...mountedHereRef.current];
+    if (targets.length === 0 || !selectedJobOrder?.orderNo) { onClose(); return; }
+
+    setReverting(true);
+    const failed: string[] = [];
+    for (const conUid of targets) {
+      try {
+        await api.delete(`/production/job-orders/${selectedJobOrder.orderNo}/consumables/${encodeURIComponent(conUid)}`);
+      } catch {
+        failed.push(conUid);
+      }
+    }
+    mountedHereRef.current = failed;
+    setReverting(false);
+    bumpConsumableRefresh();
+
+    if (failed.length > 0) {
+      toast.error(t('kiosk.consumable.revertFailed', '장착 해제하지 못한 소모품이 있습니다: {{list}}', { list: failed.join(', ') }));
+      return;
+    }
+    toast.success(t('kiosk.consumable.reverted', '이번에 장착한 소모품을 해제했습니다.'));
+    onClose();
+  }, [selectedJobOrder, onClose, bumpConsumableRefresh, t]);
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.consumableScanTitle')} size="lg">
+    <Modal isOpen={isOpen} onClose={handleCancel} title={t('kiosk.prep.consumableScanTitle')} size="lg">
       <div className="space-y-4">
         {/* 스캔 입력 */}
         <div>
@@ -127,12 +161,15 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
 
         {/* 완료 버튼 */}
         <div className="flex justify-end gap-2 pt-2 border-t border-border">
-          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="ghost" onClick={handleCancel} disabled={reverting}>
+            {reverting ? t('kiosk.material.reverting', '되돌리는 중...') : t('common.cancel')}
+          </Button>
           <Button
             data-testid="kiosk-consumable-scan-done"
             variant="primary"
             disabled={!allMounted}
             onClick={() => {
+              mountedHereRef.current = [];
               setInterlock('consumableScanDone', true);
               onDone();
             }}

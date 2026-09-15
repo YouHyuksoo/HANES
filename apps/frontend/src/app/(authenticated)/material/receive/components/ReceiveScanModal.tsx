@@ -61,10 +61,26 @@ export default function ReceiveScanModal({ isOpen, onClose, onSuccess, receivabl
     setTimeout(() => inputRef.current?.focus(), 50);
   }, []);
 
+  /** 입고대기 목록에 없는 이유를 서버에 물어 사유까지 보여준다. */
+  const showNotReceivableReason = useCallback(async (matUid: string) => {
+    setError(t('material.receive.scan.notReceivable', '입고대기 대상이 아닙니다: {{matUid}}', { matUid }));
+    try {
+      const res = await api.get(`/material/receiving/reject-reason/${encodeURIComponent(matUid)}`);
+      const reason = res.data?.data?.reason;
+      if (reason) {
+        setError(
+          t('material.receive.scan.notReceivableReason', '입고대기 대상이 아닙니다(사유: {{reason}}): {{matUid}}', { reason, matUid }),
+        );
+      }
+    } catch {
+      // 사유 조회는 부가 정보다 — 실패해도 기본 메시지는 이미 떠 있다
+    }
+  }, [t]);
+
   const handleOwnScan = useCallback((matUid: string) => {
     const lot = receivableByUid.get(matUid);
     if (!lot) {
-      setError(t('material.receive.scan.notReceivable', '입고대기 대상이 아닙니다: {{matUid}}', { matUid }));
+      void showNotReceivableReason(matUid);
       setInput('');
       focusInput();
       return;

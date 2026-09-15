@@ -3247,7 +3247,9 @@
         "partNo": "품번",
         "noMapping": "스캔된 바코드 매핑이 없습니다.",
         "removeMapping": "스캔 매핑 삭제",
-        "footerNotice": "입고대기 그리드 선택 없이 스캔된 매핑만 입고 처리됩니다."
+        "footerNotice": "입고대기 그리드 선택 없이 스캔된 매핑만 입고 처리됩니다.",
+        "vendorDuplicate": "이미 스캔한 업체 바코드입니다: {{barcode}} (매핑: {{matUid}})",
+        "notReceivableReason": "입고대기 대상이 아닙니다(사유: {{reason}}): {{matUid}}"
       },
       "certStatus": "성적서",
       "certNotRequired": "불필요",
@@ -9281,7 +9283,10 @@
       "remaining": "{{count}}종 남음",
       "cancelAll": "투입취소",
       "cancelAllTitle": "자재투입 취소",
-      "cancelAllConfirm": "투입된 자재 {{count}}건을 모두 취소하시겠습니까?"
+      "cancelAllConfirm": "투입된 자재 {{count}}건을 모두 취소하시겠습니까?",
+      "reverting": "되돌리는 중...",
+      "reverted": "이번에 장착한 자재를 해제했습니다.",
+      "revertFailed": "장착 해제하지 못한 자재가 있습니다: {{list}}"
     },
     "sgLabel": {
       "prepareFailed": "SFG 라벨 출력 화면을 준비하지 못했습니다.",
@@ -9516,6 +9521,10 @@
       "empty": "등록된 불량 없음 (실적저장 시 불량 없음으로 처리)",
       "saveHint": "실적저장 버튼을 누르면 위 불량이 함께 저장됩니다",
       "confirm": "확인 ({{count}}개)"
+    },
+    "consumable": {
+      "reverted": "이번에 장착한 소모품을 해제했습니다.",
+      "revertFailed": "장착 해제하지 못한 소모품이 있습니다: {{list}}"
     }
   },
   "requestInspect": {

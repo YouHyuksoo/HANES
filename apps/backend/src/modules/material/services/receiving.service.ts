@@ -14,7 +14,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Between, DataSource, EntityManager, MoreThan } from 'typeorm';
+import { Repository, In, Between, DataSource, EntityManager, MoreThan, Not } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
@@ -353,7 +353,89 @@ export class ReceivingService {
   }
 
   /** 일괄/분할 입고 처리 */
+  /**
+   * 스캔한 자재가 입고대기 목록에 없는 사유를 돌려준다.
+   *
+   * 화면은 입고대기 목록만 갖고 있어 "왜 없는지"를 알 수 없다. 그래서 현장에서는
+   * "입고대기 대상이 아닙니다" 한 줄만 보고 라벨 불량·미입하로 오인했다.
+   * LOT 을 직접 되짚어 IQC 미실시/불합격/이미 입고완료 같은 실제 사유를 붙여 준다.
+   */
+  async getReceiveRejectReason(
+    matUid: string,
+    company?: string,
+    plant?: string,
+  ): Promise<{ matUid: string; reason: string; iqcStatus: string | null }> {
+    const lot = await this.matLotRepository.findOne({
+      where: { matUid, ...this.tenantWhere(company, plant) },
+    });
+    if (!lot) {
+      return { matUid, reason: '등록되지 않은 자재 시리얼입니다. 입하 여부와 라벨을 확인하세요.', iqcStatus: null };
+    }
+
+    const isConcession = lot.iqcStatus === 'FAIL' && lot.specialAcceptYn === 'Y';
+    const iqcMandatory = await this.sysConfigService.isEnabled('IQC_MANDATORY', company, plant);
+
+    let reason: string;
+    if (!MAT_LOT_LIVE_STATUSES.includes(lot.status as (typeof MAT_LOT_LIVE_STATUSES)[number])) {
+      reason = `사용할 수 없는 자재 상태입니다 (상태: ${lot.status}).`;
+    } else if (lot.iqcStatus === 'FAIL' && !isConcession) {
+      reason = 'IQC 불합격입니다. 특채 승인을 받아야 입고할 수 있습니다.';
+    } else if (iqcMandatory && lot.iqcStatus !== 'PASS' && !isConcession) {
+      reason = 'IQC 미실시입니다. 수입검사를 먼저 진행하세요.';
+    } else if ((lot.initQty ?? 0) <= 0) {
+      reason = '입고할 수량이 없습니다.';
+    } else {
+      // 위 조건을 다 통과했는데 목록에 없으면 남는 사유는 기입고 완료다.
+      reason = '이미 입고가 완료된 자재입니다.';
+    }
+
+    return { matUid, reason, iqcStatus: lot.iqcStatus ?? null };
+  }
+
+  /**
+   * 업체(거래처) 바코드 중복 차단.
+   *
+   * 업체바코드는 "어느 업체 LOT 이 어느 자체 LOT 인가"를 잇는 추적 키라 한 번만 쓰여야 한다.
+   * 자체바코드는 화면에서 막고 있었지만 업체바코드는 아무 검증이 없어, 같은 라벨을 두 번 찍거나
+   * 다른 LOT 에 잘못 매핑해도 그대로 입고됐다(취소된 입고분은 재사용을 허용한다).
+   */
+  private async assertVendorBarcodesUnused(
+    dto: CreateBulkReceiveDto,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    const seen = new Map<string, string>();
+    for (const item of dto.items) {
+      const barcode = item.vendorBarcode?.trim();
+      if (!barcode) continue;
+
+      const previous = seen.get(barcode);
+      if (previous) {
+        throw new BadRequestException(
+          `같은 업체 바코드를 두 LOT 에 매핑할 수 없습니다: ${barcode} (${previous}, ${item.matUid})`,
+        );
+      }
+      seen.set(barcode, item.matUid);
+
+      const used = await this.matReceivingRepository.findOne({
+        where: {
+          vendorBarcode: barcode,
+          status: Not('CANCELED'),
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+        },
+      });
+      if (used && used.matUid !== item.matUid) {
+        throw new BadRequestException(
+          `이미 입고에 사용된 업체 바코드입니다: ${barcode} (기존 자재 ${used.matUid})`,
+        );
+      }
+    }
+  }
+
   async createBulkReceive(dto: CreateBulkReceiveDto, company?: string, plant?: string) {
+    await this.assertVendorBarcodesUnused(dto, company, plant);
+
     // LOT 검증
     for (const item of dto.items) {
       const receiveWarehouseCode = item.warehouseId ?? item.warehouseCode;

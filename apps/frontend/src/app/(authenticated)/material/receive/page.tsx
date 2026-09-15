@@ -112,7 +112,7 @@ export default function ReceivingPage() {
         </Card>
 
         {/* 우측: 스캔 입고 패널 */}
-        <Card className="w-[340px] flex-shrink-0 flex flex-col overflow-hidden" padding="none">
+        <Card className="w-[520px] flex-shrink-0 flex flex-col overflow-hidden" padding="none">
           <ReceiveScanPanel receivable={receivable} onSuccess={refresh} />
         </Card>
       </div>

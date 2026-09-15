@@ -50,7 +50,8 @@ function WorkerSelectModal({ isOpen, onClose, onConfirm }: WorkerSelectModalProp
   const { t } = useTranslation();
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [tempWorker, setTempWorker] = useState<Worker | null>(null);
-  const [mode, setMode] = useState<"search" | "qr">("search");
+  // 현장은 작업자 QR 을 찍는 흐름이라 QR 스캔으로 연다(검색 탭은 QR 없을 때의 대안).
+  const [mode, setMode] = useState<"search" | "qr">("qr");
   const [searchText, setSearchText] = useState("");
   const [qrText, setQrText] = useState("");
   const qrRef = useRef<HTMLInputElement>(null);

@@ -2692,7 +2692,9 @@
         "partNo": "Mã hàng",
         "noMapping": "Chưa có ánh xạ mã vạch đã quét.",
         "removeMapping": "Xóa ánh xạ quét",
-        "footerNotice": "Chỉ các ánh xạ đã quét được nhập kho, không phụ thuộc lựa chọn trên lưới chờ."
+        "footerNotice": "Chỉ các ánh xạ đã quét được nhập kho, không phụ thuộc lựa chọn trên lưới chờ.",
+        "vendorDuplicate": "Mã vạch NCC đã quét: {{barcode}} (đã gán: {{matUid}})",
+        "notReceivableReason": "Không thuộc diện chờ nhập kho (lý do: {{reason}}): {{matUid}}"
       },
       "warehouseLabel": "Kho nhập",
       "locationLabel": "Vị trí lưu trữ",
@@ -9241,7 +9243,10 @@
       "remaining": "Còn {{count}} loại",
       "cancelAll": "Hủy nhập",
       "cancelAllTitle": "Hủy nhập vật tư",
-      "cancelAllConfirm": "Hủy toàn bộ {{count}} lô vật tư đã nhập?"
+      "cancelAllConfirm": "Hủy toàn bộ {{count}} lô vật tư đã nhập?",
+      "reverting": "Đang hoàn tác...",
+      "reverted": "Đã tháo vật tư đã lắp trong lần này.",
+      "revertFailed": "Một số vật tư không thể tháo: {{list}}"
     },
     "sgLabel": {
       "prepareFailed": "Không thể chuẩn bị màn hình in nhãn SFG.",
@@ -9476,6 +9481,10 @@
       "empty": "Không có lỗi đăng ký (sẽ lưu không có lỗi)",
       "saveHint": "Nhấn Lưu thực tế sẽ lưu các lỗi trên cùng lúc.",
       "confirm": "Xác nhận ({{count}} cái)"
+    },
+    "consumable": {
+      "reverted": "Đã tháo vật tư tiêu hao đã lắp trong lần này.",
+      "revertFailed": "Một số vật tư tiêu hao không thể tháo: {{list}}"
     }
   },
   "requestInspect": {

@@ -2692,7 +2692,9 @@
         "partNo": "品号",
         "noMapping": "暂无已扫描的条码映射。",
         "removeMapping": "删除扫描映射",
-        "footerNotice": "仅处理已扫描的映射入库，与待入库表格的选择无关。"
+        "footerNotice": "仅处理已扫描的映射入库，与待入库表格的选择无关。",
+        "vendorDuplicate": "该厂商条码已扫描：{{barcode}}（已映射：{{matUid}}）",
+        "notReceivableReason": "不是待入库对象（原因：{{reason}}）：{{matUid}}"
       },
       "warehouseLabel": "入库仓库",
       "locationLabel": "存储位置",
@@ -9241,7 +9243,10 @@
       "remaining": "{{count}} 种未登记",
       "cancelAll": "取消投入",
       "cancelAllTitle": "取消物料投入",
-      "cancelAllConfirm": "确认取消已投入的 {{count}} 项物料吗？"
+      "cancelAllConfirm": "确认取消已投入的 {{count}} 项物料吗？",
+      "reverting": "正在撤销...",
+      "reverted": "已解除本次装载的物料。",
+      "revertFailed": "部分物料无法解除装载：{{list}}"
     },
     "sgLabel": {
       "prepareFailed": "无法准备 SFG 标签打印画面。",
@@ -9476,6 +9481,10 @@
       "empty": "无已注册不良（保存时处理为无不良）",
       "saveHint": "点击保存实绩时，上述不良将一起保存。",
       "confirm": "确认（{{count}}件）"
+    },
+    "consumable": {
+      "reverted": "已解除本次装载的耗材。",
+      "revertFailed": "部分耗材无法解除装载：{{list}}"
     }
   },
   "requestInspect": {

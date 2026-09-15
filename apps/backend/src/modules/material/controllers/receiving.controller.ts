@@ -40,6 +40,18 @@ export class ReceivingController {
     return ResponseUtil.success(data);
   }
 
+  @Get('reject-reason/:matUid')
+  @ApiOperation({
+    summary: '입고대기 목록에 없는 사유 조회',
+    description:
+      '스캔한 자재가 입고대기 목록에 없을 때 왜 없는지(IQC 미실시/불합격/이미 입고완료 등) 돌려준다. ' +
+      '현장에서 "입고대기 대상이 아닙니다" 한 줄만 보고 라벨 불량으로 오인하던 문제를 없애기 위한 진단용.',
+  })
+  async getRejectReason(@Param('matUid') matUid: string, @Company() company: string, @Plant() plant: string) {
+    const data = await this.receivingService.getReceiveRejectReason(matUid, company, plant);
+    return ResponseUtil.success(data);
+  }
+
   @Post('auto')
   @HttpCode(HttpStatus.OK)
   @UseGuards(InventoryFreezeGuard)

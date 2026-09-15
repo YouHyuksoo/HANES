@@ -37,10 +37,14 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
   const [mounted, setMounted] = useState<MountedMaterial[]>([]);
   const [waitingRows, setWaitingRows] = useState<MountedMaterial[]>([]);
   const [scanInput, setScanInput] = useState('');
+  /** 이번 모달에서 장착한 matUid — 취소 시 이것만 되돌린다(열기 전부터 장착돼 있던 건 건드리지 않는다). */
+  const mountedHereRef = useRef<string[]>([]);
+  const [reverting, setReverting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isOpen || !selectedJobOrder?.itemCode) return;
+    mountedHereRef.current = [];
     api.get(`/master/boms/parent/${selectedJobOrder.itemCode}`)
       .then(res => setBomItems(filterBomMaterials(res.data?.data ?? [])))
       .catch(() => setBomItems([]));
@@ -112,6 +116,7 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
         `/production/job-orders/${selectedJobOrder.orderNo}/material-mounts/scan`,
         { matUid, equipCode: selectedEquip?.equipCode },
       );
+      mountedHereRef.current.push(matUid);
       bumpMaterialMountRefresh();
       toast.success(t('kiosk.material.scanOk'));
     } catch (err: unknown) {
@@ -125,8 +130,39 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
     setTimeout(() => inputRef.current?.focus(), 50);
   }, [scanInput, selectedJobOrder, selectedEquip, bumpMaterialMountRefresh, t]);
 
+  /**
+   * 취소 — 이번 모달에서 장착한 자재를 되돌린 뒤 닫는다.
+   * 스캔은 즉시 서버에 반영(설비 WIP 이동)되므로, 되돌리지 않으면 '취소'가 거짓말이 된다.
+   * 열기 전부터 장착돼 있던 자재는 이번 세션 기록에 없으므로 그대로 둔다.
+   */
+  const handleCancel = useCallback(async () => {
+    const targets = [...mountedHereRef.current];
+    if (targets.length === 0 || !selectedEquip?.equipCode) { onClose(); return; }
+
+    setReverting(true);
+    const failed: string[] = [];
+    for (const matUid of targets) {
+      try {
+        await api.post('/production/equip-material/unmount', { equipCode: selectedEquip.equipCode, matUid });
+      } catch {
+        failed.push(matUid);
+      }
+    }
+    mountedHereRef.current = failed;
+    setReverting(false);
+    bumpMaterialMountRefresh();
+
+    if (failed.length > 0) {
+      // 조용히 닫으면 사용자는 되돌려진 줄 안다. 남은 건 이름을 대고 모달을 열어 둔다.
+      toast.error(t('kiosk.material.revertFailed', '장착 해제하지 못한 자재가 있습니다: {{list}}', { list: failed.join(', ') }));
+      return;
+    }
+    toast.success(t('kiosk.material.reverted', '이번에 장착한 자재를 해제했습니다.'));
+    onClose();
+  }, [selectedEquip, onClose, bumpMaterialMountRefresh, t]);
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('kiosk.prep.materialScan')} size="2xl">
+    <Modal isOpen={isOpen} onClose={handleCancel} title={t('kiosk.prep.materialScan')} size="2xl">
       <div className="grid gap-4 lg:grid-cols-[minmax(280px,0.9fr)_minmax(360px,1.1fr)]">
         <div className="min-h-0 rounded border border-border bg-surface/40">
           <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
@@ -241,12 +277,15 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
           </ul>
 
           <div className="flex justify-end gap-2 pt-2 border-t border-border">
-            <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
+            <Button variant="ghost" onClick={handleCancel} disabled={reverting}>
+              {reverting ? t('kiosk.material.reverting', '되돌리는 중...') : t('common.cancel')}
+            </Button>
             <Button
               variant="primary"
               data-testid="kiosk-material-scan-done"
               disabled={!allScanned}
               onClick={() => {
+                mountedHereRef.current = [];
                 setInterlock('materialScanDone', true);
                 onDone();
               }}
