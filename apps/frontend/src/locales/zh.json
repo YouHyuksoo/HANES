@@ -2348,7 +2348,8 @@
       "requester": "请求人",
       "requestQty": "请求数量",
       "issuedQty": "出库数量",
-      "actions": "操作"
+      "actions": "操作",
+      "recvDate": "入库日"
     },
     "badge": {
       "arrived": "已入库",
@@ -2935,7 +2936,17 @@
       "lotLoading": "LOT查询中",
       "lotSelect": "选择LOT",
       "issuableQty": "可用(IQC合格)",
-      "pendingIqcQty": "未检"
+      "pendingIqcQty": "未检",
+      "requestItems": "请求明细",
+      "targetQty": "实际出库",
+      "allocatedQty": "已分配",
+      "shortageQty": "不足",
+      "selectRequestItem": "请在左侧选择品目。",
+      "autoAllocate": "FIFO 自动分配",
+      "resetAllocation": "重置分配",
+      "allocateQty": "分配数量",
+      "lotRemainQty": "余量",
+      "fifoFirst": "先入"
     },
     "stock": {
       "title": "物料库存",

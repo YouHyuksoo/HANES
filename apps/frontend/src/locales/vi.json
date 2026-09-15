@@ -2348,7 +2348,8 @@
       "requester": "Người yêu cầu",
       "requestQty": "SL yêu cầu",
       "issuedQty": "SL đã xuất",
-      "actions": "Thao tác"
+      "actions": "Thao tác",
+      "recvDate": "Ngày nhập"
     },
     "badge": {
       "arrived": "Đã nhập",
@@ -2935,7 +2936,17 @@
       "lotLoading": "Đang tải LOT",
       "lotSelect": "Chọn LOT",
       "issuableQty": "Có thể xuất (IQC đạt)",
-      "pendingIqcQty": "Chưa kiểm IQC"
+      "pendingIqcQty": "Chưa kiểm IQC",
+      "requestItems": "Chi tiết yêu cầu",
+      "targetQty": "SL xuất",
+      "allocatedQty": "Đã phân bổ",
+      "shortageQty": "Thiếu",
+      "selectRequestItem": "Chọn mặt hàng ở bên trái.",
+      "autoAllocate": "Tự phân bổ FIFO",
+      "resetAllocation": "Đặt lại",
+      "allocateQty": "SL phân bổ",
+      "lotRemainQty": "Còn lại",
+      "fifoFirst": "Vào trước"
     },
     "stock": {
       "title": "Tồn kho vật tư",

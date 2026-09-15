@@ -12,43 +12,24 @@
  */
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle, Package, AlertTriangle, Info } from 'lucide-react';
-import { ColumnDef } from '@tanstack/react-table';
-import { isProductionIssueType } from '@harness/shared';
-import { Modal, Button, Input, Select } from '@/components/ui';
-import DataGrid from '@/components/data-grid/DataGrid';
+import { Package, AlertTriangle, Info } from 'lucide-react';
+import { isProductionIssueType, allocateFifo, roundUpToPack, type FifoLot } from '@harness/shared';
+import { Modal, Button, Select } from '@/components/ui';
 import ProcessSelect from '@/components/shared/ProcessSelect';
 import { useApiQuery, useInvalidateQueries } from '@/hooks/useApi';
 import { api } from '@/services/api';
 import { useComCodeOptions } from '@/hooks/useComCode';
 import { notifyIssueWarnings } from '@/components/material/issue-warnings';
+import RequestItemList from './issue-from-request/RequestItemList';
+import LotAllocationPanel from './issue-from-request/LotAllocationPanel';
+import type { AllocationMap, AvailableStock, IssueRow, RequestDetailItem } from './issue-from-request/types';
+import { stockAvailableQty, sumSlices } from './issue-from-request/types';
 
 interface IssueFromRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   requestId: string;
 }
-
-/** 요청 상세의 품목 */
-interface RequestDetailItem {
-  id: string;
-  seq?: number;
-  itemCode: string;
-  itemName: string;
-  unit: string;
-  requestQty: number;
-  issuedQty: number;
-  /** 포장단위(최소 출고 단위) */
-  minPackQty?: number;
-  /** 출고 가능 재고(IQC 합격 또는 특채, 백엔드 집계) */
-  issuableQty?: number;
-  /** IQC 미검사(PENDING/HOLD) 재고(백엔드 집계) */
-  pendingIqcQty?: number;
-}
-
-/** 실출고수량 = ceil(잔여/포장단위)*포장단위. 포장단위<=0이면 잔여 그대로 */
-const roundUpToPack = (qty: number, minPackQty: number) =>
-  minPackQty > 0 && qty > 0 ? Math.ceil(qty / minPackQty) * minPackQty : qty;
 
 /** 요청 상세 응답 */
 interface RequestDetail {
@@ -65,32 +46,6 @@ interface RequestDetail {
   items: RequestDetailItem[];
 }
 
-/** 출고 입력 행 */
-interface IssueRow extends RequestDetailItem {
-  rowKey: string;
-  seq: number;
-  remainQty: number;
-  /** 포장단위 올림 잔여(최대 출고 허용 수량) */
-  packRemainQty: number;
-  issueQty: number;
-}
-
-interface AvailableStock {
-  id?: string;
-  matUid: string;
-  itemCode: string;
-  warehouseCode: string;
-  warehouseName?: string;
-  availableQty?: number;
-  qty?: number;
-  unit?: string;
-  /** 입고일(FIFO 선입선출 가시화) */
-  recvDate?: string | null;
-}
-
-/** 입고일 표시용 포맷 (YYYY-MM-DD) */
-const fmtRecvDate = (v?: string | null) => (v ? String(v).slice(0, 10) : '-');
-
 export default function IssueFromRequestModal({
   isOpen, onClose, requestId,
 }: IssueFromRequestModalProps) {
@@ -101,10 +56,35 @@ export default function IssueFromRequestModal({
   const [processCode, setProcessCode] = useState<string>('');
   const [issueRows, setIssueRows] = useState<IssueRow[]>([]);
   const [availableStocksByItem, setAvailableStocksByItem] = useState<Record<string, AvailableStock[]>>({});
-  const [selectedMatUids, setSelectedMatUids] = useState<Record<string, string>>({});
+  const [allocation, setAllocation] = useState<AllocationMap>({});
+  const [selectedRowKey, setSelectedRowKey] = useState<string | null>(null);
+  /** 사용자가 직접 수량을 고친 품목 — 자동배분이 덮어쓰지 않는다 */
+  const [manualRowKeys, setManualRowKeys] = useState<Set<string>>(new Set());
   const [isLoadingLots, setIsLoadingLots] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  /** 한 품목을 FIFO 자동배분한다 */
+  const allocateRow = useCallback((row: IssueRow, stocks: AvailableStock[]) => {
+    const fifoLots: FifoLot[] = stocks.map((stock) => ({
+      matUid: stock.matUid,
+      availableQty: stockAvailableQty(stock),
+    }));
+    return allocateFifo(row.packRemainQty, fifoLots).slices;
+  }, []);
+
+  /** 롯트별 배분수량 수동 변경. 다른 롯트 배분을 합쳐도 packRemainQty(실출고수량)를 넘지 못한다 */
+  const handleSliceChange = useCallback((rowKey: string, matUid: string, qty: number) => {
+    setManualRowKeys((prev) => new Set(prev).add(rowKey));
+    setAllocation((prev) => {
+      const others = (prev[rowKey] ?? []).filter((slice) => slice.matUid !== matUid);
+      const row = issueRows.find((r) => r.rowKey === rowKey);
+      const room = Math.max(0, (row?.packRemainQty ?? 0) - sumSlices(others));
+      const cappedQty = Math.min(qty, room);
+      const next = cappedQty > 0 ? [...others, { matUid, qty: cappedQty }] : others;
+      return { ...prev, [rowKey]: next };
+    });
+  }, [issueRows]);
 
   // 요청 상세 조회
   const { data, isLoading } = useApiQuery<RequestDetail>(
@@ -132,7 +112,6 @@ export default function IssueFromRequestModal({
           seq,
           remainQty,
           packRemainQty,
-          issueQty: packRemainQty, // 기본값: 포장단위 올림 잔여(실출고수량)
         };
       }),
     );
@@ -167,17 +146,15 @@ export default function IssueFromRequestModal({
         if (!isMounted) return;
         const nextByItem = Object.fromEntries(entries);
         setAvailableStocksByItem(nextByItem);
-        setSelectedMatUids((prev) => {
+        setAllocation((prev) => {
           const next = { ...prev };
           for (const row of issueRows) {
-            if (next[row.rowKey]) continue;
-            const candidates = nextByItem[row.itemCode] ?? [];
-            const preferred = candidates.find((stock) => (stock.availableQty ?? stock.qty ?? 0) >= row.issueQty)
-              ?? candidates[0];
-            if (preferred?.matUid) next[row.rowKey] = preferred.matUid;
+            if (manualRowKeys.has(row.rowKey)) continue;
+            next[row.rowKey] = allocateRow(row, nextByItem[row.itemCode] ?? []);
           }
           return next;
         });
+        setSelectedRowKey((prev) => prev ?? issueRows[0]?.rowKey ?? null);
       } catch (err: unknown) {
         if (!isMounted) return;
         const axiosErr = err as { response?: { data?: { message?: string } } };
@@ -193,34 +170,30 @@ export default function IssueFromRequestModal({
     };
   }, [isOpen, issueRows]);
 
-  // 출고수량 변경
-  const handleQtyChange = useCallback((rowKey: string, qty: number) => {
-    setIssueRows((prev) =>
-      prev.map((row) =>
-        row.rowKey === rowKey ? { ...row, issueQty: Math.max(0, Math.min(qty, row.packRemainQty)) } : row,
-      ),
-    );
-  }, []);
+  // 선택된 요청 품목
+  const selectedRow = useMemo(
+    () => issueRows.find((row) => row.rowKey === selectedRowKey) ?? null,
+    [issueRows, selectedRowKey],
+  );
 
-  const handleLotChange = useCallback((rowKey: string, matUid: string) => {
-    setSelectedMatUids((prev) => ({ ...prev, [rowKey]: matUid }));
-  }, []);
-
-  // 총 출고수량
+  // 총 출고수량(배분 합계)
   const totalIssueQty = useMemo(
-    () => issueRows.reduce((sum, r) => sum + (r.issueQty || 0), 0),
-    [issueRows],
+    () => issueRows.reduce((sum, row) => sum + sumSlices(allocation[row.rowKey]), 0),
+    [issueRows, allocation],
   );
 
   // 일괄 출고 처리
   const handleSubmit = useCallback(async () => {
-    const validRows = issueRows.filter((r) => r.issueQty > 0);
-    if (validRows.length === 0) return;
-    const missingLot = validRows.find((r) => !selectedMatUids[r.rowKey]);
-    if (missingLot) {
-      setErrorMsg(`${missingLot.itemCode} 출고 LOT를 선택해주세요.`);
-      return;
-    }
+    const items = issueRows.flatMap((row) =>
+      (allocation[row.rowKey] ?? [])
+        .filter((slice) => slice.qty > 0)
+        .map((slice) => ({
+          requestItemId: String(row.seq),
+          matUid: slice.matUid,
+          issueQty: slice.qty,
+        })),
+    );
+    if (items.length === 0) return;
     // 생산 출고는 공정재고 적재가 필수(백엔드도 차단)
     if (processMissing) {
       setErrorMsg(t('material.issue.processRequired', { defaultValue: '출고 공정을 선택하세요.' }));
@@ -231,11 +204,7 @@ export default function IssueFromRequestModal({
     setErrorMsg(null);
     try {
       const res = await api.post(`/material/issue-requests/${requestId}/issue`, {
-        items: validRows.map((r) => ({
-          requestItemId: String(r.seq),
-          matUid: selectedMatUids[r.rowKey],
-          issueQty: r.issueQty,
-        })),
+        items,
         issueType,
         processCode: processCode || undefined,
       });
@@ -250,135 +219,7 @@ export default function IssueFromRequestModal({
     } finally {
       setIsSubmitting(false);
     }
-  }, [issueRows, requestId, issueType, processCode, processMissing, selectedMatUids, invalidate, onClose, t]);
-
-  // 컬럼 정의
-  const columns = useMemo<ColumnDef<IssueRow>[]>(() => [
-    { accessorKey: 'itemCode', header: t('common.partCode', { defaultValue: '품목코드' }), size: 120, meta: { filterType: 'text' as const } },
-    { accessorKey: 'itemName', header: t('common.partName', { defaultValue: '품목명' }), size: 150, meta: { filterType: 'text' as const } },
-    {
-      accessorKey: 'requestQty',
-      header: t('material.col.requestQty'),
-      size: 100,
-      meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => <span>{((getValue() as number) ?? 0).toLocaleString()}</span>,
-    },
-    {
-      accessorKey: 'issuedQty',
-      header: t('material.issue.issuedLabel'),
-      size: 90,
-      meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => <span>{((getValue() as number) ?? 0).toLocaleString()}</span>,
-    },
-    {
-      accessorKey: 'remainQty',
-      header: t('material.issue.remainingLabel'),
-      size: 90,
-      meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => (
-        <span className="font-medium text-primary">{((getValue() as number) ?? 0).toLocaleString()}</span>
-      ),
-    },
-    {
-      accessorKey: 'minPackQty',
-      header: t('material.request.minPackQty', { defaultValue: '불출포장단위' }),
-      size: 80,
-      meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => {
-        const v = (getValue() as number) ?? 0;
-        return <span className="text-text-muted">{v > 0 ? v.toLocaleString() : '-'}</span>;
-      },
-    },
-    {
-      accessorKey: 'issuableQty',
-      header: t('material.issue.issuableQty', { defaultValue: '가용(IQC합격)' }),
-      size: 100,
-      meta: { filterType: 'number' as const },
-      cell: ({ row }) => {
-        const v = Number(row.original.issuableQty ?? 0);
-        // 잔여보다 출고가능 재고가 적으면 강조(승인 단계 정책이 WARN 이었거나 그 뒤 재고가 줄어든 경우)
-        const short = v < row.original.remainQty;
-        return <span className={short ? 'font-medium text-red-600 dark:text-red-400' : ''}>{v.toLocaleString()}</span>;
-      },
-    },
-    {
-      accessorKey: 'pendingIqcQty',
-      header: t('material.issue.pendingIqcQty', { defaultValue: '미검사' }),
-      size: 80,
-      meta: { filterType: 'number' as const },
-      cell: ({ getValue }) => {
-        const v = Number((getValue() as number) ?? 0);
-        return <span className={v > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-text-muted'}>{v > 0 ? v.toLocaleString() : '-'}</span>;
-      },
-    },
-    {
-      id: 'matUidSelect',
-      header: '출고 LOT',
-      size: 360,
-      meta: { filterType: 'none' as const },
-      cell: ({ row }) => {
-        const item = row.original;
-        // 백엔드가 입고일(FIFO) 오름차순으로 정렬 → 첫 항목이 선입선출 권장 LOT
-        const options = (availableStocksByItem[item.itemCode] ?? []).map((stock, i) => ({
-          value: stock.matUid,
-          label: `${i === 0 ? '⭐ ' : ''}${stock.matUid} · ${stock.warehouseName ?? stock.warehouseCode} · ${(stock.availableQty ?? stock.qty ?? 0).toLocaleString()}${stock.unit ? ` ${stock.unit}` : ''} · 📅${fmtRecvDate(stock.recvDate)}`,
-        }));
-        // 가용 LOT가 없으면 비활성 셀렉트 대신 이유를 보여준다(창고재고 0 = 입고/IQC 합격 LOT 없음)
-        if (!isLoadingLots && options.length === 0) {
-          return (
-            <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-              {t('material.issue.noAvailableLot', { defaultValue: '출고 가능 LOT 없음 (창고재고 0)' })}
-            </span>
-          );
-        }
-        return (
-          <Select
-            options={options}
-            value={selectedMatUids[item.rowKey] ?? ''}
-            onChange={(value) => handleLotChange(item.rowKey, value)}
-            placeholder={isLoadingLots ? t('material.issue.lotLoading', { defaultValue: 'LOT 조회 중' }) : t('material.issue.lotSelect', { defaultValue: 'LOT 선택' })}
-            fullWidth
-            disabled={isLoadingLots}
-          />
-        );
-      },
-    },
-    {
-      id: 'issueQtyInput',
-      header: t('material.issue.issueQtyLabel'),
-      size: 120,
-      meta: { filterType: 'none' as const },
-      cell: ({ row }) => {
-        const item = row.original;
-        // 선택한 LOT의 가용재고가 출고수량보다 적으면 사전 경고(백엔드도 차단)
-        const selectedStock = (availableStocksByItem[item.itemCode] ?? []).find(
-          (s) => s.matUid === selectedMatUids[item.rowKey],
-        );
-        const availQty = selectedStock?.availableQty ?? selectedStock?.qty ?? 0;
-        const shortage = !!selectedMatUids[item.rowKey] && availQty < item.issueQty;
-        return (
-          <div className="flex items-center gap-1">
-            <Input
-              type="number"
-              value={String(item.issueQty)}
-              onChange={(e) => handleQtyChange(item.rowKey, Number(e.target.value))}
-              className={`w-24 text-right ${shortage ? 'border-red-400' : ''}`}
-              min={0}
-              max={item.packRemainQty}
-            />
-            {shortage && (
-              <AlertTriangle
-                className="w-4 h-4 text-red-500 shrink-0"
-                aria-label={t('material.issue.lotShortage', { defaultValue: '선택 LOT 가용재고 부족' })}
-              />
-            )}
-          </div>
-        );
-      },
-    },
-    { accessorKey: 'unit', header: t('common.unit'), size: 60, meta: { filterType: 'text' as const } },
-  ], [t, availableStocksByItem, selectedMatUids, isLoadingLots, handleLotChange, handleQtyChange]);
+  }, [issueRows, requestId, issueType, processCode, processMissing, allocation, invalidate, onClose, t]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('material.issue.processAction')} size="full">
@@ -446,13 +287,43 @@ export default function IssueFromRequestModal({
           </div>
         )}
 
-        {/* 품목 테이블 */}
-        <DataGrid
-          data={issueRows}
-          columns={columns}
-          isLoading={isLoading}
-          emptyMessage={t('common.noData')}
-        />
+        {/* 좌: 요청 내역 / 우: 선택 품목의 FIFO LOT 배분 */}
+        <div className="flex gap-3 h-[420px]">
+          <div className="w-[45%] min-w-0">
+            <RequestItemList
+              rows={issueRows}
+              allocation={allocation}
+              selectedRowKey={selectedRowKey}
+              onSelect={setSelectedRowKey}
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <LotAllocationPanel
+              row={selectedRow}
+              lots={selectedRow ? (availableStocksByItem[selectedRow.itemCode] ?? []) : []}
+              slices={selectedRow ? (allocation[selectedRow.rowKey] ?? []) : []}
+              isLoading={isLoadingLots}
+              onChange={(matUid, qty) => selectedRow && handleSliceChange(selectedRow.rowKey, matUid, qty)}
+              onAutoAllocate={() => {
+                if (!selectedRow) return;
+                setManualRowKeys((prev) => {
+                  const next = new Set(prev);
+                  next.delete(selectedRow.rowKey);
+                  return next;
+                });
+                setAllocation((prev) => ({
+                  ...prev,
+                  [selectedRow.rowKey]: allocateRow(selectedRow, availableStocksByItem[selectedRow.itemCode] ?? []),
+                }));
+              }}
+              onReset={() => {
+                if (!selectedRow) return;
+                setManualRowKeys((prev) => new Set(prev).add(selectedRow.rowKey));
+                setAllocation((prev) => ({ ...prev, [selectedRow.rowKey]: [] }));
+              }}
+            />
+          </div>
+        </div>
 
         {/* 하단 요약 + 버튼 */}
         <div className="flex items-center justify-between pt-4 border-t border-border">

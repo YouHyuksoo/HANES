@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 const modal = readFileSync('apps/frontend/src/components/material/IssueFromRequestModal.tsx', 'utf8');
+const lotAllocationPanel = readFileSync('apps/frontend/src/components/material/issue-from-request/LotAllocationPanel.tsx', 'utf8');
+const requestItemList = readFileSync('apps/frontend/src/components/material/issue-from-request/RequestItemList.tsx', 'utf8');
 const panel = readFileSync('apps/frontend/src/components/material/WorkOrderRequestPanel.tsx', 'utf8');
 const hook = readFileSync('apps/frontend/src/hooks/material/useIssueRequestData.ts', 'utf8');
 const page = readFileSync('apps/frontend/src/app/(authenticated)/material/request/page.tsx', 'utf8');
@@ -22,8 +24,12 @@ const menuSeed = readFileSync('apps/backend/src/seeds/menu-config.json', 'utf8')
 test('실출고 모달은 포장단위 올림 잔여까지 출고를 허용한다', () => {
   assert.match(modal, /roundUpToPack/, '실출고수량은 포장단위 올림으로 계산해야 한다');
   assert.match(modal, /packRemainQty/, '최대 출고 허용 수량은 포장단위 올림 잔여여야 한다');
-  assert.match(modal, /max=\{item\.packRemainQty\}/, '출고수량 입력 상한은 낱개 잔여가 아닌 포장단위 올림 잔여여야 한다');
-  assert.match(modal, /issueQty:\s*packRemainQty/, '기본 출고수량은 포장단위 올림 잔여여야 한다');
+  // 2단 구조에서는 낱개 입력 상한(max=...)이 아니라 포장단위 올림 잔여(packRemainQty)가
+  // FIFO 자동배분의 목표수량으로 쓰인다 — 배분 총량이 곧 실출고수량 상한이다.
+  assert.match(modal, /allocateFifo\(row\.packRemainQty/, '자동배분 목표수량은 포장단위 올림 잔여여야 한다');
+  // 수동 배분(개별 LOT 수량 직접 입력)도 여러 LOT 합계가 packRemainQty 를 넘지 못하게
+  // 모달이 캡을 걸어야 한다 — 예전의 입력 상한(max=packRemainQty)이 옮겨간 자리.
+  assert.match(modal, /packRemainQty[\s\S]{0,20}\)\s*-\s*sumSlices\(others\)/, '수동 배분 합계도 포장단위 올림 잔여를 넘지 못해야 한다');
   assert.match(modal, /minPackQty/, '포장단위 컬럼을 표시해야 한다');
 });
 
@@ -39,8 +45,10 @@ test('#1 작성 패널에서 BOM 외 품목을 직접 검색해 추가할 수 �
 });
 
 test('#7 실출고 모달은 LOT 입고일(FIFO)과 가용부족 경고를 표시한다', () => {
-  assert.match(modal, /fmtRecvDate/, 'LOT 입고일을 표시해야 한다');
-  assert.match(modal, /shortage/, '선택 LOT 가용재고 부족 경고가 있어야 한다');
+  // 2단 구조에서는 입고일 표시/부족 경고가 모달 본문이 아니라 하위 컴포넌트로 옮겨졌다:
+  // LOT 입고일은 우측 LotAllocationPanel, 배분 부족 경고는 좌측 RequestItemList가 보여준다.
+  assert.match(lotAllocationPanel, /fmtRecvDate/, 'LOT 입고일을 표시해야 한다');
+  assert.match(requestItemList, /shortage/, '배분 부족 경고가 있어야 한다');
 });
 
 test('#8 공정 지정 출고는 공정재고 적재 안내를 표시한다', () => {

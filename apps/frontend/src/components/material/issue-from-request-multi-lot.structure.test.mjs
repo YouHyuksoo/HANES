@@ -1,0 +1,50 @@
+import { readFileSync } from 'node:fs';
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+
+const modal = readFileSync('apps/frontend/src/components/material/IssueFromRequestModal.tsx', 'utf8');
+const panel = readFileSync('apps/frontend/src/components/material/issue-from-request/LotAllocationPanel.tsx', 'utf8');
+
+test('출고 모달이 공통 FIFO 배분 규칙을 쓴다', () => {
+  assert.match(modal, /allocateFifo/, '자체 배분 로직 대신 @harness/shared 의 allocateFifo 를 써야 한다');
+  assert.match(modal, /from '@harness\/shared'/, 'allocateFifo 는 공통 패키지에서 import 해야 한다');
+});
+
+test('한 요청 품목이 여러 LOT 를 쓸 수 있다', () => {
+  assert.equal(
+    modal.includes('selectedMatUids'),
+    false,
+    '품목당 LOT 1개를 고르던 단일 선택 상태가 남아 있으면 안 된다',
+  );
+  assert.match(
+    modal,
+    /flatMap|\.map\([\s\S]{0,400}slices/,
+    'items 페이로드는 품목별 slices 를 펼쳐 같은 requestItemId 로 복수 엔트리를 보내야 한다',
+  );
+  assert.match(
+    modal,
+    /requestItemId:\s*String\(/,
+    'requestItemId 는 요청 품목 seq 문자열이어야 한다',
+  );
+});
+
+test('qty=0 조각은 전송하지 않는다', () => {
+  assert.match(
+    modal,
+    /qty\s*>\s*0/,
+    'issueQty 는 @Min(1) 이므로 0 조각을 걸러야 한다',
+  );
+});
+
+test('배분 수량 입력은 공통 QtyInput 을 쓴다', () => {
+  assert.match(panel, /QtyInput/, '천단위 표시를 위해 공통 QtyInput 을 써야 한다');
+  assert.equal(
+    panel.includes('type="number"'),
+    false,
+    'type=number 는 천단위 구분 기호를 표시하지 못한다',
+  );
+});
+
+test('우측 패널이 FIFO 순서와 입고일을 보여준다', () => {
+  assert.match(panel, /recvDate/, '선입선출 판단 근거인 입고일을 표시해야 한다');
+});

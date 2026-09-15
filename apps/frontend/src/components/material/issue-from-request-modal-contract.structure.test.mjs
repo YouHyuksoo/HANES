@@ -13,20 +13,20 @@ test('IssueFromRequestModal sends backend issue-request contract with selected L
 
   assert.match(
     source,
-    /selectedMatUids/,
-    'modal should keep a selected matUid per request item',
+    /allocation\[row\.rowKey\]/,
+    'modal should keep FIFO allocation slices per request item',
   );
 
   assert.match(
     source,
-    /requestItemId:\s*String\(r\.seq/,
+    /requestItemId:\s*String\(row\.seq/,
     'payload must send requestItemId as the request item seq expected by the backend',
   );
 
   assert.match(
     source,
-    /matUid:\s*selectedMatUids\[r\.rowKey\]/,
-    'payload must include the selected material UID for each issued request item',
+    /matUid:\s*slice\.matUid/,
+    'payload must include each allocated lot matUid',
   );
 
   assert.equal(

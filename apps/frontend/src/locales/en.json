@@ -2366,7 +2366,8 @@
       "requester": "Requester",
       "requestQty": "Req. Qty",
       "issuedQty": "Issued Qty",
-      "actions": "Actions"
+      "actions": "Actions",
+      "recvDate": "Received"
     },
     "badge": {
       "arrived": "Arrived",
@@ -2953,7 +2954,17 @@
       "lotLoading": "Loading LOTs",
       "lotSelect": "Select LOT",
       "issuableQty": "Issuable (IQC pass)",
-      "pendingIqcQty": "Pending IQC"
+      "pendingIqcQty": "Pending IQC",
+      "requestItems": "Request Items",
+      "targetQty": "Target",
+      "allocatedQty": "Allocated",
+      "shortageQty": "Short",
+      "selectRequestItem": "Select an item on the left.",
+      "autoAllocate": "Auto Allocate (FIFO)",
+      "resetAllocation": "Reset",
+      "allocateQty": "Allocate Qty",
+      "lotRemainQty": "Remaining",
+      "fifoFirst": "First In"
     },
     "stock": {
       "title": "Material Stock",

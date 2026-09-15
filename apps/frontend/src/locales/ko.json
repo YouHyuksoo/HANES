@@ -2884,7 +2884,8 @@
       "issuedQty": "출고수량",
       "actions": "처리",
       "lineNoExpanded": "L/N(라인번호)",
-      "revisionNoExpanded": "R/N(릴리즈번호)"
+      "revisionNoExpanded": "R/N(릴리즈번호)",
+      "recvDate": "입고일"
     },
     "badge": {
       "arrived": "입하완료",
@@ -3485,7 +3486,17 @@
       "lotLoading": "LOT 조회 중",
       "lotSelect": "LOT 선택",
       "issuableQty": "가용(IQC합격)",
-      "pendingIqcQty": "미검사"
+      "pendingIqcQty": "미검사",
+      "requestItems": "요청 내역",
+      "targetQty": "실출고",
+      "allocatedQty": "배분",
+      "shortageQty": "부족",
+      "selectRequestItem": "좌측에서 품목을 선택하세요.",
+      "autoAllocate": "FIFO 자동배분",
+      "resetAllocation": "배분 초기화",
+      "allocateQty": "배분수량",
+      "lotRemainQty": "잔량",
+      "fifoFirst": "선입"
     },
     "stock": {
       "title": "자재재고현황",

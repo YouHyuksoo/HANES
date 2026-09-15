@@ -11,6 +11,8 @@ const helper = readFileSync('apps/frontend/src/components/material/issue-warning
 const barcodeHook = readFileSync('apps/frontend/src/hooks/material/useBarcodeScan.ts', 'utf8');
 const requestsHook = readFileSync('apps/frontend/src/hooks/material/useIssueRequests.ts', 'utf8');
 const issueModal = readFileSync('apps/frontend/src/components/material/IssueFromRequestModal.tsx', 'utf8');
+const requestItemList = readFileSync('apps/frontend/src/components/material/issue-from-request/RequestItemList.tsx', 'utf8');
+const lotAllocationPanel = readFileSync('apps/frontend/src/components/material/issue-from-request/LotAllocationPanel.tsx', 'utf8');
 const detailModal = readFileSync('apps/frontend/src/components/material/IssueRequestDetailModal.tsx', 'utf8');
 const requestDataHook = readFileSync('apps/frontend/src/hooks/material/useIssueRequestData.ts', 'utf8');
 const createPanels = [
@@ -44,18 +46,23 @@ test('출고요청 생성 3경로 모두 IQC 미검사 안내 warnings 를 toast
 });
 
 test('출고요청 항목 그리드에 가용(IQC합격)·미검사 컬럼을 표시한다', () => {
-  assert.match(issueModal, /accessorKey: 'issuableQty'/);
-  assert.match(issueModal, /accessorKey: 'pendingIqcQty'/);
-  assert.match(issueModal, /material\.issue\.issuableQty/);
-  assert.match(issueModal, /material\.issue\.pendingIqcQty/);
+  // 2단 구조에서는 요청 품목 그리드가 모달 본문의 DataGrid 컬럼이 아니라
+  // 좌측 RequestItemList 컴포넌트로 옮겨졌다 — 같은 두 값을 그 표에서 확인한다.
+  assert.match(requestItemList, /row\.issuableQty/);
+  assert.match(requestItemList, /row\.pendingIqcQty/);
+  assert.match(requestItemList, /material\.issue\.issuableQty/);
+  assert.match(requestItemList, /material\.issue\.pendingIqcQty/);
   assert.match(detailModal, /material\.issue\.issuableQty/);
   assert.match(detailModal, /material\.issue\.pendingIqcQty/);
   assert.match(requestDataHook, /issuableQty\?: number/);
   assert.match(requestDataHook, /pendingIqcQty\?: number/);
 });
 
-test('IssueFromRequestModal 의 FIFO 권장(⭐) 표시는 유지한다', () => {
-  assert.match(issueModal, /i === 0 \? '⭐ ' : ''/);
+test('IssueFromRequestModal 의 FIFO 권장 표시는 유지한다', () => {
+  // 롯트 선택 Select 의 ⭐ 접두 라벨은 우측 LotAllocationPanel 의 선입 LOT 뱃지로 이어졌다
+  // (여러 LOT 를 동시에 보여주는 2단 구조라 셀렉트 라벨 접두어 방식은 더 이상 맞지 않는다).
+  assert.match(lotAllocationPanel, /i === 0 &&/);
+  assert.match(lotAllocationPanel, /material\.issue\.fifoFirst/);
 });
 
 test('백엔드 계약: 출고 행·승인·생성 응답에 warnings, 상세 항목에 issuableQty/pendingIqcQty', () => {
