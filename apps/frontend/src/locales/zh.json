@@ -2349,7 +2349,8 @@
       "requestQty": "请求数量",
       "issuedQty": "出库数量",
       "actions": "操作",
-      "recvDate": "入库日"
+      "recvDate": "入库日",
+      "manufactureDate": "生产日期"
     },
     "badge": {
       "arrived": "已入库",

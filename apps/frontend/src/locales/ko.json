@@ -2885,7 +2885,8 @@
       "actions": "처리",
       "lineNoExpanded": "L/N(라인번호)",
       "revisionNoExpanded": "R/N(릴리즈번호)",
-      "recvDate": "입고일"
+      "recvDate": "입고일",
+      "manufactureDate": "제조일자"
     },
     "badge": {
       "arrived": "입하완료",

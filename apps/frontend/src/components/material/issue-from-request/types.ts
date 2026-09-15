@@ -39,8 +39,15 @@ export interface AvailableStock {
   availableQty?: number;
   qty?: number;
   unit?: string;
-  /** 입고일(FIFO 선입선출 기준) */
+  /** 입고일 */
   recvDate?: string | null;
+  /** 제조일자 */
+  manufactureDate?: string | null;
+  /**
+   * 서버가 실제로 정렬에 쓴 FIFO 기준(sys-config FIFO_CRITERIA 정규화 값).
+   * 출고 정책이 위반을 판정하는 기준과 같다 — 프론트가 추측하지 않도록 서버가 내려준다.
+   */
+  fifoCriteria?: 'RECEIVE_DATE' | 'MFG_DATE';
 }
 
 /** 요청 품목(rowKey) → 롯트 배분 조각 목록 */
@@ -54,5 +61,18 @@ export const stockAvailableQty = (stock: AvailableStock): number =>
 export const sumSlices = (slices: AllocationSlice[] | undefined): number =>
   (slices ?? []).reduce((sum, slice) => sum + slice.qty, 0);
 
-/** 입고일 표시용 포맷 (YYYY-MM-DD) */
+/** 날짜 표시용 포맷 (YYYY-MM-DD) */
 export const fmtRecvDate = (v?: string | null) => (v ? String(v).slice(0, 10) : '-');
+
+/**
+ * 목록의 FIFO 기준 — 서버가 행마다 내려준 값을 그대로 쓴다.
+ * 값이 없으면(행 없음) 규칙 단일 출처(normalizeFifoCriteria)의 기본과 같은 RECEIVE_DATE.
+ */
+export const fifoCriteriaOf = (stocks: AvailableStock[]): 'RECEIVE_DATE' | 'MFG_DATE' =>
+  stocks.find((stock) => stock.fifoCriteria)?.fifoCriteria ?? 'RECEIVE_DATE';
+
+/** 정렬 기준이 된 날짜 — 기준이 MFG_DATE 면 제조일자, 아니면 입고일 */
+export const fifoDateOf = (
+  stock: AvailableStock,
+  criteria: 'RECEIVE_DATE' | 'MFG_DATE',
+): string | null | undefined => (criteria === 'MFG_DATE' ? stock.manufactureDate : stock.recvDate);

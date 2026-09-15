@@ -2367,7 +2367,8 @@
       "requestQty": "Req. Qty",
       "issuedQty": "Issued Qty",
       "actions": "Actions",
-      "recvDate": "Received"
+      "recvDate": "Received",
+      "manufactureDate": "Mfg Date"
     },
     "badge": {
       "arrived": "Arrived",

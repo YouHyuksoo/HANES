@@ -2349,7 +2349,8 @@
       "requestQty": "SL yêu cầu",
       "issuedQty": "SL đã xuất",
       "actions": "Thao tác",
-      "recvDate": "Ngày nhập"
+      "recvDate": "Ngày nhập",
+      "manufactureDate": "Ngày SX"
     },
     "badge": {
       "arrived": "Đã nhập",
