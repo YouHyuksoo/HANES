@@ -40,6 +40,7 @@ import { FaiModule } from './fai/fai.module';
 import { ContinuityInspectModule } from './continuity-inspect/continuity-inspect.module';
 import { AqlModule } from './aql/aql.module';
 import { DefectCodesModule } from './defect-codes/defect-codes.module';
+import { NcrModule } from './ncr/ncr.module';
 
 @Module({
   imports: [
@@ -56,10 +57,12 @@ import { DefectCodesModule } from './defect-codes/defect-codes.module';
     ContinuityInspectModule,
     AqlModule,
     DefectCodesModule,
+    NcrModule,
   ],
   controllers: [],
   providers: [],
   exports: [
+    NcrModule,
     // 모든 서브모듈 export
     DefectsModule,
     InspectionModule,
