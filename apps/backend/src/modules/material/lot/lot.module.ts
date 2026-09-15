@@ -26,6 +26,6 @@ import { MatLotService } from '../services/mat-lot.service';
   ],
   controllers: [MatLotController, LotSplitController, LotMergeController],
   providers: [MatLotService, LotSplitService, LotMergeService],
-  exports: [MatLotService],
+  exports: [MatLotService, LotSplitService],
 })
 export class LotModule {}

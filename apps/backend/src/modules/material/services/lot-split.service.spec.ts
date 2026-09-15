@@ -274,4 +274,45 @@ describe('LotSplitService', () => {
       expect(children.every((c) => isMatLotIssuable(c.status) && c.currentQty > 0)).toBe(true);
     });
   });
+
+  describe('splitInTx 옵션', () => {
+    it('allowIssuedSource=true 이면 출고 이력이 있어도 현재고 기준으로 분할한다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue(sourceLot());
+      mockQueryRunner.manager.findOne = jest.fn()
+        .mockResolvedValueOnce(sourceLot())
+        .mockResolvedValueOnce(sourceStock())
+        .mockResolvedValueOnce(part());
+      mockQueryRunner.manager.find = jest.fn().mockResolvedValue([
+        { matUid: 'MAT-001', status: 'DONE' } as MatIssue,
+      ]);
+      mockQueryRunner.manager.query = jest.fn().mockResolvedValue([{ RECVD: 10 }]);
+
+      const result = await target.splitInTx(
+        mockQueryRunner,
+        { sourceLotId: 'MAT-001', splitQty: 7 },
+        { allowIssuedSource: true },
+        'C1', 'P1',
+      );
+
+      expect(result.results).toEqual([
+        { matUid: 'NEW-1', qty: 7 },
+        { matUid: 'NEW-2', qty: 3 },
+      ]);
+    });
+
+    it('옵션 없이 호출하면 출고 이력 차단이 그대로 유지된다', async () => {
+      mockQueryRunner.manager.findOne = jest.fn()
+        .mockResolvedValueOnce(sourceLot())
+        .mockResolvedValueOnce(sourceStock())
+        .mockResolvedValueOnce(part());
+      mockQueryRunner.manager.find = jest.fn().mockResolvedValue([
+        { matUid: 'MAT-001', status: 'DONE' } as MatIssue,
+      ]);
+      mockQueryRunner.manager.query = jest.fn().mockResolvedValue([{ RECVD: 10 }]);
+
+      await expect(
+        target.splitInTx(mockQueryRunner, { sourceLotId: 'MAT-001', splitQty: 7 }, {}, 'C1', 'P1'),
+      ).rejects.toThrow('이미 자재출고 이력이 있는 LOT는 분할할 수 없습니다');
+    });
+  });
 });

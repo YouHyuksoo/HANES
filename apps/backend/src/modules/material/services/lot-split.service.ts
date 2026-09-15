@@ -32,6 +32,22 @@ const RECEIVED_GATE_SQL =
   `lot.initQty <= NVL((SELECT SUM(st."QTY") FROM "STOCK_TRANSACTIONS" st` +
   ` WHERE st."MAT_UID" = lot.matUid AND st."TRANS_TYPE" IN (${RECEIVED_TRANS_TYPES}) AND st."STATUS" <> 'CANCELED'), 0)`;
 
+/** 분할 호출 옵션 — 출고 오케스트레이션 경로에서만 검사를 완화한다. */
+export interface SplitOptions {
+  /**
+   * 출고 이력이 있는 원본의 분할을 허용한다(기본 false).
+   *
+   * 출고요청 분할 출고(split-for-issue)에서만 true 로 쓴다. 이 경로에서는 전날 분할로
+   * 생긴 잔량 시리얼에 출고 이력이 붙는데, 검사를 그대로 두면 그 시리얼을 다시 쪼갤 수
+   * 없어 분할 출고가 롯트당 1회로 제한된다.
+   *
+   * 안전한 이유: 분할은 initQty 가 아니라 현재고(sourceStock.qty)를 두 조각으로 나누고,
+   * 입고완료 게이트는 출고와 무관한 RECEIVE 계열 수불 합계만 본다. 과거 출고 이력이
+   * 가리키는 원본 시리얼은 status='SPLIT' 으로 남고 origin 계승으로 추적이 유지된다.
+   */
+  allowIssuedSource?: boolean;
+}
+
 @Injectable()
 export class LotSplitService {
   constructor(
@@ -144,45 +160,56 @@ export class LotSplitService {
   }
 
   async split(dto: LotSplitDto, company?: string, plant?: string, userId?: string) {
+    return this.tx.run((queryRunner) => this.splitInTx(queryRunner, dto, {}, company, plant, userId));
+  }
+
+  async splitInTx(
+    queryRunner: QueryRunner,
+    dto: LotSplitDto,
+    options: SplitOptions = {},
+    company?: string,
+    plant?: string,
+    userId?: string,
+  ) {
     const { sourceLotId, splitQty, remark } = dto;
     const tenantWhere = this.tenantWhere(company, plant);
 
-    return this.tx.run(async (queryRunner) => {
-      // 1) 원본 LOT 조회 + 기본 상태 검증
-      const sourceLot = await queryRunner.manager.findOne(MatLot, {
-        where: { matUid: sourceLotId, ...tenantWhere },
-      });
-      if (!sourceLot) {
-        throw new NotFoundException(`원본 LOT을 찾을 수 없습니다: ${sourceLotId}`);
-      }
-      this.assertSameTenant(sourceLot, company, plant, '원본 LOT');
+    // 1) 원본 LOT 조회 + 기본 상태 검증
+    const sourceLot = await queryRunner.manager.findOne(MatLot, {
+      where: { matUid: sourceLotId, ...tenantWhere },
+    });
+    if (!sourceLot) {
+      throw new NotFoundException(`원본 LOT을 찾을 수 없습니다: ${sourceLotId}`);
+    }
+    this.assertSameTenant(sourceLot, company, plant, '원본 LOT');
 
-      if (isMatLotOnHold(sourceLot.status)) {
-        throw new BadRequestException('HOLD 상태인 LOT은 분할할 수 없습니다.');
-      }
-      if (!isMatLotMergeableOrSplittable(sourceLot.status)) {
-        throw new BadRequestException(`정상(NORMAL) 상태가 아닌 LOT은 분할할 수 없습니다. 현재 상태: ${sourceLot.status}`);
-      }
+    if (isMatLotOnHold(sourceLot.status)) {
+      throw new BadRequestException('HOLD 상태인 LOT은 분할할 수 없습니다.');
+    }
+    if (!isMatLotMergeableOrSplittable(sourceLot.status)) {
+      throw new BadRequestException(`정상(NORMAL) 상태가 아닌 LOT은 분할할 수 없습니다. 현재 상태: ${sourceLot.status}`);
+    }
 
-      // 2) 입고완료 게이팅 (RECEIVE 합 >= initQty)
-      await this.assertReceived(queryRunner, sourceLot);
+    // 2) 입고완료 게이팅 (RECEIVE 합 >= initQty)
+    await this.assertReceived(queryRunner, sourceLot);
 
-      // 3) 원본 재고 조회 + 수량/예약 검증
-      const sourceStock = await queryRunner.manager.findOne(MatStock, {
-        where: { matUid: sourceLotId, ...tenantWhere },
-      });
-      if (!sourceStock || sourceStock.qty <= 0) {
-        throw new BadRequestException(`분할할 재고가 없습니다. 현재 재고: ${sourceStock?.qty ?? 0}`);
-      }
-      this.assertSameTenant(sourceStock, sourceLot.company, sourceLot.plant, '원본 재고');
-      if ((sourceStock.reservedQty ?? 0) > 0) {
-        throw new BadRequestException('예약 수량이 있는 LOT는 분할할 수 없습니다. 예약부터 먼저 정리해 주세요.');
-      }
-      if (splitQty >= sourceStock.qty) {
-        throw new BadRequestException(`분할 수량은 현재 재고보다 작아야 합니다. 현재: ${sourceStock.qty}, 요청: ${splitQty}`);
-      }
+    // 3) 원본 재고 조회 + 수량/예약 검증
+    const sourceStock = await queryRunner.manager.findOne(MatStock, {
+      where: { matUid: sourceLotId, ...tenantWhere },
+    });
+    if (!sourceStock || sourceStock.qty <= 0) {
+      throw new BadRequestException(`분할할 재고가 없습니다. 현재 재고: ${sourceStock?.qty ?? 0}`);
+    }
+    this.assertSameTenant(sourceStock, sourceLot.company, sourceLot.plant, '원본 재고');
+    if ((sourceStock.reservedQty ?? 0) > 0) {
+      throw new BadRequestException('예약 수량이 있는 LOT는 분할할 수 없습니다. 예약부터 먼저 정리해 주세요.');
+    }
+    if (splitQty >= sourceStock.qty) {
+      throw new BadRequestException(`분할 수량은 현재 재고보다 작아야 합니다. 현재: ${sourceStock.qty}, 요청: ${splitQty}`);
+    }
 
-      // 4) 출고이력 검증
+    // 4) 출고이력 검증 — 출고 오케스트레이션 경로(allowIssuedSource)에서는 건너뛴다
+    if (!options.allowIssuedSource) {
       const issueHistories = await queryRunner.manager.find(MatIssue, {
         where: { matUid: sourceLotId, ...tenantWhere },
       });
@@ -191,38 +218,76 @@ export class LotSplitService {
           '이미 자재출고 이력이 있는 LOT는 분할할 수 없습니다. 자재출고부터 먼저 정리해 주세요.',
         );
       }
+    }
 
-      // 5) 품목 정보 + 분할 가능 여부
-      const part = await queryRunner.manager.findOne(ItemMaster, {
-        where: { itemCode: sourceLot.itemCode, ...tenantWhere },
-      });
-      if (!part) {
-        throw new NotFoundException(`품목을 찾을 수 없습니다: ${sourceLot.itemCode}`);
-      }
-      this.assertSameTenant(part, sourceLot.company, sourceLot.plant, '품목');
-      if (part.isSplittable === 'N') {
-        throw new BadRequestException(
-          `해당 품목은 분할할 수 없습니다. 품번: ${part.itemCode}, 분할 설정: ${part.isSplittable}`,
-        );
-      }
+    // 5) 품목 정보 + 분할 가능 여부
+    const part = await queryRunner.manager.findOne(ItemMaster, {
+      where: { itemCode: sourceLot.itemCode, ...tenantWhere },
+    });
+    if (!part) {
+      throw new NotFoundException(`품목을 찾을 수 없습니다: ${sourceLot.itemCode}`);
+    }
+    this.assertSameTenant(part, sourceLot.company, sourceLot.plant, '품목');
+    if (part.isSplittable === 'N') {
+      throw new BadRequestException(
+        `해당 품목은 분할할 수 없습니다. 품번: ${part.itemCode}, 분할 설정: ${part.isSplittable}`,
+      );
+    }
 
-      // ── 처리: 원본 전량 OUT → 신규 2조각 발번/IN ──
-      const totalQty = sourceStock.qty;
-      const remainQty = totalQty - splitQty; // 잔량 조각 (>0 보장됨)
-      const warehouseCode = sourceStock.warehouseCode;
-      const origin = sourceLot.origin || sourceLot.matUid;
-      const splitRemark = remark || `자재분할: ${sourceLot.matUid} (${totalQty}) → ${splitQty} + ${remainQty}`;
+    // ── 처리: 원본 전량 OUT → 신규 2조각 발번/IN ──
+    const totalQty = sourceStock.qty;
+    const remainQty = totalQty - splitQty; // 잔량 조각 (>0 보장됨)
+    const warehouseCode = sourceStock.warehouseCode;
+    const origin = sourceLot.origin || sourceLot.matUid;
+    const splitRemark = remark || `자재분할: ${sourceLot.matUid} (${totalQty}) → ${splitQty} + ${remainQty}`;
 
-      // 6) 원본 전량 OUT
-      const outTransNo = await this.numbering.next('STOCK_TX', queryRunner, userId);
+    // 6) 원본 전량 OUT
+    const outTransNo = await this.numbering.next('STOCK_TX', queryRunner, userId);
+    await queryRunner.manager.save(StockTransaction, queryRunner.manager.create(StockTransaction, {
+      transNo: outTransNo,
+      transType: 'LOT_SPLIT_OUT',
+      transDate: new Date(),
+      fromWarehouseId: warehouseCode,
+      itemCode: sourceLot.itemCode,
+      matUid: sourceLot.matUid,
+      qty: -totalQty,
+      refType: 'LOT_SPLIT',
+      refId: sourceLot.matUid,
+      remark: splitRemark,
+      workerId: userId ?? null,
+      status: 'DONE',
+      company: sourceLot.company,
+      plant: sourceLot.plant,
+      createdBy: userId ?? null,
+    }));
+
+    // 7) 원본 폐기 (status=SPLIT, 재고 0)
+    await queryRunner.manager.update(MatLot, { matUid: sourceLot.matUid, ...tenantWhere }, {
+      status: MAT_LOT_STATUS.SPLIT,
+      currentQty: 0,
+      updatedBy: userId ?? null,
+    });
+    await queryRunner.manager.update(MatStock,
+      { warehouseCode: sourceStock.warehouseCode, itemCode: sourceStock.itemCode, matUid: sourceStock.matUid, ...tenantWhere },
+      { qty: 0, availableQty: 0, updatedBy: userId ?? null },
+    );
+
+    // 8) 신규 2조각 발번/생성/IN
+    const pieces: number[] = [splitQty, remainQty];
+    const created: Array<{ matUid: string; qty: number }> = [];
+    for (const qty of pieces) {
+      const newSerial = await this.numbering.nextMatSerial(queryRunner);
+      await this.createChildLot(queryRunner, sourceLot, sourceStock, origin, newSerial, qty, userId);
+
+      const inTransNo = await this.numbering.next('STOCK_TX', queryRunner, userId);
       await queryRunner.manager.save(StockTransaction, queryRunner.manager.create(StockTransaction, {
-        transNo: outTransNo,
-        transType: 'LOT_SPLIT_OUT',
+        transNo: inTransNo,
+        transType: 'LOT_SPLIT_IN',
         transDate: new Date(),
-        fromWarehouseId: warehouseCode,
+        toWarehouseId: warehouseCode,
         itemCode: sourceLot.itemCode,
-        matUid: sourceLot.matUid,
-        qty: -totalQty,
+        matUid: newSerial,
+        qty,
         refType: 'LOT_SPLIT',
         refId: sourceLot.matUid,
         remark: splitRemark,
@@ -233,64 +298,26 @@ export class LotSplitService {
         createdBy: userId ?? null,
       }));
 
-      // 7) 원본 폐기 (status=SPLIT, 재고 0)
-      await queryRunner.manager.update(MatLot, { matUid: sourceLot.matUid, ...tenantWhere }, {
-        status: MAT_LOT_STATUS.SPLIT,
-        currentQty: 0,
-        updatedBy: userId ?? null,
-      });
-      await queryRunner.manager.update(MatStock,
-        { warehouseCode: sourceStock.warehouseCode, itemCode: sourceStock.itemCode, matUid: sourceStock.matUid, ...tenantWhere },
-        { qty: 0, availableQty: 0, updatedBy: userId ?? null },
-      );
+      created.push({ matUid: newSerial, qty });
+    }
 
-      // 8) 신규 2조각 발번/생성/IN
-      const pieces: number[] = [splitQty, remainQty];
-      const created: Array<{ matUid: string; qty: number }> = [];
-      for (const qty of pieces) {
-        const newSerial = await this.numbering.nextMatSerial(queryRunner);
-        await this.createChildLot(queryRunner, sourceLot, sourceStock, origin, newSerial, qty, userId);
-
-        const inTransNo = await this.numbering.next('STOCK_TX', queryRunner, userId);
-        await queryRunner.manager.save(StockTransaction, queryRunner.manager.create(StockTransaction, {
-          transNo: inTransNo,
-          transType: 'LOT_SPLIT_IN',
-          transDate: new Date(),
-          toWarehouseId: warehouseCode,
-          itemCode: sourceLot.itemCode,
-          matUid: newSerial,
-          qty,
-          refType: 'LOT_SPLIT',
-          refId: sourceLot.matUid,
-          remark: splitRemark,
-          workerId: userId ?? null,
-          status: 'DONE',
-          company: sourceLot.company,
-          plant: sourceLot.plant,
-          createdBy: userId ?? null,
-        }));
-
-        created.push({ matUid: newSerial, qty });
-      }
-
-      return {
-        sourceLotNo: sourceLot.matUid,
-        itemCode: part.itemCode,
-        itemName: part.itemName,
-        arrivalNo: sourceLot.arrivalNo,
-        results: created,
-        // MatLabelPreviewModal 재사용용 라벨 데이터
-        label: {
-          arrivalNo: sourceLot.arrivalNo ?? '',
-          serials: created.map((c, idx) => ({
-            matUid: c.matUid,
-            initQty: c.qty,
-            arrivalSeq: idx + 1,
-            itemCode: part.itemCode,
-          })),
-        },
-      };
-    });
+    return {
+      sourceLotNo: sourceLot.matUid,
+      itemCode: part.itemCode,
+      itemName: part.itemName,
+      arrivalNo: sourceLot.arrivalNo,
+      results: created,
+      // MatLabelPreviewModal 재사용용 라벨 데이터
+      label: {
+        arrivalNo: sourceLot.arrivalNo ?? '',
+        serials: created.map((c, idx) => ({
+          matUid: c.matUid,
+          initQty: c.qty,
+          arrivalSeq: idx + 1,
+          itemCode: part.itemCode,
+        })),
+      },
+    };
   }
 
   /** 입고완료 게이팅 검증 (트랜잭션 내) */
