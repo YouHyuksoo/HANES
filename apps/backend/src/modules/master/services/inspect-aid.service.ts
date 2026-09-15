@@ -68,7 +68,7 @@ export class InspectAidService {
   }
 
   async findAll(query: InspectAidQueryDto, company: string, plant: string) {
-    const { page = 1, limit = 50, search, aidType, status, itemCode, processCode, useYn } = query;
+    const { page = 1, limit = 50, search, aidType, status, itemCode, processCode, useYn, inspectType } = query;
     const qb = this.repo.createQueryBuilder('a')
       .where('a.company = :company', { company })
       .andWhere('a.plant = :plant', { plant });
@@ -78,6 +78,10 @@ export class InspectAidService {
     if (itemCode) qb.andWhere('a.itemCode = :itemCode', { itemCode });
     if (processCode) qb.andWhere('a.processCode = :processCode', { processCode });
     if (useYn) qb.andWhere('a.useYn = :useYn', { useYn });
+    // 검사유형이 비어 있는 견본(전 검사유형 공통)도 함께 보여준다.
+    if (inspectType) {
+      qb.andWhere('(a.inspectType = :inspectType OR a.inspectType IS NULL)', { inspectType });
+    }
     if (search?.trim()) {
       qb.andWhere(
         '(UPPER(a.aidCode) LIKE :search OR UPPER(a.aidName) LIKE :search OR UPPER(a.itemCode) LIKE :search OR UPPER(a.location) LIKE :search)',
@@ -86,7 +90,8 @@ export class InspectAidService {
     }
 
     const [rows, total] = await qb
-      .orderBy('a.aidType', 'ASC')
+      .orderBy('a.sortOrder', 'ASC')
+      .addOrderBy('a.aidType', 'ASC')
       .addOrderBy('a.aidCode', 'ASC')
       .skip((page - 1) * limit)
       .take(limit)
@@ -139,6 +144,10 @@ export class InspectAidService {
       status: dto.status ?? 'ACTIVE',
       remark: dto.remark ?? null,
       useYn: dto.useYn ?? 'Y',
+      inspectType: dto.inspectType ?? null,
+      // 홀더·지그는 대조 대상이 아니므로 필수 플래그를 강제로 내린다.
+      requiredYn: dto.aidType === 'HOLDER' ? 'N' : (dto.requiredYn ?? 'Y'),
+      sortOrder: dto.sortOrder ?? 0,
       createdBy: userId,
       updatedBy: userId,
     });
@@ -162,9 +171,14 @@ export class InspectAidService {
       ...(dto.status !== undefined ? { status: dto.status } : {}),
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
       ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
+      ...(dto.inspectType !== undefined ? { inspectType: dto.inspectType } : {}),
+      ...(dto.requiredYn !== undefined ? { requiredYn: dto.requiredYn } : {}),
+      ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
       updatedBy: userId,
     };
     Object.assign(aid, patch);
+    // 유형이 홀더로 바뀌면 대조 필수는 성립하지 않는다.
+    if (aid.aidType === 'HOLDER') aid.requiredYn = 'N';
     const saved = await this.repo.save(aid);
     return this.toView(saved);
   }
