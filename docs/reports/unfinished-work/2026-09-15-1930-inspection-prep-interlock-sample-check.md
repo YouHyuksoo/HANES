@@ -43,7 +43,9 @@
   9. `/inspection/terminal-result` 동일 동작
   10. `POST /quality/continuity-inspect/inspect` 직접 호출이 400으로 막히는지
 - 위 검증 후 `INSPECT_SAMPLE_CHECKS` / `INSPECT_SAMPLE_CHECK_ITEMS` / `INSPECT_RESULTS.INSPECTOR_ID` 실제 적재 확인 (계획 Task 10 Step 3 쿼리)
-- i18n locale 4개 파일(`apps/frontend/src/locales/{ko,en,zh,vi}.json`)은 **편집만 하고 커밋하지 않았다.** 같은 파일에 다른 세션(hanes-1b, material-issue FIFO 작업)의 미커밋 변경이 섞여 있어 파일 단위 커밋이 그 작업을 쓸어갈 수 있다. 사용자 확인 후 커밋 필요.
+- i18n locale 4개 파일(`apps/frontend/src/locales/{ko,en,zh,vi}.json`)은 **편집만 하고 커밋하지 않았다.** 같은 파일에 다른 세션(hanes-1b, material-issue FIFO 작업)의 미커밋 변경 2줄(`material.iqcRequestLot`, `inspection...voidSuccess`)이 섞여 있어 파일 단위 커밋이 그 작업을 함께 가져간다. 사용자 확인 후 커밋 필요.
+  - 작업트리 유실에 대비해 패치를 백업해 뒀다: `C:/Users/hsyou/AppData/Local/Temp/claude/C--Project-HANES/47b52f8e-27ef-4d7f-9906-665c82e3ba85/scratchpad/i18n-inspect-prep.patch` (`git apply`로 복원). 세션 종료 시 지워질 수 있으니 조기 커밋이 안전하다.
+  - 키 경로 해석은 4개 언어 모두 확인했다(`inspection.result.prep.*`, `inspection.result.sampleCheck.*`, `master.inspectAid.*` 전부 ALL OK).
 
 ## 변경 파일
 
