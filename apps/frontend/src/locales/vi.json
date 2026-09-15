@@ -2952,7 +2952,8 @@
       "splitNotice": "Dán hai nhãn lên phần xuất và phần còn lại.",
       "splitCommittedReloadFailed": "Việc tách đã được lưu. Nếu nhãn chưa in, hãy dùng [In lại nhãn], dán nhãn rồi tải lại danh sách.",
       "splitLabelLoadFailed": "Không tải được lịch sử nhãn tách. Hãy mở lại nếu cần in lại nhãn.",
-      "fractionUnusable": "Dưới 1 · không phân bổ"
+      "fractionUnusable": "Dưới 1 · không phân bổ",
+      "splitNotPossible": "Không thể tách · số lượng nhãn không khớp"
     },
     "stock": {
       "title": "Tồn kho vật tư",

@@ -2970,7 +2970,8 @@
       "splitNotice": "Attach the two printed labels to the issued and remaining lots.",
       "splitCommittedReloadFailed": "The split is already committed. If the labels were not printed, use [Reprint Labels], attach them, then reload.",
       "splitLabelLoadFailed": "Could not load the split label history. Reopen the dialog if you need to reprint labels.",
-      "fractionUnusable": "Below 1 · not allocatable"
+      "fractionUnusable": "Below 1 · not allocatable",
+      "splitNotPossible": "Cannot split · label qty will not match"
     },
     "stock": {
       "title": "Material Stock",
