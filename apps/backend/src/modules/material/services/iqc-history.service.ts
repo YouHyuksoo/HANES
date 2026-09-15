@@ -658,6 +658,132 @@ export class IqcHistoryService {
     };
   }
 
+  /**
+   * 의뢰 LOT(여러 입하건을 한 검사 LOT으로 묶은 단위)의 판정을 해당 입하건 전체에 적용한다.
+   *
+   * 초보자 가이드:
+   * 1. createArrivalResult는 입하 1건 단위 + AQL 자동판정이고, 이쪽은 검사자가 내린 판정(result)을
+   *    의뢰에 묶인 입하건 전부에 그대로 전파한다. 판정 근거는 의뢰 화면에서 이미 확정된다.
+   * 2. 검사 이력(IQC_LOGS)은 대표 입하번호로 1건만 남긴다. 입하건마다 남기면 LOT 하나가
+   *    여러 번 검사된 것처럼 보인다.
+   * 3. PASS 유효기간 계산 / FAIL 불량창고 이동은 입하 단위 판정과 동일 규칙을 따른다.
+   */
+  async applyIqcVerdictToArrivals(
+    input: {
+      arrivalNo: string;
+      arrivalNos: string[];
+      itemCode: string;
+      lotQty?: number | null;
+      result: string;
+      inspectorName?: string;
+      remark?: string;
+      details?: string;
+      sampleQty?: number;
+      inspectType?: string;
+      logRemark?: string;
+    },
+    company?: string,
+    plant?: string,
+  ) {
+    const arrivalNos = [...new Set([input.arrivalNo, ...input.arrivalNos].filter(Boolean))];
+    if (arrivalNos.length === 0) {
+      throw new BadRequestException('판정할 입하건이 없습니다.');
+    }
+
+    const lots = await this.matLotRepository.find({
+      where: {
+        arrivalNo: In(arrivalNos),
+        itemCode: input.itemCode,
+        iqcStatus: 'PENDING',
+        ...this.tenantWhere(company, plant),
+      },
+    });
+    if (lots.length === 0) {
+      throw new NotFoundException(
+        `검사 대상(PENDING) 시리얼이 없습니다: 입하 ${arrivalNos.join(', ')} / 품목 ${input.itemCode}`,
+      );
+    }
+
+    const tenantCompany = lots[0].company;
+    const tenantPlant = lots[0].plant;
+    const vendorCode = lots[0].vendor ?? null;
+    const finalResult = input.result === 'FAIL' ? 'FAIL' : 'PASS';
+    const lotQty = Number(input.lotQty) > 0
+      ? Number(input.lotQty)
+      : lots.reduce((sum, lot) => sum + (Number(lot.initQty) || 0), 0);
+
+    // 1) 의뢰에 묶인 입하건의 PENDING 시리얼 전체를 한 번에 판정
+    const verdictWhere = {
+      arrivalNo: In(arrivalNos),
+      itemCode: input.itemCode,
+      iqcStatus: 'PENDING',
+      ...this.tenantWhere(tenantCompany, tenantPlant),
+    };
+    await this.matLotRepository.update(verdictWhere, { iqcStatus: finalResult });
+    await this.matArrivalRepository.update(verdictWhere, { iqcStatus: finalResult });
+
+    // 2) 검사 이력 1건 (대표 입하번호, matUid=null → 입하단위 검사 표식)
+    const log = this.iqcLogRepository.create({
+      arrivalNo: input.arrivalNo,
+      matUid: null,
+      itemCode: input.itemCode,
+      vendorCode,
+      inspectType: input.inspectType || 'INITIAL',
+      result: finalResult,
+      details: input.details || null,
+      inspectorName: input.inspectorName || null,
+      destructSampleQty: input.sampleQty || null,
+      lotQty,
+      remark: input.logRemark || input.remark || null,
+      inspectDate: new Date(),
+      company: tenantCompany,
+      plant: tenantPlant,
+    });
+    const saved = await this.iqcLogRepository.save(log);
+
+    const part = await this.itemMasterRepository.findOne({
+      where: { itemCode: input.itemCode, ...this.tenantWhere(tenantCompany, tenantPlant) },
+    });
+
+    // 3) PASS + 품목 유효기간 설정 → 시리얼별 expireDate 계산
+    if (finalResult === 'PASS' && part && (part.expiryDate ?? 0) > 0) {
+      for (const lot of lots) {
+        const expireDate = calcLotExpireDate(lot, part.expiryDate, new Date());
+        await this.matLotRepository.update(
+          { matUid: lot.matUid, ...this.tenantWhere(lot.company, lot.plant) },
+          { expireDate },
+        );
+      }
+    }
+
+    // 4) FAIL → 묶인 시리얼 전체를 불량창고로 이동
+    if (finalResult === 'FAIL') {
+      for (const lot of lots) {
+        await this.handleIqcFail(lot.matUid, lot.itemCode, lot.company, lot.plant);
+      }
+    }
+
+    // 5) 공급사 검사모드(까다로운/보통/수월한) 갱신 — 대표 입하번호 기준
+    await this.aqlService.updateVendorInspectionModeAfterLot({
+      vendorCode,
+      arrivalNo: input.arrivalNo,
+      itemCode: input.itemCode,
+      company: tenantCompany,
+      plant: tenantPlant,
+    });
+
+    return {
+      ...saved,
+      arrivalNo: input.arrivalNo,
+      arrivalNos,
+      itemCode: input.itemCode,
+      itemName: part?.itemName ?? null,
+      affectedSerials: lots.length,
+      lotQty,
+      result: finalResult,
+    };
+  }
+
   private resolveDefectCounts(dto: CreateArrivalIqcResultDto) {
     const providedMajor = dto.defectMajor != null;
     const counts = {
