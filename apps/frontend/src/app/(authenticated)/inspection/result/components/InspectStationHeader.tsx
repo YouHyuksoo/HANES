@@ -305,14 +305,6 @@ export default function InspectStationHeader({
                 <History className="h-4 w-4" />
               </button>
             </div>
-            <HeaderCheckItem
-              label={t("inspection.result.prep.consumable")}
-              done={prep.consumablesReady}
-              notDoneDetail={prep.unmountedConsumCount ? String(prep.unmountedConsumCount) : undefined}
-              disabled={!hasEquip}
-              disabledReason={equipReason}
-              wide
-            />
           </div>
 
           {/* 전체화면 */}

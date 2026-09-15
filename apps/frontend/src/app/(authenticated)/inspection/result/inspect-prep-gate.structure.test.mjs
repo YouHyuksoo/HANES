@@ -27,11 +27,13 @@ test('상단 헤더는 실적입력(가공)과 같은 공용 카드·모달을 �
   assert.doesNotMatch(src, /bg-(green|red|orange)-50/, '파스텔 배경은 쓰지 않는다');
 });
 
-test('상단 헤더가 검사기·작업지시·작업자·준비점검 4종을 한 줄에 모은다', () => {
+test('상단 헤더가 검사기·작업지시·작업자·준비점검 3종을 한 줄에 모은다', () => {
   const src = read('InspectStationHeader.tsx');
-  for (const key of ['prep.dailyInspect', 'prep.workerInspect', 'prep.sampleCheck', 'prep.consumable']) {
+  for (const key of ['prep.dailyInspect', 'prep.workerInspect', 'prep.sampleCheck']) {
     assert.match(src, new RegExp(key.replace('.', '\.')), `${key} 카드가 있어야 한다`);
   }
+  // 소모품 장착은 소모품 패널에서 바코드로 처리한다. 헤더에 입구를 두면 입구가 두 곳이 된다.
+  assert.doesNotMatch(src, /prep\.consumable/, '소모품 항목은 헤더에 두지 않는다');
   assert.match(src, /inspect-equip-open/, '검사기 선택이 헤더에 있어야 한다');
   assert.match(src, /inspect-worker-open/, '작업자 추가가 헤더에 있어야 한다');
   assert.match(src, /inspect-sample-check-open/, '양불 대조 입력이 헤더에 있어야 한다');
