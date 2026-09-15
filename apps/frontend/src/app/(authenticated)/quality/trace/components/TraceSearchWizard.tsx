@@ -20,6 +20,7 @@ import {
   type LucideProps,
 } from "lucide-react";
 import { Button, Input } from "@/components/ui";
+import { EquipSearchModal } from "@/components/shared";
 import type { TraceSearchInput, TraceSearchMode } from "../types";
 
 interface Props {
@@ -42,6 +43,8 @@ interface SingleInput {
 
 interface EquipmentInput {
   equipCode: string;
+  /** 선택한 설비명 — 코드만으로는 어떤 설비인지 알 수 없어 함께 표시한다 */
+  equipName: string;
   dateFrom: string;
   dateTo: string;
 }
@@ -76,6 +79,7 @@ export default function TraceSearchWizard({ isOpen, loading, onClose, onSubmit }
   const [mode, setMode] = useState<TraceSearchMode | null>(null);
   const [single, setSingle] = useState<SingleInput>({ value: "" });
   const [equipment, setEquipment] = useState<EquipmentInput>(() => defaultEquipmentInput());
+  const [equipModalOpen, setEquipModalOpen] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -185,19 +189,41 @@ export default function TraceSearchWizard({ isOpen, loading, onClose, onSubmit }
             <div className="space-y-4">
               {needsPeriod ? (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  <Input
-                    label={
-                      isOperator
-                        ? t("quality.trace.wizard.workerCode", "작업자코드")
-                        : t("quality.trace.wizard.equipCode", "설비코드")
-                    }
-                    value={equipment.equipCode}
-                    onChange={(event) => setEquipment((prev) => ({ ...prev, equipCode: event.target.value }))}
-                    onKeyDown={(event) => event.key === "Enter" && submit()}
-                    leftIcon={isOperator ? <User className="h-4 w-4" /> : <Wrench className="h-4 w-4" />}
-                    fullWidth
-                    autoFocus
-                  />
+                  {isOperator ? (
+                    <Input
+                      label={t("quality.trace.wizard.workerCode", "작업자코드")}
+                      value={equipment.equipCode}
+                      onChange={(event) => setEquipment((prev) => ({ ...prev, equipCode: event.target.value }))}
+                      onKeyDown={(event) => event.key === "Enter" && submit()}
+                      leftIcon={<User className="h-4 w-4" />}
+                      fullWidth
+                      autoFocus
+                    />
+                  ) : (
+                    /* 설비코드는 외워서 칠 수 없다. 목록에서 골라 넣는다. */
+                    <div className="flex items-end gap-2">
+                      <Input
+                        label={t("quality.trace.wizard.equipCode", "설비코드")}
+                        value={
+                          equipment.equipName
+                            ? `${equipment.equipCode} - ${equipment.equipName}`
+                            : equipment.equipCode
+                        }
+                        placeholder={t("quality.trace.wizard.equipPick", "설비를 선택하세요")}
+                        readOnly
+                        onClick={() => setEquipModalOpen(true)}
+                        leftIcon={<Wrench className="h-4 w-4" />}
+                        fullWidth
+                      />
+                      <Button
+                        variant="secondary"
+                        onClick={() => setEquipModalOpen(true)}
+                        className="flex-shrink-0"
+                      >
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                   <Input
                     type="date"
                     label={t("quality.trace.wizard.dateFrom", "시작일")}
@@ -240,6 +266,19 @@ export default function TraceSearchWizard({ isOpen, loading, onClose, onSubmit }
           )}
         </div>
       </div>
+
+      <EquipSearchModal
+        isOpen={equipModalOpen}
+        onClose={() => setEquipModalOpen(false)}
+        onSelect={(equip) =>
+          setEquipment((prev) => ({
+            ...prev,
+            equipCode: equip.equipCode,
+            equipName: equip.equipName ?? "",
+          }))
+        }
+        includeInactive
+      />
     </div>
   );
 }
@@ -250,5 +289,5 @@ function defaultEquipmentInput(): EquipmentInput {
   const mm = String(now.getMonth() + 1).padStart(2, "0");
   const dd = String(now.getDate()).padStart(2, "0");
   const today = `${yyyy}-${mm}-${dd}`;
-  return { equipCode: "", dateFrom: today, dateTo: today };
+  return { equipCode: "", equipName: "", dateFrom: today, dateTo: today };
 }

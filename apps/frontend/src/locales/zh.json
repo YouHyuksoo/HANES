@@ -5077,7 +5077,10 @@
       "actionMount": "装载",
       "actionUnmount": "拆卸",
       "sourceRepair": "修理",
-      "sourceRework": "返工"
+      "sourceRework": "返工",
+      "wizard": {
+        "equipPick": "请选择设备"
+      }
     },
     "oqc": {
       "title": "出货检查(OQC)",
@@ -6151,7 +6154,9 @@
         "completedAt": "作业完成处理的日期时间。即在执行画面按下完成按钮的时刻。",
         "remark": "整个作业的备注。显示在执行画面输入的特殊事项。"
       }
-    }
+    },
+    "equipSearch": "设备检索",
+    "equipSearchPlaceholder": "按设备编码或设备名称检索..."
   },
   "shipping": {
     "boxScan": {

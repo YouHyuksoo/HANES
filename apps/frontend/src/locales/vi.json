@@ -5077,7 +5077,10 @@
       "actionMount": "Lắp đặt",
       "actionUnmount": "Tháo ra",
       "sourceRepair": "Sửa chữa",
-      "sourceRework": "Tái chế"
+      "sourceRework": "Tái chế",
+      "wizard": {
+        "equipPick": "Chọn thiết bị"
+      }
     },
     "oqc": {
       "title": "Kiểm tra xuất hàng (OQC)",
@@ -6151,7 +6154,9 @@
         "completedAt": "Ngày giờ hoàn thành công việc. Thời điểm bấm nút hoàn thành trên màn hình thực hiện.",
         "remark": "Ghi chú cho toàn bộ lệnh. Hiển thị các lưu ý đã nhập trên màn hình thực hiện."
       }
-    }
+    },
+    "equipSearch": "Tìm thiết bị",
+    "equipSearchPlaceholder": "Tìm theo mã hoặc tên thiết bị..."
   },
   "shipping": {
     "boxScan": {

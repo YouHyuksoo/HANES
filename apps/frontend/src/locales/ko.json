@@ -1779,7 +1779,9 @@
         "completedAt": "작업을 완료 처리한 일시입니다. 실행 화면에서 완료 버튼을 누른 시점입니다.",
         "remark": "작업 전체에 대한 비고입니다. 실행 화면에서 입력한 특이사항이 표시됩니다."
       }
-    }
+    },
+    "equipSearch": "설비 검색",
+    "equipSearchPlaceholder": "설비코드 또는 설비명 검색..."
   },
   "master": {
     "part": {
@@ -5631,7 +5633,10 @@
       "actionMount": "장착",
       "actionUnmount": "탈거",
       "sourceRepair": "수리",
-      "sourceRework": "재작업"
+      "sourceRework": "재작업",
+      "wizard": {
+        "equipPick": "설비를 선택하세요"
+      }
     },
     "oqc": {
       "title": "출하검사(OQC)",

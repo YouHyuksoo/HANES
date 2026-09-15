@@ -17,6 +17,8 @@ export { default as PartnerSelect } from "./PartnerSelect";
 export { default as ConsumableSearchModal } from "./ConsumableSearchModal";
 export type { ConsumableItem } from "./ConsumableSearchModal";
 export { default as UseYnSelect, useUseYnOptions } from "./UseYnSelect";
+export { default as EquipSearchModal } from "./EquipSearchModal";
+export type { EquipSearchItem } from "./EquipSearchModal";
 export { default as OrderSearchModal } from "./OrderSearchModal";
 export type { OrderItem } from "./OrderSearchModal";
 export { default as InspectItemImage } from "./InspectItemImage";

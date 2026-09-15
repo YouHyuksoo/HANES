@@ -5095,7 +5095,10 @@
       "actionMount": "Mount",
       "actionUnmount": "Unmount",
       "sourceRepair": "Repair",
-      "sourceRework": "Rework"
+      "sourceRework": "Rework",
+      "wizard": {
+        "equipPick": "Select equipment"
+      }
     },
     "oqc": {
       "title": "OQC Inspection",
@@ -6169,7 +6172,9 @@
         "completedAt": "Date and time the work was completed. The moment the complete button was pressed on the execution screen.",
         "remark": "Remark for the whole work order. Shows notes entered on the execution screen."
       }
-    }
+    },
+    "equipSearch": "Search Equipment",
+    "equipSearchPlaceholder": "Search by equipment code or name..."
   },
   "shipping": {
     "boxScan": {
