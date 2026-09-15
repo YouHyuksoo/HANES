@@ -30,6 +30,7 @@ export * from './material';
 
 // 품질 관련 타입
 export * from './quality';
+export * from './quality-control-plan';
 
 // 출하 관련 타입
 export * from './shipping';

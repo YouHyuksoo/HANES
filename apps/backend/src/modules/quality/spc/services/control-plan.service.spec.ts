@@ -5,13 +5,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, BadRequestException, GoneException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { ControlPlanService } from './control-plan.service';
 import { ControlPlan } from '../../../../entities/control-plan.entity';
 import { ControlPlanItem } from '../../../../entities/control-plan-item.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { NumberingService } from '../../../../shared/numbering.service';
+import { TransactionService } from '../../../../shared/transaction.service';
 
 describe('ControlPlanService', () => {
   let target: ControlPlanService;
@@ -115,5 +116,30 @@ describe('ControlPlanService', () => {
       await expect(target.revise('CP-001', 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
       expect(mockPlanRepo.save).not.toHaveBeenCalled();
     });
+  });
+
+  it('구 목록 API는 신규 Revision 테이블을 조회하는 adapter를 사용한다', async () => {
+    const tx = createMock<TransactionService>();
+    const query = jest.fn().mockResolvedValue([{ planNo: 'CP-20260915-001', itemCode: 'FG01', itemName: '제품', phase: 'PRODUCTION', revisionNo: 0, status: 'DRAFT' }]);
+    tx.run.mockImplementation(async (callback) => callback({ query } as any));
+    const adapter = new ControlPlanService(mockPlanRepo, mockItemRepo, mockNumbering, tx);
+    const result = await adapter.findAll({ page: 1, limit: 50 }, '40', '1000');
+    expect(result.data).toHaveLength(1);
+    expect(String(query.mock.calls[0][0])).toContain('QUALITY_PLAN_REVISIONS');
+    expect(mockPlanRepo.createQueryBuilder).not.toHaveBeenCalled();
+  });
+
+  it('구 쓰기 API는 레거시 테이블에 이중 저장하지 않고 신규 API 안내와 함께 종료한다', async () => {
+    const tx = createMock<TransactionService>();
+    const adapter = new ControlPlanService(mockPlanRepo, mockItemRepo, mockNumbering, tx);
+
+    await expect(adapter.create({ itemCode: 'FG01', itemName: '제품' } as any, '40', '1000', 'tester'))
+      .rejects.toThrow(GoneException);
+    await expect(adapter.update('CP-001', {} as any, 'tester', '40', '1000')).rejects.toThrow(GoneException);
+    await expect(adapter.delete('CP-001', '40', '1000')).rejects.toThrow(GoneException);
+    await expect(adapter.approve('CP-001', 'tester', '40', '1000')).rejects.toThrow(GoneException);
+    await expect(adapter.revise('CP-001', 'tester', '40', '1000')).rejects.toThrow(GoneException);
+    expect(mockPlanRepo.save).not.toHaveBeenCalled();
+    expect(mockItemRepo.save).not.toHaveBeenCalled();
   });
 });

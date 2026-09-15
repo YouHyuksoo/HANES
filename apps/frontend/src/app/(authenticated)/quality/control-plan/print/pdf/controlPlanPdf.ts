@@ -1,0 +1,15 @@
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { documentHeader, getText, type QualityPlanPrintModel } from '../controlPlanPrintModel';
+import { addPageFooters, drawFormTitle, drawInfoGrid, loadNotoSansKrFont, padTableRows } from './pdfBase';
+
+export const CONTROL_PLAN_PHYSICAL_COLUMNS = ['PROCESS_NO','FLOW_SUB','FLOW_MAIN','FLOW_OUTSOURCING','PROCESS_NAME','EQUIPMENT_NAME','CHARACTERISTIC_NO','PRODUCT_CHARACTERISTIC','PROCESS_CHARACTERISTIC','SPECIAL_CHAR_CODE','SPECIFICATION','EVALUATION_METHOD','SAMPLE_SIZE','SAMPLE_FREQUENCY','CONTROL_METHOD','RESPONSIBLE_ROLE','REACTION_PLAN','RECORD_FORM'] as const;
+
+export async function createControlPlanPdf(model: QualityPlanPrintModel) {
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a3'}); await loadNotoSansKrFont(doc); const header=documentHeader(model,'CONTROL_PLAN'); const width=doc.internal.pageSize.getWidth();
+  const decorate=()=>{ drawFormTitle(doc,'CONTROL PLAN','[첨부 5] Control Plan',width); drawInfoGrid(doc,[['Document No.',header.documentNo,'REV. No.',header.revision,'Project Name',header.project,'Phase Covered',header.phase,'Prepared by/Date',`${header.author || '-'} / ${header.issueDate || '-'}`],['Issue Date',header.issueDate,'Part No.',header.itemCode,'Organization/Site',getText(model.package,'ORGANIZATION'),'Verified by/Date','-','Revision Date',header.issueDate],['Part Name',header.itemName,'Customer',header.customer || 'N/A','Key Contact',getText(model.package,'KEY_CONTACT'),'Approved by/Date','-','Latest Change Level','-']],width,14,4.5); };
+  decorate();
+  const rows=model.controlPlanRows.map((row)=>{const lane=getText(row,'FLOW_LANE'); return [getText(row,'PROCESS_NO'),lane==='SUB'?'●':'',lane==='MAIN'?'●':'',lane==='OUTSOURCING'?'●':'',getText(row,'PROCESS_NAME'),getText(row,'EQUIPMENT_NAME'),getText(row,'CHARACTERISTIC_NO'),getText(row,'PRODUCT_CHARACTERISTIC'),getText(row,'PROCESS_CHARACTERISTIC'),getText(row,'SPECIAL_CHAR_CODE'),getText(row,'SPECIFICATION'),getText(row,'EVALUATION_METHOD'),getText(row,'SAMPLE_SIZE'),getText(row,'SAMPLE_FREQUENCY'),getText(row,'CONTROL_METHOD'),getText(row,'RESPONSIBLE_ROLE'),getText(row,'REACTION_PLAN'),getText(row,'RECORD_FORM')];});
+  autoTable(doc,{startY:29,theme:'grid',styles:{font:'NotoSansKR',fontStyle:'normal',fontSize:5.4,cellPadding:1,lineColor:[75,75,75],lineWidth:0.12,minCellHeight:21},headStyles:{font:'NotoSansKR',fontStyle:'normal',fillColor:[242,242,242],textColor:20},head:[[{content:'Process flow',colSpan:4},{content:'Process',colSpan:2},{content:'Control Characteristics',colSpan:4},{content:'Method',colSpan:5},{content:'Reaction Plan',colSpan:2},{content:'Document',rowSpan:2}],['Process No.','Sub','Main','Out Sourcing','Process Name','Machines/Jigs/Fixtures/Tools','No.','Product','Process','Special Characteristics','Specification / Tolerance','Evaluation Measurement Technique','Sample Size','Freq.','Control Method (Error Proofing)','Contact','Corrective Action']],body:padTableRows(rows,18,10),margin:{left:7,right:7,top:29,bottom:10},didDrawPage:decorate});
+  addPageFooters(doc,'QREKA-PR-025-04',header.revision,'A3(420mm×297mm)'); return doc;
+}

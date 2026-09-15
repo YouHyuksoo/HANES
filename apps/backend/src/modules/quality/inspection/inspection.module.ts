@@ -30,7 +30,10 @@ import { EquipMaster } from '../../../entities/equip-master.entity';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
-import { ControlPlanItem } from '../../../entities/control-plan-item.entity';
+import { QualityControlPlanRowEntity } from '../../../entities/quality-control-plan-row.entity';
+import { QualityPlanRevisionEntity } from '../../../entities/quality-plan-revision.entity';
+import { QualityPlanDocumentEntity } from '../../../entities/quality-plan-document.entity';
+import { QualityPlanPackageEntity } from '../../../entities/quality-plan-package.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
@@ -65,7 +68,10 @@ import { SharedModule } from '../../../shared/shared.module';
       WorkerMaster,
       ProcessMaster,
       MatLot,
-      ControlPlanItem,
+      QualityControlPlanRowEntity,
+      QualityPlanRevisionEntity,
+      QualityPlanDocumentEntity,
+      QualityPlanPackageEntity,
       PartnerMaster,
       BoxMaster,
       PalletMaster,

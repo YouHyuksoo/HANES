@@ -10,7 +10,7 @@
  * 3. **size**: 모달 크기 (sm, md, lg, xl, full)
  * 4. **Portal**: body에 직접 렌더링하여 z-index 문제 방지
  */
-import { useEffect, useCallback, useState, Fragment } from 'react';
+import { useEffect, useCallback, useId, useState, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { X, AlertTriangle, HelpCircle, Copy, Check } from 'lucide-react';
@@ -40,6 +40,7 @@ function Modal({
   footer,
 }: ModalProps) {
   const { t } = useTranslation();
+  const titleId = useId();
 
   // ESC 키로 닫기
   const handleKeyDown = useCallback(
@@ -96,7 +97,7 @@ function Modal({
           `}
           role="dialog"
           aria-modal="true"
-          aria-labelledby={title ? 'modal-title' : undefined}
+          aria-labelledby={title ? titleId : undefined}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -104,7 +105,7 @@ function Modal({
             <div className="flex items-center justify-between p-4 border-b border-border">
               {title && (
                 <h2
-                  id="modal-title"
+                  id={titleId}
                   className="text-lg font-semibold text-text"
                 >
                   {title}

@@ -1,0 +1,12 @@
+'use client';
+
+import { useState } from 'react';
+import { Search } from 'lucide-react';
+import { Button, Input, Modal } from '@/components/ui';
+import { PartSearchModal, type PartItem } from '@/components/shared';
+
+export default function NewPackageModal({ isOpen, onClose, onConfirm, busy }: { isOpen: boolean; onClose: () => void; onConfirm: (input: { itemCode: string; phase: string; projectCode?: string; projectName?: string; partNumber?: string }) => Promise<unknown>; busy: boolean }) {
+  const [part, setPart] = useState<PartItem | null>(null); const [partOpen, setPartOpen] = useState(false);
+  const [phase, setPhase] = useState('PRODUCTION'); const [projectCode, setProjectCode] = useState(''); const [projectName, setProjectName] = useState(''); const [partNumber, setPartNumber] = useState('');
+  return <><Modal isOpen={isOpen} onClose={onClose} title="품질 문서 묶음 신규 생성" size="lg" footer={<><Button variant="secondary" onClick={onClose}>취소</Button><Button disabled={!part || busy} onClick={async () => { if (!part) return; const result = await onConfirm({ itemCode: part.itemCode, phase, projectCode, projectName, partNumber }); if (result !== undefined) onClose(); }}>PFD · PFMEA · CP 생성</Button></>}><div className="grid gap-4 md:grid-cols-2"><div className="md:col-span-2"><label className="mb-1 block text-sm font-medium text-text">품목</label><button className="flex w-full items-center rounded-md border border-border bg-background px-3 py-2 text-left text-sm" onClick={() => setPartOpen(true)}><span className={part ? 'text-text' : 'text-text-muted'}>{part ? `${part.itemCode} · ${part.itemName}` : '품목마스터에서 선택'}</span><Search className="ml-auto h-4 w-4 text-primary" /></button></div><label className="text-sm font-medium text-text">단계<select className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2" value={phase} onChange={(event) => setPhase(event.target.value)}><option value="PROTOTYPE">Prototype</option><option value="PRE_LAUNCH">Pre-launch</option><option value="PRODUCTION">Production</option></select></label><Input label="품번" value={partNumber} onChange={(event) => setPartNumber(event.target.value)} fullWidth /><Input label="프로젝트 코드" value={projectCode} onChange={(event) => setProjectCode(event.target.value)} fullWidth /><Input label="프로젝트명" value={projectName} onChange={(event) => setProjectName(event.target.value)} fullWidth /></div></Modal><PartSearchModal isOpen={partOpen} onClose={() => setPartOpen(false)} onSelect={(value) => { setPart(value); setPartOpen(false); }} /></>;
+}

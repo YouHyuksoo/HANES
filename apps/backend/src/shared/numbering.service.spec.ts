@@ -187,4 +187,21 @@ describe('NumberingService', () => {
       );
     });
   });
+
+  describe('quality document numbers', () => {
+    it.each([
+      ['PFD', 'SEQ_QUALITY_PFD_NO', 'PFD-20260915-007'],
+      ['PFMEA', 'SEQ_QUALITY_PFMEA_NO', 'PFMEA-20260915-007'],
+      ['CONTROL_PLAN', 'SEQ_QUALITY_CP_NO', 'CP-20260915-007'],
+    ] as const)('nextQualityDocumentNo uses %s global sequence', async (type, sequence, expected) => {
+      mockQueryRunner.query.mockResolvedValueOnce([{ NEXT_SEQ: 7 }]);
+
+      await expect(
+        target.nextQualityDocumentNo(mockQueryRunner, type, new Date(2026, 8, 15, 12, 0, 0)),
+      ).resolves.toBe(expected);
+      expect(mockQueryRunner.query).toHaveBeenCalledWith(
+        `SELECT ${sequence}.NEXTVAL AS "NEXT_SEQ" FROM DUAL`,
+      );
+    });
+  });
 });

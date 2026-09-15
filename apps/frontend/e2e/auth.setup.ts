@@ -13,6 +13,7 @@ import fs from 'fs';
 const authFile = path.join(__dirname, '.auth/user.json');
 
 setup('인증: 로그인 후 세션 저장', async ({ page }) => {
+  setup.setTimeout(90_000);
   const email = process.env.E2E_EMAIL;
   const password = process.env.E2E_PASSWORD;
   if (!email || !password) {
@@ -32,7 +33,8 @@ setup('인증: 로그인 후 세션 저장', async ({ page }) => {
   await page.locator('form button[type="submit"]').click();
 
   // 로그인 성공 → 대시보드 이동
-  await page.waitForURL('**/dashboard', { timeout: 15000 });
+  // Turbopack 개발 서버의 첫 화면 컴파일은 냉기동 시 15초를 넘을 수 있다.
+  await page.waitForURL('**/dashboard', { timeout: 60000 });
 
   fs.mkdirSync(path.dirname(authFile), { recursive: true });
   await page.context().storageState({ path: authFile });

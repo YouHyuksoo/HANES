@@ -9,7 +9,7 @@ keywords: [관리계획서, Control Plan, THN, 입고검사, IQC, 압착, 크림
 # THN 전장 관리계획서 (텍스트화)
 
 원본: 현장 PDF `THN 관리계획서` (스캔 20페이지, 양산 Control Plan).  
-이 문서는 AI 지식검색용으로 텍스트화한 것이다. HANES 화면/테이블에 시드한 데이터가 아니다.
+이 문서는 AI 지식검색용으로 텍스트화한 원본 기준이다. `2026-09-15_seed_thn_control_plan_standard.sql`이 이 기준을 HANES `QC_CONTROL_PLAN`의 `THN-STD-2026` 표준 DRAFT 패키지로 시드한다.
 
 이상 발생 시 공통 반응: 부적합 FLOW, 폐기 후 재작업, LOT 불량 관리자 보고, 필요 시 보전 호출.
 

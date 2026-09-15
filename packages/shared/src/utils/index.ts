@@ -25,3 +25,4 @@ export * from './repair-rules';
 export * from './assembly-sg-rules';
 export * from './inspect-measurement-spec';
 export * from './issue-allocation-rules';
+export * from './quality-control-plan.rules';
