@@ -23,6 +23,7 @@ import { BomMaster } from '../../../entities/bom-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatIssueService } from './mat-issue.service';
@@ -42,6 +43,9 @@ export interface ItemStockAvailability {
 }
 
 const EMPTY_AVAILABILITY: ItemStockAvailability = { availableQty: 0, issuableQty: 0, pendingIqcQty: 0 };
+
+/** 라벨 재출력 복원 조회 기간(일) — 분할 후 며칠 뒤 이어서 출고하는 현장 흐름을 덮는다 */
+const SPLIT_LABEL_LOOKBACK_DAYS = 7;
 import {
   CreateIssueRequestDto,
   IssueRequestQueryDto,
@@ -67,6 +71,10 @@ export class IssueRequestService {
     private readonly matIssueRepository: Repository<MatIssue>,
     @InjectRepository(MatStock)
     private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(MatLot)
+    private readonly matLotRepository: Repository<MatLot>,
+    @InjectRepository(StockTransaction)
+    private readonly stockTransactionRepository: Repository<StockTransaction>,
     @InjectRepository(RoutingProcess)
     private readonly routingProcessRepository: Repository<RoutingProcess>,
     private readonly matIssueService: MatIssueService,
@@ -705,6 +713,89 @@ export class IssueRequestService {
       }
       return { splits };
     });
+  }
+
+  /**
+   * 이미 커밋된 출고 준비 분할의 라벨 데이터를 되살린다 — 모달을 닫았다 열어도 재출력할 수 있게.
+   *
+   * 분할은 커밋되지만 라벨 출력은 실패하거나 건너뛸 수 있다(프린터 잼, 미리보기 닫기).
+   * 그 상태로 모달을 닫으면 라벨 없는 신규 시리얼 2건이 창고에 남고 원본은 SPLIT(재고 0)이라
+   * 실물을 식별할 방법이 사라진다. 그래서 화면 상태가 아니라 DB 에서 복원한다.
+   *
+   * 복원 근거: 분할이 남긴 STOCK_TRANSACTIONS (transType='LOT_SPLIT_IN', refType='LOT_SPLIT',
+   * refId=원본 시리얼). 한 refId 그룹 = 자식 2건 = 라벨 2장이고 TRANS_NO 오름차순이
+   * 출고분 → 잔량분 순서다.
+   *
+   * 한계: 수불에는 "어느 출고요청의 분할인가"를 가리키는 컬럼이 없다. 그래서 요청 품목코드와
+   * 최근 기간으로만 좁힌다. 같은 품목을 /material/lot-split 화면에서 따로 분할한 건도 함께
+   * 잡힐 수 있다(과다 복원). 재출력 목록이 조금 넓은 것은 무해하지만, 라벨 없는 시리얼을
+   * 놓치는 과소 복원은 현장에서 식별 불가 재고를 만들기 때문에 넓은 쪽을 택했다.
+   */
+  async findSplitLabelGroups(requestNo: string, company?: string, plant?: string) {
+    const request = await this.getRequestOrFail(requestNo, company, plant);
+    const effectiveCompany = request.company ?? company;
+    const effectivePlant = request.plant ?? plant;
+    const tenantWhere = this.tenantWhere(effectiveCompany, effectivePlant);
+
+    const items = await this.requestItemRepository.find({ where: { requestId: requestNo, ...tenantWhere } });
+    const itemCodes = [...new Set(items.map((item) => item.itemCode).filter(Boolean))];
+    if (itemCodes.length === 0) return { splits: [] };
+
+    const since = new Date(Date.now() - SPLIT_LABEL_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+    const txs = await this.stockTransactionRepository.find({
+      where: {
+        transType: 'LOT_SPLIT_IN',
+        refType: 'LOT_SPLIT',
+        status: 'DONE',
+        itemCode: In(itemCodes),
+        transDate: MoreThanOrEqual(since),
+        ...tenantWhere,
+      },
+      order: { transNo: 'ASC' },
+    });
+    if (txs.length === 0) return { splits: [] };
+
+    const childMatUids = [...new Set(txs.map((tx) => tx.matUid).filter((uid): uid is string => !!uid))];
+    const [childLots, parts] = await Promise.all([
+      this.matLotRepository.find({ where: { matUid: In(childMatUids), ...tenantWhere } }),
+      this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }),
+    ]);
+    const lotMap = new Map(childLots.map((lot) => [lot.matUid, lot]));
+    const partMap = new Map(parts.map((part) => [part.itemCode, part]));
+
+    // refId(원본 시리얼)별 그룹 — 한 그룹이 라벨 미리보기 1회분이다
+    const bySource = new Map<string, StockTransaction[]>();
+    for (const tx of txs) {
+      if (!tx.refId || !tx.matUid) continue;
+      const group = bySource.get(tx.refId);
+      if (group) group.push(tx);
+      else bySource.set(tx.refId, [tx]);
+    }
+
+    const splits = [...bySource.entries()].map(([sourceMatUid, group]) => {
+      const part = partMap.get(group[0].itemCode);
+      const arrivalNo = lotMap.get(group[0].matUid ?? '')?.arrivalNo ?? null;
+      const results = group.map((tx) => ({ matUid: tx.matUid as string, qty: Number(tx.qty) }));
+      return {
+        sourceMatUid,
+        sourceLotNo: sourceMatUid,
+        itemCode: group[0].itemCode,
+        itemName: part?.itemName ?? group[0].itemCode,
+        arrivalNo,
+        results,
+        label: {
+          arrivalNo: arrivalNo ?? '',
+          serials: results.map((child, idx) => ({
+            matUid: child.matUid,
+            initQty: lotMap.get(child.matUid)?.initQty ?? child.qty,
+            arrivalSeq: idx + 1,
+            itemCode: group[0].itemCode,
+          })),
+        },
+      };
+    });
+
+    return { splits };
   }
 
   /**

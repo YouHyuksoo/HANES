@@ -115,6 +115,18 @@ export class IssueRequestController {
     return ResponseUtil.success(data, 'LOT이 분할되었습니다. 라벨을 출력해 부착하세요.');
   }
 
+  @Get(':requestNo/split-labels')
+  @ApiOperation({ summary: '출고 준비 분할 라벨 복원 — 모달을 닫았다 열어도 분할 결과를 재출력할 수 있게 한다' })
+  @ApiParam({ name: 'requestNo', description: '출고요청 번호' })
+  async findSplitLabels(
+    @Param('requestNo') requestNo: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.issueRequestService.findSplitLabelGroups(requestNo, company, plant);
+    return ResponseUtil.success(data);
+  }
+
   @Post(':requestNo/issue')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: '출고요청 기반 실출고' })

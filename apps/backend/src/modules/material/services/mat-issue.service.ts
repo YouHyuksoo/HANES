@@ -5,7 +5,7 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, DataSource, In } from 'typeorm';
+import { Repository, Between, DataSource, In, QueryRunner } from 'typeorm';
 import { isProductionIssueType, isMatLotIssuable, isMatLotOnHold, MAT_LOT_STATUS } from '@harness/shared';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
@@ -108,9 +108,16 @@ export class MatIssueService {
     criteria: FifoCriteria,
     company?: string | null,
     plant?: string | null,
+    queryRunner?: QueryRunner,
   ): Promise<FifoCandidateRow[]> {
     const dateColumn = criteria === 'MFG_DATE' ? 'l.manufactureDate' : 'l.recvDate';
-    const qb = this.matStockRepository.createQueryBuilder('s')
+    // 출고 트랜잭션 안에서 부르면 같은 트랜잭션에서 읽어야 한다. 기본 커넥션으로 읽으면
+    // 방금(같은 트랜잭션에서) 차감한 선입 롯트가 아직 재고>0 으로 보여, 한 요청을
+    // 선입 A + 후입 B 로 정확히 FIFO 배분해도 B 차례에 A 가 후보로 잡혀 FIFO 위반으로 막힌다.
+    const qb = queryRunner
+      ? queryRunner.manager.createQueryBuilder(MatStock, 's')
+      : this.matStockRepository.createQueryBuilder('s');
+    qb
       .select('l.matUid', 'matUid')
       .addSelect('l.recvDate', 'recvDate')
       .addSelect('l.manufactureDate', 'manufactureDate')
@@ -135,6 +142,8 @@ export class MatIssueService {
    * - 만료 LOT + EXPIRED_ISSUE_BLOCK=Y → 항상 차단
    * - FIFO 위반 + FIFO_ACTION=BLOCK → 차단(먼저 낼 LOT matUid·기준일 포함)
    * - FIFO 위반 + WARN → 경고 문자열 반환
+   * @param queryRunner 출고 트랜잭션. 주면 FIFO 후보 조회가 같은 트랜잭션에서 돌아
+   *                    이미 차감한(미커밋) 재고를 반영한다. 없으면 기본 커넥션으로 읽는다.
    * @returns warnings (차단이 아닌 경고만)
    */
   async evaluateIssuePolicy(
@@ -143,6 +152,7 @@ export class MatIssueService {
     policy: IssuePolicyConfig,
     company?: string | null,
     plant?: string | null,
+    queryRunner?: QueryRunner,
   ): Promise<string[]> {
     const warnings: string[] = [];
 
@@ -154,7 +164,7 @@ export class MatIssueService {
 
     if (!policy.fifoEnabled) return warnings;
 
-    const candidates = await this.findFifoCandidateLots(lot, warehouseCode, policy.fifoCriteria, company, plant);
+    const candidates = await this.findFifoCandidateLots(lot, warehouseCode, policy.fifoCriteria, company, plant, queryRunner);
     const older = findOlderIssuableLot(lot, candidates, policy.fifoCriteria);
     if (!older) return warnings;
 
@@ -313,7 +323,7 @@ export class MatIssueService {
     return this.tx.run((queryRunner) => this.createInTx(queryRunner, dto, company, plant));
   }
 
-  async createInTx(queryRunner: import('typeorm').QueryRunner, dto: CreateMatIssueDto, company?: string, plant?: string) {
+  async createInTx(queryRunner: QueryRunner, dto: CreateMatIssueDto, company?: string, plant?: string) {
     const { orderNo, prodResultNo, warehouseCode, issueType, items, remark, workerId } = dto;
     const results = [];
     const issueNo = await this.numbering.nextInTx(queryRunner, 'MAT_ISSUE');
@@ -361,7 +371,7 @@ export class MatIssueService {
       }
 
       // 유효기간 만료 차단 + FIFO(BLOCK 차단 / WARN 경고 수집) — IQC·HOLD 검사 다음 단계
-      const policyWarnings = await this.evaluateIssuePolicy(lot, warehouseCode, issuePolicy, lot.company ?? company, lot.plant ?? plant);
+      const policyWarnings = await this.evaluateIssuePolicy(lot, warehouseCode, issuePolicy, lot.company ?? company, lot.plant ?? plant, queryRunner);
 
       const stockRows = await queryRunner.manager.find(MatStock, {
         where: warehouseCode

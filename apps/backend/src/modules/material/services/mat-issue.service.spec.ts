@@ -27,6 +27,40 @@ const createFifoCandidateQueryBuilder = (rows: Array<Record<string, unknown>>) =
   getRawMany: jest.fn().mockResolvedValue(rows),
 });
 
+/**
+ * 출고 트랜잭션 manager 의 createQueryBuilder 목.
+ *
+ * 한 목이 두 가지로 쓰인다 — 인자가 있으면(createQueryBuilder(MatStock, 's')) FIFO 후보 조회,
+ * 없으면 재고 차감 UPDATE 빌더다. FIFO 후보 조회는 같은 트랜잭션에서 돌아야 이 트랜잭션이
+ * 이미 차감한(미커밋) 재고를 본다. 두 용도를 각각 세는 카운터를 붙여, 기존 테스트의
+ * "항목마다 후보 1쿼리" / "재고 차감 N회" 검증이 의미를 잃지 않게 한다.
+ */
+const createManagerQueryBuilder = () => {
+  const fifoCalls = jest.fn();
+  const updateCalls = jest.fn();
+  let fifoRows: Array<Record<string, unknown>> = [];
+  const fn = jest.fn((...args: unknown[]) => {
+    if (args.length > 0) {
+      fifoCalls();
+      return createFifoCandidateQueryBuilder(fifoRows);
+    }
+    updateCalls();
+    return {
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      setParameters: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
+  });
+  return Object.assign(fn, {
+    fifoCalls,
+    updateCalls,
+    setFifoRows: (rows: Array<Record<string, unknown>>) => { fifoRows = rows; },
+  });
+};
+
 describe('MatIssueService', () => {
   let target: MatIssueService;
   let mockMatIssueRepo: DeepMocked<Repository<MatIssue>>;
@@ -533,7 +567,7 @@ describe('MatIssueService', () => {
         ]),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
-      createQueryBuilder: jest.fn(() => ({ update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }) })),
+      createQueryBuilder: createManagerQueryBuilder(),
       update: jest.fn().mockResolvedValue(undefined),
     };
     (mockQueryRunner as any).manager = manager;
@@ -554,7 +588,7 @@ describe('MatIssueService', () => {
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-001', qty: -3 }));
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({ transNo: 'TX-002', qty: -2 }));
-    expect(manager.createQueryBuilder).toHaveBeenCalledTimes(2);
+    expect(manager.createQueryBuilder.updateCalls).toHaveBeenCalledTimes(2);
   });
 
   it('moves stock to the process PROC_MAT_STOCKS when processCode is given', async () => {
@@ -582,7 +616,7 @@ describe('MatIssueService', () => {
         ]),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
-      createQueryBuilder: jest.fn(() => ({ update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }) })),
+      createQueryBuilder: createManagerQueryBuilder(),
       update: jest.fn().mockResolvedValue(undefined),
     };
     (mockQueryRunner as any).manager = manager;
@@ -612,7 +646,7 @@ describe('MatIssueService', () => {
       }),
     );
     // 원자재창고 차감
-    expect(manager.createQueryBuilder).toHaveBeenCalledTimes(1);
+    expect(manager.createQueryBuilder.updateCalls).toHaveBeenCalledTimes(1);
     // 공정재고 가산은 ProcMatStockService.addStockInTx 로 위임(PROC_MAT_STOCKS)
     expect(mockProcMatStockService.addStockInTx).toHaveBeenCalledWith(
       mockQueryRunner,
@@ -651,7 +685,7 @@ describe('MatIssueService', () => {
         ]),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
-      createQueryBuilder: jest.fn(() => ({ update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }) })),
+      createQueryBuilder: createManagerQueryBuilder(),
       update: jest.fn().mockResolvedValue(undefined),
     };
     (mockQueryRunner as any).manager = manager;
@@ -700,7 +734,7 @@ describe('MatIssueService', () => {
         ]),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
-      createQueryBuilder: jest.fn(() => ({ update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }) })),
+      createQueryBuilder: createManagerQueryBuilder(),
       update: jest.fn().mockResolvedValue(undefined),
     };
     (mockQueryRunner as any).manager = manager;
@@ -747,6 +781,7 @@ describe('MatIssueService', () => {
         .mockResolvedValueOnce([]),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
+      createQueryBuilder: createManagerQueryBuilder(),
       update: jest.fn().mockResolvedValue(undefined),
     };
     (mockQueryRunner as any).manager = manager;
@@ -774,7 +809,7 @@ describe('MatIssueService', () => {
           .mockResolvedValueOnce([{ warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'MAT-NEW', qty: 0, availableQty: 0, company: 'HANES', plant: 'P01' } as MatStock]),
         create: jest.fn((entity, payload) => ({ ...payload })),
         save: jest.fn().mockImplementation(async (entity) => entity),
-        createQueryBuilder: jest.fn(() => ({ update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }) })),
+        createQueryBuilder: createManagerQueryBuilder(),
         update: jest.fn().mockResolvedValue(undefined),
       };
       (mockQueryRunner as any).manager = manager;
@@ -789,45 +824,45 @@ describe('MatIssueService', () => {
 
     it('FIFO BLOCK(기본): 더 오래된 출고가능 LOT 가 있으면 먼저 낼 LOT 와 기준일을 담아 차단한다', async () => {
       const manager = setupManager({});
-      mockMatStockRepo.createQueryBuilder.mockReturnValue(createFifoCandidateQueryBuilder([
+      manager.createQueryBuilder.setFifoRows([
         { matUid: 'MAT-OLD', recvDate: new Date(2026, 8, 1), manufactureDate: null, lotStatus: 'NORMAL' },
-      ]) as any);
+      ]);
 
       await expect(target.create(issueDto, 'HANES', 'P01')).rejects.toThrow(/FIFO.*MAT-OLD.*2026-09-01/);
       // 재고 차감 전에 막힌다
-      expect(manager.createQueryBuilder).not.toHaveBeenCalled();
+      expect(manager.createQueryBuilder.updateCalls).not.toHaveBeenCalled();
       expect(manager.save).not.toHaveBeenCalled();
     });
 
     it('FIFO WARN: 출고는 진행하고 결과 행에 warnings 를 싣는다', async () => {
       configBy({ FIFO_ACTION: 'WARN' });
       const manager = setupManager({});
-      mockMatStockRepo.createQueryBuilder.mockReturnValue(createFifoCandidateQueryBuilder([
+      manager.createQueryBuilder.setFifoRows([
         { matUid: 'MAT-OLD', recvDate: new Date(2026, 8, 1), manufactureDate: null, lotStatus: 'NORMAL' },
-      ]) as any);
+      ]);
 
       const result = await target.create(issueDto, 'HANES', 'P01');
 
-      expect(manager.createQueryBuilder).toHaveBeenCalledTimes(1);
+      expect(manager.createQueryBuilder.updateCalls).toHaveBeenCalledTimes(1);
       expect(result[0].warnings).toHaveLength(1);
       expect(result[0].warnings[0]).toMatch(/FIFO.*MAT-OLD/);
     });
 
     it('기준일이 같은 LOT 는 위반이 아니다', async () => {
-      setupManager({});
-      mockMatStockRepo.createQueryBuilder.mockReturnValue(createFifoCandidateQueryBuilder([
+      const manager = setupManager({});
+      manager.createQueryBuilder.setFifoRows([
         { matUid: 'MAT-SAME', recvDate: new Date(2026, 8, 5, 9, 0), manufactureDate: null, lotStatus: 'NORMAL' },
-      ]) as any);
+      ]);
 
       const result = await target.create(issueDto, 'HANES', 'P01');
       expect(result[0].warnings).toEqual([]);
     });
 
     it('기준일이 null 인 후보 LOT 는 순서를 만들지 않는다', async () => {
-      setupManager({});
-      mockMatStockRepo.createQueryBuilder.mockReturnValue(createFifoCandidateQueryBuilder([
+      const manager = setupManager({});
+      manager.createQueryBuilder.setFifoRows([
         { matUid: 'MAT-NODATE', recvDate: null, manufactureDate: null, lotStatus: 'NORMAL' },
-      ]) as any);
+      ]);
 
       const result = await target.create(issueDto, 'HANES', 'P01');
       expect(result[0].warnings).toEqual([]);
@@ -835,33 +870,33 @@ describe('MatIssueService', () => {
 
     it('FIFO_CRITERIA=MFG_DATE 면 제조일로 비교한다', async () => {
       configBy({ FIFO_CRITERIA: 'MFG_DATE' });
-      setupManager({});
+      const manager = setupManager({});
       // 입고일은 더 늦지만 제조일이 더 빠른 LOT → MFG_DATE 기준 위반
-      mockMatStockRepo.createQueryBuilder.mockReturnValue(createFifoCandidateQueryBuilder([
+      manager.createQueryBuilder.setFifoRows([
         { matUid: 'MAT-OLDMFG', recvDate: new Date(2026, 8, 8), manufactureDate: new Date(2026, 7, 20), lotStatus: 'NORMAL' },
-      ]) as any);
+      ]);
 
       await expect(target.create(issueDto, 'HANES', 'P01')).rejects.toThrow(/제조일.*MAT-OLDMFG.*2026-08-20/);
     });
 
     it('수리 부품 소비(REPAIR)는 FIFO_APPLY_REPAIR 미설정(기본 N)이면 FIFO 후보를 조회하지 않는다', async () => {
-      setupManager({});
-      mockMatStockRepo.createQueryBuilder.mockReturnValue(createFifoCandidateQueryBuilder([
+      const manager = setupManager({});
+      manager.createQueryBuilder.setFifoRows([
         { matUid: 'MAT-OLD', recvDate: new Date(2026, 8, 1), manufactureDate: null, lotStatus: 'NORMAL' },
-      ]) as any);
+      ]);
 
       const result = await target.create({ ...issueDto, issueType: 'REPAIR' }, 'HANES', 'P01');
 
-      expect(mockMatStockRepo.createQueryBuilder).not.toHaveBeenCalled();
+      expect(manager.createQueryBuilder.fifoCalls).not.toHaveBeenCalled();
       expect(result[0].warnings).toEqual([]);
     });
 
     it('수리 부품 소비(REPAIR)도 FIFO_APPLY_REPAIR=Y 면 FIFO BLOCK 이 적용된다', async () => {
       configBy({ FIFO_APPLY_REPAIR: 'Y' });
       const manager = setupManager({});
-      mockMatStockRepo.createQueryBuilder.mockReturnValue(createFifoCandidateQueryBuilder([
+      manager.createQueryBuilder.setFifoRows([
         { matUid: 'MAT-OLD', recvDate: new Date(2026, 8, 1), manufactureDate: null, lotStatus: 'NORMAL' },
-      ]) as any);
+      ]);
 
       await expect(target.create({ ...issueDto, issueType: 'REPAIR' }, 'HANES', 'P01')).rejects.toThrow(/FIFO.*MAT-OLD/);
       expect(manager.save).not.toHaveBeenCalled();
@@ -876,11 +911,11 @@ describe('MatIssueService', () => {
 
     it('FIFO_ENABLED=N 이면 후보 LOT 를 조회하지 않는다', async () => {
       configBy({ FIFO_ENABLED: 'N' });
-      setupManager({});
+      const manager = setupManager({});
 
       const result = await target.create(issueDto, 'HANES', 'P01');
 
-      expect(mockMatStockRepo.createQueryBuilder).not.toHaveBeenCalled();
+      expect(manager.createQueryBuilder.fifoCalls).not.toHaveBeenCalled();
       expect(result[0].warnings).toEqual([]);
     });
 
@@ -896,7 +931,49 @@ describe('MatIssueService', () => {
       // 5키(FIFO_ENABLED/FIFO_CRITERIA/FIFO_ACTION/EXPIRED_ISSUE_BLOCK/FIFO_APPLY_REPAIR) × 1회
       expect(mockSysConfigService.getValue).toHaveBeenCalledTimes(5);
       // 후보 LOT 조회는 항목마다 1쿼리
-      expect(mockMatStockRepo.createQueryBuilder).toHaveBeenCalledTimes(3);
+      expect(manager.createQueryBuilder.fifoCalls).toHaveBeenCalledTimes(3);
+    });
+
+    it('같은 트랜잭션이 이미 차감한 선입 LOT 때문에 다음 품목이 FIFO 로 막히지 않는다', async () => {
+      // 선입 A 200 + 후입 B 700 으로 정확히 FIFO 배분한 출고.
+      // A 를 먼저 출고해 차감(미커밋)한 뒤 B 차례가 되면, 후보 조회를 기본 커넥션으로 하는
+      // 구현은 아직 재고가 남아 보이는 A 를 "먼저 낼 LOT" 로 잡아 FIFO_ACTION=BLOCK(기본)으로
+      // 출고 전체를 거절한다. 후보 조회가 같은 트랜잭션에서 돌아야 이 오탐이 사라진다.
+      const lotsByUid: Record<string, MatLot> = {
+        'MAT-A': { matUid: 'MAT-A', itemCode: 'ITEM-001', iqcStatus: 'PASS', status: 'NORMAL', company: 'HANES', plant: 'P01', recvDate: new Date(2026, 8, 1), manufactureDate: null, expireDate: null, currentQty: 200 } as MatLot,
+        'MAT-B': { matUid: 'MAT-B', itemCode: 'ITEM-001', iqcStatus: 'PASS', status: 'NORMAL', company: 'HANES', plant: 'P01', recvDate: new Date(2026, 8, 5), manufactureDate: null, expireDate: null, currentQty: 1000 } as MatLot,
+      };
+      const manager = {
+        findOne: jest.fn(async (_entity: unknown, options: { where: { matUid: string } }) => lotsByUid[options.where.matUid]),
+        find: jest.fn(async (_entity: unknown, options: { where: { matUid: string } }) => [
+          { warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: options.where.matUid, qty: 1000, availableQty: 1000, company: 'HANES', plant: 'P01' } as MatStock,
+        ]),
+        create: jest.fn((entity, payload) => ({ ...payload })),
+        save: jest.fn().mockImplementation(async (entity) => entity),
+        createQueryBuilder: createManagerQueryBuilder(),
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+      (mockQueryRunner as any).manager = manager;
+      mockNumbering.nextInTx.mockReset().mockResolvedValue('TX-N');
+      mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-A', itemCode: 'ITEM-001' } as MatLot);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as ItemMaster);
+
+      // 트랜잭션 시점의 후보: A 는 방금 이 트랜잭션에서 0 이 되었으므로 후보가 아니다
+      manager.createQueryBuilder.setFifoRows([]);
+      // 기본 커넥션에서 읽으면 미커밋 차감이 안 보여 A 가 아직 재고>0 으로 남아 있다
+      mockMatStockRepo.createQueryBuilder.mockReturnValue(createFifoCandidateQueryBuilder([
+        { matUid: 'MAT-A', recvDate: new Date(2026, 8, 1), manufactureDate: null, lotStatus: 'NORMAL' },
+      ]) as any);
+
+      const result = await target.create({
+        issueType: 'OTHER',
+        warehouseCode: 'W1',
+        items: [{ matUid: 'MAT-A', issueQty: 200 }, { matUid: 'MAT-B', issueQty: 700 }],
+      } as any, 'HANES', 'P01');
+
+      expect(result).toHaveLength(2);
+      expect(manager.createQueryBuilder).toHaveBeenCalledWith(MatStock, 's');
+      expect(mockMatStockRepo.createQueryBuilder).not.toHaveBeenCalled();
     });
 
     it('유효기간 만료 LOT 는 EXPIRED_ISSUE_BLOCK=Y(기본)에서 항상 차단한다', async () => {
@@ -905,7 +982,7 @@ describe('MatIssueService', () => {
       await expect(target.create(issueDto, 'HANES', 'P01')).rejects.toThrow(/유효기간이 만료된 LOT.*MAT-NEW.*2026-01-01/);
       expect(manager.save).not.toHaveBeenCalled();
       // 만료 차단은 FIFO 후보 조회보다 먼저
-      expect(mockMatStockRepo.createQueryBuilder).not.toHaveBeenCalled();
+      expect(manager.createQueryBuilder.fifoCalls).not.toHaveBeenCalled();
     });
 
     it('EXPIRED_ISSUE_BLOCK=N 이면 만료 LOT 도 출고한다', async () => {

@@ -241,7 +241,36 @@ export class LotSplitService {
     const origin = sourceLot.origin || sourceLot.matUid;
     const splitRemark = remark || `자재분할: ${sourceLot.matUid} (${totalQty}) → ${splitQty} + ${remainQty}`;
 
-    // 6) 원본 전량 OUT
+    // 6) 원본 재고 0 — 읽은 수량이 그대로일 때만 쓴다(동시 분할/출고 방어)
+    //
+    // 분할은 차감이 아니라 "현재고를 두 조각으로 나누는" 연산이라, 조건 없이 0 을 쓰면
+    // 같은 롯트를 두 명이 동시에 분할할 때 둘 다 1000 을 읽고 각각 700+300 자식을 만들어
+    // 실물 1000 에 대해 2000 이 생긴다. 그래서 mat-issue.service 의 재고 차감 가드와 같은
+    // 방식으로 조건부 UPDATE + affected 검사를 건다.
+    //
+    // 비교는 `>=` 가 아니라 `=` 다. 차감(mat-issue)은 남은 수량만 확인하면 되지만 분할은
+    // 읽은 totalQty 를 그대로 조각 합으로 쓰므로, 그 사이 수량이 늘어난 경우(병합 IN 등)에도
+    // 나머지가 증발한다.
+    const stockZeroResult = await queryRunner.manager
+      .createQueryBuilder()
+      .update(MatStock)
+      .set({ qty: 0, availableQty: 0, updatedBy: userId ?? null })
+      .where({
+        warehouseCode: sourceStock.warehouseCode,
+        itemCode: sourceStock.itemCode,
+        matUid: sourceStock.matUid,
+        ...tenantWhere,
+      })
+      .andWhere('QTY = :expectedQty')
+      .setParameters({ expectedQty: totalQty })
+      .execute();
+    if (stockZeroResult.affected !== 1) {
+      throw new BadRequestException(
+        `분할하는 사이 재고가 변경되었습니다(조회 당시 ${totalQty}). 다시 조회한 뒤 분할해 주세요: ${sourceLot.matUid}`,
+      );
+    }
+
+    // 7) 원본 전량 OUT
     const outTransNo = await this.numbering.next('STOCK_TX', queryRunner, userId);
     await queryRunner.manager.save(StockTransaction, queryRunner.manager.create(StockTransaction, {
       transNo: outTransNo,
@@ -261,18 +290,14 @@ export class LotSplitService {
       createdBy: userId ?? null,
     }));
 
-    // 7) 원본 폐기 (status=SPLIT, 재고 0)
+    // 8) 원본 폐기 (status=SPLIT, LOT 잔량 0) — 재고 0 은 6) 에서 조건부로 이미 처리했다
     await queryRunner.manager.update(MatLot, { matUid: sourceLot.matUid, ...tenantWhere }, {
       status: MAT_LOT_STATUS.SPLIT,
       currentQty: 0,
       updatedBy: userId ?? null,
     });
-    await queryRunner.manager.update(MatStock,
-      { warehouseCode: sourceStock.warehouseCode, itemCode: sourceStock.itemCode, matUid: sourceStock.matUid, ...tenantWhere },
-      { qty: 0, availableQty: 0, updatedBy: userId ?? null },
-    );
 
-    // 8) 신규 2조각 발번/생성/IN
+    // 9) 신규 2조각 발번/생성/IN
     const pieces: number[] = [splitQty, remainQty];
     const created: Array<{ matUid: string; qty: number }> = [];
     for (const qty of pieces) {
@@ -361,6 +386,11 @@ export class LotSplitService {
       invoiceNo: sourceLot.invoiceNo,
       poNo: sourceLot.poNo,
       iqcStatus: sourceLot.iqcStatus,
+      // 특채(IQC FAIL 이지만 출고 허용) 판정은 iqcStatus 와 한 쌍이다. 계승하지 않으면
+      // 엔티티 기본값 'N' 이 들어가 자식이 FAIL+N 이 되고, 출고 가능 판정(canIssueByIqc)과
+      // 가용 목록 필터에서 모두 빠져 영영 출고할 수 없는 재고가 된다.
+      specialAcceptYn: sourceLot.specialAcceptYn,
+      specialAcceptWorkerCode: sourceLot.specialAcceptWorkerCode,
       status: MAT_LOT_STATUS.NORMAL,
       company: sourceLot.company,
       plant: sourceLot.plant,

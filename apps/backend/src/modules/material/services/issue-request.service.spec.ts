@@ -12,6 +12,7 @@ import { BomMaster } from '../../../entities/bom-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatIssueService } from './mat-issue.service';
@@ -43,6 +44,8 @@ describe('IssueRequestService', () => {
   let bomRepo: DeepMocked<Repository<BomMaster>>;
   let matIssueRepo: DeepMocked<Repository<MatIssue>>;
   let matStockRepo: DeepMocked<Repository<MatStock>>;
+  let matLotRepo: DeepMocked<Repository<MatLot>>;
+  let stockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
   let routingProcessRepo: DeepMocked<Repository<RoutingProcess>>;
   let matIssueService: DeepMocked<MatIssueService>;
@@ -61,6 +64,8 @@ describe('IssueRequestService', () => {
     bomRepo = createMock<Repository<BomMaster>>();
     matIssueRepo = createMock<Repository<MatIssue>>();
     matStockRepo = createMock<Repository<MatStock>>();
+    matLotRepo = createMock<Repository<MatLot>>();
+    stockTxRepo = createMock<Repository<StockTransaction>>();
     warehouseRepo = createMock<Repository<Warehouse>>();
     routingProcessRepo = createMock<Repository<RoutingProcess>>();
     matIssueService = createMock<MatIssueService>();
@@ -96,6 +101,8 @@ describe('IssueRequestService', () => {
         { provide: getRepositoryToken(BomMaster), useValue: bomRepo },
         { provide: getRepositoryToken(MatIssue), useValue: matIssueRepo },
         { provide: getRepositoryToken(MatStock), useValue: matStockRepo },
+        { provide: getRepositoryToken(MatLot), useValue: matLotRepo },
+        { provide: getRepositoryToken(StockTransaction), useValue: stockTxRepo },
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
         { provide: getRepositoryToken(RoutingProcess), useValue: routingProcessRepo },
         { provide: MatIssueService, useValue: matIssueService },
@@ -1373,6 +1380,57 @@ describe('IssueRequestService', () => {
       await expect(service.splitForIssue('MR-1', {
         splits: [{ sourceMatUid: 'LOT-A', issueQty: 1 }],
       } as any, 'C1', 'P1')).rejects.toThrow('출고할 수 없는 상태입니다');
+    });
+  });
+
+  describe('findSplitLabelGroups — 라벨 재출력 복원', () => {
+    const wireRequest = () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'MR-1', status: 'APPROVED', company: 'C1', plant: 'P1',
+      } as MatIssueRequest);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'MR-1', seq: 1, itemCode: 'ITEM-1' } as MatIssueRequestItem,
+      ]);
+    };
+
+    it('분할 수불(LOT_SPLIT_IN)에서 원본 롯트별 라벨 그룹을 복원한다', async () => {
+      wireRequest();
+      stockTxRepo.find.mockResolvedValue([
+        { transNo: 'TX-1', itemCode: 'ITEM-1', matUid: 'NEW-1', qty: 700, refId: 'LOT-A' } as StockTransaction,
+        { transNo: 'TX-2', itemCode: 'ITEM-1', matUid: 'NEW-2', qty: 300, refId: 'LOT-A' } as StockTransaction,
+      ]);
+      matLotRepo.find.mockResolvedValue([
+        { matUid: 'NEW-1', initQty: 700, arrivalNo: 'AR-1' } as MatLot,
+        { matUid: 'NEW-2', initQty: 300, arrivalNo: 'AR-1' } as MatLot,
+      ]);
+      itemMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-1', itemName: '와이어' } as ItemMaster]);
+
+      const result = await service.findSplitLabelGroups('MR-1', 'C1', 'P1');
+
+      // 모달을 닫았다 열어도 라벨 2장을 다시 뽑을 수 있어야 한다(분할은 이미 커밋됨)
+      expect(result.splits).toHaveLength(1);
+      expect(result.splits[0]).toEqual(expect.objectContaining({
+        sourceMatUid: 'LOT-A', itemCode: 'ITEM-1', itemName: '와이어', arrivalNo: 'AR-1',
+      }));
+      // TRANS_NO 오름차순 = 출고분 → 잔량분
+      expect(result.splits[0].results).toEqual([
+        { matUid: 'NEW-1', qty: 700 },
+        { matUid: 'NEW-2', qty: 300 },
+      ]);
+      expect(result.splits[0].label.serials.map((s) => s.initQty)).toEqual([700, 300]);
+      expect(stockTxRepo.find).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ transType: 'LOT_SPLIT_IN', refType: 'LOT_SPLIT' }),
+        order: { transNo: 'ASC' },
+      }));
+    });
+
+    it('분할 이력이 없으면 빈 목록을 돌려준다', async () => {
+      wireRequest();
+      stockTxRepo.find.mockResolvedValue([]);
+
+      const result = await service.findSplitLabelGroups('MR-1', 'C1', 'P1');
+
+      expect(result.splits).toEqual([]);
     });
   });
 });

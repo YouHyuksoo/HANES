@@ -58,6 +58,32 @@ describe('allocateFifo', () => {
     expect(result.slices).toEqual([{ matUid: 'B', qty: 100 }]);
   });
 
+  it('소수 가용 롯트는 정수분만 배분하고 나머지는 부족으로 남긴다', () => {
+    // 운영 DB 에 0.725 같은 소수 재고가 실재한다. 그대로 배분하면 issueQty 가
+    // @IsInt() 검증에 걸려 사용자가 아무것도 건드리지 않아도 출고가 400 으로 튄다.
+    const result = allocateFifo(100, lots(['A', 10.7], ['B', 1000]));
+    expect(result.slices).toEqual([
+      { matUid: 'A', qty: 10 },
+      { matUid: 'B', qty: 90 },
+    ]);
+    expect(result.allocatedQty).toBe(100);
+    expect(result.shortageQty).toBe(0);
+  });
+
+  it('가용이 1 미만인 롯트는 조각을 만들지 않는다', () => {
+    // recvDate ASC 정렬이라 오래 남은 소수 잔량이 맨 앞에 온다 — 반드시 건너뛰어야 한다
+    const result = allocateFifo(100, lots(['A', 0.725], ['B', 1000]));
+    expect(result.slices).toEqual([{ matUid: 'B', qty: 100 }]);
+    expect(result.shortageQty).toBe(0);
+  });
+
+  it('소수 잔량만 남으면 못 채운 수량이 shortageQty 로 드러난다', () => {
+    const result = allocateFifo(100, lots(['A', 99.9]));
+    expect(result.slices).toEqual([{ matUid: 'A', qty: 99 }]);
+    expect(result.allocatedQty).toBe(99);
+    expect(result.shortageQty).toBe(1);
+  });
+
   it('롯트가 없으면 전량 부족이다', () => {
     const result = allocateFifo(900, []);
     expect(result.slices).toEqual([]);

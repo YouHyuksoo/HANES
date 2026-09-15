@@ -32,6 +32,17 @@ describe('LotSplitService', () => {
   let mockTx: DeepMocked<TransactionService>;
   let mockNumbering: DeepMocked<NumberingService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
+  const createStockZeroQb = (affected = 1) => ({
+    update: jest.fn().mockReturnThis(),
+    set: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    setParameters: jest.fn().mockReturnThis(),
+    execute: jest.fn().mockResolvedValue({ affected }),
+  });
+
+  /** 원본 재고 0 쓰기(조건부 UPDATE) 빌더 목 — affected 로 동시성 충돌을 흉내낸다 */
+  let stockZeroQb: ReturnType<typeof createStockZeroQb>;
 
   const sourceLot = (over: Partial<MatLot> = {}): MatLot => ({
     matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'NORMAL', initQty: 10,
@@ -58,6 +69,8 @@ describe('LotSplitService', () => {
     mockTx = createMock<TransactionService>();
     mockNumbering = createMock<NumberingService>();
     mockQueryRunner = createMock<QueryRunner>();
+    stockZeroQb = createStockZeroQb(1);
+    (mockQueryRunner.manager.createQueryBuilder as unknown as jest.Mock) = jest.fn(() => stockZeroQb);
 
     mockTx.run.mockImplementation(async (callback: any) => callback(mockQueryRunner));
     mockNumbering.nextMatSerial
@@ -260,18 +273,79 @@ describe('LotSplitService', () => {
       expect(isMatLotIssuable(sourcePatch[0].status)).toBe(false);
       expect(sourcePatch[0].currentQty).toBe(0);
 
-      // 원본 MAT_STOCKS 잔량 0 (종결 LOT 재고 잔존 방지)
-      const stockPatch = (mockQueryRunner.manager.update as jest.Mock).mock.calls
-        .filter(([entity]) => entity === MatStock)
-        .map(([, , patch]) => patch as { qty: number; availableQty: number });
-      expect(stockPatch).toHaveLength(1);
-      expect(stockPatch[0]).toEqual(expect.objectContaining({ qty: 0, availableQty: 0 }));
+      // 원본 MAT_STOCKS 잔량 0 (종결 LOT 재고 잔존 방지) — 조건부 UPDATE 로 나간다
+      expect(stockZeroQb.update).toHaveBeenCalledWith(MatStock);
+      expect(stockZeroQb.set).toHaveBeenCalledWith(expect.objectContaining({ qty: 0, availableQty: 0 }));
+      expect(stockZeroQb.andWhere).toHaveBeenCalledWith('QTY = :expectedQty');
+      expect(stockZeroQb.setParameters).toHaveBeenCalledWith({ expectedQty: 10 });
+      expect(stockZeroQb.execute).toHaveBeenCalledTimes(1);
 
       const children = (mockQueryRunner.manager.create as jest.Mock).mock.calls
         .filter(([entity]) => entity === MatLot)
         .map(([, obj]) => obj as { matUid: string; status: string; currentQty: number });
       expect(children.map((c) => c.matUid)).toEqual(['NEW-1', 'NEW-2']);
       expect(children.every((c) => isMatLotIssuable(c.status) && c.currentQty > 0)).toBe(true);
+    });
+  });
+
+  describe('동시 분할 방어 — 원본 재고 0 쓰기는 조건부다', () => {
+    const wire = () => {
+      mockQueryRunner.manager.findOne = jest.fn()
+        .mockResolvedValueOnce(sourceLot())
+        .mockResolvedValueOnce(sourceStock())
+        .mockResolvedValueOnce(part());
+      mockQueryRunner.manager.query = jest.fn().mockResolvedValue([{ RECVD: 10 }]);
+      mockQueryRunner.manager.find = jest.fn().mockResolvedValue([]);
+      (mockQueryRunner.manager.create as jest.Mock).mockImplementation((_e: unknown, obj: unknown) => obj);
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+    };
+
+    it('조회한 수량이 그대로일 때만(QTY = 조회수량) 재고를 0 으로 쓴다', async () => {
+      wire();
+
+      await target.split({ sourceLotId: 'MAT-001', splitQty: 3 }, 'C1', 'P1');
+
+      // 비교가 '>=' 가 아니라 '=' 인 이유: 분할은 차감이 아니라 조회 수량을 두 조각으로
+      // 나누는 연산이라, 그 사이 수량이 늘어난 경우(병합 IN 등)에도 증가분이 증발한다.
+      expect(stockZeroQb.andWhere).toHaveBeenCalledWith('QTY = :expectedQty');
+      expect(stockZeroQb.setParameters).toHaveBeenCalledWith({ expectedQty: 10 });
+    });
+
+    it('그 사이 다른 트랜잭션이 재고를 바꿨으면(affected 0) 분할을 중단한다', async () => {
+      wire();
+      stockZeroQb = createStockZeroQb(0);
+      (mockQueryRunner.manager.createQueryBuilder as unknown as jest.Mock) = jest.fn(() => stockZeroQb);
+
+      await expect(target.split({ sourceLotId: 'MAT-001', splitQty: 3 }, 'C1', 'P1'))
+        .rejects.toThrow(/재고가 변경되었습니다/);
+
+      // 가드가 없으면 두 세션이 각각 자식 2조각을 발번해 실물 없는 재고가 생긴다
+      expect(mockNumbering.nextMatSerial).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('자식 LOT 속성 계승', () => {
+    it('특채(FAIL + specialAcceptYn=Y) 판정을 자식이 그대로 물려받는다', async () => {
+      mockQueryRunner.manager.findOne = jest.fn()
+        .mockResolvedValueOnce(sourceLot({ iqcStatus: 'FAIL', specialAcceptYn: 'Y', specialAcceptWorkerCode: 'QC-01' }))
+        .mockResolvedValueOnce(sourceStock())
+        .mockResolvedValueOnce(part());
+      mockQueryRunner.manager.query = jest.fn().mockResolvedValue([{ RECVD: 10 }]);
+      mockQueryRunner.manager.find = jest.fn().mockResolvedValue([]);
+      (mockQueryRunner.manager.create as jest.Mock).mockImplementation((_e: unknown, obj: unknown) => obj);
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+
+      await target.split({ sourceLotId: 'MAT-001', splitQty: 3 }, 'C1', 'P1');
+
+      const children = (mockQueryRunner.manager.create as jest.Mock).mock.calls
+        .filter(([entity]) => entity === MatLot)
+        .map(([, obj]) => obj as { iqcStatus: string; specialAcceptYn: string; specialAcceptWorkerCode: string | null });
+      expect(children).toHaveLength(2);
+      // 계승하지 않으면 엔티티 기본값 'N' 이 들어가 FAIL+N 이 되고 영영 출고할 수 없는 재고가 된다
+      expect(children.every((c) => c.iqcStatus === 'FAIL' && c.specialAcceptYn === 'Y')).toBe(true);
+      expect(children.every((c) => c.specialAcceptWorkerCode === 'QC-01')).toBe(true);
     });
   });
 
