@@ -34,3 +34,15 @@ test('점검 완료는 콜백으로만 호출 화면에 전달한다', () => {
     assert.match(src, /context\.onInterlock/, '인터락 반영은 context.onInterlock 콜백으로 한다');
   }
 });
+
+test('컨텍스트 콜백은 안정된 참조로 감싼다 (무한 렌더 루프 방지)', () => {
+  for (const url of shared) {
+    const src = readFileSync(url, 'utf8');
+    assert.doesNotMatch(
+      src,
+      /const setInterlock = context\.onInterlock \?\? \(\(\) => \{\}\)/,
+      '매 렌더 새 함수를 만들면 deps에 걸린 effect가 무한 재실행된다',
+    );
+    assert.match(src, /useCallback<NonNullable<InspectModalContext\['onInterlock'\]>>/, 'useCallback으로 감싸야 한다');
+  }
+});

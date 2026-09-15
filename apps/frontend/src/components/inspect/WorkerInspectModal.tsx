@@ -17,7 +17,7 @@ import toast from 'react-hot-toast';
 import { CheckCircle2, XCircle, QrCode, Wrench, User, Clock, Play } from 'lucide-react';
 import { Modal, Button } from '@/components/ui';
 import api from '@/services/api';
-import type { InspectModalProps } from './types';
+import type { InspectModalContext, InspectModalProps } from './types';
 import { BarcodeScanInput, InspectItemImage } from '@/components/shared';
 
 interface WorkerInspectItem {
@@ -44,7 +44,13 @@ export default function WorkerInspectModal({ isOpen, onClose, onDone, context }:
   const selectedEquip = context.equip;
   const selectedJobOrder = context.jobOrder ?? null;
   const selectedWorkers = context.workers;
-  const setInterlock = context.onInterlock ?? (() => {});
+  // onInterlock을 그대로 쓰면 미지정 화면에서 매 렌더 새 함수가 만들어져
+  // 이 값을 deps에 둔 effect/callback이 무한 재실행된다(2026-09-15 화면 멈춤 결함).
+  const onInterlock = context.onInterlock;
+  const setInterlock = useCallback<NonNullable<InspectModalContext['onInterlock']>>(
+    (key, value) => { onInterlock?.(key, value); },
+    [onInterlock],
+  );
   const [items, setItems] = useState<WorkerInspectItem[]>([]);
   const [results, setResults] = useState<Record<number, ItemResult>>({});
   const [scanTimes, setScanTimes] = useState<Record<number, string>>({});

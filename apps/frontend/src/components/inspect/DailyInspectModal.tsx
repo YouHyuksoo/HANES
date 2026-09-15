@@ -16,7 +16,7 @@ import toast from 'react-hot-toast';
 import { CheckCircle2, XCircle, Save, AlertTriangle, Wrench } from 'lucide-react';
 import { Modal, Button } from '@/components/ui';
 import api from '@/services/api';
-import type { InspectModalProps } from './types';
+import type { InspectModalContext, InspectModalProps } from './types';
 import { InspectItemImage } from '@/components/shared';
 
 interface InspectItem {
@@ -88,7 +88,13 @@ export default function DailyInspectModal({ isOpen, onClose, onDone, context }: 
   // 화면 스토어에 의존하지 않는다. 호출 화면(키오스크/검사)이 컨텍스트로 넘긴다.
   const selectedEquip = context.equip;
   const selectedWorkers = context.workers;
-  const setInterlock = context.onInterlock ?? (() => {});
+  // onInterlock을 그대로 쓰면 미지정 화면에서 매 렌더 새 함수가 만들어져
+  // 이 값을 deps에 둔 effect가 무한 재실행된다(2026-09-15 화면 멈춤 결함). 항상 안정된 참조로 감싼다.
+  const onInterlock = context.onInterlock;
+  const setInterlock = useCallback<NonNullable<InspectModalContext['onInterlock']>>(
+    (key, value) => { onInterlock?.(key, value); },
+    [onInterlock],
+  );
   const [items, setItems] = useState<InspectItem[]>([]);
   const [results, setResults] = useState<Record<number, ItemResult>>({});
   const [measureValues, setMeasureValues] = useState<Record<number, string>>({});
