@@ -247,11 +247,15 @@ export class MatStockService {
     if (company) qb.andWhere('stock.company = :company', { company });
     if (plant) qb.andWhere('stock.plant = :plant', { plant });
 
+    // leftJoin + skip/take 는 TypeORM 의 "distinctAlias" 두-단계 페이징 래퍼를 태우는데,
+    // 이 래퍼는 조인 컬럼(lot.recvDate) 정렬을 내부 서브쿼리의 select alias로 요구해
+    // 실제 Oracle에서 ORA-00904로 거부된다(2026-09-15 실측). MAT_LOTS.matUid 가 유일 PK라
+    // 이 조인은 1:0..1 로 row fan-out이 없으므로 DISTINCT 래퍼가 필요 없는 offset/limit 을 쓴다.
     const stocks = await qb
       .orderBy('lot.recvDate', 'ASC', 'NULLS LAST')
       .addOrderBy('stock.matUid', 'ASC')
-      .skip((page - 1) * limit)
-      .take(limit)
+      .offset((page - 1) * limit)
+      .limit(limit)
       .getMany();
 
     const matUids = stocks.map((s) => s.matUid).filter(Boolean) as string[];

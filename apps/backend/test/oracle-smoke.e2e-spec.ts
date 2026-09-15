@@ -14,11 +14,13 @@
  *
  * 안전성: 읽기 전용이다. 쓰기를 건드리는 검사는 트랜잭션을 열고 반드시 ROLLBACK 한다.
  */
-import { DataSource } from 'typeorm';
+import { DataSource, In } from 'typeorm';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { lockRowsForUpdate } from '../src/common/utils/row-lock.util';
 import { toDateOnly } from '../src/common/utils/date-only.util';
+import { MatStock } from '../src/entities/mat-stock.entity';
+import { MatLot } from '../src/entities/mat-lot.entity';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -104,6 +106,40 @@ describeOrSkip('Oracle smoke (실 DB)', () => {
     } finally {
       await qr.rollbackTransaction();
       await qr.release();
+    }
+  });
+
+  it('출고가능 재고 조회가 LOT 조인 + recvDate 정렬 + 페이징을 실 Oracle 에서 실행한다', async () => {
+    // MatStockService.findAvailable 이 만드는 쿼리와 같은 모양이다. leftJoin + skip/take 조합은
+    // TypeORM 의 "distinctAlias" 두-단계 페이징 래퍼를 태우는데, 이 래퍼는 조인 컬럼
+    // (lot.recvDate) 정렬을 내부 서브쿼리의 select alias 로 요구해 실제 Oracle 에서
+    // ORA-00904("distinctAlias"."lot_RECV_DATE": 부적합한 식별자)로 거부됐다(2026-09-15 실측).
+    // offset/limit 은 그 래퍼를 타지 않는다 — 이 테스트는 그 회귀를 잡는다.
+    const rows = await ds
+      .getRepository(MatStock)
+      .createQueryBuilder('stock')
+      .leftJoin(MatLot, 'lot', 'lot.matUid = stock.matUid')
+      .where('stock.qty > 0')
+      .orderBy('lot.recvDate', 'ASC', 'NULLS LAST')
+      .addOrderBy('stock.matUid', 'ASC')
+      .offset(0)
+      .limit(5)
+      .getMany();
+
+    expect(Array.isArray(rows)).toBe(true);
+
+    // 정렬이 실제로 걸렸는지, joined recvDate 기준으로 비내림(non-decreasing)인지 검증한다.
+    const matUids = rows.map((row) => row.matUid).filter(Boolean) as string[];
+    const lots = matUids.length > 0 ? await ds.getRepository(MatLot).find({ where: { matUid: In(matUids) } }) : [];
+    const lotMap = new Map(lots.map((lot) => [lot.matUid, lot]));
+    const recvDates = rows
+      .map((row) => lotMap.get(row.matUid)?.recvDate)
+      .filter((recvDate): recvDate is Date | string => recvDate !== null && recvDate !== undefined);
+
+    for (let i = 1; i < recvDates.length; i++) {
+      const prev = new Date(recvDates[i - 1]).getTime();
+      const curr = new Date(recvDates[i]).getTime();
+      expect(curr).toBeGreaterThanOrEqual(prev);
     }
   });
 });

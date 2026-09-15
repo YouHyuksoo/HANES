@@ -58,8 +58,8 @@ describe('MatStockService', () => {
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       addOrderBy: jest.fn().mockReturnThis(),
-      skip: jest.fn().mockReturnThis(),
-      take: jest.fn().mockReturnThis(),
+      offset: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue(stocks),
     };
     mockMatStockRepo.createQueryBuilder.mockReturnValue(qb as never);
@@ -321,52 +321,34 @@ describe('MatStockService', () => {
       });
     });
 
-    it('출고 가능 재고를 입고일(recvDate) 오름차순(FIFO)으로 DB ORDER BY 결과 순서 그대로 반환한다', async () => {
-      const older = createStock({ matUid: 'MAT-OLD', itemCode: 'ITEM-001' });
-      const newer = createStock({ matUid: 'MAT-NEW', itemCode: 'ITEM-001' });
-      // FIFO는 DB ORDER BY 로 건다(Task 2) — getMany 는 DB가 이미 RECV_DATE ASC 로
-      // 정렬해 돌려준 순서(가장 오래 보관된 LOT 먼저)를 흉내낸다. 서비스가 이 순서를
-      // 메모리에서 다시 뒤섞지 않는지 검증한다.
-      const qb = mockAvailableStocksQb([older, newer]);
-      mockMatLotRepo.find.mockResolvedValue([
-        { matUid: 'MAT-OLD', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001', recvDate: new Date('2026-06-10') } as MatLot,
-        { matUid: 'MAT-NEW', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001', recvDate: new Date('2026-06-20') } as MatLot,
-      ]);
-      mockItemMasterRepo.find.mockResolvedValue([]);
-
-      const result = await target.findAvailable({ page: 1, limit: 10 });
-
-      expect(qb.orderBy).toHaveBeenCalledWith('lot.recvDate', 'ASC', 'NULLS LAST');
-      // 가장 오래 보관된 LOT(MAT-OLD)이 먼저 와야 한다
-      expect(result.data.map((d) => d.matUid)).toEqual(['MAT-OLD', 'MAT-NEW']);
-    });
-
-    it('입고일이 없는(null) LOT은 DB의 NULLS LAST 정렬 결과대로 뒤에 남는다', async () => {
-      const dated = createStock({ matUid: 'MAT-DATED', itemCode: 'ITEM-001' });
-      const undated = createStock({ matUid: 'MAT-NULL', itemCode: 'ITEM-001' });
-      // NULLS LAST 이므로 DB가 돌려주는 순서는 입고일 있는 LOT 먼저, null 은 뒤
-      const qb = mockAvailableStocksQb([dated, undated]);
-      mockMatLotRepo.find.mockResolvedValue([
-        { matUid: 'MAT-DATED', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001', recvDate: new Date('2026-06-15') } as MatLot,
-        { matUid: 'MAT-NULL', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001', recvDate: null } as unknown as MatLot,
-      ]);
-      mockItemMasterRepo.find.mockResolvedValue([]);
-
-      const result = await target.findAvailable({ page: 1, limit: 10 });
-
-      expect(qb.orderBy).toHaveBeenCalledWith('lot.recvDate', 'ASC', 'NULLS LAST');
-      expect(result.data.map((d) => d.matUid)).toEqual(['MAT-DATED', 'MAT-NULL']);
-    });
-  });
-
-  describe('findAvailable FIFO 정렬', () => {
-    it('메모리 정렬이 아니라 DB ORDER BY 로 RECV_DATE 오름차순을 건다', async () => {
+    // FIFO 정렬은 이제 DB의 몫이라(Task 2), mock 으로는 "DB가 실제로 정렬한다"를 증명할 수
+    // 없다(그건 오라클 스모크 테스트가 한다). 이 단위 테스트가 가진 유일한 이빨은 서비스가
+    // 쿼리빌더에 정확히 어떤 계약(조인/조건/정렬/페이징)을 요청하는지다. 이미 정렬된 입력을
+    // mock에 넣고 같은 순서가 나오는지 보던 이전 두 테스트는 통과 조건이 항상 참이라 삭제하고,
+    // 쿼리빌더 호출 계약 하나로 합친다 — 이 중 하나라도 빠지면 반드시 실패해야 한다.
+    it('LOT 조인 + FIFO 정렬 + 페이징 계약을 쿼리빌더에 정확히 건다 (find 대신 createQueryBuilder)', async () => {
       const qb = mockAvailableStocksQb([]);
 
-      await target.findAvailable({ page: 1, limit: 10, itemCode: 'ITEM-001' } as never, 'C1', 'P1');
+      await target.findAvailable(
+        { page: 2, limit: 20, itemCode: 'ITEM-001', warehouseCode: 'WH-01' } as never,
+        'C1',
+        'P1',
+      );
 
-      expect(qb.orderBy).toHaveBeenCalledWith('lot.recvDate', 'ASC', 'NULLS LAST');
       expect(mockMatStockRepo.find).not.toHaveBeenCalled();
+      expect(qb.leftJoin).toHaveBeenCalledWith(MatLot, 'lot', 'lot.matUid = stock.matUid');
+      expect(qb.where).toHaveBeenCalledWith('stock.qty > 0');
+      expect(qb.andWhere).toHaveBeenCalledWith('stock.itemCode = :itemCode', { itemCode: 'ITEM-001' });
+      expect(qb.andWhere).toHaveBeenCalledWith('stock.warehouseCode = :warehouseCode', { warehouseCode: 'WH-01' });
+      expect(qb.andWhere).toHaveBeenCalledWith('stock.company = :company', { company: 'C1' });
+      expect(qb.andWhere).toHaveBeenCalledWith('stock.plant = :plant', { plant: 'P1' });
+      expect(qb.orderBy).toHaveBeenCalledWith('lot.recvDate', 'ASC', 'NULLS LAST');
+      expect(qb.addOrderBy).toHaveBeenCalledWith('stock.matUid', 'ASC');
+      // page=2, limit=20 → offset = (2-1)*20 = 20. skip/take 는 leftJoin 조인 컬럼 정렬과
+      // 함께 쓰면 distinctAlias 페이징 래퍼를 타 ORA-00904 로 거부된다(2026-09-15 실측,
+      // oracle-smoke.e2e-spec.ts 회귀 테스트 참조). offset/limit 으로만 페이징해야 한다.
+      expect(qb.offset).toHaveBeenCalledWith(20);
+      expect(qb.limit).toHaveBeenCalledWith(20);
     });
   });
 
