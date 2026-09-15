@@ -46,6 +46,8 @@
 
 ## 미완료 / 남은 것
 
+> 2026-09-16 04:10: FAIL 경로 검증은 완료되었다. 아래 `검증 상태` 절을 보라.
+
 ### AQL 예상 시료수 표시가 실제 판정값과 다르다
 
 의뢰 LOT 구성 화면(`/quality/iqc-request-lot`)의 `예상 시료수`는 모집단수량과 같은 값을 보여준다(모집단 3,000 → 3000).
@@ -85,7 +87,38 @@ DB 스키마 변경 없음.
   - `MAT_LOTS` 3 PASS / 47 PENDING, `MAT_ARRIVALS` 3 PASS / 47 PENDING — 의뢰한 행만 판정됨
   - `IQC_LOGS` 1건: `RESULT=PASS`, `LOT_QTY=3000`, `AQL_SAMPLE_QTY=125`, `LEVEL=II`, `MODE=NORMAL`, `AQL_MAJOR_CODE=AQL-I-0.01`, `AC/RE=0/1`, `JUDGE_REASON='검사항목별 AQL 기준 합격'`, `REMARK='[IQL:IQL20260916-0003]'`
 - 실행함: 검증 데이터 전량 원복. 의뢰 헤더/라인 0건, IQC_LOGS 해당 1건 삭제, `MAT_LOTS`/`MAT_ARRIVALS` 50건 PENDING 복구, `IQC_INSPECT_LOT_MODE='ARRIVAL'` 원복
-- 실행 못함: FAIL 경로(불량창고 이동)와 파괴검사 시료 자동출고 경로의 실데이터 검증. PASS 경로만 확인했다
+
+### FAIL 경로 검증 (2026-09-16 04:10 추가)
+
+`IQC_FAIL_DEFECT_MOVE_MODE` 두 값을 모두 확인했다. 두 케이스 모두 품목 `HKEAN1W002FA`, 입하 50행 중 3행(#1, #3, #50), 모집단 3,000으로 구성했다.
+
+**공통**
+
+- 검사항목 1번을 FAIL로 한 시리얼에만 표시하면 모달이 `예상 LOT 판정: FAIL — IQC-TEST MAJOR 불량 1건이 Ac 0 초과`를 보여준다
+- FAIL은 불량코드와 불량수가 필수다. 둘 중 하나라도 비면 등록 버튼이 disabled이고 `FAIL 판정에는 불량코드와 불량수가 필요합니다.` 경고가 뜨다. 정상 동작이다
+- 등록 후 `IQC_REQUEST_LOTS.STATUS=FAIL`, `SAMPLE_QTY=125`
+- `MAT_LOTS` 3 FAIL / 47 PENDING, `MAT_ARRIVALS` 3 FAIL / 47 PENDING — 의뢰한 행만 판정된다
+- `IQC_LOGS` 1건: `RESULT=FAIL`, `LOT_QTY=3000`, `AQL_SAMPLE_QTY=125`, `AC/RE=0/1`, `DEFECT_MAJOR=1`, `JUDGE_REASON='IQC-TEST MAJOR 불량 1건이 Ac 0 초과'`, `REMARK='[IQL:<의뢰번호>]'`
+
+**Test A — `IQC_FAIL_DEFECT_MOVE_MODE=MANUAL` (운영 기본값), 의뢰 `IQL20260916-0004`**
+
+- 재고 이동 없음. `STOCK_TRANSACTIONS` `REF_TYPE='IQC_FAIL'` 18건 그대로 유지
+- 대상 3건 입하재고 `W001 / QTY 1000 / AVAILABLE` 유지
+- 설계대로 자재관리 > IQC불합격자재 불량창고입고 화면에서 수동 처리할 대상으로 남는다
+
+**Test B — `IQC_FAIL_DEFECT_MOVE_MODE=AUTO`, 의뢰 `IQL20260916-0005`**
+
+- `STOCK_TRANSACTIONS` `REF_TYPE='IQC_FAIL'` 18 → **21건**. 정확히 3건만 증가
+- 생성된 3건은 의뢰한 시리얼 `VH1-RM260913-00001/00003/00050`, 각 `W001 → DEFECT`, QTY 1000, `비고='IQC 불합격 자동이동 (불량창고)'`
+- 입하재고 3건 `QTY=0 / AVAILABLE_QTY=0 / STATUS=DEPLETED`
+- 불량창고 `MAT_STOCKS` 3건 `DEFECT / 1000`
+- 나머지 47건 입하재고는 그대로다. **같은 ARRIVAL_NO여도 의뢰에 담긴 행만 이동한다**
+
+**원복**
+
+두 케이스 데이터를 전량 되돌렸다. 의뢰 헤더/라인 0건, `MAT_LOTS`·`MAT_ARRIVALS` 50건 PENDING, `IQC_FAIL` 트랜잭션 18건 복귀, 입하재고 3건 `W001/1000/AVAILABLE` 복구, 불량창고 `MAT_STOCKS` 행 삭제, `IQC_FAIL_DEFECT_MOVE_MODE='MANUAL'`·`IQC_INSPECT_LOT_MODE='ARRIVAL'` 원복까지 확인했다.
+
+- 실행 못함: 파괴검사 시료 자동출고(`IQC_SAMPLE_ISSUE_MODE=AUTO_ISSUE`) 경로. 현재 운영값은 `LOSS_ALLOW`라 동작하지 않는다
 
 ## 기존 실패 (이번 변경과 무관)
 
