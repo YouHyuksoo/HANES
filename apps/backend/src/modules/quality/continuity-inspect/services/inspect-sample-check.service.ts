@@ -12,12 +12,13 @@
  */
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, IsNull, Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { InspectAid } from '../../../../entities/inspect-aid.entity';
 import { InspectSampleCheck } from '../../../../entities/inspect-sample-check.entity';
 import { InspectSampleCheckItem } from '../../../../entities/inspect-sample-check-item.entity';
 import { ShiftPattern } from '../../../../entities/shift-pattern.entity';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
+import { TransactionService } from '../../../../shared/transaction.service';
 import { EquipInspectService } from '../../../equipment/services/equip-inspect.service';
 import { ShiftResolver } from '../../../../utils/shift-resolver';
 import { formatYmdLocal } from '../../../../shared/date.util';
@@ -109,7 +110,7 @@ export class InspectSampleCheckService {
     private readonly shiftPatternRepository: Repository<ShiftPattern>,
     private readonly seqGenerator: SeqGeneratorService,
     private readonly equipInspectService: EquipInspectService,
-    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {
     this.shiftResolver = new ShiftResolver(this.shiftPatternRepository);
   }
@@ -346,10 +347,8 @@ export class InspectSampleCheckService {
       ? 'PASS'
       : 'NG';
 
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    try {
+    // 트랜잭션 제어는 공용 TransactionService만 쓴다(아키텍처 경계 규칙).
+    return this.tx.run(async (queryRunner) => {
       const checkNo = await this.seqGenerator.getNo('SMP_CHK', queryRunner);
       const header: Partial<InspectSampleCheck> = {
         company: tenant.company ?? '',
@@ -386,14 +385,8 @@ export class InspectSampleCheckService {
       }));
       await queryRunner.manager.save(InspectSampleCheckItem, items);
 
-      await queryRunner.commitTransaction();
       return { checkNo, overallResult };
-    } catch (error: unknown) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    });
   }
 
   async findHistory(

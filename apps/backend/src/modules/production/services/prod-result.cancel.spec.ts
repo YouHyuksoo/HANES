@@ -21,6 +21,7 @@ import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
 import { EquipInspectService } from '../../equipment/services/equip-inspect.service';
+import { EquipInspectGateService } from '../../equipment/services/equip-inspect-gate.service';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
@@ -76,6 +77,8 @@ describe('ProdResultService cancel flow', () => {
         { provide: SysConfigService, useValue: createMock<SysConfigService>() },
         { provide: getRepositoryToken(EquipInspectItemPool), useValue: createMock<Repository<EquipInspectItemPool>>({ find: jest.fn().mockResolvedValue([]) }) },
         { provide: EquipInspectService, useValue: createMock<EquipInspectService>() },
+        // 설비점검 인터락은 EquipInspectGateService가 단일 출처다. 이 스위트는 인터락 자체를 검증하지 않으므로 통과 모킹.
+        { provide: EquipInspectGateService, useValue: createMock<EquipInspectGateService>({ assertGate: jest.fn().mockResolvedValue(undefined) }) },
         { provide: TransactionService, useValue: mockTx },
       ],
     })

@@ -51,7 +51,7 @@ describe('ContinuityInspectService', () => {
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockTx.run.mockImplementation(async (callback) => callback(mockQueryRunner));
-    mockEquipMasterRepo.findOne.mockResolvedValue({ equipCode: 'EQ-1', currentWorkerCodes: 'W-100' });
+    mockEquipMasterRepo.findOne.mockResolvedValue(createMock<EquipMaster>({ equipCode: 'EQ-1', currentWorkerCodes: 'W-100' }));
     mockEquipInspectGate.assertGate.mockResolvedValue(undefined);
     mockSampleCheckService.assertReady.mockResolvedValue(undefined);
     mockQueryRunner.connect.mockResolvedValue(undefined);

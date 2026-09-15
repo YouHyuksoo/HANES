@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+
 import { BadRequestException } from '@nestjs/common';
 import { InspectSampleCheckService } from './inspect-sample-check.service';
 import { InspectAid } from '../../../../entities/inspect-aid.entity';
@@ -8,6 +8,7 @@ import { InspectSampleCheck } from '../../../../entities/inspect-sample-check.en
 import { InspectSampleCheckItem } from '../../../../entities/inspect-sample-check-item.entity';
 import { ShiftPattern } from '../../../../entities/shift-pattern.entity';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
+import { TransactionService } from '../../../../shared/transaction.service';
 import { EquipInspectService } from '../../../equipment/services/equip-inspect.service';
 
 const TENANT = { company: 'C1', plant: 'P1' };
@@ -46,7 +47,7 @@ describe('InspectSampleCheckService', () => {
     connect: jest.fn(), startTransaction: jest.fn(), commitTransaction: jest.fn(),
     rollbackTransaction: jest.fn(), release: jest.fn(), manager,
   };
-  const dataSource = { createQueryRunner: () => queryRunner };
+  const tx = { run: jest.fn(async (cb: (qr: unknown) => Promise<unknown>) => cb(queryRunner)) };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -68,7 +69,7 @@ describe('InspectSampleCheckService', () => {
         { provide: getRepositoryToken(ShiftPattern), useValue: shiftRepo },
         { provide: SeqGeneratorService, useValue: seq },
         { provide: EquipInspectService, useValue: equipInspectService },
-        { provide: DataSource, useValue: dataSource },
+        { provide: TransactionService, useValue: tx },
       ],
     }).compile();
     service = moduleRef.get(InspectSampleCheckService);
