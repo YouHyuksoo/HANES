@@ -148,3 +148,13 @@ INSPECT_RESULTS (PK: RESULT_NO)
 - FG 바코드 채번: Oracle `SEQ_FG_BARCODE`
 - 검사번호 채번: `SEQ_RULES` 코드 `INSPECT_RESULT`
 - 스코프: `COMPANY='40'`, `PLANT_CD='1000'`
+
+## 검사 준비 인터락 (2026-09-15 추가)
+- 게이트 단일 출처: `EquipInspectGateService`(equipment 모듈). 생산실적(`ProdResultService.assertEquipInspectGate`)과 검사(`ContinuityInspectService.assertInspectPrepGate`)가 같은 함수를 호출합니다.
+- 적용 스코프 `INSPECTION`. sys-config `EQUIP_INSPECT_INTERLOCK`(전역), `INSPECT_DAILY_INSPECT_REQUIRED`, `INSPECT_WORKER_INSPECT_REQUIRED`로 끌 수 있습니다. `EQUIP_INSPECT_ITEM_POOL`에 DAILY/WORKER 항목이 없는 설비는 인터락 대상이 아닙니다.
+- 양불마스터 대조: `InspectSampleCheckService`. 후보는 `INSPECT_AIDS`(AID_TYPE LIMIT_OK/LIMIT_NG, 품목·검사유형 일치 또는 NULL), 결과는 `INSPECT_SAMPLE_CHECKS` + `INSPECT_SAMPLE_CHECK_ITEMS`.
+- 판정 키: `ORDER_NO + INSPECT_TYPE + EQUIP_CODE + WORK_DATE + SHIFT_CODE`. 재대조는 갱신이 아니라 새 `CHECK_NO`(채번 docType `SMP_CHK`)로 쌓고 최신 1건이 유효합니다.
+- OK/NG는 서버 산출: `LIMIT_OK`는 기대 PASS, `LIMIT_NG`는 기대 FAIL. 요청 본문의 판정을 신뢰하지 않습니다.
+- 작업자: `EQUIP_MASTERS.CURRENT_WORKER_CODES`(PATCH `/equipment/equips/:code/workers`)를 그대로 씁니다. 현재 작업자가 0명이거나 요청 workerId가 목록에 없으면 400.
+- API: `GET /quality/continuity-inspect/prep-status`, `GET .../sample-check/candidates`, `POST .../sample-check`, `GET .../sample-check/history`.
+- 트러블슈팅: 검사 등록이 400으로 막히면 메시지에 어떤 단계인지 나옵니다(일상점검·작업자점검·양불대조·만료견본·작업자 미배정).

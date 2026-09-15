@@ -4,19 +4,22 @@ audience: operator
 title: 검사보조구 관리 — 운영 가이드
 summary: INSPECT_AIDS 테이블 전체 컬럼·DB 매핑, CRUD·사진 업로드(multer uploads/inspect-aids)·만료임박(expiring) API, 유효기간 계산 로직, 공통코드 INSPECT_AID_TYPE/INSPECT_AID_STATUS와 트러블슈팅
 tags: [품질, 기준정보, 한도견본, 운영]
-keywords: [INSPECT_AIDS, INSPECT_AID_TYPE, INSPECT_AID_STATUS, LIMIT_OK, LIMIT_NG, HOLDER, VALID_TO, expiring, expiryState, daysToExpiry, IMAGE_URL, uploads/inspect-aids, multer, inspect-aids, 한도견본, 검사홀더, 멀티테넌시, 트러블슈팅]
+keywords: [INSPECT_AIDS, INSPECT_AID_TYPE, INSPECT_AID_STATUS, LIMIT_OK, LIMIT_NG, HOLDER, VALID_TO, expiring, expiryState, daysToExpiry, IMAGE_URL, uploads/inspect-aids, multer, inspect-aids, 한도견본, 검사홀더, 멀티테넌시, 트러블슈팅, INSPECT_SAMPLE_CHECKS, INSPECT_SAMPLE_CHECK_ITEMS, 양불마스터, INSPECT_TYPE, REQUIRED_YN, SORT_ORDER, sample-check, prep-status]
 related: [QC_DEFECT_CODE, MST_PART, MST_PROCESS, EQUIP_INSPECT_ITEM_MASTER]
 ---
 
 # 검사보조구 관리 — 운영 가이드
 
 ## 시스템 목적·역할
-한도견본(양품/불량)과 검사홀더·지그를 `INSPECT_AIDS` 한 테이블로 관리합니다. 기존에는 PPAP 제출 체크박스 외에 개념이 없었고, 고객 감사(24P·25P) 대응으로 신설했습니다. 사진은 설비점검항목 마스터와 같은 multer 디스크 업로드 패턴(`uploads/inspect-aids/`)을 쓰고, 유효기간 만료·임박은 서버가 `VALID_TO` 기준으로 계산해 내려줍니다. 검사 화면에서 한도견본을 참조하는 연동은 후속 범위입니다.
+한도견본(양품/불량)과 검사홀더·지그를 `INSPECT_AIDS` 한 테이블로 관리합니다. 기존에는 PPAP 제출 체크박스 외에 개념이 없었고, 고객 감사(24P·25P) 대응으로 신설했습니다. 사진은 설비점검항목 마스터와 같은 multer 디스크 업로드 패턴(`uploads/inspect-aids/`)을 쓰고, 유효기간 만료·임박은 서버가 `VALID_TO` 기준으로 계산해 내려줍니다. 검사 화면 연동은 2026-09-15에 들어갔습니다. 통전·단자검사가 `INSPECT_TYPE`·`REQUIRED_YN`·`SORT_ORDER`로 대조 대상을 뽑고, 대조 결과는 `INSPECT_SAMPLE_CHECKS` / `INSPECT_SAMPLE_CHECK_ITEMS`에 남습니다.
 
 ## 데이터 구조
 ```
 INSPECT_AIDS (PK COMPANY + PLANT_CD + AID_CODE)
   ├─ AID_TYPE     → COM_CODES 'INSPECT_AID_TYPE' (LIMIT_OK / LIMIT_NG / HOLDER)
+  ├─ INSPECT_TYPE → COM_CODES 'INSPECT_TYPE' (CONTINUITY / TERMINAL, NULL=전 검사유형 공통)
+  ├─ REQUIRED_YN  → 검사 전 대조 필수 (HOLDER는 서버가 'N' 강제)
+  ├─ SORT_ORDER   → 대조 모달 표시 순서
   ├─ STATUS       → COM_CODES 'INSPECT_AID_STATUS' (ACTIVE / EXPIRED / RETIRED)
   ├─ ITEM_CODE    → ITEM_MASTERS (논리 참조)
   ├─ PROCESS_CODE → PROCESS_MASTERS (논리 참조)
