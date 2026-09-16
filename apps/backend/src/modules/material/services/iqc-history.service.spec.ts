@@ -442,9 +442,61 @@ describe('IqcHistoryService cancel policy', () => {
       plant: 'P01',
     } as MatLot;
 
-    it('입하단위 판정은 REQUESTED 의뢰에 담긴 입하 행을 거절한다', async () => {
-      // 막지 않으면 MAT_LOTS만 PASS가 되고 IQC_REQUEST_LOTS는 REQUESTED로 남는 고아가 된다
+    const freeLot = {
+      matUid: 'MAT-F1',
+      arrivalNo: 'ARR-H',
+      arrivalSeq: 4,
+      itemCode: 'ITEM-001',
+      iqcStatus: 'PENDING',
+      vendor: 'SUP-001',
+      initQty: 7,
+      company: 'HANES',
+      plant: 'P01',
+    } as MatLot;
+
+    it('REQUEST 모드는 의뢰에 담긴 행만 빼고 잔여 행을 판정한다', async () => {
+      // 검사대기 목록이 잔여 행만 보여주므로 판정 대상도 같아야 한다.
+      // 전체를 거절하면 화면에 보이는 잔여 행을 검사할 방법이 없어진다.
+      mockSysConfigService.getValue.mockResolvedValue('REQUEST');
+      mockMatLotRepo.find.mockResolvedValue([heldLot, freeLot]);
+      mockRequestLotLineQb.getRawMany.mockResolvedValue([
+        { requestNo: 'IQL20260916-0001', arrivalNo: 'ARR-H', arrivalSeq: 3 },
+      ]);
+      mockIqcLogRepo.create.mockReturnValue({ arrivalNo: 'ARR-H', itemCode: 'ITEM-001' } as IqcLog);
+      mockIqcLogRepo.save.mockResolvedValue({ arrivalNo: 'ARR-H', itemCode: 'ITEM-001' } as IqcLog);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as ItemMaster);
+
+      await target.createArrivalResult({ arrivalNo: 'ARR-H', itemCode: 'ITEM-001', result: 'PASS' } as any, 'HANES', 'P01');
+
+      // 판정 모집단은 잔여 행(7)만이다. 담긴 행의 5는 들어가지 않는다
+      const call = (mockAqlService.resolveIqcPolicyByItem as jest.Mock).mock.calls[0][0];
+      expect(call.lotQty).toBe(7);
+      // LOT 갱신 대상도 잔여 시리얼 하나뿐이다
+      const lotUpdateWhere = (mockMatLotRepo.update as jest.Mock).mock.calls[0][0];
+      expect(lotUpdateWhere.matUid._value ?? lotUpdateWhere.matUid).toEqual(['MAT-F1']);
+      // 입하 행 갱신도 잔여 SEQ로 좁혀야 한다 — 안 그러면 판정 안 한 행까지 상태가 바뀐다
+      const arrivalUpdateWhere = (mockMatArrivalRepo.update as jest.Mock).mock.calls[0][0];
+      expect(arrivalUpdateWhere.seq).toBeDefined();
+      expect(arrivalUpdateWhere.seq._value ?? arrivalUpdateWhere.seq).toEqual([4]);
+    });
+
+    it('REQUEST 모드에서 잔여 행이 하나도 없으면 거절한다', async () => {
+      mockSysConfigService.getValue.mockResolvedValue('REQUEST');
       mockMatLotRepo.find.mockResolvedValue([heldLot]);
+      mockRequestLotLineQb.getRawMany.mockResolvedValue([
+        { requestNo: 'IQL20260916-0001', arrivalNo: 'ARR-H', arrivalSeq: 3 },
+      ]);
+
+      await expect(
+        target.createArrivalResult({ arrivalNo: 'ARR-H', itemCode: 'ITEM-001', result: 'PASS' } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(/IQL20260916-0001/);
+      expect(mockAqlService.resolveIqcPolicyByItem).not.toHaveBeenCalled();
+    });
+
+    it('ARRIVAL 모드는 의뢰에 담긴 행이 섞여 있으면 전체를 거절한다', async () => {
+      // 모드를 되돌린 상태다. 조용히 일부만 판정하지 않고 의뢰를 정리하게 한다
+      mockSysConfigService.getValue.mockResolvedValue('ARRIVAL');
+      mockMatLotRepo.find.mockResolvedValue([heldLot, freeLot]);
       mockRequestLotLineQb.getRawMany.mockResolvedValue([
         { requestNo: 'IQL20260916-0001', arrivalNo: 'ARR-H', arrivalSeq: 3 },
       ]);

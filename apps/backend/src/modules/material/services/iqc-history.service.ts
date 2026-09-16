@@ -263,13 +263,18 @@ export class IqcHistoryService {
    * 영구 잔존하는 고아가 된다(의뢰 헤더를 갱신하는 곳은 createRequestLotResult 뿐이다).
    * 모드를 REQUEST에서 ARRIVAL로 되돌렸거나 API를 직접 호출한 경우에도 같은 일이 생긴다.
    */
-  private async assertNotHeldByRequestLot(
+  private static requestLotRowKey(arrivalNo: string | null, arrivalSeq: number | null | undefined) {
+    return `${arrivalNo}#${Number(arrivalSeq)}`;
+  }
+
+  /** 대상 입하 행 중 REQUESTED 의뢰에 담긴 것을 {행키 → 의뢰번호}로 돌려준다. */
+  private async findRequestLotHolds(
     targets: Array<{ arrivalNo: string | null; arrivalSeq: number | null | undefined; itemCode: string }>,
     company?: string,
     plant?: string,
-  ) {
+  ): Promise<Map<string, string>> {
     const rows = targets.filter((t) => !!t.arrivalNo && t.arrivalSeq != null);
-    if (rows.length === 0) return;
+    if (rows.length === 0) return new Map();
     const arrivalNos = [...new Set(rows.map((t) => t.arrivalNo as string))];
     const itemCodes = [...new Set(rows.map((t) => t.itemCode))];
     // 주의: 조인 조건 문자열에 줄바꿈을 넣지 말 것. TypeORM이 alias.프로퍼티를 못 풀어 ORA-00904가 난다.
@@ -284,23 +289,39 @@ export class IqcHistoryService {
       .andWhere(company ? 'ln.company = :company' : '1=1', company ? { company } : {})
       .andWhere(plant ? 'ln.plant = :plant' : '1=1', plant ? { plant } : {})
       .getRawMany<{ requestNo: string; arrivalNo: string; arrivalSeq: number }>();
-    if (lines.length === 0) return;
+    if (lines.length === 0) return new Map();
     const heldKeys = new Map<string, string>(
-      lines.map((l) => [`${l.arrivalNo}#${Number(l.arrivalSeq)}`, l.requestNo]),
+      lines.map((l) => [IqcHistoryService.requestLotRowKey(l.arrivalNo, l.arrivalSeq), l.requestNo]),
     );
-    const blocked = new Map<string, string[]>();
+    const holds = new Map<string, string>();
     for (const target of rows) {
-      const key = `${target.arrivalNo}#${Number(target.arrivalSeq)}`;
+      const key = IqcHistoryService.requestLotRowKey(target.arrivalNo, target.arrivalSeq);
       const requestNo = heldKeys.get(key);
-      if (!requestNo) continue;
-      const list = blocked.get(requestNo) ?? [];
-      list.push(key);
-      blocked.set(requestNo, list);
+      if (requestNo) holds.set(key, requestNo);
     }
-    if (blocked.size === 0) return;
-    const detail = [...blocked.entries()].map(([requestNo, keys]) => `${requestNo}(${keys.join(', ')})`).join(', ');
+    return holds;
+  }
+
+  private static describeRequestLotHolds(holds: Map<string, string>) {
+    const byRequest = new Map<string, string[]>();
+    for (const [key, requestNo] of holds) {
+      const list = byRequest.get(requestNo) ?? [];
+      list.push(key);
+      byRequest.set(requestNo, list);
+    }
+    return [...byRequest.entries()].map(([requestNo, keys]) => `${requestNo}(${keys.join(', ')})`).join(', ');
+  }
+
+  /** 단건 판정용. 대상이 하나뿐이라 제외하면 남는 게 없으므로 항상 거절이다. */
+  private async assertNotHeldByRequestLot(
+    targets: Array<{ arrivalNo: string | null; arrivalSeq: number | null | undefined; itemCode: string }>,
+    company?: string,
+    plant?: string,
+  ) {
+    const holds = await this.findRequestLotHolds(targets, company, plant);
+    if (holds.size === 0) return;
     throw new BadRequestException(
-      `검사의뢰 LOT에 포함된 입하 행입니다. 의뢰 단위로 검사하거나 의뢰를 취소하세요: ${detail}`,
+      `검사의뢰 LOT에 포함된 입하 행입니다. 의뢰 단위로 검사하거나 의뢰를 취소하세요: ${IqcHistoryService.describeRequestLotHolds(holds)}`,
     );
   }
 
@@ -719,14 +740,42 @@ export class IqcHistoryService {
         `검사 대상(PENDING) 시리얼이 없습니다: 입하 ${dto.arrivalNo} / 품목 ${dto.itemCode}`,
       );
     }
-    await this.assertNotHeldByRequestLot(
+    // 같은 ARRIVAL_NO의 일부 행만 의뢰 LOT에 담겨 있을 수 있다.
+    // REQUEST 모드의 검사대기 목록은 담긴 행을 빼고 잔여 행만 보여주므로, 판정 대상도 같은 집합이어야 한다.
+    // 담긴 행까지 싸잡아 판정하면 의뢰 헤더가 REQUESTED로 남는 고아가 생기고,
+    // 반대로 전체를 거절하면 화면에 보이는 잔여 행을 검사할 방법이 없어진다.
+    const holds = await this.findRequestLotHolds(
       lots.map((lot) => ({ arrivalNo: lot.arrivalNo ?? null, arrivalSeq: lot.arrivalSeq, itemCode: lot.itemCode })),
       lots[0].company,
       lots[0].plant,
     );
+    let targets = lots;
+    if (holds.size > 0) {
+      const detail = IqcHistoryService.describeRequestLotHolds(holds);
+      const lotMode = await this.sysConfigService.getValue(IQC_INSPECT_LOT_MODE_KEY, company, plant);
+      if (!allowsIqcRequestLot(lotMode)) {
+        // 입하단위 모드인데 REQUESTED 의뢰가 남아 있다 = 모드를 되돌린 상태다.
+        // 이때는 조용히 일부만 판정하지 않고 의뢰를 정리하게 한다.
+        throw new BadRequestException(
+          `검사의뢰 LOT에 포함된 입하 행입니다. 의뢰 단위로 검사하거나 의뢰를 취소하세요: ${detail}`,
+        );
+      }
+      targets = lots.filter(
+        (lot) => !holds.has(IqcHistoryService.requestLotRowKey(lot.arrivalNo ?? null, lot.arrivalSeq)),
+      );
+      if (targets.length === 0) {
+        throw new BadRequestException(
+          `이 입하의 검사대기 시리얼이 모두 검사의뢰 LOT에 포함되어 있습니다. 의뢰 단위로 검사하세요: ${detail}`,
+        );
+      }
+    }
+
+    const targetSeqs = targets
+      .map((lot) => lot.arrivalSeq)
+      .filter((seq): seq is number => seq != null);
 
     return this.judgeLotsWithAql({
-      lots,
+      lots: targets,
       itemCode: dto.itemCode,
       representativeArrivalNo: dto.arrivalNo,
       dto,
@@ -736,6 +785,8 @@ export class IqcHistoryService {
             arrivalNo: dto.arrivalNo,
             itemCode: dto.itemCode,
             iqcStatus: 'PENDING',
+            // 의뢰에 담긴 행을 뺐다면 입하 행 갱신도 같은 범위로 좁힌다. 안 그러면 판정하지 않은 행까지 상태가 바뀐다.
+            ...(holds.size > 0 && targetSeqs.length === targets.length ? { seq: In(targetSeqs) } : {}),
             ...this.tenantWhere(tenantCompany, tenantPlant),
           },
           { iqcStatus: status },
