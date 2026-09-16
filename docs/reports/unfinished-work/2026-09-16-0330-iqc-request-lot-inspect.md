@@ -520,3 +520,39 @@ REQUEST 모드에서 화면 전 구간을 확인했다. **판정은 실행하지
 - 같은 `ARRIVAL_NO`로 판정/취소가 반복되는 입하단위 경로에도 같은 문제가 있을 수 있다
 - 확인할 것: `revertVendorInspectionModeForCanceledLot`이 취소 대상 판정이 실제로 만든 이력만 되돌리는가. `IQC_LOGS.REQUEST_NO`나 `inspectDate` 기준으로 좁혀야 할 수 있다
 - 이번 범위 밖이라 손대지 않았다
+
+---
+
+## 검사강도 이력 오염 수정 (2026-09-16, 커밋 0d9ed1c4)
+
+### 원인
+
+`revertVendorInspectionModeForCanceledLot`이 공급사의 **최신 모드 이력 1건**을 가져와 `(refArrivalNo, refItemCode)`만 대조하고 되돌렸다. 취소 대상 판정이 실제로 그 이력을 만들었는지는 확인하지 않는다.
+
+그래서 모드를 바꾼 적도 없는 11:52 판정을 11:54에 취소하니, 같은 입하번호로 02:32에 만들어진 무관한 이력(SEQ 61, `NORMAL→TIGHTENED`)이 되돌아갔다.
+
+### 수정
+
+- 입력에 `inspectedAt`(`IQC_LOGS.INSPECT_DATE`)을 추가하고, 이력의 `changedAt`이 그보다 앞서면 되돌리지 않는다. 모드 변경은 판정 저장 직후 같은 요청 안에서 기록되므로 이 판정이 만든 이력은 `changedAt >= inspectedAt`이다
+- `cancel()`이 `log.inspectDate`를 넘긴다
+
+### 함께 고친 것 (doubt 프로브)
+
+```
+의심: 취소·원복 로직이 최신 1건을 집으면서 그것이 대상 작업의 산출물인지/유효한지 확인하지 않는다
+프로브: IQC_LOGS 조회 전수에서 status 조건 유무 / 최신 1건 기반 원복 경로
+결과: status='DONE' 누락 2곳 → 함께 수정
+      - arrival.service.ts:831 입하 취소 가드 — 판정을 취소했는데도 "IQC 판정이 완료된
+        입하는 취소할 수 없습니다"로 계속 막혔다
+      - arrival.service.ts:1200 입하 IQC 상태 표시 — 취소된 판정을 PASS/FAIL로 표시했다
+      이미 덮여 있던 곳: iqc-defect-receive.service.ts:133, receiving.service.ts:194,
+      aql.service.ts:661 (셋 다 status='DONE' 보유)
+      reverseIqcFailMove / autoIssueDestructSample 차단은 cancelRefId IS NULL 로 덮여 있다
+```
+
+### 검증
+
+- 수정 전: 판정(모드 변경 없음) → 취소하면 `'IQC 판정 취소로 검사강도 원복'` 이력이 생기고 모드가 `TIGHTENED→NORMAL`로 바뀜
+- 수정 후 (`IQL20260916-0011`, 같은 시나리오): **모드이력 8건 유지, 모드 TIGHTENED 유지**. 의뢰 헤더는 `REQUESTED / SAMPLE_QTY=null`로 정상 복원, `MAT_LOTS` 50 PENDING
+- backend tsc 0 error, jest **651 pass**
+- 원복 후 전 지표 사전값 일치: 의뢰 0/0, `IQC_LOGS` 160, PENDING 50, 잘못된 유효기간 0, 모드이력 8, `IQC_FAIL` 트랜잭션 18
