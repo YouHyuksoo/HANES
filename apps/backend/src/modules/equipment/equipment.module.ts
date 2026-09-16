@@ -60,6 +60,10 @@ import { SensorDataLog } from '../../entities/sensor-data-log.entity';
 import { EquipConditionRule } from '../../entities/equip-condition-rule.entity';
 import { SensorMonitorService } from './services/sensor-monitor.service';
 import { SensorMonitorController } from './controllers/sensor-monitor.controller';
+import { EquipStopController, EquipCallController } from './controllers/equip-stop.controller';
+import { EquipStopService } from './services/equip-stop.service';
+import { EquipStopEvent } from '../../entities/equip-stop-event.entity';
+import { EquipCallEvent } from '../../entities/equip-call-event.entity';
 import { SystemModule } from '../system/system.module';
 
 @Module({
@@ -88,6 +92,8 @@ import { SystemModule } from '../system/system.module';
       MoldUsageLog,
       SensorDataLog,
       EquipConditionRule,
+      EquipStopEvent,
+      EquipCallEvent,
     ]),
     SystemModule,
   ],
@@ -102,6 +108,8 @@ import { SystemModule } from '../system/system.module';
     PmWorkOrderController,
     MoldController,
     SensorMonitorController,
+    EquipStopController,
+    EquipCallController,
   ],
   providers: [
     EquipMasterService,
@@ -111,6 +119,7 @@ import { SystemModule } from '../system/system.module';
     PmPlanService,
     MoldService,
     SensorMonitorService,
+    EquipStopService,
   ],
   exports: [
     EquipMasterService,
@@ -120,6 +129,7 @@ import { SystemModule } from '../system/system.module';
     PmPlanService,
     MoldService,
     SensorMonitorService,
+    EquipStopService,
   ],
 })
 export class EquipmentModule {}

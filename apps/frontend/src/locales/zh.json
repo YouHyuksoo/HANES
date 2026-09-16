@@ -8534,6 +8534,24 @@
       "OPEN": "已开立",
       "IN_PROGRESS": "处理中",
       "CLOSED": "已关闭"
+    },
+    "EQUIP_STOP_REASON": {
+      "FAILURE": "设备故障",
+      "JAM": "零件卡滞",
+      "MAT_SHORT": "物料短缺",
+      "MODEL_CHG": "换型",
+      "SETUP": "作业准备",
+      "QUALITY": "品质异常",
+      "NO_WORKER": "作业者缺勤",
+      "POWER": "停电",
+      "MAINT": "预防保养",
+      "ETC": "其他"
+    },
+    "EQUIP_CALL_TYPE": {
+      "EQUIP": "设备异常",
+      "QUALITY": "品质咨询",
+      "MATERIAL": "物料请求",
+      "ETC": "其他"
     }
   },
   "comCodeGroup": {
@@ -9744,6 +9762,48 @@
     "consumable": {
       "reverted": "已解除本次装载的耗材。",
       "revertFailed": "部分耗材无法解除装载：{{list}}"
+    },
+    "equipStop": {
+      "title": "设备停机",
+      "stopping": "停机中",
+      "start": "登记停机",
+      "release": "解除停机",
+      "startedAt": "停机时间",
+      "idleHint": "设备停止时，选择原因（也可留空）并登记停机。从登记时刻开始累计损失时间。",
+      "reason": "停机原因",
+      "reasonPlaceholder": "选择原因（可不选）",
+      "reasonUndecided": "原因未定 — 需选择原因才能解除",
+      "reasonRequired": "必须选择停机原因才能解除。",
+      "undecided": "原因未定",
+      "remark": "停机备注",
+      "remarkPlaceholder": "现象／处理备注",
+      "releaseRemark": "处理内容",
+      "releaseRemarkPlaceholder": "如何处理后恢复运行",
+      "startFailed": "登记设备停机失败。",
+      "releaseFailed": "解除设备停机失败。",
+      "todayHistory": "当日停机履历",
+      "todayCount": "件数",
+      "todayLoss": "损失时间",
+      "colStarted": "停机",
+      "colReleased": "解除",
+      "colLoss": "损失时间",
+      "blockReason": "设备处于停机状态。请先解除停机再登记实绩。",
+      "banner": "设备停机中 — 实绩输入已被阻止。点击以解除。"
+    },
+    "managerCall": {
+      "title": "呼叫管理员",
+      "calling": "呼叫中",
+      "call": "呼叫管理员",
+      "ack": "处理完成",
+      "calledAt": "呼叫时间",
+      "idleHint": "选择呼叫类型并填写需求后呼叫。呼叫履历与等待时间将被记录。",
+      "type": "呼叫类型",
+      "remark": "呼叫内容",
+      "remarkPlaceholder": "需要什么帮助",
+      "ackRemark": "处理内容",
+      "ackRemarkPlaceholder": "如何处理的",
+      "callFailed": "登记呼叫失败。",
+      "ackFailed": "处理呼叫失败。"
     }
   },
   "requestInspect": {

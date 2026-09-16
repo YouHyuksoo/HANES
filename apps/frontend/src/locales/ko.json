@@ -8574,6 +8574,24 @@
       "OPEN": "발행",
       "IN_PROGRESS": "조치중",
       "CLOSED": "종결"
+    },
+    "EQUIP_STOP_REASON": {
+      "FAILURE": "설비고장",
+      "JAM": "부품걸림",
+      "MAT_SHORT": "자재결품",
+      "MODEL_CHG": "모델교체",
+      "SETUP": "작업준비",
+      "QUALITY": "품질이상",
+      "NO_WORKER": "작업자부재",
+      "POWER": "정전",
+      "MAINT": "예방정비",
+      "ETC": "기타"
+    },
+    "EQUIP_CALL_TYPE": {
+      "EQUIP": "설비이상",
+      "QUALITY": "품질문의",
+      "MATERIAL": "자재요청",
+      "ETC": "기타"
     }
   },
   "comCodeGroup": {
@@ -9784,6 +9802,48 @@
     "consumable": {
       "reverted": "이번에 장착한 소모품을 해제했습니다.",
       "revertFailed": "장착 해제하지 못한 소모품이 있습니다: {{list}}"
+    },
+    "equipStop": {
+      "title": "설비정지",
+      "stopping": "정지 중",
+      "start": "설비정지 등록",
+      "release": "정지 해제",
+      "startedAt": "정지 시각",
+      "idleHint": "설비가 멈추면 사유를 고르고(또는 비워둔 채) 정지를 등록하세요. 등록 시각부터 유실시간이 쌓입니다.",
+      "reason": "정지사유",
+      "reasonPlaceholder": "사유 선택(미정 가능)",
+      "reasonUndecided": "사유미정 — 해제하려면 사유를 선택하세요",
+      "reasonRequired": "정지사유를 선택해야 해제할 수 있습니다.",
+      "undecided": "사유미정",
+      "remark": "정지 비고",
+      "remarkPlaceholder": "현상/조치 메모",
+      "releaseRemark": "조치 내용",
+      "releaseRemarkPlaceholder": "어떤 조치로 재가동했는지",
+      "startFailed": "설비정지 등록에 실패했습니다.",
+      "releaseFailed": "설비정지 해제에 실패했습니다.",
+      "todayHistory": "당일 정지 이력",
+      "todayCount": "건수",
+      "todayLoss": "유실시간",
+      "colStarted": "정지",
+      "colReleased": "해제",
+      "colLoss": "유실시간",
+      "blockReason": "설비가 정지 중입니다. 정지를 해제한 뒤 실적을 등록하세요.",
+      "banner": "설비 정지 중 — 실적 입력이 차단됩니다. 눌러서 해제하세요."
+    },
+    "managerCall": {
+      "title": "관리자호출",
+      "calling": "호출 중",
+      "call": "관리자 호출",
+      "ack": "응대 완료",
+      "calledAt": "호출 시각",
+      "idleHint": "도움이 필요한 유형과 내용을 적어 호출하세요. 호출 이력과 대기시간이 기록됩니다.",
+      "type": "호출유형",
+      "remark": "호출 내용",
+      "remarkPlaceholder": "어떤 도움이 필요한지",
+      "ackRemark": "응대 내용",
+      "ackRemarkPlaceholder": "어떻게 처리했는지",
+      "callFailed": "관리자호출 등록에 실패했습니다.",
+      "ackFailed": "응대 처리에 실패했습니다."
     }
   },
   "requestInspect": {

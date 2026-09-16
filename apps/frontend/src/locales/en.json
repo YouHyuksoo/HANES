@@ -8552,6 +8552,24 @@
       "OPEN": "Open",
       "IN_PROGRESS": "In Progress",
       "CLOSED": "Closed"
+    },
+    "EQUIP_STOP_REASON": {
+      "FAILURE": "Equipment Failure",
+      "JAM": "Part Jam",
+      "MAT_SHORT": "Material Shortage",
+      "MODEL_CHG": "Model Changeover",
+      "SETUP": "Setup",
+      "QUALITY": "Quality Issue",
+      "NO_WORKER": "Operator Absent",
+      "POWER": "Power Outage",
+      "MAINT": "Preventive Maintenance",
+      "ETC": "Other"
+    },
+    "EQUIP_CALL_TYPE": {
+      "EQUIP": "Equipment Issue",
+      "QUALITY": "Quality Question",
+      "MATERIAL": "Material Request",
+      "ETC": "Other"
     }
   },
   "comCodeGroup": {
@@ -9762,6 +9780,48 @@
     "consumable": {
       "reverted": "Consumables mounted in this session were unmounted.",
       "revertFailed": "Some consumables could not be unmounted: {{list}}"
+    },
+    "equipStop": {
+      "title": "Equipment Stop",
+      "stopping": "Stopped",
+      "start": "Register Stop",
+      "release": "Release Stop",
+      "startedAt": "Stopped at",
+      "idleHint": "When the equipment stops, pick a reason (or leave it blank) and register the stop. Downtime accrues from that moment.",
+      "reason": "Stop Reason",
+      "reasonPlaceholder": "Select reason (optional)",
+      "reasonUndecided": "Reason undecided - select a reason to release",
+      "reasonRequired": "A stop reason is required before releasing.",
+      "undecided": "Undecided",
+      "remark": "Stop Note",
+      "remarkPlaceholder": "Symptom / action note",
+      "releaseRemark": "Action Taken",
+      "releaseRemarkPlaceholder": "What was done to resume",
+      "startFailed": "Failed to register the equipment stop.",
+      "releaseFailed": "Failed to release the equipment stop.",
+      "todayHistory": "Stop History Today",
+      "todayCount": "Count",
+      "todayLoss": "Downtime",
+      "colStarted": "Stopped",
+      "colReleased": "Released",
+      "colLoss": "Downtime",
+      "blockReason": "The equipment is stopped. Release the stop before entering results.",
+      "banner": "Equipment stopped - result entry is blocked. Tap to release."
+    },
+    "managerCall": {
+      "title": "Call Manager",
+      "calling": "Calling",
+      "call": "Call Manager",
+      "ack": "Mark Handled",
+      "calledAt": "Called at",
+      "idleHint": "Choose a call type and describe what you need. The call and waiting time are recorded.",
+      "type": "Call Type",
+      "remark": "Call Note",
+      "remarkPlaceholder": "What help do you need",
+      "ackRemark": "Handling Note",
+      "ackRemarkPlaceholder": "How it was handled",
+      "callFailed": "Failed to register the call.",
+      "ackFailed": "Failed to mark the call handled."
     }
   },
   "requestInspect": {

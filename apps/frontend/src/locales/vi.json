@@ -8534,6 +8534,24 @@
       "OPEN": "Đã phát hành",
       "IN_PROGRESS": "Đang xử lý",
       "CLOSED": "Đã kết thúc"
+    },
+    "EQUIP_STOP_REASON": {
+      "FAILURE": "Hỏng thiết bị",
+      "JAM": "Kẹt linh kiện",
+      "MAT_SHORT": "Thiếu vật tư",
+      "MODEL_CHG": "Đổi model",
+      "SETUP": "Chuẩn bị sản xuất",
+      "QUALITY": "Lỗi chất lượng",
+      "NO_WORKER": "Vắng người vận hành",
+      "POWER": "Mất điện",
+      "MAINT": "Bảo trì phòng ngừa",
+      "ETC": "Khác"
+    },
+    "EQUIP_CALL_TYPE": {
+      "EQUIP": "Sự cố thiết bị",
+      "QUALITY": "Hỏi về chất lượng",
+      "MATERIAL": "Yêu cầu vật tư",
+      "ETC": "Khác"
     }
   },
   "comCodeGroup": {
@@ -9744,6 +9762,48 @@
     "consumable": {
       "reverted": "Đã tháo vật tư tiêu hao đã lắp trong lần này.",
       "revertFailed": "Một số vật tư tiêu hao không thể tháo: {{list}}"
+    },
+    "equipStop": {
+      "title": "Dừng thiết bị",
+      "stopping": "Đang dừng",
+      "start": "Đăng ký dừng",
+      "release": "Giải trừ dừng",
+      "startedAt": "Thời điểm dừng",
+      "idleHint": "Khi thiết bị dừng, chọn lý do (hoặc để trống) rồi đăng ký. Thời gian thất thoát được tính từ lúc đó.",
+      "reason": "Lý do dừng",
+      "reasonPlaceholder": "Chọn lý do (có thể bỏ trống)",
+      "reasonUndecided": "Chưa xác định lý do — chọn lý do để giải trừ",
+      "reasonRequired": "Phải chọn lý do dừng mới giải trừ được.",
+      "undecided": "Chưa xác định",
+      "remark": "Ghi chú dừng",
+      "remarkPlaceholder": "Hiện tượng / ghi chú xử lý",
+      "releaseRemark": "Nội dung xử lý",
+      "releaseRemarkPlaceholder": "Đã xử lý thế nào để chạy lại",
+      "startFailed": "Đăng ký dừng thiết bị thất bại.",
+      "releaseFailed": "Giải trừ dừng thiết bị thất bại.",
+      "todayHistory": "Lịch sử dừng trong ngày",
+      "todayCount": "Số lần",
+      "todayLoss": "Thời gian thất thoát",
+      "colStarted": "Dừng",
+      "colReleased": "Giải trừ",
+      "colLoss": "Thời gian thất thoát",
+      "blockReason": "Thiết bị đang dừng. Hãy giải trừ dừng trước khi nhập sản lượng.",
+      "banner": "Thiết bị đang dừng — nhập sản lượng bị chặn. Nhấn để giải trừ."
+    },
+    "managerCall": {
+      "title": "Gọi quản lý",
+      "calling": "Đang gọi",
+      "call": "Gọi quản lý",
+      "ack": "Đã xử lý",
+      "calledAt": "Thời điểm gọi",
+      "idleHint": "Chọn loại yêu cầu và ghi nội dung rồi gọi. Lịch sử gọi và thời gian chờ được ghi lại.",
+      "type": "Loại gọi",
+      "remark": "Nội dung gọi",
+      "remarkPlaceholder": "Bạn cần hỗ trợ gì",
+      "ackRemark": "Nội dung xử lý",
+      "ackRemarkPlaceholder": "Đã xử lý thế nào",
+      "callFailed": "Đăng ký gọi quản lý thất bại.",
+      "ackFailed": "Xử lý cuộc gọi thất bại."
     }
   },
   "requestInspect": {

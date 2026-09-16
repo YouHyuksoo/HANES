@@ -56,6 +56,8 @@ import { SysConfigService } from '../../system/services/sys-config.service';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { SgLabel } from '../../../entities/sg-label.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
+import { ProcessCapa } from '../../../entities/process-capa.entity';
+import { ProcessMaster } from '../../../entities/process-master.entity';
 import { DefectLog } from '../../../entities/defect-log.entity';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { SelfInspectResult } from '../../../entities/self-inspect-result.entity';
@@ -746,6 +748,29 @@ export class ProdResultService {
    * ProdResult를 create() 밖에서 저장하는 경로(서브공정 키팅 confirmAssembly/confirmSubKit)도 이 게이트를 호출한다.
    * 판정 규칙 자체는 EquipInspectGateService가 단일 출처다. 검사 화면(통전·단자)도 같은 함수를 호출한다.
    */
+  /**
+   * 설비정지 게이트 — EQUIP_STOP_EVENTS 에 진행중(OPEN) 정지가 있으면 실적을 막는다.
+   * 정지 해제는 키오스크 설비정지 팝업에서 한다.
+   */
+  async assertEquipNotStopped(
+    equipCode?: string | null,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    if (!equipCode || !company || !plant) return;
+    const rows =
+      (await this.dataSource.query(
+        `SELECT STOP_ID AS "stopId" FROM EQUIP_STOP_EVENTS
+          WHERE COMPANY = :1 AND PLANT_CD = :2 AND EQUIP_CODE = :3 AND STATUS = 'OPEN'`,
+        [company, plant, equipCode],
+      )) ?? [];
+    if (rows.length > 0) {
+      throw new BadRequestException(
+        `설비가 정지 중입니다. 정지를 해제한 뒤 실적을 등록하세요. (설비 ${equipCode})`,
+      );
+    }
+  }
+
   async assertEquipInspectGate(
     dto: Pick<CreateProdResultDto, 'equipCode' | 'orderNo'>,
     company?: string,
@@ -810,6 +835,9 @@ export class ProdResultService {
       company,
       plant,
     );
+
+    // 설비정지 게이트 — 정지 중인 설비에는 실적을 받지 않는다(정지구간 유실시간이 실적과 겹치면 집계가 무의미해진다)
+    await this.assertEquipNotStopped(dto.equipCode, company, plant);
 
     // 설비점검 인터록 서버 게이트 (일상점검/작업자설비점검 미완료 시 차단)
     await this.assertEquipInspectGate(dto, company, plant);
@@ -2596,5 +2624,227 @@ export class ProdResultService {
         resultCount: parseInt(r.resultCount) || 0,
       };
     });
+  }
+
+  /**
+   * 생산성 분석 (품목 x 공정 기준)
+   *
+   * 계산 정의 (단일 출처: 이 메서드):
+   * - 작업시간(workHours) = SUM(END_TIME - START_TIME), 종료시간이 없는 실적은 제외
+   * - 투입인원(workerCnt) = PROCESS_CAPAS.WORKER_CNT, 없으면 실적의 distinct 작업자 수(최소 1)
+   * - 투입공수(manHours) = 작업시간 x 투입인원
+   * - 실적UPH = 총생산수량 / 작업시간
+   * - 실적TT(초) = 작업시간(초) / 총생산수량
+   * - 표준UPH/표준TT = PROCESS_CAPAS.STD_UPH / STD_TACT_TIME (한쪽만 있으면 3600 기준으로 환산)
+   * - 인당생산성 = 총생산수량 / 투입공수
+   * - 능률(%) = (총생산수량 x 표준TT) / 작업시간(초) x 100  → 표준공수 대비 실적공수
+   * - 가동률(%) = 작업시간 / 조업가능시간, 조업가능시간 = 실적발생일수 x 1일 조업시간(SHIFT_PATTERNS 평균, 없으면 8h)
+   * - OEE(%) = 가동률 x 성능가동률(UPH달성률) x 양품률 / 10000
+   */
+  async getProductivityAnalysis(
+    fromDate?: string,
+    toDate?: string,
+    search?: string,
+    company?: string,
+    plant?: string,
+  ) {
+    const effectiveDateFrom = fromDate || new Date().toISOString().substring(0, 10);
+    const effectiveDateTo = toDate || effectiveDateFrom;
+
+    const qb = this.prodResultRepository
+      .createQueryBuilder('pr')
+      .leftJoin('pr.jobOrder', 'jo')
+      .leftJoin('jo.part', 'p')
+      .select([
+        'pr.resultNo AS "resultNo"',
+        'pr.processCode AS "resultProcessCode"',
+        'pr.goodQty AS "goodQty"',
+        'pr.defectQty AS "defectQty"',
+        'pr.startAt AS "startAt"',
+        'pr.endAt AS "endAt"',
+        'pr.workerId AS "workerId"',
+        'pr.equipCode AS "equipCode"',
+        'jo.orderNo AS "orderNo"',
+        'jo.planQty AS "planQty"',
+        'jo.lineCode AS "lineCode"',
+        'jo.processCode AS "orderProcessCode"',
+        'jo.itemCode AS "orderItemCode"',
+        'p.itemCode AS "itemCode"',
+        'p.itemName AS "itemName"',
+        'p.itemType AS "itemType"',
+      ])
+      .where('pr.status != :status', { status: 'CANCELED' })
+      .andWhere("pr.startAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate: effectiveDateFrom })
+      .andWhere("pr.startAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate: effectiveDateTo });
+    if (company) qb.andWhere('pr.company = :company', { company });
+    if (plant) qb.andWhere('pr.plant = :plant', { plant });
+    if (search) {
+      qb.andWhere('(p.itemCode LIKE :search OR p.itemName LIKE :search)', { search: `%${search}%` });
+    }
+
+    const rows = await qb.getRawMany();
+    if (rows.length === 0) return [];
+
+    // 1일 조업시간 (SHIFT_PATTERNS 평균, 없으면 8시간)
+    const shiftWhere: Record<string, string> = { useYn: 'Y' };
+    if (company) shiftWhere.company = company;
+    if (plant) shiftWhere.plant = plant;
+    const shifts = await this.prodResultRepository.manager.find(ShiftPattern, { where: shiftWhere });
+    const shiftMinutes = shifts
+      .map((s) => Number(s.workMinutes) || 0)
+      .filter((m) => m > 0);
+    const dailyWorkHours =
+      shiftMinutes.length > 0
+        ? shiftMinutes.reduce((a, b) => a + b, 0) / shiftMinutes.length / 60
+        : 8;
+
+    type Bucket = {
+      itemCode: string;
+      itemName: string;
+      itemType: string;
+      processCode: string;
+      lineCodes: Set<string>;
+      orders: Map<string, number>;
+      workers: Set<string>;
+      equips: Set<string>;
+      workDays: Set<string>;
+      goodQty: number;
+      defectQty: number;
+      workSeconds: number;
+      resultCount: number;
+      timedResultCount: number;
+    };
+
+    const buckets = new Map<string, Bucket>();
+    for (const r of rows) {
+      const itemCode: string = r.itemCode || r.orderItemCode || '';
+      const processCode: string = r.resultProcessCode || r.orderProcessCode || '';
+      if (!itemCode) continue;
+      const key = `${itemCode}|${processCode}`;
+      let b = buckets.get(key);
+      if (!b) {
+        b = {
+          itemCode,
+          itemName: r.itemName || '',
+          itemType: r.itemType || '',
+          processCode,
+          lineCodes: new Set<string>(),
+          orders: new Map<string, number>(),
+          workers: new Set<string>(),
+          equips: new Set<string>(),
+          workDays: new Set<string>(),
+          goodQty: 0,
+          defectQty: 0,
+          workSeconds: 0,
+          resultCount: 0,
+          timedResultCount: 0,
+        };
+        buckets.set(key, b);
+      }
+      if (r.lineCode) b.lineCodes.add(String(r.lineCode));
+      if (r.orderNo) b.orders.set(String(r.orderNo), Number(r.planQty) || 0);
+      if (r.workerId) b.workers.add(String(r.workerId));
+      if (r.equipCode) b.equips.add(String(r.equipCode));
+      b.goodQty += Number(r.goodQty) || 0;
+      b.defectQty += Number(r.defectQty) || 0;
+      b.resultCount += 1;
+
+      const startAt = r.startAt ? new Date(r.startAt) : null;
+      const endAt = r.endAt ? new Date(r.endAt) : null;
+      if (startAt) b.workDays.add(formatYmdLocal(startAt));
+      if (startAt && endAt) {
+        const sec = (endAt.getTime() - startAt.getTime()) / 1000;
+        if (sec > 0) {
+          b.workSeconds += sec;
+          b.timedResultCount += 1;
+        }
+      }
+    }
+
+    // 표준 생산능력(PROCESS_CAPAS) 로딩
+    const capaWhere: Record<string, string> = { useYn: 'Y' };
+    if (company) capaWhere.company = company;
+    if (plant) capaWhere.plant = plant;
+    const capas = await this.prodResultRepository.manager.find(ProcessCapa, { where: capaWhere });
+    const capaMap = new Map<string, ProcessCapa>();
+    capas.forEach((c) => capaMap.set(`${c.itemCode}|${c.processCode}`, c));
+
+    const processWhere: Record<string, string> = {};
+    if (company) processWhere.company = company;
+    if (plant) processWhere.plant = plant;
+    const processes = await this.prodResultRepository.manager.find(ProcessMaster, { where: processWhere });
+    const processNameMap = new Map<string, string>();
+    processes.forEach((p) => processNameMap.set(p.processCode, p.processName));
+
+    const round1 = (v: number) => Math.round(v * 10) / 10;
+    const round2 = (v: number) => Math.round(v * 100) / 100;
+
+    const list = Array.from(buckets.values()).map((b) => {
+      const capa = capaMap.get(`${b.itemCode}|${b.processCode}`) ?? null;
+      const totalQty = b.goodQty + b.defectQty;
+      const planQty = Array.from(b.orders.values()).reduce((a, c) => a + c, 0);
+      const workHours = b.workSeconds / 3600;
+
+      let stdUph = capa ? Number(capa.stdUph) || 0 : 0;
+      let stdTactTime = capa ? Number(capa.stdTactTime) || 0 : 0;
+      if (stdUph <= 0 && stdTactTime > 0) stdUph = 3600 / stdTactTime;
+      if (stdTactTime <= 0 && stdUph > 0) stdTactTime = 3600 / stdUph;
+
+      const capaWorkerCnt = capa ? Number(capa.workerCnt) || 0 : 0;
+      const workerCnt = capaWorkerCnt > 0 ? capaWorkerCnt : Math.max(b.workers.size, 1);
+      const capaEquipCnt = capa ? Number(capa.equipCnt) || 0 : 0;
+      const equipCnt = capaEquipCnt > 0 ? capaEquipCnt : b.equips.size;
+
+      const manHours = workHours * workerCnt;
+      const actualUph = workHours > 0 ? totalQty / workHours : 0;
+      const actualTactTime = totalQty > 0 && b.workSeconds > 0 ? b.workSeconds / totalQty : 0;
+      const perManUph = manHours > 0 ? totalQty / manHours : 0;
+      const efficiencyRate =
+        b.workSeconds > 0 && stdTactTime > 0 ? ((totalQty * stdTactTime) / b.workSeconds) * 100 : 0;
+      const uphAchieveRate = stdUph > 0 && actualUph > 0 ? (actualUph / stdUph) * 100 : 0;
+
+      const availableHours = b.workDays.size * dailyWorkHours;
+      const operationRate = availableHours > 0 ? (workHours / availableHours) * 100 : 0;
+      const yieldRate = totalQty > 0 ? (b.goodQty / totalQty) * 100 : 0;
+      const defectRate = totalQty > 0 ? (b.defectQty / totalQty) * 100 : 0;
+      const oee =
+        operationRate > 0 && uphAchieveRate > 0
+          ? (operationRate * uphAchieveRate * yieldRate) / 10000
+          : 0;
+
+      return {
+        itemCode: b.itemCode,
+        itemName: b.itemName,
+        itemType: b.itemType,
+        processCode: b.processCode,
+        processName: processNameMap.get(b.processCode) ?? b.processCode,
+        lineCode: Array.from(b.lineCodes).join(', '),
+        planQty,
+        totalQty,
+        goodQty: b.goodQty,
+        defectQty: b.defectQty,
+        yieldRate: round1(yieldRate),
+        defectRate: round1(defectRate),
+        workHours: round2(workHours),
+        manHours: round2(manHours),
+        workerCnt,
+        equipCnt,
+        workDays: b.workDays.size,
+        actualUph: round1(actualUph),
+        stdUph: round1(stdUph),
+        uphAchieveRate: round1(uphAchieveRate),
+        actualTactTime: round1(actualTactTime),
+        stdTactTime: round1(stdTactTime),
+        perManUph: round1(perManUph),
+        efficiencyRate: round1(efficiencyRate),
+        operationRate: round1(operationRate),
+        oee: round1(oee),
+        orderCount: b.orders.size,
+        resultCount: b.resultCount,
+        hasStandard: !!capa,
+      };
+    });
+
+    return list.sort((a, b) => b.totalQty - a.totalQty);
   }
 }

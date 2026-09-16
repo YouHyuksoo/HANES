@@ -12,13 +12,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle, ChevronDown, ClipboardList, Cpu,
-  Maximize2, Minimize2, UserPlus, X, CheckCircle,
+  Maximize2, Minimize2, UserPlus, X, CheckCircle, Square, BellRing,
 } from 'lucide-react';
 import { useKioskStore } from '@/stores/kioskStore';
 import EquipSelectModal from './EquipSelectModal';
 import { HeaderCheckItem } from '@/components/inspect';
 import type { EquipOption } from '../utils/equipOptions';
 import { inspectStatusDetail, isInspectNg } from '../utils/inspectStatus';
+import { formatElapsed } from '../hooks/useEquipStop';
 
 interface EquipHeaderProps {
   equips: EquipOption[];
@@ -36,6 +37,18 @@ interface EquipHeaderProps {
   dailyInspectResult?: string | null;
   /** 작업자설비점검 종합판정(PASS/FAIL). 점검 기록이 없으면 null */
   workerInspectResult?: string | null;
+  /** 설비정지 팝업 열기 */
+  onOpenEquipStop: () => void;
+  /** 관리자호출 팝업 열기 */
+  onOpenManagerCall: () => void;
+  /** 진행중 설비정지 여부 */
+  isStopped?: boolean;
+  /** 정지 경과초 (서버 기준) */
+  stopElapsed?: number;
+  /** 진행중 관리자호출 여부 */
+  isCalling?: boolean;
+  /** 호출 대기 경과초 (서버 기준) */
+  callElapsed?: number;
 }
 
 export default function EquipHeader({
@@ -43,6 +56,9 @@ export default function EquipHeader({
   onSelectEquip, onRemoveWorker,
   dailyInspectAt, workerInspectAt,
   dailyInspectResult, workerInspectResult,
+  onOpenEquipStop, onOpenManagerCall,
+  isStopped = false, stopElapsed = 0,
+  isCalling = false, callElapsed = 0,
 }: EquipHeaderProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -233,6 +249,57 @@ export default function EquipHeader({
               testId="kiosk-worker-inspect-open"
               wide
             />
+          </div>
+
+          {/* 설비정지 / 관리자호출 — 현장에서 가장 급할 때 누르는 버튼이라 헤더 우측 고정 */}
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              data-testid="kiosk-equip-stop-open"
+              onClick={onOpenEquipStop}
+              disabled={!selectedEquip}
+              title={selectedEquip ? undefined : t('kiosk.header.selectEquipFirst', '설비를 먼저 선택하세요.')}
+              className={`inline-flex h-11 items-center gap-1.5 rounded-lg border-2 px-3 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:border-border disabled:text-black/40 dark:disabled:text-white/40 ${
+                isStopped
+                  ? 'border-red-600 text-red-600 dark:border-red-400 dark:text-red-400'
+                  : 'border-border text-black/70 hover:border-red-500 hover:text-red-600 dark:text-white/70 dark:hover:border-red-400 dark:hover:text-red-400'
+              }`}
+            >
+              <Square className="h-4 w-4 shrink-0" />
+              {isStopped ? (
+                <span className="flex flex-col items-start leading-tight">
+                  <span className="text-[11px]">{t('kiosk.equipStop.stopping', '정지 중')}</span>
+                  <span data-testid="kiosk-header-stop-elapsed" className="font-mono text-sm tabular-nums">
+                    {formatElapsed(stopElapsed)}
+                  </span>
+                </span>
+              ) : (
+                <span>{t('kiosk.equipStop.title', '설비정지')}</span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              data-testid="kiosk-manager-call-open"
+              onClick={onOpenManagerCall}
+              disabled={!selectedEquip}
+              title={selectedEquip ? undefined : t('kiosk.header.selectEquipFirst', '설비를 먼저 선택하세요.')}
+              className={`inline-flex h-11 items-center gap-1.5 rounded-lg border-2 px-3 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:border-border disabled:text-black/40 dark:disabled:text-white/40 ${
+                isCalling
+                  ? 'border-amber-600 text-amber-600 dark:border-amber-400 dark:text-amber-400'
+                  : 'border-border text-black/70 hover:border-amber-500 hover:text-amber-600 dark:text-white/70 dark:hover:border-amber-400 dark:hover:text-amber-400'
+              }`}
+            >
+              <BellRing className="h-4 w-4 shrink-0" />
+              {isCalling ? (
+                <span className="flex flex-col items-start leading-tight">
+                  <span className="text-[11px]">{t('kiosk.managerCall.calling', '호출 중')}</span>
+                  <span className="font-mono text-sm tabular-nums">{formatElapsed(callElapsed)}</span>
+                </span>
+              ) : (
+                <span>{t('kiosk.managerCall.title', '관리자호출')}</span>
+              )}
+            </button>
           </div>
 
           {/* 전체화면 */}

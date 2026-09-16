@@ -41,6 +41,9 @@ import ConsumableScanModal from './components/ConsumableScanModal';
 import DefectInputModal from './components/DefectInputModal';
 import SelfInspectModal from './components/SelfInspectModal';
 import SgLabelPrintHost, { type SgLabelPrintHandle } from './components/SgLabelPrintHost';
+import EquipStopModal from './components/EquipStopModal';
+import ManagerCallModal from './components/ManagerCallModal';
+import { useEquipStop, formatElapsed } from './hooks/useEquipStop';
 import { normalizeEquipOptions, type EquipOption } from './utils/equipOptions';
 
 const SELF_INSPECT_BATCH_WINDOW_MS = 10_000;
@@ -78,6 +81,9 @@ export default function InputKioskPage() {
   } = useKioskStore();
 
   const [equips, setEquips] = useState<EquipOption[]>([]);
+
+  // 설비정지 / 관리자호출 — 경과시간 기준은 서버다(새로고침·재부팅해도 이어진다)
+  const equipStop = useEquipStop(selectedEquip?.equipCode, selectedJobOrder?.orderNo);
   const [historyKey, setHistoryKey] = useState(0);
   const [firstInspectDone, setFirstInspectDone] = useState(false);
   /** 공정별 자주검사 항목 수(초/중/종물). -1 = 미조회 */
@@ -93,6 +99,8 @@ export default function InputKioskPage() {
   const [isMaterialScanOpen, setIsMaterialScanOpen] = useState(false);
   const [isConsumableScanOpen, setIsConsumableScanOpen] = useState(false);
   const [isDefectOpen, setIsDefectOpen] = useState(false);
+  const [isEquipStopOpen, setIsEquipStopOpen] = useState(false);
+  const [isManagerCallOpen, setIsManagerCallOpen] = useState(false);
   const [selfInspectTiming, setSelfInspectTiming] = useState<InspectTiming | null>(null);
   const restoredEquipRef = useRef<string | null>(null);
 
@@ -452,6 +460,8 @@ export default function InputKioskPage() {
     if (hasPendingDelegate) reasons.push(t('kiosk.selfInspect.delegateBlocking'));
     if (isMidBlock) reasons.push(t('kiosk.selfInspect.midBlock'));
     if (isLastBlock) reasons.push(t('kiosk.selfInspect.lastBlock'));
+    // 정지 중에는 실적을 받지 않는다. 정지구간과 실적이 겹치면 유실시간 집계가 무의미해진다(서버도 같은 조건으로 막는다).
+    if (equipStop.isStopped) reasons.push(t('kiosk.equipStop.blockReason', '설비가 정지 중입니다. 정지를 해제한 뒤 실적을 등록하세요.'));
     return reasons;
   }, [
     selectedEquip,
@@ -466,6 +476,7 @@ export default function InputKioskPage() {
     hasPendingDelegate,
     isMidBlock,
     isLastBlock,
+    equipStop.isStopped,
     t,
   ]);
 
@@ -499,6 +510,12 @@ export default function InputKioskPage() {
         workerInspectAt={workerInspectAt}
         dailyInspectResult={dailyInspectResult}
         workerInspectResult={workerInspectResult}
+        onOpenEquipStop={() => setIsEquipStopOpen(true)}
+        onOpenManagerCall={() => setIsManagerCallOpen(true)}
+        isStopped={equipStop.isStopped}
+        stopElapsed={equipStop.stopElapsed}
+        isCalling={equipStop.isCalling}
+        callElapsed={equipStop.callElapsed}
       />
 
       {/* ② ③ ④ 메인 3패널 */}
@@ -545,7 +562,7 @@ export default function InputKioskPage() {
               <ProductionInputBar
                 onSaved={handleSaved}
                 onResultSaved={handleResultSaved}
-                interlockDone={allInterlockDone && !hasPendingDelegate && !isMidBlock}
+                interlockDone={allInterlockDone && !hasPendingDelegate && !isMidBlock && !equipStop.isStopped}
                 disabledReasons={submitDisabledReasons}
                 productionType={productionType}
               />
@@ -573,6 +590,20 @@ export default function InputKioskPage() {
           <span className="animate-pulse">●</span>
           {t('kiosk.selfInspect.midBlock')}
         </div>
+      )}
+
+      {/* 설비정지 배너 — 팝업을 닫아도 정지 중임이 화면에서 사라지지 않게 한다 */}
+      {equipStop.isStopped && (
+        <button
+          type="button"
+          onClick={() => setIsEquipStopOpen(true)}
+          data-testid="kiosk-stop-banner"
+          className="flex w-full items-center justify-center gap-2 bg-red-600 px-4 py-2 text-sm font-bold text-white"
+        >
+          <span className="animate-pulse">●</span>
+          {t('kiosk.equipStop.banner', '설비 정지 중 — 실적 입력이 차단됩니다. 눌러서 해제하세요.')}
+          <span className="font-mono tabular-nums">{formatElapsed(equipStop.stopElapsed)}</span>
+        </button>
       )}
 
       {/* ── 모달들 ── */}
@@ -612,6 +643,32 @@ export default function InputKioskPage() {
       <DefectInputModal
         isOpen={isDefectOpen}
         onClose={() => setIsDefectOpen(false)}
+      />
+      <EquipStopModal
+        isOpen={isEquipStopOpen}
+        onClose={() => setIsEquipStopOpen(false)}
+        equipCode={selectedEquip?.equipCode}
+        equipName={selectedEquip?.equipName}
+        openStop={equipStop.openStop}
+        stopElapsed={equipStop.stopElapsed}
+        history={equipStop.history}
+        summary={equipStop.summary}
+        loading={equipStop.loading}
+        onStart={equipStop.startStop}
+        onUpdateReason={equipStop.updateReason}
+        onRelease={equipStop.releaseStop}
+        onRefreshHistory={() => void equipStop.refreshHistory()}
+      />
+      <ManagerCallModal
+        isOpen={isManagerCallOpen}
+        onClose={() => setIsManagerCallOpen(false)}
+        equipCode={selectedEquip?.equipCode}
+        equipName={selectedEquip?.equipName}
+        openCall={equipStop.openCall}
+        callElapsed={equipStop.callElapsed}
+        loading={equipStop.loading}
+        onCall={equipStop.createCall}
+        onAck={equipStop.ackCall}
       />
       {selfInspectTiming && (
         <SelfInspectModal
