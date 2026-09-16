@@ -300,3 +300,72 @@ AQL NULL 항목은 전부 `THN-A50-*` 계열이고, `IQC-*` 계열은 전부 채
   - 4개 화면의 예상 시료수 표시가 AQL 값으로 바뀌었는지
 - 운영 모드는 여전히 `ARRIVAL`이다. 전환 시점은 사용자 결정
 - **표시 폴백**: `resolveIqcDisplaySampleQty()`가 null을 돌려주는 경우 화면이 `0`을 찍는 자리가 있다(`(… ?? 0).toLocaleString()`). AQL 항목이 하나도 없고 전수/파괴만 있는 품목에서 "예상 시료수 0"으로 보일 수 있다. 실제 그런 품목이 있는지 확인하고 필요하면 `-` 폴백으로 바꿔야 한다
+
+---
+
+## E 적용 및 REQUEST 모드 전환 (2026-09-16 11:00~11:20, 커밋 61ff5671 / b7aebf28)
+
+### E. IQC_LOGS.REQUEST_NO — JSHANES 적용 완료
+
+- pre-check: 컬럼 없음, IQC_LOGS 160건, REMARK에 `[IQL:` 0건, INVALID 객체 0건, 의존 객체는 `PACKAGE BODY PKG_WORKFLOW` 1건
+- 적용(`apps/backend/src/migrations/2026-09-16_iqc_logs_request_no.sql`, `--execute-file` 6블록 전부 성공)
+  - `ALTER TABLE IQC_LOGS ADD (REQUEST_NO VARCHAR2(50))` — `IQC_REQUEST_LOTS.REQUEST_NO`와 같은 길이
+  - `COMMENT ON COLUMN`, `CREATE INDEX IX_IQC_LOGS_REQUEST_NO (COMPANY, PLANT_CD, REQUEST_NO)`
+  - 백필 UPDATE(REGEXP_SUBSTR). 대상 0건. 정규식은 드리프트 노트가 붙은 REMARK에서도 의뢰번호만 뽑는 것을 실행 전 확인
+  - `ALTER PACKAGE PKG_WORKFLOW COMPILE BODY`
+- post-check: 컬럼 `VARCHAR2(50) NULLABLE=Y`, 인덱스 1건, 코멘트 적재, `PKG_WORKFLOW` VALID, INVALID 객체 0건
+- 코드: `IqcLog.requestNo` 추가, `judgeLotsWithAql` 입력에 `requestNo`, `createRequestLotResult`가 전달. REMARK의 `[IQL:...]` 접두어는 기존 조회 호환을 위해 유지
+- `docs/database/schema-erd.md` 재생성(`ORACLE_SITE=JSHANES`)
+
+### 운영 모드 전환
+
+`SYS_CONFIGS.IQC_INSPECT_LOT_MODE` `ARRIVAL` → **`REQUEST`** (COMPANY=40 / PLANT_CD=1000, 2026-09-16 11:12:48).
+전환 시점 `IQC_REQUEST_LOTS` 0건이라 넘어갈 재고 의뢰는 없었다.
+
+### REQUEST 모드 스모크 (서비스 레이어 직접 호출)
+
+| 단계 | 결과 |
+|---|---|
+| 후보 조회 | 50건 / 수량합 50,000 |
+| 검사대기 입하단위 행 | 50시리얼 / 50,000 EA |
+| 의뢰 생성 | `IQL20260916-0007` / 모집단 3,000 / 라인 3 |
+| 후보 축소 | 50 → 47 (담은 3행만 제외) |
+| 검사대기 의뢰LOT 행 | `IQL20260916-0007` / 3시리얼 / 3,000 EA |
+| 검사대기 입하단위 잔여 | 47시리얼 / 47,000 EA |
+| 의뢰 시리얼 조회 | 3건 (`VH1-RM260913-00001/2/3`). requestNo 없이 조회하면 50건 |
+| 취소 후 후보 복구 | 정상 |
+
+쿼리 실행 검증도 별도로 했다. `findRequestLotHolds`, `findPendingRequestLots`, `findPendingArrivals`의 의뢰 제외 서브쿼리 모두 TypeORM alias 치환과 Oracle 실행 정상.
+
+### 사고 — 스모크가 운영 데이터에 판정을 실행했다 (원복 완료)
+
+스모크 스크립트에 `createArrivalResult` 호출을 넣은 것이 잘못이었다. 읽기 위주로 짰다고 판단했으나 이 호출은 쓰기다.
+
+- 발생: `R26091300001 / HKEAN1W002FA`의 잔여 47행(SEQ 4~50)이 PASS로 판정됨 (11:17~11:18)
+- 변경된 것: `MAT_LOTS` 47행 `PENDING→PASS` + `EXPIRE_DATE` 2027-09-08 채워짐, `MAT_ARRIVALS` 47행 `PENDING→PASS`, `IQC_LOGS` 1건 생성(`LOT_QTY=47000`, `AQL_SAMPLE_QTY=47000`, `RESULT=PASS`)
+- 영향 없던 것: PASS라 재고 이동 없음(`IQC_FAIL_DEFECT_MOVE_MODE=MANUAL`), `VENDOR_INSPECTION_MODE_HISTORY` 0건 추가, `PARTNER_MASTERS.INSPECTION_MODE` 변경 없음
+- 원복: 47행 `PENDING` + `EXPIRE_DATE=NULL`, `MAT_ARRIVALS` 47행 `PENDING`, `IQC_LOGS` 해당 1건 삭제, 의뢰 헤더/라인 0건
+- post-check: `MAT_LOTS` 50 PENDING / 11 PASS / 1 CANCELED, `MAT_ARRIVALS` 동일, SEQ 4~50 `EXPIRE_DATE` 0건, 해당 입하 `IQC_LOGS` 0건 — 판정 전 상태와 일치
+
+역설적으로 이 사고가 **잔여 행 판정 로직이 실데이터에서 설계대로 도는 것을 확인**시켜 줬다. 담긴 3행은 건드리지 않고 잔여 47행만, 모집단도 47,000으로 잡혔다.
+
+**교훈: 운영 DB 대상 스모크에 판정·저장 계열 호출을 넣지 말 것.** 조회와 되돌리기 쉬운 쓰기(의뢰 생성/취소)까지만 넣는다.
+
+### 곁들여 고친 것
+
+`PendingArrivalsResult` 선언에 `requestNo`가 없었다. 런타임에는 내려가고 프론트가 자체 타입으로 받아 동작은 했지만 백엔드 계약이 실제와 어긋나 있었다. 이 사실은 스모크 스크립트를 짜다가 드러났다.
+
+### doubt 프로브
+
+```
+의심: 이력/참조가 전용 컬럼 없이 REMARK 문자열로만 출처를 연결한다
+프로브: remark에 대괄호 접두어로 참조를 심는 패턴 grep
+결과: production/services/job-order.service.ts 3곳 (`[공정작업] orderNo`, `[자동생성] orderNo`, `[HOLD] 이전상태:`)
+      → 같은 유형이지만 production 모듈이라 범위 밖. 보고만 한다
+```
+
+### 남은 것
+
+- **브라우저 확인**: 화면 레벨 검증은 아직이다. 특히 4개 화면의 예상 시료수 표시, 모드 배너 제거 확인(이제 REQUEST라 배너가 안 떠야 한다), 의뢰 LOT 행 배지
+- **이전 세션 잔여물**: `R26091300001`의 SEQ 1, 3이 `IQC_STATUS='PENDING'`인데 `EXPIRE_DATE`가 채워져 있다(2026-09-16 02:34 갱신). PENDING LOT에 유효기간이 있는 건 정합성에 어긋난다. 이번 사고 원복 범위 밖이라 두었다
+- D(AQL NULL 149건), F(lineRole 미소비), G(이중 편성 UNIQUE) 미결
