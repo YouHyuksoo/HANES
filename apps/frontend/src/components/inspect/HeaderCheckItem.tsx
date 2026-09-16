@@ -17,8 +17,9 @@
  *   점검을 완료했지만 종합판정이 불합격이면 done=false + notDoneDetail='완료·NG'로 표현한다.
  *   배지가 초록인데 작업은 막히는 모순을 만들지 않기 위해 done은 "진행 가능"의 의미로 유지한다.
  */
+import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, ClipboardCheck } from 'lucide-react';
 
 interface HeaderCheckItemProps {
   label: string;
@@ -33,6 +34,13 @@ interface HeaderCheckItemProps {
   wide?: boolean;
   /** 시나리오 드라이버가 입력 버튼을 집는다 */
   testId?: string;
+  /**
+   * 화면이 좁아지면(2xl 미만) 카드를 아이콘 버튼 하나로 접는다.
+   * 키오스크 헤더처럼 한 줄에 고정폭 요소가 많은 화면에서 쓴다.
+   */
+  responsiveCompact?: boolean;
+  /** 접힌 상태에서 쓸 아이콘. 없으면 ClipboardCheck */
+  icon?: ComponentType<{ className?: string }>;
 }
 
 export default function HeaderCheckItem({
@@ -47,6 +55,8 @@ export default function HeaderCheckItem({
   onInput,
   wide = false,
   testId,
+  responsiveCompact = false,
+  icon: Icon = ClipboardCheck,
 }: HeaderCheckItemProps) {
   const { t } = useTranslation();
   const isDisabled = Boolean(disabled || notTarget);
@@ -71,7 +81,20 @@ export default function HeaderCheckItem({
     muted: 'text-black/50 dark:text-white/50',
   }[tone];
 
-  return (
+  // 접힌(아이콘) 모드의 툴팁·aria 문구. 라벨 + 상태 + (막힌 경우) 사유를 한 줄로 합친다.
+  const statusText = notTarget
+    ? (notTargetDetail ?? t('kiosk.header.notTarget', '대상 아님'))
+    : done
+      ? (doneDetail ?? t('kiosk.header.done', '완료'))
+      : (notDoneDetail ?? t('kiosk.header.notDone', '미완료'));
+  const compactTitle = [label, statusText, isDisabled ? reasonText : null].filter(Boolean).join(' · ');
+  const compactToneCls = {
+    done: 'border-green-600 text-green-700 dark:border-green-400 dark:text-green-400',
+    todo: 'border-red-500 text-red-600 dark:border-red-400 dark:text-red-400',
+    muted: 'border-border text-black/50 dark:text-white/50',
+  }[tone];
+
+  const fullCard = (
     <div
       className={`flex h-11 shrink-0 items-center justify-between gap-2 rounded-lg border border-border ${edgeCls} bg-card pl-2 pr-2.5 ${wide ? 'w-48' : 'w-36'}`}
       title={isDisabled ? (reasonText ?? '') : ''}
@@ -111,5 +134,31 @@ export default function HeaderCheckItem({
         {done ? t('common.view', '보기') : t('common.input', '입력')}
       </button>
     </div>
+  );
+
+  if (!responsiveCompact) return fullCard;
+
+  // 좁은 화면: 아이콘 버튼 하나로 접는다. 상태는 테두리·아이콘 색 + 우상단 점으로만 알린다.
+  // 넓은 화면(2xl+): 2xl:contents 로 래퍼를 투명하게 만들어 기존 카드 레이아웃을 그대로 유지한다.
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onInput}
+        disabled={isDisabled}
+        data-testid={testId ? `${testId}-compact` : undefined}
+        aria-label={compactTitle}
+        title={compactTitle}
+        className={`relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border-2 bg-card transition-colors disabled:cursor-not-allowed disabled:border-border disabled:text-black/40 dark:disabled:text-white/40 2xl:hidden ${compactToneCls} ${!done && !isDisabled ? 'animate-pulse' : ''}`}
+      >
+        <Icon className="h-5 w-5 shrink-0" />
+        {!notTarget && (
+          done
+            ? <CheckCircle2 className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-card text-green-600 dark:text-green-400" />
+            : <XCircle className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-card text-red-500 dark:text-red-400" />
+        )}
+      </button>
+      <div className="hidden 2xl:contents">{fullCard}</div>
+    </>
   );
 }
