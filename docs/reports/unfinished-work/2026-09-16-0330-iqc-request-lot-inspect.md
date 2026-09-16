@@ -241,7 +241,11 @@ JSHANES `IQC_PART_SPEC_ITEMS` 실측: `HKEAN1W002FA`, `1SH21A7A09` 모두 `SEQ 1
 ### A. 완료 — 모드 가드
 
 - `IqcRequestLotService.create()`가 `IQC_INSPECT_LOT_MODE`를 읽고 REQUEST가 아니면 생성을 거절한다. 모드 판정은 `@harness/shared` `allowsIqcRequestLot()` 단일 출처
-- `createArrivalResult()`/`createResult()`가 REQUESTED 의뢰에 담긴 입하 행이면 거절한다(`assertNotHeldByRequestLot`). 모드를 되돌리거나 API를 직접 쳐도 고아가 생기지 않는다
+- 판정 경로가 REQUESTED 의뢰에 담긴 입하 행을 다룰 때(커밋 `ab0d6bf7`에서 범위 조정)
+  - **REQUEST 모드**: 담긴 행을 판정 대상에서 빼고 잔여 행만 판정한다. 잔여가 0건이면 거절한다. `MAT_ARRIVALS` 갱신도 그 SEQ로 좁힌다
+  - **ARRIVAL 모드**: 전체를 거절한다. 모드를 되돌린 상태이므로 조용히 일부만 판정하지 않고 의뢰를 정리하게 한다
+  - **단건 판정**: 대상이 하나뿐이라 항상 거절한다
+  - 처음에는 모드 구분 없이 전체를 거절했는데, 그러면 REQUEST 모드에서 검사대기 목록에 잔여 47행으로 떠 있는 행을 클릭해도 담긴 3행 때문에 서버가 거절했다. 화면과 서버가 어긋나는 상태였다
 - 의뢰 화면에 모드 경고 배너 + 확정 버튼 비활성. 프론트가 서버 거절 사유를 그대로 표시한다
 - 테스트: 모드 가드 2건, 보유 행 가드 3건 신규
 
@@ -295,3 +299,4 @@ AQL NULL 항목은 전부 `THN-A50-*` 계열이고, `IQC-*` 계열은 전부 채
   - 모드가 ARRIVAL일 때 배너/버튼 비활성과 서버 거절 메시지
   - 4개 화면의 예상 시료수 표시가 AQL 값으로 바뀌었는지
 - 운영 모드는 여전히 `ARRIVAL`이다. 전환 시점은 사용자 결정
+- **표시 폴백**: `resolveIqcDisplaySampleQty()`가 null을 돌려주는 경우 화면이 `0`을 찍는 자리가 있다(`(… ?? 0).toLocaleString()`). AQL 항목이 하나도 없고 전수/파괴만 있는 품목에서 "예상 시료수 0"으로 보일 수 있다. 실제 그런 품목이 있는지 확인하고 필요하면 `-` 폴백으로 바꿔야 한다
