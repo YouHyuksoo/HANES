@@ -1545,10 +1545,11 @@ export class IqcHistoryService {
       );
 
       if (log.matUid) {
+        // EXPIRE_DATE는 PASS 판정 시 계산되는 파생값이라 취소하면 같이 지워야 한다(입하단위 경로와 동일).
         await queryRunner.manager.update(
           MatLot,
           { matUid: log.matUid, ...this.tenantWhere(log.company, log.plant) },
-          { iqcStatus: 'PENDING' },
+          { iqcStatus: 'PENDING', expireDate: null },
         );
       } else if (log.arrivalNo && log.itemCode) {
         // 입하단위 검사 → 해당 입하건 전체 시리얼을 일괄 PENDING 복원
@@ -1581,7 +1582,7 @@ export class IqcHistoryService {
           await queryRunner.manager.update(
             MatLot,
             { matUid: lot.matUid, ...this.tenantWhere(log.company, log.plant) },
-            { iqcStatus: 'PENDING' },
+            { iqcStatus: 'PENDING', expireDate: null },
           );
         }
       }

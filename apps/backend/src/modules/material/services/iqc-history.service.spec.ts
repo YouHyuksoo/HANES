@@ -933,7 +933,7 @@ describe('IqcHistoryService cancel policy', () => {
     expect(manager.update).toHaveBeenCalledWith(
       MatLot,
       { matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
-      { iqcStatus: 'PENDING' },
+      { iqcStatus: 'PENDING', expireDate: null },
     );
   });
 
