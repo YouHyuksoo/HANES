@@ -1642,6 +1642,8 @@ export class IqcHistoryService {
       vendorCode: log.vendorCode,
       arrivalNo: log.arrivalNo,
       itemCode: log.itemCode,
+      // 이 판정이 만든 모드 이력만 되돌리도록 검사일시를 넘긴다
+      inspectedAt: log.inspectDate,
       company: log.company,
       plant: log.plant,
     });

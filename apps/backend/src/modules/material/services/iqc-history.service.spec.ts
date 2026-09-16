@@ -1043,10 +1043,12 @@ describe('IqcHistoryService cancel policy', () => {
 
     await target.cancel('2026-04-08', 1, { reason: 'retest' } as any);
 
+    // 이 판정이 만든 모드 이력만 되돌리도록 검사일시를 함께 넘긴다
     expect(mockAqlService.revertVendorInspectionModeForCanceledLot).toHaveBeenCalledWith({
       vendorCode: 'SUP-001',
       arrivalNo: 'ARR-001',
       itemCode: 'ITEM-001',
+      inspectedAt: expect.any(Date),
       company: 'HANES',
       plant: 'P01',
     });

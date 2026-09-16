@@ -716,6 +716,14 @@ export class AqlService {
     vendorCode?: string | null;
     itemCode?: string | null;
     arrivalNo?: string | null;
+    /**
+     * 취소 대상 판정의 검사일시(IQC_LOGS.INSPECT_DATE).
+     *
+     * 이게 없으면 같은 (입하번호, 품목)으로 과거에 생긴 이력을 이 판정이 만든 것으로 착각한다.
+     * 실제로 겪었다(2026-09-16): 모드를 바꾼 적 없는 판정을 취소했더니 9시간 전 다른 판정이 만든
+     * NORMAL→TIGHTENED 이력이 되돌아갔다. 같은 입하번호로 판정/취소가 반복되면 재현된다.
+     */
+    inspectedAt?: Date | string | null;
     company?: string;
     plant?: string;
   }) {
@@ -747,8 +755,15 @@ export class AqlService {
     const sameCanceledLot =
       (latest.refArrivalNo ?? null) === (input.arrivalNo ?? null) &&
       (latest.refItemCode ?? null) === (input.itemCode ?? null);
+    // 취소 대상 판정이 실제로 만든 이력만 되돌린다. 판정 시각보다 앞선 이력은 다른 판정의 것이다.
+    // (모드 변경은 판정 저장 직후 같은 요청 안에서 기록되므로 changedAt >= inspectedAt 이다.)
+    const inspectedAt = input.inspectedAt ? new Date(input.inspectedAt) : null;
+    const madeByCanceledLot =
+      !inspectedAt ||
+      !latest.changedAt ||
+      new Date(latest.changedAt).getTime() >= inspectedAt.getTime();
     const latestNewMode = this.normalizeInspectionMode(latest.newMode);
-    if (!sameCanceledLot || currentMode !== latestNewMode) {
+    if (!sameCanceledLot || !madeByCanceledLot || currentMode !== latestNewMode) {
       return { vendorCode, inspectionMode: currentMode, changed: false };
     }
 

@@ -1159,8 +1159,9 @@ describe('ArrivalService', () => {
 
       await target.cancel({ transactionId: 'TX-005', reason: 'cancel', workerId: 'user' } as any, 'C1', 'P1');
 
+      // 취소된 판정(STATUS='CANCELED')은 입하 취소를 막지 않는다 — 유효 판정만 본다
       expect(mockIqcLogRepo.findOne).toHaveBeenCalledWith({
-        where: { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
+        where: { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', status: 'DONE', company: 'C1', plant: 'P1' },
         order: { inspectDate: 'DESC' },
       });
       expect(mockItemMasterRepo.findOne).toHaveBeenCalledWith({

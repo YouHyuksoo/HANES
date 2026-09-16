@@ -777,4 +777,68 @@ describe('AqlService', () => {
     }));
     expect(result).toEqual(expect.objectContaining({ changed: true, inspectionMode: 'NORMAL' }));
   });
+
+  it('does not revert a mode history that predates the canceled judgement', async () => {
+    // 실측 재현(2026-09-16): 모드를 바꾼 적 없는 판정을 취소했더니 9시간 전 다른 판정이 만든
+    // 이력이 되돌아갔다. 같은 (입하번호, 품목)으로 판정/취소가 반복되면 재현된다.
+    partnerRepo.findOne.mockResolvedValue({
+      company: '40',
+      plant: '1000',
+      partnerCode: 'SUP-C',
+      inspectionMode: 'TIGHTENED',
+    });
+    modeHistoryRepo.find.mockResolvedValue([
+      {
+        vendorCode: 'SUP-C',
+        prevMode: 'NORMAL',
+        newMode: 'TIGHTENED',
+        refArrivalNo: 'ARR-1',
+        refItemCode: 'ITEM-1',
+        changedAt: new Date('2026-09-16T02:32:30'),
+      },
+    ]);
+
+    const result = await service.revertVendorInspectionModeForCanceledLot({
+      vendorCode: 'SUP-C',
+      arrivalNo: 'ARR-1',
+      itemCode: 'ITEM-1',
+      inspectedAt: new Date('2026-09-16T11:52:01'),
+      company: '40',
+      plant: '1000',
+    });
+
+    expect(partnerRepo.save).not.toHaveBeenCalled();
+    expect(modeHistoryRepo.save).not.toHaveBeenCalled();
+    expect(result).toEqual(expect.objectContaining({ changed: false, inspectionMode: 'TIGHTENED' }));
+  });
+
+  it('reverts a mode history created by the canceled judgement itself', async () => {
+    partnerRepo.findOne.mockResolvedValue({
+      company: '40',
+      plant: '1000',
+      partnerCode: 'SUP-C',
+      inspectionMode: 'TIGHTENED',
+    });
+    modeHistoryRepo.find.mockResolvedValue([
+      {
+        vendorCode: 'SUP-C',
+        prevMode: 'NORMAL',
+        newMode: 'TIGHTENED',
+        refArrivalNo: 'ARR-1',
+        refItemCode: 'ITEM-1',
+        changedAt: new Date('2026-09-16T11:52:03'),
+      },
+    ]);
+
+    const result = await service.revertVendorInspectionModeForCanceledLot({
+      vendorCode: 'SUP-C',
+      arrivalNo: 'ARR-1',
+      itemCode: 'ITEM-1',
+      inspectedAt: new Date('2026-09-16T11:52:01'),
+      company: '40',
+      plant: '1000',
+    });
+
+    expect(result).toEqual(expect.objectContaining({ changed: true, inspectionMode: 'NORMAL' }));
+  });
 });

@@ -828,8 +828,15 @@ export class ArrivalService {
       ...(original.plant ? { plant: original.plant } : plant ? { plant } : {}),
     };
     if (original.itemCode) {
+      // 취소된 판정(STATUS='CANCELED')은 유효한 판정이 아니다. status 조건이 없으면
+      // 판정을 취소했는데도 입하 취소가 계속 막힌다.
       const iqcRecord = await this.iqcLogRepository.findOne({
-        where: { arrivalNo: original.refId ?? undefined, itemCode: original.itemCode, ...tenantWhere },
+        where: {
+          arrivalNo: original.refId ?? undefined,
+          itemCode: original.itemCode,
+          status: 'DONE',
+          ...tenantWhere,
+        },
         order: { inspectDate: 'DESC' },
       });
       if (iqcRecord && (iqcRecord.result === 'PASS' || iqcRecord.result === 'FAIL')) {
@@ -1197,8 +1204,9 @@ export class ArrivalService {
 
     if (iqcYn === 'Y') {
       // IQC_LOGS에서 해당 입하번호의 최신 검사 결과 조회
+      // 취소된 판정을 PASS/FAIL로 표시하지 않도록 유효 판정만 본다
       const latestIqcLog = await this.iqcLogRepository.findOne({
-        where: { arrivalNo: arrival.arrivalNo },
+        where: { arrivalNo: arrival.arrivalNo, status: 'DONE' },
         order: { inspectDate: 'DESC' },
       });
 
