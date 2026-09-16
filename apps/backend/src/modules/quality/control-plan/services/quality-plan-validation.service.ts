@@ -2,6 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { calculateRpn, validateQualityPlan, type QualityPlanValidationIssue } from '@harness/shared';
 import type { QueryRunner } from 'typeorm';
 import { TransactionService } from '../../../../shared/transaction.service';
+import {
+  CONTROL_PLAN_REQUIRED_FIELDS,
+  type ControlPlanRawRow,
+  type PfmeaRawRow,
+  type ProcessFlowRawRow,
+  isQualityPlanDocumentType,
+  type QualityPlanRawRowBase,
+  type RevisionContextRawRow,
+  type ScalarRawRow,
+} from '../types/raw-rows';
 
 @Injectable()
 export class QualityPlanValidationService {
@@ -12,7 +22,7 @@ export class QualityPlanValidationService {
   }
 
   async validateInTx(qr: QueryRunner, revisionId: number, company: string, plant: string, userId: string) {
-    const contextRows = await qr.query(
+    const contextRows: RevisionContextRawRow[] = await qr.query(
       `SELECT D.PACKAGE_ID,D.DOCUMENT_TYPE,R.REVISION_CODE,R.CHANGE_REASON,R.CHANGE_DESCRIPTION,
               R.REF_PFD_REVISION_ID,R.REF_PFMEA_REVISION_ID,
               PR.STATUS AS REF_PFD_STATUS,PD.PACKAGE_ID AS REF_PFD_PACKAGE_ID,PD.DOCUMENT_TYPE AS REF_PFD_TYPE,
@@ -27,26 +37,31 @@ export class QualityPlanValidationService {
     );
     if (!contextRows.length) throw new NotFoundException('검증할 Revision을 찾을 수 없습니다.');
     const context = contextRows[0];
-    const documentType = context.DOCUMENT_TYPE ?? context.document_type;
+    const rawDocumentType = context.DOCUMENT_TYPE ?? context.document_type;
+    // 모르는 문서유형을 조용히 CONTROL_PLAN 분기로 흘려보내면 엉뚱한 검증 결과가 발행된다.
+    if (!isQualityPlanDocumentType(rawDocumentType)) {
+      throw new NotFoundException(`알 수 없는 관리계획 문서유형입니다: ${rawDocumentType ?? '(없음)'}`);
+    }
+    const documentType = rawDocumentType;
     const pfdRevisionId = documentType === 'PFD' ? revisionId : Number(context.REF_PFD_REVISION_ID ?? 0);
     const pfmeaRevisionId = documentType === 'PFMEA' ? revisionId : documentType === 'CONTROL_PLAN' ? Number(context.REF_PFMEA_REVISION_ID ?? 0) : 0;
     const cpRevisionId = documentType === 'CONTROL_PLAN' ? revisionId : 0;
-    const pfdRows = pfdRevisionId ? await qr.query(this.revisionRowsSql('QUALITY_PROCESS_FLOW_ROWS'), [pfdRevisionId, company, plant]) : [];
-    const pfmeaRows = pfmeaRevisionId ? await qr.query(this.revisionRowsSql('QUALITY_PFMEA_ROWS'), [pfmeaRevisionId, company, plant]) : [];
-    const cpRows = cpRevisionId ? await qr.query(this.revisionRowsSql('QUALITY_CONTROL_PLAN_ROWS'), [cpRevisionId, company, plant]) : [];
+    const pfdRows: ProcessFlowRawRow[] = pfdRevisionId ? await qr.query(this.revisionRowsSql('QUALITY_PROCESS_FLOW_ROWS'), [pfdRevisionId, company, plant]) : [];
+    const pfmeaRows: PfmeaRawRow[] = pfmeaRevisionId ? await qr.query(this.revisionRowsSql('QUALITY_PFMEA_ROWS'), [pfmeaRevisionId, company, plant]) : [];
+    const cpRows: ControlPlanRawRow[] = cpRevisionId ? await qr.query(this.revisionRowsSql('QUALITY_CONTROL_PLAN_ROWS'), [cpRevisionId, company, plant]) : [];
 
-    const pfd = pfdRows.map((row: any) => ({ id: Number(row.ROW_ID), processNo: String(row.PROCESS_NO ?? '') }));
-    const pfmea = pfmeaRows.map((row: any) => ({
+    const pfd = pfdRows.map((row) => ({ id: Number(row.ROW_ID), processNo: String(row.PROCESS_NO ?? '') }));
+    const pfmea = pfmeaRows.map((row) => ({
       id: Number(row.ROW_ID), processFlowRowId: Number(row.PROCESS_FLOW_ROW_ID),
-      specialCharacteristicCode: row.SPECIAL_CHAR_CODE,
+      specialCharacteristicCode: row.SPECIAL_CHAR_CODE ?? undefined,
     }));
-    const cp = cpRows.map((row: any) => ({
+    const cp = cpRows.map((row) => ({
       id: Number(row.ROW_ID), processFlowRowId: Number(row.PROCESS_FLOW_ROW_ID), pfmeaRowId: row.PFMEA_ROW_ID == null ? null : Number(row.PFMEA_ROW_ID),
-      sampleSize: row.SAMPLE_SIZE, sampleFrequency: row.SAMPLE_FREQUENCY,
+      sampleSize: row.SAMPLE_SIZE ?? undefined, sampleFrequency: row.SAMPLE_FREQUENCY ?? undefined,
     }));
     let issues = validateQualityPlan({ revisionId, processFlowRows: pfd, pfmeaRows: pfmea, controlPlanRows: cp });
     if (documentType !== 'CONTROL_PLAN') issues = issues.filter((issue) => issue.code !== 'SPECIAL_CHARACTERISTIC_NOT_CONTROLLED');
-    const currentRows = documentType === 'PFD' ? pfdRows : documentType === 'PFMEA' ? pfmeaRows : cpRows;
+    const currentRows: QualityPlanRawRowBase[] = documentType === 'PFD' ? pfdRows : documentType === 'PFMEA' ? pfmeaRows : cpRows;
     if (!currentRows.length) issues.push(this.issue('ERROR', 'DOCUMENT_EMPTY', documentType, revisionId, 0, 'rows', '행이 없는 문서는 발행할 수 없습니다.'));
     this.addReferenceIssues(context, documentType, revisionId, issues);
     if (String(context.REVISION_CODE ?? '00') !== '00') {
@@ -74,7 +89,7 @@ export class QualityPlanValidationService {
     return `SELECT X.* FROM ${table} X WHERE X.REVISION_ID=:1 AND X.COMPANY=:2 AND X.PLANT_CD=:3 ORDER BY X.ROW_SEQ`;
   }
 
-  private addReferenceIssues(context: any, documentType: 'PFD' | 'PFMEA' | 'CONTROL_PLAN', revisionId: number,
+  private addReferenceIssues(context: RevisionContextRawRow, documentType: 'PFD' | 'PFMEA' | 'CONTROL_PLAN', revisionId: number,
     issues: QualityPlanValidationIssue[]) {
     const references = documentType === 'PFMEA'
       ? [{ id: context.REF_PFD_REVISION_ID, status: context.REF_PFD_STATUS, packageId: context.REF_PFD_PACKAGE_ID, type: context.REF_PFD_TYPE, expectedType: 'PFD', field: 'refPfdRevisionId' }]
@@ -97,7 +112,7 @@ export class QualityPlanValidationService {
   private async addOldReferenceWarnings(qr: QueryRunner, referenceIds: number[], company: string, plant: string, revisionId: number,
     issues: QualityPlanValidationIssue[]) {
     for (const referenceId of referenceIds) {
-      const rows = await qr.query(
+      const rows: ScalarRawRow[] = await qr.query(
         `SELECT COUNT(*) AS "CNT" FROM QUALITY_PLAN_REVISIONS REF JOIN QUALITY_PLAN_REVISIONS NEWER
            ON NEWER.COMPANY=REF.COMPANY AND NEWER.PLANT_CD=REF.PLANT_CD AND NEWER.DOCUMENT_ID=REF.DOCUMENT_ID
           WHERE REF.REVISION_ID=:1 AND REF.COMPANY=:2 AND REF.PLANT_CD=:3
@@ -107,7 +122,7 @@ export class QualityPlanValidationService {
     }
   }
 
-  private addDuplicatePfdIssues(rows: any[], revisionId: number, issues: QualityPlanValidationIssue[]) {
+  private addDuplicatePfdIssues(rows: ProcessFlowRawRow[], revisionId: number, issues: QualityPlanValidationIssue[]) {
     const seen = new Set<string>();
     for (const row of rows) {
       const processNo = String(row.PROCESS_NO ?? '');
@@ -116,7 +131,7 @@ export class QualityPlanValidationService {
     }
   }
 
-  private addPfmeaIssues(rows: any[], revisionId: number, issues: QualityPlanValidationIssue[]) {
+  private addPfmeaIssues(rows: PfmeaRawRow[], revisionId: number, issues: QualityPlanValidationIssue[]) {
     for (const row of rows) {
       const expected = calculateRpn(Number(row.SEVERITY), Number(row.OCCURRENCE), Number(row.DETECTION));
       if (expected !== Number(row.RPN)) issues.push(this.issue('ERROR', 'PFMEA_RPN_MISMATCH', 'PFMEA', revisionId, row.ROW_ID, 'rpn', 'PFMEA RPN 계산값이 일치하지 않습니다.'));
@@ -126,10 +141,9 @@ export class QualityPlanValidationService {
     }
   }
 
-  private addControlPlanIssues(rows: any[], revisionId: number, issues: QualityPlanValidationIssue[]) {
+  private addControlPlanIssues(rows: ControlPlanRawRow[], revisionId: number, issues: QualityPlanValidationIssue[]) {
     for (const row of rows) {
-      const required = ['SPECIFICATION', 'EVALUATION_METHOD', 'CONTROL_METHOD', 'REACTION_PLAN'];
-      for (const field of required) if (!String(row[field] ?? '').trim()) {
+      for (const field of CONTROL_PLAN_REQUIRED_FIELDS) if (!String(row[field] ?? '').trim()) {
         issues.push(this.issue('ERROR', 'CP_REQUIRED_FIELD_MISSING', 'CONTROL_PLAN', revisionId, row.ROW_ID, field.toLowerCase(), 'Control Plan 필수 관리정보가 누락되었습니다.'));
       }
       if ((row.EQUIPMENT_CODE || row.EVALUATION_METHOD) && row.CALIBRATION_CONFIRMED !== 'Y') {
@@ -144,7 +158,7 @@ export class QualityPlanValidationService {
   }
 
   private async nextId(qr: QueryRunner) {
-    const rows = await qr.query('SELECT SEQ_QUALITY_PLAN_VALIDATION.NEXTVAL AS "NEXT_SEQ" FROM DUAL');
+    const rows: ScalarRawRow[] = await qr.query('SELECT SEQ_QUALITY_PLAN_VALIDATION.NEXTVAL AS "NEXT_SEQ" FROM DUAL');
     return Number(rows[0]?.NEXT_SEQ ?? rows[0]?.next_seq);
   }
 }

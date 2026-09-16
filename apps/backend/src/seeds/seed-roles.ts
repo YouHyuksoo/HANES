@@ -218,9 +218,9 @@ async function seedRoles(): Promise<void> {
     console.log('  Seed completed successfully!');
     console.log('='.repeat(60));
 
-  } catch (error: any) {
-    console.error('\n  Seed failed:', error.message);
-    if (error.stack) {
+  } catch (error: unknown) {
+    console.error('\n  Seed failed:', error instanceof Error ? error.message : String(error));
+    if (error instanceof Error && error.stack) {
       console.error(error.stack);
     }
     process.exit(1);

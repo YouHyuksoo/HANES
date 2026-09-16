@@ -69,8 +69,8 @@ async function seedActivityLogConfig(): Promise<void> {
     console.log();
     console.log('  Seed completed successfully!');
     console.log('='.repeat(60));
-  } catch (error: any) {
-    console.error('\n  Seed failed:', error.message);
+  } catch (error: unknown) {
+    console.error('\n  Seed failed:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   } finally {
     if (dataSource.isInitialized) {

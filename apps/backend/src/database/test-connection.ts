@@ -139,19 +139,22 @@ async function testOracleConnection() {
     await dataSource.destroy();
     process.exit(0);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    // oracledb 오류는 Error에 code를 얹어 던진다 — 둘 다 없을 수 있으므로 좁혀서 읽는다.
+    const message = error instanceof Error ? error.message : String(error);
+    const code = error instanceof Error && 'code' in error ? String(error.code) : '';
     console.error('❌ Connection failed!\n');
     console.error('Error Details:');
-    console.error(`   Message: ${error.message}`);
-    console.error(`   Code: ${error.code || 'N/A'}`);
+    console.error(`   Message: ${message}`);
+    console.error(`   Code: ${code || 'N/A'}`);
     
-    if (error.message.includes('ORA-12541')) {
+    if (message.includes('ORA-12541')) {
       console.error('\n💡 Hint: Oracle listener is not running or cannot be reached.');
-    } else if (error.message.includes('ORA-12514')) {
+    } else if (message.includes('ORA-12514')) {
       console.error('\n💡 Hint: Service name or SID is incorrect.');
-    } else if (error.message.includes('ORA-01017')) {
+    } else if (message.includes('ORA-01017')) {
       console.error('\n💡 Hint: Invalid username or password.');
-    } else if (error.message.includes('ORA-12154')) {
+    } else if (message.includes('ORA-12154')) {
       console.error('\n💡 Hint: TNS connection identifier could not be resolved.');
     }
 
