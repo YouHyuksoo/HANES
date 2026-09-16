@@ -572,7 +572,12 @@ export default function InputKioskPage() {
 
         {/* 우측: 양품조건 + 작업이력 */}
         <div className="min-w-0 overflow-hidden flex flex-col bg-surface border-l-2 border-border">
-          <WorkHistoryPanel key={historyKey} />
+          <WorkHistoryPanel
+            key={historyKey}
+            stopHistory={equipStop.history}
+            stopSummary={equipStop.summary}
+            onOpenEquipStop={() => setIsEquipStopOpen(true)}
+          />
         </div>
       </div>
 

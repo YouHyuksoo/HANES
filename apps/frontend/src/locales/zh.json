@@ -9554,7 +9554,11 @@
       "recentHistory": "作业历史",
       "autoRefresh": "10秒自动刷新",
       "noHistory": "无作业历史",
-      "equipInterface": "设备"
+      "equipInterface": "设备",
+      "lossTotal": "损失合计",
+      "lossHistory": "损失履历",
+      "noLoss": "当日无停机",
+      "lossMore": "全部 {{count}} 件"
     },
     "input": {
       "selfInspect": "工序抽样检验",

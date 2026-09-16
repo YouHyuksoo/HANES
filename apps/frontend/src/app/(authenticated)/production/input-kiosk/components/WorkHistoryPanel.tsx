@@ -2,19 +2,22 @@
 
 /**
  * @file components/WorkHistoryPanel.tsx
- * @description 우측 패널 — 양품조건(라우팅 기준) + 최근 작업이력
+ * @description 우측 패널 — 양품조건(라우팅 기준) + 최근 작업이력 + 당일 유실 이력
  *
  * 초보자 가이드:
  * - 양품조건: 작업지시의 itemCode → by-item API로 routingCode+seq 조회 →
  *             GET /master/routing-groups/:code/processes/:seq/conditions
  * - 작업이력: GET /production/prod-results?orderNo=&limit=10
+ * - 유실 이력: 설비정지 훅(useEquipStop)이 가진 당일 이력을 page.tsx에서 내려받는다.
+ *              합계는 서버 집계값을 그대로 쓴다(메모리 재집계 금지).
  */
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { History, CheckCircle2, XCircle, Clock, FlaskConical } from 'lucide-react';
+import { History, CheckCircle2, XCircle, Clock, FlaskConical, Square } from 'lucide-react';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
-import { useComCodeList } from '@/hooks/useComCode';
+import { useComCodeList, useComCodeLabel } from '@/hooks/useComCode';
+import { formatDuration, type EquipStopEvent, type EquipStopSummary } from '../hooks/useEquipStop';
 
 interface QualityCondition {
   conditionSeq: number;
@@ -46,7 +49,23 @@ function formatHistoryTime(value?: string) {
   return kst.toISOString().slice(0, 19).replace('T', ' ');
 }
 
-export default function WorkHistoryPanel() {
+interface WorkHistoryPanelProps {
+  /** 당일 설비정지 이력 (useEquipStop) */
+  stopHistory?: EquipStopEvent[];
+  /** 당일 유실시간 집계 (서버 산출) */
+  stopSummary?: EquipStopSummary;
+  /** 유실 이력 줄을 누르면 설비정지 팝업을 연다 */
+  onOpenEquipStop?: () => void;
+}
+
+/** 유실 이력은 좁은 패널이라 최근 것만 보여준다. 전체는 설비정지 팝업에서 본다. */
+const STOP_HISTORY_VISIBLE = 3;
+
+export default function WorkHistoryPanel({
+  stopHistory = [],
+  stopSummary,
+  onOpenEquipStop,
+}: WorkHistoryPanelProps) {
   const { t } = useTranslation();
   const { selectedEquip, selectedJobOrder } = useKioskStore();
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -147,8 +166,8 @@ export default function WorkHistoryPanel() {
         </div>
       </div>
 
-      {/* 요약 통계 */}
-      <div className="grid grid-cols-2 gap-2 px-3 py-2 border-b border-border/50 shrink-0">
+      {/* 요약 통계 — 양품/불량/유실 */}
+      <div className="grid grid-cols-3 gap-2 px-3 py-2 border-b border-border/50 shrink-0">
         <div className="bg-card border border-border rounded p-2 text-center">
           <p className="text-lg font-bold text-green-600 dark:text-green-400 tabular-nums">
             {totalGood.toLocaleString()}
@@ -160,6 +179,16 @@ export default function WorkHistoryPanel() {
             {totalDefect.toLocaleString()}
           </p>
           <p className="text-xs text-text-muted">{t('kiosk.history.defectTotal')}</p>
+        </div>
+        {/* 유실합계 — 수량이 아니라 시간이라 단위가 다르다. 당일 이 설비 기준. */}
+        <div className="bg-card border border-border rounded p-2 text-center">
+          <p
+            data-testid="kiosk-history-loss-total"
+            className="text-lg font-bold text-amber-600 dark:text-amber-400 tabular-nums"
+          >
+            {formatDuration(stopSummary?.totalLossSeconds ?? 0)}
+          </p>
+          <p className="text-xs text-text-muted">{t('kiosk.history.lossTotal', '유실 합계')}</p>
         </div>
       </div>
 
@@ -209,6 +238,69 @@ export default function WorkHistoryPanel() {
           </ul>
         )}
       </div>
+
+      {/* 유실 이력 — 작업이력 아래 고정 높이. 최근 3건만 보여주고 전체는 설비정지 팝업에서 본다. */}
+      <div className="shrink-0 border-t border-border">
+        <div className="flex items-center gap-1.5 border-b border-border bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+          <Square className="h-3 w-3 text-amber-500" />
+          <span className="text-xs font-semibold text-text">{t('kiosk.history.lossHistory', '유실 이력')}</span>
+          {stopHistory.length > STOP_HISTORY_VISIBLE && (
+            <button
+              type="button"
+              onClick={onOpenEquipStop}
+              className="ml-auto text-[10px] text-text-muted underline-offset-2 hover:text-primary hover:underline"
+            >
+              {t('kiosk.history.lossMore', '전체 {{count}}건', { count: stopHistory.length })}
+            </button>
+          )}
+        </div>
+        {stopHistory.length === 0 ? (
+          <p className="px-3 py-2 text-center text-[11px] text-text-muted">
+            {t('kiosk.history.noLoss', '당일 정지 없음')}
+          </p>
+        ) : (
+          <ul className="divide-y divide-border/30">
+            {stopHistory.slice(0, STOP_HISTORY_VISIBLE).map(stop => (
+              <li
+                key={stop.stopId}
+                onClick={onOpenEquipStop}
+                /* pr-11: 우하단 개선요청 FAB(bottom-5 right-3, 36px → 우측 48px 점유)이 마지막 줄의 유실시간을 가린다.
+                   세로로 여백을 키우는 대신 오른쪽만 비워 겹침을 피한다. */
+                className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap py-1.5 pl-2.5 pr-14 transition-colors hover:bg-surface/50"
+              >
+                <span className="text-[10px] tabular-nums text-text-muted shrink-0">
+                  {stop.startedAt?.slice(11, 16) ?? '-'}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[11px] text-text">
+                  <StopReasonText code={stop.stopReason} />
+                </span>
+                {stop.status === 'OPEN' && (
+                  <span className="shrink-0 text-[10px] font-bold text-red-600 dark:text-red-400">
+                    {t('kiosk.equipStop.stopping', '정지 중')}
+                  </span>
+                )}
+                <span className="shrink-0 text-[11px] font-medium tabular-nums text-amber-600 dark:text-amber-400">
+                  {formatDuration(stop.lossSeconds)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
+}
+
+/** 정지사유 라벨 — 공통코드 단일 출처, 미정이면 빨간 '사유미정' */
+function StopReasonText({ code }: { code: string | null }) {
+  const { t } = useTranslation();
+  const label = useComCodeLabel('EQUIP_STOP_REASON', code ?? '');
+  if (!code) {
+    return (
+      <span className="font-semibold text-red-600 dark:text-red-400">
+        {t('kiosk.equipStop.undecided', '사유미정')}
+      </span>
+    );
+  }
+  return <span>{label}</span>;
 }

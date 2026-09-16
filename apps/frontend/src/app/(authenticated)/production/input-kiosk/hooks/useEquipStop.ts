@@ -134,12 +134,17 @@ export function useEquipStop(equipCode?: string | null, jobOrderNo?: string | nu
     }
   }, [equipCode]);
 
+  // 당일 이력/집계는 우측 패널의 '유실 합계'가 항상 쓰므로 팝업과 무관하게 같이 갱신한다.
   useEffect(() => {
     void refresh();
+    void refreshHistory();
     if (!equipCode) return;
-    const timer = window.setInterval(() => void refresh(), POLL_INTERVAL_MS);
+    const timer = window.setInterval(() => {
+      void refresh();
+      void refreshHistory();
+    }, POLL_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [equipCode, refresh]);
+  }, [equipCode, refresh, refreshHistory]);
 
   const startStop = useCallback(async (stopReason?: string, stopRemark?: string) => {
     if (!equipCode) return;
@@ -152,10 +157,11 @@ export function useEquipStop(equipCode?: string | null, jobOrderNo?: string | nu
         stopRemark: stopRemark || undefined,
       });
       setOpenStop(res.data?.data ?? null);
+      await refreshHistory();
     } finally {
       setLoading(false);
     }
-  }, [equipCode, jobOrderNo]);
+  }, [equipCode, jobOrderNo, refreshHistory]);
 
   const updateReason = useCallback(async (stopId: number, stopReason: string, stopRemark?: string) => {
     setLoading(true);

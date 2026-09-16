@@ -9572,7 +9572,11 @@
       "recentHistory": "Work History",
       "autoRefresh": "10s auto-refresh",
       "noHistory": "No work history",
-      "equipInterface": "Equipment"
+      "equipInterface": "Equipment",
+      "lossTotal": "Downtime",
+      "lossHistory": "Downtime Log",
+      "noLoss": "No stops today",
+      "lossMore": "All {{count}}"
     },
     "input": {
       "selfInspect": "Process Sample Inspection",

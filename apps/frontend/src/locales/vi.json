@@ -9554,7 +9554,11 @@
       "recentHistory": "Lịch sử sản xuất",
       "autoRefresh": "Tự động làm mới 10 giây",
       "noHistory": "Không có lịch sử sản xuất",
-      "equipInterface": "Thiết bị"
+      "equipInterface": "Thiết bị",
+      "lossTotal": "Tổng thất thoát",
+      "lossHistory": "Lịch sử thất thoát",
+      "noLoss": "Hôm nay không có dừng máy",
+      "lossMore": "Tất cả {{count}}"
     },
     "input": {
       "selfInspect": "Kiểm tra mẫu công đoạn",

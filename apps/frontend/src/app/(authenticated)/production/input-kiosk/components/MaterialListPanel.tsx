@@ -180,6 +180,16 @@ export default function MaterialListPanel({
   const mountedBomCount = bomItems.filter(b => mountedByItem.has(b.childItemCode)).length;
   const mountedConsumCount = consumables.filter(c => c.mountedConUid != null).length;
 
+  /**
+   * BOM 외 장착 자재.
+   * 자재는 설비 귀속(WIP_MAT_STOCKS)이라 작업지시가 바뀌거나 미선택이어도 설비에 그대로 남는다.
+   * 이걸 화면에 안 보여주면 "자재리스트는 비었는데 투입취소 버튼만 활성"으로 모순해 보인다.
+   */
+  const extraMounts = useMemo(() => {
+    const bomCodes = new Set(bomItems.map(b => b.childItemCode));
+    return mounted.filter(m => (m.availableQty ?? 0) > 0 && !bomCodes.has(m.itemCode));
+  }, [bomItems, mounted]);
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* BOM 자재리스트 (설비 장착 현황) */}
@@ -215,29 +225,27 @@ export default function MaterialListPanel({
           {mounted.length > 0 && (
             <button
               onClick={() => setCancelAllOpen(true)}
-              title={t('kiosk.material.cancelAll', '자재투입 전체 취소')}
+              title={t('kiosk.material.cancelAllHint', { count: mounted.length })}
               className="inline-flex items-center gap-1 rounded border border-red-300 bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-600 transition-colors hover:bg-red-100 dark:border-red-700 dark:bg-red-900/20 dark:text-red-300"
             >
               <Trash2 className="h-3 w-3" />
-              {t('kiosk.material.cancelAll', '투입취소')}
+              {t('kiosk.material.cancelAll')} ({mounted.length})
             </button>
-          )}
-          {!selectedJobOrder && (
-            <span
-              className="text-[10px] text-text-muted max-w-[140px] truncate"
-              title={materialScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.materialScan')}
-            >
-              {materialScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.materialScan')}
-            </span>
           )}
         </div>
 
-        {bomItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-text-muted">
-            <Package className="w-8 h-8 mb-2 opacity-30" />
-            <span className="text-xs">{t('kiosk.material.noBom')}</span>
+        {bomItems.length === 0 && extraMounts.length === 0 ? (
+          /* 작업지시가 없어서 비어 있는 것과, 작업지시는 있는데 BOM이 없는 것은 원인이 다르다.
+             안내는 헤더가 아니라 비어 있는 리스트 영역에 둔다(헤더에서는 잘려서 안 읽혔다). */
+          <div className="flex flex-col items-center justify-center gap-1 px-4 py-8 text-center text-text-muted">
+            <Package className="mb-1 h-8 w-8 opacity-30" />
+            <span className="text-xs">
+              {selectedJobOrder
+                ? t('kiosk.material.noBom')
+                : materialScanDisabledReasons.join(' / ') || t('kiosk.input.disabledReasons.materialScan')}
+            </span>
           </div>
-        ) : (
+        ) : bomItems.length > 0 ? (
           <ul className="divide-y divide-border/40">
             {bomItems.map((item) => {
               const coveredMounts = mountedByItem.get(item.childItemCode) ?? [];
@@ -287,6 +295,56 @@ export default function MaterialListPanel({
               );
             })}
           </ul>
+        ) : null}
+
+        {/* BOM 외 장착 자재 — 작업지시 BOM에 없는데 이 설비에 남아 있는 자재.
+            이 목록이 없으면 "자재 없음 + 투입취소 버튼 활성" 모순으로 보인다. */}
+        {extraMounts.length > 0 && (
+          <>
+            <div className="flex items-center gap-1.5 border-y border-amber-300 bg-amber-50 px-3 py-1.5 dark:border-amber-700 dark:bg-amber-900/20">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <span className="text-[11px] font-semibold text-amber-800 dark:text-amber-200">
+                {t('kiosk.material.extraMounts')}
+              </span>
+              <span className="ml-auto text-[11px] text-amber-700 dark:text-amber-300">
+                {extraMounts.length}{t('kiosk.material.unit')}
+              </span>
+            </div>
+            <div className="px-3 py-1 text-[10px] leading-snug text-text-muted">
+              {t('kiosk.material.extraMountsHint')}
+            </div>
+            <ul className="divide-y divide-border/40">
+              {extraMounts.map((m) => (
+                <li
+                  key={`extra-${m.itemCode}-${m.matUid}`}
+                  className="flex items-center gap-1.5 border-l-2 border-l-amber-400 px-2 py-1"
+                >
+                  <AlertCircle className="h-3 w-3 shrink-0 text-amber-500" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-1">
+                      <span className="truncate text-[11px] font-bold leading-none text-text">{m.itemCode}</span>
+                      <span className="shrink-0 text-[11px] font-bold leading-none tabular-nums text-text">
+                        {(m.availableQty ?? 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex items-baseline justify-between gap-1">
+                      <span className="truncate text-[10px] leading-none text-amber-700 dark:text-amber-300">{m.matUid}</span>
+                      {m.itemName && (
+                        <span className="shrink-0 truncate text-[10px] leading-none text-text-muted">{m.itemName}</span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveMaterial([m])}
+                    className="shrink-0 rounded p-0.5 text-text-muted transition-colors hover:bg-red-100 hover:text-red-500 dark:hover:bg-red-900/30"
+                    title={t('kiosk.material.removeLot')}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
 

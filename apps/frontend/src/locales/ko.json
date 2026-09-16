@@ -9594,7 +9594,11 @@
       "recentHistory": "작업이력",
       "autoRefresh": "10초 자동갱신",
       "noHistory": "작업이력 없음",
-      "equipInterface": "설비"
+      "equipInterface": "설비",
+      "lossTotal": "유실 합계",
+      "lossHistory": "유실 이력",
+      "noLoss": "당일 정지 없음",
+      "lossMore": "전체 {{count}}건"
     },
     "input": {
       "selfInspect": "공정샘플검사 입력",
