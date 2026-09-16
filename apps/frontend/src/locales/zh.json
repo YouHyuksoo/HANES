@@ -4792,8 +4792,8 @@
         "savedNg": "比对结果不合格 — 请点检检查机后重新比对。",
         "historyTitle": "良否样品比对履历",
         "historyEmpty": "没有比对履历。",
-        "aidCode": "样品编码",
-        "aidType": "类型",
+        "sampleCode": "样品编码",
+        "sampleType": "类型",
         "expected": "期望结果",
         "actual": "实际结果",
         "judge": "判定"

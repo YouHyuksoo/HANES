@@ -376,6 +376,11 @@
           "path": "/master/inspect-aid"
         },
         {
+          "menuCode": "QC_LIMIT_SAMPLE",
+          "title": "양불마스터",
+          "path": "/master/limit-sample"
+        },
+        {
           "menuCode": "QC_AQL",
           "title": "AQL 기준관리",
           "path": "/quality/aql"

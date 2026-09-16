@@ -4792,8 +4792,8 @@
         "savedNg": "Kết quả đối chiếu không đạt — hãy kiểm tra máy rồi đối chiếu lại.",
         "historyTitle": "Lịch sử đối chiếu mẫu tốt/xấu",
         "historyEmpty": "Chưa có lịch sử đối chiếu.",
-        "aidCode": "Mã mẫu",
-        "aidType": "Loại",
+        "sampleCode": "Mã mẫu",
+        "sampleType": "Loại",
         "expected": "Kết quả mong đợi",
         "actual": "Kết quả thực tế",
         "judge": "Phán định"

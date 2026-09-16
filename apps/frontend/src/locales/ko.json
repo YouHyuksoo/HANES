@@ -5344,8 +5344,8 @@
         "savedNg": "대조 결과가 불합격입니다 — 검사기 점검 후 재대조하세요.",
         "historyTitle": "양불마스터 대조 이력",
         "historyEmpty": "대조 이력이 없습니다.",
-        "aidCode": "견본코드",
-        "aidType": "유형",
+        "sampleCode": "견본코드",
+        "sampleType": "유형",
         "expected": "기대결과",
         "actual": "실제결과",
         "judge": "판정"

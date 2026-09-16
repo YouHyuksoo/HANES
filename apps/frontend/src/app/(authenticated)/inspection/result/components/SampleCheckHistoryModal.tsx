@@ -11,13 +11,13 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Modal } from "@/components/ui";
+import { ComCodeBadge, Modal } from "@/components/ui";
 import api from "@/services/api";
 
 interface SampleCheckHistoryItem {
   seqNo: number;
-  aidCode: string;
-  aidType: string;
+  sampleCode: string;
+  sampleType: string;
   expectedResult: string;
   actualResult: string;
   result: string;
@@ -119,8 +119,8 @@ export default function SampleCheckHistoryModal({
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="text-text-muted">
-                        <th className="py-1 text-left">{t("inspection.result.sampleCheck.aidCode")}</th>
-                        <th className="py-1 text-left">{t("inspection.result.sampleCheck.aidType")}</th>
+                        <th className="py-1 text-left">{t("inspection.result.sampleCheck.sampleCode")}</th>
+                        <th className="py-1 text-left">{t("inspection.result.sampleCheck.sampleType")}</th>
                         <th className="py-1 text-left">{t("inspection.result.sampleCheck.expected")}</th>
                         <th className="py-1 text-left">{t("inspection.result.sampleCheck.actual")}</th>
                         <th className="py-1 text-left">{t("inspection.result.sampleCheck.judge")}</th>
@@ -129,8 +129,8 @@ export default function SampleCheckHistoryModal({
                     <tbody>
                       {row.items.map((item) => (
                         <tr key={`${row.checkNo}-${item.seqNo}`} className="border-t border-border/60">
-                          <td className="py-1 font-mono">{item.aidCode}</td>
-                          <td className="py-1">{item.aidType}</td>
+                          <td className="py-1 font-mono">{item.sampleCode}</td>
+                          <td className="py-1"><ComCodeBadge groupCode="LIMIT_SAMPLE_TYPE" code={item.sampleType} /></td>
                           <td className="py-1">{item.expectedResult}</td>
                           <td className="py-1">{item.actualResult}</td>
                           <td className={`py-1 font-semibold ${item.result === "OK" ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>

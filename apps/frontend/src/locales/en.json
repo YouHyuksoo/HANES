@@ -4810,8 +4810,8 @@
         "savedNg": "Verification failed — check the tester and verify again.",
         "historyTitle": "Master Sample Verification History",
         "historyEmpty": "No verification history.",
-        "aidCode": "Sample Code",
-        "aidType": "Type",
+        "sampleCode": "Sample Code",
+        "sampleType": "Type",
         "expected": "Expected",
         "actual": "Actual",
         "judge": "Result"
