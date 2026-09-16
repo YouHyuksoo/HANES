@@ -36,6 +36,7 @@ describe('IqcHistoryService cancel policy', () => {
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
   let mockSysConfigService: DeepMocked<SysConfigService>;
+  let mockIqcRequestLotRepo: DeepMocked<Repository<IqcRequestLot>>;
   let mockIqcRequestLotLineRepo: DeepMocked<Repository<IqcRequestLotLine>>;
   let mockRequestLotLineQb: {
     innerJoin: jest.Mock;
@@ -105,6 +106,7 @@ describe('IqcHistoryService cancel policy', () => {
       andWhere: jest.fn().mockReturnThis(),
       getRawMany: jest.fn().mockResolvedValue([]),
     };
+    mockIqcRequestLotRepo = createMock<Repository<IqcRequestLot>>();
     mockIqcRequestLotLineRepo = createMock<Repository<IqcRequestLotLine>>();
     mockIqcRequestLotLineRepo.createQueryBuilder.mockReturnValue(mockRequestLotLineQb as never);
 
@@ -120,7 +122,7 @@ describe('IqcHistoryService cancel policy', () => {
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
         { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
-        { provide: getRepositoryToken(IqcRequestLot), useValue: createMock<Repository<IqcRequestLot>>() },
+        { provide: getRepositoryToken(IqcRequestLot), useValue: mockIqcRequestLotRepo },
         { provide: getRepositoryToken(IqcRequestLotLine), useValue: mockIqcRequestLotLineRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: SysConfigService, useValue: mockSysConfigService },
@@ -519,6 +521,40 @@ describe('IqcHistoryService cancel policy', () => {
       await target.createArrivalResult({ arrivalNo: 'ARR-H', itemCode: 'ITEM-001', result: 'PASS' } as any, 'HANES', 'P01');
 
       expect(mockAqlService.resolveIqcPolicyByItem).toHaveBeenCalled();
+    });
+
+    it('의뢰 LOT 판정은 IQC_LOGS.REQUEST_NO를 채우고 입하단위는 비운다', async () => {
+      // REMARK의 '[IQL:...]' 문자열이 아니라 이 컬럼이 의뢰↔이력 역추적의 정본이다
+      mockSysConfigService.getValue.mockResolvedValue('REQUEST');
+      mockMatLotRepo.find.mockResolvedValue([freeLot]);
+      mockRequestLotLineQb.getRawMany.mockResolvedValue([]);
+      mockIqcLogRepo.create.mockImplementation((v) => v as IqcLog);
+      mockIqcLogRepo.save.mockImplementation(async (v) => v as IqcLog);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as ItemMaster);
+
+      await target.createArrivalResult({ arrivalNo: 'ARR-H', itemCode: 'ITEM-001', result: 'PASS' } as any, 'HANES', 'P01');
+      expect((mockIqcLogRepo.create as jest.Mock).mock.calls[0][0].requestNo).toBeNull();
+
+      (mockIqcLogRepo.create as jest.Mock).mockClear();
+      mockIqcRequestLotRepo.findOne.mockResolvedValue({
+        requestNo: 'IQL20260916-0009',
+        itemCode: 'ITEM-001',
+        lotQty: 7,
+        status: 'REQUESTED',
+        company: 'HANES',
+        plant: 'P01',
+      } as never);
+      mockIqcRequestLotLineRepo.find.mockResolvedValue([
+        { requestNo: 'IQL20260916-0009', seq: 1, arrivalNo: 'ARR-H', arrivalSeq: 4, itemCode: 'ITEM-001', lineRole: 'SAMPLE' } as never,
+      ]);
+      mockIqcRequestLotRepo.save.mockImplementation(async (v) => v as never);
+
+      await target.createRequestLotResult('IQL20260916-0009', { itemCode: 'ITEM-001', result: 'PASS' } as any, 'HANES', 'P01');
+
+      const log = (mockIqcLogRepo.create as jest.Mock).mock.calls[0][0];
+      expect(log.requestNo).toBe('IQL20260916-0009');
+      // REMARK 접두어는 기존 조회 호환을 위해 그대로 남긴다
+      expect(log.remark).toContain('[IQL:IQL20260916-0009]');
     });
 
     it('단건 판정도 REQUESTED 의뢰에 담긴 시리얼을 거절한다', async () => {

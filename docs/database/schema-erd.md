@@ -1,12 +1,12 @@
 ---
 sources: []
-verifiedCommit: 41fe7f2a
+verifiedCommit: 6669b8d3
 generated: true
 ---
 
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-09-16 01:31:36
+- 작성일: 2026-09-16 11:12:01
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
@@ -14,7 +14,7 @@ generated: true
 ## 1. 요약
 
 - 테이블 수: 196
-- 컬럼 수: 3291
+- 컬럼 수: 3292
 - PK 보유 테이블: 189
 - DB FK 수: 68
 - COM_CODES 그룹 수: 173
@@ -8149,6 +8149,7 @@ erDiagram
 | `DEFECT_MINOR` | `NUMBER` | `Y` |  | 기본값 `0` |  |
 | `AQL_JUDGE_REASON` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `ITEM_RESULTS` | `CLOB` | `Y` |  |  | 검사항목별 AQL 판정결과(JSON) |
+| `REQUEST_NO` | `VARCHAR2(50)` | `Y` |  |  | 검사의뢰 LOT 번호 (IQC_REQUEST_LOTS.REQUEST_NO). 의뢰 LOT 단위 판정에만 채워지고 입하단위/단건 판정은 NULL |
 
 ### `IQC_PART_SPECS`
 

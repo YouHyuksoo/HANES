@@ -45,6 +45,13 @@ export class IqcLog {
   @Column({ type: 'varchar2', name: 'VENDOR_CODE', length: 50, nullable: true })
   vendorCode: string | null;
 
+  /**
+   * 검사의뢰 LOT 번호 (IQC_REQUEST_LOTS.REQUEST_NO).
+   * 의뢰 LOT 단위 판정에만 채워진다. 입하단위/단건 판정은 NULL이다.
+   */
+  @Column({ type: 'varchar2', name: 'REQUEST_NO', length: 50, nullable: true })
+  requestNo: string | null;
+
   @Column({ name: 'INSPECT_TYPE', length: 50, default: 'INITIAL' })
   inspectType: string;
 

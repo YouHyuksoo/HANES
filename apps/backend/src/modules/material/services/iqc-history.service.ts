@@ -859,6 +859,7 @@ export class IqcHistoryService {
       dto,
       lotQtyOverride: Number(header.lotQty) || null,
       logRemarkPrefix: `[IQL:${requestNo}]${driftNote}`,
+      requestNo,
       applyArrivalStatus: async (status, tenantCompany, tenantPlant) => {
         for (const line of lines) {
           await this.matArrivalRepository.update(
@@ -894,8 +895,10 @@ export class IqcHistoryService {
     dto: CreateArrivalIqcResultDto;
     /** 모집단 수량. 없으면 lots의 INIT_QTY 합을 쓴다. */
     lotQtyOverride?: number | null;
-    /** IQC_LOGS.REMARK 접두어 (의뢰 LOT 추적용) */
+    /** IQC_LOGS.REMARK 접두어 (의뢰 LOT 추적용). REQUEST_NO 컬럼과 별개로 남긴다 — 기존 조회가 REMARK를 본다. */
     logRemarkPrefix?: string | null;
+    /** IQC_LOGS.REQUEST_NO. 의뢰 LOT 판정에만 채운다. 역추적의 정본이다. */
+    requestNo?: string | null;
     applyArrivalStatus: (
       status: 'PASS' | 'FAIL',
       tenantCompany: string,
@@ -951,6 +954,7 @@ export class IqcHistoryService {
       matUid: null,
       itemCode,
       vendorCode,
+      requestNo: input.requestNo ?? null,
       inspectType: dto.inspectType || 'INITIAL',
       result: finalResult,
       details: dto.details || null,
