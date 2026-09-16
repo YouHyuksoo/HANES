@@ -102,7 +102,19 @@
 
 ## IMPR_REQUESTS — 화면 개선요청
 
+## INSPECT_AIDS — 검사보조구 마스터 (검사홀더·지그). 양품/불량 한도견본은 LIMIT_SAMPLES로 분리됨
+동의어: 검사보조구, 검사홀더, 검사지그, 치공구
+
 ## INSPECT_RESULTS — 검사 결과 (공정검사/AOI 등)
+
+## INSPECT_SAMPLE_CHECK_ITEMS — 양불마스터 대조 샘플별 결과 (기대결과 vs 검사기 실제결과)
+동의어: 한도견본 대조 상세, 견본 대조 항목
+관계:
+- SAMPLE_CODE -> LIMIT_SAMPLES.SAMPLE_CODE
+- CHECK_NO -> INSPECT_SAMPLE_CHECKS.CHECK_NO
+
+## INSPECT_SAMPLE_CHECKS — 양불마스터 대조 헤더 (작업지시x검사유형x검사기x조업일x교대 단위 종합판정)
+동의어: 한도견본 대조, 견본 대조 이력
 
 ## INTER_LOGS — 인터페이스 송수신 이력 로그
 
@@ -133,6 +145,18 @@
 ## LABEL_PRINT_LOGS — 라벨 인쇄 이력 로그
 
 ## LABEL_TEMPLATES — 라벨 템플릿 마스터
+
+## LIMIT_SAMPLE_IMAGES — 양불마스터 견본 사진 (한 견본에 여러 장, 대표 1장은 IS_PRIMARY='Y')
+동의어: 한도견본 사진, 견본 이미지
+관계:
+- SAMPLE_CODE -> LIMIT_SAMPLES.SAMPLE_CODE
+
+## LIMIT_SAMPLES — 양불마스터 (양품/불량 한도견본). 검사 시작 전 대조용 견본의 유효기간·승인·사진 관리
+동의어: 양불마스터, 한도견본, 양품견본, 불량견본, 한계견본
+관계:
+- ITEM_CODE -> ITEM_MASTERS.ITEM_CODE
+- PROCESS_CODE -> PROCESS_MASTERS.PROCESS_CODE
+- DEFECT_CODE -> DEFECT_CODE_MASTERS.DEFECT_CODE
 
 ## MAT_ARRIVAL_STOCKS — 자재 입하 재고
 

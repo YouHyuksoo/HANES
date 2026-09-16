@@ -1,23 +1,23 @@
 ---
 sources: []
-verifiedCommit: 6669b8d3
+verifiedCommit: efea1762
 generated: true
 ---
 
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-09-16 11:12:01
+- 작성일: 2026-09-16 17:56:59
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
 
 ## 1. 요약
 
-- 테이블 수: 196
-- 컬럼 수: 3292
-- PK 보유 테이블: 189
+- 테이블 수: 200
+- 컬럼 수: 3357
+- PK 보유 테이블: 193
 - DB FK 수: 68
-- COM_CODES 그룹 수: 173
+- COM_CODES 그룹 수: 177
 
 ## 2. 모듈별 테이블
 
@@ -34,12 +34,14 @@ generated: true
 - `CONSUMABLE_USAGE_MAP`: 소모품 사용 정의(품목 설비별 사용량) / PK: `COMPANY, PLANT_CD, PRODUCT_ITEM_CODE, EQUIP_CODE, CONSUMABLE_CODE`
 - `EQUIP_BOM_ITEMS`: 설비 BOM 부품(예비품) 마스터 / PK: `EQUIP_CODE, BOM_ITEM_CODE`
 - `EQUIP_BOM_RELS`: 설비-부품 관계 (설비에 장착된 부품) / PK: `EQUIP_CODE, BOM_ITEM_CODE`
+- `EQUIP_CALL_EVENTS`: 관리자호출 이력. 호출(OPEN) 후 담당자가 도착해 응대하면 ACKED / PK: `CALL_ID`
 - `EQUIP_CONDITION_RULES`: 설비 상태감시 규칙(센서 임계값) / PK: `RULE_ID`
 - `EQUIP_INSPECT_ITEM_MASTERS`: 설비점검항목 기준 마스터 (설비유형별 점검항목 템플릿) / PK: `COMPANY, PLANT_CD, ITEM_CODE`
 - `EQUIP_INSPECT_ITEM_POOL`: 설비 점검 항목 풀 / PK: `COMPANY, PLANT_CD, EQUIP_CODE, ITEM_CODE, INSPECT_TYPE`
 - `EQUIP_INSPECT_LOGS`: 설비 점검 이력 로그 / PK: `EQUIP_CODE, INSPECT_TYPE, INSPECT_DATE`
 - `EQUIP_MASTERS`: 설비 마스터 / PK: `COMPANY, PLANT_CD, EQUIP_CODE`
 - `EQUIP_PROTOCOLS`: 설비 통신 프로토콜 정의 / PK: `PROTOCOL_ID`
+- `EQUIP_STOP_EVENTS`: 설비정지 이벤트. 키오스크에서 등록하고 해제 시 유실시간(LOSS_SECONDS)을 서버가 확정한다 / PK: `STOP_ID`
 - `INTER_LOGS`: 인터페이스 송수신 이력 로그 / PK: `TRANS_DATE, SEQ`
 - `MOLD_MASTERS`: 금형 마스터 / PK: `MOLD_CODE`
 - `MOLD_USAGE_LOGS`: 금형 사용 이력(쇼트 수) / PK: `USAGE_DATE, SEQ`
@@ -112,6 +114,8 @@ generated: true
 - `HARNESS_DRAWING_REVISIONS`: 하네스 제품 도면 Revision / PK: `REVISION_ID`
 - `IMPR_REQUESTS`: 화면 개선요청 / PK: `IMPR_ID`
 - `INV_ADJ_LOGS`: 재고 조정(실사) 이력 로그 / PK: `ADJ_DATE, SEQ`
+- `LIMIT_SAMPLES`: 양불마스터 (양품/불량 한도견본) ― 검사 전 대조용 견본의 유효기간·승인·사진 관리 / PK: `COMPANY, PLANT_CD, SAMPLE_CODE`
+- `LIMIT_SAMPLE_IMAGES`: 양불마스터 견본 사진 ― 한 견본에 각도별·불량부위별 여러 장. 대표 1장(IS_PRIMARY=Y)이 그리드·대조 모달 썸네일 / PK: `COMPANY, PLANT_CD, SAMPLE_CODE, SEQ_NO`
 - `MODEL_SUFFIXES`: 모델 서픽스 마스터 / PK: `MODEL_CODE, SUFFIX_CODE`
 - `NCR_ATTACHMENTS`: 부적합 보고서 첨부파일 ― 현상 사진, 측정 성적서, 고객 클레임 문서 등 / PK: `COMPANY, PLANT_CD, NCR_NO, SEQ`
 - `NCR_REPORTS`: 부적합 보고서(NCR) ― 부적합 1건을 문서번호로 묶어 처리·시정조치까지 추적 / PK: `NCR_NO`
@@ -184,7 +188,7 @@ generated: true
 - `FAI_ITEMS`: 초도품검사(FAI) 측정 항목 / PK: `FAI_ID, SEQ`
 - `FAI_REQUESTS`: 초도품검사(FAI) 요청 / PK: `FAI_NO`
 - `GAUGE_MASTERS`: 게이지(측정기) 마스터 / PK: `GAUGE_CODE`
-- `INSPECT_AIDS`: 검사보조구 마스터 (양품/불량 한도견본, 검사홀더/지그) ― 유효기간·승인·사진 관리 / PK: `COMPANY, PLANT_CD, AID_CODE`
+- `INSPECT_AIDS`: 검사보조구 마스터 (검사홀더·지그) ― 유효기간·승인·사진 관리. 양품/불량 한도견본은 LIMIT_SAMPLES로 분리됨 / PK: `COMPANY, PLANT_CD, AID_CODE`
 - `INSPECT_ITEM_SPECS`: 품목별 리크/내전압/토크 검사 스펙 (THN 관리계획서 I50/H57 실측 판정) / PK: `SPEC_ID`
 - `INSPECT_RESULTS`: 검사 결과 (공정검사/AOI 등) / PK: `RESULT_NO`
 - `INSPECT_SAMPLE_CHECKS`: 양불마스터(한도견본) 대조 헤더 ― 통전·단자검사 시작 전 검사기 유효성 확인 기록 / PK: `COMPANY, PLANT_CD, CHECK_NO`
@@ -892,6 +896,21 @@ erDiagram
     TIMESTAMP_6 CREATED_AT NOT_NULL
     string more_columns
   }
+  EQUIP_CALL_EVENTS {
+    NUMBER CALL_ID PK NOT_NULL
+    VARCHAR2_50 COMPANY NOT_NULL
+    VARCHAR2_50 PLANT_CD NOT_NULL
+    VARCHAR2_50 EQUIP_CODE NOT_NULL
+    VARCHAR2_50 JOB_ORDER_NO
+    VARCHAR2_50 CALL_TYPE NOT_NULL
+    VARCHAR2_500 CALL_REMARK
+    VARCHAR2_20 STATUS NOT_NULL
+    TIMESTAMP_6 CALLED_AT NOT_NULL
+    VARCHAR2_50 CALLED_BY
+    TIMESTAMP_6 ACKED_AT
+    VARCHAR2_50 ACKED_BY
+    string more_columns
+  }
   EQUIP_CONDITION_RULES {
     NUMBER RULE_ID PK NOT_NULL
     VARCHAR2_50 EQUIP_CODE NOT_NULL
@@ -980,6 +999,21 @@ erDiagram
     VARCHAR2_5 DATA_START_CHAR
     VARCHAR2_5 DATA_END_CHAR
     VARCHAR2_500 SAMPLE_DATA
+    string more_columns
+  }
+  EQUIP_STOP_EVENTS {
+    NUMBER STOP_ID PK NOT_NULL
+    VARCHAR2_50 COMPANY NOT_NULL
+    VARCHAR2_50 PLANT_CD NOT_NULL
+    VARCHAR2_50 EQUIP_CODE NOT_NULL
+    VARCHAR2_50 JOB_ORDER_NO
+    VARCHAR2_50 STOP_REASON
+    VARCHAR2_500 STOP_REMARK
+    VARCHAR2_20 STATUS NOT_NULL
+    TIMESTAMP_6 STARTED_AT NOT_NULL
+    VARCHAR2_50 STARTED_BY
+    TIMESTAMP_6 RELEASED_AT
+    VARCHAR2_50 RELEASED_BY
     string more_columns
   }
   FAI_ITEMS {
@@ -1108,11 +1142,11 @@ erDiagram
     VARCHAR2_200 AID_NAME NOT_NULL
     VARCHAR2_50 ITEM_CODE
     VARCHAR2_50 PROCESS_CODE
-    VARCHAR2_50 DEFECT_CODE
     VARCHAR2_500 IMAGE_URL
     VARCHAR2_200 LOCATION
     DATE VALID_FROM
     DATE VALID_TO
+    VARCHAR2_50 APPROVED_BY
     string more_columns
   }
   INSPECT_ITEM_SPECS {
@@ -1166,8 +1200,8 @@ erDiagram
     VARCHAR2_50 PLANT_CD PK NOT_NULL
     VARCHAR2_30 CHECK_NO PK NOT_NULL
     NUMBER_5 SEQ_NO PK NOT_NULL
-    VARCHAR2_50 AID_CODE NOT_NULL
-    VARCHAR2_30 AID_TYPE NOT_NULL
+    VARCHAR2_50 SAMPLE_CODE NOT_NULL
+    VARCHAR2_30 SAMPLE_TYPE NOT_NULL
     VARCHAR2_10 EXPECTED_RESULT NOT_NULL
     VARCHAR2_10 ACTUAL_RESULT NOT_NULL
     VARCHAR2_10 RESULT NOT_NULL
@@ -1445,6 +1479,33 @@ erDiagram
     VARCHAR2_50 CREATED_BY
     VARCHAR2_50 UPDATED_BY
     string more_columns
+  }
+  LIMIT_SAMPLES {
+    VARCHAR2_50 COMPANY PK NOT_NULL
+    VARCHAR2_50 PLANT_CD PK NOT_NULL
+    VARCHAR2_50 SAMPLE_CODE PK NOT_NULL
+    VARCHAR2_30 SAMPLE_TYPE NOT_NULL
+    VARCHAR2_200 SAMPLE_NAME NOT_NULL
+    VARCHAR2_50 ITEM_CODE
+    VARCHAR2_50 PROCESS_CODE
+    VARCHAR2_50 DEFECT_CODE
+    VARCHAR2_30 INSPECT_TYPE
+    VARCHAR2_200 LOCATION
+    DATE VALID_FROM
+    DATE VALID_TO
+    string more_columns
+  }
+  LIMIT_SAMPLE_IMAGES {
+    VARCHAR2_50 COMPANY PK NOT_NULL
+    VARCHAR2_50 PLANT_CD PK NOT_NULL
+    VARCHAR2_50 SAMPLE_CODE PK NOT_NULL
+    NUMBER SEQ_NO PK NOT_NULL
+    VARCHAR2_500 IMAGE_URL NOT_NULL
+    VARCHAR2_200 CAPTION
+    CHAR_1 IS_PRIMARY NOT_NULL
+    NUMBER SORT_ORDER NOT_NULL
+    VARCHAR2_50 CREATED_BY
+    TIMESTAMP_6 CREATED_AT NOT_NULL
   }
   MAT_ARRIVALS {
     VARCHAR2_50 ARRIVAL_NO PK NOT_NULL
@@ -3297,6 +3358,7 @@ erDiagram
 | `DEFECT_LOGS` | `DEFECT_CODE` | `DEFECT_CATEGORY_MASTERS` |
 | `EQUIP_BOM_ITEMS` | `EQUIP_CODE` | `EQUIP_BOM_RELS` |
 | `EQUIP_BOM_RELS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
+| `EQUIP_CALL_EVENTS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `EQUIP_CONDITION_RULES` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `EQUIP_CONDITION_RULES` | `PM_PLAN_CODE` | `PM_PLANS` |
 | `EQUIP_INSPECT_ITEM_MASTERS` | `ITEM_CODE` | `ITEM_MASTERS` |
@@ -3306,6 +3368,7 @@ erDiagram
 | `EQUIP_MASTERS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `EQUIP_MASTERS` | `PROCESS_CODE` | `PROCESS_CAPAS` |
 | `EQUIP_PROTOCOLS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
+| `EQUIP_STOP_EVENTS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `FAI_ITEMS` | `FAI_ID` | `FAI_REQUESTS` |
 | `FAI_REQUESTS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `FG_LABELS` | `ITEM_CODE` | `ITEM_MASTERS` |
@@ -3315,13 +3378,13 @@ erDiagram
 | `HARNESS_DRAWING_MASTERS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `INSPECT_AIDS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `INSPECT_AIDS` | `PROCESS_CODE` | `PROCESS_CAPAS` |
-| `INSPECT_AIDS` | `DEFECT_CODE` | `DEFECT_CATEGORY_MASTERS` |
 | `INSPECT_ITEM_SPECS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `INSPECT_RESULTS` | `PROD_RESULT_ID` | `PROD_RESULTS` |
 | `INSPECT_RESULTS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `INSPECT_SAMPLE_CHECKS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `INSPECT_SAMPLE_CHECKS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `INSPECT_SAMPLE_CHECKS` | `SHIFT_CODE` | `SHIFT_PATTERNS` |
+| `INSPECT_SAMPLE_CHECK_ITEMS` | `SAMPLE_CODE` | `SAMPLE_INSPECT_RESULTS` |
 | `INV_ADJ_LOGS` | `WAREHOUSE_CODE` | `WAREHOUSES` |
 | `INV_ADJ_LOGS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `IQC_ITEM_MASTERS` | `ITEM_CODE` | `ITEM_MASTERS_CONSUMABLE_BAK_20260616` |
@@ -3340,6 +3403,11 @@ erDiagram
 | `JOB_ORDERS` | `PROCESS_CODE` | `PROCESS_CAPAS` |
 | `JOB_ORDERS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `LABEL_PRINT_LOGS` | `WORKER_CODE` | `WORKER_MASTERS` |
+| `LIMIT_SAMPLES` | `SAMPLE_CODE` | `SAMPLE_INSPECT_RESULTS` |
+| `LIMIT_SAMPLES` | `ITEM_CODE` | `ITEM_MASTERS` |
+| `LIMIT_SAMPLES` | `PROCESS_CODE` | `PROCESS_CAPAS` |
+| `LIMIT_SAMPLES` | `DEFECT_CODE` | `DEFECT_CATEGORY_MASTERS` |
+| `LIMIT_SAMPLE_IMAGES` | `SAMPLE_CODE` | `SAMPLE_INSPECT_RESULTS` |
 | `MAT_ARRIVALS` | `PO_ID` | `PURCHASE_ORDERS` |
 | `MAT_ARRIVALS` | `PO_ITEM_ID` | `PURCHASE_ORDER_ITEMS` |
 | `MAT_ARRIVALS` | `PO_NO` | `PURCHASE_ORDERS` |
@@ -3442,13 +3510,6 @@ erDiagram
 | `REWORK_ORDERS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `REWORK_PROCESSES` | `REWORK_ORDER_ID` | `REWORK_ORDERS` |
 | `REWORK_PROCESSES` | `PROCESS_CODE` | `PROCESS_CAPAS` |
-| `REWORK_PROCESSES` | `WORKER_CODE` | `WORKER_MASTERS` |
-| `REWORK_PROCESSES` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
-| `REWORK_RESULTS` | `WORKER_CODE` | `WORKER_MASTERS` |
-| `REWORK_RESULTS` | `REWORK_ORDER_ID` | `REWORK_ORDERS` |
-| `REWORK_RESULTS` | `PROCESS_CODE` | `PROCESS_CAPAS` |
-| `ROLE_MENU_PERMISSIONS` | `MENU_CODE` | `MENU_CATEGORIES` |
-| `ROUTING_GROUPS` | `ROUTING_CODE` | `ROUTING_MATERIALS` |
 
 ## 5. 모듈별 ERD
 
@@ -3619,6 +3680,21 @@ erDiagram
     TIMESTAMP_6 CREATED_AT NOT_NULL
     string more_columns
   }
+  EQUIP_CALL_EVENTS {
+    NUMBER CALL_ID PK NOT_NULL
+    VARCHAR2_50 COMPANY NOT_NULL
+    VARCHAR2_50 PLANT_CD NOT_NULL
+    VARCHAR2_50 EQUIP_CODE NOT_NULL
+    VARCHAR2_50 JOB_ORDER_NO
+    VARCHAR2_50 CALL_TYPE NOT_NULL
+    VARCHAR2_500 CALL_REMARK
+    VARCHAR2_20 STATUS NOT_NULL
+    TIMESTAMP_6 CALLED_AT NOT_NULL
+    VARCHAR2_50 CALLED_BY
+    TIMESTAMP_6 ACKED_AT
+    VARCHAR2_50 ACKED_BY
+    string more_columns
+  }
   EQUIP_CONDITION_RULES {
     NUMBER RULE_ID PK NOT_NULL
     VARCHAR2_50 EQUIP_CODE NOT_NULL
@@ -3707,6 +3783,21 @@ erDiagram
     VARCHAR2_5 DATA_START_CHAR
     VARCHAR2_5 DATA_END_CHAR
     VARCHAR2_500 SAMPLE_DATA
+    string more_columns
+  }
+  EQUIP_STOP_EVENTS {
+    NUMBER STOP_ID PK NOT_NULL
+    VARCHAR2_50 COMPANY NOT_NULL
+    VARCHAR2_50 PLANT_CD NOT_NULL
+    VARCHAR2_50 EQUIP_CODE NOT_NULL
+    VARCHAR2_50 JOB_ORDER_NO
+    VARCHAR2_50 STOP_REASON
+    VARCHAR2_500 STOP_REMARK
+    VARCHAR2_20 STATUS NOT_NULL
+    TIMESTAMP_6 STARTED_AT NOT_NULL
+    VARCHAR2_50 STARTED_BY
+    TIMESTAMP_6 RELEASED_AT
+    VARCHAR2_50 RELEASED_BY
     string more_columns
   }
   INTER_LOGS {
@@ -4693,6 +4784,33 @@ erDiagram
     NUMBER_5 SEQ PK NOT_NULL
     string more_columns
   }
+  LIMIT_SAMPLES {
+    VARCHAR2_50 COMPANY PK NOT_NULL
+    VARCHAR2_50 PLANT_CD PK NOT_NULL
+    VARCHAR2_50 SAMPLE_CODE PK NOT_NULL
+    VARCHAR2_30 SAMPLE_TYPE NOT_NULL
+    VARCHAR2_200 SAMPLE_NAME NOT_NULL
+    VARCHAR2_50 ITEM_CODE
+    VARCHAR2_50 PROCESS_CODE
+    VARCHAR2_50 DEFECT_CODE
+    VARCHAR2_30 INSPECT_TYPE
+    VARCHAR2_200 LOCATION
+    DATE VALID_FROM
+    DATE VALID_TO
+    string more_columns
+  }
+  LIMIT_SAMPLE_IMAGES {
+    VARCHAR2_50 COMPANY PK NOT_NULL
+    VARCHAR2_50 PLANT_CD PK NOT_NULL
+    VARCHAR2_50 SAMPLE_CODE PK NOT_NULL
+    NUMBER SEQ_NO PK NOT_NULL
+    VARCHAR2_500 IMAGE_URL NOT_NULL
+    VARCHAR2_200 CAPTION
+    CHAR_1 IS_PRIMARY NOT_NULL
+    NUMBER SORT_ORDER NOT_NULL
+    VARCHAR2_50 CREATED_BY
+    TIMESTAMP_6 CREATED_AT NOT_NULL
+  }
   MODEL_SUFFIXES {
     VARCHAR2_100 MODEL_CODE PK NOT_NULL
     VARCHAR2_50 SUFFIX_CODE PK NOT_NULL
@@ -5656,11 +5774,11 @@ erDiagram
     VARCHAR2_200 AID_NAME NOT_NULL
     VARCHAR2_50 ITEM_CODE
     VARCHAR2_50 PROCESS_CODE
-    VARCHAR2_50 DEFECT_CODE
     VARCHAR2_500 IMAGE_URL
     VARCHAR2_200 LOCATION
     DATE VALID_FROM
     DATE VALID_TO
+    VARCHAR2_50 APPROVED_BY
     string more_columns
   }
   INSPECT_ITEM_SPECS {
@@ -5714,8 +5832,8 @@ erDiagram
     VARCHAR2_50 PLANT_CD PK NOT_NULL
     VARCHAR2_30 CHECK_NO PK NOT_NULL
     NUMBER_5 SEQ_NO PK NOT_NULL
-    VARCHAR2_50 AID_CODE NOT_NULL
-    VARCHAR2_30 AID_TYPE NOT_NULL
+    VARCHAR2_50 SAMPLE_CODE NOT_NULL
+    VARCHAR2_30 SAMPLE_TYPE NOT_NULL
     VARCHAR2_10 EXPECTED_RESULT NOT_NULL
     VARCHAR2_10 ACTUAL_RESULT NOT_NULL
     VARCHAR2_10 RESULT NOT_NULL
@@ -7476,6 +7594,31 @@ erDiagram
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` | 등록일시 |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` | 수정일시 |
 
+### `EQUIP_CALL_EVENTS`
+
+- 설명: 관리자호출 이력. 호출(OPEN) 후 담당자가 도착해 응대하면 ACKED
+- PK: `CALL_ID`
+
+| 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
+|---|---|---|---|---|---|
+| `CALL_ID` | `NUMBER` | `N` | PK |  |  |
+| `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `EQUIP_CODE` | `VARCHAR2(50)` | `N` |  |  |  |
+| `JOB_ORDER_NO` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `CALL_TYPE` | `VARCHAR2(50)` | `N` |  |  | 호출유형. COM_CODES(EQUIP_CALL_TYPE) |
+| `CALL_REMARK` | `VARCHAR2(500)` | `Y` |  |  |  |
+| `STATUS` | `VARCHAR2(20)` | `N` |  | 기본값 `'OPEN'`<br>CHECK `STATUS IN ('OPEN','ACKED')` |  |
+| `CALLED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` |  |
+| `CALLED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `ACKED_AT` | `TIMESTAMP(6)` | `Y` |  |  |  |
+| `ACKED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `ACK_REMARK` | `VARCHAR2(500)` | `Y` |  |  |  |
+| `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+
 ### `EQUIP_CONDITION_RULES`
 
 - 설명: 설비 상태감시 규칙(센서 임계값)
@@ -7630,6 +7773,33 @@ erDiagram
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` |  |
 | `VALUE_INDEX` | `NUMBER` | `Y` |  |  | 측정 수치 토큰 위치 (0-based, NULL: 수치 미수신) |
 | `VALUE_UNIT` | `VARCHAR2(20)` | `Y` |  |  | 측정 수치 단위 (예: kgf, N, mm) |
+
+### `EQUIP_STOP_EVENTS`
+
+- 설명: 설비정지 이벤트. 키오스크에서 등록하고 해제 시 유실시간(LOSS_SECONDS)을 서버가 확정한다
+- PK: `STOP_ID`
+
+| 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
+|---|---|---|---|---|---|
+| `STOP_ID` | `NUMBER` | `N` | PK |  |  |
+| `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `EQUIP_CODE` | `VARCHAR2(50)` | `N` |  |  |  |
+| `JOB_ORDER_NO` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `STOP_REASON` | `VARCHAR2(50)` | `Y` |  |  | 정지사유. COM_CODES(EQUIP_STOP_REASON). NULL=사유미정(해제 전 확정 필요) |
+| `STOP_REMARK` | `VARCHAR2(500)` | `Y` |  |  |  |
+| `STATUS` | `VARCHAR2(20)` | `N` |  | 기본값 `'OPEN'`<br>CHECK `STATUS IN ('OPEN','CLOSED')` | OPEN=정지중, CLOSED=해제완료 |
+| `STARTED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `CURRENT_TIMESTAMP` |  |
+| `STARTED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `RELEASED_AT` | `TIMESTAMP(6)` | `Y` |  |  |  |
+| `RELEASED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `RELEASE_REMARK` | `VARCHAR2(500)` | `Y` |  |  |  |
+| `LOSS_SECONDS` | `NUMBER` | `Y` |  |  | 유실시간(초). 해제 시 RELEASED_AT-STARTED_AT 로 서버가 계산해 고정한다 |
+| `PREV_EQUIP_STATUS` | `VARCHAR2(20)` | `Y` |  |  | 정지 직전 EQUIP_MASTERS.STATUS. 해제 시 이 값으로 되돌린다 |
+| `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 
 ### `FAI_ITEMS`
 
@@ -7844,7 +8014,7 @@ erDiagram
 
 ### `INSPECT_AIDS`
 
-- 설명: 검사보조구 마스터 (양품/불량 한도견본, 검사홀더/지그) ― 유효기간·승인·사진 관리
+- 설명: 검사보조구 마스터 (검사홀더·지그) ― 유효기간·승인·사진 관리. 양품/불량 한도견본은 LIMIT_SAMPLES로 분리됨
 - PK: `COMPANY, PLANT_CD, AID_CODE`
 
 | 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
@@ -7852,11 +8022,10 @@ erDiagram
 | `COMPANY` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 회사 코드 |
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 사업장 코드 |
 | `AID_CODE` | `VARCHAR2(50)` | `N` | PK |  | 보조구 코드 (사용자 입력) |
-| `AID_TYPE` | `VARCHAR2(30)` | `N` |  |  | 보조구 유형 (COM_CODES INSPECT_AID_TYPE: LIMIT_OK 양품한도견본 / LIMIT_NG 불량한도견본 / HOLDER 검사홀더·지그) |
+| `AID_TYPE` | `VARCHAR2(30)` | `N` |  |  | 보조구 유형 (COM_CODES INSPECT_AID_TYPE: HOLDER 검사홀더·지그) |
 | `AID_NAME` | `VARCHAR2(200)` | `N` |  |  | 보조구 명칭 |
 | `ITEM_CODE` | `VARCHAR2(50)` | `Y` |  |  | 대상 품목코드 (ITEM_MASTERS.ITEM_CODE, 선택) |
 | `PROCESS_CODE` | `VARCHAR2(50)` | `Y` |  |  | 적용 공정코드 (PROCESS_MASTERS.PROCESS_CODE, 선택) |
-| `DEFECT_CODE` | `VARCHAR2(50)` | `Y` |  |  | 불량 한도견본의 대표 불량코드 (DEFECT_CODE_MASTERS.DEFECT_CODE, 선택) |
 | `IMAGE_URL` | `VARCHAR2(500)` | `Y` |  |  | 사진 경로 (/uploads/inspect-aids/...) |
 | `LOCATION` | `VARCHAR2(200)` | `Y` |  |  | 보관 위치 |
 | `VALID_FROM` | `DATE` | `Y` |  |  | 유효기간 시작일 |
@@ -7870,9 +8039,6 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` | 생성일시 |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` | 수정일시 |
-| `INSPECT_TYPE` | `VARCHAR2(30)` | `Y` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자 | 적용 검사유형 (COM_CODES INSPECT_TYPE: CONTINUITY 도통/TERMINAL 단자. NULL=전 검사유형 공통) |
-| `REQUIRED_YN` | `VARCHAR2(1)` | `N` |  | 기본값 `'Y'` | 검사 전 대조 필수 여부 (Y=필수, N=참고용) |
-| `SORT_ORDER` | `NUMBER(5)` | `N` |  | 기본값 `0` | 대조 모달 표시 순서 |
 
 ### `INSPECT_ITEM_SPECS`
 
@@ -7971,9 +8137,9 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 |  |
 | `CHECK_NO` | `VARCHAR2(30)` | `N` | PK |  |  |
 | `SEQ_NO` | `NUMBER(5)` | `N` | PK |  |  |
-| `AID_CODE` | `VARCHAR2(50)` | `N` |  |  | 한도견본 코드 (INSPECT_AIDS.AID_CODE, 바코드 스캔값) |
-| `AID_TYPE` | `VARCHAR2(30)` | `N` |  |  |  |
-| `EXPECTED_RESULT` | `VARCHAR2(10)` | `N` |  |  | 기대 결과 (LIMIT_OK=PASS, LIMIT_NG=FAIL) |
+| `SAMPLE_CODE` | `VARCHAR2(50)` | `N` |  |  | 대조한 견본 코드 (LIMIT_SAMPLES.SAMPLE_CODE) |
+| `SAMPLE_TYPE` | `VARCHAR2(30)` | `N` |  |  | 견본 유형 스냅샷 (OK 양품견본 / NG 불량견본) |
+| `EXPECTED_RESULT` | `VARCHAR2(10)` | `N` |  |  | 기대 결과 (양품견본 OK → PASS, 불량견본 NG → FAIL) |
 | `ACTUAL_RESULT` | `VARCHAR2(10)` | `N` |  |  | 검사기 실제 결과 (PASS/FAIL, 작업자 입력) |
 | `RESULT` | `VARCHAR2(10)` | `N` |  |  | 판정 (OK=기대와 일치, NG=불일치) ― 서버가 산출 |
 | `SCANNED_AT` | `TIMESTAMP(6)` | `Y` |  |  |  |
@@ -8472,6 +8638,55 @@ erDiagram
 | `ZPL_CODE` | `CLOB` | `Y` |  |  | 외부 디자이너에서 만든 ZPL 코드 (변수 플레이스홀더 포함) |
 | `PRINT_MODE` | `VARCHAR2(20)` | `N` |  | 기본값 `'BROWSER'`<br>COM_CODES.PRINT_MODE: BROWSER=브라우저 인쇄, ZPL=ZPL 인쇄, BOTH=브라우저+ZPL | 인쇄 모드: BROWSER, ZPL, BOTH |
 | `PRINTER_ID` | `VARCHAR2(36)` | `Y` |  | 기본값 `NULL` | 기본 프린터 ID (EQUIP_MASTERS FK, 옵션) |
+
+### `LIMIT_SAMPLES`
+
+- 설명: 양불마스터 (양품/불량 한도견본) ― 검사 전 대조용 견본의 유효기간·승인·사진 관리
+- PK: `COMPANY, PLANT_CD, SAMPLE_CODE`
+
+| 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
+|---|---|---|---|---|---|
+| `COMPANY` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 회사 코드 |
+| `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 사업장 코드 |
+| `SAMPLE_CODE` | `VARCHAR2(50)` | `N` | PK |  | 견본 코드 (사용자 입력, 실물에 바코드로 부착해 대조 시 스캔) |
+| `SAMPLE_TYPE` | `VARCHAR2(30)` | `N` |  | CHECK `SAMPLE_TYPE IN ('OK','NG')` | 견본 유형 (COM_CODES LIMIT_SAMPLE_TYPE: OK 양품견본 / NG 불량견본) |
+| `SAMPLE_NAME` | `VARCHAR2(200)` | `N` |  |  | 견본 명칭 |
+| `ITEM_CODE` | `VARCHAR2(50)` | `Y` |  |  | 대상 품목코드 (ITEM_MASTERS.ITEM_CODE, NULL이면 공용 견본) |
+| `PROCESS_CODE` | `VARCHAR2(50)` | `Y` |  |  | 적용 공정코드 (PROCESS_MASTERS.PROCESS_CODE, 선택) |
+| `DEFECT_CODE` | `VARCHAR2(50)` | `Y` |  |  | 불량견본(NG)의 대표 불량코드 (DEFECT_CODE_MASTERS.DEFECT_CODE, 선택) |
+| `INSPECT_TYPE` | `VARCHAR2(30)` | `Y` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자 | 적용 검사유형 (COM_CODES INSPECT_TYPE, NULL이면 전 검사유형 공통) |
+| `LOCATION` | `VARCHAR2(200)` | `Y` |  |  | 보관 위치 |
+| `VALID_FROM` | `DATE` | `Y` |  |  | 유효기간 시작일 |
+| `VALID_TO` | `DATE` | `Y` |  |  | 유효기간 종료일 (만료/임박 판정 기준) |
+| `APPROVED_BY` | `VARCHAR2(50)` | `Y` |  |  | 승인자 |
+| `APPROVED_AT` | `TIMESTAMP(6)` | `Y` |  |  | 승인일시 |
+| `STATUS` | `VARCHAR2(20)` | `N` |  | 기본값 `'ACTIVE'`<br>CHECK `STATUS IN ('ACTIVE','EXPIRED','RETIRED')` | 상태 (COM_CODES LIMIT_SAMPLE_STATUS: ACTIVE 사용중 / EXPIRED 만료 / RETIRED 폐기) |
+| `REQUIRED_YN` | `CHAR(1)` | `N` |  | 기본값 `'Y'`<br>CHECK `REQUIRED_YN IN ('Y','N')` | 검사 시작 전 대조 필수 여부 (Y=필수, N=참고용) |
+| `SORT_ORDER` | `NUMBER` | `N` |  | 기본값 `0` | 대조 모달 표시 순서 |
+| `REMARK` | `VARCHAR2(500)` | `Y` |  |  | 비고 |
+| `USE_YN` | `CHAR(1)` | `N` |  | 기본값 `'Y'`<br>CHECK `USE_YN IN ('Y','N')`<br>COM_CODES.USE_YN: Y=사용, N=미사용<br>관례값 Y/N | 사용여부 (Y/N) |
+| `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 생성자 |
+| `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 수정자 |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` | 생성일시 |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` | 수정일시 |
+
+### `LIMIT_SAMPLE_IMAGES`
+
+- 설명: 양불마스터 견본 사진 ― 한 견본에 각도별·불량부위별 여러 장. 대표 1장(IS_PRIMARY=Y)이 그리드·대조 모달 썸네일
+- PK: `COMPANY, PLANT_CD, SAMPLE_CODE, SEQ_NO`
+
+| 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
+|---|---|---|---|---|---|
+| `COMPANY` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 회사 코드 |
+| `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 | 사업장 코드 |
+| `SAMPLE_CODE` | `VARCHAR2(50)` | `N` | PK |  | 견본 코드 (LIMIT_SAMPLES.SAMPLE_CODE) |
+| `SEQ_NO` | `NUMBER` | `N` | PK |  | 사진 순번 (견본 내 MAX+1) |
+| `IMAGE_URL` | `VARCHAR2(500)` | `N` |  |  | 사진 경로 (/uploads/limit-samples/...) |
+| `CAPTION` | `VARCHAR2(200)` | `Y` |  |  | 사진 설명 (촬영 각도, 불량 부위 등) |
+| `IS_PRIMARY` | `CHAR(1)` | `N` |  | 기본값 `'N'`<br>CHECK `IS_PRIMARY IN ('Y','N')` | 대표 사진 여부 (Y는 견본당 1건, UX_LIMIT_SAMPLE_IMAGES_PRIMARY가 강제) |
+| `SORT_ORDER` | `NUMBER` | `N` |  | 기본값 `0` | 표시 순서 |
+| `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  | 생성자 |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` | 생성일시 |
 
 ### `MAT_ARRIVALS`
 
