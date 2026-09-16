@@ -369,3 +369,47 @@ AQL NULL 항목은 전부 `THN-A50-*` 계열이고, `IQC-*` 계열은 전부 채
 - **브라우저 확인**: 화면 레벨 검증은 아직이다. 특히 4개 화면의 예상 시료수 표시, 모드 배너 제거 확인(이제 REQUEST라 배너가 안 떠야 한다), 의뢰 LOT 행 배지
 - **이전 세션 잔여물**: `R26091300001`의 SEQ 1, 3이 `IQC_STATUS='PENDING'`인데 `EXPIRE_DATE`가 채워져 있다(2026-09-16 02:34 갱신). PENDING LOT에 유효기간이 있는 건 정합성에 어긋난다. 이번 사고 원복 범위 밖이라 두었다
 - D(AQL NULL 149건), F(lineRole 미소비), G(이중 편성 UNIQUE) 미결
+
+---
+
+## PENDING LOT 유효기간 잔여물 정리 (2026-09-16, 커밋 ee387c32)
+
+### 데이터 정리 (요청받은 것)
+
+- pre-check: `IQC_STATUS='PENDING'`인데 `EXPIRE_DATE`가 있는 `MAT_LOTS` **2건** — `VH1-RM260913-00001`, `VH1-RM260913-00003` (둘 다 2027-09-08, 2026-09-16 02:34 갱신)
+- `UPDATE MAT_LOTS SET EXPIRE_DATE=NULL WHERE IQC_STATUS='PENDING' AND EXPIRE_DATE IS NOT NULL`
+- post-check: PENDING 53건 중 0건. CANCELED 80건 0건, FAIL 18건 0건, PASS 276건 중 206건(유효기간 설정 품목)은 그대로
+
+### 원인 — 코드에 있었다
+
+`EXPIRE_DATE`는 IQC PASS 판정 시 계산되는 파생값이다(단건 `iqc-history.service.ts:394`, 입하단위 `:996`).
+그런데 `cancel()`의 복원 분기 셋 중 **입하단위 경로만** `expireDate: null`을 넣고 있었다.
+
+| 취소 분기 | 수정 전 | 수정 후 |
+|---|---|---|
+| 단건 (`log.matUid`) | `{ iqcStatus: 'PENDING' }` | `{ iqcStatus: 'PENDING', expireDate: null }` |
+| 입하단위 (`arrivalNo + itemCode`) | `{ iqcStatus: 'PENDING', expireDate: null }` | 변경 없음 |
+| 품목 폴백 (`itemCode`) | `{ iqcStatus: 'PENDING' }` | `{ iqcStatus: 'PENDING', expireDate: null }` |
+
+정리한 데이터가 정확히 이 경로로 재발했을 것이다.
+
+```
+의심: 판정 시 채운 파생값을 취소 경로가 되돌리지 않는다
+프로브: expireDate 참조 전수 / 판정이 만드는 다른 파생값의 역전 경로 확인
+결과: expireDate 취소 누락 2곳 → 함께 수정 (단건, 품목 폴백)
+      다른 파생값은 이미 덮여 있다 — FAIL 재고 이동은 reverseIqcFailMove가 되돌리고,
+      파괴검사 시료 자동출고는 취소 자체를 차단한다(BadRequestException)
+      FAIL 18건 / CANCELED 80건 모두 EXPIRE_DATE 0건으로 실측 확인
+```
+
+## 미확인 — 의뢰 LOT 판정 취소 경로 (REQUEST 모드 전환으로 새로 열림)
+
+코드를 읽고 추론한 것이고 **실행으로 확인하지 않았다.** 단정하지 말 것.
+
+- `createRequestLotResult`가 만드는 `IQC_LOGS`는 `MAT_UID=null`, `ARRIVAL_NO=대표 입하번호`다
+- `cancel()`은 `log.requestNo`를 보지 않고 `(arrivalNo, itemCode, iqcStatus=log.result)` 조건으로 되돌린다
+- **확인할 것 1**: 같은 `ARRIVAL_NO`의 의뢰 외 행이 **이미 PASS인 상태**에서 의뢰 판정을 취소하면 그 행까지 PENDING으로 돌아가는가. 잔여 행이 아직 PENDING이면 `iqcStatus: log.result` 조건에 안 걸리므로 무증상이다 — 그 전제가 성립하는지부터 봐야 한다
+- **확인할 것 2**: `IQC_REQUEST_LOTS.STATUS`가 `REQUESTED`로 복원되지 않아 재검사가 막히는가
+- `IQC_LOGS.REQUEST_NO` 컬럼이 생겼으므로 그것으로 정확히 분기할 수 있다
+
+검증하려면 운영 DB에서 의뢰 LOT 판정을 실제로 실행해야 한다. 이번 세션에서 같은 종류의 실행으로 47행을 되돌린 직후라 반복하지 않았다.
