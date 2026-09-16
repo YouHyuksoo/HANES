@@ -541,7 +541,8 @@
     "material.arrivalResult": "到货实绩查询",
     "material.receiveLabel": "入库标签发行",
     "quality.ncr": "不合格报告",
-    "production.labelReprint": "标签重新打印"
+    "production.labelReprint": "标签重新打印",
+    "consumables.safetyAlert": "安全库存预警"
   },
   "header": {
     "theme": "主题",
@@ -726,7 +727,9 @@
       "holdOrder": "保留工单 {{count}}件",
       "shortage": "低于安全库存 {{count}}项",
       "nearExpiry": "临期LOT {{count}}件",
-      "repairWait": "待修 {{count}}件"
+      "repairWait": "待修 {{count}}件",
+      "consumableShortage": "耗材低于安全库存 {{count}} 项",
+      "consumablePreAlert": "耗材库存预警 {{count}} 项"
     }
   },
   "inventory": {
@@ -6982,6 +6985,26 @@
       "returnTo_ACTIVE": "退回仓库（解除工序分配）",
       "returnTo_REPAIR": "维修中",
       "mountHint": "装载仅通过现场终端扫码处理"
+    },
+    "safetyAlert": {
+      "title": "耗材安全库存预警",
+      "description": "在触及安全库存前提前告警。已装机且寿命临近的数量将从可用库存中扣除。",
+      "level": "级别",
+      "levelShortage": "不足",
+      "levelPreAlert": "预警",
+      "levelNormal": "正常",
+      "levelNotManaged": "未设定",
+      "availableQty": "可用库存",
+      "wornOut": "寿命耗尽",
+      "replacingQty": "即将更换",
+      "effectiveQty": "有效可用",
+      "threshold": "预警阈值",
+      "shortageQty": "不足数量",
+      "ratioNote": "预警阈值 = 安全库存 × {{ratio}}",
+      "onlyActionNeeded": "仅需处理项",
+      "searchPlaceholder": "按耗材代码或名称搜索",
+      "empty": "没有可显示的耗材。",
+      "emptyAction": "没有不足或预警的耗材。"
     }
   },
   "outsourcing": {

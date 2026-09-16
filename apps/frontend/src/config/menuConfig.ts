@@ -304,6 +304,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "CONS_RECEIVING", labelKey: "menu.consumables.receiving", path: "/consumables/receiving" },
       { code: "CONS_ISSUING", labelKey: "menu.consumables.issuing", path: "/consumables/issuing" },
       { code: "CONS_STOCK", labelKey: "menu.consumables.stock", path: "/consumables/stock" },
+      { code: "CONS_SAFETY_ALERT", labelKey: "menu.consumables.safetyAlert", path: "/consumables/safety-alert" },
       { code: "CONS_LIFE", labelKey: "menu.consumables.life", path: "/consumables/life" },
       { code: "CONS_MOUNT", labelKey: "menu.consumables.mount", path: "/consumables/mount" },
     ],

@@ -541,7 +541,8 @@
     "material.arrivalResult": "Arrival Results",
     "material.receiveLabel": "Receiving Label",
     "quality.ncr": "Nonconformance Report",
-    "production.labelReprint": "Label Reprint"
+    "production.labelReprint": "Label Reprint",
+    "consumables.safetyAlert": "Safety Stock Pre-Alert"
   },
   "header": {
     "theme": "Theme",
@@ -726,7 +727,9 @@
       "holdOrder": "{{count}} job orders on hold",
       "shortage": "{{count}} items below safety stock",
       "nearExpiry": "{{count}} near-expiry lots",
-      "repairWait": "{{count}} repairs waiting"
+      "repairWait": "{{count}} repairs waiting",
+      "consumableShortage": "{{count}} consumables below safety stock",
+      "consumablePreAlert": "{{count}} consumables in pre-alert"
     }
   },
   "inventory": {
@@ -7000,6 +7003,26 @@
       "returnTo_ACTIVE": "Return to Warehouse (clear process)",
       "returnTo_REPAIR": "Under Repair",
       "mountHint": "Mounting is done only by barcode scan at the shop-floor kiosk"
+    },
+    "safetyAlert": {
+      "title": "Consumable Safety Stock Pre-Alert",
+      "description": "Warns before stock reaches the safety level. Mounted items near end of life are subtracted from available stock.",
+      "level": "Level",
+      "levelShortage": "Shortage",
+      "levelPreAlert": "Pre-Alert",
+      "levelNormal": "Normal",
+      "levelNotManaged": "Not Set",
+      "availableQty": "Available",
+      "wornOut": "Worn Out",
+      "replacingQty": "Replacing Soon",
+      "effectiveQty": "Effective",
+      "threshold": "Pre-Alert Threshold",
+      "shortageQty": "Shortage Qty",
+      "ratioNote": "Pre-alert threshold = safety stock × {{ratio}}",
+      "onlyActionNeeded": "Action needed only",
+      "searchPlaceholder": "Search by consumable code or name",
+      "empty": "No consumables to show.",
+      "emptyAction": "No consumables are short or in pre-alert."
     }
   },
   "outsourcing": {

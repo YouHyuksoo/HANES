@@ -68,11 +68,22 @@ export interface DashboardSummary {
 }
 
 /** 4개 API 를 합친 대시보드 원천 데이터 (실패한 API 는 null) */
+/** 소모품 안전재고 사전알림 — 판정은 서버가 @harness/shared 규칙으로 끝내서 내려준다 */
+export interface ConsumableSafetyRowLite {
+  consumableCode: string;
+  name: string;
+  level: string;
+  effectiveQty: number;
+  safetyStock: number;
+  shortageQty: number;
+}
+
 export interface DashboardData {
   summary: DashboardSummary | null;
   production: ProductionBoardData | null;
   quality: QualityBoardData | null;
   inventory: InventoryBoardData | null;
+  consumableSafety: ConsumableSafetyRowLite[] | null;
 }
 
 export type AttentionSeverity = "critical" | "high" | "medium" | "low";

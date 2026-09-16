@@ -57,6 +57,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/consumables/safety-alert": {
+      const mod = await import("./page-registries/consumables__safety-alert.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/consumables/stock": {
       const mod = await import("./page-registries/consumables__stock.generated");
       component = mod.getPageComponent();

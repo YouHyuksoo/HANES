@@ -23,7 +23,7 @@ function fromDetails(details: AttentionDetail[]) {
 
 export function buildAttention(data: DashboardData): AttentionItem[] {
   const items: AttentionItem[] = [];
-  const { summary, production, quality, inventory } = data;
+  const { summary, production, quality, inventory, consumableSafety } = data;
 
   if (summary) {
     if (summary.equip.stop > 0) {
@@ -73,6 +73,21 @@ export function buildAttention(data: DashboardData): AttentionItem[] {
     const near = inventory.expiry.filter((e) => e.daysLeft >= 0).map(lotDetail);
     if (near.length > 0) {
       items.push({ key: "nearExpiry", severity: "medium", count: near.length, ...fromDetails(near), href: "/material/shelf-life" });
+    }
+  }
+
+  // 소모품 안전재고 — 부족은 자재 부족과 같은 무게(medium), 사전경고는 그보다 낮다(low).
+  // 서버가 이미 부족/사전경고만 내려주므로 여기서 판정하지 않는다.
+  if (consumableSafety && consumableSafety.length > 0) {
+    const detail = (r: (typeof consumableSafety)[number]): AttentionDetail =>
+      ({ code: r.consumableCode, name: r.name || r.consumableCode, meta: `${r.effectiveQty.toLocaleString()} / ${r.safetyStock.toLocaleString()}` });
+    const shortage = consumableSafety.filter((r) => r.level === "SHORTAGE").map(detail);
+    if (shortage.length > 0) {
+      items.push({ key: "consumableShortage", severity: "medium", count: shortage.length, ...fromDetails(shortage), href: "/consumables/safety-alert" });
+    }
+    const preAlert = consumableSafety.filter((r) => r.level === "PRE_ALERT").map(detail);
+    if (preAlert.length > 0) {
+      items.push({ key: "consumablePreAlert", severity: "low", count: preAlert.length, ...fromDetails(preAlert), href: "/consumables/safety-alert" });
     }
   }
 

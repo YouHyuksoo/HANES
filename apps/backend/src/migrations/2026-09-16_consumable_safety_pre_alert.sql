@@ -1,0 +1,30 @@
+-- 소모품 안전재고 사전알림
+--
+-- 1) 사전경고 임계 배수 설정
+--    부족을 알린 시점에는 이미 늦어서, 안전재고에 닿기 전 여유 구간에서 미리 경고한다.
+--    판정: 실효가용 <= 안전재고 -> 부족 / <= 안전재고*배수 -> 사전경고
+--    (실효가용 = ACTIVE 가용 - 장착중 수명임박. 규칙 단일출처는 @harness/shared consumable-safety-stock-rules)
+--    1 미만 값은 사전경고가 부족보다 늦어지므로 코드에서 기본값(1.2)으로 되돌린다.
+--
+-- 2) 메뉴 등록 (CONS_SAFETY_ALERT) — 재고현황 바로 뒤
+
+MERGE INTO SYS_CONFIGS t
+USING (SELECT '40' COMPANY, '1000' PLANT_CD FROM dual) s
+   ON (t.COMPANY = s.COMPANY AND t.PLANT_CD = s.PLANT_CD AND t.CONFIG_KEY = 'CONSUMABLE_PRE_ALERT_RATIO')
+WHEN NOT MATCHED THEN
+  INSERT (CONFIG_GROUP, CONFIG_KEY, CONFIG_VALUE, CONFIG_TYPE, LABEL, SORT_ORDER, IS_ACTIVE, COMPANY, PLANT_CD, CREATED_AT, UPDATED_AT)
+  VALUES ('CONSUMABLE', 'CONSUMABLE_PRE_ALERT_RATIO', '1.2', 'NUMBER',
+          '소모품 사전경고 임계 배수 (안전재고 x 배수 이하이면 사전경고)', 10, 'Y',
+          s.COMPANY, s.PLANT_CD, SYSTIMESTAMP, SYSTIMESTAMP)
+/
+
+MERGE INTO MENU_CATEGORY_ITEMS t
+USING (SELECT 'CONS_SAFETY_ALERT' MENU_CODE, 'CONSUMABLES' CATEGORY_CODE, '40' COMPANY, '1000' PLANT_CD FROM dual) s
+   ON (t.MENU_CODE = s.MENU_CODE AND t.CATEGORY_CODE = s.CATEGORY_CODE AND t.COMPANY = s.COMPANY AND t.PLANT_CD = s.PLANT_CD)
+WHEN NOT MATCHED THEN
+  INSERT (MENU_CODE, CATEGORY_CODE, SORT_ORDER, COMPANY, PLANT_CD, CREATED_BY, UPDATED_BY, CREATED_AT, UPDATED_AT)
+  VALUES (s.MENU_CODE, s.CATEGORY_CODE, 55, s.COMPANY, s.PLANT_CD, 'system', 'system', SYSTIMESTAMP, SYSTIMESTAMP)
+/
+
+COMMIT
+/

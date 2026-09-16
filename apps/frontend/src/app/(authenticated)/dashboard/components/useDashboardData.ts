@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import api from "@/services/api";
 import { getTodayLocal } from "@/utils/date";
-import type { DashboardData, DashboardSummary, InventoryBoardData, ProductionBoardData, QualityBoardData } from "./types";
+import type { ConsumableSafetyRowLite, DashboardData, DashboardSummary, InventoryBoardData, ProductionBoardData, QualityBoardData } from "./types";
 
 const REFRESH_MS = 60_000;
 
@@ -24,7 +24,7 @@ async function fetchData<T>(url: string, params?: Record<string, string>): Promi
 }
 
 export function useDashboardData() {
-  const [data, setData] = useState<DashboardData>({ summary: null, production: null, quality: null, inventory: null });
+  const [data, setData] = useState<DashboardData>({ summary: null, production: null, quality: null, inventory: null, consumableSafety: null });
   const [loading, setLoading] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const inFlight = useRef(false);
@@ -34,17 +34,20 @@ export function useDashboardData() {
     inFlight.current = true;
     setLoading(true);
     const today = getTodayLocal();
-    const [summary, production, quality, inventory] = await Promise.allSettled([
+    const [summary, production, quality, inventory, consumableSafety] = await Promise.allSettled([
       fetchData<DashboardSummary>("/dashboard/summary", { date: today }),
       fetchData<ProductionBoardData>("/monitoring/boards/production"),
       fetchData<QualityBoardData>("/monitoring/boards/quality"),
       fetchData<InventoryBoardData>("/monitoring/boards/inventory"),
+      // 조치가 필요한 것만 받는다 — 대시보드가 전량을 들고 있을 이유가 없다
+      fetchData<ConsumableSafetyRowLite[]>("/consumables/safety-stock", { onlyActionNeeded: "Y" }),
     ]);
     setData((prev) => ({
       summary: summary.status === "fulfilled" ? summary.value : prev.summary,
       production: production.status === "fulfilled" ? production.value : prev.production,
       quality: quality.status === "fulfilled" ? quality.value : prev.quality,
       inventory: inventory.status === "fulfilled" ? inventory.value : prev.inventory,
+      consumableSafety: consumableSafety.status === "fulfilled" ? consumableSafety.value : prev.consumableSafety,
     }));
     setUpdatedAt(new Date());
     setLoading(false);

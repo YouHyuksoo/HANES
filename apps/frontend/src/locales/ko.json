@@ -541,7 +541,8 @@
     "system.improvementRequests": "개선요청 관리",
     "material.arrivalResult": "입하실적조회",
     "quality.ncr": "부적합 보고서",
-    "production.labelReprint": "라벨 재발행"
+    "production.labelReprint": "라벨 재발행",
+    "consumables.safetyAlert": "안전재고 사전알림"
   },
   "header": {
     "theme": "테마",
@@ -726,7 +727,9 @@
       "holdOrder": "보류 작업지시 {{count}}건",
       "shortage": "안전재고 미달 {{count}}품목",
       "nearExpiry": "기한임박 LOT {{count}}건",
-      "repairWait": "수리 대기 {{count}}건"
+      "repairWait": "수리 대기 {{count}}건",
+      "consumableShortage": "소모품 안전재고 미달 {{count}}품목",
+      "consumablePreAlert": "소모품 재고 사전경고 {{count}}품목"
     }
   },
   "inventory": {
@@ -7020,6 +7023,26 @@
       "returnTo_ACTIVE": "창고 반납 (공정 배정 해제)",
       "returnTo_REPAIR": "수리중 (정비 입고)",
       "mountHint": "장착은 현장 키오스크 스캔에서만 처리됩니다"
+    },
+    "safetyAlert": {
+      "title": "소모품 안전재고 사전알림",
+      "description": "안전재고에 닿기 전에 미리 알립니다. 장착중이면서 수명이 임박한 수량은 가용재고에서 뺍니다.",
+      "level": "수준",
+      "levelShortage": "부족",
+      "levelPreAlert": "사전경고",
+      "levelNormal": "정상",
+      "levelNotManaged": "미설정",
+      "availableQty": "가용재고",
+      "wornOut": "수명소진",
+      "replacingQty": "교체임박",
+      "effectiveQty": "실효가용",
+      "threshold": "사전경고 임계",
+      "shortageQty": "부족수량",
+      "ratioNote": "사전경고 임계 = 안전재고 × {{ratio}}",
+      "onlyActionNeeded": "조치 필요만",
+      "searchPlaceholder": "소모품코드 또는 소모품명 검색",
+      "empty": "표시할 소모품이 없습니다.",
+      "emptyAction": "부족하거나 사전경고 대상인 소모품이 없습니다."
     }
   },
   "outsourcing": {

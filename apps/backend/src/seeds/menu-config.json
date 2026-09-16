@@ -207,6 +207,7 @@
       "CONS_RECEIVING",
       "CONS_ISSUING",
       "CONS_STOCK",
+      "CONS_SAFETY_ALERT",
       "CONS_LIFE",
       "CONS_MOUNT"
     ],

@@ -28,3 +28,4 @@ export * from './issue-allocation-rules';
 export * from './quality-control-plan.rules';
 export * from './iqc-inspect-mode-rules';
 export * from './iqc-sample-qty-rules';
+export * from './consumable-safety-stock-rules';
