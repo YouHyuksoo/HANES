@@ -1,0 +1,89 @@
+-- 한도견본 76건 이관 · INSPECT_AIDS 홀더 전용 축소 — docs/specs/2026-09-16-limit-sample-master-design.md 4절
+-- 선행: 2026-09-16_limit_samples.sql (테이블 생성)
+-- 실행: python C:/Users/hsyou/.claude/skills/oracle-db/scripts/oracle_connector.py --site JSHANES --execute-file <this file>
+
+-- 1) LIMIT_OK/LIMIT_NG → LIMIT_SAMPLES 이관 (멱등: 이미 옮긴 코드는 건너뛴다)
+INSERT INTO LIMIT_SAMPLES (
+  COMPANY, PLANT_CD, SAMPLE_CODE, SAMPLE_TYPE, SAMPLE_NAME,
+  ITEM_CODE, PROCESS_CODE, DEFECT_CODE, INSPECT_TYPE, LOCATION,
+  VALID_FROM, VALID_TO, APPROVED_BY, APPROVED_AT, STATUS,
+  REQUIRED_YN, SORT_ORDER, REMARK, USE_YN,
+  CREATED_BY, UPDATED_BY, CREATED_AT, UPDATED_AT
+)
+SELECT a.COMPANY, a.PLANT_CD, a.AID_CODE,
+       CASE a.AID_TYPE WHEN 'LIMIT_OK' THEN 'OK' ELSE 'NG' END,
+       a.AID_NAME, a.ITEM_CODE, a.PROCESS_CODE, a.DEFECT_CODE, a.INSPECT_TYPE, a.LOCATION,
+       a.VALID_FROM, a.VALID_TO, a.APPROVED_BY, a.APPROVED_AT, a.STATUS,
+       NVL(a.REQUIRED_YN, 'Y'), NVL(a.SORT_ORDER, 0), a.REMARK, a.USE_YN,
+       a.CREATED_BY, a.UPDATED_BY, a.CREATED_AT, a.UPDATED_AT
+  FROM INSPECT_AIDS a
+ WHERE a.AID_TYPE IN ('LIMIT_OK', 'LIMIT_NG')
+   AND NOT EXISTS (
+     SELECT 1 FROM LIMIT_SAMPLES s
+      WHERE s.COMPANY = a.COMPANY AND s.PLANT_CD = a.PLANT_CD AND s.SAMPLE_CODE = a.AID_CODE
+   )
+/
+
+-- 2) 이관 건수 검증 — 남은 원본이 전부 옮겨졌는지 확인하고, 아니면 멈춘다
+DECLARE
+  remain NUMBER;
+BEGIN
+  SELECT COUNT(*) INTO remain
+    FROM INSPECT_AIDS a
+   WHERE a.AID_TYPE IN ('LIMIT_OK', 'LIMIT_NG')
+     AND NOT EXISTS (
+       SELECT 1 FROM LIMIT_SAMPLES s
+        WHERE s.COMPANY = a.COMPANY AND s.PLANT_CD = a.PLANT_CD AND s.SAMPLE_CODE = a.AID_CODE
+     );
+  IF remain > 0 THEN
+    RAISE_APPLICATION_ERROR(-20001, '이관되지 않은 한도견본이 ' || remain || '건 남아 있습니다. 원본 삭제를 중단합니다.');
+  END IF;
+END;
+/
+
+-- 3) 원본 삭제
+DELETE FROM INSPECT_AIDS WHERE AID_TYPE IN ('LIMIT_OK', 'LIMIT_NG')
+/
+
+-- 4) 검사홀더·지그 시드 — 이관 후 검사보조구 화면이 비지 않도록 본래 용도 데이터를 넣는다
+MERGE INTO INSPECT_AIDS t
+USING (
+  SELECT 'HD-CONT-001' AID_CODE, '통전검사 고정 홀더' AID_NAME, '통전검사기 커넥터를 정위치에 고정하는 홀더' REMARK, 'QC실 A-1' LOCATION FROM dual
+  UNION ALL
+  SELECT 'HD-CRIMP-001', '단자압착 검사 지그', '압착 단자 높이·폭 측정 시 시료를 고정하는 지그', 'QC실 A-2' FROM dual
+  UNION ALL
+  SELECT 'HD-VISUAL-001', '외관검사 확대경 스탠드', '외관검사용 확대경 거치 스탠드 (배율 10x)', 'QC실 B-1' FROM dual
+) s
+ON (t.AID_CODE = s.AID_CODE AND t.COMPANY = '40' AND t.PLANT_CD = '1000')
+WHEN NOT MATCHED THEN
+  INSERT (COMPANY, PLANT_CD, AID_CODE, AID_TYPE, AID_NAME, LOCATION, VALID_FROM,
+          STATUS, REMARK, USE_YN, CREATED_BY, UPDATED_BY, CREATED_AT, UPDATED_AT)
+  VALUES ('40', '1000', s.AID_CODE, 'HOLDER', s.AID_NAME, s.LOCATION, TRUNC(SYSDATE),
+          'ACTIVE', s.REMARK, 'Y', 'claude', 'claude', SYSTIMESTAMP, SYSTIMESTAMP)
+/
+
+-- 5) 한도견본 전용 컬럼 DROP (이관 후 전량 NULL/무의미)
+DECLARE
+  n NUMBER;
+BEGIN
+  SELECT COUNT(*) INTO n FROM USER_TAB_COLUMNS
+   WHERE TABLE_NAME = 'INSPECT_AIDS' AND COLUMN_NAME = 'DEFECT_CODE';
+  IF n > 0 THEN
+    EXECUTE IMMEDIATE 'ALTER TABLE INSPECT_AIDS DROP (DEFECT_CODE, INSPECT_TYPE, REQUIRED_YN, SORT_ORDER)';
+  END IF;
+END;
+/
+
+-- 6) 한도견본 유형 공통코드 비활성 (INSPECT_AIDS는 이제 HOLDER 전용)
+UPDATE COM_CODES SET USE_YN = 'N'
+ WHERE GROUP_CODE = 'INSPECT_AID_TYPE' AND DETAIL_CODE IN ('LIMIT_OK', 'LIMIT_NG')
+/
+
+-- 7) 테이블 코멘트 정정
+COMMENT ON TABLE INSPECT_AIDS IS '검사보조구 마스터 (검사홀더·지그) — 유효기간·승인·사진 관리. 양품/불량 한도견본은 LIMIT_SAMPLES로 분리됨'
+/
+COMMENT ON COLUMN INSPECT_AIDS.AID_TYPE IS '보조구 유형 (COM_CODES INSPECT_AID_TYPE: HOLDER 검사홀더·지그)'
+/
+
+COMMIT
+/
