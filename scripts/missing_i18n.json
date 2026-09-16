@@ -67,6 +67,34 @@
     "fallback": "AQL 기준관리에서 먼저 등록하세요",
     "file": "app/(authenticated)/master/iqc-item/components/IqcSpecPanel.tsx"
   },
+  "master.iqcPartSpec.ungrouped": {
+    "fallback": "미지정",
+    "file": "app/(authenticated)/master/iqc-item/components/ItemListPanel.tsx"
+  },
+  "master.iqcPartSpec.loadFailed": {
+    "fallback": "품목별 IQC 목록을 불러오지 못했습니다.",
+    "file": "app/(authenticated)/master/iqc-part-spec/page.tsx"
+  },
+  "master.iqcPartSpec.partSearch": {
+    "fallback": "품목그룹, 품목코드 검색...",
+    "file": "app/(authenticated)/master/iqc-part-spec/page.tsx"
+  },
+  "master.iqcPartSpec.hasItems": {
+    "fallback": "IQC 검사항목 유무",
+    "file": "app/(authenticated)/master/iqc-part-spec/page.tsx"
+  },
+  "master.iqcPartSpec.itemsAll": {
+    "fallback": "검사항목: 전체",
+    "file": "app/(authenticated)/master/iqc-part-spec/page.tsx"
+  },
+  "master.iqcPartSpec.itemsYes": {
+    "fallback": "검사항목: 있음",
+    "file": "app/(authenticated)/master/iqc-part-spec/page.tsx"
+  },
+  "master.iqcPartSpec.itemsNo": {
+    "fallback": "검사항목: 없음",
+    "file": "app/(authenticated)/master/iqc-part-spec/page.tsx"
+  },
   "master.label.noSourceField": {
     "fallback": "고정값 사용",
     "file": "app/(authenticated)/master/label/components/LabelObjectDesigner.tsx"
@@ -115,6 +143,66 @@
     "fallback": "외주처",
     "file": "app/(authenticated)/master/routing/components/RoutingGroupManager.tsx"
   },
+  "inventory.warehouse.useFilter": {
+    "fallback": "창고 사용여부",
+    "file": "app/(authenticated)/master/warehouse/page.tsx"
+  },
+  "common.processName": {
+    "fallback": "공정명",
+    "file": "app/(authenticated)/master/work-instruction/workInstructionColumns.tsx"
+  },
+  "material.disabledHelp.adjustSaving": {
+    "fallback": "재고조정을 저장하고 있습니다.",
+    "file": "app/(authenticated)/material/adjustment/page.tsx"
+  },
+  "material.disabledHelp.adjustRequired": {
+    "fallback": "창고와 품목을 선택하고 조정 후 수량과 조정 사유를 입력하세요.",
+    "file": "app/(authenticated)/material/adjustment/page.tsx"
+  },
+  "material.disabledHelp.arrivalCancelBusy": {
+    "fallback": "입하취소를 처리하고 있습니다.",
+    "file": "app/(authenticated)/material/arrival/components/ArrivalCancelModal.tsx"
+  },
+  "material.disabledHelp.cancelReason": {
+    "fallback": "취소 사유를 입력하세요.",
+    "file": "app/(authenticated)/material/arrival/components/ArrivalCancelModal.tsx"
+  },
+  "material.disabledHelp.arrivalSaving": {
+    "fallback": "입하를 저장하고 있습니다.",
+    "file": "app/(authenticated)/material/arrival/components/ManualArrivalModal.tsx"
+  },
+  "material.disabledHelp.arrivalRequired": {
+    "fallback": "품목과 입하창고를 선택하고 입하수량을 0보다 크게 입력하세요.",
+    "file": "app/(authenticated)/material/arrival/components/ManualArrivalModal.tsx"
+  },
+  "material.disabledHelp.poClosed": {
+    "fallback": "마감된 PO 라인은 입하할 수 없습니다.",
+    "file": "app/(authenticated)/material/arrival/components/PoLineGrid.tsx"
+  },
+  "material.disabledHelp.poNoRemaining": {
+    "fallback": "PO 라인의 입하 잔량이 0이어서 추가 입하할 수 없습니다.",
+    "file": "app/(authenticated)/material/arrival/components/PoLineGrid.tsx"
+  },
+  "material.disabledHelp.selectPoLine": {
+    "fallback": "입하할 PO 라인을 선택하세요.",
+    "file": "app/(authenticated)/material/arrival/components/PoLineReceiptModal.tsx"
+  },
+  "material.disabledHelp.arrivalQty": {
+    "fallback": "입하수량은 0보다 크고 PO 라인 잔량 이하여야 합니다.",
+    "file": "app/(authenticated)/material/arrival/components/PoLineReceiptModal.tsx"
+  },
+  "material.disabledHelp.manufacturer": {
+    "fallback": "제조사를 선택하세요.",
+    "file": "app/(authenticated)/material/arrival/components/PoLineReceiptModal.tsx"
+  },
+  "material.disabledHelp.arrivalWarehouse": {
+    "fallback": "입하창고를 선택하세요.",
+    "file": "app/(authenticated)/material/arrival/components/PoLineReceiptModal.tsx"
+  },
+  "material.disabledHelp.arrivalDate": {
+    "fallback": "입하일은 오늘 이후로 지정할 수 없습니다.",
+    "file": "app/(authenticated)/material/arrival/components/PoLineReceiptModal.tsx"
+  },
   "material.concession.specialAcceptWorker": {
     "fallback": "특채처리자",
     "file": "app/(authenticated)/material/concession/concessionColumns.tsx"
@@ -139,9 +227,109 @@
     "fallback": "작업자 선택",
     "file": "app/(authenticated)/material/concession/page.tsx"
   },
+  "material.disabledHelp.workerLoading": {
+    "fallback": "작업자를 조회하고 있습니다.",
+    "file": "app/(authenticated)/material/concession/page.tsx"
+  },
+  "material.disabledHelp.workerQr": {
+    "fallback": "특채 처리자의 작업자 QR을 입력하거나 스캔하세요.",
+    "file": "app/(authenticated)/material/concession/page.tsx"
+  },
   "material.concession.selectedWorker": {
     "fallback": "선택된 작업자",
     "file": "app/(authenticated)/material/concession/page.tsx"
+  },
+  "material.disabledHelp.concessionSaving": {
+    "fallback": "특채 처리를 저장하고 있습니다.",
+    "file": "app/(authenticated)/material/concession/page.tsx"
+  },
+  "material.disabledHelp.concessionWorker": {
+    "fallback": "특채 처리자를 작업자 QR로 조회하여 지정하세요.",
+    "file": "app/(authenticated)/material/concession/page.tsx"
+  },
+  "common.actionProcessingHelp": {
+    "fallback": "처리 중입니다. 완료될 때까지 기다려 주세요.",
+    "file": "app/(authenticated)/material/iqc-defect-receive/page.tsx"
+  },
+  "material.disabledHelp.iqcCancelBusy": {
+    "fallback": "검사취소를 처리하고 있습니다.",
+    "file": "app/(authenticated)/material/iqc-history/page.tsx"
+  },
+  "material.disabledHelp.stockScanning": {
+    "fallback": "스캔한 자재 정보를 조회하고 있습니다.",
+    "file": "app/(authenticated)/material/issue/components/IssueScanPanel.tsx"
+  },
+  "material.disabledHelp.scanBarcode": {
+    "fallback": "자재 바코드를 입력하거나 스캔하세요.",
+    "file": "app/(authenticated)/material/issue/components/IssueScanPanel.tsx"
+  },
+  "material.disabledHelp.selectProcess": {
+    "fallback": "출고 대상 공정을 선택하세요.",
+    "file": "app/(authenticated)/material/issue/components/IssueScanPanel.tsx"
+  },
+  "material.disabledHelp.mergeDuplicate": {
+    "fallback": "이미 병합 대상 목록에 추가한 LOT입니다.",
+    "file": "app/(authenticated)/material/lot-merge/lotMergeColumns.tsx"
+  },
+  "material.disabledHelp.scanMerge": {
+    "fallback": "병합할 자재시리얼을 입력하거나 스캔하세요.",
+    "file": "app/(authenticated)/material/lot-merge/page.tsx"
+  },
+  "material.disabledHelp.mergeCount": {
+    "fallback": "병합할 LOT을 두 개 이상 추가하세요.",
+    "file": "app/(authenticated)/material/lot-merge/page.tsx"
+  },
+  "material.disabledHelp.splitSaving": {
+    "fallback": "LOT 분할을 처리하고 있습니다.",
+    "file": "app/(authenticated)/material/lot-split/page.tsx"
+  },
+  "material.disabledHelp.splitQty": {
+    "fallback": "분할수량은 0보다 크고 선택한 LOT의 현재수량보다 작아야 합니다.",
+    "file": "app/(authenticated)/material/lot-split/page.tsx"
+  },
+  "material.disabledHelp.receiveSaving": {
+    "fallback": "자재 입고를 처리하고 있습니다.",
+    "file": "app/(authenticated)/material/misc-receipt/components/MiscReceiptRegisterPanel.tsx"
+  },
+  "material.disabledHelp.miscRequired": {
+    "fallback": "입고창고와 품목을 선택하고 입고수량을 0보다 크게 입력하세요.",
+    "file": "app/(authenticated)/material/misc-receipt/components/MiscReceiptRegisterPanel.tsx"
+  },
+  "material.disabledHelp.countedRows": {
+    "fallback": "실사수량을 입력한 품목이 있어야 재고에 반영할 수 있습니다.",
+    "file": "app/(authenticated)/material/physical-inv/page.tsx"
+  },
+  "material.disabledHelp.poSaving": {
+    "fallback": "발주를 저장하고 있습니다.",
+    "file": "app/(authenticated)/material/po/components/PoFormPanel.tsx"
+  },
+  "material.disabledHelp.poNo": {
+    "fallback": "발주번호를 입력하세요.",
+    "file": "app/(authenticated)/material/po/components/PoFormPanel.tsx"
+  },
+  "material.disabledHelp.poPartner": {
+    "fallback": "발주 거래처를 선택하세요.",
+    "file": "app/(authenticated)/material/po/components/PoFormPanel.tsx"
+  },
+  "material.disabledHelp.poItems": {
+    "fallback": "발주 품목을 한 건 이상 추가하세요.",
+    "file": "app/(authenticated)/material/po/components/PoFormPanel.tsx"
+  },
+  "material.disabledHelp.poQty": {
+    "fallback": "모든 발주 품목의 수량을 1 이상의 정수로 입력하세요.",
+    "file": "app/(authenticated)/material/po/components/PoFormPanel.tsx"
+  },
+  "material.disabledHelp.receiveCancelBusy": {
+    "fallback": "입고취소를 처리하고 있습니다.",
+    "file": "app/(authenticated)/material/receipt-cancel/page.tsx"
+  },
+  "material.disabledHelp.receiveWarehouse": {
+    "fallback": "자재를 입고할 창고를 선택하세요.",
+    "file": "app/(authenticated)/material/receive/components/ReceiveScanModal.tsx"
+  },
+  "material.disabledHelp.scanPair": {
+    "fallback": "거래처 바코드와 자재시리얼을 짝으로 스캔하여 입고 목록에 추가하세요.",
+    "file": "app/(authenticated)/material/receive/components/ReceiveScanModal.tsx"
   },
   "material.receiveHistory.concessionYn": {
     "fallback": "특채여부",
@@ -155,13 +343,81 @@
     "fallback": "일반",
     "file": "app/(authenticated)/material/receive/components/ReceivingHistoryTable.tsx"
   },
-  "material.request.status.partial": {
-    "fallback": "부분출고",
-    "file": "app/(authenticated)/material/request-other/page.tsx"
+  "material.disabledHelp.printing": {
+    "fallback": "라벨을 출력하고 있습니다.",
+    "file": "app/(authenticated)/material/receive-label/components/PrintActionBar.tsx"
+  },
+  "material.disabledHelp.selectLabels": {
+    "fallback": "출력할 자재 라벨을 선택하세요.",
+    "file": "app/(authenticated)/material/receive-label/components/PrintActionBar.tsx"
+  },
+  "material.disabledHelp.printAgent": {
+    "fallback": "ZPL USB 인쇄를 위해 프린트 에이전트를 연결하세요.",
+    "file": "app/(authenticated)/material/receive-label/components/PrintActionBar.tsx"
+  },
+  "material.disabledHelp.printer": {
+    "fallback": "라벨 프린터를 선택하세요.",
+    "file": "app/(authenticated)/material/receive-label/components/PrintActionBar.tsx"
+  },
+  "material.disabledHelp.requestSaving": {
+    "fallback": "출고요청을 저장하고 있습니다.",
+    "file": "app/(authenticated)/material/request-other/components/OtherIssueRequestDetailPanel.tsx"
+  },
+  "material.disabledHelp.requestQty": {
+    "fallback": "요청 품목을 추가하고 모든 품목의 요청수량을 0보다 크게 입력하세요.",
+    "file": "app/(authenticated)/material/request-other/components/OtherIssueRequestDetailPanel.tsx"
   },
   "material.request.searchRequestPlaceholder": {
     "fallback": "요청번호 / 품목 / 비고 검색",
     "file": "app/(authenticated)/material/request-other/page.tsx"
+  },
+  "material.disabledHelp.scrapSaving": {
+    "fallback": "폐기요청을 저장하고 있습니다.",
+    "file": "app/(authenticated)/material/scrap/components/ScrapRegisterModal.tsx"
+  },
+  "material.disabledHelp.scrapStock": {
+    "fallback": "폐기할 재고를 선택하세요.",
+    "file": "app/(authenticated)/material/scrap/components/ScrapRegisterModal.tsx"
+  },
+  "material.disabledHelp.scrapReason": {
+    "fallback": "폐기 사유를 선택하세요.",
+    "file": "app/(authenticated)/material/scrap/components/ScrapRegisterModal.tsx"
+  },
+  "material.disabledHelp.scrapQty": {
+    "fallback": "폐기수량은 0보다 크고 가용수량 이하여야 합니다.",
+    "file": "app/(authenticated)/material/scrap/components/ScrapRegisterModal.tsx"
+  },
+  "material.disabledHelp.scrapScan": {
+    "fallback": "폐기할 자재를 스캔하세요.",
+    "file": "app/(authenticated)/material/scrap/components/ScrapRegisterPanel.tsx"
+  },
+  "material.disabledHelp.inspectionLoading": {
+    "fallback": "검사항목을 불러오고 있습니다.",
+    "file": "app/(authenticated)/material/shelf-life-reinspect/components/ReinspectModal.tsx"
+  },
+  "material.disabledHelp.inspectionSaving": {
+    "fallback": "검사결과를 저장하고 있습니다.",
+    "file": "app/(authenticated)/material/shelf-life-reinspect/components/ReinspectModal.tsx"
+  },
+  "material.disabledHelp.inspectionResult": {
+    "fallback": "검사 판정을 입력하세요.",
+    "file": "app/(authenticated)/material/shelf-life-reinspect/components/ReinspectModal.tsx"
+  },
+  "material.disabledHelp.transferSaving": {
+    "fallback": "창고 이동을 처리하고 있습니다.",
+    "file": "app/(authenticated)/material/stock-transfer/components/StockTransferPanel.tsx"
+  },
+  "material.disabledHelp.scanStock": {
+    "fallback": "이동할 자재를 스캔하세요.",
+    "file": "app/(authenticated)/material/stock-transfer/components/StockTransferPanel.tsx"
+  },
+  "material.disabledHelp.destinationWarehouse": {
+    "fallback": "이동할 목적지 창고를 선택하세요.",
+    "file": "app/(authenticated)/material/stock-transfer/components/StockTransferPanel.tsx"
+  },
+  "material.disabledHelp.transferQty": {
+    "fallback": "이동수량은 0보다 크고 가용수량 이하여야 합니다.",
+    "file": "app/(authenticated)/material/stock-transfer/components/StockTransferPanel.tsx"
   },
   "productMgmt.defectTransfer.targetTitle": {
     "fallback": "입고 대상 불량 재고",
@@ -174,6 +430,38 @@
   "productMgmt.defectTransfer.historyTitle": {
     "fallback": "불량창고 입고 이력",
     "file": "app/(authenticated)/product/defect-transfer/page.tsx"
+  },
+  "common.disabled.processing": {
+    "fallback": "처리 중입니다. 완료될 때까지 기다려 주세요.",
+    "file": "app/(authenticated)/product/defect-transfer/page.tsx"
+  },
+  "common.disabled.qtyPositive": {
+    "fallback": "수량을 1 이상 입력하세요.",
+    "file": "app/(authenticated)/product/defect-transfer/page.tsx"
+  },
+  "product.defectTransfer.exceedsAvailable": {
+    "fallback": "가용수량을 초과했습니다. 수량을 줄여 주세요.",
+    "file": "app/(authenticated)/product/defect-transfer/page.tsx"
+  },
+  "common.disabled.cancelReason": {
+    "fallback": "취소 사유를 입력하세요.",
+    "file": "app/(authenticated)/product/defect-transfer/page.tsx"
+  },
+  "product.defectTransfer.noAvailable": {
+    "fallback": "불량 입고할 가용수량이 없습니다. 재고와 예약수량을 확인하세요.",
+    "file": "app/(authenticated)/product/defect-transfer/productDefectTransferColumns.tsx"
+  },
+  "common.disabled.item": {
+    "fallback": "품목을 선택하세요.",
+    "file": "app/(authenticated)/product/issue/components/IssueFormPanel.tsx"
+  },
+  "common.disabled.warehouse": {
+    "fallback": "출고 창고를 선택하세요.",
+    "file": "app/(authenticated)/product/issue/components/IssueFormPanel.tsx"
+  },
+  "common.disabled.issueType": {
+    "fallback": "출고계정을 선택하세요.",
+    "file": "app/(authenticated)/product/issue/components/IssueFormPanel.tsx"
   },
   "productMgmt.issue.col.toWarehouse": {
     "fallback": "도착창고",
@@ -190,6 +478,18 @@
   "productMgmt.issue.goodStock": {
     "fallback": "양품",
     "file": "app/(authenticated)/product/issue/productIssueColumns.tsx"
+  },
+  "product.receive.selectFirst": {
+    "fallback": "입고할 제품을 선택하세요.",
+    "file": "app/(authenticated)/product/receive/components/ReceivablePanel.tsx"
+  },
+  "product.receive.warehouseFirst": {
+    "fallback": "입고 창고를 선택하세요.",
+    "file": "app/(authenticated)/product/receive/components/ReceivablePanel.tsx"
+  },
+  "production.inputAssembly.sgNotReadyHelp": {
+    "fallback": "필요한 반제품을 스캔하고 잔량을 확인하세요.",
+    "file": "app/(authenticated)/production/input-assembly/components/AssemblyActionBar.tsx"
   },
   "production.equipMaterial.expectedBom": {
     "fallback": "작업지시 BOM 장착 품목",
@@ -218,6 +518,22 @@
   "production.subprocess.clearOrderFailed": {
     "fallback": "설비 현재 작업지시 해제에 실패했습니다.",
     "file": "app/(authenticated)/production/input-assembly/page.tsx"
+  },
+  "production.inputAssembly.finishIssuedHelp": {
+    "fallback": "발행된 FG 라벨을 스캔하여 확정하거나 발행을 취소하세요.",
+    "file": "app/(authenticated)/production/input-assembly/page.tsx"
+  },
+  "kiosk.equip.useFilter": {
+    "fallback": "사용여부",
+    "file": "app/(authenticated)/production/input-kiosk/components/EquipSelectModal.tsx"
+  },
+  "common.used": {
+    "fallback": "사용",
+    "file": "app/(authenticated)/production/input-kiosk/components/EquipSelectModal.tsx"
+  },
+  "kiosk.equip.unusedHint": {
+    "fallback": "미사용 설비는 생산입력에 선택할 수 없습니다.",
+    "file": "app/(authenticated)/production/input-kiosk/components/EquipSelectModal.tsx"
   },
   "kiosk.material.waitingPickHint": {
     "fallback": "미장착 품목의 LOT를 선택하면 스캔과 동일하게 장착합니다.",
@@ -335,10 +651,6 @@
     "fallback": "지정",
     "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
   },
-  "production.order.equipUnassigned": {
-    "fallback": "미지정",
-    "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
-  },
   "production.order.unassignedEquipNotice": {
     "fallback": "설비 미지정 공정도 저장할 수 있으며, 생성 후 작업지시 수정에서 설비를 배정할 수 있습니다.",
     "file": "app/(authenticated)/production/order/components/JobOrderCreateModal.tsx"
@@ -353,6 +665,26 @@
   },
   "production.order.toolView": {
     "fallback": "도구보기",
+    "file": "app/(authenticated)/production/order/page.tsx"
+  },
+  "production.order.help.canStart": {
+    "fallback": "대기 상태의 작업지시만 시작할 수 있습니다.",
+    "file": "app/(authenticated)/production/order/page.tsx"
+  },
+  "production.order.help.canComplete": {
+    "fallback": "진행 중인 작업지시만 완료할 수 있습니다.",
+    "file": "app/(authenticated)/production/order/page.tsx"
+  },
+  "production.order.help.canHold": {
+    "fallback": "대기 또는 진행 중인 작업지시만 보류할 수 있습니다.",
+    "file": "app/(authenticated)/production/order/page.tsx"
+  },
+  "production.order.help.canHoldRelease": {
+    "fallback": "보류 상태의 작업지시만 보류 해제할 수 있습니다.",
+    "file": "app/(authenticated)/production/order/page.tsx"
+  },
+  "production.order.help.canCancel": {
+    "fallback": "대기 또는 보류 상태의 작업지시만 취소할 수 있습니다.",
     "file": "app/(authenticated)/production/order/page.tsx"
   },
   "common.partType": {
@@ -378,10 +710,6 @@
   "production.order.orderKindItem": {
     "fallback": "품목",
     "file": "app/(authenticated)/production/order/productionOrderColumns.tsx"
-  },
-  "production.result.equipAll": {
-    "fallback": "전체 설비",
-    "file": "app/(authenticated)/production/result/page.tsx"
   },
   "production.result.productionType": {
     "fallback": "생산유형",
@@ -447,6 +775,26 @@
     "fallback": "Code Letter와 AQL 값의 교차점으로 표준 샘플수량, Ac, Re를 결정합니다. 화살표는 Sample Code Letter로 저장합니다.",
     "file": "app/(authenticated)/quality/aql/page.tsx"
   },
+  "common.disabled.title": {
+    "fallback": "제목을 입력하세요.",
+    "file": "app/(authenticated)/quality/capa/components/CapaFormPanel.tsx"
+  },
+  "quality.disabled.capaType": {
+    "fallback": "시정조치 유형을 선택하세요.",
+    "file": "app/(authenticated)/quality/capa/components/CapaFormPanel.tsx"
+  },
+  "quality.disabled.changeType": {
+    "fallback": "변경 유형을 선택하세요.",
+    "file": "app/(authenticated)/quality/change-control/components/ChangeFormPanel.tsx"
+  },
+  "quality.disabled.productScan": {
+    "fallback": "불량 대상 바코드를 스캔하거나 입력하세요.",
+    "file": "app/(authenticated)/quality/defect/components/DefectFormPanel.tsx"
+  },
+  "quality.disabled.defectCode": {
+    "fallback": "불량코드를 선택하세요.",
+    "file": "app/(authenticated)/quality/defect/components/DefectFormPanel.tsx"
+  },
   "quality.defect.cancelRegistration": {
     "fallback": "등록취소",
     "file": "app/(authenticated)/quality/defect/defectColumns.tsx"
@@ -462,6 +810,82 @@
   "quality.defect.confirmDelete": {
     "fallback": "등록 취소 확인",
     "file": "app/(authenticated)/quality/defect/page.tsx"
+  },
+  "quality.disabled.sampleQty": {
+    "fallback": "샘플 수량을 입력하세요.",
+    "file": "app/(authenticated)/quality/fai/components/FaiFormPanel.tsx"
+  },
+  "quality.disabled.alreadyInspected": {
+    "fallback": "이미 검사한 제품입니다. 다음 검사 대상을 스캔하거나 목록에서 선택하세요.",
+    "file": "app/(authenticated)/quality/inspect/components/VisualInspectPanel.tsx"
+  },
+  "quality.disabled.inspectTarget": {
+    "fallback": "검사할 제품을 스캔하거나 대기 목록에서 선택하세요.",
+    "file": "app/(authenticated)/quality/inspect/components/VisualInspectPanel.tsx"
+  },
+  "quality.disabled.noPending": {
+    "fallback": "선택한 조건에 검사 대기 제품이 없습니다.",
+    "file": "app/(authenticated)/quality/inspect/components/VisualInspectPanel.tsx"
+  },
+  "quality.disabled.noSelection": {
+    "fallback": "선택한 검사 대상이 없습니다.",
+    "file": "app/(authenticated)/quality/inspect/components/VisualInspectPanel.tsx"
+  },
+  "master.inspectItemSpec.subtitle": {
+    "fallback": "품목별 리크(Air Leak)·내전압·체결 토크 합격 기준. 통합검사에서 실측값과 대조합니다.",
+    "file": "app/(authenticated)/quality/inspect-measurement-spec/page.tsx"
+  },
+  "material.arrival.invoiceNo": {
+    "fallback": "인보이스",
+    "file": "app/(authenticated)/quality/iqc-request-lot/page.tsx"
+  },
+  "quality.disabled.calibrationDate": {
+    "fallback": "교정일을 입력하세요.",
+    "file": "app/(authenticated)/quality/msa/components/CalibrationList.tsx"
+  },
+  "quality.disabled.calibrationResult": {
+    "fallback": "교정 결과를 선택하세요.",
+    "file": "app/(authenticated)/quality/msa/components/CalibrationList.tsx"
+  },
+  "quality.disabled.gaugeCode": {
+    "fallback": "계측기 코드를 입력하세요.",
+    "file": "app/(authenticated)/quality/msa/components/GaugeFormPanel.tsx"
+  },
+  "quality.disabled.gaugeName": {
+    "fallback": "계측기명을 입력하세요.",
+    "file": "app/(authenticated)/quality/msa/components/GaugeFormPanel.tsx"
+  },
+  "quality.oqc.selectBoxesFirst": {
+    "fallback": "출하검사를 의뢰할 박스를 선택하세요.",
+    "file": "app/(authenticated)/quality/oqc/components/OqcRequestModal.tsx"
+  },
+  "quality.disabled.ppapReason": {
+    "fallback": "제출 사유를 선택하세요.",
+    "file": "app/(authenticated)/quality/ppap/components/PpapFormPanel.tsx"
+  },
+  "quality.disabled.rejectReason": {
+    "fallback": "반려 사유를 입력하세요.",
+    "file": "app/(authenticated)/quality/rework/components/ReworkApprovePanel.tsx"
+  },
+  "quality.disabled.reworkQty": {
+    "fallback": "재작업 수량을 입력하세요.",
+    "file": "app/(authenticated)/quality/rework/components/ReworkFormPanel.tsx"
+  },
+  "quality.disabled.worker": {
+    "fallback": "작업자를 선택하세요.",
+    "file": "app/(authenticated)/quality/rework/components/ReworkResultPanel.tsx"
+  },
+  "quality.disabled.resultQty": {
+    "fallback": "실적수량을 입력하세요.",
+    "file": "app/(authenticated)/quality/rework/components/ReworkResultPanel.tsx"
+  },
+  "quality.disabled.workDetail": {
+    "fallback": "작업 내용을 입력하세요.",
+    "file": "app/(authenticated)/quality/rework/components/ReworkResultPanel.tsx"
+  },
+  "quality.disabled.inspector": {
+    "fallback": "검사자를 선택하세요.",
+    "file": "app/(authenticated)/quality/rework/page.tsx"
   },
   "quality.trace.life": {
     "fallback": "수명",
@@ -551,6 +975,10 @@
     "fallback": "감수하고 조회",
     "file": "app/(authenticated)/quality/trace/page.tsx"
   },
+  "shipping.disabled.selectOrder": {
+    "fallback": "출하할 작업의 출하지시를 선택하세요.",
+    "file": "app/(authenticated)/shipping/confirm/page.tsx"
+  },
   "shipping.history.boxShipped": {
     "fallback": "박스 단건 출하",
     "file": "app/(authenticated)/shipping/history/page.tsx"
@@ -571,21 +999,69 @@
     "fallback": "확정취소에 실패했습니다.",
     "file": "app/(authenticated)/shipping/order/page.tsx"
   },
+  "shipping.disabled.confirmDraft": {
+    "fallback": "작성 상태의 출하지시만 확정할 수 있습니다.",
+    "file": "app/(authenticated)/shipping/order/page.tsx"
+  },
+  "shipping.disabled.orderItems": {
+    "fallback": "출하 품목을 먼저 추가하세요.",
+    "file": "app/(authenticated)/shipping/order/page.tsx"
+  },
   "shipping.shipOrder.confirm": {
     "fallback": "확정",
+    "file": "app/(authenticated)/shipping/order/page.tsx"
+  },
+  "shipping.disabled.unconfirmConfirmed": {
+    "fallback": "확정 상태의 출하지시만 확정취소할 수 있습니다.",
     "file": "app/(authenticated)/shipping/order/page.tsx"
   },
   "shipping.shipOrder.unconfirmOrder": {
     "fallback": "확정취소",
     "file": "app/(authenticated)/shipping/order/page.tsx"
   },
+  "shipping.disabled.draftOnly": {
+    "fallback": "작성 상태에서만 처리할 수 있습니다. 출하지시 상태를 확인하세요.",
+    "file": "app/(authenticated)/shipping/order/page.tsx"
+  },
+  "shipping.disabled.orderSave": {
+    "fallback": "출하예정일과 1개 이상의 품목을 입력하고, 모든 발주수량을 양의 정수로 입력하세요.",
+    "file": "app/(authenticated)/shipping/order/page.tsx"
+  },
   "shipping.shipOrder.saveAndConfirm": {
     "fallback": "저장 후 확정",
+    "file": "app/(authenticated)/shipping/order/page.tsx"
+  },
+  "shipping.disabled.orderReadonly": {
+    "fallback": "작성 상태만 수정할 수 있습니다. 확정 상태라면 확정취소 후 수정하세요.",
     "file": "app/(authenticated)/shipping/order/page.tsx"
   },
   "shipping.shipOrder.unconfirmOrderMessage": {
     "fallback": "출하지시 확정을 취소하고 작성중(DRAFT) 상태로 되돌리시겠습니까? 출하수량 또는 배정된 박스/팔레트가 있으면 처리되지 않습니다.",
     "file": "app/(authenticated)/shipping/order/page.tsx"
+  },
+  "shipping.disabled.selectBox": {
+    "fallback": "박스를 먼저 선택하세요.",
+    "file": "app/(authenticated)/shipping/pack/page.tsx"
+  },
+  "shipping.disabled.openBox": {
+    "fallback": "열린 박스만 처리할 수 있습니다. 박스 상태를 확인하세요.",
+    "file": "app/(authenticated)/shipping/pack/page.tsx"
+  },
+  "shipping.disabled.palletAssigned": {
+    "fallback": "팔레트에 적재된 박스입니다. 팔레트에서 먼저 해제하세요.",
+    "file": "app/(authenticated)/shipping/pack/page.tsx"
+  },
+  "shipping.disabled.closedBox": {
+    "fallback": "닫힌 박스만 다시 열 수 있습니다.",
+    "file": "app/(authenticated)/shipping/pack/page.tsx"
+  },
+  "shipping.disabled.emptyLabel": {
+    "fallback": "제품이 담긴 박스만 라벨을 재발행할 수 있습니다.",
+    "file": "app/(authenticated)/shipping/pack/page.tsx"
+  },
+  "shipping.disabled.deleteEmptyBox": {
+    "fallback": "열린 빈 박스만 삭제할 수 있습니다. 담긴 제품·팔레트 배정·OQC 상태를 확인하세요.",
+    "file": "app/(authenticated)/shipping/pack/page.tsx"
   },
   "shipping.pack.waitingDesc": {
     "fallback": "검사 합격 후 미배정 FG 시리얼",
@@ -594,6 +1070,22 @@
   "common.countUnit": {
     "fallback": "건",
     "file": "app/(authenticated)/shipping/pack/page.tsx"
+  },
+  "shipping.disabled.boxLimit": {
+    "fallback": "박스 포장수량 한도에 도달했습니다. 다른 박스를 사용하세요.",
+    "file": "app/(authenticated)/shipping/pack/page.tsx"
+  },
+  "shipping.disabled.serial": {
+    "fallback": "담을 제품 바코드를 스캔하세요.",
+    "file": "app/(authenticated)/shipping/pack/page.tsx"
+  },
+  "shipping.disabled.emptyBox": {
+    "fallback": "박스에 제품을 먼저 담으세요.",
+    "file": "app/(authenticated)/shipping/pack/page.tsx"
+  },
+  "shipping.disabled.selectPallet": {
+    "fallback": "라벨을 출력할 팔레트를 선택하세요.",
+    "file": "app/(authenticated)/shipping/pallet/components/PalletLabelModal.tsx"
   },
   "shipping.pallet.shipOrderNotWaiting": {
     "fallback": "팔레트 생성 대기중인 출하지시가 아닙니다.",
@@ -627,12 +1119,36 @@
     "fallback": "스캔 후 Enter를 누르면 대기 목록과 대조합니다.",
     "file": "app/(authenticated)/shipping/pallet/page.tsx"
   },
+  "shipping.disabled.orderScan": {
+    "fallback": "출하지시를 선택하거나 바코드를 스캔하세요.",
+    "file": "app/(authenticated)/shipping/pallet/page.tsx"
+  },
+  "shipping.disabled.selectBoxes": {
+    "fallback": "팔레트에 적재할 박스를 선택하세요.",
+    "file": "app/(authenticated)/shipping/pallet/page.tsx"
+  },
   "shipping.pallet.deleteEmptyPalletMessage": {
     "fallback": "빈 팔레트를 삭제하시겠습니까?",
     "file": "app/(authenticated)/shipping/pallet/page.tsx"
   },
+  "shipping.disabled.openPallet": {
+    "fallback": "열린 팔레트만 처리할 수 있습니다. 팔레트 상태를 확인하세요.",
+    "file": "app/(authenticated)/shipping/pallet/palletColumns.tsx"
+  },
+  "shipping.disabled.palletOrder": {
+    "fallback": "출하지시가 연결된 팔레트만 처리할 수 있습니다.",
+    "file": "app/(authenticated)/shipping/pallet/palletColumns.tsx"
+  },
+  "shipping.disabled.closedPallet": {
+    "fallback": "닫힌 팔레트만 다시 열 수 있습니다.",
+    "file": "app/(authenticated)/shipping/pallet/palletColumns.tsx"
+  },
   "shipping.pallet.deleteEmptyPallet": {
     "fallback": "빈 팔레트 삭제",
+    "file": "app/(authenticated)/shipping/pallet/palletColumns.tsx"
+  },
+  "shipping.disabled.deleteEmptyPallet": {
+    "fallback": "열린 상태이며 박스와 출하 연결이 없는 팔레트만 삭제할 수 있습니다. 적재·출하 상태를 확인하세요.",
     "file": "app/(authenticated)/shipping/pallet/palletColumns.tsx"
   },
   "workflowGuide.lane": {
@@ -731,6 +1247,14 @@
     "fallback": "이전",
     "file": "components/help/HelpPanel.tsx"
   },
+  "kiosk.prep.newInspection": {
+    "fallback": "새 점검 등록",
+    "file": "components/inspect/DailyInspectModal.tsx"
+  },
+  "material.disabledHelp.issueAccount": {
+    "fallback": "출고계정을 선택하세요.",
+    "file": "components/material/BarcodeScanTab.tsx"
+  },
   "material.iqc.defectCode": {
     "fallback": "불량코드",
     "file": "components/material/IqcModal.tsx"
@@ -747,13 +1271,105 @@
     "fallback": "PASS 판정에는 불량코드를 입력할 수 없습니다.",
     "file": "components/material/IqcModal.tsx"
   },
+  "material.disabledHelp.iqcScan": {
+    "fallback": "검사할 자재시리얼을 스캔하세요.",
+    "file": "components/material/IqcModal.tsx"
+  },
+  "material.disabledHelp.iqcIncomplete": {
+    "fallback": "판정이 끝나지 않은 자재시리얼의 검사 판정을 완료하세요.",
+    "file": "components/material/IqcModal.tsx"
+  },
+  "material.disabledHelp.iqcDefect": {
+    "fallback": "불합격 항목의 불량코드와 불량수량을 입력하세요.",
+    "file": "components/material/IqcModal.tsx"
+  },
+  "material.disabledHelp.iqcConflict": {
+    "fallback": "합격 판정에는 불량코드와 불량수량을 등록할 수 없습니다.",
+    "file": "components/material/IqcModal.tsx"
+  },
+  "material.disabledHelp.iqcStatus": {
+    "fallback": "검사대기 또는 검사 중인 입하 건만 검사할 수 있습니다.",
+    "file": "components/material/IqcTable.tsx"
+  },
+  "material.iqc.requestLotTag": {
+    "fallback": "의뢰LOT",
+    "file": "components/material/IqcTable.tsx"
+  },
   "common.expand": {
     "fallback": "펼치기",
-    "file": "components/material/WorkOrderRequestPanel.tsx"
+    "file": "components/material/issue-request/JobOrderTreeList.tsx"
   },
   "common.collapse": {
     "fallback": "접기",
+    "file": "components/material/issue-request/JobOrderTreeList.tsx"
+  },
+  "material.disabledHelp.lotLoading": {
+    "fallback": "출고 가능한 자재 LOT을 조회하고 있습니다.",
+    "file": "components/material/IssueFromRequestModal.tsx"
+  },
+  "material.disabledHelp.selectIssueQty": {
+    "fallback": "출고할 LOT을 선택하고 출고수량을 0보다 크게 입력하세요.",
+    "file": "components/material/IssueFromRequestModal.tsx"
+  },
+  "material.disabledHelp.issueCancelBusy": {
+    "fallback": "출고취소를 처리하고 있습니다.",
+    "file": "components/material/IssueHistoryTab.tsx"
+  },
+  "material.disabledHelp.issueQtyRemaining": {
+    "fallback": "출고수량은 0보다 크고 요청 잔량 이하여야 합니다.",
+    "file": "components/material/IssueProcessModal.tsx"
+  },
+  "material.disabledHelp.rejectReason": {
+    "fallback": "출고요청 반려 사유를 입력하세요.",
+    "file": "components/material/IssueRequestTab.tsx"
+  },
+  "material.disabledHelp.noLabels": {
+    "fallback": "출력할 자재 LOT 라벨이 없습니다.",
+    "file": "components/material/MatLabelPreviewModal.tsx"
+  },
+  "material.disabledHelp.receivePassed": {
+    "fallback": "검사 합격 상태의 자재만 입고확정할 수 있습니다.",
+    "file": "components/material/ReceivingTable.tsx"
+  },
+  "material.disabledHelp.bomLoading": {
+    "fallback": "작업지시의 BOM 품목을 불러오고 있습니다.",
+    "file": "components/material/RequestModal.tsx"
+  },
+  "material.disabledHelp.selectOrder": {
+    "fallback": "작업지시를 선택하세요.",
     "file": "components/material/WorkOrderRequestPanel.tsx"
+  },
+  "material.disabledHelp.positiveRequest": {
+    "fallback": "요청수량이 0보다 큰 품목을 한 건 이상 입력하세요.",
+    "file": "components/material/WorkOrderRequestPanel.tsx"
+  },
+  "production.jobOrderHud.selected": {
+    "fallback": "작업지시 선택 완료",
+    "file": "components/production/JobOrderHud.tsx"
+  },
+  "common.item": {
+    "fallback": "품목",
+    "file": "components/production/JobOrderHud.tsx"
+  },
+  "equipment.equipCode": {
+    "fallback": "설비코드",
+    "file": "components/shared/EquipSearchModal.tsx"
+  },
+  "equipment.equipName": {
+    "fallback": "설비명",
+    "file": "components/shared/EquipSearchModal.tsx"
+  },
+  "master.line.lineCode": {
+    "fallback": "라인코드",
+    "file": "components/shared/EquipSearchModal.tsx"
+  },
+  "shipping.disabled.scanPallet": {
+    "fallback": "확인할 팔레트 바코드를 입력하거나 스캔하세요.",
+    "file": "components/shipping/ShipmentScanModal.tsx"
+  },
+  "shipping.disabled.verifyAll": {
+    "fallback": "대상 팔레트를 모두 스캔하여 검증한 후 출하를 확정하세요.",
+    "file": "components/shipping/ShipmentScanModal.tsx"
   },
   "ai.config.llmTitle": {
     "fallback": "LLM 채팅 설정",
