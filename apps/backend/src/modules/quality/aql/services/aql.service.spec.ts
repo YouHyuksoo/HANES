@@ -487,6 +487,8 @@ describe('AqlService', () => {
     });
 
     expect(result.sampleQty).toBe(3);
+    expect(result.aqlSampleQty).toBe(3);
+    expect(result.fullInspectQty).toBe(0);
     expect(result.sampleSource).toBe('RATIO_FALLBACK');
     expect(result.judgeReason).toContain('IQC_SAMPLE_RATIO 3/25 fallback');
   });
@@ -522,6 +524,69 @@ describe('AqlService', () => {
     expect(result.result).toBe('FAIL');
     expect(result.defectMajor).toBe(2);
     expect(result.itemResults?.[0].acceptQty).toBe(0);
+  });
+
+  it('separates the AQL sample size from a FULL inspection item requirement', async () => {
+    // 실데이터 재현(2026-09-16): HKEAN1W002FA 처럼 AQL 항목 1건 + 전수(FULL) 항목 1건이 섞인 품목.
+    // sampleQty 는 두 값의 최댓값이라 모집단이 되어버린다. 화면 표시는 aqlSampleQty 를 쓴다.
+    specItemRepo.find.mockResolvedValue([
+      { seq: 1, inspItemCode: 'IQC-TEST', defectGrade: 'MAJOR', inspectionLevel: 'II', inspectionType: 'AQL', sampleMethod: 'AQL', aql: 1.0, useYn: 'Y' },
+      { seq: 101, inspItemCode: 'THN-A50-G01', defectGrade: 'MAJOR', inspectionType: 'FULL', sampleMethod: 'FIXED', aql: null, useYn: 'Y' },
+    ]);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', inspectionLevel: 'II', iqcAqlPolicyCode: 'AQLP-II-1.0-2.5' });
+    policyRepo.findOne.mockResolvedValue({
+      policyCode: 'AQLP-II-1.0-2.5',
+      inspectionLevel: 'II',
+      majorAqlCode: 'AQL-II-1.0',
+      minorAqlCode: 'AQL-II-2.5',
+      criticalMode: 'IMMEDIATE_FAIL',
+      useYn: 'Y',
+    });
+    partnerRepo.findOne.mockResolvedValue(null);
+    standardRepo.find.mockResolvedValue([
+      { company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' },
+    ]);
+    ruleRepo.find.mockResolvedValue([{ lotQtyFrom: 1, lotQtyTo: 5000, sampleSize: 125, acceptQty: 0, rejectQty: 1 }]);
+
+    const result = await service.resolveIqcPolicyByItem({
+      itemCode: 'PCB',
+      vendorCode: null,
+      lotQty: 3000,
+      itemDefectCounts: {},
+      company: '40',
+      plant: '1000',
+    });
+
+    expect(result.sampleQty).toBe(3000);
+    expect(result.aqlSampleQty).toBe(125);
+    expect(result.fullInspectQty).toBe(3000);
+  });
+
+  it('reports fullInspectQty 0 when every item is AQL sampled', async () => {
+    specItemRepo.find.mockResolvedValue([
+      { seq: 1, inspItemCode: 'DIM', defectGrade: 'MAJOR', inspectionLevel: 'II', inspectionType: 'AQL', sampleMethod: 'AQL', aql: 1.0, useYn: 'Y' },
+    ]);
+    partRepo.findOne.mockResolvedValue({ itemCode: 'PCB', inspectionLevel: 'II', iqcAqlPolicyCode: 'AQLP-II-1.0-2.5' });
+    policyRepo.findOne.mockResolvedValue({
+      policyCode: 'AQLP-II-1.0-2.5',
+      inspectionLevel: 'II',
+      majorAqlCode: 'AQL-II-1.0',
+      minorAqlCode: 'AQL-II-2.5',
+      criticalMode: 'IMMEDIATE_FAIL',
+      useYn: 'Y',
+    });
+    partnerRepo.findOne.mockResolvedValue(null);
+    standardRepo.find.mockResolvedValue([
+      { company: '40', plant: '1000', aqlCode: 'AQL-II-1.0', useYn: 'Y' },
+    ]);
+    ruleRepo.find.mockResolvedValue([{ lotQtyFrom: 1, lotQtyTo: 200, sampleSize: 20, acceptQty: 1, rejectQty: 2 }]);
+
+    const result = await service.resolveIqcPolicyByItem({
+      itemCode: 'PCB', vendorCode: null, lotQty: 100, itemDefectCounts: {}, company: '40', plant: '1000',
+    });
+
+    expect(result.aqlSampleQty).toBe(20);
+    expect(result.fullInspectQty).toBe(0);
   });
 
   it('rejects an IQC target with no active inspection items', async () => {

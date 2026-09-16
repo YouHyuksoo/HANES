@@ -205,7 +205,6 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "QC_IQC_REQUEST_LOT", labelKey: "menu.quality.iqcRequestLot", path: "/quality/iqc-request-lot" },
       { code: "QC_IQC", labelKey: "menu.material.iqc", path: "/material/iqc" },
       { code: "QC_IQC_HISTORY", labelKey: "menu.material.iqcHistory", path: "/material/iqc-history" },
-      { code: "QC_IQC_REQUEST_LOT", labelKey: "menu.quality.iqcRequestLot", path: "/quality/iqc-request-lot" },
       { code: "QC_CONCESSION", labelKey: "menu.material.concession", path: "/material/concession" },
       { code: "QC_DEFECT", labelKey: "menu.quality.defect", path: "/quality/defect" },
       { code: "QC_DEFECT_CODE", labelKey: "menu.quality.defectCode", path: "/quality/defect-code" },

@@ -398,7 +398,7 @@
     "material.po": "PO管理",
     "material.poStatus": "PO现况查询",
     "material.iqcHistory": "进料检验历史查询",
-    "quality.iqcRequestLot": "IQC 检验委托(LOT)",
+    "quality.iqcRequestLot": "IQC 检验委托批次",
     "material.lotSplit": "物料分割管理",
     "material.lotMerge": "物料合并",
     "material.shelfLife": "物料保质期管理",
@@ -540,7 +540,6 @@
     "system.improvementRequests": "改善申请管理",
     "material.arrivalResult": "到货实绩查询",
     "material.receiveLabel": "入库标签发行",
-    "quality.iqcRequestLot": "IQC 检验委托批次",
     "quality.ncr": "不合格报告",
     "production.labelReprint": "标签重新打印"
   },
@@ -3561,6 +3560,36 @@
     "disabledHelp": {
       "arrivalInvoiceNo": "请输入发票号。",
       "arrivalRequiredManual": "请选择品目、入库仓库、供应商和发票号，并输入大于0的入库数量。"
+    },
+    "iqcRequestLot": {
+      "title": "IQC 检验委托批次",
+      "desc": "单一品目。选入的入库行合计数量即为批量。",
+      "modeDisabledBanner": "当前 IQC 检验单位为入库单位(ARRIVAL)。此状态下创建的委托不会出现在 IQC 待检列表中，因此已禁止确定委托。请在系统设置中将 IQC_INSPECT_LOT_MODE 改为 REQUEST。",
+      "modeDisabled": "IQC 检验单位为入库单位(ARRIVAL)。请先在系统设置中将检验单位改为委托批次(REQUEST)后再委托。",
+      "load": "查询候选",
+      "invoiceFilter": "发票筛选",
+      "invoiceHint": "仅便于挑选",
+      "candidates": "未委托入库",
+      "arrivalSeq": "行号",
+      "addVisibleSample": "可见行设为样品",
+      "addVisibleRep": "可见行设为代表",
+      "noCandidates": "请先查询品目后选择入库行。没有待检序列号的入库行无检验对象，将从列表中排除。",
+      "basket": "本次委托构成",
+      "lotQty": "批量",
+      "aqlSample": "预计样本数",
+      "sample": "样品",
+      "represented": "代表",
+      "sampleHint": "样本数在检验时由 AQL 依批量算出。合格判定在 IQC 检验画面进行。",
+      "confirm": "确定委托",
+      "requestNo": "委托编号",
+      "needItem": "请输入品目代码。",
+      "needLines": "请选择构成入库行。",
+      "needSample": "请至少指定一行为样品。",
+      "created": "已登记检验委托批次。",
+      "canceled": "已取消委托。",
+      "fullInspectQty": "全检/破坏检验项目所需",
+      "pendingQty": "待检数量",
+      "serialCount": "序列号数"
     }
   },
   "productMgmt": {

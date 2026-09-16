@@ -398,7 +398,7 @@
     "material.po": "Quản lý PO",
     "material.poStatus": "Tra cứu tình trạng PO",
     "material.iqcHistory": "Tra cứu lịch sử kiểm tra đầu vào",
-    "quality.iqcRequestLot": "Yêu cầu kiểm tra IQC (LOT)",
+    "quality.iqcRequestLot": "LOT yêu cầu kiểm tra IQC",
     "material.lotSplit": "Quản lý phân tách lô",
     "material.lotMerge": "Gộp LOT",
     "material.shelfLife": "Hạn sử dụng vật tư",
@@ -540,7 +540,6 @@
     "system.improvementRequests": "Quản lý yêu cầu cải tiến",
     "material.arrivalResult": "Kết quả nhập hàng",
     "material.receiveLabel": "Phát hành nhãn nhập kho",
-    "quality.iqcRequestLot": "LOT yêu cầu kiểm tra IQC",
     "quality.ncr": "Báo cáo không phù hợp",
     "production.labelReprint": "In lại nhãn"
   },
@@ -3561,6 +3560,36 @@
     "disabledHelp": {
       "arrivalInvoiceNo": "Vui lòng nhập số hóa đơn.",
       "arrivalRequiredManual": "Chọn mặt hàng, kho nhập, nhà cung cấp và số hóa đơn, rồi nhập số lượng lớn hơn 0."
+    },
+    "iqcRequestLot": {
+      "title": "Lô yêu cầu kiểm tra IQC",
+      "desc": "Một mã hàng. Các dòng hàng đến được chọn hợp thành lô, tổng số lượng là cỡ lô.",
+      "modeDisabledBanner": "Đơn vị kiểm tra IQC hiện là đơn vị hàng đến (ARRIVAL). Yêu cầu tạo lúc này sẽ không hiện trong danh sách chờ kiểm tra IQC nên việc xác nhận yêu cầu đang bị chặn. Hãy đổi IQC_INSPECT_LOT_MODE thành REQUEST trong Cài đặt hệ thống.",
+      "modeDisabled": "Đơn vị kiểm tra IQC là đơn vị hàng đến (ARRIVAL). Hãy đổi đơn vị kiểm tra sang lô yêu cầu (REQUEST) trong Cài đặt hệ thống trước khi tạo yêu cầu.",
+      "load": "Tải danh sách",
+      "invoiceFilter": "Lọc hóa đơn",
+      "invoiceHint": "Chỉ để dễ chọn",
+      "candidates": "Hàng đến chưa yêu cầu",
+      "arrivalSeq": "Số dòng",
+      "addVisibleSample": "Thêm dòng hiển thị làm mẫu",
+      "addVisibleRep": "Thêm dòng hiển thị làm đại diện",
+      "noCandidates": "Hãy tra mã hàng trước rồi chọn dòng hàng đến. Dòng hàng đến không có serial chờ kiểm tra sẽ bị loại khỏi danh sách vì không có gì để kiểm.",
+      "basket": "Cấu thành yêu cầu này",
+      "lotQty": "Số lượng lô",
+      "aqlSample": "Cỡ mẫu dự kiến",
+      "sample": "Mẫu",
+      "represented": "Đại diện",
+      "sampleHint": "Cỡ mẫu do AQL tính từ số lượng lô tại thời điểm kiểm tra. Phán định đạt/không đạt thực hiện ở màn hình kiểm tra IQC.",
+      "confirm": "Xác nhận yêu cầu",
+      "requestNo": "Số yêu cầu",
+      "needItem": "Hãy nhập mã hàng.",
+      "needLines": "Hãy chọn dòng hàng đến cấu thành.",
+      "needSample": "Hãy chỉ định ít nhất một dòng làm mẫu.",
+      "created": "Đã đăng ký lô yêu cầu kiểm tra.",
+      "canceled": "Đã hủy yêu cầu.",
+      "fullInspectQty": "Yêu cầu hạng mục toàn bộ/phá hủy",
+      "pendingQty": "SL chờ kiểm tra",
+      "serialCount": "Số serial"
     }
   },
   "productMgmt": {

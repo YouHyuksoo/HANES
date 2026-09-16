@@ -9,10 +9,11 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ClipboardList, RefreshCw, Search } from "lucide-react";
+import { AlertTriangle, ClipboardList, RefreshCw, Search } from "lucide-react";
 import { Button, Card, CardContent, Input } from "@/components/ui";
 import { PartSearchModal } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
+import { resolveIqcDisplaySampleQty, resolveIqcFullInspectQty } from "@harness/shared";
 import { arrivalRowKey, useIqcRequestLot, type RequestCandidate, type RequestRow } from "@/hooks/material/useIqcRequestLot";
 
 export default function IqcRequestLotPage() {
@@ -24,7 +25,8 @@ export default function IqcRequestLotPage() {
       { accessorKey: "arrivalNo", header: t("material.iqc.arrivalNoLabel", "입하번호"), size: 140 },
       { accessorKey: "seq", header: t("material.iqcRequestLot.arrivalSeq", "행번호"), size: 70 },
       { accessorKey: "invoiceNo", header: t("material.arrival.invoiceNo", "인보이스"), size: 120 },
-      { accessorKey: "qty", header: t("common.qty"), size: 80 },
+      { accessorKey: "qty", header: t("material.iqcRequestLot.pendingQty", "검사대기수량"), size: 110 },
+      { accessorKey: "serialCount", header: t("material.iqcRequestLot.serialCount", "시리얼수"), size: 80 },
       { accessorKey: "vendorName", header: t("material.iqc.supplierLabel", "공급업체"), size: 140 },
       {
         id: "act",
@@ -83,6 +85,18 @@ export default function IqcRequestLotPage() {
         </Button>
       </div>
 
+      {!h.requestLotEnabled ? (
+        <div className="flex items-start gap-2 border border-warning rounded px-3 py-2 text-sm text-warning">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>
+            {t(
+              "material.iqcRequestLot.modeDisabledBanner",
+              "현재 IQC 검사 단위가 입하단위(ARRIVAL)입니다. 이 상태로 의뢰하면 IQC 검사대기 목록에 뜨지 않으므로 의뢰 확정이 막혀 있습니다. 시스템설정에서 IQC_INSPECT_LOT_MODE를 REQUEST로 바꾸세요.",
+            )}
+          </span>
+        </div>
+      ) : null}
+
       <div className="flex gap-2 items-end flex-wrap">
         <div className="w-56">
           <Input
@@ -130,7 +144,10 @@ export default function IqcRequestLotPage() {
                 columns={candidateCols}
                 isLoading={h.loading}
                 getRowId={(row) => arrivalRowKey(row)}
-                emptyMessage={t("material.iqcRequestLot.noCandidates", "품목을 조회한 뒤 입하를 고르세요.")}
+                emptyMessage={t(
+                  "material.iqcRequestLot.noCandidates",
+                  "품목을 조회한 뒤 입하를 고르세요. 검사대기 시리얼이 없는 입하 행은 검사할 대상이 없어 목록에서 제외됩니다.",
+                )}
               />
             </div>
           </CardContent>
@@ -143,7 +160,16 @@ export default function IqcRequestLotPage() {
             {h.aql ? (
               <p className="text-sm text-text-muted">
                 AQL {h.aql.inspectionLevel}/{h.aql.inspectionMode} ·{" "}
-                {t("material.iqcRequestLot.aqlSample", "예상 시료수")} {h.aql.sampleQty ?? "-"}
+                {t("material.iqcRequestLot.aqlSample", "예상 시료수")}{" "}
+                {(resolveIqcDisplaySampleQty(h.aql) ?? 0).toLocaleString() || "-"}
+                {/* 전수/파괴 항목 소요량은 AQL 시료수와 의미가 달라 합치지 않고 따로 적는다 */}
+                {resolveIqcFullInspectQty(h.aql) ? (
+                  <>
+                    {" · "}
+                    {t("material.iqcRequestLot.fullInspectQty", "전수/파괴 검사항목 소요")}{" "}
+                    {(resolveIqcFullInspectQty(h.aql) ?? 0).toLocaleString()}
+                  </>
+                ) : null}
               </p>
             ) : null}
             <ul className="flex-1 min-h-0 overflow-auto text-sm space-y-1">
@@ -167,7 +193,9 @@ export default function IqcRequestLotPage() {
                 "시료수는 검사 시점에 AQL이 모집단수량으로 산출합니다. 합불 판정은 IQC 검사 화면에서 합니다.",
               )}
             </p>
-            <Button onClick={() => void h.confirmRequest()}>{t("material.iqcRequestLot.confirm", "의뢰 확정")}</Button>
+            <Button onClick={() => void h.confirmRequest()} disabled={!h.requestLotEnabled}>
+              {t("material.iqcRequestLot.confirm", "의뢰 확정")}
+            </Button>
           </CardContent>
         </Card>
       </div>

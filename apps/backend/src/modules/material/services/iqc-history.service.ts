@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { IQC_INSPECT_LOT_MODE_KEY, allowsIqcRequestLot } from '@harness/shared';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, In, DataSource, IsNull, QueryRunner } from 'typeorm';
 import { IqcLog } from '../../../entities/iqc-log.entity';
@@ -255,6 +256,54 @@ export class IqcHistoryService {
     return { data: flattenedData, total, page, limit };
   }
 
+  /**
+   * REQUESTED 상태 의뢰 LOT에 담긴 입하 행을 입하단위/단건 경로로 판정하지 못하게 막는다.
+   *
+   * 막지 않으면 MAT_LOTS/MAT_ARRIVALS만 PASS/FAIL이 되고 IQC_REQUEST_LOTS.STATUS는 REQUESTED로
+   * 영구 잔존하는 고아가 된다(의뢰 헤더를 갱신하는 곳은 createRequestLotResult 뿐이다).
+   * 모드를 REQUEST에서 ARRIVAL로 되돌렸거나 API를 직접 호출한 경우에도 같은 일이 생긴다.
+   */
+  private async assertNotHeldByRequestLot(
+    targets: Array<{ arrivalNo: string | null; arrivalSeq: number | null | undefined; itemCode: string }>,
+    company?: string,
+    plant?: string,
+  ) {
+    const rows = targets.filter((t) => !!t.arrivalNo && t.arrivalSeq != null);
+    if (rows.length === 0) return;
+    const arrivalNos = [...new Set(rows.map((t) => t.arrivalNo as string))];
+    const itemCodes = [...new Set(rows.map((t) => t.itemCode))];
+    // 주의: 조인 조건 문자열에 줄바꿈을 넣지 말 것. TypeORM이 alias.프로퍼티를 못 풀어 ORA-00904가 난다.
+    const lines = await this.iqcRequestLotLineRepository
+      .createQueryBuilder('ln')
+      .innerJoin(IqcRequestLot, 'rq', "rq.requestNo = ln.requestNo AND rq.company = ln.company AND rq.plant = ln.plant AND rq.status = 'REQUESTED'")
+      .select('ln.requestNo', 'requestNo')
+      .addSelect('ln.arrivalNo', 'arrivalNo')
+      .addSelect('ln.arrivalSeq', 'arrivalSeq')
+      .where('ln.arrivalNo IN (:...arrivalNos)', { arrivalNos })
+      .andWhere('ln.itemCode IN (:...itemCodes)', { itemCodes })
+      .andWhere(company ? 'ln.company = :company' : '1=1', company ? { company } : {})
+      .andWhere(plant ? 'ln.plant = :plant' : '1=1', plant ? { plant } : {})
+      .getRawMany<{ requestNo: string; arrivalNo: string; arrivalSeq: number }>();
+    if (lines.length === 0) return;
+    const heldKeys = new Map<string, string>(
+      lines.map((l) => [`${l.arrivalNo}#${Number(l.arrivalSeq)}`, l.requestNo]),
+    );
+    const blocked = new Map<string, string[]>();
+    for (const target of rows) {
+      const key = `${target.arrivalNo}#${Number(target.arrivalSeq)}`;
+      const requestNo = heldKeys.get(key);
+      if (!requestNo) continue;
+      const list = blocked.get(requestNo) ?? [];
+      list.push(key);
+      blocked.set(requestNo, list);
+    }
+    if (blocked.size === 0) return;
+    const detail = [...blocked.entries()].map(([requestNo, keys]) => `${requestNo}(${keys.join(', ')})`).join(', ');
+    throw new BadRequestException(
+      `검사의뢰 LOT에 포함된 입하 행입니다. 의뢰 단위로 검사하거나 의뢰를 취소하세요: ${detail}`,
+    );
+  }
+
   async createResult(dto: CreateIqcResultDto, company?: string, plant?: string) {
     const lot = await this.matLotRepository.findOne({
       where: { matUid: dto.matUid, ...this.tenantWhere(company, plant) },
@@ -263,6 +312,11 @@ export class IqcHistoryService {
       throw new NotFoundException(`LOT을 찾을 수 없습니다: ${dto.matUid}`);
     }
     this.assertSameTenant('LOT', { company, plant }, lot);
+    await this.assertNotHeldByRequestLot(
+      [{ arrivalNo: lot.arrivalNo ?? null, arrivalSeq: lot.arrivalSeq, itemCode: lot.itemCode }],
+      lot.company,
+      lot.plant,
+    );
 
     const lotTenantWhere = this.tenantWhere(lot.company, lot.plant);
 
@@ -322,7 +376,7 @@ export class IqcHistoryService {
     }
 
     if (finalResult === 'PASS' && dto.destructSampleQty && dto.destructSampleQty > 0) {
-      const issueMode = await this.sysConfigService.getValue('IQC_SAMPLE_ISSUE_MODE');
+      const issueMode = await this.sysConfigService.getValue('IQC_SAMPLE_ISSUE_MODE', lot.company, lot.plant);
       if (issueMode === 'AUTO_ISSUE') {
         await this.autoIssueDestructSample(
           lot.matUid,
@@ -446,8 +500,8 @@ export class IqcHistoryService {
   async findPendingArrivals(query: PendingArrivalQueryDto, company?: string, plant?: string): Promise<PendingArrivalsResult> {
     const iqcStatus = query.iqcStatus || 'PENDING';
     // IQC_INSPECT_LOT_MODE=REQUEST 일 때만 의뢰 LOT 묶음 행을 섮는다. 기본값 ARRIVAL은 기존 동작 그대로다.
-    const lotMode = (await this.sysConfigService.getValue('IQC_INSPECT_LOT_MODE')) || 'ARRIVAL';
-    const requestMode = lotMode === 'REQUEST' && iqcStatus === 'PENDING';
+    const lotMode = await this.sysConfigService.getValue(IQC_INSPECT_LOT_MODE_KEY, company, plant);
+    const requestMode = allowsIqcRequestLot(lotMode) && iqcStatus === 'PENDING';
 
     const qb = this.matLotRepository
       .createQueryBuilder('lot')
@@ -665,6 +719,11 @@ export class IqcHistoryService {
         `검사 대상(PENDING) 시리얼이 없습니다: 입하 ${dto.arrivalNo} / 품목 ${dto.itemCode}`,
       );
     }
+    await this.assertNotHeldByRequestLot(
+      lots.map((lot) => ({ arrivalNo: lot.arrivalNo ?? null, arrivalSeq: lot.arrivalSeq, itemCode: lot.itemCode })),
+      lots[0].company,
+      lots[0].plant,
+    );
 
     return this.judgeLotsWithAql({
       lots,
@@ -730,13 +789,25 @@ export class IqcHistoryService {
     }
 
     const sampleLine = lines.find((l) => l.lineRole === 'SAMPLE') ?? lines[0];
+
+    // 모집단은 '의뢰 확정 시점의 스냅샷'(header.lotQty)이 정본이다. 판정 시점 시리얼 합과 갈라질 수 있다
+    // (확정 후 시리얼이 취소되거나 분할되면 줄어든다). 이건 버그가 아니라 의도다 — AQL Ac/Re는 담당자가
+    // 합의한 모집단 기준으로 뽑아야 하고, 검사 중에 모집단이 흔들리면 기준이 바뀐다.
+    // 다만 나중에 추적이 되도록 어긋난 사실은 IQC_LOGS.REMARK에 남긴다.
+    const judgedLotQty = lots.reduce((sum, lot) => sum + (Number(lot.initQty) || 0), 0);
+    const snapshotLotQty = Number(header.lotQty) || 0;
+    const driftNote =
+      snapshotLotQty > 0 && judgedLotQty !== snapshotLotQty
+        ? `[모집단드리프트:확정 ${snapshotLotQty} vs 판정시점 ${judgedLotQty}]`
+        : '';
+
     const judged = await this.judgeLotsWithAql({
       lots,
       itemCode: header.itemCode,
       representativeArrivalNo: sampleLine.arrivalNo,
       dto,
       lotQtyOverride: Number(header.lotQty) || null,
-      logRemarkPrefix: `[IQL:${requestNo}]`,
+      logRemarkPrefix: `[IQL:${requestNo}]${driftNote}`,
       applyArrivalStatus: async (status, tenantCompany, tenantPlant) => {
         for (const line of lines) {
           await this.matArrivalRepository.update(
@@ -882,7 +953,7 @@ export class IqcHistoryService {
 
     // 5) PASS + 샘플수량 → 파괴검사 시료 자동출고 (AUTO_ISSUE 모드, 시리얼 순서대로 차감)
     if (finalResult === 'PASS' && dto.sampleQty && dto.sampleQty > 0) {
-      const issueMode = await this.sysConfigService.getValue('IQC_SAMPLE_ISSUE_MODE');
+      const issueMode = await this.sysConfigService.getValue('IQC_SAMPLE_ISSUE_MODE', tenantCompany, tenantPlant);
       if (issueMode === 'AUTO_ISSUE') {
         let remaining = dto.sampleQty;
         for (const lot of lots) {

@@ -72,6 +72,16 @@ export type IqcAqlPolicyResolution = {
   inspectionMode: string;
   result: 'PASS' | 'FAIL';
   sampleQty: number;
+  /**
+   * AQL 샘플링 항목만의 시료수. 전수(FULL)/파괴/고정 항목은 빼고 계산한다.
+   *
+   * `sampleQty`는 전 항목의 최댓값이라, 전수검사 항목이 하나라도 있으면 모집단 수량이 된다.
+   * 화면에 "예상 시료수"로 그 값을 쓰면 담당자는 모집단 전량을 뽑아야 하는 것으로 읽는다.
+   * 그래서 표시용으로는 이 값을 쓰고, 전수/파괴 소요량은 `fullInspectQty`로 따로 보여준다.
+   */
+  aqlSampleQty: number;
+  /** 전수(FULL)/파괴/고정 검사항목이 요구하는 검사수량. 없으면 0. */
+  fullInspectQty: number;
   /** 샘플수량 산정 근거 */
   sampleSource?: 'AQL' | 'ITEM_SPEC' | 'RATIO_FALLBACK' | 'NONE';
   defectCritical: number;
@@ -392,6 +402,9 @@ export class AqlService {
       inspectionMode,
       result,
       sampleQty: Math.max(majorRule?.sampleSize ?? 0, minorRule?.sampleSize ?? 0),
+      // 품목 단일 정책에는 전수/파괴 검사항목 개념이 없다. 시료수는 전부 AQL 산출값이다.
+      aqlSampleQty: Math.max(majorRule?.sampleSize ?? 0, minorRule?.sampleSize ?? 0),
+      fullInspectQty: 0,
       sampleSource: majorRule || minorRule ? 'AQL' : 'NONE',
       defectCritical,
       defectMajor,
@@ -496,6 +509,9 @@ export class AqlService {
     let defectMajor = 0;
     let defectMinor = 0;
     let sampleQty = 0;
+    // 표시용 분리 — AQL 샘플링 항목과 전수/파괴 항목의 소요량은 의미가 달라 한 숫자로 합치면 안 된다.
+    let aqlSampleQty = 0;
+    let fullInspectQty = 0;
     let majorRule: AqlSeverityRule | null = null;
     let minorRule: AqlSeverityRule | null = null;
     const itemResults: IqcItemJudgeResult[] = [];
@@ -525,6 +541,7 @@ export class AqlService {
         const providedInspected = input.itemInspectedCounts?.[item.seq];
         inspectedQty = providedInspected != null ? this.toNonNegativeInt(providedInspected) : requiredQty;
         sampleQty = Math.max(sampleQty, inspectedQty ?? requiredQty ?? 0);
+        fullInspectQty = Math.max(fullInspectQty, requiredQty ?? 0);
         if (defectCount > 0) {
           itemResult = 'FAIL';
           reason = `${item.inspItemCode} ${type === 'FULL' ? '전수' : '파괴'}검사 불량 ${defectCount}건`;
@@ -538,6 +555,7 @@ export class AqlService {
       } else if (aql != null) {
         rule = await this.resolveSeverityRule(level, inspectionMode, aql, lotQty, input.company, input.plant);
         sampleQty = Math.max(sampleQty, rule.actualInspectQty ?? rule.sampleSize);
+        aqlSampleQty = Math.max(aqlSampleQty, rule.actualInspectQty ?? rule.sampleSize);
         requiredQty = inspectedQty = rule.actualInspectQty ?? rule.sampleSize;
         if (grade === 'MAJOR' && !majorRule) majorRule = rule;
         if (grade === 'MINOR' && !minorRule) minorRule = rule;
@@ -584,6 +602,7 @@ export class AqlService {
       // AQL 표준과 품목별 고정수량은 절대 덮어쓰지 않는다.
       if (Number.isFinite(configuredRatio) && configuredRatio > 0) {
         sampleQty = Math.min(lotQty, Math.max(1, Math.ceil(lotQty * configuredRatio / 100)));
+        aqlSampleQty = sampleQty;
         sampleSource = 'RATIO_FALLBACK';
       }
     }
@@ -606,6 +625,8 @@ export class AqlService {
       inspectionMode,
       result,
       sampleQty,
+      aqlSampleQty,
+      fullInspectQty,
       sampleSource,
       defectCritical,
       defectMajor,

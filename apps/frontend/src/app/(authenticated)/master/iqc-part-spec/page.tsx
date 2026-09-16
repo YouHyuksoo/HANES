@@ -18,6 +18,7 @@ import ServerPager from "@/components/shared/ServerPager";
 import { Select } from "@/components/ui";
 import toast from "react-hot-toast";
 import { useAuthStore } from "@/stores/authStore";
+import { resolveIqcDisplaySampleQty, type IqcSampleQtySource } from "@harness/shared";
 
 interface PartItem {
   itemCode: string;
@@ -28,7 +29,7 @@ interface PartItem {
   inspectItemCount: number;
 }
 
-interface AqlPolicyPreview {
+interface AqlPolicyPreview extends IqcSampleQtySource {
   inspectionLevel: string;
   inspectionMode: string;
   sampleQty: number;
@@ -247,7 +248,7 @@ export default function IqcPartSpecPage() {
                 <div className="rounded border border-border/70 bg-surface px-2 py-1.5">
                   <div className="text-[10px] leading-tight text-text-muted">{t("master.iqcPartSpec.sampleQty", "샘플수량")}</div>
                   <div className="mt-0.5 text-xs font-semibold text-text tabular-nums">
-                    {aqlPreviewLoading ? "..." : (aqlPreview?.sampleQty ?? "-")}
+                    {aqlPreviewLoading ? "..." : (resolveIqcDisplaySampleQty(aqlPreview) ?? "-")}
                   </div>
                 </div>
                 </IqcPartHelp>

@@ -22,6 +22,7 @@ import { useComCodeMap } from "@/hooks/useComCode";
 import { mapPendingGroupToIqcItem, type IqcItem } from "@/hooks/material/useIqcData";
 import type { IqcRequestTarget } from "@/hooks/material/useIqcRequestPrint";
 import BarcodeCanvas from "@/app/(authenticated)/master/label/components/BarcodeCanvas";
+import { resolveIqcDisplaySampleQty, type IqcSampleQtySource } from "@harness/shared";
 
 interface Props {
   targets: IqcRequestTarget[];
@@ -50,7 +51,7 @@ interface InspectItemRow {
   aql?: number | null;
 }
 
-interface AqlPolicy {
+interface AqlPolicy extends IqcSampleQtySource {
   sampleQty: number;
   inspectionLevel: string;
   inspectionMode: string;
@@ -247,7 +248,7 @@ export default function IqcRequestPrintModal({ targets, onClose }: Props) {
                           <th className={TH}>{t("material.iqc.request.aql", "AQL (시료수/수준/모드)")}</th>
                           <td className={TD} colSpan={3}>
                             {aqlPolicy
-                              ? `${fmtNum(aqlPolicy.sampleQty)} / ${aqlPolicy.inspectionLevel} / ${aqlPolicy.inspectionMode}`
+                              ? `${fmtNum(resolveIqcDisplaySampleQty(aqlPolicy) ?? 0)} / ${aqlPolicy.inspectionLevel} / ${aqlPolicy.inspectionMode}`
                               : t("material.iqc.request.noAql", "AQL 정책 없음 (수동 판정)")}
                           </td>
                         </tr>

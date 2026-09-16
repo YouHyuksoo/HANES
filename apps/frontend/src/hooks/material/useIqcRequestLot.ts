@@ -7,14 +7,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import { IQC_INSPECT_LOT_MODE_KEY, allowsIqcRequestLot } from "@harness/shared";
+import type { IqcSampleQtySource } from "@harness/shared";
 import api from "@/services/api";
+import { useSysConfigStore } from "@/stores/sysConfigStore";
 
 export interface RequestCandidate {
   arrivalNo: string;
   /** MAT_ARRIVALS.SEQ. arrivalNo 단독으로는 입하 행이 유일하지 않다. */
   seq: number;
   itemCode: string;
+  /**
+   * 검사대기(PENDING) 시리얼 INIT_QTY 합. MAT_ARRIVALS.QTY가 아니다.
+   * 모집단(LOT_QTY)·검사대기 목록 표시 수량·판정 대상이 모두 이 기준이다.
+   */
   qty: number;
+  /** 이 입하 행에 달린 검사대기 시리얼 건수 */
+  serialCount: number;
   invoiceNo: string | null;
   vendorCode: string | null;
   vendorName: string | null;
@@ -46,11 +55,18 @@ export type BasketRow = RequestCandidate & { lineRole: "SAMPLE" | "REPRESENTED" 
 /** 입하 행 식별 키. MAT_ARRIVALS PK가 (ARRIVAL_NO, SEQ) 복합키라 둘을 묶어야 행이 구분된다. */
 export const arrivalRowKey = (row: { arrivalNo: string; seq: number }) => `${row.arrivalNo}#${row.seq}`;
 
-interface AqlPreview {
-  sampleQty?: number | null;
+interface AqlPreview extends IqcSampleQtySource {
   inspectionLevel?: string | null;
   inspectionMode?: string | null;
   judgeReason?: string | null;
+}
+
+/** 서버가 내려준 거절 사유(모드 가드, 중복 편성 등)를 삼키지 않고 그대로 보여준다. */
+function resolveApiMessage(error: unknown, fallback: string): string {
+  const message = (error as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
+  if (typeof message === "string" && message.trim()) return message;
+  if (Array.isArray(message) && typeof message[0] === "string") return message[0];
+  return fallback;
 }
 
 export function useIqcRequestLot() {
@@ -64,6 +80,10 @@ export function useIqcRequestLot() {
   const [loading, setLoading] = useState(false);
   const [aql, setAql] = useState<AqlPreview | null>(null);
   const [partOpen, setPartOpen] = useState(false);
+  // 검사 단위 모드. ARRIVAL이면 의뢰를 만들어도 IQC 검사대기에 뜨지 않으므로 서버가 생성을 막는다.
+  // 판정 기준은 @harness/shared 단일 출처를 쓴다. 여기에 조건을 따로 적지 말 것.
+  const inspectLotMode = useSysConfigStore((state) => state.getConfig(IQC_INSPECT_LOT_MODE_KEY));
+  const requestLotEnabled = allowsIqcRequestLot(inspectLotMode);
 
   const lotQty = useMemo(() => basket.reduce((sum, row) => sum + row.qty, 0), [basket]);
   const vendorCode = basket[0]?.vendorCode ?? candidates[0]?.vendorCode ?? "";
@@ -148,6 +168,15 @@ export function useIqcRequestLot() {
   };
 
   const confirmRequest = async () => {
+    if (!requestLotEnabled) {
+      toast.error(
+        t(
+          "material.iqcRequestLot.modeDisabled",
+          "IQC 검사 단위가 입하단위(ARRIVAL)입니다. 시스템설정에서 검사 단위를 의뢰 LOT(REQUEST)으로 바꿔야 의뢰할 수 있습니다.",
+        ),
+      );
+      return;
+    }
     if (!itemCode.trim()) {
       toast.error(t("material.iqcRequestLot.needItem", "품목코드를 입력하세요."));
       return;
@@ -169,8 +198,8 @@ export function useIqcRequestLot() {
       toast.success(t("material.iqcRequestLot.created", "검사의뢰 LOT을 등록했습니다."));
       setBasket([]);
       await refresh();
-    } catch {
-      toast.error(t("common.saveFailed"));
+    } catch (error: unknown) {
+      toast.error(resolveApiMessage(error, t("common.saveFailed")));
     }
   };
 
@@ -179,8 +208,8 @@ export function useIqcRequestLot() {
       await api.post(`/quality/iqc-request-lots/${encodeURIComponent(requestNo)}/cancel`);
       toast.success(t("material.iqcRequestLot.canceled", "의뢰를 취소했습니다."));
       await refresh();
-    } catch {
-      toast.error(t("common.saveFailed"));
+    } catch (error: unknown) {
+      toast.error(resolveApiMessage(error, t("common.saveFailed")));
     }
   };
 
@@ -201,6 +230,8 @@ export function useIqcRequestLot() {
     partOpen,
     setPartOpen,
     lotQty,
+    inspectLotMode,
+    requestLotEnabled,
     refresh,
     addToBasket,
     removeFromBasket,

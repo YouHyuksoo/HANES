@@ -398,7 +398,7 @@
     "material.po": "Purchase Order",
     "material.poStatus": "PO Status Inquiry",
     "material.iqcHistory": "IQC History Inquiry",
-    "quality.iqcRequestLot": "IQC Inspection Request (LOT)",
+    "quality.iqcRequestLot": "IQC Inspection Request LOT",
     "material.lotSplit": "Lot Split Mgmt",
     "material.lotMerge": "Lot Merge",
     "material.shelfLife": "Material Shelf Life",
@@ -540,7 +540,6 @@
     "system.improvementRequests": "Improvement Requests",
     "material.arrivalResult": "Arrival Results",
     "material.receiveLabel": "Receiving Label",
-    "quality.iqcRequestLot": "IQC Inspection Request LOT",
     "quality.ncr": "Nonconformance Report",
     "production.labelReprint": "Label Reprint"
   },
@@ -3579,6 +3578,36 @@
     "disabledHelp": {
       "arrivalInvoiceNo": "Enter the invoice number.",
       "arrivalRequiredManual": "Select item, warehouse, supplier and invoice number, and enter a quantity greater than 0."
+    },
+    "iqcRequestLot": {
+      "title": "IQC Inspection Request Lot",
+      "desc": "One item. The arrivals you add make up the lot, and their total quantity is the population.",
+      "modeDisabledBanner": "The IQC inspection unit is currently set to arrival unit (ARRIVAL). A request created now would not appear in the IQC pending list, so confirming a request is blocked. Change IQC_INSPECT_LOT_MODE to REQUEST in System Settings.",
+      "modeDisabled": "The IQC inspection unit is arrival unit (ARRIVAL). Change the inspection unit to request lot (REQUEST) in System Settings before creating a request.",
+      "load": "Load Candidates",
+      "invoiceFilter": "Invoice Filter",
+      "invoiceHint": "For easier picking only",
+      "candidates": "Unrequested Arrivals",
+      "arrivalSeq": "Row No.",
+      "addVisibleSample": "Add Visible as Sample",
+      "addVisibleRep": "Add Visible as Represented",
+      "noCandidates": "Search an item first, then pick arrivals. Arrival rows with no pending serials are excluded because there is nothing to inspect.",
+      "basket": "Current Request",
+      "lotQty": "Lot Qty",
+      "aqlSample": "Est. Sample Size",
+      "sample": "Sample",
+      "represented": "Represented",
+      "sampleHint": "The sample size is derived by AQL from the lot quantity at inspection time. Pass/fail is decided on the IQC inspection screen.",
+      "confirm": "Confirm Request",
+      "requestNo": "Request No.",
+      "needItem": "Enter an item code.",
+      "needLines": "Select the arrivals to include.",
+      "needSample": "Designate at least one arrival as the sample.",
+      "created": "Inspection request lot created.",
+      "canceled": "Request canceled.",
+      "fullInspectQty": "Full/destructive item requirement",
+      "pendingQty": "Pending Qty",
+      "serialCount": "Serials"
     }
   },
   "productMgmt": {

@@ -9,11 +9,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import { IQC_INSPECT_LOT_MODE_KEY, allowsIqcRequestLot } from '@harness/shared';
 import { IqcRequestLot } from '../../../entities/iqc-request-lot.entity';
 import { IqcRequestLotLine } from '../../../entities/iqc-request-lot-line.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
+import { MatLot } from '../../../entities/mat-lot.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
 import { CreateIqcRequestLotDto, IqcRequestLotQueryDto } from '../dto/iqc-request-lot.dto';
 
 @Injectable()
@@ -28,7 +31,25 @@ export class IqcRequestLotService {
     @InjectRepository(ItemMaster)
     private readonly itemRepo: Repository<ItemMaster>,
     private readonly numbering: NumberingService,
+    private readonly sysConfigService: SysConfigService,
   ) {}
+
+  /**
+   * 의뢰 LOT 구성이 허용되는 모드인지 확인한다.
+   *
+   * ARRIVAL 모드에서 의뢰를 만들면 `/material/iqc` 검사대기 목록이 의뢰 LOT을 조회하지 않아
+   * 의뢰가 REQUESTED 상태로 영구 잔존한다. 그 사이 같은 입하 행은 입하단위로 판정되어
+   * MAT_LOTS/MAT_ARRIVALS만 PASS/FAIL이 되고 의뢰 헤더는 갱신되지 않는다.
+   * 그래서 모드가 REQUEST가 아니면 생성 자체를 막는다.
+   */
+  private async assertRequestLotModeEnabled(company?: string, plant?: string) {
+    const mode = await this.sysConfigService.getValue(IQC_INSPECT_LOT_MODE_KEY, company, plant);
+    if (!allowsIqcRequestLot(mode)) {
+      throw new BadRequestException(
+        `IQC 검사 단위가 입하단위(ARRIVAL)입니다. 검사의뢰 LOT을 쓰려면 시스템설정에서 ${IQC_INSPECT_LOT_MODE_KEY}를 REQUEST로 바꾸세요.`,
+      );
+    }
+  }
 
   /**
    * 입하 행 식별 키. MAT_ARRIVALS PK가 복합키 (ARRIVAL_NO, SEQ)라 ARRIVAL_NO 단독으로는 행을 구분할 수 없다.
@@ -44,15 +65,61 @@ export class IqcRequestLotService {
     };
   }
 
+  /**
+   * 의뢰 구성 후보 입하 행.
+   *
+   * 수량은 MAT_ARRIVALS.QTY가 아니라 그 행에 달린 검사대기(PENDING) 시리얼의 INIT_QTY 합이다.
+   * 두 값은 갈라진다(2026-09-16 실측: 409건 중 18건). 입하 1행에 시리얼이 여러 건 달리고
+   * 그 합이 입하수량과 다른 1:N 케이스가 있기 때문이다.
+   *
+   * 모집단(LOT_QTY)·검사대기 목록 표시 수량·실제 판정 대상이 모두 같은 기준이어야 하므로
+   * 여기서부터 시리얼 합으로 통일한다. 시리얼이 한 건도 없는 입하 행은 검사할 대상이 없으므로
+   * 후보에서 빠진다(MAT_ARRIVALS는 PENDING인데 MAT_LOTS는 CANCELED인 데이터가 실제로 있다).
+   */
   async listCandidates(itemCode: string, company?: string, plant?: string) {
     if (!itemCode?.trim()) {
       throw new BadRequestException('품목코드를 지정하세요.');
     }
-    const arrivals = await this.arrivalRepo.find({
-      where: { itemCode: itemCode.trim(), iqcStatus: 'PENDING', ...this.tenant(company, plant) },
-      order: { arrivalDate: 'DESC' },
-    });
-    if (arrivals.length === 0) return [];
+    // 주의: 조인 조건 문자열에 줄바꿈을 넣지 말 것. TypeORM이 alias.프로퍼티를 못 풀어 ORA-00904가 난다.
+    const arrivals = await this.arrivalRepo
+      .createQueryBuilder('a')
+      .innerJoin(MatLot, 'lot', "lot.arrivalNo = a.arrivalNo AND lot.arrivalSeq = a.seq AND lot.itemCode = a.itemCode AND lot.company = a.company AND lot.plant = a.plant AND lot.iqcStatus = 'PENDING'")
+      .select('a.arrivalNo', 'arrivalNo')
+      .addSelect('a.seq', 'seq')
+      .addSelect('a.itemCode', 'itemCode')
+      .addSelect('a.invoiceNo', 'invoiceNo')
+      .addSelect('a.vendorCode', 'vendorCode')
+      .addSelect('a.vendorName', 'vendorName')
+      .addSelect('a.arrivalDate', 'arrivalDate')
+      .addSelect('a.iqcStatus', 'iqcStatus')
+      .addSelect('SUM(lot.initQty)', 'qty')
+      .addSelect('COUNT(*)', 'serialCount')
+      .where('a.itemCode = :itemCode', { itemCode: itemCode.trim() })
+      .andWhere("a.iqcStatus = 'PENDING'")
+      .groupBy('a.arrivalNo')
+      .addGroupBy('a.seq')
+      .addGroupBy('a.itemCode')
+      .addGroupBy('a.invoiceNo')
+      .addGroupBy('a.vendorCode')
+      .addGroupBy('a.vendorName')
+      .addGroupBy('a.arrivalDate')
+      .addGroupBy('a.iqcStatus')
+      .orderBy('a.arrivalDate', 'DESC');
+    if (company) arrivals.andWhere('a.company = :company', { company });
+    if (plant) arrivals.andWhere('a.plant = :plant', { plant });
+    const rows = await arrivals.getRawMany<{
+      arrivalNo: string;
+      seq: number;
+      itemCode: string;
+      invoiceNo: string | null;
+      vendorCode: string | null;
+      vendorName: string | null;
+      arrivalDate: Date | null;
+      iqcStatus: string;
+      qty: string;
+      serialCount: string;
+    }>();
+    if (rows.length === 0) return [];
     const taken = await this.lineRepo
       .createQueryBuilder('ln')
       .innerJoin(IqcRequestLot, 'rq', 'rq.requestNo = ln.requestNo')
@@ -63,19 +130,21 @@ export class IqcRequestLotService {
       .select(['ln.arrivalNo AS "arrivalNo"', 'ln.arrivalSeq AS "arrivalSeq"'])
       .getRawMany<{ arrivalNo: string; arrivalSeq: number }>();
     const takenSet = new Set(taken.map((r) => IqcRequestLotService.arrivalKey(r.arrivalNo, Number(r.arrivalSeq))));
-    return arrivals
-      .filter((a) => !takenSet.has(IqcRequestLotService.arrivalKey(a.arrivalNo, a.seq)))
-      .map((a) => ({
-        arrivalNo: a.arrivalNo,
-        seq: a.seq,
-        itemCode: a.itemCode,
-        qty: Number(a.qty) || 0,
-        invoiceNo: a.invoiceNo,
-        vendorCode: a.vendorCode,
-        vendorName: a.vendorName,
-        arrivalDate: a.arrivalDate,
-        iqcStatus: a.iqcStatus,
-      }));
+    return rows
+      .map((r) => ({
+        arrivalNo: r.arrivalNo,
+        seq: Number(r.seq),
+        itemCode: r.itemCode,
+        /** 검사대기 시리얼 INIT_QTY 합. MAT_ARRIVALS.QTY가 아니다. */
+        qty: Number(r.qty) || 0,
+        serialCount: Number(r.serialCount) || 0,
+        invoiceNo: r.invoiceNo,
+        vendorCode: r.vendorCode,
+        vendorName: r.vendorName,
+        arrivalDate: r.arrivalDate,
+        iqcStatus: r.iqcStatus,
+      }))
+      .filter((a) => !takenSet.has(IqcRequestLotService.arrivalKey(a.arrivalNo, a.seq)));
   }
 
   async list(query: IqcRequestLotQueryDto, company?: string, plant?: string) {
@@ -102,6 +171,7 @@ export class IqcRequestLotService {
   }
 
   async create(dto: CreateIqcRequestLotDto, company: string, plant: string, userId?: string) {
+    await this.assertRequestLotModeEnabled(company, plant);
     const itemCode = dto.itemCode.trim();
     if (!dto.lines?.length) {
       throw new BadRequestException('구성 입하를 한 건 이상 선택하세요.');
@@ -124,16 +194,20 @@ export class IqcRequestLotService {
     if (missing.length > 0) {
       throw new BadRequestException(`PENDING 입하가 아니거나 품목이 다른 행이 있습니다: ${missing.join(', ')}`);
     }
-    const taken = await this.listCandidates(itemCode, company, plant);
-    const free = new Set(taken.map((t) => IqcRequestLotService.arrivalKey(t.arrivalNo, t.seq)));
+    const candidates = await this.listCandidates(itemCode, company, plant);
+    const freeByKey = new Map(
+      candidates.map((c) => [IqcRequestLotService.arrivalKey(c.arrivalNo, c.seq), c]),
+    );
     for (const key of requestedKeys) {
-      if (!free.has(key)) {
+      if (!freeByKey.has(key)) {
         throw new BadRequestException(`입하 행 ${key} 는 이미 다른 의뢰 LOT에 포함되어 있습니다.`);
       }
     }
     const item = await this.itemRepo.findOne({ where: { itemCode, ...this.tenant(company, plant) } });
-    const selected = requestedKeys.map((k) => byKey.get(k)!);
-    const lotQty = selected.reduce((sum, a) => sum + (Number(a.qty) || 0), 0);
+    // 모집단은 후보 행의 검사대기 시리얼 합이다. MAT_ARRIVALS.QTY와 갈라지므로 입하수량을 쓰지 말 것.
+    // 여기서 어긋나면 화면 표시 수량과 AQL 모집단이 달라진다.
+    const selected = requestedKeys.map((k) => freeByKey.get(k)!);
+    const lotQty = selected.reduce((sum, c) => sum + (Number(c.qty) || 0), 0);
     if (lotQty <= 0) {
       throw new BadRequestException('모집단 수량이 0입니다.');
     }
@@ -157,16 +231,17 @@ export class IqcRequestLotService {
     });
     await this.requestRepo.save(header);
     const lines = dto.lines.map((line, idx) => {
-      const arrival = byKey.get(IqcRequestLotService.arrivalKey(line.arrivalNo, line.arrivalSeq))!;
+      const candidate = freeByKey.get(IqcRequestLotService.arrivalKey(line.arrivalNo, line.arrivalSeq))!;
       return this.lineRepo.create({
         requestNo,
         seq: idx + 1,
         arrivalNo: line.arrivalNo,
         arrivalSeq: line.arrivalSeq,
         itemCode,
-        qty: Number(arrival.qty) || 0,
+        // 헤더 LOT_QTY와 같은 기준(검사대기 시리얼 합)을 쓴다
+        qty: Number(candidate.qty) || 0,
         lineRole: line.lineRole,
-        invoiceNo: arrival.invoiceNo ?? null,
+        invoiceNo: candidate.invoiceNo ?? null,
         company,
         plant,
       });

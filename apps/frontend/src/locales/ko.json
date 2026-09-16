@@ -399,7 +399,7 @@
     "material.po": "PO관리",
     "material.poStatus": "PO현황조회",
     "material.iqcHistory": "수입검사이력조회",
-    "quality.iqcRequestLot": "IQC 검사의뢰(LOT)",
+    "quality.iqcRequestLot": "IQC 검사의뢰 LOT",
     "material.lotSplit": "자재분할관리",
     "material.lotMerge": "자재병합관리",
     "material.shelfLife": "자재유수명관리",
@@ -540,7 +540,6 @@
     "root": "최상위",
     "system.improvementRequests": "개선요청 관리",
     "material.arrivalResult": "입하실적조회",
-    "quality.iqcRequestLot": "IQC 검사의뢰 LOT",
     "quality.ncr": "부적합 보고서",
     "production.labelReprint": "라벨 재발행"
   },
@@ -4113,6 +4112,36 @@
     "disabledHelp": {
       "arrivalInvoiceNo": "인보이스 번호를 입력하세요.",
       "arrivalRequiredManual": "품목·입하창고·공급업체·인보이스 번호를 지정하고 입하수량을 0보다 크게 입력하세요."
+    },
+    "iqcRequestLot": {
+      "title": "IQC 검사의뢰 LOT",
+      "desc": "품목 하나. 담당자가 입하를 골라 담으면 그 수량 합이 모집단입니다.",
+      "modeDisabledBanner": "현재 IQC 검사 단위가 입하단위(ARRIVAL)입니다. 이 상태로 의뢰하면 IQC 검사대기 목록에 뜨지 않으므로 의뢰 확정이 막혀 있습니다. 시스템설정에서 IQC_INSPECT_LOT_MODE를 REQUEST로 바꾸세요.",
+      "modeDisabled": "IQC 검사 단위가 입하단위(ARRIVAL)입니다. 시스템설정에서 검사 단위를 의뢰 LOT(REQUEST)으로 바꿔야 의뢰할 수 있습니다.",
+      "load": "후보 조회",
+      "invoiceFilter": "인보이스 필터",
+      "invoiceHint": "고르기 쉽게만",
+      "candidates": "미의뢰 입하",
+      "arrivalSeq": "행번호",
+      "addVisibleSample": "보이는 행 시료로",
+      "addVisibleRep": "보이는 행 대표로",
+      "noCandidates": "품목을 조회한 뒤 입하를 고르세요. 검사대기 시리얼이 없는 입하 행은 검사할 대상이 없어 목록에서 제외됩니다.",
+      "basket": "이번 의뢰 구성",
+      "lotQty": "모집단수량",
+      "aqlSample": "예상 시료수",
+      "sample": "시료",
+      "represented": "대표",
+      "sampleHint": "시료수는 검사 시점에 AQL이 모집단수량으로 산출합니다. 합불 판정은 IQC 검사 화면에서 합니다.",
+      "confirm": "의뢰 확정",
+      "requestNo": "의뢰번호",
+      "needItem": "품목코드를 입력하세요.",
+      "needLines": "구성 입하를 선택하세요.",
+      "needSample": "시료 입하를 한 건 이상 지정하세요.",
+      "created": "검사의뢰 LOT을 등록했습니다.",
+      "canceled": "의뢰를 취소했습니다.",
+      "fullInspectQty": "전수/파괴 검사항목 소요",
+      "pendingQty": "검사대기수량",
+      "serialCount": "시리얼수"
     }
   },
   "productMgmt": {

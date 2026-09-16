@@ -36,6 +36,15 @@ describe('IqcHistoryService cancel policy', () => {
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
   let mockSysConfigService: DeepMocked<SysConfigService>;
+  let mockIqcRequestLotLineRepo: DeepMocked<Repository<IqcRequestLotLine>>;
+  let mockRequestLotLineQb: {
+    innerJoin: jest.Mock;
+    select: jest.Mock;
+    addSelect: jest.Mock;
+    where: jest.Mock;
+    andWhere: jest.Mock;
+    getRawMany: jest.Mock;
+  };
   let mockAqlService: DeepMocked<AqlService>;
   let mockTx: DeepMocked<TransactionService>;
 
@@ -73,6 +82,8 @@ describe('IqcHistoryService cancel policy', () => {
       inspectionMode: 'NORMAL',
       result: 'PASS',
       sampleQty: 5,
+      aqlSampleQty: 5,
+      fullInspectQty: 0,
       defectCritical: 0,
       defectMajor: 0,
       defectMinor: 0,
@@ -84,6 +95,18 @@ describe('IqcHistoryService cancel policy', () => {
     mockAqlService.attributeDefectQtyToFailedItems.mockImplementation((counts) => counts);
     mockAqlService.updateVendorInspectionModeAfterLot.mockResolvedValue(null);
     mockAqlService.revertVendorInspectionModeForCanceledLot.mockResolvedValue(null);
+
+    // 의뢰 LOT 보유 가드용 QueryBuilder. 기본은 '어떤 의뢰에도 안 담김'이다.
+    mockRequestLotLineQb = {
+      innerJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    };
+    mockIqcRequestLotLineRepo = createMock<Repository<IqcRequestLotLine>>();
+    mockIqcRequestLotLineRepo.createQueryBuilder.mockReturnValue(mockRequestLotLineQb as never);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -98,7 +121,7 @@ describe('IqcHistoryService cancel policy', () => {
         { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
         { provide: getRepositoryToken(IqcRequestLot), useValue: createMock<Repository<IqcRequestLot>>() },
-        { provide: getRepositoryToken(IqcRequestLotLine), useValue: createMock<Repository<IqcRequestLotLine>>() },
+        { provide: getRepositoryToken(IqcRequestLotLine), useValue: mockIqcRequestLotLineRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: SysConfigService, useValue: mockSysConfigService },
         { provide: AqlService, useValue: mockAqlService },
@@ -288,6 +311,8 @@ describe('IqcHistoryService cancel policy', () => {
         inspectionMode: 'NORMAL',
         result: 'FAIL',
         sampleQty: 5,
+        aqlSampleQty: 5,
+        fullInspectQty: 0,
         defectCritical: 0,
         defectMajor: 1,
         defectMinor: 0,
@@ -404,6 +429,59 @@ describe('IqcHistoryService cancel policy', () => {
     });
   });
 
+  describe('REQUESTED 의뢰 LOT 보유 행 가드', () => {
+    const heldLot = {
+      matUid: 'MAT-H1',
+      arrivalNo: 'ARR-H',
+      arrivalSeq: 3,
+      itemCode: 'ITEM-001',
+      iqcStatus: 'PENDING',
+      vendor: 'SUP-001',
+      initQty: 5,
+      company: 'HANES',
+      plant: 'P01',
+    } as MatLot;
+
+    it('입하단위 판정은 REQUESTED 의뢰에 담긴 입하 행을 거절한다', async () => {
+      // 막지 않으면 MAT_LOTS만 PASS가 되고 IQC_REQUEST_LOTS는 REQUESTED로 남는 고아가 된다
+      mockMatLotRepo.find.mockResolvedValue([heldLot]);
+      mockRequestLotLineQb.getRawMany.mockResolvedValue([
+        { requestNo: 'IQL20260916-0001', arrivalNo: 'ARR-H', arrivalSeq: 3 },
+      ]);
+
+      await expect(
+        target.createArrivalResult({ arrivalNo: 'ARR-H', itemCode: 'ITEM-001', result: 'PASS' } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(/IQL20260916-0001/);
+      expect(mockAqlService.resolveIqcPolicyByItem).not.toHaveBeenCalled();
+    });
+
+    it('다른 SEQ 행이 담겨 있으면 이 행의 입하단위 판정은 막지 않는다', async () => {
+      mockMatLotRepo.find.mockResolvedValue([heldLot]);
+      mockRequestLotLineQb.getRawMany.mockResolvedValue([
+        { requestNo: 'IQL20260916-0001', arrivalNo: 'ARR-H', arrivalSeq: 99 },
+      ]);
+      mockIqcLogRepo.create.mockReturnValue({ arrivalNo: 'ARR-H', itemCode: 'ITEM-001' } as IqcLog);
+      mockIqcLogRepo.save.mockResolvedValue({ arrivalNo: 'ARR-H', itemCode: 'ITEM-001' } as IqcLog);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item' } as ItemMaster);
+
+      await target.createArrivalResult({ arrivalNo: 'ARR-H', itemCode: 'ITEM-001', result: 'PASS' } as any, 'HANES', 'P01');
+
+      expect(mockAqlService.resolveIqcPolicyByItem).toHaveBeenCalled();
+    });
+
+    it('단건 판정도 REQUESTED 의뢰에 담긴 시리얼을 거절한다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue(heldLot);
+      mockRequestLotLineQb.getRawMany.mockResolvedValue([
+        { requestNo: 'IQL20260916-0002', arrivalNo: 'ARR-H', arrivalSeq: 3 },
+      ]);
+
+      await expect(
+        target.createResult({ matUid: 'MAT-H1', result: 'PASS' } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(/IQL20260916-0002/);
+      expect(mockAqlService.resolveIqcPolicyByItem).not.toHaveBeenCalled();
+    });
+  });
+
   describe('createArrivalResult', () => {
     it('입하단위 IQC 판정은 LOT과 입하 행 상태를 같은 결과로 갱신한다', async () => {
       mockMatLotRepo.find.mockResolvedValue([
@@ -502,6 +580,8 @@ describe('IqcHistoryService cancel policy', () => {
         inspectionMode: 'NORMAL',
         result: 'FAIL',
         sampleQty: 20,
+        aqlSampleQty: 20,
+        fullInspectQty: 0,
         defectCritical: 0,
         defectMajor: 2,
         defectMinor: 0,
@@ -925,6 +1005,8 @@ describe('IqcHistoryService cancel policy', () => {
       inspectionMode: 'NORMAL',
       result: 'FAIL',
       sampleQty: 5,
+      aqlSampleQty: 5,
+      fullInspectQty: 0,
       defectCritical: 0,
       defectMajor: 1,
       defectMinor: 0,
@@ -997,6 +1079,8 @@ describe('IqcHistoryService cancel policy', () => {
       inspectionMode: 'NORMAL',
       result: 'FAIL',
       sampleQty: 5,
+      aqlSampleQty: 5,
+      fullInspectQty: 0,
       defectCritical: 0,
       defectMajor: 1,
       defectMinor: 0,

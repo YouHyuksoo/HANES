@@ -8,6 +8,7 @@ import { IqcRequestLotLine } from '../../../entities/iqc-request-lot-line.entity
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { SysConfigService } from '../../system/services/sys-config.service';
 import { IqcRequestLotService } from './iqc-request-lot.service';
 
 describe('IqcRequestLotService', () => {
@@ -17,6 +18,28 @@ describe('IqcRequestLotService', () => {
   let lineRepo: DeepMocked<Repository<IqcRequestLotLine>>;
   let itemRepo: DeepMocked<Repository<ItemMaster>>;
   let numbering: DeepMocked<NumberingService>;
+  let sysConfig: DeepMocked<SysConfigService>;
+  let candidateQb: { getRawMany: jest.Mock } & Record<string, jest.Mock>;
+
+  /** listCandidates 가 돌려줄 후보 행. qty 는 MAT_ARRIVALS.QTY 가 아니라 검사대기 시리얼 INIT_QTY 합이다. */
+  const mockCandidates = (
+    rows: Array<{ arrivalNo: string; seq: number; itemCode: string; qty: number; serialCount?: number; invoiceNo?: string | null; vendorCode?: string | null }>,
+  ) => {
+    candidateQb.getRawMany.mockResolvedValue(
+      rows.map((r) => ({
+        arrivalNo: r.arrivalNo,
+        seq: r.seq,
+        itemCode: r.itemCode,
+        invoiceNo: r.invoiceNo ?? 'INV-1',
+        vendorCode: r.vendorCode ?? 'V1',
+        vendorName: 'Vendor',
+        arrivalDate: null,
+        iqcStatus: 'PENDING',
+        qty: String(r.qty),
+        serialCount: String(r.serialCount ?? 1),
+      })),
+    );
+  };
 
   beforeEach(async () => {
     arrivalRepo = createMock<Repository<MatArrival>>();
@@ -24,6 +47,9 @@ describe('IqcRequestLotService', () => {
     lineRepo = createMock<Repository<IqcRequestLotLine>>();
     itemRepo = createMock<Repository<ItemMaster>>();
     numbering = createMock<NumberingService>();
+    sysConfig = createMock<SysConfigService>();
+    // 기본은 의뢰 LOT 모드. ARRIVAL 모드 가드는 별도 케이스에서 확인한다.
+    sysConfig.getValue.mockResolvedValue('REQUEST');
     const qb = {
       innerJoin: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
@@ -32,6 +58,18 @@ describe('IqcRequestLotService', () => {
       getRawMany: jest.fn().mockResolvedValue([]),
     };
     lineRepo.createQueryBuilder.mockReturnValue(qb as never);
+    candidateQb = {
+      innerJoin: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    };
+    arrivalRepo.createQueryBuilder.mockReturnValue(candidateQb as never);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -41,9 +79,35 @@ describe('IqcRequestLotService', () => {
         { provide: getRepositoryToken(MatArrival), useValue: arrivalRepo },
         { provide: getRepositoryToken(ItemMaster), useValue: itemRepo },
         { provide: NumberingService, useValue: numbering },
+        { provide: SysConfigService, useValue: sysConfig },
       ],
     }).compile();
     target = module.get(IqcRequestLotService);
+  });
+
+  it('IQC_INSPECT_LOT_MODE가 ARRIVAL이면 의뢰 생성을 거절한다', async () => {
+    // ARRIVAL 모드에서 만든 의뢰는 검사대기 목록에 뜨지 않아 REQUESTED로 영구 잔존한다.
+    sysConfig.getValue.mockResolvedValue('ARRIVAL');
+    await expect(
+      target.create(
+        { itemCode: 'P1', lines: [{ arrivalNo: 'A1', arrivalSeq: 1, lineRole: 'SAMPLE' }] },
+        '40',
+        '1000',
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    // 모드 가드는 다른 검증보다 먼저 돈다 — 입하 조회까지 가지 않는다
+    expect(arrivalRepo.find).not.toHaveBeenCalled();
+  });
+
+  it('IQC_INSPECT_LOT_MODE 미설정이면 ARRIVAL로 보고 거절한다', async () => {
+    sysConfig.getValue.mockResolvedValue(null);
+    await expect(
+      target.create(
+        { itemCode: 'P1', lines: [{ arrivalNo: 'A1', arrivalSeq: 1, lineRole: 'SAMPLE' }] },
+        '40',
+        '1000',
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('시료 없이 구성하면 거절한다', async () => {
@@ -58,15 +122,16 @@ describe('IqcRequestLotService', () => {
 
   it('한 품목 입하를 시료+대표로 묶고 의뢰번호를 채번한다', async () => {
     numbering.next.mockResolvedValue('IQL20260915-0001');
-    arrivalRepo.find
-      .mockResolvedValueOnce([
-        { arrivalNo: 'A1', seq: 1, itemCode: 'P1', qty: 100, iqcStatus: 'PENDING', vendorCode: 'V1', invoiceNo: 'INV-1' } as MatArrival,
-        { arrivalNo: 'A2', seq: 1, itemCode: 'P1', qty: 200, iqcStatus: 'PENDING', vendorCode: 'V1', invoiceNo: 'INV-1' } as MatArrival,
-      ])
-      .mockResolvedValueOnce([
-        { arrivalNo: 'A1', seq: 1, itemCode: 'P1', qty: 100, iqcStatus: 'PENDING', vendorCode: 'V1', invoiceNo: 'INV-1' } as MatArrival,
-        { arrivalNo: 'A2', seq: 1, itemCode: 'P1', qty: 200, iqcStatus: 'PENDING', vendorCode: 'V1', invoiceNo: 'INV-1' } as MatArrival,
-      ]);
+    arrivalRepo.find.mockResolvedValue([
+      { arrivalNo: 'A1', seq: 1, itemCode: 'P1', qty: 100, iqcStatus: 'PENDING', vendorCode: 'V1', invoiceNo: 'INV-1' } as MatArrival,
+      { arrivalNo: 'A2', seq: 1, itemCode: 'P1', qty: 200, iqcStatus: 'PENDING', vendorCode: 'V1', invoiceNo: 'INV-1' } as MatArrival,
+    ]);
+    // MAT_ARRIVALS.QTY 는 100/200 인데 실제 검사대기 시리얼 합은 300/600 인 1:N 케이스(실데이터 409건 중 18건).
+    // 모집단은 시리얼 합 기준이어야 한다.
+    mockCandidates([
+      { arrivalNo: 'A1', seq: 1, itemCode: 'P1', qty: 300 },
+      { arrivalNo: 'A2', seq: 1, itemCode: 'P1', qty: 600 },
+    ]);
     itemRepo.findOne.mockResolvedValue({ itemCode: 'P1', itemName: 'Cable' } as ItemMaster);
     requestRepo.create.mockImplementation((v) => v as IqcRequestLot);
     requestRepo.save.mockImplementation(async (v) => v as IqcRequestLot);
@@ -85,7 +150,9 @@ describe('IqcRequestLotService', () => {
       '1000',
     );
     expect(saved.requestNo).toBe('IQL20260915-0001');
-    expect(saved.lotQty).toBe(300);
+    // 입하수량 합(300)이 아니라 검사대기 시리얼 합(900)이다
+    expect(saved.lotQty).toBe(900);
+    expect(saved.lines.map((l) => l.qty)).toEqual([300, 600]);
     expect(saved.lines).toHaveLength(2);
   });
 
@@ -105,6 +172,7 @@ describe('IqcRequestLotService', () => {
       }) as MatArrival,
     );
     arrivalRepo.find.mockResolvedValue(rows);
+    mockCandidates(rows.map((r) => ({ arrivalNo: r.arrivalNo, seq: r.seq, itemCode: r.itemCode, qty: 100 })));
     itemRepo.findOne.mockResolvedValue({ itemCode: '1SH21A7A09', itemName: 'SHIELD' } as ItemMaster);
     requestRepo.create.mockImplementation((v) => v as IqcRequestLot);
     requestRepo.save.mockImplementation(async (v) => v as IqcRequestLot);

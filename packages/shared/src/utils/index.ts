@@ -26,3 +26,5 @@ export * from './assembly-sg-rules';
 export * from './inspect-measurement-spec';
 export * from './issue-allocation-rules';
 export * from './quality-control-plan.rules';
+export * from './iqc-inspect-mode-rules';
+export * from './iqc-sample-qty-rules';

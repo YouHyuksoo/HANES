@@ -12,6 +12,7 @@ import { BarcodeScanInput } from "@/components/shared";
 import { useWorkerOptions } from "@/hooks/useMasterOptions";
 import type { IqcItem, IqcResultForm } from "@/hooks/material/useIqcData";
 import api from "@/services/api";
+import { resolveIqcDisplaySampleQty, resolveIqcFullInspectQty, type IqcSampleQtySource } from "@harness/shared";
 
 interface IqcInspectItem {
   itemCode: string;
@@ -64,7 +65,7 @@ interface SerialInspection {
   rows: MeasurementRow[];
 }
 
-interface AqlPolicyPreview {
+interface AqlPolicyPreview extends IqcSampleQtySource {
   inspectionLevel: string;
   inspectionMode: string;
   sampleQty: number;
@@ -707,12 +708,16 @@ export default function IqcModal({ isOpen, onClose, selectedItem, form, setForm,
             <div className="rounded border border-border bg-background px-2 py-1.5">
               <span className="block text-[11px] font-medium leading-none text-text-muted">{t("material.iqc.aqlSampleQty", "AQL 샘플수량")}</span>
               <span className="mt-1 block text-xs font-semibold text-text">
-                {aqlPolicy ? `${aqlPolicy.sampleQty.toLocaleString()} / ${aqlPolicy.inspectionLevel} / ${aqlPolicy.inspectionMode}` : "-"}
+                {aqlPolicy
+                  ? `${(resolveIqcDisplaySampleQty(aqlPolicy) ?? 0).toLocaleString()} / ${aqlPolicy.inspectionLevel} / ${aqlPolicy.inspectionMode}`
+                  : "-"}
               </span>
               {aqlPolicy && (
                 <span className="mt-1 block text-[10px] leading-tight text-text-muted">
                   검사항목 기준 {aqlItemSummary.total}건
                   {aqlItemSummary.fixed > 0 ? ` · 파괴/고정 ${aqlItemSummary.fixed}건` : ""}
+                  {/* 전수/파괴 소요량은 AQL 시료수와 의미가 달라 합치지 않고 따로 적는다 */}
+                  {resolveIqcFullInspectQty(aqlPolicy) ? ` · 전수/파괴 소요 ${(resolveIqcFullInspectQty(aqlPolicy) ?? 0).toLocaleString()}` : ""}
                 </span>
               )}
               {aqlItemSummary.rules.length > 0 && (
