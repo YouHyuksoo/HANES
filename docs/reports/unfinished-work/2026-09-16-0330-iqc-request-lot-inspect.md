@@ -142,3 +142,156 @@ offenders는 `modules/quality/control-plan/services/` 4파일이며 `git status`
 - `judgeLotsWithAql()`는 입하단위와 의뢰 LOT 공용 코어다. 한쪽만 고치면 두 경로가 갈라진다.
 - `applyIqcVerdictToArrivals()`를 되살리지 말 것. AQL을 우회한다.
 - 품목 `1SH21A7A09`은 `MAT_ARRIVALS`는 PENDING인데 `MAT_LOTS`는 CANCELED다. 의뢰 구성은 되지만 검사 대상 시리얼이 없어 IQC 목록에 뜨지 않는다. 테스트에 쓰지 말 것. 데이터 정합성 문제로 별도 확인이 필요하다.
+
+---
+
+## 프로세스 유기성 점검 (2026-09-16, 코드 정독 + JSHANES 실측)
+
+브라우저 실행 없이 소스 정독과 DB 실측으로만 확인했다. 전 세션의 브라우저 검증 결과는 그대로 유효하다고 보고 그 위에 얹는다.
+
+### A. ARRIVAL 모드에서 의뢰 화면이 막다른 길이다 (1급)
+
+`IqcRequestLotService.create()`는 `IQC_INSPECT_LOT_MODE`를 읽지 않는다(소스 전수 확인, 참조 0건).
+현재 운영값은 `ARRIVAL`(JSHANES 실측: COMPANY=40 / PLANT_CD=1000 / 'ARRIVAL')이다. 따라서:
+
+- 담당자가 `/quality/iqc-request-lot`에서 의뢰를 확정해도 `/material/iqc`에는 아무 행도 뜨지 않는다
+- 같은 입하 행이 입하단위 행으로 그대로 노출되어 의뢰와 무관하게 검사·판정된다
+- `createArrivalResult` 경로는 `IQC_REQUEST_LOTS`를 전혀 건드리지 않는다(`iqcRequestLotRepository` 참조는 `findPendingSerials`/`createRequestLotResult`/`findPendingRequestLots`뿐)
+- 결과적으로 `MAT_LOTS`/`MAT_ARRIVALS`는 PASS/FAIL인데 의뢰 헤더는 `REQUESTED`로 영구 잔존한다. 취소밖에 길이 없다
+
+화면에 모드 경고나 생성 차단이 없다. 지금 상태의 가장 큰 구멍이다.
+
+### B. 모집단 수량 산출 기준이 두 갈래다 (1급)
+
+| 값 | 산출식 | 쓰이는 곳 |
+|---|---|---|
+| `IQC_REQUEST_LOTS.LOT_QTY` | `SUM(MAT_ARRIVALS.QTY)` | AQL 모집단 (`lotQtyOverride`) |
+| 검사대기 목록 `totalQty` | `SUM(MAT_LOTS.INIT_QTY)` | 화면 표시 수량 |
+
+JSHANES 실측: `(ARRIVAL_NO, SEQ)` 조인 409건 중 **18건**에서 두 값이 다르다. 입하 행 1건에 시리얼 여러 건이 달리고 그 합이 입하수량과 어긋나는 1:N 케이스다.
+
+예) `R26090900020 / SEQ 3 / VSFT1-201` — 입하수량 1,000 vs 시리얼 2건 합 3,000
+예) `R26070300018 / SEQ 1 / 6TPP210190` — 8,000,000 vs 5건 합 23,999,990
+
+입하단위 경로는 표시와 판정이 모두 `SUM(INIT_QTY)`라 일치하지만, 의뢰 LOT 경로만 갈라진다. 화면에 3,000 EA로 보이는 LOT을 AQL은 1,000 모집단으로 샘플수를 잡을 수 있다.
+
+### C. 예상 시료수 불일치 — 원인 확정, 그리고 범위가 더 넓다 (1급)
+
+**`0125` 기록의 "AQL 규칙이 없어 전수검사로 폴백" 추정은 틀렸다.** 실제 원인은 다르다.
+
+JSHANES `IQC_PART_SPEC_ITEMS` 실측: `HKEAN1W002FA`, `1SH21A7A09` 모두 `SEQ 101 / THN-A50-G01`이 `INSPECTION_TYPE='FULL'`, `SAMPLE_METHOD='FIXED'`다.
+
+`aql.service.ts:522-527`에서 FULL 항목은 `requiredQty = lotQty`이고, `itemInspectedCounts`가 없으면 `inspectedQty = requiredQty`로 폴백해 `sampleQty = max(..., lotQty)`가 된다.
+판정 경로는 `parseDestructive(dto.details)`로 실제 검사수량을 넘기므로 AQL 규칙값(125)이 남지만, **미리보기 경로는 `itemInspectedCounts`를 아예 넘기지 않는다.**
+
+프론트 호출부 전수 확인 결과 `itemInspectedCounts`를 넘기는 곳이 **한 곳도 없다.**
+
+- `hooks/material/useIqcRequestLot.ts:113` (의뢰 LOT 구성)
+- `components/material/IqcModal.tsx:521` (IQC 검사 모달 예상 판정)
+- `components/material/IqcRequestPrintModal.tsx:110` (검사의뢰서 인쇄)
+- `app/(authenticated)/master/iqc-part-spec/page.tsx:131` (품목 검사규격 AQL 요약)
+
+즉 FULL/파괴 검사항목이 하나라도 있는 품목은 **네 화면 모두** 예상 시료수가 모집단수량으로 뜬다. 의뢰 화면만의 문제가 아니다. 인쇄되는 검사의뢰서에도 잘못된 시료수가 찍힌다.
+
+### D. AQL이 실제로 적용되는 항목이 1건뿐이다 (확인 필요)
+
+`HKEAN1W002FA`의 활성 검사항목 6건 중 `AQL` 값이 있는 것은 `SEQ 1 / IQC-TEST`(AQL 0.01, 수준 I) 하나다.
+나머지 `THN-A50-H01/H02/V01/V02`는 등급(MAJOR/CRITICAL)만 있고 `AQL`이 `NULL`이라 `aql.service.ts:548`의 "AQL 미설정 → 불량 1건이면 FAIL" 제로톨러런스 분기로 떨어진다. `1SH21A7A09`도 9건 중 2건만 AQL이 있다.
+
+동작 자체는 설계된 보수적 폴백이지만, 담당자 입장에서는 **AQL 샘플링 검사로 보이는데 실제로는 대부분 항목이 무관용 판정**이다. THN 표준 관리계획 시드가 AQL 값을 안 채운 것으로 보인다. 기준정보 쪽 확인이 필요하다.
+
+### E. 의뢰↔검사이력 연결이 문자열뿐이다 (2급)
+
+`IQC_LOGS`에 `REQUEST_NO` 계열 컬럼이 없다(실측 0건). 연결은 `REMARK`의 `[IQL:...]` 접두어 하나다.
+역추적이 LIKE 검색으로만 가능하고 FK 무결성이 없다. 의뢰 LOT 기준 검사이력 조회 화면을 만들려면 먼저 컬럼이 필요하다.
+
+### F. `lineRole`(시료/대표)이 하류에서 소비되지 않는다 (2급)
+
+`createRequestLotResult`에서 `sampleLine`은 `representativeArrivalNo`(로그 표시용 대표 입하번호)만 정한다.
+검사 대상 시리얼도, 시료수도 역할과 무관하다. 화면은 담당자에게 시료/대표 구분을 강제(`SAMPLE` 1건 필수)하는데 판정은 그걸 쓰지 않는다. 의도된 설계인지 미구현인지 결정이 필요하다.
+
+### G. 같은 입하 행의 이중 편성을 DB가 막지 않는다 (2급)
+
+`IX_IQC_REQ_LOT_ARR`는 `NONUNIQUE`다(실측). 중복 방지는 `create()`의 애플리케이션 레벨 검사(`listCandidates` 재조회 후 대조)뿐이라 동시 요청에서 같은 입하 행이 두 의뢰에 들어갈 수 있다.
+단 `REQUESTED` 상태에서만 의미가 있고 검사 시점에는 `iqcStatus='PENDING'` 필터가 다시 걸려 이중 판정까지는 가지 않는다.
+
+### H. 기존 패턴 (신규 결함 아님)
+
+- `getValue('IQC_INSPECT_LOT_MODE')`(`iqc-history.service.ts:449`)에 company/plant를 넘기지 않는다. `SysConfigService.getValue`는 tenant 미지정 시 `configKey`만으로 `findOne` 한다. `IQC_SAMPLE_ISSUE_MODE`(325, 885행)도 동일하다. `IQC_FAIL_DEFECT_MOVE_MODE`(1090행)만 tenant를 넘긴다. 단일 테넌트인 현재는 무증상이다
+- `listCandidates()`가 품목의 PENDING 입하를 전량 로드한 뒤 메모리에서 `taken` 필터를 건다. itemCode 단위라 유계지만 프로젝트 SQL 규칙(메모리 집계 금지)과는 어긋난다
+
+### 정정
+
+`0125` 기록 "다음 작업자가 바로 할 일 #2 — `1SH21A7A09`의 AQL 규칙 확인"은 해소됐다. AQL 규칙은 있다(SEQ 1,2 = AQL 1.0 / 수준 II). 시료수가 모집단과 같게 나온 원인은 위 C의 FULL 검사항목 폴백이다.
+
+### 우선순위 제안
+
+1. A — 모드 가드. ARRIVAL 모드면 의뢰 생성을 막거나 화면에 경고를 띄운다. 또는 REQUEST로 전환한다
+2. C — 미리보기 4개 호출부에 `itemInspectedCounts`를 넘기거나, 서버가 미리보기에서 FULL 항목을 시료수 산출에서 빼도록 한다
+3. B — 모집단 기준을 하나로 정한다. 표시와 판정이 같은 값을 쓰게 한다
+4. D — 검사규격 AQL 미설정 항목 정리 (기준정보)
+5. E/F/G — 설계 결정 후 반영
+
+---
+
+## 점검 결과 조치 (2026-09-16, 커밋 34ac2c43)
+
+우선순위 A → C → B → D 순으로 처리했다. E/F/G는 설계·스키마 결정이 필요해 보고만 한다.
+
+### A. 완료 — 모드 가드
+
+- `IqcRequestLotService.create()`가 `IQC_INSPECT_LOT_MODE`를 읽고 REQUEST가 아니면 생성을 거절한다. 모드 판정은 `@harness/shared` `allowsIqcRequestLot()` 단일 출처
+- `createArrivalResult()`/`createResult()`가 REQUESTED 의뢰에 담긴 입하 행이면 거절한다(`assertNotHeldByRequestLot`). 모드를 되돌리거나 API를 직접 쳐도 고아가 생기지 않는다
+- 의뢰 화면에 모드 경고 배너 + 확정 버튼 비활성. 프론트가 서버 거절 사유를 그대로 표시한다
+- 테스트: 모드 가드 2건, 보유 행 가드 3건 신규
+
+### C. 완료 — 예상 시료수
+
+원인 확정: `aql.service.ts:522-527`에서 FULL 항목은 `itemInspectedCounts`가 없으면 `inspectedQty = requiredQty = lotQty`로 폴백하고, `sampleQty`가 전 항목 최댓값이라 모집단이 된다. 미리보기 호출부 **4곳 전부** `itemInspectedCounts`를 안 넘긴다.
+
+- `IqcAqlPolicyResolution`에 `aqlSampleQty`(AQL 항목만)와 `fullInspectQty`(전수/파괴/고정)를 분리 추가. 기존 `sampleQty`는 판정·로그용으로 그대로 둔다
+- 표시 규칙은 `@harness/shared` `resolveIqcDisplaySampleQty()`/`resolveIqcFullInspectQty()` 단일 출처
+- 4개 화면(의뢰 구성 / IQC 검사 모달 / 검사의뢰서 인쇄 / 품목 검사규격)이 분리값을 쓴다. 전수·파괴 소요량은 합치지 않고 따로 표시
+
+### B. 완료 — 모집단 기준 통일
+
+- `listCandidates()`를 `MAT_ARRIVALS × MAT_LOTS(PENDING)` 조인 집계로 바꿔 `qty`를 시리얼 `INIT_QTY` 합으로 내린다. `create()`의 `LOT_QTY`와 라인 `QTY`도 같은 값을 쓴다
+- 후보 그리드에 `검사대기수량`/`시리얼수` 컬럼을 노출한다
+- **부수효과**: 검사대기 시리얼이 없는 입하 행은 후보에서 빠진다. `1SH21A7A09`은 후보 60행 → **0행**이 된다(MAT_ARRIVALS는 PENDING인데 MAT_LOTS는 IQC_STATUS='CANCELED'). 빈 목록 문구에 제외 사유를 적어 뒀다
+- 스냅샷 드리프트: `createRequestLotResult`는 확정 시점 `header.lotQty`를 정본으로 유지한다(검사 중 모집단이 흔들리면 Ac/Re 기준이 바뀌므로). 판정 시점 시리얼 합과 다르면 `IQC_LOGS.REMARK`에 `[모집단드리프트:확정 N vs 판정시점 M]`을 남긴다
+- 실행 검증: `listCandidates` QueryBuilder를 JSHANES에 직접 실행. 생성 SQL의 alias 치환 정상, `HKEAN1W002FA` 50행 / 합계 50,000, `1SH21A7A09` 0행
+
+### D. 조사 완료 — 조치는 사용자 결정
+
+`IQC_PART_SPEC_ITEMS` 실측 (USE_YN='Y', 등급 있음, INSPECTION_TYPE='AQL'):
+
+| 구분 | 항목 수 | 품목 수 |
+|---|---|---|
+| AQL 값 있음 | 39 | 8 |
+| **AQL NULL** | **149 (79%)** | **30** |
+
+AQL NULL 항목은 전부 `THN-A50-*` 계열이고, `IQC-*` 계열은 전부 채워져 있다. 시드 소스 `2026-09-14_seed_thn_a50_iqc.sql`이 `DEFECT_GRADE`와 `INSPECTION_TYPE='AQL'`만 넣고 AQL 값을 넣지 않는다.
+
+결과적으로 이 149건은 `aql.service.ts:548`의 "등급은 있으나 AQL 미설정 → 불량 1건 이상이면 FAIL" 제로톨러런스 분기로 돈다. 동작은 설계된 보수적 폴백이지만, 담당자에게는 AQL 샘플링으로 보이면서 실제로는 무관용이다.
+
+**AQL 값을 채우는 것은 품질 판정 기준 변경이라 THN 표준 관리계획 담당 결정 사항이다.** 이번 작업에서 손대지 않았다.
+
+### E / F / G — 보고만
+
+- **E. 의뢰↔검사이력 연결이 문자열뿐**: `IQC_LOGS`에 `REQUEST_NO` 계열 컬럼 없음(실측). 연결은 `REMARK`의 `[IQL:...]` 접두어 하나다. 컬럼 추가는 DDL이고, DDL 후 의존 PL/SQL 패키지 INVALID(ORA-04068) 처리가 따라온다. 사용자 승인 후 진행할 일
+- **F. `lineRole`(시료/대표)이 판정에서 소비되지 않음**: `createRequestLotResult`에서 대표 입하번호(로그 표시용)만 정한다. 검사 대상 시리얼과 시료수는 역할과 무관하다. 판정에 반영하면 AQL 표준 샘플링과 충돌할 수 있어 설계 결정이 먼저다
+- **G. 이중 편성을 DB가 막지 않음**: `IX_IQC_REQ_LOT_ARR`가 NONUNIQUE. 상태(`REQUESTED`)가 헤더 테이블에 있어 라인 테이블 단순 UNIQUE로는 못 막는다. 라인에 상태 비정규화 컬럼을 두는 설계 결정이 필요하다. 검사 시점에 `iqcStatus='PENDING'` 필터가 다시 걸려 이중 판정까지는 가지 않는다
+
+### 곁들여 고친 것 (doubt 프로브 결과)
+
+- **SysConfig tenant 스코프 누락**: `getValue()` 호출 20곳 중 10곳이 company/plant를 안 넘긴다. IQC 범위 3곳(`iqc-history.service.ts` 379/503/944)은 함께 고쳤다. 나머지 7곳은 범위 밖이라 보고만 한다 — `erp-material.service.ts` 210/280, `scrap.service.ts` 126, `auto-issue.service.ts` 128/209, `hv-spc.service.ts` 46. 단일 테넌트인 현재는 무증상이다
+- **메뉴 코드 중복 등록**: `QC_IQC_REQUEST_LOT`이 `menuConfig.ts`, `menu-code-validator.ts`, `menu-config.json` 세 곳에 각각 두 번 등록돼 있었다. 전부 제거하고 `QC_AQL` 다음 위치로 통일했다. DB(`MENU_CATEGORY_ITEMS`)는 1건으로 정상
+- **i18n 네임스페이스 통째 누락**: `material.iqcRequestLot` 27개 키가 ko/en/zh/vi 어디에도 없어 화면이 t() 폴백으로만 돌고 있었다. 4개 파일에 채웠다. 참고로 저장소 전체 미등록 키는 아직 340여 건 남아 있다(범위 밖)
+
+### 아직 검증 못한 것
+
+- **브라우저 전 구간 재검증을 하지 않았다.** 이번 변경은 tsc/jest/직접 SQL 실행까지만 확인했다. 특히 다음은 화면에서 봐야 한다
+  - `IQC_INSPECT_LOT_MODE=REQUEST`로 바꾼 뒤 의뢰 생성 → 검사대기 노출 → 판정 전 구간
+  - 모드가 ARRIVAL일 때 배너/버튼 비활성과 서버 거절 메시지
+  - 4개 화면의 예상 시료수 표시가 AQL 값으로 바뀌었는지
+- 운영 모드는 여전히 `ARRIVAL`이다. 전환 시점은 사용자 결정
