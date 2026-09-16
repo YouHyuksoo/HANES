@@ -15,12 +15,17 @@ test('/master/inspect-aid keeps page.tsx thin: columns + form panel are separate
   assert.doesNotMatch(page, /<Input\s+label=/);
 });
 
-test('type tabs filter the list by aidType and expiring summary comes from /expiring', () => {
-  assert.match(page, /role="tablist"/);
-  for (const type of ['LIMIT_OK', 'LIMIT_NG', 'HOLDER']) {
-    assert.match(page, new RegExp(`value: "${type}"`), `${type} 탭 누락`);
+test('holder-only master: no type tabs, and limit-sample fields are gone', () => {
+  // 한도견본은 /master/limit-sample로 분리됐다 — 유형 탭도 대조 전용 필드도 여기 남아 있으면 안 된다.
+  assert.doesNotMatch(page, /role="tablist"/);
+  for (const gone of ['LIMIT_OK', 'LIMIT_NG', 'typeTab']) {
+    assert.doesNotMatch(page, new RegExp(gone), `${gone} 잔존`);
   }
-  assert.match(page, /params\.aidType = typeTab/);
+  for (const gone of ['defectCode', 'inspectType', 'requiredYn', 'sortOrder']) {
+    for (const src of [page, panel, columns]) {
+      assert.doesNotMatch(src, new RegExp(gone), `${gone} 잔존`);
+    }
+  }
   assert.match(page, /\/master\/inspect-aids\/expiring/);
   assert.match(page, /days: EXPIRING_DAYS/);
   assert.match(page, /const EXPIRING_DAYS = 30/);
@@ -56,7 +61,6 @@ test('coded values use shared select components', () => {
   assert.match(panel, /<PartSelect[\s\S]*value=\{form\.itemCode\}/);
   assert.match(panel, /<ProcessSelect[\s\S]*value=\{form\.processCode\}/);
   assert.match(panel, /<UseYnSelect includeAll=\{false\}/);
-  assert.match(page, /\/quality\/defect-codes\/options/);
   assert.match(columns, /<ComCodeBadge groupCode="INSPECT_AID_TYPE"/);
   assert.match(columns, /<ComCodeBadge groupCode="INSPECT_AID_STATUS"/);
 });

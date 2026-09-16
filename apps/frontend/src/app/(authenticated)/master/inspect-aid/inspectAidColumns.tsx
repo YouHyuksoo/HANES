@@ -2,7 +2,7 @@
 
 /**
  * @file src/app/(authenticated)/master/inspect-aid/inspectAidColumns.tsx
- * @description 검사보조구(한도견본·검사홀더) DataGrid 컬럼 팩토리 + 유효기간 만료/임박 배지
+ * @description 검사보조구(검사홀더·지그) DataGrid 컬럼 팩토리 + 유효기간 만료/임박 배지
  *
  * 초보자 가이드:
  * 1. 유효기간 배지는 서버가 내려준 expiryState(EXPIRED/EXPIRING/VALID/NONE)를 그대로 표시한다(프론트 재계산 없음).
@@ -16,7 +16,7 @@ import { ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
 import InspectItemImage from "@/components/shared/InspectItemImage";
 
-export type InspectAidType = "LIMIT_OK" | "LIMIT_NG" | "HOLDER";
+export type InspectAidType = "HOLDER";
 export type InspectAidStatus = "ACTIVE" | "EXPIRED" | "RETIRED";
 export type InspectAidExpiryState = "EXPIRED" | "EXPIRING" | "VALID" | "NONE";
 
@@ -27,7 +27,6 @@ export interface InspectAidRow {
   aidName: string;
   itemCode: string | null;
   processCode: string | null;
-  defectCode: string | null;
   imageUrl: string | null;
   location: string | null;
   validFrom: string | null;
@@ -37,12 +36,6 @@ export interface InspectAidRow {
   status: InspectAidStatus;
   remark: string | null;
   useYn: string;
-  /** 적용 검사유형 — null이면 전 검사유형 공통 */
-  inspectType: string | null;
-  /** 검사 전 대조 필수 여부 */
-  requiredYn: string;
-  /** 대조 모달 표시 순서 */
-  sortOrder: number;
   expiryState: InspectAidExpiryState;
   daysToExpiry: number | null;
   updatedAt: string;
@@ -118,44 +111,12 @@ export function createInspectAidGridColumns({
       meta: { filterType: "text" as const },
     },
     {
-      accessorKey: "inspectType",
-      header: () => <StatusHeaderHelp label={t("master.inspectAid.inspectType")} codeType="INSPECT_TYPE" align="center" />,
-      size: 120,
-      meta: { filterType: "multi" as const },
-      cell: ({ getValue }) => {
-        const code = getValue() as string | null;
-        if (!code) return <span className="text-text-muted">{t("master.inspectAid.inspectTypeAll")}</span>;
-        return <ComCodeBadge groupCode="INSPECT_TYPE" code={code} />;
-      },
-    },
-    {
-      accessorKey: "requiredYn", header: t("master.inspectAid.requiredYn"), size: 90,
-      meta: { align: "center" as const, filterType: "multi" as const },
-      cell: ({ getValue }) => (getValue() === "Y"
-        ? (
-          <span className="inline-flex items-center rounded border border-primary px-1.5 py-0.5 text-[11px] font-semibold text-primary">
-            {t("master.inspectAid.required")}
-          </span>
-        )
-        : <span className="text-text-muted">-</span>),
-    },
-    {
-      accessorKey: "sortOrder", header: t("master.inspectAid.sortOrder"), size: 80,
-      meta: { align: "right" as const },
-      cell: ({ getValue }) => <span className="tabular-nums">{(getValue() as number) ?? 0}</span>,
-    },
-    {
       accessorKey: "itemCode", header: t("master.inspectAid.itemCode"), size: 130,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string | null) ?? "-",
     },
     {
       accessorKey: "processCode", header: t("master.inspectAid.processCode"), size: 110,
-      meta: { filterType: "text" as const },
-      cell: ({ getValue }) => (getValue() as string | null) ?? "-",
-    },
-    {
-      accessorKey: "defectCode", header: t("master.inspectAid.defectCode"), size: 110,
       meta: { filterType: "text" as const },
       cell: ({ getValue }) => (getValue() as string | null) ?? "-",
     },

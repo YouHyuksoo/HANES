@@ -2,10 +2,10 @@
 
 /**
  * @file src/app/(authenticated)/master/inspect-aid/page.tsx
- * @description 검사보조구 마스터(한도견본·검사홀더) 페이지 — 레이아웃·상태 배선만 담당
+ * @description 검사보조구 마스터(검사홀더·지그) 페이지 — 레이아웃·상태 배선만 담당
  *
  * 초보자 가이드:
- * 1. 상단 유형 탭(전체/양품견본/불량견본/홀더) + 만료·임박 카운트(서버 /expiring?days=30)
+ * 1. 상단 만료·임박 카운트(서버 /expiring?days=30). 양품·불량 한도견본은 /master/limit-sample로 분리됐다.
  * 2. 좌: DataGrid(서버 페이징) — 컬럼은 inspectAidColumns.tsx (만료/임박 배지 포함)
  * 3. 우: InspectAidFormPanel — 행 클릭 시 데이터 교체 + useUnsavedGuard, 사진은 저장 후 POST :code/image
  * 4. API: /master/inspect-aids (GET/POST), /:code (PUT/DELETE), /:code/image (POST/DELETE), /expiring
@@ -14,14 +14,13 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, RefreshCw, Search, ShieldCheck } from "lucide-react";
 import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
-import type { SelectOption } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect, UseYnSelect } from "@/components/shared";
 import ServerPager from "@/components/shared/ServerPager";
 import api from "@/services/api";
 import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import { formatDateOnly } from "@/utils/date";
-import { createInspectAidGridColumns, type InspectAidRow, type InspectAidType } from "./inspectAidColumns";
+import { createInspectAidGridColumns, type InspectAidRow } from "./inspectAidColumns";
 import InspectAidFormPanel, {
   emptyInspectAidForm,
   validateInspectAidForm,
@@ -30,9 +29,6 @@ import InspectAidFormPanel, {
 
 const PAGE_SIZE = 100;
 const EXPIRING_DAYS = 30;
-type TypeTab = "" | InspectAidType;
-
-interface DefectCodeOption { defectCode: string; defectName: string }
 
 export default function InspectAidPage() {
   const { t } = useTranslation();
@@ -41,12 +37,10 @@ export default function InspectAidPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [typeTab, setTypeTab] = useState<TypeTab>("");
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [useYnFilter, setUseYnFilter] = useState("Y");
   const [expiringSummary, setExpiringSummary] = useState({ expired: 0, expiring: 0 });
-  const [defectCodeOptions, setDefectCodeOptions] = useState<SelectOption[]>([]);
   const [panelOpen, setPanelOpen] = useState(false);
   const [editing, setEditing] = useState<InspectAidRow | null>(null);
   const [selectedRow, setSelectedRow] = useState<InspectAidRow | null>(null);
@@ -79,7 +73,6 @@ export default function InspectAidPage() {
     setLoading(true);
     try {
       const params: Record<string, string> = { page: String(page), limit: String(PAGE_SIZE) };
-      if (typeTab) params.aidType = typeTab;
       if (searchText.trim()) params.search = searchText.trim();
       if (statusFilter) params.status = statusFilter;
       if (useYnFilter) params.useYn = useYnFilter;
@@ -92,32 +85,11 @@ export default function InspectAidPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, typeTab, searchText, statusFilter, useYnFilter]);
+  }, [page, searchText, statusFilter, useYnFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { fetchExpiring(); }, [fetchExpiring]);
-  useEffect(() => { setPage(1); }, [typeTab, searchText, statusFilter, useYnFilter]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await api.get("/quality/defect-codes/options");
-        const list: DefectCodeOption[] = Array.isArray(res.data?.data) ? res.data.data : [];
-        if (!cancelled) setDefectCodeOptions(list.map(d => ({ value: d.defectCode, label: `${d.defectCode} - ${d.defectName}` })));
-      } catch {
-        if (!cancelled) setDefectCodeOptions([]);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  const typeTabs = useMemo<Array<{ value: TypeTab; label: string }>>(() => [
-    { value: "", label: t("common.all") },
-    { value: "LIMIT_OK", label: t("comCode.INSPECT_AID_TYPE.LIMIT_OK") },
-    { value: "LIMIT_NG", label: t("comCode.INSPECT_AID_TYPE.LIMIT_NG") },
-    { value: "HOLDER", label: t("comCode.INSPECT_AID_TYPE.HOLDER") },
-  ], [t]);
+  useEffect(() => { setPage(1); }, [searchText, statusFilter, useYnFilter]);
 
   const setField = useCallback((key: keyof InspectAidForm, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -132,7 +104,6 @@ export default function InspectAidPage() {
   const openCreate = () => {
     setEditing(null);
     const blank = emptyInspectAidForm();
-    if (typeTab) blank.aidType = typeTab;
     setForm(blank);
     initialFormRef.current = blank;
     resetImageState(null);
@@ -148,7 +119,6 @@ export default function InspectAidPage() {
       aidName: row.aidName,
       itemCode: row.itemCode ?? "",
       processCode: row.processCode ?? "",
-      defectCode: row.defectCode ?? "",
       location: row.location ?? "",
       validFrom: row.validFrom ?? "",
       validTo: row.validTo ?? "",
@@ -158,9 +128,6 @@ export default function InspectAidPage() {
       status: row.status || "ACTIVE",
       remark: row.remark ?? "",
       useYn: row.useYn || "Y",
-      inspectType: row.inspectType ?? "",
-      requiredYn: row.requiredYn || "Y",
-      sortOrder: String(row.sortOrder ?? 0),
     };
     setForm(next);
     initialFormRef.current = next;
@@ -214,7 +181,6 @@ export default function InspectAidPage() {
       aidName: form.aidName.trim(),
       itemCode: form.itemCode || null,
       processCode: form.processCode || null,
-      defectCode: form.aidType === "LIMIT_NG" ? (form.defectCode || null) : null,
       location: form.location.trim() || null,
       validFrom: form.validFrom || null,
       validTo: form.validTo || null,
@@ -223,10 +189,6 @@ export default function InspectAidPage() {
       status: form.status,
       remark: form.remark.trim() || null,
       useYn: form.useYn,
-      inspectType: form.inspectType || null,
-      // 홀더·지그는 대조 대상이 아니므로 필수 플래그를 항상 내려보낸다(서버도 같은 규칙).
-      requiredYn: form.aidType === "HOLDER" ? "N" : form.requiredYn,
-      sortOrder: Number(form.sortOrder) || 0,
     };
     try {
       const aidCode = editing?.aidCode ?? payload.aidCode;
@@ -300,19 +262,6 @@ export default function InspectAidPage() {
           </div>
         </div>
 
-        {/* 유형 탭 */}
-        <div className="flex gap-1 border-b border-border flex-shrink-0" role="tablist">
-          {typeTabs.map(tab => (
-            <button key={tab.value || "ALL"} type="button" role="tab" aria-selected={typeTab === tab.value}
-              onClick={() => setTypeTab(tab.value)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                typeTab === tab.value ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text"
-              }`}>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
         <Card className="flex-1 min-h-0 overflow-hidden" padding="none">
           <CardContent className="h-full p-4">
             <DataGrid data={rows} columns={columns} isLoading={loading} pageSize={PAGE_SIZE}
@@ -337,7 +286,7 @@ export default function InspectAidPage() {
                   <ServerPager page={page} total={total} limit={PAGE_SIZE} onPageChange={setPage} disabled={loading} className="flex-shrink-0 ml-auto" />
                 </div>
               }
-              sqlQuery={`SELECT *\nFROM INSPECT_AIDS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY AID_TYPE, AID_CODE`} />
+              sqlQuery={`SELECT *\nFROM INSPECT_AIDS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\nORDER BY AID_CODE`} />
           </CardContent>
         </Card>
       </div>
@@ -348,7 +297,6 @@ export default function InspectAidPage() {
           editing={!!editing}
           saving={saving}
           form={form}
-          defectCodeOptions={defectCodeOptions}
           previewUrl={previewUrl}
           imageError={imageError}
           onChange={setField}

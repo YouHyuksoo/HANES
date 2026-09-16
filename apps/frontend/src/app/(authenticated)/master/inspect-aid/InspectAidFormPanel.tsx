@@ -2,18 +2,17 @@
 
 /**
  * @file src/app/(authenticated)/master/inspect-aid/InspectAidFormPanel.tsx
- * @description 검사보조구 등록/수정 우측 슬라이드 패널 — 사진 업로드/교체/삭제 포함 (액션 버튼 상단)
+ * @description 검사보조구(검사홀더·지그) 등록/수정 우측 슬라이드 패널 — 사진 업로드/교체/삭제 포함 (액션 버튼 상단)
  *
  * 초보자 가이드:
  * 1. form 상태·저장·업로드 호출은 page.tsx가 소유. 이 컴포넌트는 입력 UI와 파일 선택만 담당한다.
- * 2. 유형은 ComCodeSelect(INSPECT_AID_TYPE), 품목 PartSelect, 공정 ProcessSelect, 불량코드는 옵션 API 목록 Select.
+ * 2. 유형은 ComCodeSelect(INSPECT_AID_TYPE), 품목 PartSelect, 공정 ProcessSelect.
  * 3. 사진: previewUrl(blob 또는 서버 경로)로 미리보기, 삭제는 ConfirmModal 확인 후 page에서 처리.
  */
 import { useRef } from "react";
 import type { TFunction } from "i18next";
 import { ImageIcon, RefreshCw, Trash2, Upload } from "lucide-react";
-import { Button, Input, Select } from "@/components/ui";
-import type { SelectOption } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 import { ComCodeSelect, PartSelect, ProcessSelect, UseYnSelect } from "@/components/shared";
 import { resolveBackendFileUrl } from "@/utils/file-url";
 
@@ -23,7 +22,6 @@ export interface InspectAidForm {
   aidName: string;
   itemCode: string;
   processCode: string;
-  defectCode: string;
   location: string;
   validFrom: string;
   validTo: string;
@@ -32,21 +30,14 @@ export interface InspectAidForm {
   status: string;
   remark: string;
   useYn: string;
-  /** 적용 검사유형 — 빈 값이면 전 검사유형 공통 */
-  inspectType: string;
-  /** 검사 전 대조 필수 여부 (홀더·지그는 N 고정) */
-  requiredYn: string;
-  /** 대조 모달 표시 순서 */
-  sortOrder: string;
 }
 
 export const emptyInspectAidForm = (): InspectAidForm => ({
   aidCode: "",
-  aidType: "LIMIT_OK",
+  aidType: "HOLDER",
   aidName: "",
   itemCode: "",
   processCode: "",
-  defectCode: "",
   location: "",
   validFrom: "",
   validTo: "",
@@ -55,9 +46,6 @@ export const emptyInspectAidForm = (): InspectAidForm => ({
   status: "ACTIVE",
   remark: "",
   useYn: "Y",
-  inspectType: "",
-  requiredYn: "Y",
-  sortOrder: "0",
 });
 
 /** 저장 가능 조건: 코드·유형·명칭 필수, 유효기간 시작 ≤ 종료 */
@@ -72,7 +60,6 @@ interface InspectAidFormPanelProps {
   editing: boolean;
   saving: boolean;
   form: InspectAidForm;
-  defectCodeOptions: SelectOption[];
   previewUrl: string | null;
   imageError: boolean;
   onChange: (key: keyof InspectAidForm, value: string) => void;
@@ -84,14 +71,11 @@ interface InspectAidFormPanelProps {
 }
 
 export default function InspectAidFormPanel({
-  t, editing, saving, form, defectCodeOptions, previewUrl, imageError,
+  t, editing, saving, form, previewUrl, imageError,
   onChange, onImageSelect, onImageError, onRequestImageDelete, onSave, onCancel,
 }: InspectAidFormPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canSave = !saving && validateInspectAidForm(form);
-  const isNgSample = form.aidType === "LIMIT_NG";
-  /** 홀더·지그는 대조 대상이 아니므로 필수 플래그를 잠근다. */
-  const isHolder = form.aidType === "HOLDER";
 
   return (
     <div className="w-[480px] border-l border-border bg-background flex flex-col h-full overflow-hidden shadow-2xl text-xs animate-slide-in-right">
@@ -123,27 +107,6 @@ export default function InspectAidFormPanel({
             </div>
             <ProcessSelect label={t("master.inspectAid.processCode")} value={form.processCode}
               onChange={v => onChange("processCode", v)} placeholder={t("common.all")} fullWidth />
-            <Select label={t("master.inspectAid.defectCode")} options={defectCodeOptions} value={form.defectCode}
-              onChange={v => onChange("defectCode", v)} placeholder={t("common.all")} fullWidth
-              disabled={!isNgSample} />
-            {!isNgSample && (
-              <p className="col-span-2 text-text-muted">{t("master.inspectAid.defectCodeHint")}</p>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-xs font-semibold text-text-muted mb-2">{t("master.inspectAid.sectionSampleCheck")}</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <ComCodeSelect groupCode="INSPECT_TYPE" includeAll={false} label={t("master.inspectAid.inspectType")}
-              placeholder={t("master.inspectAid.inspectTypeAll")}
-              value={form.inspectType} onChange={v => onChange("inspectType", v)} fullWidth />
-            <UseYnSelect includeAll={false} label={t("master.inspectAid.requiredYn")}
-              value={isHolder ? "N" : form.requiredYn} onChange={v => onChange("requiredYn", v)}
-              disabled={isHolder} fullWidth />
-            <Input label={t("master.inspectAid.sortOrder")} type="number" min={0} value={form.sortOrder}
-              onChange={e => onChange("sortOrder", e.target.value)} fullWidth />
-            <p className="col-span-2 text-text-muted">{t("master.inspectAid.requiredHint")}</p>
           </div>
         </div>
 

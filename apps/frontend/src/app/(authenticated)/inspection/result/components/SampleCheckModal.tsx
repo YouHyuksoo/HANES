@@ -5,8 +5,8 @@
  * @description 양불마스터(한도견본) 대조 모달 — 견본 바코드 스캔 후 검사기 결과 입력
  *
  * 초보자 가이드:
- * 1. 후보는 품목·검사유형 기준으로 서버가 내려준다(INSPECT_AIDS).
- * 2. 견본 바코드(AID_CODE)를 스캔한 행만 합격/불합격 버튼이 열린다.
+ * 1. 후보는 품목·검사유형 기준으로 서버가 내려준다(LIMIT_SAMPLES).
+ * 2. 견본 바코드(SAMPLE_CODE)를 스캔한 행만 합격/불합격 버튼이 열린다.
  * 3. OK/NG 판정은 서버가 기대값(양품=합격, 불량=불합격)과 비교해 산출한다. 화면은 판정하지 않는다.
  * 4. 필수 견본이 만료면 저장을 막고 기준정보 갱신을 안내한다.
  * 5. alert/confirm 대신 공용 Modal과 토스트를 쓴다.
@@ -20,9 +20,9 @@ import { BarcodeScanInput, InspectItemImage } from "@/components/shared";
 import api from "@/services/api";
 
 export interface SampleCheckCandidate {
-  aidCode: string;
-  aidName: string;
-  aidType: string;
+  sampleCode: string;
+  sampleName: string;
+  sampleType: string;
   expectedResult: "PASS" | "FAIL";
   requiredYn: string;
   sortOrder: number;
@@ -86,14 +86,14 @@ export default function SampleCheckModal({
   const handleScan = useCallback((raw: string) => {
     const code = raw.trim().toUpperCase();
     if (!code) return;
-    const found = candidates.find((c) => c.aidCode.trim().toUpperCase() === code);
+    const found = candidates.find((c) => c.sampleCode.trim().toUpperCase() === code);
     setScanValue("");
     if (!found) {
       toast.error(t("inspection.result.sampleCheck.unknownCode", { code }));
       return;
     }
-    setScannedCodes((prev) => ({ ...prev, [found.aidCode]: new Date().toISOString() }));
-    setActiveCode(found.aidCode);
+    setScannedCodes((prev) => ({ ...prev, [found.sampleCode]: new Date().toISOString() }));
+    setActiveCode(found.sampleCode);
     scanRef.current?.focus();
   }, [candidates, t]);
 
@@ -105,7 +105,7 @@ export default function SampleCheckModal({
     () => requiredCandidates.filter((c) => c.expired),
     [requiredCandidates],
   );
-  const allRequiredAnswered = requiredCandidates.every((c) => actualResults[c.aidCode]);
+  const allRequiredAnswered = requiredCandidates.every((c) => actualResults[c.sampleCode]);
   const canSave = !saving
     && candidates.length > 0
     && expiredRequired.length === 0
@@ -115,11 +115,11 @@ export default function SampleCheckModal({
     setSaving(true);
     try {
       const items = candidates
-        .filter((c) => actualResults[c.aidCode])
+        .filter((c) => actualResults[c.sampleCode])
         .map((c) => ({
-          aidCode: c.aidCode,
-          actualResult: actualResults[c.aidCode],
-          scannedAt: scannedCodes[c.aidCode] ?? null,
+          sampleCode: c.sampleCode,
+          actualResult: actualResults[c.sampleCode],
+          scannedAt: scannedCodes[c.sampleCode] ?? null,
         }));
       const res = await api.post("/quality/continuity-inspect/sample-check", {
         orderNo, inspectType, equipCode, itemCode, items,
@@ -167,7 +167,7 @@ export default function SampleCheckModal({
             <div>
               <p className="font-semibold">{t("inspection.result.sampleCheck.expiredBlocked")}</p>
               <p className="mt-0.5 font-mono">
-                {expiredRequired.map((c) => `${c.aidCode}${c.validTo ? ` (${c.validTo})` : ""}`).join(", ")}
+                {expiredRequired.map((c) => `${c.sampleCode}${c.validTo ? ` (${c.validTo})` : ""}`).join(", ")}
               </p>
             </div>
           </div>
@@ -181,21 +181,21 @@ export default function SampleCheckModal({
 
         <div className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto">
           {candidates.map((candidate) => {
-            const scanned = Boolean(scannedCodes[candidate.aidCode]);
-            const actual = actualResults[candidate.aidCode];
+            const scanned = Boolean(scannedCodes[candidate.sampleCode]);
+            const actual = actualResults[candidate.sampleCode];
             return (
               <div
-                key={candidate.aidCode}
+                key={candidate.sampleCode}
                 className={[
                   "flex items-center gap-3 rounded border px-3 py-2",
-                  activeCode === candidate.aidCode ? "border-primary" : "border-border",
+                  activeCode === candidate.sampleCode ? "border-primary" : "border-border",
                 ].join(" ")}
               >
-                <InspectItemImage imageUrl={candidate.imageUrl} alt={candidate.aidName} size={44} />
+                <InspectItemImage imageUrl={candidate.imageUrl} alt={candidate.sampleName} size={44} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-semibold text-primary">{candidate.aidCode}</span>
-                    <ComCodeBadge groupCode="INSPECT_AID_TYPE" code={candidate.aidType} />
+                    <span className="font-mono text-xs font-semibold text-primary">{candidate.sampleCode}</span>
+                    <ComCodeBadge groupCode="LIMIT_SAMPLE_TYPE" code={candidate.sampleType} />
                     {candidate.requiredYn === "Y" && (
                       <span className="rounded border border-primary px-1 py-0.5 text-[10px] font-semibold text-primary">
                         {t("inspection.result.sampleCheck.required")}
@@ -208,7 +208,7 @@ export default function SampleCheckModal({
                     )}
                   </div>
                   <div className="mt-0.5 flex items-center gap-2 text-xs">
-                    <span className="truncate text-text">{candidate.aidName}</span>
+                    <span className="truncate text-text">{candidate.sampleName}</span>
                     <span className="shrink-0 text-text-muted">
                       {candidate.expectedResult === "PASS"
                         ? t("inspection.result.sampleCheck.expectedPass")
@@ -222,7 +222,7 @@ export default function SampleCheckModal({
                     variant={actual === "PASS" ? "primary" : "secondary"}
                     disabled={!scanned || candidate.expired}
                     title={!scanned ? t("inspection.result.sampleCheck.notScanned") : undefined}
-                    onClick={() => setActualResults((prev) => ({ ...prev, [candidate.aidCode]: "PASS" }))}
+                    onClick={() => setActualResults((prev) => ({ ...prev, [candidate.sampleCode]: "PASS" }))}
                   >
                     <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
                     {t("inspection.result.sampleCheck.actualPass")}
@@ -232,7 +232,7 @@ export default function SampleCheckModal({
                     variant={actual === "FAIL" ? "danger" : "secondary"}
                     disabled={!scanned || candidate.expired}
                     title={!scanned ? t("inspection.result.sampleCheck.notScanned") : undefined}
-                    onClick={() => setActualResults((prev) => ({ ...prev, [candidate.aidCode]: "FAIL" }))}
+                    onClick={() => setActualResults((prev) => ({ ...prev, [candidate.sampleCode]: "FAIL" }))}
                   >
                     <XCircle className="mr-1 h-3.5 w-3.5" />
                     {t("inspection.result.sampleCheck.actualFail")}
