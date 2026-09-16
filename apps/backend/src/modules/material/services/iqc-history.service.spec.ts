@@ -937,6 +937,54 @@ describe('IqcHistoryService cancel policy', () => {
     );
   });
 
+  it('의뢰 LOT 판정 취소는 담긴 행만 되돌리고 의뢰 헤더를 REQUESTED로 복원한다', async () => {
+    // 실측 확인(2026-09-16): 헤더를 안 되돌리면 STATUS가 PASS로 남아 재검사가 영영 막힌다.
+    mockIqcLogRepo.findOne.mockResolvedValue({
+      inspectDate: new Date('2026-09-16'),
+      seq: 1,
+      arrivalNo: 'ARR-REQ',
+      matUid: null,
+      requestNo: 'IQL20260916-0009',
+      itemCode: 'ITEM-001',
+      result: 'PASS',
+      status: 'DONE',
+      company: 'HANES',
+      plant: 'P01',
+    } as any);
+    mockMatReceivingRepo.findOne.mockResolvedValue(null);
+    mockStockTxRepo.findOne.mockResolvedValue(null);
+
+    const manager = {
+      find: jest.fn().mockResolvedValue([
+        { requestNo: 'IQL20260916-0009', seq: 1, arrivalNo: 'ARR-REQ', arrivalSeq: 3, itemCode: 'ITEM-001' },
+      ]),
+      findOne: jest.fn().mockResolvedValue(null),
+      update: jest.fn().mockResolvedValue(undefined),
+      save: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    await target.cancel('2026-09-16', 1, { reason: 'retest' } as any);
+
+    // 의뢰에 담긴 (ARRIVAL_NO, ARRIVAL_SEQ) 행만 되돌린다 — 대표 입하번호 전체가 아니다
+    expect(manager.update).toHaveBeenCalledWith(
+      MatLot,
+      expect.objectContaining({ arrivalNo: 'ARR-REQ', arrivalSeq: 3, itemCode: 'ITEM-001', iqcStatus: 'PASS' }),
+      { iqcStatus: 'PENDING', expireDate: null },
+    );
+    expect(manager.update).toHaveBeenCalledWith(
+      MatArrival,
+      expect.objectContaining({ arrivalNo: 'ARR-REQ', seq: 3, itemCode: 'ITEM-001', iqcStatus: 'PASS' }),
+      { iqcStatus: 'PENDING' },
+    );
+    // 헤더 복원
+    expect(manager.update).toHaveBeenCalledWith(
+      IqcRequestLot,
+      expect.objectContaining({ requestNo: 'IQL20260916-0009' }),
+      { status: 'REQUESTED', sampleQty: null },
+    );
+  });
+
   it('입하단위 IQC 취소는 LOT과 입하 행 상태를 함께 PENDING으로 복원한다', async () => {
     mockIqcLogRepo.findOne.mockResolvedValue({
       inspectDate: new Date('2026-04-08'),

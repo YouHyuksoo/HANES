@@ -1523,8 +1523,25 @@ export class IqcHistoryService {
         await this.reverseIqcFailMove(queryRunner, log.matUid, log.itemCode, log.company, log.plant);
       }
 
-      // 입하단위 검사(matUid=null) FAIL → 입하건 전체 시리얼의 불량창고 이동을 원복
-      if (!log.matUid && log.arrivalNo && log.itemCode && log.result === 'FAIL') {
+      // 의뢰 LOT 검사 FAIL → 의뢰에 담긴 입하 행의 시리얼만 불량창고 이동을 원복한다.
+      // 대표 입하번호 전체를 대상으로 하면 의뢰 밖 행까지 되돌아간다.
+      if (!log.matUid && log.requestNo && log.itemCode && log.result === 'FAIL') {
+        for (const line of await this.findRequestLotLinesInTx(queryRunner, log)) {
+          const failedLots = await queryRunner.manager.find(MatLot, {
+            where: {
+              arrivalNo: line.arrivalNo,
+              arrivalSeq: line.arrivalSeq,
+              itemCode: line.itemCode,
+              iqcStatus: 'FAIL',
+              ...this.tenantWhere(log.company, log.plant),
+            },
+          });
+          for (const lot of failedLots) {
+            await this.reverseIqcFailMove(queryRunner, lot.matUid, lot.itemCode, lot.company, lot.plant);
+          }
+        }
+      } else if (!log.matUid && log.arrivalNo && log.itemCode && log.result === 'FAIL') {
+        // 입하단위 검사(matUid=null) FAIL → 입하건 전체 시리얼의 불량창고 이동을 원복
         const failedLots = await queryRunner.manager.find(MatLot, {
           where: {
             arrivalNo: log.arrivalNo,
@@ -1550,6 +1567,39 @@ export class IqcHistoryService {
           MatLot,
           { matUid: log.matUid, ...this.tenantWhere(log.company, log.plant) },
           { iqcStatus: 'PENDING', expireDate: null },
+        );
+      } else if (log.requestNo && log.itemCode) {
+        // 의뢰 LOT 검사 → 의뢰에 담긴 (ARRIVAL_NO, ARRIVAL_SEQ) 행만 복원하고 의뢰 헤더도 되돌린다.
+        // 대표 입하번호로 되돌리면 의뢰 밖 행까지 PENDING이 되고, 헤더를 안 되돌리면
+        // STATUS가 PASS/FAIL로 남아 재검사가 영영 막힌다(createRequestLotResult가 REQUESTED만 받는다).
+        for (const line of await this.findRequestLotLinesInTx(queryRunner, log)) {
+          await queryRunner.manager.update(
+            MatLot,
+            {
+              arrivalNo: line.arrivalNo,
+              arrivalSeq: line.arrivalSeq,
+              itemCode: line.itemCode,
+              iqcStatus: log.result,
+              ...this.tenantWhere(log.company, log.plant),
+            },
+            { iqcStatus: 'PENDING', expireDate: null },
+          );
+          await queryRunner.manager.update(
+            MatArrival,
+            {
+              arrivalNo: line.arrivalNo,
+              seq: line.arrivalSeq,
+              itemCode: line.itemCode,
+              iqcStatus: log.result,
+              ...this.tenantWhere(log.company, log.plant),
+            },
+            { iqcStatus: 'PENDING' },
+          );
+        }
+        await queryRunner.manager.update(
+          IqcRequestLot,
+          { requestNo: log.requestNo, ...this.tenantWhere(log.company, log.plant) },
+          { status: 'REQUESTED', sampleQty: null },
         );
       } else if (log.arrivalNo && log.itemCode) {
         // 입하단위 검사 → 해당 입하건 전체 시리얼을 일괄 PENDING 복원
@@ -1597,6 +1647,18 @@ export class IqcHistoryService {
     });
 
     return { inspectDate, seq, status: 'CANCELED' };
+  }
+
+  /** 취소 트랜잭션 안에서 의뢰 LOT 구성 라인을 읽는다. */
+  private async findRequestLotLinesInTx(
+    queryRunner: QueryRunner,
+    log: { requestNo: string | null; company: string; plant: string },
+  ) {
+    if (!log.requestNo) return [];
+    return queryRunner.manager.find(IqcRequestLotLine, {
+      where: { requestNo: log.requestNo, ...this.tenantWhere(log.company, log.plant) },
+      order: { seq: 'ASC' },
+    });
   }
 
   private async reverseIqcFailMove(
