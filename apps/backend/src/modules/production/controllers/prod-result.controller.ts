@@ -213,4 +213,21 @@ export class ProdResultController {
     const data = await this.prodResultService.getSummaryByProduct(fromDate, toDate, search, company, plant);
     return ResponseUtil.success(data);
   }
+
+  @Get('summary/productivity')
+  @ApiOperation({ summary: 'Productivity analysis by item x process' })
+  @ApiQuery({ name: 'fromDate', required: false, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'toDate', required: false, description: 'YYYY-MM-DD' })
+  @ApiQuery({ name: 'search', required: false, description: 'Search keyword' })
+  @ApiResponse({ status: 200, description: 'Success' })
+  async getProductivityAnalysis(
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+    @Query('search') search?: string,
+    @Company() company?: string,
+    @Plant() plant?: string,
+  ) {
+    const data = await this.prodResultService.getProductivityAnalysis(fromDate, toDate, search, company, plant);
+    return ResponseUtil.success(data);
+  }
 }

@@ -2630,7 +2630,9 @@ export class ProdResultService {
    * 생산성 분석 (품목 x 공정 기준)
    *
    * 계산 정의 (단일 출처: 이 메서드):
-   * - 작업시간(workHours) = SUM(END_TIME - START_TIME), 종료시간이 없는 실적은 제외
+   * - 작업시간(workHours): ① 실적 SUM(PR.END_TIME - PR.START_TIME) 우선
+   *   ② 실적 소요시간이 0이면(현장 실적입력이 시각 1건만 찍는 경우) 작업지시 착수~완료 SUM(JO.END_TIME - JO.START_TIME)을 distinct 지시 단위로 사용
+   *   ③ 둘 다 0이면 시간 기반 지표를 비운다. 산정 근거는 workTimeSource로 내린다.
    * - 투입인원(workerCnt) = PROCESS_CAPAS.WORKER_CNT, 없으면 실적의 distinct 작업자 수(최소 1)
    * - 투입공수(manHours) = 작업시간 x 투입인원
    * - 실적UPH = 총생산수량 / 작업시간
@@ -2669,6 +2671,8 @@ export class ProdResultService {
         'jo.lineCode AS "lineCode"',
         'jo.processCode AS "orderProcessCode"',
         'jo.itemCode AS "orderItemCode"',
+        'jo.startAt AS "orderStartAt"',
+        'jo.endAt AS "orderEndAt"',
         'p.itemCode AS "itemCode"',
         'p.itemName AS "itemName"',
         'p.itemType AS "itemType"',
@@ -2704,13 +2708,13 @@ export class ProdResultService {
       itemType: string;
       processCode: string;
       lineCodes: Set<string>;
-      orders: Map<string, number>;
+      orders: Map<string, { planQty: number; startAt: Date | null; endAt: Date | null }>;
       workers: Set<string>;
       equips: Set<string>;
       workDays: Set<string>;
       goodQty: number;
       defectQty: number;
-      workSeconds: number;
+      resultWorkSeconds: number;
       resultCount: number;
       timedResultCount: number;
     };
@@ -2729,20 +2733,26 @@ export class ProdResultService {
           itemType: r.itemType || '',
           processCode,
           lineCodes: new Set<string>(),
-          orders: new Map<string, number>(),
+          orders: new Map<string, { planQty: number; startAt: Date | null; endAt: Date | null }>(),
           workers: new Set<string>(),
           equips: new Set<string>(),
           workDays: new Set<string>(),
           goodQty: 0,
           defectQty: 0,
-          workSeconds: 0,
+          resultWorkSeconds: 0,
           resultCount: 0,
           timedResultCount: 0,
         };
         buckets.set(key, b);
       }
       if (r.lineCode) b.lineCodes.add(String(r.lineCode));
-      if (r.orderNo) b.orders.set(String(r.orderNo), Number(r.planQty) || 0);
+      if (r.orderNo) {
+        b.orders.set(String(r.orderNo), {
+          planQty: Number(r.planQty) || 0,
+          startAt: r.orderStartAt ? new Date(r.orderStartAt) : null,
+          endAt: r.orderEndAt ? new Date(r.orderEndAt) : null,
+        });
+      }
       if (r.workerId) b.workers.add(String(r.workerId));
       if (r.equipCode) b.equips.add(String(r.equipCode));
       b.goodQty += Number(r.goodQty) || 0;
@@ -2755,7 +2765,7 @@ export class ProdResultService {
       if (startAt && endAt) {
         const sec = (endAt.getTime() - startAt.getTime()) / 1000;
         if (sec > 0) {
-          b.workSeconds += sec;
+          b.resultWorkSeconds += sec;
           b.timedResultCount += 1;
         }
       }
@@ -2782,8 +2792,33 @@ export class ProdResultService {
     const list = Array.from(buckets.values()).map((b) => {
       const capa = capaMap.get(`${b.itemCode}|${b.processCode}`) ?? null;
       const totalQty = b.goodQty + b.defectQty;
-      const planQty = Array.from(b.orders.values()).reduce((a, c) => a + c, 0);
-      const workHours = b.workSeconds / 3600;
+      const orderList = Array.from(b.orders.values());
+      const planQty = orderList.reduce((a, c) => a + c.planQty, 0);
+
+      // 작업지시 착수~완료 기반 소요시간(지시 단위로 중복 제거됨). 진행중(완료시간 널)은 제외한다.
+      let orderWorkSeconds = 0;
+      let closedOrderCount = 0;
+      const orderSpanDays = new Set<string>();
+      for (const o of orderList) {
+        if (!o.startAt || !o.endAt) continue;
+        const sec = (o.endAt.getTime() - o.startAt.getTime()) / 1000;
+        if (sec <= 0) continue;
+        orderWorkSeconds += sec;
+        closedOrderCount += 1;
+        // 지시가 여러 날에 걸치면 조업가능시간도 그만큼 늘려야 가동률이 100%를 넘지 않는다
+        for (let d = new Date(o.startAt); d <= o.endAt; d.setDate(d.getDate() + 1)) {
+          orderSpanDays.add(formatYmdLocal(d));
+        }
+      }
+
+      const workSeconds = b.resultWorkSeconds > 0 ? b.resultWorkSeconds : orderWorkSeconds;
+      const workTimeSource: 'RESULT' | 'JOB_ORDER' | 'NONE' =
+        b.resultWorkSeconds > 0 ? 'RESULT' : orderWorkSeconds > 0 ? 'JOB_ORDER' : 'NONE';
+      const workHours = workSeconds / 3600;
+      const effectiveDays =
+        workTimeSource === 'JOB_ORDER'
+          ? new Set([...b.workDays, ...orderSpanDays]).size
+          : b.workDays.size;
 
       let stdUph = capa ? Number(capa.stdUph) || 0 : 0;
       let stdTactTime = capa ? Number(capa.stdTactTime) || 0 : 0;
@@ -2797,13 +2832,13 @@ export class ProdResultService {
 
       const manHours = workHours * workerCnt;
       const actualUph = workHours > 0 ? totalQty / workHours : 0;
-      const actualTactTime = totalQty > 0 && b.workSeconds > 0 ? b.workSeconds / totalQty : 0;
+      const actualTactTime = totalQty > 0 && workSeconds > 0 ? workSeconds / totalQty : 0;
       const perManUph = manHours > 0 ? totalQty / manHours : 0;
       const efficiencyRate =
-        b.workSeconds > 0 && stdTactTime > 0 ? ((totalQty * stdTactTime) / b.workSeconds) * 100 : 0;
+        workSeconds > 0 && stdTactTime > 0 ? ((totalQty * stdTactTime) / workSeconds) * 100 : 0;
       const uphAchieveRate = stdUph > 0 && actualUph > 0 ? (actualUph / stdUph) * 100 : 0;
 
-      const availableHours = b.workDays.size * dailyWorkHours;
+      const availableHours = effectiveDays * dailyWorkHours;
       const operationRate = availableHours > 0 ? (workHours / availableHours) * 100 : 0;
       const yieldRate = totalQty > 0 ? (b.goodQty / totalQty) * 100 : 0;
       const defectRate = totalQty > 0 ? (b.defectQty / totalQty) * 100 : 0;
@@ -2827,6 +2862,8 @@ export class ProdResultService {
         defectRate: round1(defectRate),
         workHours: round2(workHours),
         manHours: round2(manHours),
+        workTimeSource,
+        closedOrderCount,
         workerCnt,
         equipCnt,
         workDays: b.workDays.size,
