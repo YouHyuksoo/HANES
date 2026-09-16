@@ -68,6 +68,8 @@ export * from './equip-inspect-item-master.entity';
 export * from './equip-inspect-item-pool.entity';
 export * from './terminal-crimp-spec.entity';
 export * from './inspect-aid.entity';
+export * from './limit-sample.entity';
+export * from './limit-sample-image.entity';
 export * from './equip-inspect-log.entity';
 export * from './oqc-request.entity';
 export * from './oqc-request-box.entity';
