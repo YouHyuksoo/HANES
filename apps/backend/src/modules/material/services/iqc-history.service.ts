@@ -28,6 +28,11 @@ export interface DebugSql {
 
 export interface PendingArrivalsResult {
   data: Array<{
+    /**
+     * 검사의뢰 LOT 번호. REQUEST 모드의 의뢰 LOT 묶음 행에만 값이 있고 입하단위 행은 null이다.
+     * 프론트는 이 값으로 제출 엔드포인트를 가른다(request-lot/:requestNo vs arrival).
+     */
+    requestNo: string | null;
     arrivalNo: string;
     itemCode: string;
     itemName: string | null;
