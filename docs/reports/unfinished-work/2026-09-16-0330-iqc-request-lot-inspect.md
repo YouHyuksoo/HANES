@@ -452,3 +452,71 @@ REQUEST 모드에서 화면 전 구간을 확인했다. **판정은 실행하지
 
 - 의뢰 LOT **판정** 경로 (PASS/FAIL 등록). 유닛 테스트와 이전 세션 브라우저 검증으로만 덮여 있다
 - 의뢰 LOT **판정 취소** 경로 — 위 "미확인" 절 참조
+
+---
+
+## 판정·판정취소 경로 브라우저 검증 (2026-09-16, 커밋 06bdb9da)
+
+### 판정 경로 — 정상
+
+의뢰 `IQL20260916-0009` 생성 후 `/material/iqc`에서 IQC 검사 모달로 PASS 등록.
+
+- 모달 헤더: `입하번호 IQL20260916-0009 / 시리얼수 3 / 총수량 3,000 EA`
+- **`AQL 샘플수량 125 / II / TIGHTENED`**, `검사항목 기준 6건 · 파괴/고정 2건 · 전수/파괴 소요 3,000` — C 수정 반영 확인
+- `검사대기 시리얼 조회 (3)` → 의뢰에 담긴 `VH1-RM260913-00001/2/3` 정확히 3건
+- 등록 결과
+  - `IQC_REQUEST_LOTS`: `STATUS=PASS`, `SAMPLE_QTY=125`
+  - `IQC_LOGS`: **`REQUEST_NO=IQL20260916-0009`** (E 컬럼 적재 확인), `RESULT=PASS`, `LOT_QTY=3000`, `AQL_SAMPLE_QTY=125`, `REMARK=[IQL:...]`
+  - `MAT_LOTS`: 3 PASS(EXPIRE_DATE 3건) / 47 PENDING — 의뢰한 행만 판정됨
+
+> 판정 직후 조회에서 헤더가 REQUESTED로 보여 한때 결함으로 판단했으나, 커밋 전에 읽은 것이었다. 재조회로 `PASS / 125 / UPDATED_AT 11:52:03` 확인.
+
+### 판정취소 경로 — 결함 발견 → 수정 → 재검증
+
+**발견(실행 확인).** `/material/iqc-history`에서 판정 취소 후:
+
+| 대상 | 결과 |
+|---|---|
+| `MAT_LOTS` | 50 PENDING / EXPIRE_DATE 0건 ✅ |
+| `MAT_ARRIVALS` | 50 PENDING ✅ |
+| `IQC_LOGS` | `STATUS=CANCELED` ✅ |
+| `IQC_REQUEST_LOTS` | **`STATUS=PASS` 잔존** ❌ (`UPDATED_AT`이 판정 시각 그대로) |
+
+`createRequestLotResult`는 `STATUS='REQUESTED'`만 받으므로 그 의뢰는 영영 재검사 불가 상태가 된다. 기록에 "확인할 것 2"로 남겼던 항목이 사실로 확정됐다.
+
+**수정.** `cancel()`에 `log.requestNo` 분기 추가.
+
+- 의뢰 라인의 `(ARRIVAL_NO, ARRIVAL_SEQ)` 행만 PENDING 복원 (대표 입하번호 전체가 아니다)
+- 헤더를 `STATUS='REQUESTED'`, `SAMPLE_QTY=null`로 복원
+- FAIL 원복(`reverseIqcFailMove`)도 같은 분기로 범위를 좁혔다 — 대표 입하번호 전체를 대상으로 하면 의뢰 밖 행의 불량창고 이동까지 되돌아간다
+- 트랜잭션 안에서 라인을 읽는 `findRequestLotLinesInTx` 헬퍼 추가
+
+**재검증.** 백엔드 재빌드 후 `IQL20260916-0010`으로 판정 → 취소:
+
+- 판정: `STATUS=PASS / SAMPLE_QTY=125`, MAT_LOTS 3 PASS / 47 PENDING
+- 취소: **`STATUS=REQUESTED / SAMPLE_QTY=null` 복원**, MAT_LOTS 50 PENDING / EXPIRE_DATE 0건, MAT_ARRIVALS 50 PENDING, IQC_LOGS CANCELED
+
+### 원복
+
+테스트 데이터 전량 삭제 후 사전 상태와 대조:
+
+| 항목 | 사전 | 사후 |
+|---|---|---|
+| `IQC_REQUEST_LOTS` / `_LINES` | 0 / 0 | 0 / 0 |
+| `IQC_LOGS` | 160 | 160 |
+| `MAT_LOTS` PENDING (R26091300001) | 50 | 50 |
+| PENDING인데 EXPIRE_DATE 있음 | 0 | 0 |
+| `IQC_FAIL` 트랜잭션 | 18 | 18 |
+| 공급사 모드 / 모드이력 | TIGHTENED / 8 | TIGHTENED / 8 |
+
+### 새로 발견 — 미해결
+
+**판정 취소가 무관한 공급사 검사강도 이력을 되돌린다.**
+
+첫 취소(11:54) 때 `VENDOR_INSPECTION_MODE_HISTORY`에 `TIGHTENED→NORMAL / '판정 취소로 검사강도 원복'` 이력이 생겼다. 그런데 그 판정(11:52)은 모드를 바꾼 적이 없다. `revertVendorInspectionModeForCanceledLot`이 `arrivalNo` 기준으로 최신 모드 이력을 찾는데, 의뢰 LOT의 대표 입하번호가 같은 `R26091300001`이라 **02:32의 무관한 이력(SEQ 61)을 되돌린 것**으로 보인다.
+
+두 번째 취소가 다시 `NORMAL→TIGHTENED`로 만들어 순 효과는 0이었고, 테스트 이력 2건(SEQ 62·63)은 삭제했다.
+
+- 같은 `ARRIVAL_NO`로 판정/취소가 반복되는 입하단위 경로에도 같은 문제가 있을 수 있다
+- 확인할 것: `revertVendorInspectionModeForCanceledLot`이 취소 대상 판정이 실제로 만든 이력만 되돌리는가. `IQC_LOGS.REQUEST_NO`나 `inspectDate` 기준으로 좁혀야 할 수 있다
+- 이번 범위 밖이라 손대지 않았다
