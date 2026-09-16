@@ -3,7 +3,7 @@
  * @description 양불마스터 대조 샘플별 결과 — 기대결과(견본유형)와 검사기 실제결과를 비교한다.
  *
  * 초보자 가이드:
- * 1. EXPECTED_RESULT: 양품 한도견본(LIMIT_OK)=PASS, 불량 한도견본(LIMIT_NG)=FAIL
+ * 1. EXPECTED_RESULT: 양품견본(OK)=PASS, 불량견본(NG)=FAIL
  * 2. ACTUAL_RESULT: 작업자가 입력한 검사기 실제 결과
  * 3. RESULT: 서버가 산출한 OK/NG (기대와 일치하면 OK)
  */
@@ -23,11 +23,11 @@ export class InspectSampleCheckItem {
   @PrimaryColumn({ name: 'SEQ_NO', type: 'number' })
   seqNo: number;
 
-  @Column({ name: 'AID_CODE', length: 50 })
-  aidCode: string;
+  @Column({ name: 'SAMPLE_CODE', length: 50 })
+  sampleCode: string;
 
-  @Column({ name: 'AID_TYPE', length: 30 })
-  aidType: string;
+  @Column({ name: 'SAMPLE_TYPE', length: 30 })
+  sampleType: string;
 
   @Column({ name: 'EXPECTED_RESULT', length: 10 })
   expectedResult: string;

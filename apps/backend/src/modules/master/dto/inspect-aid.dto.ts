@@ -1,6 +1,6 @@
 /**
  * @file inspect-aid.dto.ts
- * @description 검사보조구 마스터 DTO — 목록 필터/생성/수정/만료임박 조회
+ * @description 검사보조구(검사홀더·지그) 마스터 DTO — 목록 필터/생성/수정/만료임박 조회
  */
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsDateString, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
@@ -8,13 +8,11 @@ import { Type } from 'class-transformer';
 import { USE_YN_VALUES } from '@harness/shared';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
-export const INSPECT_AID_TYPES = ['LIMIT_OK', 'LIMIT_NG', 'HOLDER'] as const;
+export const INSPECT_AID_TYPES = ['HOLDER'] as const;
 export const INSPECT_AID_STATUSES = ['ACTIVE', 'EXPIRED', 'RETIRED'] as const;
-/** 양불마스터 대조를 적용할 검사유형 (COM_CODES INSPECT_TYPE 중 검사화면이 쓰는 값) */
-export const INSPECT_AID_INSPECT_TYPES = ['CONTINUITY', 'TERMINAL'] as const;
 
 export class CreateInspectAidDto {
-  @ApiProperty({ description: '보조구 코드', example: 'LS-OK-0001' })
+  @ApiProperty({ description: '보조구 코드', example: 'HD-CONT-001' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
@@ -38,10 +36,6 @@ export class CreateInspectAidDto {
   @ApiPropertyOptional({ description: '적용 공정코드' })
   @IsOptional() @IsString() @MaxLength(50)
   processCode?: string | null;
-
-  @ApiPropertyOptional({ description: '대표 불량코드 (불량 한도견본)' })
-  @IsOptional() @IsString() @MaxLength(50)
-  defectCode?: string | null;
 
   @ApiPropertyOptional({ description: '보관 위치' })
   @IsOptional() @IsString() @MaxLength(200)
@@ -74,18 +68,6 @@ export class CreateInspectAidDto {
   @ApiPropertyOptional({ description: '사용여부', default: 'Y' })
   @IsOptional() @IsIn([...USE_YN_VALUES])
   useYn?: string;
-
-  @ApiPropertyOptional({ description: '적용 검사유형 (비우면 전 검사유형 공통)', enum: INSPECT_AID_INSPECT_TYPES })
-  @IsOptional() @IsIn([...INSPECT_AID_INSPECT_TYPES])
-  inspectType?: string | null;
-
-  @ApiPropertyOptional({ description: '검사 전 대조 필수 여부 (HOLDER는 항상 N)', default: 'Y' })
-  @IsOptional() @IsIn([...USE_YN_VALUES])
-  requiredYn?: string;
-
-  @ApiPropertyOptional({ description: '대조 모달 표시 순서', default: 0 })
-  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(9999)
-  sortOrder?: number;
 }
 
 export class UpdateInspectAidDto extends PartialType(CreateInspectAidDto) {}
@@ -114,10 +96,6 @@ export class InspectAidQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '사용여부' })
   @IsOptional() @IsIn([...USE_YN_VALUES])
   useYn?: string;
-
-  @ApiPropertyOptional({ description: '적용 검사유형', enum: INSPECT_AID_INSPECT_TYPES })
-  @IsOptional() @IsIn([...INSPECT_AID_INSPECT_TYPES])
-  inspectType?: string;
 }
 
 export class InspectAidExpiringQueryDto {

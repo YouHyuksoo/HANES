@@ -1,6 +1,6 @@
 /**
  * @file inspect-aid.controller.ts
- * @description 검사보조구 마스터(한도견본·검사홀더) API 컨트롤러
+ * @description 검사보조구 마스터(검사홀더·지그) API 컨트롤러
  *
  * 초보자 가이드:
  * 1. GET    /master/inspect-aids             — 목록(페이징·유형/상태/품목/공정 필터)
@@ -35,7 +35,7 @@ import {
 
 const UPLOAD_DIR = './uploads/inspect-aids';
 
-@ApiTags('기준정보 - 검사보조구(한도견본·검사홀더)')
+@ApiTags('기준정보 - 검사보조구(검사홀더·지그)')
 @Controller('master/inspect-aids')
 export class InspectAidController {
   private readonly logger = new Logger(InspectAidController.name);

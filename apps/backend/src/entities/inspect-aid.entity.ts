@@ -1,10 +1,10 @@
 /**
  * @file inspect-aid.entity.ts
- * @description 검사보조구 마스터 엔티티 — 양품/불량 한도견본, 검사홀더·지그
+ * @description 검사보조구 마스터 엔티티 — 검사홀더·지그 (양품/불량 한도견본은 LimitSample로 분리됨)
  *
  * 초보자 가이드:
  * 1. PK: COMPANY + PLANT_CD + AID_CODE (설비점검항목 마스터와 같은 복합 PK 패턴)
- * 2. AID_TYPE은 공통코드 INSPECT_AID_TYPE(LIMIT_OK/LIMIT_NG/HOLDER)
+ * 2. AID_TYPE은 공통코드 INSPECT_AID_TYPE(HOLDER 검사홀더·지그)
  * 3. STATUS: ACTIVE(사용중) / EXPIRED(만료) / RETIRED(폐기) — 공통코드 INSPECT_AID_STATUS
  * 4. VALID_TO 기준으로 만료·임박(기본 30일) 목록을 GET /expiring 으로 조회한다.
  * 5. IMAGE_URL은 multer 업로드 경로(/uploads/inspect-aids/...)
@@ -34,9 +34,6 @@ export class InspectAid {
   @Column({ type: 'varchar2', name: 'PROCESS_CODE', length: 50, nullable: true })
   processCode: string | null;
 
-  @Column({ type: 'varchar2', name: 'DEFECT_CODE', length: 50, nullable: true })
-  defectCode: string | null;
-
   @Column({ type: 'varchar2', name: 'IMAGE_URL', length: 500, nullable: true })
   imageUrl: string | null;
 
@@ -57,18 +54,6 @@ export class InspectAid {
 
   @Column({ name: 'STATUS', length: 20, default: 'ACTIVE' })
   status: string;
-
-  /** 적용 검사유형 (COM_CODES INSPECT_TYPE). NULL = 전 검사유형 공통 */
-  @Column({ type: 'varchar2', name: 'INSPECT_TYPE', length: 30, nullable: true })
-  inspectType: string | null;
-
-  /** 검사 시작 전 대조 필수 여부 (Y=필수, N=참고용). HOLDER는 항상 N */
-  @Column({ name: 'REQUIRED_YN', length: 1, default: 'Y' })
-  requiredYn: string;
-
-  /** 대조 모달 표시 순서 */
-  @Column({ name: 'SORT_ORDER', type: 'number', default: 0 })
-  sortOrder: number;
 
   @Column({ type: 'varchar2', name: 'REMARK', length: 500, nullable: true })
   remark: string | null;

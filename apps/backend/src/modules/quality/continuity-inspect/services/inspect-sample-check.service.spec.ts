@@ -3,7 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { BadRequestException } from '@nestjs/common';
 import { InspectSampleCheckService } from './inspect-sample-check.service';
-import { InspectAid } from '../../../../entities/inspect-aid.entity';
+import { LimitSample } from '../../../../entities/limit-sample.entity';
+import { LimitSampleImage } from '../../../../entities/limit-sample-image.entity';
 import { InspectSampleCheck } from '../../../../entities/inspect-sample-check.entity';
 import { InspectSampleCheckItem } from '../../../../entities/inspect-sample-check-item.entity';
 import { ShiftPattern } from '../../../../entities/shift-pattern.entity';
@@ -14,21 +15,22 @@ import { EquipInspectService } from '../../../equipment/services/equip-inspect.s
 const TENANT = { company: 'C1', plant: 'P1' };
 const ACTOR = { userId: 'U1', workerId: 'W-100' };
 
-function aid(over: Partial<InspectAid>): InspectAid {
+function sample(over: Partial<LimitSample>): LimitSample {
   return {
-    company: 'C1', plant: 'P1', aidCode: 'OK-1', aidType: 'LIMIT_OK', aidName: '양품견본',
-    itemCode: 'ITEM-1', processCode: null, defectCode: null, imageUrl: null, location: null,
+    company: 'C1', plant: 'P1', sampleCode: 'OK-1', sampleType: 'OK', sampleName: '양품견본',
+    itemCode: 'ITEM-1', processCode: null, defectCode: null, location: null,
     validFrom: null, validTo: null, approvedBy: null, approvedAt: null, status: 'ACTIVE',
     inspectType: 'CONTINUITY', requiredYn: 'Y', sortOrder: 1,
     remark: null, useYn: 'Y',
     createdBy: null, updatedBy: null, createdAt: new Date(), updatedAt: new Date(),
     ...over,
-  } as InspectAid;
+  } as LimitSample;
 }
 
 describe('InspectSampleCheckService', () => {
   let service: InspectSampleCheckService;
-  const aidRepo = { find: jest.fn() };
+  const sampleRepo = { find: jest.fn() };
+  const sampleImageRepo = { find: jest.fn() };
   const checkRepo = { findOne: jest.fn(), find: jest.fn() };
   const itemRepo = { find: jest.fn() };
   const shiftRepo = { find: jest.fn() };
@@ -59,11 +61,13 @@ describe('InspectSampleCheckService', () => {
     ]);
     equipInspectService.getInspectionStatus.mockResolvedValue({ workDate: '2026-09-15' });
     checkRepo.findOne.mockResolvedValue(null);
+    sampleImageRepo.find.mockResolvedValue([]);
 
     const moduleRef = await Test.createTestingModule({
       providers: [
         InspectSampleCheckService,
-        { provide: getRepositoryToken(InspectAid), useValue: aidRepo },
+        { provide: getRepositoryToken(LimitSample), useValue: sampleRepo },
+        { provide: getRepositoryToken(LimitSampleImage), useValue: sampleImageRepo },
         { provide: getRepositoryToken(InspectSampleCheck), useValue: checkRepo },
         { provide: getRepositoryToken(InspectSampleCheckItem), useValue: itemRepo },
         { provide: getRepositoryToken(ShiftPattern), useValue: shiftRepo },
@@ -81,9 +85,9 @@ describe('InspectSampleCheckService', () => {
   const statusArgs = { orderNo: 'W1', inspectType: 'CONTINUITY', equipCode: 'EQ-1', itemCode: 'ITEM-1' };
 
   it('양품견본은 PASS, 불량견본은 FAIL일 때 종합 PASS로 저장한다', async () => {
-    aidRepo.find.mockResolvedValue([aid({}), aid({ aidCode: 'NG-1', aidType: 'LIMIT_NG', sortOrder: 2 })]);
+    sampleRepo.find.mockResolvedValue([sample({}), sample({ sampleCode: 'NG-1', sampleType: 'NG', sortOrder: 2 })]);
     const res = await service.create(
-      { ...baseDto, items: [{ aidCode: 'OK-1', actualResult: 'PASS' }, { aidCode: 'NG-1', actualResult: 'FAIL' }] },
+      { ...baseDto, items: [{ sampleCode: 'OK-1', actualResult: 'PASS' }, { sampleCode: 'NG-1', actualResult: 'FAIL' }] },
       ACTOR,
       TENANT,
     );
@@ -95,9 +99,9 @@ describe('InspectSampleCheckService', () => {
   });
 
   it('불량견본이 PASS로 나오면 NG로 판정한다', async () => {
-    aidRepo.find.mockResolvedValue([aid({ aidCode: 'NG-1', aidType: 'LIMIT_NG' })]);
+    sampleRepo.find.mockResolvedValue([sample({ sampleCode: 'NG-1', sampleType: 'NG' })]);
     const res = await service.create(
-      { ...baseDto, items: [{ aidCode: 'NG-1', actualResult: 'PASS' }] },
+      { ...baseDto, items: [{ sampleCode: 'NG-1', actualResult: 'PASS' }] },
       ACTOR,
       TENANT,
     );
@@ -106,9 +110,9 @@ describe('InspectSampleCheckService', () => {
   });
 
   it('양품견본이 FAIL로 나오면 NG로 판정한다', async () => {
-    aidRepo.find.mockResolvedValue([aid({})]);
+    sampleRepo.find.mockResolvedValue([sample({})]);
     const res = await service.create(
-      { ...baseDto, items: [{ aidCode: 'OK-1', actualResult: 'FAIL' }] },
+      { ...baseDto, items: [{ sampleCode: 'OK-1', actualResult: 'FAIL' }] },
       ACTOR,
       TENANT,
     );
@@ -116,31 +120,31 @@ describe('InspectSampleCheckService', () => {
   });
 
   it('필수 견본이 빠지면 저장을 거부한다', async () => {
-    aidRepo.find.mockResolvedValue([aid({}), aid({ aidCode: 'NG-1', aidType: 'LIMIT_NG' })]);
+    sampleRepo.find.mockResolvedValue([sample({}), sample({ sampleCode: 'NG-1', sampleType: 'NG' })]);
     await expect(service.create(
-      { ...baseDto, items: [{ aidCode: 'OK-1', actualResult: 'PASS' }] },
+      { ...baseDto, items: [{ sampleCode: 'OK-1', actualResult: 'PASS' }] },
       ACTOR, TENANT,
     )).rejects.toThrow(/필수 한도견본/);
   });
 
   it('후보에 없는 코드를 스캔하면 거부한다', async () => {
-    aidRepo.find.mockResolvedValue([aid({})]);
+    sampleRepo.find.mockResolvedValue([sample({})]);
     await expect(service.create(
-      { ...baseDto, items: [{ aidCode: 'UNKNOWN', actualResult: 'PASS' }] },
+      { ...baseDto, items: [{ sampleCode: 'UNKNOWN', actualResult: 'PASS' }] },
       ACTOR, TENANT,
     )).rejects.toThrow(/등록되지 않은 한도견본/);
   });
 
   it('유효기간이 지난 필수 견본이 있으면 거부한다', async () => {
-    aidRepo.find.mockResolvedValue([aid({ validTo: new Date('2020-01-01') })]);
+    sampleRepo.find.mockResolvedValue([sample({ validTo: new Date('2020-01-01') })]);
     await expect(service.create(
-      { ...baseDto, items: [{ aidCode: 'OK-1', actualResult: 'PASS' }] },
+      { ...baseDto, items: [{ sampleCode: 'OK-1', actualResult: 'PASS' }] },
       ACTOR, TENANT,
     )).rejects.toThrow(/유효기간/);
   });
 
   it('필수 견본이 0건이면 대조 없이 통과 상태를 돌려준다', async () => {
-    aidRepo.find.mockResolvedValue([]);
+    sampleRepo.find.mockResolvedValue([]);
     const status = await service.getStatus(statusArgs, TENANT);
     expect(status.required).toBe(false);
     expect(status.done).toBe(true);
@@ -148,25 +152,26 @@ describe('InspectSampleCheckService', () => {
   });
 
   it('대조 기록이 없으면 검사를 차단한다', async () => {
-    aidRepo.find.mockResolvedValue([aid({})]);
+    sampleRepo.find.mockResolvedValue([sample({})]);
     checkRepo.findOne.mockResolvedValue(null);
+    sampleImageRepo.find.mockResolvedValue([]);
     await expect(service.assertReady(statusArgs, TENANT)).rejects.toThrow(BadRequestException);
   });
 
   it('최신 대조가 NG면 검사를 차단한다', async () => {
-    aidRepo.find.mockResolvedValue([aid({})]);
+    sampleRepo.find.mockResolvedValue([sample({})]);
     checkRepo.findOne.mockResolvedValue({ checkNo: 'SMC-1', overallResult: 'NG', checkedAt: new Date() });
     await expect(service.assertReady(statusArgs, TENANT)).rejects.toThrow(/대조 결과가 불합격/);
   });
 
   it('최신 대조가 PASS면 통과한다', async () => {
-    aidRepo.find.mockResolvedValue([aid({})]);
+    sampleRepo.find.mockResolvedValue([sample({})]);
     checkRepo.findOne.mockResolvedValue({ checkNo: 'SMC-1', overallResult: 'PASS', checkedAt: new Date() });
     await expect(service.assertReady(statusArgs, TENANT)).resolves.toBeUndefined();
   });
 
   it('필수 견본이 만료면 대조 자체를 막고 사유를 돌려준다', async () => {
-    aidRepo.find.mockResolvedValue([aid({ validTo: new Date('2020-01-01') })]);
+    sampleRepo.find.mockResolvedValue([sample({ validTo: new Date('2020-01-01') })]);
     const status = await service.getStatus(statusArgs, TENANT);
     expect(status.done).toBe(false);
     expect(status.blockReason).toMatch(/유효기간/);
@@ -174,23 +179,23 @@ describe('InspectSampleCheckService', () => {
   });
 
   it('후보 조회는 기대결과와 만료여부를 함께 내린다', async () => {
-    aidRepo.find.mockResolvedValue([
-      aid({}),
-      aid({ aidCode: 'NG-1', aidType: 'LIMIT_NG', validTo: new Date('2020-01-01'), sortOrder: 2 }),
+    sampleRepo.find.mockResolvedValue([
+      sample({}),
+      sample({ sampleCode: 'NG-1', sampleType: 'NG', validTo: new Date('2020-01-01'), sortOrder: 2 }),
     ]);
     const list = await service.getCandidates('ITEM-1', 'CONTINUITY', TENANT);
     expect(list).toHaveLength(2);
-    expect(list[0]).toMatchObject({ aidCode: 'OK-1', expectedResult: 'PASS', expired: false });
-    expect(list[1]).toMatchObject({ aidCode: 'NG-1', expectedResult: 'FAIL', expired: true });
+    expect(list[0]).toMatchObject({ sampleCode: 'OK-1', expectedResult: 'PASS', expired: false });
+    expect(list[1]).toMatchObject({ sampleCode: 'NG-1', expectedResult: 'FAIL', expired: true });
   });
 
   it('스캔 코드는 공백·대소문자를 정규화해 매칭한다', async () => {
-    aidRepo.find.mockResolvedValue([aid({})]);
+    sampleRepo.find.mockResolvedValue([sample({})]);
     const res = await service.create(
-      { ...baseDto, items: [{ aidCode: ' ok-1 ', actualResult: 'PASS' }] },
+      { ...baseDto, items: [{ sampleCode: ' ok-1 ', actualResult: 'PASS' }] },
       ACTOR, TENANT,
     );
     expect(res.overallResult).toBe('PASS');
-    expect(savedItems[0][0].aidCode).toBe('OK-1');
+    expect(savedItems[0][0].sampleCode).toBe('OK-1');
   });
 });

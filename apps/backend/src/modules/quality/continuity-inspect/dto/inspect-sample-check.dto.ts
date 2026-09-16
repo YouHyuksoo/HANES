@@ -3,7 +3,7 @@
  * @description 양불마스터 대조 DTO — 견본별 검사기 실제결과만 받고 OK/NG는 서버가 산출한다.
  *
  * 초보자 가이드:
- * 1. aidCode는 한도견본 바코드 스캔값(INSPECT_AIDS.AID_CODE)이다.
+ * 1. sampleCode는 견본 바코드 스캔값(LIMIT_SAMPLES.SAMPLE_CODE)이다.
  * 2. actualResult는 작업자가 검사기 화면을 보고 입력한 PASS/FAIL이다.
  * 3. 기대값 비교(양품=PASS, 불량=FAIL)와 종합판정은 서버가 한다. 프론트 판정을 신뢰하지 않는다.
  */
@@ -24,9 +24,9 @@ export const SAMPLE_CHECK_INSPECT_TYPES = ['CONTINUITY', 'TERMINAL'] as const;
 export const SAMPLE_ACTUAL_RESULTS = ['PASS', 'FAIL'] as const;
 
 export class SampleCheckItemDto {
-  @ApiProperty({ description: '한도견본 코드 (INSPECT_AIDS.AID_CODE, 바코드 스캔값)' })
+  @ApiProperty({ description: '견본 코드 (LIMIT_SAMPLES.SAMPLE_CODE, 바코드 스캔값)' })
   @IsString() @IsNotEmpty() @MaxLength(50)
-  aidCode: string;
+  sampleCode: string;
 
   @ApiProperty({ description: '검사기 실제 결과', enum: SAMPLE_ACTUAL_RESULTS })
   @IsIn([...SAMPLE_ACTUAL_RESULTS])

@@ -3,8 +3,8 @@
  * @description 양불마스터(한도견본) 대조 — 후보 조회, 준비 상태 판정, 대조 결과 저장
  *
  * 초보자 가이드:
- * 1. 후보는 기존 검사보조구 마스터(INSPECT_AIDS)에서 읽는다. 별도 마스터를 만들지 않는다.
- * 2. 기대결과: 양품 한도견본(LIMIT_OK)=PASS, 불량 한도견본(LIMIT_NG)=FAIL.
+ * 1. 후보는 양불마스터(LIMIT_SAMPLES)에서 읽는다. 검사홀더·지그(INSPECT_AIDS)는 대조 대상이 아니다.
+ * 2. 기대결과: 양품견본(OK)=PASS, 불량견본(NG)=FAIL.
  *    작업자는 검사기 실제결과만 입력하고 OK/NG는 서버가 비교해 산출한다.
  * 3. 판정 단위: 작업지시 x 검사유형 x 검사기 x 조업일 x 교대. 재대조는 새 기록으로 쌓인다.
  * 4. 필수 견본이 0건이면 대조 대상이 아니므로 통과 처리한다(소모품 인터락과 같은 관례).
@@ -12,8 +12,9 @@
  */
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
-import { InspectAid } from '../../../../entities/inspect-aid.entity';
+import { In, IsNull, Repository } from 'typeorm';
+import { LimitSample } from '../../../../entities/limit-sample.entity';
+import { LimitSampleImage } from '../../../../entities/limit-sample-image.entity';
 import { InspectSampleCheck } from '../../../../entities/inspect-sample-check.entity';
 import { InspectSampleCheckItem } from '../../../../entities/inspect-sample-check-item.entity';
 import { ShiftPattern } from '../../../../entities/shift-pattern.entity';
@@ -24,15 +25,15 @@ import { ShiftResolver } from '../../../../utils/shift-resolver';
 import { formatYmdLocal } from '../../../../shared/date.util';
 import { CreateSampleCheckDto } from '../dto/inspect-sample-check.dto';
 
-/** 대조 대상 견본 유형 — 홀더·지그는 대조하지 않는다. */
-const SAMPLE_AID_TYPES = ['LIMIT_OK', 'LIMIT_NG'] as const;
+/** 대조 대상 견본 유형 (COM_CODES LIMIT_SAMPLE_TYPE) */
+const SAMPLE_TYPES = ['OK', 'NG'] as const;
 /** 교대 미판별 시 저장값 (NULL 키는 유일성 판정이 불가하므로 센티넬 대신 명시값을 쓴다) */
 const SHIFT_NONE = 'NONE';
 
 export interface SampleCheckCandidate {
-  aidCode: string;
-  aidName: string;
-  aidType: string;
+  sampleCode: string;
+  sampleName: string;
+  sampleType: string;
   expectedResult: 'PASS' | 'FAIL';
   requiredYn: string;
   sortOrder: number;
@@ -69,8 +70,8 @@ export interface SampleCheckHistoryRow {
   createdBy: string | null;
   items: {
     seqNo: number;
-    aidCode: string;
-    aidType: string;
+    sampleCode: string;
+    sampleType: string;
     expectedResult: string;
     actualResult: string;
     result: string;
@@ -100,8 +101,10 @@ export class InspectSampleCheckService {
   private readonly shiftResolver: ShiftResolver;
 
   constructor(
-    @InjectRepository(InspectAid)
-    private readonly aidRepository: Repository<InspectAid>,
+    @InjectRepository(LimitSample)
+    private readonly limitSampleRepository: Repository<LimitSample>,
+    @InjectRepository(LimitSampleImage)
+    private readonly limitSampleImageRepository: Repository<LimitSampleImage>,
     @InjectRepository(InspectSampleCheck)
     private readonly checkRepository: Repository<InspectSampleCheck>,
     @InjectRepository(InspectSampleCheckItem)
@@ -127,23 +130,60 @@ export class InspectSampleCheckService {
     return formatYmdLocal(date);
   }
 
-  private toCandidate(aid: InspectAid, todayYmd: string): SampleCheckCandidate {
-    const validTo = this.toYmd(aid.validTo);
-    const expired = (validTo != null && validTo < todayYmd) || aid.status !== 'ACTIVE';
+  private toCandidate(
+    sample: LimitSample,
+    todayYmd: string,
+    imageUrl: string | null,
+  ): SampleCheckCandidate {
+    const validTo = this.toYmd(sample.validTo);
+    const expired = (validTo != null && validTo < todayYmd) || sample.status !== 'ACTIVE';
     return {
-      aidCode: aid.aidCode,
-      aidName: aid.aidName,
-      aidType: aid.aidType,
-      expectedResult: aid.aidType === 'LIMIT_OK' ? 'PASS' : 'FAIL',
-      requiredYn: aid.requiredYn ?? 'Y',
-      sortOrder: aid.sortOrder ?? 0,
-      imageUrl: aid.imageUrl ?? null,
-      defectCode: aid.defectCode ?? null,
-      location: aid.location ?? null,
+      sampleCode: sample.sampleCode,
+      sampleName: sample.sampleName,
+      sampleType: sample.sampleType,
+      expectedResult: sample.sampleType === 'OK' ? 'PASS' : 'FAIL',
+      requiredYn: sample.requiredYn ?? 'Y',
+      sortOrder: sample.sortOrder ?? 0,
+      imageUrl,
+      defectCode: sample.defectCode ?? null,
+      location: sample.location ?? null,
       validTo,
-      status: aid.status,
+      status: sample.status,
       expired,
     };
+  }
+
+  /**
+   * 후보 견본들의 대표 사진을 한 번에 읽어 코드별 1장으로 줄인다 (N+1 방지).
+   * 대표(IS_PRIMARY='Y')가 없으면 표시순서상 첫 사진을 쓴다.
+   */
+  private async loadPrimaryImages(
+    sampleCodes: string[],
+    tenant: TenantArgs,
+  ): Promise<Map<string, string>> {
+    const map = new Map<string, string>();
+    if (sampleCodes.length === 0) return map;
+    const rows = await this.limitSampleImageRepository.find({
+      where: {
+        ...(tenant.company ? { company: tenant.company } : {}),
+        ...(tenant.plant ? { plant: tenant.plant } : {}),
+        sampleCode: In(sampleCodes),
+      },
+    });
+    const best = new Map<string, LimitSampleImage>();
+    for (const row of rows) {
+      const current = best.get(row.sampleCode);
+      if (!current) {
+        best.set(row.sampleCode, row);
+        continue;
+      }
+      const rowWins = row.isPrimary === 'Y' && current.isPrimary !== 'Y';
+      const sameRank = (row.isPrimary === 'Y') === (current.isPrimary === 'Y');
+      const earlier = row.sortOrder - current.sortOrder || row.seqNo - current.seqNo;
+      if (rowWins || (sameRank && earlier < 0)) best.set(row.sampleCode, row);
+    }
+    for (const [code, row] of best) map.set(code, row.imageUrl);
+    return map;
   }
 
   /**
@@ -160,25 +200,26 @@ export class InspectSampleCheckService {
       ...(tenant.plant ? { plant: tenant.plant } : {}),
       useYn: 'Y',
     };
-    const where = SAMPLE_AID_TYPES.flatMap((aidType) =>
+    const where = SAMPLE_TYPES.flatMap((sampleType) =>
       [itemCode, null].flatMap((item) =>
         [inspectType, null].map((type) => ({
           ...tenantWhere,
-          aidType,
+          sampleType,
           itemCode: item === null ? IsNull() : item,
           inspectType: type === null ? IsNull() : type,
         })),
       ),
     );
 
-    const rows = await this.aidRepository.find({ where });
+    const rows = await this.limitSampleRepository.find({ where });
+    const imageMap = await this.loadPrimaryImages(rows.map((r) => r.sampleCode), tenant);
     const todayYmd = formatYmdLocal(new Date());
     const unique = new Map<string, SampleCheckCandidate>();
     for (const row of rows) {
-      unique.set(row.aidCode, this.toCandidate(row, todayYmd));
+      unique.set(row.sampleCode, this.toCandidate(row, todayYmd, imageMap.get(row.sampleCode) ?? null));
     }
     return [...unique.values()].sort(
-      (a, b) => a.sortOrder - b.sortOrder || a.aidCode.localeCompare(b.aidCode),
+      (a, b) => a.sortOrder - b.sortOrder || a.sampleCode.localeCompare(b.sampleCode),
     );
   }
 
@@ -254,7 +295,7 @@ export class InspectSampleCheckService {
         workDate: window.workDate,
         shiftCode: window.shiftCode,
         candidateCount: candidates.length,
-        blockReason: `한도견본 유효기간이 만료되어 대조할 수 없습니다: ${expired.aidCode} (만료 ${expired.validTo ?? '미설정'}) — 기준정보에서 갱신하세요.`,
+        blockReason: `한도견본 유효기간이 만료되어 대조할 수 없습니다: ${expired.sampleCode} (만료 ${expired.validTo ?? '미설정'}) — 기준정보에서 갱신하세요.`,
       };
     }
 
@@ -305,31 +346,31 @@ export class InspectSampleCheckService {
     tenant: TenantArgs,
   ): Promise<{ checkNo: string; overallResult: 'PASS' | 'NG' }> {
     const candidates = await this.getCandidates(dto.itemCode, dto.inspectType, tenant);
-    const byCode = new Map(candidates.map((c) => [this.normalizeCode(c.aidCode), c]));
+    const byCode = new Map(candidates.map((c) => [this.normalizeCode(c.sampleCode), c]));
 
     // 1) 후보에 없는 코드 거부 (다른 품목·다른 검사유형·미등록 견본 스캔)
-    const requested = dto.items.map((item) => ({ ...item, aidCode: this.normalizeCode(item.aidCode) }));
+    const requested = dto.items.map((item) => ({ ...item, sampleCode: this.normalizeCode(item.sampleCode) }));
     for (const item of requested) {
-      if (!byCode.has(item.aidCode)) {
-        throw new BadRequestException(`등록되지 않은 한도견본입니다: ${item.aidCode}`);
+      if (!byCode.has(item.sampleCode)) {
+        throw new BadRequestException(`등록되지 않은 한도견본입니다: ${item.sampleCode}`);
       }
     }
 
     // 2) 필수 견본 누락 거부
-    const requestedCodes = new Set(requested.map((item) => item.aidCode));
+    const requestedCodes = new Set(requested.map((item) => item.sampleCode));
     const missing = candidates
       .filter((c) => c.requiredYn === 'Y')
-      .find((c) => !requestedCodes.has(this.normalizeCode(c.aidCode)));
+      .find((c) => !requestedCodes.has(this.normalizeCode(c.sampleCode)));
     if (missing) {
-      throw new BadRequestException(`필수 한도견본 대조가 누락되었습니다: ${missing.aidCode}`);
+      throw new BadRequestException(`필수 한도견본 대조가 누락되었습니다: ${missing.sampleCode}`);
     }
 
     // 3) 만료 견본 거부
     for (const item of requested) {
-      const candidate = byCode.get(item.aidCode);
+      const candidate = byCode.get(item.sampleCode);
       if (candidate?.expired) {
         throw new BadRequestException(
-          `한도견본 유효기간이 만료되어 대조할 수 없습니다: ${candidate.aidCode} (만료 ${candidate.validTo ?? '미설정'})`,
+          `한도견본 유효기간이 만료되어 대조할 수 없습니다: ${candidate.sampleCode} (만료 ${candidate.validTo ?? '미설정'})`,
         );
       }
     }
@@ -337,7 +378,7 @@ export class InspectSampleCheckService {
     const window = await this.resolveWindow(dto.equipCode, tenant);
     const checkedAt = new Date();
     const rows = requested.map((item, index) => {
-      const candidate = byCode.get(item.aidCode)!;
+      const candidate = byCode.get(item.sampleCode)!;
       const result = item.actualResult === candidate.expectedResult ? 'OK' : 'NG';
       return { index: index + 1, candidate, item, result };
     });
@@ -374,8 +415,8 @@ export class InspectSampleCheckService {
         plant: tenant.plant ?? '',
         checkNo,
         seqNo: row.index,
-        aidCode: row.candidate.aidCode,
-        aidType: row.candidate.aidType,
+        sampleCode: row.candidate.sampleCode,
+        sampleType: row.candidate.sampleType,
         expectedResult: row.candidate.expectedResult,
         actualResult: row.item.actualResult,
         result: row.result,
@@ -433,8 +474,8 @@ export class InspectSampleCheckService {
       createdBy: header.createdBy ?? null,
       items: (byCheckNo.get(header.checkNo) ?? []).map((item) => ({
         seqNo: item.seqNo,
-        aidCode: item.aidCode,
-        aidType: item.aidType,
+        sampleCode: item.sampleCode,
+        sampleType: item.sampleType,
         expectedResult: item.expectedResult,
         actualResult: item.actualResult,
         result: item.result,

@@ -25,7 +25,8 @@ import { JobOrder } from '../../../entities/job-order.entity';
 import { EquipProtocol } from '../../../entities/equip-protocol.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { InspectItemSpec } from '../../../entities/inspect-item-spec.entity';
-import { InspectAid } from '../../../entities/inspect-aid.entity';
+import { LimitSample } from '../../../entities/limit-sample.entity';
+import { LimitSampleImage } from '../../../entities/limit-sample-image.entity';
 import { InspectSampleCheck } from '../../../entities/inspect-sample-check.entity';
 import { InspectSampleCheckItem } from '../../../entities/inspect-sample-check-item.entity';
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
@@ -44,7 +45,8 @@ import { SystemModule } from '../../system/system.module';
       EquipProtocol,
       ProdResult,
       InspectItemSpec,
-      InspectAid,
+      LimitSample,
+      LimitSampleImage,
       InspectSampleCheck,
       InspectSampleCheckItem,
       ShiftPattern,
