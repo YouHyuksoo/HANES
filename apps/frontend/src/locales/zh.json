@@ -338,6 +338,7 @@
     "master.iqcItem": "检查项目主数据",
     "master.iqcPartSpec": "按品目IQC项目管理",
     "master.inspectAid": "检验辅助工具",
+    "master.limitSample": "良品不良样品主数据",
     "master.terminalCrimpSpec": "端子压接规格",
     "master.inspectItemSpec": "检验实测规格",
     "inspectMeasurementSpec": "检验实测规格",
@@ -435,6 +436,7 @@
     "production.inputEquip": "实绩录入(检测设备)",
     "production.sampleInspect": "抽样检查历史查询",
     "production.resultSummary": "生产实绩综合查询",
+    "production.productivity": "生产效率分析",
     "production.packResult": "包装实绩查询",
     "production.wipStock": "半成品/成品库存查询",
     "production.wipSemiStock": "半成品在制查询",
@@ -2303,15 +2305,8 @@
       "applicatorCode": "应用器"
     },
     "inspectAid": {
-      "sectionSampleCheck": "良否样品比对",
-      "inspectType": "适用检查类型",
-      "inspectTypeAll": "所有检查类型通用",
-      "requiredYn": "必须比对",
-      "required": "必须",
-      "sortOrder": "显示顺序",
-      "requiredHint": "必须比对的样品在导通/端子检查开始前必须完成比对。请将工具编码以条码形式粘贴在实物上。",
       "title": "检验辅助工具管理",
-      "subtitle": "登记良品/不良限度样品和检验夹具，管理有效期、批准和照片。",
+      "subtitle": "登记检验夹具与治具，管理有效期、批准和照片。",
       "searchPlaceholder": "搜索编码/名称/物料/位置",
       "sectionBasic": "基本信息",
       "sectionValidity": "有效期 · 批准",
@@ -2320,8 +2315,6 @@
       "aidName": "工具名称",
       "itemCode": "对象物料",
       "processCode": "适用工序",
-      "defectCode": "代表不良代码",
-      "defectCodeHint": "代表不良代码仅适用于不良限度样品(LIMIT_NG)。",
       "image": "照片",
       "imageUploadHint": "点击选择照片 (JPG/PNG/GIF/WebP, 5MB以内)",
       "imageChange": "更换照片",
@@ -2338,6 +2331,49 @@
       "valid": "有效",
       "daysAgoSuffix": "天前",
       "expiringWithin": "{{days}}天内到期"
+    },
+    "limitSample": {
+      "title": "良品不良样品主数据",
+      "subtitle": "登记良品/不良限度样品，管理有效期、批准和照片。",
+      "searchPlaceholder": "搜索代码、名称、物料或存放位置",
+      "sectionBasic": "基本信息",
+      "sectionSampleCheck": "对照设置",
+      "sectionValidity": "有效期 / 批准",
+      "sectionImages": "样品照片",
+      "sampleCode": "样品代码",
+      "sampleType": "类型",
+      "sampleName": "样品名称",
+      "itemCode": "对象物料",
+      "processCode": "适用工序",
+      "defectCode": "代表不良代码",
+      "defectCodeHint": "代表不良代码仅用于不良样品（NG）。",
+      "inspectType": "适用检验类型",
+      "inspectTypeAll": "全部检验类型通用",
+      "requiredYn": "对照必需",
+      "required": "必需",
+      "requiredHint": "必需对照的样品必须在导通、端子检验开始前完成对照。请在实物上粘贴样品代码条码。",
+      "sortOrder": "显示顺序",
+      "location": "存放位置",
+      "validFrom": "有效开始日",
+      "validTo": "有效结束日",
+      "approvedBy": "批准人",
+      "approvedAt": "批准日",
+      "expiry": "有效期状态",
+      "expired": "已过期",
+      "expiring": "即将过期",
+      "valid": "有效",
+      "daysAgoSuffix": "天前",
+      "expiringWithin": "{{days}}天内过期",
+      "images": "照片",
+      "imageCount": "照片数",
+      "imageAddHint": "点击选择样品照片（可多选，JPG/PNG/GIF/WebP，5MB 以内）",
+      "imageCaption": "照片说明",
+      "imageCaptionPlaceholder": "拍摄角度、不良部位等",
+      "imagePrimary": "代表",
+      "imageSetPrimary": "设为代表",
+      "imagePending": "保存时上传",
+      "imageDeleteConfirm": "确定删除该样品照片吗？",
+      "imageLoadFailed": "无法加载图片"
     }
   },
   "material": {
@@ -4362,6 +4398,39 @@
         "defectTotal": "总不良数量",
         "yieldRate": "整体良品率"
       }
+    },
+    "productivity": {
+      "title": "生产效率分析",
+      "description": "按品目×工序分析UPH、工时、效率、开动率和OEE",
+      "process": "工序",
+      "totalQty": "生产数量",
+      "workHours": "作业时间(H)",
+      "manHours": "投入工时(M/H)",
+      "workerCnt": "投入人员",
+      "equipCnt": "设备数",
+      "actualUph": "实际UPH",
+      "stdUph": "标准UPH",
+      "uphAchieveRate": "UPH达成率",
+      "actualTactTime": "实际TT(秒)",
+      "stdTactTime": "标准TT(秒)",
+      "perManUph": "人均生产效率",
+      "efficiencyRate": "效率",
+      "operationRate": "开动率",
+      "oee": "OEE",
+      "hasStandard": "标准登记",
+      "standardRegistered": "已登记",
+      "standardMissing": "未登记",
+      "kpiTotalQty": "总生产数量",
+      "kpiManHours": "总投入工时",
+      "kpiUph": "平均UPH",
+      "kpiPerManUph": "平均人均生产效率",
+      "kpiEfficiency": "平均效率",
+      "kpiYield": "整体良品率",
+      "noWorkTimeNotice": "生产实绩和作业指示都没有耗时，作业时间为0。需要实绩登记时记录结束时间，或作业指示已完成。",
+      "jobOrderBasedNotice": "其中{{count}}行因实绩无结束时间，改用作业指示开工~完工时间推算作业时间（作业时间列标注“指示”）。进行中的指示已排除。",
+      "srcJobOrder": "指示",
+      "srcJobOrderHint": "按作业指示开工~完工时间推算的作业时间。",
+      "noStandardNotice": "PROCESS_CAPAS中未登记标准TT/标准UPH/投入人员，因此标准UPH、UPH达成率、效率和OEE显示为空。"
     },
     "orderResult": {
       "title": "作业指示对比实绩",
@@ -7590,10 +7659,19 @@
       "LIMIT_NG": "判定为不合格的界限不良样品",
       "HOLDER": "检验时固定/定位产品的夹具"
     },
+    "LIMIT_SAMPLE_TYPE": {
+      "OK": "可判定合格的界限良品样品",
+      "NG": "判定为不合格的界限不良样品"
+    },
     "INSPECT_AID_STATUS": {
       "ACTIVE": "有效期内使用中的辅助工具",
       "EXPIRED": "有效期已过，需要重新批准",
       "RETIRED": "已停用/报废的辅助工具"
+    },
+    "LIMIT_SAMPLE_STATUS": {
+      "ACTIVE": "在有效期内且用于检验的样品",
+      "EXPIRED": "超过有效期需重新批准的样品",
+      "RETIRED": "停止使用或废弃的样品"
     }
   },
   "comCode": {
@@ -8498,10 +8576,19 @@
       "LIMIT_NG": "不良限度样品",
       "HOLDER": "检验夹具"
     },
+    "LIMIT_SAMPLE_TYPE": {
+      "OK": "良品样品",
+      "NG": "不良样品"
+    },
     "INSPECT_AID_STATUS": {
       "ACTIVE": "使用中",
       "EXPIRED": "已过期",
       "RETIRED": "报废"
+    },
+    "LIMIT_SAMPLE_STATUS": {
+      "ACTIVE": "使用中",
+      "EXPIRED": "已过期",
+      "RETIRED": "已废弃"
     },
     "NCR_TARGET_TYPE": {
       "RAW_MATERIAL": "原材料",
@@ -9515,6 +9602,9 @@
       "scanPlaceholder": "请扫描条码...",
       "remaining": "{{count}} 种未登记",
       "cancelAll": "取消投入",
+      "cancelAllHint": "解除该设备上已装载的 {{count}} 项物料",
+      "extraMounts": "BOM外装载物料",
+      "extraMountsHint": "物料归属于设备，作业指示变更后仍保留。这些不在当前作业指示BOM中，故单独列出。",
       "cancelAllTitle": "取消物料投入",
       "cancelAllConfirm": "确认取消已投入的 {{count}} 项物料吗？",
       "reverting": "正在撤销...",

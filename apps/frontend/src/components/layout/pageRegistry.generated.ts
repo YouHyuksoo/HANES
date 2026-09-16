@@ -302,6 +302,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/master/limit-sample": {
+      const mod = await import("./page-registries/master__limit-sample.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/master/part": {
       const mod = await import("./page-registries/master__part.generated");
       component = mod.getPageComponent();
@@ -654,6 +659,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
     }
     case "/production/product-trans": {
       const mod = await import("./page-registries/production__product-trans.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/productivity": {
+      const mod = await import("./page-registries/production__productivity.generated");
       component = mod.getPageComponent();
       break;
     }

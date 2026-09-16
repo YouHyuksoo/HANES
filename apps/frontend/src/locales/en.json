@@ -338,6 +338,7 @@
     "master.iqcItem": "Inspection Item Master",
     "master.iqcPartSpec": "IQC Items by Part",
     "master.inspectAid": "Inspection Aids",
+    "master.limitSample": "Limit Samples",
     "master.terminalCrimpSpec": "Terminal Crimp Specs",
     "master.inspectItemSpec": "Inspect Measurement Specs",
     "inspectMeasurementSpec": "Inspect Measurement Specs",
@@ -435,6 +436,7 @@
     "production.inputEquip": "Input (Equip)",
     "production.sampleInspect": "Sample Inspect Inquiry",
     "production.resultSummary": "Production Result Summary",
+    "production.productivity": "Productivity Analysis",
     "production.packResult": "Pack Result",
     "production.wipStock": "WIP/Product Stock Inquiry",
     "production.wipSemiStock": "Semi-Product WIP Inquiry",
@@ -2321,15 +2323,8 @@
       "torqueUnit": "Torque unit"
     },
     "inspectAid": {
-      "sectionSampleCheck": "Master Sample Verification",
-      "inspectType": "Inspection Type",
-      "inspectTypeAll": "All inspection types",
-      "requiredYn": "Comparison Required",
-      "required": "Required",
-      "sortOrder": "Sort Order",
-      "requiredHint": "Required samples must be verified before continuity/terminal inspection starts. Attach the aid code as a barcode on the physical sample.",
       "title": "Inspection Aids",
-      "subtitle": "Register OK/NG limit samples and inspection holders/jigs; manage validity, approval and photos.",
+      "subtitle": "Register inspection holders and jigs; manage validity, approval and photos.",
       "searchPlaceholder": "Search code, name, item, location",
       "sectionBasic": "Basic",
       "sectionValidity": "Validity · Approval",
@@ -2338,8 +2333,6 @@
       "aidName": "Aid name",
       "itemCode": "Item",
       "processCode": "Process",
-      "defectCode": "Defect code",
-      "defectCodeHint": "Defect code applies only to NG limit samples (LIMIT_NG).",
       "image": "Photo",
       "imageUploadHint": "Click to select a photo (JPG/PNG/GIF/WebP, up to 5MB)",
       "imageChange": "Change photo",
@@ -2356,6 +2349,49 @@
       "valid": "Valid",
       "daysAgoSuffix": "d ago",
       "expiringWithin": "Expiring within {{days}}d"
+    },
+    "limitSample": {
+      "title": "Limit Samples",
+      "subtitle": "Register OK/NG limit samples and manage validity, approval and photos.",
+      "searchPlaceholder": "Search code, name, item or location",
+      "sectionBasic": "Basic info",
+      "sectionSampleCheck": "Cross-check settings",
+      "sectionValidity": "Validity / Approval",
+      "sectionImages": "Sample photos",
+      "sampleCode": "Sample code",
+      "sampleType": "Type",
+      "sampleName": "Sample name",
+      "itemCode": "Target item",
+      "processCode": "Process",
+      "defectCode": "Representative defect code",
+      "defectCodeHint": "The representative defect code applies to NG samples only.",
+      "inspectType": "Inspection type",
+      "inspectTypeAll": "All inspection types",
+      "requiredYn": "Cross-check required",
+      "required": "Required",
+      "requiredHint": "Required samples must be cross-checked before continuity and terminal inspection. Attach the sample code as a barcode to the physical sample.",
+      "sortOrder": "Display order",
+      "location": "Storage location",
+      "validFrom": "Valid from",
+      "validTo": "Valid to",
+      "approvedBy": "Approved by",
+      "approvedAt": "Approved on",
+      "expiry": "Validity status",
+      "expired": "Expired",
+      "expiring": "Expiring",
+      "valid": "Valid",
+      "daysAgoSuffix": " days ago",
+      "expiringWithin": "Expiring within {{days}} days",
+      "images": "Photos",
+      "imageCount": "Photos",
+      "imageAddHint": "Click to select sample photos (multiple allowed, JPG/PNG/GIF/WebP, up to 5MB)",
+      "imageCaption": "Caption",
+      "imageCaptionPlaceholder": "Angle, defect area, etc.",
+      "imagePrimary": "Primary",
+      "imageSetPrimary": "Set as primary",
+      "imagePending": "Will be uploaded on save",
+      "imageDeleteConfirm": "Delete this sample photo?",
+      "imageLoadFailed": "Unable to load image"
     }
   },
   "material": {
@@ -4380,6 +4416,39 @@
         "defectTotal": "Total Defect Qty",
         "yieldRate": "Overall Yield Rate"
       }
+    },
+    "productivity": {
+      "title": "Productivity Analysis",
+      "description": "Analyze UPH, man-hours, efficiency, operation rate and OEE by item x process",
+      "process": "Process",
+      "totalQty": "Output Qty",
+      "workHours": "Work Hours(H)",
+      "manHours": "Man-Hours(M/H)",
+      "workerCnt": "Workers",
+      "equipCnt": "Equipment",
+      "actualUph": "Actual UPH",
+      "stdUph": "Std UPH",
+      "uphAchieveRate": "UPH Achieve",
+      "actualTactTime": "Actual TT(s)",
+      "stdTactTime": "Std TT(s)",
+      "perManUph": "Output per Man-Hour",
+      "efficiencyRate": "Efficiency",
+      "operationRate": "Operation Rate",
+      "oee": "OEE",
+      "hasStandard": "Standard",
+      "standardRegistered": "Set",
+      "standardMissing": "Not set",
+      "kpiTotalQty": "Total Output",
+      "kpiManHours": "Total Man-Hours",
+      "kpiUph": "Average UPH",
+      "kpiPerManUph": "Avg Output per Man-Hour",
+      "kpiEfficiency": "Average Efficiency",
+      "kpiYield": "Overall Yield Rate",
+      "noWorkTimeNotice": "Neither production results nor work orders have a duration, so work hours are 0. Time-based metrics require an end time on result registration or a completed work order.",
+      "jobOrderBasedNotice": "{{count}} row(s) have no result end time, so work hours were derived from work order start-to-finish time (marked 'WO' in the work hours column). Running orders are excluded.",
+      "srcJobOrder": "WO",
+      "srcJobOrderHint": "Work hours derived from work order start-to-finish time.",
+      "noStandardNotice": "Standard tact time / UPH / worker count are not registered in PROCESS_CAPAS, so Std UPH, UPH achievement, efficiency and OEE are shown empty."
     },
     "orderResult": {
       "title": "Work Order vs Result",
@@ -7608,10 +7677,19 @@
       "LIMIT_NG": "Boundary sample judged as NG",
       "HOLDER": "Holder or jig that fixes/aligns product for inspection"
     },
+    "LIMIT_SAMPLE_TYPE": {
+      "OK": "Boundary sample still accepted as OK",
+      "NG": "Boundary sample judged as NG"
+    },
     "INSPECT_AID_STATUS": {
       "ACTIVE": "Aid in use within its validity period",
       "EXPIRED": "Validity expired; re-approval required",
       "RETIRED": "Withdrawn or scrapped aid"
+    },
+    "LIMIT_SAMPLE_STATUS": {
+      "ACTIVE": "Within validity and in use for inspection",
+      "EXPIRED": "Past validity, needs re-approval",
+      "RETIRED": "Withdrawn from use"
     }
   },
   "comCode": {
@@ -8516,7 +8594,16 @@
       "LIMIT_NG": "NG limit sample",
       "HOLDER": "Inspection holder/jig"
     },
+    "LIMIT_SAMPLE_TYPE": {
+      "OK": "OK sample",
+      "NG": "NG sample"
+    },
     "INSPECT_AID_STATUS": {
+      "ACTIVE": "Active",
+      "EXPIRED": "Expired",
+      "RETIRED": "Retired"
+    },
+    "LIMIT_SAMPLE_STATUS": {
       "ACTIVE": "Active",
       "EXPIRED": "Expired",
       "RETIRED": "Retired"
@@ -9533,6 +9620,9 @@
       "scanPlaceholder": "Scan barcode...",
       "remaining": "{{count}} remaining",
       "cancelAll": "Cancel Input",
+      "cancelAllHint": "Unmount all {{count}} material lot(s) mounted on this equipment",
+      "extraMounts": "Mounted outside BOM",
+      "extraMountsHint": "Materials belong to the equipment and stay mounted across work orders. These are not in the current work order BOM, so they are listed separately.",
       "cancelAllTitle": "Cancel Material Input",
       "cancelAllConfirm": "Cancel all {{count}} input material lot(s)?",
       "reverting": "Reverting...",

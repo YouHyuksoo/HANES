@@ -338,6 +338,7 @@
     "master.iqcItem": "검사항목마스터(IQC전용)",
     "master.iqcPartSpec": "품목별 IQC 항목관리",
     "master.inspectAid": "검사보조구 관리",
+    "master.limitSample": "양불마스터",
     "master.terminalCrimpSpec": "단자별 압착 규격",
     "master.inspectItemSpec": "검사 실측 스펙",
     "inspectMeasurementSpec": "검사 실측 스펙",
@@ -436,6 +437,7 @@
     "production.inputEquip": "실적입력(검사장비)",
     "production.sampleInspect": "샘플검사이력조회",
     "production.resultSummary": "생산실적통합조회",
+    "production.productivity": "생산성분석",
     "production.packResult": "포장실적조회",
     "production.wipStock": "반제품/제품재고조회",
     "production.wipSemiStock": "반제품재공조회",
@@ -2839,15 +2841,8 @@
       "torqueUnit": "토크 단위"
     },
     "inspectAid": {
-      "sectionSampleCheck": "양불마스터 대조",
-      "inspectType": "적용 검사유형",
-      "inspectTypeAll": "전 검사유형 공통",
-      "requiredYn": "대조 필수",
-      "required": "필수",
-      "sortOrder": "표시순서",
-      "requiredHint": "대조 필수인 견본은 통전·단자검사 시작 전에 반드시 대조해야 합니다. 실물에는 보조구 코드를 바코드로 부착하세요.",
       "title": "검사보조구 관리",
-      "subtitle": "양품·불량 한도견본과 검사홀더/지그를 등록하고 유효기간·승인·사진을 관리합니다.",
+      "subtitle": "검사홀더·지그를 등록하고 유효기간·승인·사진을 관리합니다.",
       "searchPlaceholder": "코드·명칭·품목·보관위치 검색",
       "sectionBasic": "기본정보",
       "sectionValidity": "유효기간 · 승인",
@@ -2856,8 +2851,6 @@
       "aidName": "보조구 명칭",
       "itemCode": "대상 품목",
       "processCode": "적용 공정",
-      "defectCode": "대표 불량코드",
-      "defectCodeHint": "대표 불량코드는 불량 한도견본(LIMIT_NG)에만 입력합니다.",
       "image": "사진",
       "imageUploadHint": "클릭하여 보조구 사진 선택 (JPG/PNG/GIF/WebP, 5MB 이하)",
       "imageChange": "사진 변경",
@@ -2874,6 +2867,49 @@
       "valid": "유효",
       "daysAgoSuffix": "일 경과",
       "expiringWithin": "{{days}}일 내 만료"
+    },
+    "limitSample": {
+      "title": "양불마스터",
+      "subtitle": "양품·불량 한도견본을 등록하고 유효기간·승인·사진을 관리합니다.",
+      "searchPlaceholder": "코드·명칭·품목·보관위치 검색",
+      "sectionBasic": "기본정보",
+      "sectionSampleCheck": "대조 설정",
+      "sectionValidity": "유효기간 · 승인",
+      "sectionImages": "견본 사진",
+      "sampleCode": "견본 코드",
+      "sampleType": "유형",
+      "sampleName": "견본 명칭",
+      "itemCode": "대상 품목",
+      "processCode": "적용 공정",
+      "defectCode": "대표 불량코드",
+      "defectCodeHint": "대표 불량코드는 불량견본(NG)에만 입력합니다.",
+      "inspectType": "적용 검사유형",
+      "inspectTypeAll": "전 검사유형 공통",
+      "requiredYn": "대조 필수",
+      "required": "필수",
+      "requiredHint": "대조 필수인 견본은 통전·단자검사 시작 전에 반드시 대조해야 합니다. 실물에는 견본 코드를 바코드로 부착하세요.",
+      "sortOrder": "표시순서",
+      "location": "보관 위치",
+      "validFrom": "유효 시작일",
+      "validTo": "유효 종료일",
+      "approvedBy": "승인자",
+      "approvedAt": "승인일",
+      "expiry": "유효기간 상태",
+      "expired": "만료",
+      "expiring": "만료임박",
+      "valid": "유효",
+      "daysAgoSuffix": "일 경과",
+      "expiringWithin": "{{days}}일 내 만료",
+      "images": "사진",
+      "imageCount": "사진 수",
+      "imageAddHint": "클릭하여 견본 사진 선택 (여러 장 가능, JPG/PNG/GIF/WebP, 5MB 이하)",
+      "imageCaption": "사진 설명",
+      "imageCaptionPlaceholder": "촬영 각도, 불량 부위 등",
+      "imagePrimary": "대표",
+      "imageSetPrimary": "대표로 지정",
+      "imagePending": "저장 시 업로드됩니다",
+      "imageDeleteConfirm": "견본 사진을 삭제하시겠습니까?",
+      "imageLoadFailed": "이미지를 불러올 수 없습니다"
     }
   },
   "material": {
@@ -4918,6 +4954,39 @@
         "defectTotal": "총 불량수량",
         "yieldRate": "전체 양품률"
       }
+    },
+    "productivity": {
+      "title": "생산성분석",
+      "description": "품목×공정 기준 UPH·공수·능률·가동률·OEE를 분석합니다",
+      "process": "공정",
+      "totalQty": "생산수량",
+      "workHours": "작업시간(H)",
+      "manHours": "투입공수(M/H)",
+      "workerCnt": "투입인원",
+      "equipCnt": "설비수",
+      "actualUph": "실적UPH",
+      "stdUph": "표준UPH",
+      "uphAchieveRate": "UPH달성률",
+      "actualTactTime": "실적TT(초)",
+      "stdTactTime": "표준TT(초)",
+      "perManUph": "인당생산성",
+      "efficiencyRate": "능률",
+      "operationRate": "가동률",
+      "oee": "OEE",
+      "hasStandard": "표준등록",
+      "standardRegistered": "등록",
+      "standardMissing": "미등록",
+      "kpiTotalQty": "총 생산수량",
+      "kpiManHours": "총 투입공수",
+      "kpiUph": "평균 UPH",
+      "kpiPerManUph": "평균 인당생산성",
+      "kpiEfficiency": "평균 능률",
+      "kpiYield": "전체 양품률",
+      "noWorkTimeNotice": "생산실적에도 작업지시에도 소요시간이 없어 작업시간이 0입니다. 실적입력 시 종료시간이 기록되거나 작업지시가 완료 처리되어야 UPH·공수·가동률이 산출됩니다.",
+      "jobOrderBasedNotice": "{{count}}건은 생산실적 종료시간이 없어 작업지시 착수~완료 시간으로 작업시간을 산정했습니다(작업시간 컬럼의 '지시' 표시). 진행중인 지시는 제외됩니다.",
+      "srcJobOrder": "지시",
+      "srcJobOrderHint": "작업지시 착수~완료 시간 기준으로 산정한 작업시간입니다.",
+      "noStandardNotice": "공정능력(PROCESS_CAPAS)에 표준TT/표준UPH/투입인원이 등록되지 않아 표준UPH·UPH달성률·능률·OEE는 빈 값으로 표시됩니다."
     },
     "orderResult": {
       "title": "작업지시대비실적",
@@ -7629,10 +7698,19 @@
       "LIMIT_NG": "불합격으로 판정하는 한계 수준의 불량 견본",
       "HOLDER": "검사 시 제품을 고정·정렬하는 홀더나 지그"
     },
+    "LIMIT_SAMPLE_TYPE": {
+      "OK": "합격으로 인정하는 한계 수준의 양품 견본",
+      "NG": "불합격으로 판정하는 한계 수준의 불량 견본"
+    },
     "INSPECT_AID_STATUS": {
       "ACTIVE": "유효기간 내로 검사에 사용 중인 보조구",
       "EXPIRED": "유효기간이 지나 재승인이 필요한 보조구",
       "RETIRED": "사용 중지·폐기된 보조구"
+    },
+    "LIMIT_SAMPLE_STATUS": {
+      "ACTIVE": "유효기간 내로 검사에 사용 중인 견본",
+      "EXPIRED": "유효기간이 지나 재승인이 필요한 견본",
+      "RETIRED": "사용 중지·폐기된 견본"
     }
   },
   "comCode": {
@@ -8538,7 +8616,16 @@
       "LIMIT_NG": "불량 한도견본",
       "HOLDER": "검사홀더/지그"
     },
+    "LIMIT_SAMPLE_TYPE": {
+      "OK": "양품견본",
+      "NG": "불량견본"
+    },
     "INSPECT_AID_STATUS": {
+      "ACTIVE": "사용중",
+      "EXPIRED": "만료",
+      "RETIRED": "폐기"
+    },
+    "LIMIT_SAMPLE_STATUS": {
       "ACTIVE": "사용중",
       "EXPIRED": "만료",
       "RETIRED": "폐기"
@@ -9555,6 +9642,9 @@
       "scanPlaceholder": "바코드를 스캔하세요...",
       "remaining": "{{count}}종 남음",
       "cancelAll": "투입취소",
+      "cancelAllHint": "이 설비에 장착된 자재 {{count}}건을 전부 해제합니다",
+      "extraMounts": "BOM 외 장착 자재",
+      "extraMountsHint": "자재는 설비에 귀속되어 작업지시가 바뀌어도 유지됩니다. 현재 작업지시 BOM에 없는 장착 자재라 따로 표시합니다.",
       "cancelAllTitle": "자재투입 취소",
       "cancelAllConfirm": "투입된 자재 {{count}}건을 모두 취소하시겠습니까?",
       "reverting": "되돌리는 중...",

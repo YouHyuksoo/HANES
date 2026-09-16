@@ -338,6 +338,7 @@
     "master.iqcItem": "Danh mục kiểm tra",
     "master.iqcPartSpec": "Hạng mục IQC theo phẩm mục",
     "master.inspectAid": "Dụng cụ hỗ trợ kiểm tra",
+    "master.limitSample": "Dữ liệu mẫu OK/NG",
     "master.terminalCrimpSpec": "Tiêu chuẩn ép đầu cốt",
     "master.inspectItemSpec": "Thông số đo kiểm tra",
     "inspectMeasurementSpec": "Thông số đo kiểm tra",
@@ -435,6 +436,7 @@
     "production.inputEquip": "Nhập kết quả (thiết bị kiểm tra)",
     "production.sampleInspect": "Tra cứu lịch sử kiểm tra mẫu",
     "production.resultSummary": "Tổng hợp thực tế sản xuất",
+    "production.productivity": "Phân tích năng suất",
     "production.packResult": "Kết quả đóng gói",
     "production.wipStock": "Tra cứu tồn kho BTP/TP",
     "production.wipSemiStock": "Tra cứu WIP bán thành phẩm",
@@ -2303,15 +2305,8 @@
       "applicatorCode": "Applicator"
     },
     "inspectAid": {
-      "sectionSampleCheck": "Đối chiếu mẫu tốt/xấu",
-      "inspectType": "Loại kiểm tra áp dụng",
-      "inspectTypeAll": "Dùng chung cho mọi loại kiểm tra",
-      "requiredYn": "Bắt buộc đối chiếu",
-      "required": "Bắt buộc",
-      "sortOrder": "Thứ tự hiển thị",
-      "requiredHint": "Mẫu bắt buộc phải được đối chiếu trước khi bắt đầu kiểm tra thông mạch/đầu cốt. Hãy dán mã dụng cụ dạng mã vạch lên mẫu thật.",
       "title": "Quản lý dụng cụ hỗ trợ kiểm tra",
-      "subtitle": "Đăng ký mẫu giới hạn OK/NG và đồ gá kiểm tra; quản lý hiệu lực, phê duyệt và ảnh.",
+      "subtitle": "Đăng ký đồ gá và jig kiểm tra; quản lý hiệu lực, phê duyệt và ảnh.",
       "searchPlaceholder": "Tìm mã, tên, vật tư, vị trí",
       "sectionBasic": "Thông tin cơ bản",
       "sectionValidity": "Hiệu lực · Phê duyệt",
@@ -2320,8 +2315,6 @@
       "aidName": "Tên dụng cụ",
       "itemCode": "Vật tư áp dụng",
       "processCode": "Công đoạn áp dụng",
-      "defectCode": "Mã lỗi đại diện",
-      "defectCodeHint": "Mã lỗi chỉ nhập cho mẫu giới hạn NG (LIMIT_NG).",
       "image": "Ảnh",
       "imageUploadHint": "Nhấn để chọn ảnh (JPG/PNG/GIF/WebP, tối đa 5MB)",
       "imageChange": "Đổi ảnh",
@@ -2338,6 +2331,49 @@
       "valid": "Còn hiệu lực",
       "daysAgoSuffix": " ngày trước",
       "expiringWithin": "Hết hạn trong {{days}} ngày"
+    },
+    "limitSample": {
+      "title": "Dữ liệu mẫu OK/NG",
+      "subtitle": "Đăng ký mẫu giới hạn OK/NG và quản lý hiệu lực, phê duyệt, ảnh.",
+      "searchPlaceholder": "Tìm mã, tên, vật tư hoặc vị trí lưu",
+      "sectionBasic": "Thông tin cơ bản",
+      "sectionSampleCheck": "Cài đặt đối chiếu",
+      "sectionValidity": "Hiệu lực / Phê duyệt",
+      "sectionImages": "Ảnh mẫu",
+      "sampleCode": "Mã mẫu",
+      "sampleType": "Loại",
+      "sampleName": "Tên mẫu",
+      "itemCode": "Vật tư áp dụng",
+      "processCode": "Công đoạn áp dụng",
+      "defectCode": "Mã lỗi đại diện",
+      "defectCodeHint": "Mã lỗi đại diện chỉ dùng cho mẫu NG.",
+      "inspectType": "Loại kiểm tra áp dụng",
+      "inspectTypeAll": "Dùng chung mọi loại kiểm tra",
+      "requiredYn": "Bắt buộc đối chiếu",
+      "required": "Bắt buộc",
+      "requiredHint": "Mẫu bắt buộc phải được đối chiếu trước khi bắt đầu kiểm tra thông mạch và đầu cốt. Hãy dán mã mẫu dạng mã vạch lên mẫu thật.",
+      "sortOrder": "Thứ tự hiển thị",
+      "location": "Vị trí lưu",
+      "validFrom": "Hiệu lực từ",
+      "validTo": "Hiệu lực đến",
+      "approvedBy": "Người phê duyệt",
+      "approvedAt": "Ngày phê duyệt",
+      "expiry": "Trạng thái hiệu lực",
+      "expired": "Hết hạn",
+      "expiring": "Sắp hết hạn",
+      "valid": "Còn hiệu lực",
+      "daysAgoSuffix": " ngày trước",
+      "expiringWithin": "Hết hạn trong {{days}} ngày",
+      "images": "Ảnh",
+      "imageCount": "Số ảnh",
+      "imageAddHint": "Nhấn để chọn ảnh mẫu (chọn nhiều, JPG/PNG/GIF/WebP, tối đa 5MB)",
+      "imageCaption": "Chú thích ảnh",
+      "imageCaptionPlaceholder": "Góc chụp, vị trí lỗi, ...",
+      "imagePrimary": "Đại diện",
+      "imageSetPrimary": "Đặt làm đại diện",
+      "imagePending": "Sẽ tải lên khi lưu",
+      "imageDeleteConfirm": "Xóa ảnh mẫu này?",
+      "imageLoadFailed": "Không tải được ảnh"
     }
   },
   "material": {
@@ -4362,6 +4398,39 @@
         "defectTotal": "Tổng SL lỗi",
         "yieldRate": "Tỷ lệ đạt chung"
       }
+    },
+    "productivity": {
+      "title": "Phân tích năng suất",
+      "description": "Phân tích UPH, giờ công, hiệu suất, tỷ lệ vận hành và OEE theo SP x công đoạn",
+      "process": "Công đoạn",
+      "totalQty": "SL sản xuất",
+      "workHours": "Giờ làm việc(H)",
+      "manHours": "Giờ công(M/H)",
+      "workerCnt": "Số người",
+      "equipCnt": "Số thiết bị",
+      "actualUph": "UPH thực tế",
+      "stdUph": "UPH tiêu chuẩn",
+      "uphAchieveRate": "Tỷ lệ đạt UPH",
+      "actualTactTime": "TT thực tế(s)",
+      "stdTactTime": "TT tiêu chuẩn(s)",
+      "perManUph": "Năng suất/người",
+      "efficiencyRate": "Hiệu suất",
+      "operationRate": "Tỷ lệ vận hành",
+      "oee": "OEE",
+      "hasStandard": "Tiêu chuẩn",
+      "standardRegistered": "Đã đăng ký",
+      "standardMissing": "Chưa đăng ký",
+      "kpiTotalQty": "Tổng SL sản xuất",
+      "kpiManHours": "Tổng giờ công",
+      "kpiUph": "UPH trung bình",
+      "kpiPerManUph": "Năng suất/người TB",
+      "kpiEfficiency": "Hiệu suất TB",
+      "kpiYield": "Tỷ lệ đạt chung",
+      "noWorkTimeNotice": "Cả kết quả sản xuất và lệnh sản xuất đều không có thời lượng nên giờ làm việc bằng 0. Cần có thời gian kết thúc khi nhập kết quả hoặc lệnh sản xuất đã hoàn thành.",
+      "jobOrderBasedNotice": "{{count}} dòng không có thời gian kết thúc nên giờ làm việc được tính từ thời gian bắt đầu~hoàn thành lệnh sản xuất (đánh dấu 'LSX'). Lệnh đang chạy bị loại trừ.",
+      "srcJobOrder": "LSX",
+      "srcJobOrderHint": "Giờ làm việc tính từ thời gian bắt đầu~hoàn thành lệnh sản xuất.",
+      "noStandardNotice": "Chưa đăng ký TT tiêu chuẩn / UPH tiêu chuẩn / số người trong PROCESS_CAPAS nên UPH tiêu chuẩn, tỷ lệ đạt UPH, hiệu suất và OEE để trống."
     },
     "orderResult": {
       "title": "Kết quả theo lệnh SX",
@@ -7590,10 +7659,19 @@
       "LIMIT_NG": "Mẫu biên bị phán định NG",
       "HOLDER": "Đồ gá cố định/định vị sản phẩm khi kiểm tra"
     },
+    "LIMIT_SAMPLE_TYPE": {
+      "OK": "Mẫu biên còn được chấp nhận là OK",
+      "NG": "Mẫu biên bị đánh giá là NG"
+    },
     "INSPECT_AID_STATUS": {
       "ACTIVE": "Dụng cụ đang dùng trong thời hạn hiệu lực",
       "EXPIRED": "Hết hiệu lực; cần phê duyệt lại",
       "RETIRED": "Dụng cụ đã ngừng dùng/loại bỏ"
+    },
+    "LIMIT_SAMPLE_STATUS": {
+      "ACTIVE": "Còn hiệu lực và đang dùng để kiểm tra",
+      "EXPIRED": "Quá hạn, cần phê duyệt lại",
+      "RETIRED": "Đã ngừng dùng hoặc hủy"
     }
   },
   "comCode": {
@@ -8498,10 +8576,19 @@
       "LIMIT_NG": "Mẫu giới hạn NG",
       "HOLDER": "Đồ gá kiểm tra"
     },
+    "LIMIT_SAMPLE_TYPE": {
+      "OK": "Mẫu OK",
+      "NG": "Mẫu NG"
+    },
     "INSPECT_AID_STATUS": {
       "ACTIVE": "Đang dùng",
       "EXPIRED": "Hết hạn",
       "RETIRED": "Loại bỏ"
+    },
+    "LIMIT_SAMPLE_STATUS": {
+      "ACTIVE": "Đang dùng",
+      "EXPIRED": "Hết hạn",
+      "RETIRED": "Ngừng dùng"
     },
     "NCR_TARGET_TYPE": {
       "RAW_MATERIAL": "Nguyên vật liệu",
@@ -9515,6 +9602,9 @@
       "scanPlaceholder": "Quét mã vạch...",
       "remaining": "Còn {{count}} loại",
       "cancelAll": "Hủy nhập",
+      "cancelAllHint": "Tháo toàn bộ {{count}} lô vật tư đang gắn trên thiết bị này",
+      "extraMounts": "Vật tư ngoài BOM",
+      "extraMountsHint": "Vật tư thuộc thiết bị và vẫn giữ khi đổi lệnh sản xuất. Các mục này không có trong BOM của lệnh hiện tại nên được liệt kê riêng.",
       "cancelAllTitle": "Hủy nhập vật tư",
       "cancelAllConfirm": "Hủy toàn bộ {{count}} lô vật tư đã nhập?",
       "reverting": "Đang hoàn tác...",
