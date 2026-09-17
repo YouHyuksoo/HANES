@@ -78,6 +78,9 @@ export function useIqcRequestLot() {
   const [basket, setBasket] = useState<BasketRow[]>([]);
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [loading, setLoading] = useState(false);
+  // 의뢰 확정 진행 중 재제출 차단. 서버가 입하 행을 잠가 중복을 막지만,
+  // 연타는 두 번째 요청이 잠금 대기로 매달렸다가 400으로 끝나 사용자에게 실패로 보인다.
+  const [confirming, setConfirming] = useState(false);
   const [aql, setAql] = useState<AqlPreview | null>(null);
   const [partOpen, setPartOpen] = useState(false);
   // 검사 단위 모드. ARRIVAL이면 의뢰를 만들어도 IQC 검사대기에 뜨지 않으므로 서버가 생성을 막는다.
@@ -189,6 +192,8 @@ export function useIqcRequestLot() {
       toast.error(t("material.iqcRequestLot.needSample", "시료 입하를 한 건 이상 지정하세요."));
       return;
     }
+    if (confirming) return;
+    setConfirming(true);
     try {
       await api.post("/quality/iqc-request-lots", {
         itemCode: itemCode.trim(),
@@ -200,6 +205,8 @@ export function useIqcRequestLot() {
       await refresh();
     } catch (error: unknown) {
       toast.error(resolveApiMessage(error, t("common.saveFailed")));
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -237,6 +244,7 @@ export function useIqcRequestLot() {
     removeFromBasket,
     addVisible,
     confirmRequest,
+    confirming,
     cancelRequest,
   };
 }

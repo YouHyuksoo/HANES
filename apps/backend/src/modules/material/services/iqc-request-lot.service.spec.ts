@@ -2,12 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { IqcRequestLot } from '../../../entities/iqc-request-lot.entity';
 import { IqcRequestLotLine } from '../../../entities/iqc-request-lot-line.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { IqcRequestLotService } from './iqc-request-lot.service';
 
@@ -19,7 +20,12 @@ describe('IqcRequestLotService', () => {
   let itemRepo: DeepMocked<Repository<ItemMaster>>;
   let numbering: DeepMocked<NumberingService>;
   let sysConfig: DeepMocked<SysConfigService>;
+  let tx: DeepMocked<TransactionService>;
   let candidateQb: { getRawMany: jest.Mock } & Record<string, jest.Mock>;
+  /** 의뢰 확정은 트랜잭션 manager로 읽고 쓴다. 잠금 쿼리도 이 queryRunner로 나간다. */
+  let fakeQr: { manager: Record<string, jest.Mock>; query: jest.Mock };
+  /** 선점(REQUESTED 라인) 조회용 QueryBuilder */
+  let qbTaken: Record<string, jest.Mock>;
 
   /** listCandidates 가 돌려줄 후보 행. qty 는 MAT_ARRIVALS.QTY 가 아니라 검사대기 시리얼 INIT_QTY 합이다. */
   const mockCandidates = (
@@ -58,6 +64,7 @@ describe('IqcRequestLotService', () => {
       getRawMany: jest.fn().mockResolvedValue([]),
     };
     lineRepo.createQueryBuilder.mockReturnValue(qb as never);
+    qbTaken = qb;
     candidateQb = {
       innerJoin: jest.fn().mockReturnThis(),
       select: jest.fn().mockReturnThis(),
@@ -71,6 +78,21 @@ describe('IqcRequestLotService', () => {
     };
     arrivalRepo.createQueryBuilder.mockReturnValue(candidateQb as never);
 
+    // 후보/선점 조회는 이제 EntityManager.createQueryBuilder(Entity, alias)로 나간다.
+    // 목록 조회는 arrivalRepo.manager, 의뢰 확정은 트랜잭션 manager를 쓴다.
+    const managerQb = (entity: unknown) => (entity === MatArrival ? candidateQb : qb);
+    const fakeManager = {
+      createQueryBuilder: jest.fn((entity: unknown) => managerQb(entity)),
+      create: jest.fn((_entity: unknown, value: unknown) => value),
+      save: jest.fn(async (_entity: unknown, value: unknown) => value),
+    };
+    (arrivalRepo as unknown as { manager: unknown }).manager = fakeManager;
+    fakeQr = { manager: fakeManager as never, query: jest.fn().mockResolvedValue([]) };
+    tx = createMock<TransactionService>();
+    (tx.run as unknown as jest.Mock).mockImplementation(
+      (cb: (qr: QueryRunner) => Promise<unknown>) => cb(fakeQr as unknown as QueryRunner),
+    );
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         IqcRequestLotService,
@@ -80,6 +102,7 @@ describe('IqcRequestLotService', () => {
         { provide: getRepositoryToken(ItemMaster), useValue: itemRepo },
         { provide: NumberingService, useValue: numbering },
         { provide: SysConfigService, useValue: sysConfig },
+        { provide: TransactionService, useValue: tx },
       ],
     }).compile();
     target = module.get(IqcRequestLotService);
@@ -195,6 +218,51 @@ describe('IqcRequestLotService', () => {
     expect(saved.lotQty).toBe(300);
     expect(saved.lines).toHaveLength(3);
     expect(saved.lines.map((l) => l.arrivalSeq)).toEqual([1, 2, 3]);
+  });
+
+  it('의뢰 확정은 대상 입하 행을 FOR UPDATE로 잠근 뒤 진행한다', async () => {
+    // 잠그지 않으면 동시 제출 두 건이 서로의 라인을 못 보고 둘 다 통과한다
+    // (2026-09-17 실측: IQL20260917-0012 / -0013 이 1초 간격으로 같은 행을 담았다).
+    numbering.next.mockResolvedValue('IQL20260917-0100');
+    arrivalRepo.find.mockResolvedValue([
+      { arrivalNo: 'A1', seq: 2, itemCode: 'P1', iqcStatus: 'PENDING', vendorCode: 'V1' } as MatArrival,
+    ]);
+    mockCandidates([{ arrivalNo: 'A1', seq: 2, itemCode: 'P1', qty: 500 }]);
+    itemRepo.findOne.mockResolvedValue({ itemCode: 'P1', itemName: 'Cable' } as ItemMaster);
+
+    await target.create(
+      { itemCode: 'P1', lines: [{ arrivalNo: 'A1', arrivalSeq: 2, lineRole: 'SAMPLE' }] },
+      '40',
+      '1000',
+    );
+
+    expect(tx.run).toHaveBeenCalledTimes(1);
+    const [sql, params] = fakeQr.query.mock.calls[0];
+    expect(sql).toMatch(/FOR UPDATE/);
+    expect(sql).toMatch(/\(ARRIVAL_NO, SEQ\) IN/);
+    expect(params).toEqual(['40', '1000', 'P1', 'A1', 2]);
+  });
+
+  it('잠근 뒤 재확인에서 다른 의뢰가 먼저 선점했으면 거절한다', async () => {
+    // 잠금을 얻기 전에 커밋된 경쟁 의뢰의 라인이 여기서 비로소 보인다.
+    arrivalRepo.find.mockResolvedValue([
+      { arrivalNo: 'A1', seq: 1, itemCode: 'P1', iqcStatus: 'PENDING', vendorCode: 'V1' } as MatArrival,
+    ]);
+    mockCandidates([{ arrivalNo: 'A1', seq: 1, itemCode: 'P1', qty: 500 }]);
+    // 선점 조회(REQUESTED 라인)가 같은 행을 돌려준다 → 후보에서 빠진다
+    (qbTaken.getRawMany as jest.Mock).mockResolvedValue([{ arrivalNo: 'A1', arrivalSeq: 1 }]);
+    itemRepo.findOne.mockResolvedValue({ itemCode: 'P1', itemName: 'Cable' } as ItemMaster);
+
+    await expect(
+      target.create(
+        { itemCode: 'P1', lines: [{ arrivalNo: 'A1', arrivalSeq: 1, lineRole: 'SAMPLE' }] },
+        '40',
+        '1000',
+      ),
+    ).rejects.toThrow('이미 다른 의뢰 LOT에 포함되어 있습니다');
+    // 잠금은 이미 걸렸고, 저장은 일어나지 않는다
+    expect(fakeQr.query).toHaveBeenCalled();
+    expect(fakeQr.manager.save).not.toHaveBeenCalled();
   });
 
   it('같은 입하 행(ARRIVAL_NO+SEQ)을 두 번 넣으면 거절한다', async () => {

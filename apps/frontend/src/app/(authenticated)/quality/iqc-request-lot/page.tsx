@@ -193,7 +193,7 @@ export default function IqcRequestLotPage() {
                 "시료수는 검사 시점에 AQL이 모집단수량으로 산출합니다. 합불 판정은 IQC 검사 화면에서 합니다.",
               )}
             </p>
-            <Button onClick={() => void h.confirmRequest()} disabled={!h.requestLotEnabled}>
+            <Button onClick={() => void h.confirmRequest()} disabled={!h.requestLotEnabled || h.confirming}>
               {t("material.iqcRequestLot.confirm", "의뢰 확정")}
             </Button>
           </CardContent>
