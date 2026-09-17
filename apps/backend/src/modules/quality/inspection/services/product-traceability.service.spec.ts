@@ -10,6 +10,7 @@
  * - 실행: `npx jest --testPathPattern="product-traceability.service.spec"`
  */
 import { Test, TestingModule } from '@nestjs/testing';
+import { IqcJudgementLookupService } from '../../../material/services/iqc-judgement-lookup.service';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -74,13 +75,19 @@ describe('ProductTraceabilityService', () => {
   ];
 
   beforeEach(async () => {
+    const mockIqcJudgement = createMock<IqcJudgementLookupService>();
+    mockIqcJudgement.findByArrivalRows.mockResolvedValue([]);
     const providers = entities.map((entity) => ({
       provide: getRepositoryToken(entity),
       useValue: createMock<Repository<unknown>>(),
     }));
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ProductTraceabilityService, ...providers],
+      providers: [
+        ProductTraceabilityService,
+        { provide: IqcJudgementLookupService, useValue: mockIqcJudgement },
+        ...providers,
+      ],
     })
       .setLogger(new MockLoggerService())
       .compile();

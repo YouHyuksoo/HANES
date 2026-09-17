@@ -24,6 +24,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
+import { IqcJudgementLookupService } from './iqc-judgement-lookup.service';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
@@ -63,6 +64,7 @@ export class ReceivingService {
     private readonly labelPrintLogRepository: Repository<LabelPrintLog>,
     @InjectRepository(IqcLog)
     private readonly iqcLogRepository: Repository<IqcLog>,
+    private readonly iqcJudgement: IqcJudgementLookupService,
     private readonly dataSource: DataSource,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
@@ -189,25 +191,16 @@ export class ReceivingService {
       : [];
     const vendorNameMap = new Map(vendorPartners.map((p) => [p.partnerCode, p.partnerName]));
 
-    const arrivalNos = [...new Set(validLots.map((lot) => lot.arrivalNo).filter(Boolean))] as string[];
-    const passedIqcLogs = arrivalNos.length > 0 && itemCodes.length > 0
-      ? await this.iqcLogRepository.find({
-          where: {
-            arrivalNo: In(arrivalNos),
-            itemCode: In(itemCodes),
-            result: 'PASS',
-            status: 'DONE',
-            ...this.tenantWhere(company, plant),
-          },
-          order: { inspectDate: 'DESC' },
-        })
-      : [];
-    const iqcLogByArrivalItem = new Map<string, IqcLog>();
-    for (const log of passedIqcLogs) {
-      if (!log.arrivalNo || !log.itemCode) continue;
-      const key = `${log.arrivalNo}::${log.itemCode}`;
-      if (!iqcLogByArrivalItem.has(key)) iqcLogByArrivalItem.set(key, log);
-    }
+    // PASS 판정을 판정 대상(IQC_LOG_TARGETS) 기준으로 찾는다.
+    // IQC_LOGS.ARRIVAL_NO 로 찾으면 의뢰 판정의 대표 입하 행이 합격으로 안 보여 입고가 막힌다.
+    const iqcLogByArrivalItem = await this.iqcJudgement.mapLatestByArrivalItem(
+      validLots
+        .filter((lot): lot is typeof lot & { arrivalNo: string } => !!lot.arrivalNo)
+        .map((lot) => ({ arrivalNo: lot.arrivalNo, itemCode: lot.itemCode })),
+      { result: 'PASS', status: 'DONE' },
+      company,
+      plant,
+    );
 
     // 라벨 발행 여부 확인 (LABEL_PRINT_LOGS에서 성공 이력 조회)
     const printLogs = await this.labelPrintLogRepository

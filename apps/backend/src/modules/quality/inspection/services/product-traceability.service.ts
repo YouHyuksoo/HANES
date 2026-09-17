@@ -14,6 +14,7 @@ import { MatLot } from '../../../../entities/mat-lot.entity';
 import { PurchaseOrder } from '../../../../entities/purchase-order.entity';
 import { MatArrival } from '../../../../entities/mat-arrival.entity';
 import { IqcLog } from '../../../../entities/iqc-log.entity';
+import { IqcJudgementLookupService } from '../../../material/services/iqc-judgement-lookup.service';
 import { MatReceiving } from '../../../../entities/mat-receiving.entity';
 import { ItemMaster } from '../../../../entities/item-master.entity';
 import { BoxMaster } from '../../../../entities/box-master.entity';
@@ -71,6 +72,7 @@ export class ProductTraceabilityService {
     @InjectRepository(PurchaseOrder) private readonly poRepo: Repository<PurchaseOrder>,
     @InjectRepository(MatArrival) private readonly arrivalRepo: Repository<MatArrival>,
     @InjectRepository(IqcLog) private readonly iqcRepo: Repository<IqcLog>,
+    private readonly iqcJudgement: IqcJudgementLookupService,
     @InjectRepository(MatReceiving) private readonly receivingRepo: Repository<MatReceiving>,
     @InjectRepository(ItemMaster) private readonly itemMasterRepo: Repository<ItemMaster>,
     @InjectRepository(BoxMaster) private readonly boxMasterRepo: Repository<BoxMaster>,
@@ -149,10 +151,7 @@ export class ProductTraceabilityService {
         ? this.arrivalRepo.find({ where: { arrivalNo: In(arrivalNos), company, plant } })
         : Promise.resolve([]),
       this.iqcRepo.find({
-        where: [
-          { matUid: In(matUids), company, plant },
-          ...(arrivalNos.length ? [{ arrivalNo: In(arrivalNos), company, plant }] : []),
-        ],
+        where: { matUid: In(matUids), company, plant },
         order: { inspectDate: 'DESC' },
       }),
       this.receivingRepo.find({ where: { matUid: In(matUids), company, plant }, order: { receiveDate: 'ASC' } }),
@@ -168,12 +167,29 @@ export class ProductTraceabilityService {
     const arrivalFirst = new Map<string, MatArrival>();
     for (const a of arrivals) if (!arrivalFirst.has(a.arrivalNo)) arrivalFirst.set(a.arrivalNo, a);
 
-    // IQC: matUid 우선, 없으면 arrivalNo
+    // IQC: 시리얼 단건 판정이 우선, 없으면 그 시리얼이 달린 입하 행을 덮은 판정.
+    // 입하 행 역조회는 IQC_LOG_TARGETS만 본다 — IQC_LOGS.ARRIVAL_NO로 찾으면
+    // 검사의뢰 판정에서 대표 입하 행을 잃는다. ADR 0004 참고.
     const iqcByMat = new Map<string, IqcLog>();
-    const iqcByArrival = new Map<string, IqcLog>();
     for (const q of iqcs) {
       if (q.matUid && !iqcByMat.has(q.matUid)) iqcByMat.set(q.matUid, q);
-      if (q.arrivalNo && !iqcByArrival.has(q.arrivalNo)) iqcByArrival.set(q.arrivalNo, q);
+    }
+    const arrivalJudgements = await this.iqcJudgement.findByArrivalRows(
+      lots
+        .filter((l): l is typeof l & { arrivalNo: string } => !!l.arrivalNo)
+        .map((l) => ({ arrivalNo: l.arrivalNo, itemCode: l.itemCode })),
+      { status: 'DONE' },
+      company,
+      plant,
+    );
+    // 입하 행(seq)까지 일치하는 판정을 우선하고, 시리얼에 seq가 없으면 입하번호+품목으로 떨어진다.
+    const iqcByArrivalRow = new Map<string, IqcLog>();
+    const iqcByArrivalItem = new Map<string, IqcLog>();
+    for (const q of arrivalJudgements) {
+      const rowKey = `${q.targetArrivalNo}#${q.targetArrivalSeq}::${q.targetItemCode}`;
+      if (!iqcByArrivalRow.has(rowKey)) iqcByArrivalRow.set(rowKey, q);
+      const itemKey = `${q.targetArrivalNo}::${q.targetItemCode}`;
+      if (!iqcByArrivalItem.has(itemKey)) iqcByArrivalItem.set(itemKey, q);
     }
 
     const recvMap = new Map<string, MatReceiving>();
@@ -214,7 +230,13 @@ export class ProductTraceabilityService {
       const arrival = lot?.arrivalNo
         ? (lot.arrivalSeq != null ? arrivalMap.get(`${lot.arrivalNo}#${lot.arrivalSeq}`) : undefined) ?? arrivalFirst.get(lot.arrivalNo)
         : undefined;
-      const iqc = iqcByMat.get(matUid) ?? (lot?.arrivalNo ? iqcByArrival.get(lot.arrivalNo) : undefined);
+      const iqc =
+        iqcByMat.get(matUid) ??
+        (lot?.arrivalNo
+          ? (lot.arrivalSeq != null
+              ? iqcByArrivalRow.get(`${lot.arrivalNo}#${lot.arrivalSeq}::${lot.itemCode}`)
+              : undefined) ?? iqcByArrivalItem.get(`${lot.arrivalNo}::${lot.itemCode}`)
+          : undefined);
       const recv = recvMap.get(matUid);
 
       result.push({

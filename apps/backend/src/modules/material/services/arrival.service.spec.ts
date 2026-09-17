@@ -26,6 +26,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
+import { IqcJudgementLookupService } from './iqc-judgement-lookup.service';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -50,6 +51,7 @@ describe('ArrivalService', () => {
   let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
   let mockVendorBarcodeRepo: DeepMocked<Repository<VendorBarcodeMapping>>;
   let mockIqcLogRepo: DeepMocked<Repository<IqcLog>>;
+  let mockIqcJudgement: DeepMocked<IqcJudgementLookupService>;
   let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
@@ -69,6 +71,7 @@ describe('ArrivalService', () => {
     mockWarehouseRepo = createMock<Repository<Warehouse>>();
     mockVendorBarcodeRepo = createMock<Repository<VendorBarcodeMapping>>();
     mockIqcLogRepo = createMock<Repository<IqcLog>>();
+    mockIqcJudgement = createMock<IqcJudgementLookupService>();
     mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
@@ -98,6 +101,7 @@ describe('ArrivalService', () => {
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
         { provide: getRepositoryToken(VendorBarcodeMapping), useValue: mockVendorBarcodeRepo },
         { provide: getRepositoryToken(IqcLog), useValue: mockIqcLogRepo },
+        { provide: IqcJudgementLookupService, useValue: mockIqcJudgement },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: NumberingService, useValue: mockNumbering },
@@ -1072,7 +1076,7 @@ describe('ArrivalService', () => {
         target.cancel({ transactionId: 'TX-003', reason: 'cancel', workerId: 'user' } as any, 'CO', 'P01'),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockIqcLogRepo.findOne).not.toHaveBeenCalled();
+      expect(mockIqcJudgement.findLatestByArrivalRow).not.toHaveBeenCalled();
       expect(mockTx.run).not.toHaveBeenCalled();
     });
 
@@ -1138,7 +1142,9 @@ describe('ArrivalService', () => {
         company: 'C1',
         plant: 'P1',
       } as MatArrivalTransaction);
-      mockIqcLogRepo.findOne.mockResolvedValue(null);
+      // 가드는 취소 대상 시리얼이 달린 입하 행(ARRIVAL_SEQ)까지 좁혀서 판정을 찾는다
+      mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'MAT-005', arrivalSeq: 2 } as MatLot);
+      mockIqcJudgement.findLatestByArrivalRow.mockResolvedValue(null);
       mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster);
       mockWarehouseRepo.findOne.mockResolvedValue({ warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse);
       mockDataSource.getRepository.mockReturnValue({
@@ -1159,11 +1165,14 @@ describe('ArrivalService', () => {
 
       await target.cancel({ transactionId: 'TX-005', reason: 'cancel', workerId: 'user' } as any, 'C1', 'P1');
 
-      // 취소된 판정(STATUS='CANCELED')은 입하 취소를 막지 않는다 — 유효 판정만 본다
-      expect(mockIqcLogRepo.findOne).toHaveBeenCalledWith({
-        where: { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', status: 'DONE', company: 'C1', plant: 'P1' },
-        order: { inspectDate: 'DESC' },
-      });
+      // 취소된 판정(STATUS='CANCELED')은 입하 취소를 막지 않는다 — 유효 판정만 본다.
+      // 역조회는 IQC_LOGS.ARRIVAL_NO가 아니라 판정 대상(IQC_LOG_TARGETS)을 본다(ADR 0004).
+      expect(mockIqcJudgement.findLatestByArrivalRow).toHaveBeenCalledWith(
+        { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', arrivalSeq: 2 },
+        { status: 'DONE' },
+        'C1',
+        'P1',
+      );
       expect(mockItemMasterRepo.findOne).toHaveBeenCalledWith({
         where: { itemCode: 'ITEM-001', company: 'C1', plant: 'P1' },
       });

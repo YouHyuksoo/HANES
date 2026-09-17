@@ -17,6 +17,7 @@ import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity'
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
+import { IqcJudgementLookupService } from './iqc-judgement-lookup.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
@@ -42,6 +43,7 @@ describe('ReceivingService', () => {
   let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
   let mockLabelPrintLogRepo: DeepMocked<Repository<LabelPrintLog>>;
   let mockIqcLogRepo: DeepMocked<Repository<IqcLog>>;
+  let mockIqcJudgement: DeepMocked<IqcJudgementLookupService>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockNumbering: DeepMocked<NumberingService>;
@@ -64,6 +66,8 @@ describe('ReceivingService', () => {
     mockWarehouseRepo = createMock<Repository<Warehouse>>();
     mockLabelPrintLogRepo = createMock<Repository<LabelPrintLog>>();
     mockIqcLogRepo = createMock<Repository<IqcLog>>();
+    mockIqcJudgement = createMock<IqcJudgementLookupService>();
+    mockIqcJudgement.mapLatestByArrivalItem.mockResolvedValue(new Map());
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockNumbering = createMock<NumberingService>();
@@ -89,6 +93,7 @@ describe('ReceivingService', () => {
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
         { provide: getRepositoryToken(LabelPrintLog), useValue: mockLabelPrintLogRepo },
         { provide: getRepositoryToken(IqcLog), useValue: mockIqcLogRepo },
+        { provide: IqcJudgementLookupService, useValue: mockIqcJudgement },
         { provide: DataSource, useValue: mockDataSource },
         { provide: NumberingService, useValue: mockNumbering },
         { provide: TransactionService, useValue: mockTx },

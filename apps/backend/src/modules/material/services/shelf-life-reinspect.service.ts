@@ -195,6 +195,9 @@ export class ShelfLifeReInspectService {
     inspectionDate.setHours(0, 0, 0, 0);
 
     // IqcLog 기록 (matUid + retestRound 포함)
+    // 재검사는 입하 스코프 판정이 아니라 시리얼 스코프 판정이라 ARRIVAL_NO가 없고,
+    // IQC_LOG_TARGETS(판정 대상)도 만들지 않는다. 입하 행에서의 판정 역조회 대상이 아니다.
+    // 입하 스코프 판정만 대상 행을 갖는다 — ADR 0004 참고.
     const log = this.iqcLogRepo.create({
       arrivalNo: null,
       matUid: dto.matUid,

@@ -5,6 +5,7 @@ import { BadRequestException } from '@nestjs/common';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { IqcHistoryService } from './iqc-history.service';
 import { IqcLog } from '../../../entities/iqc-log.entity';
+import { IqcLogTarget } from '../../../entities/iqc-log-target.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
@@ -24,6 +25,7 @@ import { MockLoggerService } from '@test/mock-logger.service';
 describe('IqcHistoryService cancel policy', () => {
   let target: IqcHistoryService;
   let mockIqcLogRepo: DeepMocked<Repository<IqcLog>>;
+  let mockIqcLogTargetRepo: DeepMocked<Repository<IqcLogTarget>>;
   let mockMatArrivalRepo: DeepMocked<Repository<MatArrival>>;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
   let mockMatReceivingRepo: DeepMocked<Repository<MatReceiving>>;
@@ -51,6 +53,7 @@ describe('IqcHistoryService cancel policy', () => {
 
   beforeEach(async () => {
     mockIqcLogRepo = createMock<Repository<IqcLog>>();
+    mockIqcLogTargetRepo = createMock<Repository<IqcLogTarget>>();
     mockMatArrivalRepo = createMock<Repository<MatArrival>>();
     mockMatLotRepo = createMock<Repository<MatLot>>();
     mockMatReceivingRepo = createMock<Repository<MatReceiving>>();
@@ -114,6 +117,7 @@ describe('IqcHistoryService cancel policy', () => {
       providers: [
         IqcHistoryService,
         { provide: getRepositoryToken(IqcLog), useValue: mockIqcLogRepo },
+        { provide: getRepositoryToken(IqcLogTarget), useValue: mockIqcLogTargetRepo },
         { provide: getRepositoryToken(MatArrival), useValue: mockMatArrivalRepo },
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
         { provide: getRepositoryToken(MatReceiving), useValue: mockMatReceivingRepo },
@@ -890,6 +894,9 @@ describe('IqcHistoryService cancel policy', () => {
     mockNumbering.nextInTx.mockResolvedValue('TX-CANCEL-001');
 
     const manager = {
+      find: jest.fn().mockResolvedValue([
+        { arrivalNo: 'ARR-001', arrivalSeq: 1, itemCode: 'ITEM-001', matUid: 'MAT-001' },
+      ]),
       findOne: jest
         .fn()
         .mockResolvedValueOnce({
@@ -901,7 +908,8 @@ describe('IqcHistoryService cancel policy', () => {
         .mockResolvedValueOnce({ warehouseCode: 'WH-DEFECT', qty: 5 })
         .mockResolvedValueOnce({ warehouseCode: 'WH-NORMAL', qty: 0 }),
       update: jest.fn().mockResolvedValue(undefined),
-      save: jest.fn().mockResolvedValue(undefined),
+      save: jest.fn().mockImplementation(async (_entity: unknown, value: unknown) => value),
+      create: jest.fn((_entity: unknown, value: unknown) => value),
       createQueryBuilder: jest.fn(() => ({
         update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }),
@@ -955,18 +963,20 @@ describe('IqcHistoryService cancel policy', () => {
     mockStockTxRepo.findOne.mockResolvedValue(null);
 
     const manager = {
+      // 복원 범위 정본 = 판정 대상(IQC_LOG_TARGETS). 구성 라인이 아니다(ADR 0004).
       find: jest.fn().mockResolvedValue([
-        { requestNo: 'IQL20260916-0009', seq: 1, arrivalNo: 'ARR-REQ', arrivalSeq: 3, itemCode: 'ITEM-001' },
+        { inspectDate: new Date('2026-09-16'), seq: 1, arrivalNo: 'ARR-REQ', arrivalSeq: 3, itemCode: 'ITEM-001', matUid: null },
       ]),
       findOne: jest.fn().mockResolvedValue(null),
       update: jest.fn().mockResolvedValue(undefined),
-      save: jest.fn().mockResolvedValue(undefined),
+      save: jest.fn().mockImplementation(async (_entity: unknown, value: unknown) => value),
+      create: jest.fn((_entity: unknown, value: unknown) => value),
     };
     (mockQueryRunner as any).manager = manager;
 
     await target.cancel('2026-09-16', 1, { reason: 'retest' } as any);
 
-    // 의뢰에 담긴 (ARRIVAL_NO, ARRIVAL_SEQ) 행만 되돌린다 — 대표 입하번호 전체가 아니다
+    // 판정 대상 (ARRIVAL_NO, ARRIVAL_SEQ) 행만 되돌린다 — 대표 입하번호 전체가 아니다
     expect(manager.update).toHaveBeenCalledWith(
       MatLot,
       expect.objectContaining({ arrivalNo: 'ARR-REQ', arrivalSeq: 3, itemCode: 'ITEM-001', iqcStatus: 'PASS' }),
@@ -1000,6 +1010,9 @@ describe('IqcHistoryService cancel policy', () => {
     mockMatReceivingRepo.findOne.mockResolvedValue(null);
 
     const manager = {
+      find: jest.fn().mockResolvedValue([
+        { arrivalNo: 'ARR-001', arrivalSeq: 1, itemCode: 'ITEM-001', matUid: null },
+      ]),
       update: jest.fn().mockResolvedValue(undefined),
     };
     (mockQueryRunner as any).manager = manager;
@@ -1009,12 +1022,12 @@ describe('IqcHistoryService cancel policy', () => {
     expect(result.status).toBe('CANCELED');
     expect(manager.update).toHaveBeenCalledWith(
       MatLot,
-      { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', iqcStatus: 'PASS', company: 'HANES', plant: 'P01' },
+      { arrivalNo: 'ARR-001', arrivalSeq: 1, itemCode: 'ITEM-001', iqcStatus: 'PASS', company: 'HANES', plant: 'P01' },
       { iqcStatus: 'PENDING', expireDate: null },
     );
     expect(manager.update).toHaveBeenCalledWith(
       MatArrival,
-      { arrivalNo: 'ARR-001', itemCode: 'ITEM-001', iqcStatus: 'PASS', company: 'HANES', plant: 'P01' },
+      { arrivalNo: 'ARR-001', seq: 1, itemCode: 'ITEM-001', iqcStatus: 'PASS', company: 'HANES', plant: 'P01' },
       { iqcStatus: 'PENDING' },
     );
   });
@@ -1036,7 +1049,11 @@ describe('IqcHistoryService cancel policy', () => {
     mockNumbering.nextInTx.mockResolvedValue('TX-CANCEL-001');
 
     const manager = {
-      find: jest.fn().mockResolvedValue([]),
+      // 1회차 = 판정 대상 조회, 이후 = 대상 행의 FAIL 시리얼 조회(없음)
+      find: jest
+        .fn()
+        .mockResolvedValueOnce([{ arrivalNo: 'ARR-001', arrivalSeq: 1, itemCode: 'ITEM-001', matUid: null }])
+        .mockResolvedValue([]),
       update: jest.fn().mockResolvedValue(undefined),
     };
     (mockQueryRunner as any).manager = manager;
@@ -1156,7 +1173,8 @@ describe('IqcHistoryService cancel policy', () => {
     const manager = {
       update: jest.fn().mockResolvedValue(undefined),
       findOne: jest.fn().mockResolvedValue(null),
-      save: jest.fn().mockResolvedValue(undefined),
+      save: jest.fn().mockImplementation(async (_entity: unknown, value: unknown) => value),
+      create: jest.fn((_entity: unknown, value: unknown) => value),
     };
     (mockQueryRunner as any).manager = manager;
 
@@ -1173,7 +1191,8 @@ describe('IqcHistoryService cancel policy', () => {
       { warehouseCode: 'WH-NORMAL', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01' },
       { qty: 0 },
     );
-    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    // 판정 저장(IQC_LOGS + IQC_LOG_TARGETS)과 불량창고 이동이 각각 트랜잭션을 연다
+    expect(mockTx.run).toHaveBeenCalledTimes(2);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(manager.save).toHaveBeenCalledWith(StockTransaction, expect.objectContaining({
       transNo: 'TX-IQC-FAIL',
@@ -1230,13 +1249,15 @@ describe('IqcHistoryService cancel policy', () => {
     const manager = {
       update: jest.fn().mockResolvedValue(undefined),
       findOne: jest.fn().mockResolvedValue(null),
-      save: jest.fn().mockResolvedValue(undefined),
+      save: jest.fn().mockImplementation(async (_entity: unknown, value: unknown) => value),
+      create: jest.fn((_entity: unknown, value: unknown) => value),
     };
     (mockQueryRunner as any).manager = manager;
 
     await target.createResult({ matUid: 'MAT-001', result: 'FAIL' } as any);
 
-    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    // 판정 저장(IQC_LOGS + IQC_LOG_TARGETS)과 불량창고 이동이 각각 트랜잭션을 연다
+    expect(mockTx.run).toHaveBeenCalledTimes(2);
     expect(manager.update).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ matUid: 'MAT-001' }),
@@ -1281,7 +1302,8 @@ describe('IqcHistoryService cancel policy', () => {
 
     const manager = {
       update: jest.fn().mockResolvedValue(undefined),
-      save: jest.fn().mockResolvedValue(undefined),
+      save: jest.fn().mockImplementation(async (_entity: unknown, value: unknown) => value),
+      create: jest.fn((_entity: unknown, value: unknown) => value),
       createQueryBuilder: jest.fn(() => ({
         update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }),
@@ -1291,7 +1313,8 @@ describe('IqcHistoryService cancel policy', () => {
 
     await target.createResult({ matUid: 'MAT-001', result: 'PASS', destructSampleQty: 2 } as any);
 
-    expect(mockTx.run).toHaveBeenCalledTimes(1);
+    // 판정 저장(IQC_LOGS + IQC_LOG_TARGETS)과 시료 자동출고가 각각 트랜잭션을 연다
+    expect(mockTx.run).toHaveBeenCalledTimes(2);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(manager.save).toHaveBeenCalledWith(StockTransaction, expect.objectContaining({
       transNo: 'TX-IQC-DESTRUCT',

@@ -1,21 +1,21 @@
 ---
 sources: []
-verifiedCommit: efea1762
+verifiedCommit: 19f912c9
 generated: true
 ---
 
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-09-16 17:56:59
+- 작성일: 2026-09-17 20:52:05
 - DB 사이트: `JSHANES`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
 
 ## 1. 요약
 
-- 테이블 수: 200
-- 컬럼 수: 3357
-- PK 보유 테이블: 193
+- 테이블 수: 201
+- 컬럼 수: 3365
+- PK 보유 테이블: 194
 - DB FK 수: 68
 - COM_CODES 그룹 수: 177
 
@@ -197,6 +197,7 @@ generated: true
 - `IQC_ITEM_MASTERS`: IQC 검사항목 마스터 (품목별) / PK: `COMPANY, PLANT_CD, ITEM_CODE, SEQ`
 - `IQC_ITEM_POOL`: IQC 검사항목 풀 마스터 / PK: `COMPANY, PLANT_CD, INSP_ITEM_CODE`
 - `IQC_LOGS`: IQC 검사 이력 로그 / PK: `INSPECT_DATE, SEQ`
+- `IQC_LOG_TARGETS`: IQC 판정 대상. 판정 1건(IQC_LOGS)이 실제로 덮은 입하 행 목록이며 판정-입하행 역추적의 정본이다. IQC_REQUEST_LOT_LINES(판정 전 계획)와 합치지 말 것. / PK: `INSPECT_DATE, SEQ, ARRIVAL_NO, ARRIVAL_SEQ, ITEM_CODE`
 - `IQC_REQUEST_LOTS`: IQC 검사의뢰 LOT 헤더. 한 건=품목 1개. 담당자가 입하 수량을 묶어 의뢰한다. / PK: `REQUEST_NO`
 - `IQC_REQUEST_LOT_LINES`: 검사의뢰 LOT 구성 입하. SAMPLE=시료, REPRESENTED=미검사 대표 대상 / PK: `REQUEST_NO, SEQ`
 - `IQC_TEMPLATES`: 수입검사(IQC) 템플릿 / PK: `COMPANY, PLANT_CD, TEMPLATE_ID`
@@ -1307,6 +1308,16 @@ erDiagram
     VARCHAR2_50 UPDATED_BY
     NUMBER_5 SEQ PK NOT_NULL
     string more_columns
+  }
+  IQC_LOG_TARGETS {
+    TIMESTAMP_6 INSPECT_DATE PK NOT_NULL
+    NUMBER SEQ PK NOT_NULL
+    VARCHAR2_100 ARRIVAL_NO PK NOT_NULL
+    NUMBER ARRIVAL_SEQ PK NOT_NULL
+    VARCHAR2_100 ITEM_CODE PK NOT_NULL
+    VARCHAR2_50 MAT_UID
+    VARCHAR2_50 COMPANY NOT_NULL
+    VARCHAR2_50 PLANT_CD NOT_NULL
   }
   IQC_PART_SPECS {
     VARCHAR2_50 COMPANY PK NOT_NULL
@@ -3390,6 +3401,7 @@ erDiagram
 | `IQC_ITEM_MASTERS` | `ITEM_CODE` | `ITEM_MASTERS_CONSUMABLE_BAK_20260616` |
 | `IQC_LOGS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `IQC_LOGS` | `VENDOR_CODE` | `VENDOR_BARCODE_MAPPINGS` |
+| `IQC_LOG_TARGETS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `IQC_PART_SPECS` | `ITEM_CODE` | `ITEM_MASTERS_CONSUMABLE_BAK_20260616` |
 | `IQC_PART_SPEC_ITEMS` | `ITEM_CODE` | `ITEM_MASTERS` |
 | `IQC_REQUEST_LOTS` | `ITEM_CODE` | `ITEM_MASTERS` |
@@ -3509,7 +3521,6 @@ erDiagram
 | `REWORK_ORDERS` | `WORKER_CODE` | `WORKER_MASTERS` |
 | `REWORK_ORDERS` | `EQUIP_CODE` | `EQUIP_BOM_ITEMS` |
 | `REWORK_PROCESSES` | `REWORK_ORDER_ID` | `REWORK_ORDERS` |
-| `REWORK_PROCESSES` | `PROCESS_CODE` | `PROCESS_CAPAS` |
 
 ## 5. 모듈별 ERD
 
@@ -5905,6 +5916,16 @@ erDiagram
     VARCHAR2_50 UPDATED_BY
     NUMBER_5 SEQ PK NOT_NULL
     string more_columns
+  }
+  IQC_LOG_TARGETS {
+    TIMESTAMP_6 INSPECT_DATE PK NOT_NULL
+    NUMBER SEQ PK NOT_NULL
+    VARCHAR2_100 ARRIVAL_NO PK NOT_NULL
+    NUMBER ARRIVAL_SEQ PK NOT_NULL
+    VARCHAR2_100 ITEM_CODE PK NOT_NULL
+    VARCHAR2_50 MAT_UID
+    VARCHAR2_50 COMPANY NOT_NULL
+    VARCHAR2_50 PLANT_CD NOT_NULL
   }
   IQC_REQUEST_LOTS {
     VARCHAR2_50 REQUEST_NO PK NOT_NULL
@@ -8316,6 +8337,22 @@ erDiagram
 | `AQL_JUDGE_REASON` | `VARCHAR2(500)` | `Y` |  |  |  |
 | `ITEM_RESULTS` | `CLOB` | `Y` |  |  | 검사항목별 AQL 판정결과(JSON) |
 | `REQUEST_NO` | `VARCHAR2(50)` | `Y` |  |  | 검사의뢰 LOT 번호 (IQC_REQUEST_LOTS.REQUEST_NO). 의뢰 LOT 단위 판정에만 채워지고 입하단위/단건 판정은 NULL |
+
+### `IQC_LOG_TARGETS`
+
+- 설명: IQC 판정 대상. 판정 1건(IQC_LOGS)이 실제로 덮은 입하 행 목록이며 판정-입하행 역추적의 정본이다. IQC_REQUEST_LOT_LINES(판정 전 계획)와 합치지 말 것.
+- PK: `INSPECT_DATE, SEQ, ARRIVAL_NO, ARRIVAL_SEQ, ITEM_CODE`
+
+| 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
+|---|---|---|---|---|---|
+| `INSPECT_DATE` | `TIMESTAMP(6)` | `N` | PK |  |  |
+| `SEQ` | `NUMBER` | `N` | PK |  |  |
+| `ARRIVAL_NO` | `VARCHAR2(100)` | `N` | PK |  |  |
+| `ARRIVAL_SEQ` | `NUMBER` | `N` | PK | 기본값 `1` | 입하 행 순번(MAT_ARRIVALS.SEQ). ARRIVAL_NO 단독으로는 입하 행이 유일하지 않다. |
+| `ITEM_CODE` | `VARCHAR2(100)` | `N` | PK |  |  |
+| `MAT_UID` | `VARCHAR2(50)` | `Y` |  |  | 자재 시리얼 단건 판정일 때만 채운다. 입하단위/의뢰 판정에서는 NULL. |
+| `COMPANY` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(50)` | `N` |  | 테넌트 범위 컬럼 |  |
 
 ### `IQC_PART_SPECS`
 

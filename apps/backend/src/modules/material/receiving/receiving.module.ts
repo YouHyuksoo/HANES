@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { IqcLog } from '../../../entities/iqc-log.entity';
+import { IqcLogTarget } from '../../../entities/iqc-log-target.entity';
 import { IqcRequestLot } from '../../../entities/iqc-request-lot.entity';
 import { IqcRequestLotLine } from '../../../entities/iqc-request-lot-line.entity';
 import { LabelPrintLog } from '../../../entities/label-print-log.entity';
@@ -31,6 +32,7 @@ import { ReceivingController } from '../controllers/receiving.controller';
 import { ArrivalService } from '../services/arrival.service';
 import { ConcessionService } from '../services/concession.service';
 import { IqcHistoryService } from '../services/iqc-history.service';
+import { IqcJudgementLookupService } from '../services/iqc-judgement-lookup.service';
 import { IqcDefectReceiveService } from '../services/iqc-defect-receive.service';
 import { IqcRequestLotService } from '../services/iqc-request-lot.service';
 import { ReceiptCancelService } from '../services/receipt-cancel.service';
@@ -42,6 +44,7 @@ import { ReceivingService } from '../services/receiving.service';
     AqlModule,
     TypeOrmModule.forFeature([
       IqcLog,
+      IqcLogTarget,
       IqcRequestLot,
       IqcRequestLotLine,
       LabelPrintLog,
@@ -75,6 +78,7 @@ import { ReceivingService } from '../services/receiving.service';
     ArrivalService,
     ReceivingService,
     IqcHistoryService,
+    IqcJudgementLookupService,
     IqcDefectReceiveService,
     IqcRequestLotService,
     ReceiptCancelService,

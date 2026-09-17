@@ -19,6 +19,7 @@ import { InspectResultController } from './controllers/inspect-result.controller
 import { TraceController } from './controllers/trace.controller';
 import { InspectResultService } from './services/inspect-result.service';
 import { ProductTraceabilityService } from './services/product-traceability.service';
+import { IqcJudgementLookupService } from '../../material/services/iqc-judgement-lookup.service';
 import { InspectResult } from '../../../entities/inspect-result.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { TraceLog } from '../../../entities/trace-log.entity';
@@ -42,6 +43,7 @@ import { SgLabel } from '../../../entities/sg-label.entity';
 import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
+import { IqcLogTarget } from '../../../entities/iqc-log-target.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
 import { ShipmentOrder } from '../../../entities/shipment-order.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
@@ -80,6 +82,7 @@ import { SharedModule } from '../../../shared/shared.module';
       PurchaseOrder,
       MatArrival,
       IqcLog,
+      IqcLogTarget,
       MatReceiving,
       ShipmentOrder,
       StockTransaction,
@@ -94,7 +97,7 @@ import { SharedModule } from '../../../shared/shared.module';
     SharedModule, // SeqGeneratorService 제공
   ],
   controllers: [InspectResultController, TraceController],
-  providers: [InspectResultService, ProductTraceabilityService],
+  providers: [InspectResultService, ProductTraceabilityService, IqcJudgementLookupService],
   exports: [InspectResultService, ProductTraceabilityService],
 })
 export class InspectionModule {}

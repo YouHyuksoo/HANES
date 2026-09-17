@@ -29,6 +29,7 @@ import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
+import { IqcJudgementLookupService } from './iqc-judgement-lookup.service';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
@@ -82,6 +83,7 @@ export class ArrivalService {
     private readonly vendorBarcodeMappingRepository: Repository<VendorBarcodeMapping>,
     @InjectRepository(IqcLog)
     private readonly iqcLogRepository: Repository<IqcLog>,
+    private readonly iqcJudgement: IqcJudgementLookupService,
     @InjectRepository(PartnerMaster)
     private readonly partnerMasterRepository: Repository<PartnerMaster>,
     private readonly dataSource: DataSource,
@@ -827,18 +829,25 @@ export class ArrivalService {
       ...(original.company ? { company: original.company } : company ? { company } : {}),
       ...(original.plant ? { plant: original.plant } : plant ? { plant } : {}),
     };
-    if (original.itemCode) {
-      // 취소된 판정(STATUS='CANCELED')은 유효한 판정이 아니다. status 조건이 없으면
-      // 판정을 취소했는데도 입하 취소가 계속 막힌다.
-      const iqcRecord = await this.iqcLogRepository.findOne({
-        where: {
-          arrivalNo: original.refId ?? undefined,
+    if (original.itemCode && original.refId) {
+      // 취소 단위는 자재 시리얼 1건이므로 가드도 그 시리얼이 달린 입하 행만 본다.
+      // 입하번호 전체로 막으면 같은 입하번호의 미판정 행까지 취소가 막힌다.
+      // 취소된 판정(STATUS='CANCELED')은 유효한 판정이 아니라 제외된다.
+      const guardLot = original.matUid
+        ? await this.matLotRepository.findOne({
+            where: { matUid: original.matUid, ...tenantWhere },
+          })
+        : null;
+      const iqcRecord = await this.iqcJudgement.findLatestByArrivalRow(
+        {
+          arrivalNo: original.refId,
           itemCode: original.itemCode,
-          status: 'DONE',
-          ...tenantWhere,
+          arrivalSeq: guardLot?.arrivalSeq ?? null,
         },
-        order: { inspectDate: 'DESC' },
-      });
+        { status: 'DONE' },
+        tenantWhere.company,
+        tenantWhere.plant,
+      );
       if (iqcRecord && (iqcRecord.result === 'PASS' || iqcRecord.result === 'FAIL')) {
         throw new BadRequestException('IQC 판정이 완료된 입하는 취소할 수 없습니다.');
       }
@@ -1205,10 +1214,12 @@ export class ArrivalService {
     if (iqcYn === 'Y') {
       // IQC_LOGS에서 해당 입하번호의 최신 검사 결과 조회
       // 취소된 판정을 PASS/FAIL로 표시하지 않도록 유효 판정만 본다
-      const latestIqcLog = await this.iqcLogRepository.findOne({
-        where: { arrivalNo: arrival.arrivalNo, status: 'DONE' },
-        order: { inspectDate: 'DESC' },
-      });
+      const latestIqcLog = await this.iqcJudgement.findLatestByArrivalRow(
+        { arrivalNo: arrival.arrivalNo, itemCode: arrival.itemCode, arrivalSeq: arrival.seq },
+        { status: 'DONE' },
+        company,
+        plant,
+      );
 
       if (!latestIqcLog) {
         iqcStatus = 'IN_PROGRESS'; // IQC 대상이지만 아직 검사 미완

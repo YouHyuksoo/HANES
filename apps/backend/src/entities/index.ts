@@ -62,6 +62,7 @@ export * from './rework-inspect.entity';
 export * from './rework-process.entity';
 export * from './rework-result.entity';
 export * from './iqc-log.entity';
+export * from './iqc-log-target.entity';
 export * from './iqc-item-master.entity';
 export * from './iqc-item-pool.entity';
 export * from './equip-inspect-item-master.entity';

@@ -20,6 +20,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
+import { IqcJudgementLookupService } from './iqc-judgement-lookup.service';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { NumberingService } from '../../../shared/numbering.service';
@@ -75,6 +76,7 @@ export class IqcDefectReceiveService {
     private readonly matStockRepository: Repository<MatStock>,
     @InjectRepository(IqcLog)
     private readonly iqcLogRepository: Repository<IqcLog>,
+    private readonly iqcJudgement: IqcJudgementLookupService,
     @InjectRepository(StockTransaction)
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     @InjectRepository(Warehouse)
@@ -126,20 +128,17 @@ export class IqcDefectReceiveService {
     const rows = await qb.getRawMany<Omit<IqcDefectPendingRow, 'judgedAt' | 'judgeReason' | 'inspectorName'>>();
     if (rows.length === 0) return [];
 
-    // 최근 FAIL 판정 로그(입하번호+품목) 일괄 조회 — N+1 금지
-    const arrivalNos = Array.from(new Set(rows.map((r) => r.arrivalNo).filter((v): v is string => !!v)));
-    const itemCodes = Array.from(new Set(rows.map((r) => r.itemCode)));
-    const logs = arrivalNos.length > 0
-      ? await this.iqcLogRepository.find({
-          where: { arrivalNo: In(arrivalNos), itemCode: In(itemCodes), result: 'FAIL', status: 'DONE', ...this.tenantWhere(company, plant) },
-          order: { inspectDate: 'DESC' },
-        })
-      : [];
-    const latestLog = new Map<string, IqcLog>();
-    for (const log of logs) {
-      const key = `${log.arrivalNo}::${log.itemCode}`;
-      if (!latestLog.has(key)) latestLog.set(key, log);
-    }
+    // 최근 FAIL 판정을 판정 대상(IQC_LOG_TARGETS) 기준으로 일괄 조회 — N+1 금지.
+    // IQC_LOGS.ARRIVAL_NO 로 찾으면 의뢰 판정의 대표 입하 행이 판정을 못 찾는다.
+    const judgeRows = rows
+      .filter((r): r is typeof r & { arrivalNo: string } => !!r.arrivalNo)
+      .map((r) => ({ arrivalNo: r.arrivalNo, itemCode: r.itemCode }));
+    const latestLog = await this.iqcJudgement.mapLatestByArrivalItem(
+      judgeRows,
+      { result: 'FAIL', status: 'DONE' },
+      company,
+      plant,
+    );
     return rows.map((r) => {
       const log = r.arrivalNo ? latestLog.get(`${r.arrivalNo}::${r.itemCode}`) : undefined;
       return {

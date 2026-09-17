@@ -13,6 +13,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { IqcRequestLot } from '../../../entities/iqc-request-lot.entity';
 import { IqcRequestLotLine } from '../../../entities/iqc-request-lot-line.entity';
+import { IqcLogTarget } from '../../../entities/iqc-log-target.entity';
 import { IqcHistoryQueryDto, CreateIqcResultDto, CreateArrivalIqcResultDto, PendingArrivalQueryDto, CancelIqcResultDto } from '../dto/iqc-history.dto';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { AqlService } from '../../quality/aql/services/aql.service';
@@ -81,6 +82,8 @@ export class IqcHistoryService {
     private readonly iqcRequestLotRepository: Repository<IqcRequestLot>,
     @InjectRepository(IqcRequestLotLine)
     private readonly iqcRequestLotLineRepository: Repository<IqcRequestLotLine>,
+    @InjectRepository(IqcLogTarget)
+    private readonly iqcLogTargetRepository: Repository<IqcLogTarget>,
     private readonly dataSource: DataSource,
     private readonly sysConfigService: SysConfigService,
     private readonly aqlService: AqlService,
@@ -385,7 +388,15 @@ export class IqcHistoryService {
       company: lot.company,
       plant: lot.plant,
     });
-    const saved = await this.iqcLogRepository.save(log);
+    // 자재 시리얼 단건 판정 — 대상은 그 시리얼이 달린 입하 행 하나다.
+    const saved = await this.saveIqcLogWithTargets(log, [
+      {
+        arrivalNo: lot.arrivalNo,
+        arrivalSeq: lot.arrivalSeq,
+        itemCode: lot.itemCode,
+        matUid: lot.matUid,
+      },
+    ]);
 
     const part = await this.itemMasterRepository.findOne({
       where: { itemCode: lot.itemCode, ...lotTenantWhere },
@@ -987,7 +998,17 @@ export class IqcHistoryService {
       company: tenantCompany,
       plant: tenantPlant,
     });
-    const saved = await this.iqcLogRepository.save(log);
+    // 판정 대상은 이번에 실제로 판정한 시리얼이 달린 입하 행들이다.
+    // 입하단위면 그 입하번호+품목 전체, 의뢰면 의뢰에 담긴 행만 남는다.
+    const saved = await this.saveIqcLogWithTargets(
+      log,
+      lots.map((lot) => ({
+        arrivalNo: lot.arrivalNo,
+        arrivalSeq: lot.arrivalSeq,
+        itemCode: lot.itemCode,
+        matUid: null,
+      })),
+    );
 
     const part = await this.itemMasterRepository.findOne({
       where: { itemCode, ...this.tenantWhere(tenantCompany, tenantPlant) },
@@ -1049,6 +1070,52 @@ export class IqcHistoryService {
     };
   }
 
+
+  /**
+   * IQC 판정 저장의 유일한 진입점. 판정 1건과 그 판정이 덮은 입하 행을 한 트랜잭션으로 함께 쓴다.
+   *
+   * 판정 대상 없는 판정이 생기면 역추적의 정본이 깨진다(입하취소 가드가 조용히 열린다).
+   * 그래서 대상이 비면 저장하지 않고 막는다.
+   * **판정 경로에서 iqcLogRepository.save() 를 직접 호출하지 말 것.** ADR 0004 참고.
+   */
+  private async saveIqcLogWithTargets(
+    log: IqcLog,
+    targets: Array<{ arrivalNo: string | null; arrivalSeq: number | null; itemCode: string; matUid: string | null }>,
+  ): Promise<IqcLog> {
+    // 같은 입하 행이 두 번 들어오면 PK 충돌이 난다. 판정 1건은 한 입하 행에 한 줄만 쓴다.
+    const unique = new Map<string, { arrivalNo: string; arrivalSeq: number; itemCode: string; matUid: string | null }>();
+    for (const t of targets) {
+      if (!t.arrivalNo || !t.itemCode) continue;
+      const arrivalSeq = Number(t.arrivalSeq) > 0 ? Number(t.arrivalSeq) : 1;
+      const key = `${t.arrivalNo}#${arrivalSeq}#${t.itemCode}`;
+      if (!unique.has(key)) {
+        unique.set(key, { arrivalNo: t.arrivalNo, arrivalSeq, itemCode: t.itemCode, matUid: t.matUid ?? null });
+      }
+    }
+    if (unique.size === 0) {
+      throw new BadRequestException(
+        'IQC 판정 대상(입하 행)을 특정할 수 없어 판정을 저장할 수 없습니다. 입하 정보를 확인하세요.',
+      );
+    }
+
+    return this.tx.run(async (queryRunner) => {
+      const saved = await queryRunner.manager.save(IqcLog, log);
+      const rows = [...unique.values()].map((t) =>
+        queryRunner.manager.create(IqcLogTarget, {
+          inspectDate: saved.inspectDate,
+          seq: saved.seq,
+          arrivalNo: t.arrivalNo,
+          arrivalSeq: t.arrivalSeq,
+          itemCode: t.itemCode,
+          matUid: t.matUid,
+          company: saved.company,
+          plant: saved.plant,
+        }),
+      );
+      await queryRunner.manager.save(IqcLogTarget, rows);
+      return saved;
+    });
+  }
 
   private resolveDefectCounts(dto: CreateArrivalIqcResultDto) {
     const providedMajor = dto.defectMajor != null;
@@ -1523,15 +1590,28 @@ export class IqcHistoryService {
         await this.reverseIqcFailMove(queryRunner, log.matUid, log.itemCode, log.company, log.plant);
       }
 
-      // 의뢰 LOT 검사 FAIL → 의뢰에 담긴 입하 행의 시리얼만 불량창고 이동을 원복한다.
-      // 대표 입하번호 전체를 대상으로 하면 의뢰 밖 행까지 되돌아간다.
-      if (!log.matUid && log.requestNo && log.itemCode && log.result === 'FAIL') {
-        for (const line of await this.findRequestLotLinesInTx(queryRunner, log)) {
+      // 복원 범위는 그 판정이 덮은 입하 행(IQC_LOG_TARGETS)이 정한다.
+      // 구성 라인(IQC_REQUEST_LOT_LINES)으로 정하면 안 된다 — 그건 판정 *전*의 계획이라
+      // 판정 이후 의뢰가 바뀌면 사라지고, 대표 입하번호 전체로 정하면 의뢰 밖 행까지
+      // 되돌아간다. 판정 대상은 판정 *후*의 불변 스냅샷이다. ADR 0004 참고.
+      const targets = await queryRunner.manager.find(IqcLogTarget, {
+        where: { inspectDate: log.inspectDate, seq: log.seq, ...this.tenantWhere(log.company, log.plant) },
+      });
+      if (targets.length === 0) {
+        // 대상 없는 판정은 복원 범위를 알 수 없다. 조용히 아무것도 안 되돌리면
+        // 시리얼이 FAIL/불량창고에 남은 채 판정만 취소돼 상태가 어긋난다.
+        throw new BadRequestException(
+          `판정 대상(입하 행) 정보가 없어 취소할 수 없습니다: ${inspectDate}/${seq}`,
+        );
+      }
+
+      if (!log.matUid && log.result === 'FAIL') {
+        for (const target of targets) {
           const failedLots = await queryRunner.manager.find(MatLot, {
             where: {
-              arrivalNo: line.arrivalNo,
-              arrivalSeq: line.arrivalSeq,
-              itemCode: line.itemCode,
+              arrivalNo: target.arrivalNo,
+              arrivalSeq: target.arrivalSeq,
+              itemCode: target.itemCode,
               iqcStatus: 'FAIL',
               ...this.tenantWhere(log.company, log.plant),
             },
@@ -1539,19 +1619,6 @@ export class IqcHistoryService {
           for (const lot of failedLots) {
             await this.reverseIqcFailMove(queryRunner, lot.matUid, lot.itemCode, lot.company, lot.plant);
           }
-        }
-      } else if (!log.matUid && log.arrivalNo && log.itemCode && log.result === 'FAIL') {
-        // 입하단위 검사(matUid=null) FAIL → 입하건 전체 시리얼의 불량창고 이동을 원복
-        const failedLots = await queryRunner.manager.find(MatLot, {
-          where: {
-            arrivalNo: log.arrivalNo,
-            itemCode: log.itemCode,
-            iqcStatus: 'FAIL',
-            ...this.tenantWhere(log.company, log.plant),
-          },
-        });
-        for (const lot of failedLots) {
-          await this.reverseIqcFailMove(queryRunner, lot.matUid, lot.itemCode, lot.company, lot.plant);
         }
       }
 
@@ -1568,17 +1635,16 @@ export class IqcHistoryService {
           { matUid: log.matUid, ...this.tenantWhere(log.company, log.plant) },
           { iqcStatus: 'PENDING', expireDate: null },
         );
-      } else if (log.requestNo && log.itemCode) {
-        // 의뢰 LOT 검사 → 의뢰에 담긴 (ARRIVAL_NO, ARRIVAL_SEQ) 행만 복원하고 의뢰 헤더도 되돌린다.
-        // 대표 입하번호로 되돌리면 의뢰 밖 행까지 PENDING이 되고, 헤더를 안 되돌리면
-        // STATUS가 PASS/FAIL로 남아 재검사가 영영 막힌다(createRequestLotResult가 REQUESTED만 받는다).
-        for (const line of await this.findRequestLotLinesInTx(queryRunner, log)) {
+      } else {
+        // 입하단위/의뢰 판정 → 판정 대상 행만 PENDING으로 되돌린다.
+        // 검사 단위가 무엇이었든 복원 범위는 대상 스냅샷 하나로 결정된다.
+        for (const target of targets) {
           await queryRunner.manager.update(
             MatLot,
             {
-              arrivalNo: line.arrivalNo,
-              arrivalSeq: line.arrivalSeq,
-              itemCode: line.itemCode,
+              arrivalNo: target.arrivalNo,
+              arrivalSeq: target.arrivalSeq,
+              itemCode: target.itemCode,
               iqcStatus: log.result,
               ...this.tenantWhere(log.company, log.plant),
             },
@@ -1587,52 +1653,22 @@ export class IqcHistoryService {
           await queryRunner.manager.update(
             MatArrival,
             {
-              arrivalNo: line.arrivalNo,
-              seq: line.arrivalSeq,
-              itemCode: line.itemCode,
+              arrivalNo: target.arrivalNo,
+              seq: target.arrivalSeq,
+              itemCode: target.itemCode,
               iqcStatus: log.result,
               ...this.tenantWhere(log.company, log.plant),
             },
             { iqcStatus: 'PENDING' },
           );
         }
-        await queryRunner.manager.update(
-          IqcRequestLot,
-          { requestNo: log.requestNo, ...this.tenantWhere(log.company, log.plant) },
-          { status: 'REQUESTED', sampleQty: null },
-        );
-      } else if (log.arrivalNo && log.itemCode) {
-        // 입하단위 검사 → 해당 입하건 전체 시리얼을 일괄 PENDING 복원
-        await queryRunner.manager.update(
-          MatLot,
-          {
-            arrivalNo: log.arrivalNo,
-            itemCode: log.itemCode,
-            iqcStatus: log.result,
-            ...this.tenantWhere(log.company, log.plant),
-          },
-          { iqcStatus: 'PENDING', expireDate: null },
-        );
-        await queryRunner.manager.update(
-          MatArrival,
-          {
-            arrivalNo: log.arrivalNo,
-            itemCode: log.itemCode,
-            iqcStatus: log.result,
-            ...this.tenantWhere(log.company, log.plant),
-          },
-          { iqcStatus: 'PENDING' },
-        );
-      } else if (log.itemCode) {
-        const lot = await queryRunner.manager.findOne(MatLot, {
-          where: { itemCode: log.itemCode, iqcStatus: log.result, ...this.tenantWhere(log.company, log.plant) },
-          order: { createdAt: 'DESC' },
-        });
-        if (lot) {
+        if (log.requestNo) {
+          // 헤더를 안 되돌리면 STATUS가 PASS/FAIL로 남아 재검사가 영영 막힌다
+          // (createRequestLotResult는 REQUESTED만 받는다).
           await queryRunner.manager.update(
-            MatLot,
-            { matUid: lot.matUid, ...this.tenantWhere(log.company, log.plant) },
-            { iqcStatus: 'PENDING', expireDate: null },
+            IqcRequestLot,
+            { requestNo: log.requestNo, ...this.tenantWhere(log.company, log.plant) },
+            { status: 'REQUESTED', sampleQty: null },
           );
         }
       }
@@ -1649,18 +1685,6 @@ export class IqcHistoryService {
     });
 
     return { inspectDate, seq, status: 'CANCELED' };
-  }
-
-  /** 취소 트랜잭션 안에서 의뢰 LOT 구성 라인을 읽는다. */
-  private async findRequestLotLinesInTx(
-    queryRunner: QueryRunner,
-    log: { requestNo: string | null; company: string; plant: string },
-  ) {
-    if (!log.requestNo) return [];
-    return queryRunner.manager.find(IqcRequestLotLine, {
-      where: { requestNo: log.requestNo, ...this.tenantWhere(log.company, log.plant) },
-      order: { seq: 'ASC' },
-    });
   }
 
   private async reverseIqcFailMove(

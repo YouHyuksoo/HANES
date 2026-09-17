@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { IqcLog } from '../../../entities/iqc-log.entity';
+import { IqcLogTarget } from '../../../entities/iqc-log-target.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
@@ -34,6 +35,7 @@ import { ShelfLifeService } from '../services/shelf-life.service';
     TypeOrmModule.forFeature([
       InvAdjLog,
       IqcLog,
+      IqcLogTarget,
       MatLot,
       MatStock,
       ItemMaster,

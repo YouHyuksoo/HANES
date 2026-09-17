@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { IqcDefectReceiveService } from './iqc-defect-receive.service';
+import { IqcJudgementLookupService } from './iqc-judgement-lookup.service';
 import { IqcHistoryService } from './iqc-history.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
@@ -22,6 +23,7 @@ describe('IqcDefectReceiveService (수동입고, 2026-09-11 06번)', () => {
   let stockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
   let iqcHistory: DeepMocked<IqcHistoryService>;
+  let iqcJudgement: DeepMocked<IqcJudgementLookupService>;
 
   beforeEach(async () => {
     matLotRepo = createMock<Repository<MatLot>>();
@@ -29,6 +31,8 @@ describe('IqcDefectReceiveService (수동입고, 2026-09-11 06번)', () => {
     stockTxRepo = createMock<Repository<StockTransaction>>();
     warehouseRepo = createMock<Repository<Warehouse>>();
     iqcHistory = createMock<IqcHistoryService>();
+    iqcJudgement = createMock<IqcJudgementLookupService>();
+    iqcJudgement.mapLatestByArrivalItem.mockResolvedValue(new Map());
     const module = await Test.createTestingModule({
       providers: [
         IqcDefectReceiveService,
@@ -36,6 +40,7 @@ describe('IqcDefectReceiveService (수동입고, 2026-09-11 06번)', () => {
         { provide: getRepositoryToken(MatArrivalStock), useValue: arrivalStockRepo },
         { provide: getRepositoryToken(MatStock), useValue: createMock<Repository<MatStock>>() },
         { provide: getRepositoryToken(IqcLog), useValue: createMock<Repository<IqcLog>>() },
+        { provide: IqcJudgementLookupService, useValue: iqcJudgement },
         { provide: getRepositoryToken(StockTransaction), useValue: stockTxRepo },
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
         { provide: getRepositoryToken(ItemMaster), useValue: createMock<Repository<ItemMaster>>() },
