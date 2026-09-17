@@ -18,6 +18,18 @@
 --
 -- 실행: oracle-db --site JSHANES --execute-file 로 이 파일을 통째로 적용한다.
 --       각 문장은 '/' 라인으로 분리돼 있고 9개 블록이 순서대로 실행된다.
+--
+-- 배포 구간 재실행(중요): ARRIVAL_NO 폴백을 남기지 않으므로, 마이그레이션 적용과
+--   코드 배포 사이에 구 코드가 만든 판정에는 판정 대상이 없다. 역조회가 조용히
+--   "판정 없음"을 돌려주고, 입하취소 가드에서는 그게 곧 가드 열림이다(ADR 0004).
+--   백필 INSERT 2개는 NOT EXISTS로 멱등하게 만들어 뒀다. **코드 배포 직후 백필 2개를
+--   한 번 더 실행**하고 아래 쿼리가 0인지 확인한다. RETEST(ARRIVAL_NO IS NULL)는
+--   시리얼 스코프 판정이라 판정 대상을 갖지 않으므로 제외한다.
+--
+--   SELECT COUNT(*) FROM IQC_LOGS g
+--    WHERE g.ARRIVAL_NO IS NOT NULL
+--      AND NOT EXISTS (SELECT 1 FROM IQC_LOG_TARGETS t
+--                       WHERE t.INSPECT_DATE = g.INSPECT_DATE AND t.SEQ = g.SEQ);
 
 CREATE TABLE IQC_LOG_TARGETS (
   INSPECT_DATE TIMESTAMP(6) NOT NULL,
@@ -49,6 +61,11 @@ SELECT g.INSPECT_DATE, g.SEQ, l.ARRIVAL_NO, NVL(l.ARRIVAL_SEQ, 1), l.ITEM_CODE, 
     ON l.MAT_UID = g.MAT_UID AND l.COMPANY = g.COMPANY AND l.PLANT_CD = g.PLANT_CD
  WHERE g.MAT_UID IS NOT NULL
    AND l.ARRIVAL_NO IS NOT NULL
+   AND NOT EXISTS (
+     SELECT 1 FROM IQC_LOG_TARGETS t
+      WHERE t.INSPECT_DATE = g.INSPECT_DATE AND t.SEQ = g.SEQ
+        AND t.ARRIVAL_NO = l.ARRIVAL_NO AND t.ARRIVAL_SEQ = NVL(l.ARRIVAL_SEQ, 1) AND t.ITEM_CODE = l.ITEM_CODE
+   )
 /
 -- 백필 2) 입하단위 판정 — 그 입하번호+품목의 모든 입하 행
 --         (백필 시점 검사의뢰 0건이라 과거 판정 범위가 전체임이 확정된다)
@@ -59,6 +76,11 @@ SELECT DISTINCT g.INSPECT_DATE, g.SEQ, a.ARRIVAL_NO, a.SEQ, a.ITEM_CODE, NULL, g
     ON a.ARRIVAL_NO = g.ARRIVAL_NO AND a.ITEM_CODE = g.ITEM_CODE
    AND a.COMPANY = g.COMPANY AND a.PLANT_CD = g.PLANT_CD
  WHERE g.MAT_UID IS NULL
+   AND NOT EXISTS (
+     SELECT 1 FROM IQC_LOG_TARGETS t
+      WHERE t.INSPECT_DATE = g.INSPECT_DATE AND t.SEQ = g.SEQ
+        AND t.ARRIVAL_NO = a.ARRIVAL_NO AND t.ARRIVAL_SEQ = a.SEQ AND t.ITEM_CODE = a.ITEM_CODE
+   )
 /
 COMMIT
 /

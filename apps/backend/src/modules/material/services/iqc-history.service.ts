@@ -1594,11 +1594,15 @@ export class IqcHistoryService {
       // 구성 라인(IQC_REQUEST_LOT_LINES)으로 정하면 안 된다 — 그건 판정 *전*의 계획이라
       // 판정 이후 의뢰가 바뀌면 사라지고, 대표 입하번호 전체로 정하면 의뢰 밖 행까지
       // 되돌아간다. 판정 대상은 판정 *후*의 불변 스냅샷이다. ADR 0004 참고.
-      const targets = await queryRunner.manager.find(IqcLogTarget, {
-        where: { inspectDate: log.inspectDate, seq: log.seq, ...this.tenantWhere(log.company, log.plant) },
-      });
-      if (targets.length === 0) {
-        // 대상 없는 판정은 복원 범위를 알 수 없다. 조용히 아무것도 안 되돌리면
+      // 재검사(RETEST)는 시리얼 스코프 판정이라 ARRIVAL_NO도 판정 대상도 없다.
+      // 대상을 요구하는 것은 입하 스코프 판정(ARRIVAL_NO 보유)뿐이다.
+      const targets = log.arrivalNo
+        ? await queryRunner.manager.find(IqcLogTarget, {
+            where: { inspectDate: log.inspectDate, seq: log.seq, ...this.tenantWhere(log.company, log.plant) },
+          })
+        : [];
+      if (log.arrivalNo && targets.length === 0) {
+        // 대상 없는 입하 스코프 판정은 복원 범위를 알 수 없다. 조용히 아무것도 안 되돌리면
         // 시리얼이 FAIL/불량창고에 남은 채 판정만 취소돼 상태가 어긋난다.
         throw new BadRequestException(
           `판정 대상(입하 행) 정보가 없어 취소할 수 없습니다: ${inspectDate}/${seq}`,

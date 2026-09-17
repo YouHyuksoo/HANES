@@ -1032,6 +1032,43 @@ describe('IqcHistoryService cancel policy', () => {
     );
   });
 
+  it('재검사(RETEST) 판정 취소는 판정 대상이 없어도 막히지 않는다', async () => {
+    // RETEST는 시리얼 스코프 판정이라 ARRIVAL_NO도 IQC_LOG_TARGETS 행도 없다.
+    // 판정 대상 가드를 무조건 걸면 재검사 취소가 영영 400이 된다.
+    mockIqcLogRepo.findOne.mockResolvedValue({
+      inspectDate: new Date('2026-04-08'),
+      seq: 9,
+      arrivalNo: null,
+      matUid: 'MAT-RETEST',
+      itemCode: 'ITEM-001',
+      inspectType: 'RETEST',
+      result: 'PASS',
+      status: 'DONE',
+      company: 'HANES',
+      plant: 'P01',
+    } as any);
+    mockMatReceivingRepo.findOne.mockResolvedValue(null);
+    mockStockTxRepo.findOne.mockResolvedValue(null);
+
+    const manager = {
+      find: jest.fn().mockResolvedValue([]),
+      findOne: jest.fn().mockResolvedValue(null),
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    (mockQueryRunner as any).manager = manager;
+
+    const result = await target.cancel('2026-04-08', 9, { reason: 'retest' } as any);
+
+    expect(result.status).toBe('CANCELED');
+    // 판정 대상을 읽으러 가지도 않는다
+    expect(manager.find).not.toHaveBeenCalled();
+    expect(manager.update).toHaveBeenCalledWith(
+      MatLot,
+      { matUid: 'MAT-RETEST', company: 'HANES', plant: 'P01' },
+      { iqcStatus: 'PENDING', expireDate: null },
+    );
+  });
+
   it('IQC 판정 취소 후 업체 검사강도 변경 이력을 원복한다', async () => {
     mockIqcLogRepo.findOne.mockResolvedValue({
       inspectDate: new Date('2026-04-08'),
