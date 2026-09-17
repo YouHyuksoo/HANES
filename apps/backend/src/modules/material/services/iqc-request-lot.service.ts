@@ -297,9 +297,9 @@ export class IqcRequestLotService {
     plant: string,
   ) {
     const params: unknown[] = [company, plant, itemCode];
-    // 잠금 순서를 (ARRIVAL_NO, SEQ)로 고정한다. 두 요청이 같은 행들을 다른 순서로 잠그면
-    // 서로를 기다리다 ORA-00060(deadlock)으로 한쪽이 죽는다. 정렬해두면 앞선 쪽이 끝날 때까지
-    // 뒤선 쪽이 얌전히 기다린다.
+    // 대상 행을 **한 문장**으로 모두 잠근다. 데드락은 여러 문장에 걸쳐 서로 다른 순서로
+    // 잠글 때 생기므로, 한 문장으로 끝내면 그 위험이 없다(Oracle이 같은 접근 경로로 훑는다).
+    // 바인드 순서는 (ARRIVAL_NO, SEQ)로 정렬해 문장을 결정적으로 만든다.
     const ordered = [...lines].sort(
       (a, b) => a.arrivalNo.localeCompare(b.arrivalNo) || a.arrivalSeq - b.arrivalSeq,
     );

@@ -62,6 +62,22 @@ describe('BoxService', () => {
 
     mockDataSource.createQueryRunner.mockReturnValue(mockQueryRunner);
     mockTx.run.mockImplementation(async (callback) => callback(mockQueryRunner));
+    // 시리얼 선점 검사와 박스 쓰기가 트랜잭션 manager로 옮겨갔다. BoxMaster 접근만
+    // 기존 repo mock으로 위임해 두면 기존 기대(mockBoxRepo.find/save/update)가 그대로 산다.
+    (mockQueryRunner.query as jest.Mock).mockResolvedValue([]);
+    (mockQueryRunner.manager.find as jest.Mock).mockImplementation((entity: unknown, options: unknown) =>
+      entity === BoxMaster ? mockBoxRepo.find(options as never) : Promise.resolve([]),
+    );
+    (mockQueryRunner.manager.create as jest.Mock).mockImplementation((_entity: unknown, value: unknown) => value);
+    (mockQueryRunner.manager.save as jest.Mock).mockImplementation((entity: unknown, value: unknown) =>
+      entity === BoxMaster ? mockBoxRepo.save(value as never) : Promise.resolve(value),
+    );
+    (mockQueryRunner.manager.update as jest.Mock).mockImplementation(
+      (entity: unknown, criteria: unknown, partial: unknown) =>
+        entity === BoxMaster
+          ? mockBoxRepo.update(criteria as never, partial as never)
+          : Promise.resolve(undefined),
+    );
     mockQueryRunner.connect.mockResolvedValue(undefined);
     mockQueryRunner.startTransaction.mockResolvedValue(undefined);
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
@@ -450,6 +466,31 @@ describe('BoxService', () => {
       target.addSerial('BOX-001', { serials: ['FG-001'] } as any, 'C1', 'P1'),
     ).rejects.toThrow(ConflictException);
     expect(mockBoxRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('시리얼 포장은 FG 라벨을 FOR UPDATE로 잠근 뒤 교차 박스 검사를 한다', async () => {
+    // 잠그지 않으면 두 박스가 같은 시리얼을 동시에 담아도 서로의 SERIAL_LIST를 못 본다.
+    mockPackableFgWip([{ fgBarcode: 'FG-001' } as FgLabel, { fgBarcode: 'FG-002' } as FgLabel]);
+    mockBoxRepo.findOne.mockResolvedValue({
+      boxNo: 'BOX-001', itemCode: 'ITEM-001', status: 'OPEN', serialList: null, company: 'C1', plant: 'P1',
+    } as BoxMaster);
+    mockLotRepo.find.mockResolvedValue([]);
+    mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001', boxQty: 10 } as ItemMaster);
+    mockFgLabelRepo.find.mockResolvedValue([
+      { fgBarcode: 'FG-002', itemCode: 'ITEM-001', inspectPassYn: 'Y', status: 'VISUAL_PASS' } as FgLabel,
+      { fgBarcode: 'FG-001', itemCode: 'ITEM-001', inspectPassYn: 'Y', status: 'VISUAL_PASS' } as FgLabel,
+    ]);
+    mockBoxRepo.find.mockResolvedValue([]);
+
+    await target.addSerial('BOX-001', { serials: ['FG-002', 'FG-001'] } as never, 'C1', 'P1');
+
+    const lockCall = (mockQueryRunner.query as jest.Mock).mock.calls.find(([sql]) =>
+      String(sql).includes('FOR UPDATE'),
+    );
+    expect(lockCall).toBeDefined();
+    expect(String(lockCall![0])).toMatch(/FROM FG_LABELS/);
+    // 잠금 순서를 시리얼 정렬로 고정해 교차 대기 데드락을 피한다
+    expect(lockCall![1]).toEqual(['FG-001', 'FG-002', 'C1', 'P1']);
   });
 
   it('create rejects serialList already packed in another box', async () => {

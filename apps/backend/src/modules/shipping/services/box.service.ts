@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, IsNull, In, Like, Not, Between, Repository } from 'typeorm';
+import { EntityManager, ILike, IsNull, In, Like, Not, Between, QueryRunner, Repository } from 'typeorm';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
@@ -127,6 +127,7 @@ export class BoxService {
    * SERIAL_LIST 자체를 검사한다. LIKE 후보 조회 → JSON 파싱 정확 비교로 오탐 제거.
    */
   private async assertSerialsNotPackedElsewhere(
+    manager: EntityManager,
     serials: string[],
     excludeBoxNo: string | null,
     company?: string,
@@ -134,7 +135,7 @@ export class BoxService {
   ) {
     if (serials.length === 0) return;
 
-    const candidates = await this.boxRepository.find({
+    const candidates = await manager.find(BoxMaster, {
       where: serials.map((serial) => ({
         serialList: Like(`%"${serial}"%`),
         ...(excludeBoxNo ? { boxNo: Not(excludeBoxNo) } : {}),
@@ -162,6 +163,35 @@ export class BoxService {
       const detail = [...conflictBoxBySerial].map(([serial, boxNo]) => `${serial}(${boxNo})`).join(', ');
       throw new ConflictException(`이미 다른 박스에 포장된 시리얼입니다: ${detail}`);
     }
+  }
+
+  /**
+   * 포장하려는 FG 시리얼의 라벨 행을 FOR UPDATE로 잠근다.
+   *
+   * 교차 박스 중복 포장 검사는 BOXES.SERIAL_LIST(JSON)를 읽는 read-then-write라,
+   * 잠그지 않으면 두 박스가 같은 시리얼을 동시에 담아도 서로를 못 본다.
+   * SERIAL_LIST에는 잠글 행이 없으므로 다투는 실체인 FG 라벨 행을 잠근다.
+   * 대상 시리얼을 한 문장으로 모두 잠근다 — 여러 문장에 나눠 서로 다른 순서로 잠글 때 생기는
+   * 데드락(ORA-00060)을 피하기 위해서다. 바인드는 정렬해 문장을 결정적으로 만든다.
+   */
+  private async lockFgSerials(qr: QueryRunner, serials: string[], company?: string, plant?: string) {
+    if (serials.length === 0) return;
+    const ordered = [...new Set(serials)].sort();
+    const params: unknown[] = [];
+    const binds = ordered.map((serial) => {
+      params.push(serial);
+      return `:${params.length}`;
+    });
+    let sql = `SELECT FG_BARCODE FROM FG_LABELS WHERE FG_BARCODE IN (${binds.join(', ')})`;
+    if (company) {
+      params.push(company);
+      sql += ` AND COMPANY = :${params.length}`;
+    }
+    if (plant) {
+      params.push(plant);
+      sql += ` AND PLANT_CD = :${params.length}`;
+    }
+    await qr.query(`${sql} ORDER BY FG_BARCODE FOR UPDATE`, params);
   }
 
   private async nextOqcRequestNo() {
@@ -546,22 +576,27 @@ export class BoxService {
       throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
     }
 
-    if (dto.serialList && dto.serialList.length > 0) {
-      await this.assertSerialsNotPackedElsewhere(dto.serialList, boxNo, company, plant);
-    }
+    // 시리얼 선점 검사(read)와 박스 저장(write)을 한 트랜잭션에 넣고 FG 라벨을 잠근다.
+    // 잠그지 않으면 두 박스가 같은 시리얼을 동시에 담아도 서로의 SERIAL_LIST를 못 본다.
+    return this.tx.run(async (qr) => {
+      if (dto.serialList && dto.serialList.length > 0) {
+        await this.lockFgSerials(qr, dto.serialList, company, plant);
+        await this.assertSerialsNotPackedElsewhere(qr.manager, dto.serialList, boxNo, company, plant);
+      }
 
-    const box = this.boxRepository.create({
-      boxNo,
-      itemCode: dto.itemCode,
-      qty: dto.qty ?? 0,
-      serialList: dto.serialList ? JSON.stringify(dto.serialList) : null,
-      status: 'OPEN',
-      oqcStatus: null,
-      company: company || null,
-      plant: plant || null,
+      const box = qr.manager.create(BoxMaster, {
+        boxNo,
+        itemCode: dto.itemCode,
+        qty: dto.qty ?? 0,
+        serialList: dto.serialList ? JSON.stringify(dto.serialList) : null,
+        status: 'OPEN',
+        oqcStatus: null,
+        company: company || null,
+        plant: plant || null,
+      });
+
+      return qr.manager.save(BoxMaster, box);
     });
-
-    return this.boxRepository.save(box);
   }
 
   async update(id: string, dto: UpdateBoxDto, company?: string, plant?: string) {
@@ -575,16 +610,19 @@ export class BoxService {
       );
     }
 
-    if (dto.serialList && dto.serialList.length > 0) {
-      await this.assertSerialsNotPackedElsewhere(dto.serialList, id, company, plant);
-    }
+    await this.tx.run(async (qr) => {
+      if (dto.serialList && dto.serialList.length > 0) {
+        await this.lockFgSerials(qr, dto.serialList, company, plant);
+        await this.assertSerialsNotPackedElsewhere(qr.manager, dto.serialList, id, company, plant);
+      }
 
-    const updateData: Record<string, unknown> = {};
-    if (dto.qty !== undefined) updateData.qty = dto.qty;
-    if (dto.serialList !== undefined) updateData.serialList = JSON.stringify(dto.serialList);
-    if (dto.palletId !== undefined) updateData.palletNo = dto.palletId;
+      const updateData: Record<string, unknown> = {};
+      if (dto.qty !== undefined) updateData.qty = dto.qty;
+      if (dto.serialList !== undefined) updateData.serialList = JSON.stringify(dto.serialList);
+      if (dto.palletId !== undefined) updateData.palletNo = dto.palletId;
 
-    await this.boxRepository.update({ boxNo: id, ...this.tenantWhere(company, plant) }, updateData);
+      await qr.manager.update(BoxMaster, { boxNo: id, ...this.tenantWhere(company, plant) }, updateData);
+    });
     return this.findById(id, company, plant);
   }
 
@@ -662,21 +700,25 @@ export class BoxService {
 
     await this.assertSerialsArePackableFgWip(dto.serials, company, plant);
 
-    await this.assertSerialsNotPackedElsewhere(dto.serials, id, company, plant);
-
     const boxQty = part?.boxQty != null ? Number(part.boxQty) : 0;
     if (boxQty > 0 && existingSerials.length + dto.serials.length > boxQty) {
       throw new BadRequestException(`박스입수량(${boxQty})를 초과했습니다.`);
     }
 
-    const newSerialList = [...existingSerials, ...dto.serials];
-    await this.boxRepository.update(
-      { boxNo: id, ...this.tenantWhere(company, plant) },
-      {
-        serialList: JSON.stringify(newSerialList),
-        qty: newSerialList.length,
-      },
-    );
+    await this.tx.run(async (qr) => {
+      await this.lockFgSerials(qr, dto.serials, company, plant);
+      await this.assertSerialsNotPackedElsewhere(qr.manager, dto.serials, id, company, plant);
+
+      const newSerialList = [...existingSerials, ...dto.serials];
+      await qr.manager.update(
+        BoxMaster,
+        { boxNo: id, ...this.tenantWhere(company, plant) },
+        {
+          serialList: JSON.stringify(newSerialList),
+          qty: newSerialList.length,
+        },
+      );
+    });
 
     return this.findById(id, company, plant);
   }

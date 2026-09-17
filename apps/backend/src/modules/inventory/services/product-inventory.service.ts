@@ -186,29 +186,63 @@ export class ProductInventoryService {
     return this.numbering.next('PRODUCT_TX', qr);
   }
 
+  /**
+   * 박스 이중입고 가드가 다투는 대상은 박스 1건이다. 그 박스 행을 FOR UPDATE로 잠근다.
+   *
+   * 잠그지 않으면 같은 박스를 동시에 입고하는 두 요청이 서로의 트랜잭션을 못 보고 둘 다 통과한다.
+   * PRODUCT_TRANSACTIONS 쪽에는 아직 없는 행이라 잠글 대상이 없으므로 BOX_MASTERS를 잠근다.
+   */
+  private async lockBoxForReceive(qr: QueryRunner, dto: ProductReceiveStockDto) {
+    if (dto.refType !== 'BOX' || !dto.refId) return;
+    const params: unknown[] = [dto.refId];
+    let sql = 'SELECT BOX_NO FROM BOX_MASTERS WHERE BOX_NO = :1';
+    if (dto.company) {
+      params.push(dto.company);
+      sql += ` AND COMPANY = :${params.length}`;
+    }
+    if (dto.plant) {
+      params.push(dto.plant);
+      sql += ` AND PLANT_CD = :${params.length}`;
+    }
+    await qr.query(`${sql} FOR UPDATE`, params);
+  }
+
+  /**
+   * 박스 이중입고 가드. **반드시 lockBoxForReceive 뒤에, 같은 트랜잭션의 manager로** 읽어야 한다.
+   * 기본 커넥션으로 읽으면 잠그기 전 스냅샷을 보게 되어 가드가 무의미해진다.
+   */
+  private async assertBoxNotReceived(
+    qr: QueryRunner,
+    dto: ProductReceiveStockDto,
+    transTypes: string[],
+  ) {
+    if (dto.refType !== 'BOX' || !dto.refId) return;
+    const dup = await qr.manager.findOne(ProductTransaction, {
+      where: {
+        refType: 'BOX',
+        refId: dto.refId,
+        transType: In(transTypes),
+        status: PRODUCT_TRANSACTION_STATUS.DONE,
+        ...this.tenantWhere(dto.company, dto.plant),
+      },
+    });
+    if (dup) {
+      throw new ConflictException(`이미 입고된 박스입니다: ${dto.refId} (${dup.transNo})`);
+    }
+  }
+
   /** 제품 입고 처리 */
   async receiveStock(dto: ProductReceiveStockDto) {
     const tenantWhere = this.tenantWhere(dto.company, dto.plant);
     const qualityStatus = this.normalizeQualityStatus(dto.qualityStatus);
 
-    // 이중입고 가드: 박스(refType='BOX')는 1회만 입고. 동일 박스의 정상(DONE) 입고가 이미 있으면 거부.
-    // 취소(_CANCEL) 트랜잭션과 취소된(CANCELED) 원본은 제외 → 취소 후 재입고는 허용.
-    if (dto.refType === 'BOX' && dto.refId) {
-      const dup = await this.transactionRepository.findOne({
-        where: {
-          refType: 'BOX',
-          refId: dto.refId,
-          transType: In(['FG_IN', 'WIP_IN']),
-          status: PRODUCT_TRANSACTION_STATUS.DONE,
-          ...tenantWhere,
-        },
-      });
-      if (dup) {
-        throw new ConflictException(`이미 입고된 박스입니다: ${dto.refId} (${dup.transNo})`);
-      }
-    }
-
     return this.tx.run(async (queryRunner) => {
+      // 이중입고 가드: 박스(refType='BOX')는 1회만 입고. 동일 박스의 정상(DONE) 입고가 이미 있으면 거부.
+      // 취소(_CANCEL) 트랜잭션과 취소된(CANCELED) 원본은 제외 → 취소 후 재입고는 허용.
+      // 박스 행을 먼저 잠근 뒤 같은 트랜잭션에서 읽어야 동시 입고가 둘 다 통과하지 않는다.
+      await this.lockBoxForReceive(queryRunner, dto);
+      await this.assertBoxNotReceived(queryRunner, dto, ['FG_IN', 'WIP_IN']);
+
       const transNo = await this.generateTransNo(queryRunner);
 
       // 1. 트랜잭션 생성
@@ -259,21 +293,9 @@ export class ProductInventoryService {
     const tenantWhere = this.tenantWhere(dto.company, dto.plant);
     const qualityStatus = this.normalizeQualityStatus(dto.qualityStatus);
 
-    // 이중입고 가드: 박스(refType='BOX')는 1회만 입고
-    if (dto.refType === 'BOX' && dto.refId) {
-      const dup = await qr.manager.findOne(ProductTransaction, {
-        where: {
-          refType: 'BOX',
-          refId: dto.refId,
-          transType: In(['FG_IN', 'WIP_IN']),
-          status: PRODUCT_TRANSACTION_STATUS.DONE,
-          ...tenantWhere,
-        },
-      });
-      if (dup) {
-        throw new ConflictException(`이미 입고된 박스입니다: ${dto.refId} (${dup.transNo})`);
-      }
-    }
+    // 이중입고 가드: 박스(refType='BOX')는 1회만 입고. 잠근 뒤 읽어야 동시 입고를 막는다.
+    await this.lockBoxForReceive(qr, dto);
+    await this.assertBoxNotReceived(qr, dto, ['FG_IN', 'WIP_IN']);
 
     const transNo = await this.generateTransNo(qr);
 
@@ -324,20 +346,9 @@ export class ProductInventoryService {
       const tenantWhere = this.tenantWhere(dto.company, dto.plant);
 
       // 박스 이중입고 가드 (fg/receive 경로에도 적용 — 기존 issueStock 경로엔 없던 방어)
-      if (dto.refType === 'BOX' && dto.refId) {
-        const dup = await qr.manager.findOne(ProductTransaction, {
-          where: {
-            refType: 'BOX',
-            refId: dto.refId,
-            transType: In(['WIP_OUT', 'FG_IN', 'WIP_IN']),
-            status: PRODUCT_TRANSACTION_STATUS.DONE,
-            ...tenantWhere,
-          },
-        });
-        if (dup) {
-          throw new ConflictException(`이미 입고된 박스입니다: ${dto.refId} (${dup.transNo})`);
-        }
-      }
+      // 잠근 뒤 읽어야 동시 입고 두 건이 서로를 못 보고 둘 다 통과하는 일이 없다.
+      await this.lockBoxForReceive(qr, dto);
+      await this.assertBoxNotReceived(qr, dto, ['WIP_OUT', 'FG_IN', 'WIP_IN']);
 
       // FG_WIP 양품 재고에서 qty만큼 1회 출고(WIP_OUT) → 목적 창고로 입고.
       // 시리얼 추적은 FG_LABELS(BOX_NO 스탬프)가 담당하므로 현재고는 수량 버킷으로 다룬다.

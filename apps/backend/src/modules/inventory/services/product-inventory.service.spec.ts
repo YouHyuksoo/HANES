@@ -101,6 +101,32 @@ describe('ProductInventoryService', () => {
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
+    it('박스 입고는 BOX_MASTERS를 FOR UPDATE로 잠근 뒤 이중입고를 판정한다', async () => {
+      // 잠그지 않고 트랜잭션 밖에서 읽으면 같은 박스를 동시에 입고하는 두 요청이 둘 다 통과한다.
+      const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
+      mockTransRepo.createQueryBuilder.mockReturnValue(qb);
+      (mockQueryRunner.query as jest.Mock).mockResolvedValue([]);
+      // 잠금 뒤 재확인에서 기존 입고가 보인다 → 거부
+      mockQueryRunner.manager.findOne.mockResolvedValue({ transNo: 'PTX-OLD' } as any);
+
+      await expect(
+        target.receiveStock({
+          warehouseId: 'WH', itemCode: 'IT', qty: 10, transType: 'FG_IN',
+          refType: 'BOX', refId: 'BX260917001', company: 'C1', plant: 'P1',
+        } as any),
+      ).rejects.toThrow('이미 입고된 박스입니다');
+
+      const lockCall = (mockQueryRunner.query as jest.Mock).mock.calls.find(([sql]) =>
+        String(sql).includes('FOR UPDATE'),
+      );
+      expect(lockCall).toBeDefined();
+      expect(String(lockCall![0])).toMatch(/FROM BOX_MASTERS/);
+      expect(lockCall![1]).toEqual(['BX260917001', 'C1', 'P1']);
+      // 가드는 트랜잭션 안에서 돈다 — 기본 커넥션으로 읽지 않는다
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockTransRepo.findOne).not.toHaveBeenCalled();
+    });
+
     it('should rollback on error', async () => {
       const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue(null) };
       mockTransRepo.createQueryBuilder.mockReturnValue(qb);
