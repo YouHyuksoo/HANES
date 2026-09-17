@@ -22,6 +22,7 @@ import {
 import LineMapSkin from "./components/skins/LineMapSkin";
 import DepartureBoardSkin from "./components/skins/DepartureBoardSkin";
 import TreemapSkin from "./components/skins/TreemapSkin";
+import ManagerCallPanel from "./components/ManagerCallPanel";
 import type { EquipCard, EquipStatusCounts, RunningJob } from "./components/types";
 
 /** /production/progress?status=RUNNING 응답(JobOrder + part 조인) */
@@ -103,6 +104,13 @@ export default function EquipmentBoardPage() {
     [equipments],
   );
 
+  // 관리자호출 패널용 설비코드 -> 설비명 매핑 (호출 API는 설비코드만 준다)
+  const equipNameMap = useMemo(() => {
+    const m = new Map<string, string>();
+    equipments.forEach((e) => m.set(e.equipCode, e.equipName));
+    return m;
+  }, [equipments]);
+
   const updatedAt = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString() : "—";
 
   const skinProps = {
@@ -133,6 +141,9 @@ export default function EquipmentBoardPage() {
         {skin === "departure" && <DepartureBoardSkin {...skinProps} />}
         {skin === "treemap" && <TreemapSkin {...skinProps} />}
       </BoardSkinFrame>
+
+      {/* 현장 관리자호출 수신/응대 — 키오스크는 호출만 하고, 해제는 여기서 한다 */}
+      <ManagerCallPanel equipNameMap={equipNameMap} selectedCodes={config.selectedCodes} />
 
       <MonitoringSettingsModal
         isOpen={settingsOpen}

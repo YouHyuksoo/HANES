@@ -673,7 +673,6 @@ export default function InputKioskPage() {
         callElapsed={equipStop.callElapsed}
         loading={equipStop.loading}
         onCall={equipStop.createCall}
-        onAck={equipStop.ackCall}
       />
       {selfInspectTiming && (
         <SelfInspectModal

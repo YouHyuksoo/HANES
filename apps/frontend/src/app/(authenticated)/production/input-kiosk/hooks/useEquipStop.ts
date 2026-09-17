@@ -206,15 +206,9 @@ export function useEquipStop(equipCode?: string | null, jobOrderNo?: string | nu
     }
   }, [equipCode, jobOrderNo]);
 
-  const ackCall = useCallback(async (callId: number, ackRemark?: string) => {
-    setLoading(true);
-    try {
-      await api.post(`/equipment/call/${callId}/ack`, { ackRemark: ackRemark || undefined });
-      setOpenCall(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // 관리자호출 해제(ack)는 현장에서 하지 않는다. 관리자가 설비모니터링 보드의
+  // ManagerCallPanel 에서 처리하고, 키오스크는 폴링으로 배지만 내린다.
+  // 여기에 ack 함수를 다시 추가하지 말 것.
 
   const stopElapsed = useTickingSeconds(openStop ? openStop.lossSeconds : null);
   const callElapsed = useTickingSeconds(openCall ? openCall.elapsedSeconds : null);
@@ -235,6 +229,5 @@ export function useEquipStop(equipCode?: string | null, jobOrderNo?: string | nu
     updateReason,
     releaseStop,
     createCall,
-    ackCall,
   };
 }

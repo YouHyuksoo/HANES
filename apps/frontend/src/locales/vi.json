@@ -183,6 +183,14 @@
     "selectItem": "Hãy chọn mục trợ giúp ở bên trái."
   },
   "monitoring": {
+    "managerCall": {
+      "title": "Gọi quản lý",
+      "ack": "Đã xử lý",
+      "noRemark": "Không có nội dung",
+      "collapse": "Thu gọn danh sách gọi quản lý",
+      "expand": "Mở danh sách gọi quản lý",
+      "ackFailed": "Xử lý cuộc gọi thất bại."
+    },
     "board": {
       "updatedAt": "Cập nhật",
       "noOrders": "Không có lệnh sản xuất để hiển thị.",
@@ -9882,6 +9890,7 @@
       "colReleased": "Giải trừ",
       "colLoss": "Thời gian thất thoát",
       "blockReason": "Thiết bị đang dừng. Hãy giải trừ dừng trước khi nhập sản lượng.",
+      "inputSection": "Thông tin dừng",
       "banner": "Thiết bị đang dừng — nhập sản lượng bị chặn. Nhấn để giải trừ."
     },
     "managerCall": {
@@ -9890,7 +9899,9 @@
       "call": "Gọi quản lý",
       "ack": "Đã xử lý",
       "calledAt": "Thời điểm gọi",
-      "idleHint": "Chọn loại yêu cầu và ghi nội dung rồi gọi. Lịch sử gọi và thời gian chờ được ghi lại.",
+      "idleHint": "Chọn loại yêu cầu và ghi nội dung rồi gọi. Gọi không làm dừng sản xuất.",
+      "waitingHint": "Quản lý sẽ giải phóng cuộc gọi trên bảng giám sát thiết bị. Hãy tiếp tục làm việc.",
+      "inputSection": "Nội dung gọi",
       "type": "Loại gọi",
       "remark": "Nội dung gọi",
       "remarkPlaceholder": "Bạn cần hỗ trợ gì",

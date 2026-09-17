@@ -10,6 +10,11 @@
  *    사유가 미정이면 해제 버튼이 잠기고, 사유를 고르면 열린다.
  * 3. 팝업을 닫아도 정지는 유지된다. 헤더 배지에 "정지중 HH:MM:SS"가 계속 보인다.
  * 4. 하단에 당일 정지 이력과 유실시간 합계를 보여준다.
+ *
+ * 레이아웃 규칙(키오스크 가독성):
+ * - 본문은 "상태 / 입력 / 당일 이력" 3개 카드 섹션으로만 나눈다. 섹션 사이에 경계선을 둔다.
+ * - 주 액션(정지 등록 / 정지 해제)은 하단 푸터 중앙에 1개만 크게 둔다.
+ * - 닫기는 하단 왼쪽 귀퉁이(+ 상단 우측 X)로만 둔다. 주 액션 옆에 붙이지 않는다.
  */
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -35,6 +40,29 @@ interface EquipStopModalProps {
   onUpdateReason: (stopId: number, stopReason: string, stopRemark?: string) => Promise<void>;
   onRelease: (stopId: number, stopReason?: string, releaseRemark?: string) => Promise<void>;
   onRefreshHistory: () => void;
+}
+
+/** 섹션 카드 — 데이터 묶음 사이의 경계를 눈에 보이게 한다. */
+function Section({
+  title,
+  right,
+  children,
+}: {
+  title: string;
+  right?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-lg border border-border bg-background/40">
+      <header className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+        <span className="text-xs font-bold uppercase tracking-wide text-black/60 dark:text-white/60">
+          {title}
+        </span>
+        {right}
+      </header>
+      <div className="p-3">{children}</div>
+    </section>
+  );
 }
 
 export default function EquipStopModal({
@@ -85,17 +113,58 @@ export default function EquipStopModal({
 
   const canRelease = Boolean(openStop) && Boolean(reason);
 
+  // 푸터: 닫기는 왼쪽 귀퉁이, 주 액션은 정중앙 1개.
+  const footer = (
+    <div className="relative flex w-full items-center justify-center">
+      <Button
+        variant="ghost"
+        onClick={onClose}
+        className="absolute left-0"
+      >
+        {t('common.close')}
+      </Button>
+
+      {openStop ? (
+        <Button
+          variant="primary"
+          size="lg"
+          disabled={!canRelease || loading}
+          onClick={handleRelease}
+          data-testid="kiosk-stop-release"
+          className="min-w-[220px]"
+          title={canRelease ? undefined : t('kiosk.equipStop.reasonRequired', '정지사유를 선택해야 해제할 수 있습니다.')}
+        >
+          <Play className="mr-2 h-5 w-5" />
+          {t('kiosk.equipStop.release', '정지 해제')}
+        </Button>
+      ) : (
+        <Button
+          variant="danger"
+          size="lg"
+          disabled={!equipCode || loading}
+          onClick={handleStart}
+          data-testid="kiosk-stop-start"
+          className="min-w-[220px]"
+        >
+          <Square className="mr-2 h-5 w-5" />
+          {t('kiosk.equipStop.start', '설비정지 등록')}
+        </Button>
+      )}
+    </div>
+  );
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       size="xl"
+      footer={footer}
       title={`${t('kiosk.equipStop.title', '설비정지')}${equipName ? ` · ${equipName}` : ''}`}
     >
-      <div className="space-y-5">
-        {/* 경과시간 — 정지 중에만 크게 표시 */}
+      <div className="space-y-4">
+        {/* 1) 상태 — 정지 중이면 경과시간, 아니면 안내 */}
         {openStop ? (
-          <div className="flex flex-col items-center gap-2 rounded-lg border-2 border-red-500 py-6 dark:border-red-400">
+          <div className="flex flex-col items-center gap-2 rounded-lg border-2 border-red-500 bg-red-500/5 py-5 dark:border-red-400">
             <span className="flex items-center gap-2 text-sm font-bold text-red-600 dark:text-red-400">
               <AlertTriangle className="h-4 w-4" />
               {t('kiosk.equipStop.stopping', '정지 중')}
@@ -112,112 +181,99 @@ export default function EquipStopModal({
             </span>
           </div>
         ) : (
-          <div className="rounded-lg border border-border py-6 text-center text-sm text-black/60 dark:text-white/60">
+          <div className="rounded-lg border border-dashed border-border py-5 text-center text-sm text-black/60 dark:text-white/60">
             {t('kiosk.equipStop.idleHint', '설비가 멈추면 사유를 고르고(또는 비워둔 채) 정지를 등록하세요. 등록 시각부터 유실시간이 쌓입니다.')}
           </div>
         )}
 
-        {/* 사유 / 비고 */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-black/70 dark:text-white/70">
-              {t('kiosk.equipStop.reason', '정지사유')}
-              {openStop && !openStop.stopReason && !reason && (
-                <span className="ml-2 font-bold text-red-600 dark:text-red-400">
-                  {t('kiosk.equipStop.reasonUndecided', '사유미정 — 해제하려면 사유를 선택하세요')}
-                </span>
-              )}
-            </label>
-            <ComCodeSelect
-              groupCode="EQUIP_STOP_REASON"
-              includeAll={false}
-              value={reason}
-              onChange={(v) => setReason(v)}
-              placeholder={t('kiosk.equipStop.reasonPlaceholder', '사유 선택(미정 가능)')}
-              fullWidth
-            />
+        {/* 2) 입력 — 사유 / 비고 / 조치 내용 */}
+        <Section
+          title={t('kiosk.equipStop.inputSection', '정지 정보')}
+          right={
+            openStop && !openStop.stopReason && !reason ? (
+              <span className="rounded bg-red-500/10 px-2 py-0.5 text-[11px] font-bold text-red-600 dark:text-red-400">
+                {t('kiosk.equipStop.reasonUndecided', '사유미정 — 해제하려면 사유를 선택하세요')}
+              </span>
+            ) : undefined
+          }
+        >
+          <div className="divide-y divide-border">
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 pb-3">
+              <label className="text-sm font-semibold text-black/70 dark:text-white/70">
+                {t('kiosk.equipStop.reason', '정지사유')}
+              </label>
+              <ComCodeSelect
+                groupCode="EQUIP_STOP_REASON"
+                includeAll={false}
+                value={reason}
+                onChange={(v) => setReason(v)}
+                placeholder={t('kiosk.equipStop.reasonPlaceholder', '사유 선택(미정 가능)')}
+                fullWidth
+              />
+            </div>
+
+            <div className="grid grid-cols-[110px_1fr] items-center gap-3 py-3">
+              <label className="text-sm font-semibold text-black/70 dark:text-white/70">
+                {t('kiosk.equipStop.remark', '정지 비고')}
+              </label>
+              <Input
+                value={remark}
+                onChange={(e) => setRemark(e.target.value)}
+                fullWidth
+                placeholder={t('kiosk.equipStop.remarkPlaceholder', '현상/조치 메모')}
+                maxLength={500}
+              />
+            </div>
+
+            {openStop && (
+              <div className="grid grid-cols-[110px_1fr] items-center gap-3 pt-3">
+                <label className="text-sm font-semibold text-black/70 dark:text-white/70">
+                  {t('kiosk.equipStop.releaseRemark', '조치 내용')}
+                </label>
+                <Input
+                  value={releaseRemark}
+                  onChange={(e) => setReleaseRemark(e.target.value)}
+                  fullWidth
+                  placeholder={t('kiosk.equipStop.releaseRemarkPlaceholder', '어떤 조치로 재가동했는지')}
+                  maxLength={500}
+                />
+              </div>
+            )}
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-black/70 dark:text-white/70">
-              {t('kiosk.equipStop.remark', '정지 비고')}
-            </label>
-            <Input
-              value={remark}
-              onChange={(e) => setRemark(e.target.value)}
-              placeholder={t('kiosk.equipStop.remarkPlaceholder', '현상/조치 메모')}
-              maxLength={500}
-            />
-          </div>
-        </div>
+        </Section>
 
-        {openStop && (
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-black/70 dark:text-white/70">
-              {t('kiosk.equipStop.releaseRemark', '조치 내용')}
-            </label>
-            <Input
-              value={releaseRemark}
-              onChange={(e) => setReleaseRemark(e.target.value)}
-              placeholder={t('kiosk.equipStop.releaseRemarkPlaceholder', '어떤 조치로 재가동했는지')}
-              maxLength={500}
-            />
-          </div>
-        )}
-
-        {error && (
-          <p className="text-sm font-semibold text-red-600 dark:text-red-400">{error}</p>
-        )}
-
-        {/* 액션 */}
-        <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={onClose}>
-            {t('common.close')}
-          </Button>
-          {openStop ? (
-            <Button
-              variant="primary"
-              disabled={!canRelease || loading}
-              onClick={handleRelease}
-              data-testid="kiosk-stop-release"
-              title={canRelease ? undefined : t('kiosk.equipStop.reasonRequired', '정지사유를 선택해야 해제할 수 있습니다.')}
-            >
-              <Play className="mr-1 h-4 w-4" />
-              {t('kiosk.equipStop.release', '정지 해제')}
-            </Button>
-          ) : (
-            <Button
-              variant="danger"
-              disabled={!equipCode || loading}
-              onClick={handleStart}
-              data-testid="kiosk-stop-start"
-            >
-              <Square className="mr-1 h-4 w-4" />
-              {t('kiosk.equipStop.start', '설비정지 등록')}
-            </Button>
-          )}
-        </div>
-
-        {/* 당일 이력 + 유실시간 집계 */}
-        <div className="border-t border-border pt-3">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-bold text-black dark:text-white">
-              {t('kiosk.equipStop.todayHistory', '당일 정지 이력')}
+        {/* 3) 당일 이력 + 유실시간 집계 */}
+        <Section
+          title={t('kiosk.equipStop.todayHistory', '당일 정지 이력')}
+          right={
+            <span className="flex items-center gap-2 text-xs">
+              <span className="rounded bg-black/5 px-2 py-0.5 dark:bg-white/10">
+                {t('kiosk.equipStop.todayCount', '건수')}{' '}
+                <b className="tabular-nums">{summary.stopCount}</b>
+              </span>
+              <span className="rounded bg-red-500/10 px-2 py-0.5 text-red-600 dark:text-red-400">
+                {t('kiosk.equipStop.todayLoss', '유실시간')}{' '}
+                <b className="tabular-nums">{formatDuration(summary.totalLossSeconds)}</b>
+              </span>
             </span>
-            <span className="text-sm text-black/70 dark:text-white/70">
-              {t('kiosk.equipStop.todayCount', '건수')} <b className="tabular-nums">{summary.stopCount}</b>
-              <span className="mx-2 opacity-40">|</span>
-              {t('kiosk.equipStop.todayLoss', '유실시간')}{' '}
-              <b className="tabular-nums text-red-600 dark:text-red-400">{formatDuration(summary.totalLossSeconds)}</b>
-            </span>
-          </div>
+          }
+        >
           <div className="max-h-48 overflow-auto rounded border border-border">
-            <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-surface">
+            <table className="w-full border-collapse text-xs">
+              <thead className="sticky top-0 z-10 bg-surface">
                 <tr className="text-left text-black/60 dark:text-white/60">
-                  <th className="px-2 py-1.5">{t('kiosk.equipStop.colStarted', '정지')}</th>
-                  <th className="px-2 py-1.5">{t('kiosk.equipStop.colReleased', '해제')}</th>
-                  <th className="px-2 py-1.5">{t('kiosk.equipStop.reason', '정지사유')}</th>
-                  <th className="px-2 py-1.5 text-right">{t('kiosk.equipStop.colLoss', '유실시간')}</th>
+                  <th className="border-b border-r border-border px-2 py-1.5 font-semibold">
+                    {t('kiosk.equipStop.colStarted', '정지')}
+                  </th>
+                  <th className="border-b border-r border-border px-2 py-1.5 font-semibold">
+                    {t('kiosk.equipStop.colReleased', '해제')}
+                  </th>
+                  <th className="border-b border-r border-border px-2 py-1.5 font-semibold">
+                    {t('kiosk.equipStop.reason', '정지사유')}
+                  </th>
+                  <th className="border-b border-border px-2 py-1.5 text-right font-semibold">
+                    {t('kiosk.equipStop.colLoss', '유실시간')}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -227,11 +283,20 @@ export default function EquipStopModal({
                       {t('common.noData')}
                     </td>
                   </tr>
-                ) : history.map(row => (
-                  <tr key={row.stopId} className="border-t border-border">
-                    <td className="px-2 py-1.5 font-mono">{row.startedAt?.slice(11) ?? '-'}</td>
-                    <td className="px-2 py-1.5 font-mono">{row.releasedAt?.slice(11) ?? '-'}</td>
-                    <td className="px-2 py-1.5"><StopReasonLabel code={row.stopReason} /></td>
+                ) : history.map((row, idx) => (
+                  <tr
+                    key={row.stopId}
+                    className={`border-t border-border ${idx % 2 === 1 ? 'bg-black/[0.03] dark:bg-white/[0.04]' : ''}`}
+                  >
+                    <td className="border-r border-border px-2 py-1.5 font-mono tabular-nums">
+                      {row.startedAt?.slice(11) ?? '-'}
+                    </td>
+                    <td className="border-r border-border px-2 py-1.5 font-mono tabular-nums">
+                      {row.releasedAt?.slice(11) ?? '-'}
+                    </td>
+                    <td className="border-r border-border px-2 py-1.5">
+                      <StopReasonLabel code={row.stopReason} />
+                    </td>
                     <td className="px-2 py-1.5 text-right font-mono tabular-nums">
                       {formatDuration(row.lossSeconds)}
                       {row.status === 'OPEN' && (
@@ -245,7 +310,13 @@ export default function EquipStopModal({
               </tbody>
             </table>
           </div>
-        </div>
+        </Section>
+
+        {error && (
+          <p className="rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-600 dark:text-red-400">
+            {error}
+          </p>
+        )}
       </div>
     </Modal>
   );

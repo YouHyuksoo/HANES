@@ -183,6 +183,14 @@
     "selectItem": "Select a help item on the left."
   },
   "monitoring": {
+    "managerCall": {
+      "title": "Manager Calls",
+      "ack": "Mark Handled",
+      "noRemark": "No details",
+      "collapse": "Collapse manager call list",
+      "expand": "Expand manager call list",
+      "ackFailed": "Failed to mark the call as handled."
+    },
     "board": {
       "updatedAt": "Updated",
       "noOrders": "No job orders to display.",
@@ -9900,6 +9908,7 @@
       "colReleased": "Released",
       "colLoss": "Downtime",
       "blockReason": "The equipment is stopped. Release the stop before entering results.",
+      "inputSection": "Stop Details",
       "banner": "Equipment stopped - result entry is blocked. Tap to release."
     },
     "managerCall": {
@@ -9908,7 +9917,9 @@
       "call": "Call Manager",
       "ack": "Mark Handled",
       "calledAt": "Called at",
-      "idleHint": "Choose a call type and describe what you need. The call and waiting time are recorded.",
+      "idleHint": "Choose a call type and describe what you need. Calling does not stop production (register an Equipment Stop if the machine must stop).",
+      "waitingHint": "A manager releases this call from the Equipment Monitoring board. Keep working.",
+      "inputSection": "Call Details",
       "type": "Call Type",
       "remark": "Call Note",
       "remarkPlaceholder": "What help do you need",
