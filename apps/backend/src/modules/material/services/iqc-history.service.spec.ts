@@ -864,6 +864,10 @@ describe('IqcHistoryService cancel policy', () => {
       plant: 'P01',
     } as any);
     mockMatReceivingRepo.findOne.mockResolvedValue(null);
+    // 시료 확인 범위는 판정 대상이 정한다 — 입하번호 전체가 아니다(ADR 0004)
+    mockIqcLogTargetRepo.find.mockResolvedValue([
+      { arrivalNo: 'ARR-001', arrivalSeq: 1, itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' } as never,
+    ]);
     mockMatLotRepo.find.mockResolvedValue([
       { matUid: 'MAT-001', itemCode: 'ITEM-001', arrivalNo: 'ARR-001', company: 'HANES', plant: 'P01' } as MatLot,
     ]);
@@ -877,6 +881,10 @@ describe('IqcHistoryService cancel policy', () => {
       BadRequestException,
     );
     expect(mockTx.run).not.toHaveBeenCalled();
+    // 판정 대상 행으로만 조회한다 — 입하번호 전체 조건이 아니다
+    expect(mockMatLotRepo.find).toHaveBeenCalledWith({
+      where: [{ arrivalNo: 'ARR-001', arrivalSeq: 1, itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' }],
+    });
   });
 
   it('reverses IQC fail move before canceling the result', async () => {

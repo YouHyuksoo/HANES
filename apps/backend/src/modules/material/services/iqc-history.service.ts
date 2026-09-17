@@ -1556,14 +1556,23 @@ export class IqcHistoryService {
         );
       }
     } else if (!log.matUid && log.arrivalNo && log.itemCode && log.result === 'PASS') {
-      const arrivalLots = await this.matLotRepository.find({
-        where: {
-          arrivalNo: log.arrivalNo,
-          itemCode: log.itemCode,
-          ...this.tenantWhere(log.company, log.plant),
-        },
+      // 시료 출고 확인 범위도 판정 대상(IQC_LOG_TARGETS)이 정한다.
+      // 입하번호 전체로 보면 의뢰 판정에서 의뢰 밖 행의 시료 출고 때문에 취소가 잘못 막힌다.
+      // matUid가 없다고 해서 입하번호 전체 판정인 것은 아니다 — 의뢰 판정도 matUid가 없다. ADR 0004.
+      const guardTargets = await this.iqcLogTargetRepository.find({
+        where: { inspectDate: log.inspectDate, seq: log.seq, ...this.tenantWhere(log.company, log.plant) },
       });
-      // 입하건 전체 시리얼의 파괴검사 시료 자동출고 여부를 단일 쿼리로 확인 (N+1 방지)
+      const arrivalLots = guardTargets.length > 0
+        ? await this.matLotRepository.find({
+            where: guardTargets.map((t) => ({
+              arrivalNo: t.arrivalNo,
+              arrivalSeq: t.arrivalSeq,
+              itemCode: t.itemCode,
+              ...this.tenantWhere(log.company, log.plant),
+            })),
+          })
+        : [];
+      // 판정 대상 행 시리얼의 파괴검사 시료 자동출고 여부를 단일 쿼리로 확인 (N+1 방지)
       const arrivalMatUids = (arrivalLots ?? []).map((lot) => lot.matUid);
       if (arrivalMatUids.length > 0) {
         const sampleIssue = await this.stockTransactionRepository.findOne({

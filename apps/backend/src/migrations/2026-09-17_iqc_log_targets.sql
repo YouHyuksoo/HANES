@@ -25,6 +25,11 @@
 --   백필 INSERT 2개는 NOT EXISTS로 멱등하게 만들어 뒀다. **코드 배포 직후 백필 2개를
 --   한 번 더 실행**하고 아래 쿼리가 0인지 확인한다. RETEST(ARRIVAL_NO IS NULL)는
 --   시리얼 스코프 판정이라 판정 대상을 갖지 않으므로 제외한다.
+--   백필 2는 검사의뢰 판정(REQUEST_NO NOT NULL)을 반드시 제외한다 — 아래 주석 참고.
+--   재실행 전후로 이 쿼리도 같이 본다(의뢰 판정의 대상 수가 변하면 안 된다):
+--     SELECT g.REQUEST_NO, COUNT(*) FROM IQC_LOG_TARGETS t JOIN IQC_LOGS g
+--       ON g.INSPECT_DATE=t.INSPECT_DATE AND g.SEQ=t.SEQ
+--      WHERE g.REQUEST_NO IS NOT NULL GROUP BY g.REQUEST_NO;
 --
 --   SELECT COUNT(*) FROM IQC_LOGS g
 --    WHERE g.ARRIVAL_NO IS NOT NULL
@@ -68,7 +73,11 @@ SELECT g.INSPECT_DATE, g.SEQ, l.ARRIVAL_NO, NVL(l.ARRIVAL_SEQ, 1), l.ITEM_CODE, 
    )
 /
 -- 백필 2) 입하단위 판정 — 그 입하번호+품목의 모든 입하 행
---         (백필 시점 검사의뢰 0건이라 과거 판정 범위가 전체임이 확정된다)
+--
+-- REQUEST_NO IS NULL 조건이 **필수**다. 검사의뢰 판정도 MAT_UID가 NULL이라,
+-- 이 조건이 없으면 의뢰 판정을 입하단위로 오인해 그 판정의 범위를 입하번호 전체로 덮어쓴다.
+-- 최초 백필 때는 검사의뢰가 0건이라 문제가 없었지만, 재실행 절차로 쓰는 순간 깨진다.
+-- (2026-09-18 실측: 배포 후 재실행에서 의뢰 판정 대상이 3행 → 50행으로 부풀었다. 복구함.)
 INSERT INTO IQC_LOG_TARGETS (INSPECT_DATE, SEQ, ARRIVAL_NO, ARRIVAL_SEQ, ITEM_CODE, MAT_UID, COMPANY, PLANT_CD)
 SELECT DISTINCT g.INSPECT_DATE, g.SEQ, a.ARRIVAL_NO, a.SEQ, a.ITEM_CODE, NULL, g.COMPANY, g.PLANT_CD
   FROM IQC_LOGS g
@@ -76,6 +85,7 @@ SELECT DISTINCT g.INSPECT_DATE, g.SEQ, a.ARRIVAL_NO, a.SEQ, a.ITEM_CODE, NULL, g
     ON a.ARRIVAL_NO = g.ARRIVAL_NO AND a.ITEM_CODE = g.ITEM_CODE
    AND a.COMPANY = g.COMPANY AND a.PLANT_CD = g.PLANT_CD
  WHERE g.MAT_UID IS NULL
+   AND g.REQUEST_NO IS NULL
    AND NOT EXISTS (
      SELECT 1 FROM IQC_LOG_TARGETS t
       WHERE t.INSPECT_DATE = g.INSPECT_DATE AND t.SEQ = g.SEQ
