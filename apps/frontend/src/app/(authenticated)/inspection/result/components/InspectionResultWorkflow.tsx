@@ -16,7 +16,8 @@ import SampleCheckModal from "./SampleCheckModal";
 import SampleCheckHistoryModal from "./SampleCheckHistoryModal";
 import { DailyInspectModal, WorkerInspectModal } from "@/components/inspect";
 import useInspectPrepStatus from "../hooks/useInspectPrepStatus";
-import useInspectPrepGuide from "../hooks/useInspectPrepGuide";
+import { usePrepGuide } from "@/components/shared/prep-guide";
+import { buildPrepGuideSteps } from "../hooks/prepGuideSteps";
 
 interface TesterEquip {
   equipCode: string;
@@ -181,11 +182,11 @@ export default function InspectionResultWorkflow({
   });
 
   /** 진입 안내 — 검사기→작업자→작업지시→점검→대조 순서로 유도하고, 끝나면 자동으로 닫힌다 */
-  const guide = useInspectPrepGuide({
-    hasEquip: Boolean(selectedEquipCode),
-    hasOrder: Boolean(selected),
-    prep,
-  });
+  const guideSteps = useMemo(
+    () => buildPrepGuideSteps({ hasEquip: Boolean(selectedEquipCode), hasOrder: Boolean(selected), prep }),
+    [selectedEquipCode, selected, prep],
+  );
+  const guide = usePrepGuide(guideSteps);
 
   const inspectContext = useMemo(() => ({
     equip: selectedEquipCode
@@ -214,10 +215,10 @@ export default function InspectionResultWorkflow({
             size="sm"
             onClick={guide.openGuide}
             data-testid="inspect-guide-open"
-            title={t("inspection.result.guide.reopen")}
+            title={t("prepGuide.reopen")}
           >
             <Sparkles className="w-4 h-4 mr-1 text-primary" />
-            {t("inspection.result.guide.reopen")}
+            {t("prepGuide.reopen")}
           </Button>
           <Button variant="secondary" size="sm" onClick={fetchOrders}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />

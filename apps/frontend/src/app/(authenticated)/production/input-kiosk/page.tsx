@@ -27,6 +27,9 @@ import WorkerSelectModal from '@/components/worker/WorkerSelectModal';
 import JobOrderSelectModal, { JobOrder } from '@/components/production/JobOrderSelectModal';
 import type { Worker } from '@/components/worker/WorkerSelector';
 import EquipHeader from './components/EquipHeader';
+import KioskPrepGuideModal from './components/KioskPrepGuideModal';
+import { usePrepGuide } from '@/components/shared/prep-guide';
+import { buildKioskPrepGuideSteps } from './utils/kioskPrepGuideSteps';
 import MaterialListPanel from './components/MaterialListPanel';
 import WorkInstructionView from './components/WorkInstructionView';
 import RoutingFlowBar from './components/RoutingFlowBar';
@@ -93,6 +96,8 @@ export default function InputKioskPage() {
 
   // 모달 상태
   const [isJobOrderOpen, setIsJobOrderOpen] = useState(false);
+  /** 설비 선택 모달 — 헤더와 준비 안내 모달이 같은 모달을 연다 */
+  const [isEquipSelectOpen, setIsEquipSelectOpen] = useState(false);
   const [isWorkerOpen, setIsWorkerOpen] = useState(false);
   const [isDailyInspectOpen, setIsDailyInspectOpen] = useState(false);
   const [isWorkerInspectOpen, setIsWorkerInspectOpen] = useState(false);
@@ -423,6 +428,18 @@ export default function InputKioskPage() {
 
   const allInterlockDone = isAllInterlockDone(interlock);
 
+  /** 진입 안내 — 설비→작업지시→작업자→점검→스캔 순서로 유도하고, 끝나면 자동으로 닫힌다 */
+  const workerNames = useMemo(() => selectedWorkers.map(w => w.workerName), [selectedWorkers]);
+  const guideSteps = useMemo(() => buildKioskPrepGuideSteps({
+    equipName: selectedEquip?.equipName ?? null,
+    orderNo: selectedJobOrder?.orderNo ?? null,
+    workerNames,
+    interlock,
+    dailyInspectAt,
+    workerInspectAt,
+  }), [selectedEquip?.equipName, selectedJobOrder?.orderNo, workerNames, interlock, dailyInspectAt, workerInspectAt]);
+  const guide = usePrepGuide(guideSteps);
+
   // 중물 알림/차단 임계값 (QC_SELF 공통코드)
   const qcSelfMap = useComCodeMap('QC_SELF');
   const midNotifyPct = Number(qcSelfMap['QC_MID_NOTIFY_PCT']?.codeDesc ?? 40);
@@ -516,6 +533,9 @@ export default function InputKioskPage() {
         stopElapsed={equipStop.stopElapsed}
         isCalling={equipStop.isCalling}
         callElapsed={equipStop.callElapsed}
+        equipSelectOpen={isEquipSelectOpen}
+        onEquipSelectOpenChange={setIsEquipSelectOpen}
+        onOpenGuide={guide.openGuide}
       />
 
       {/* ② ③ ④ 메인 3패널 */}
@@ -612,6 +632,22 @@ export default function InputKioskPage() {
       )}
 
       {/* ── 모달들 ── */}
+      <KioskPrepGuideModal
+        open={guide.open}
+        steps={guide.steps}
+        current={guide.current}
+        doneCount={guide.doneCount}
+        allReady={guide.allReady}
+        onClose={guide.closeGuide}
+        workerNames={workerNames}
+        onOpenEquipSelect={() => setIsEquipSelectOpen(true)}
+        onOpenJobOrder={() => setIsJobOrderOpen(true)}
+        onOpenWorker={() => setIsWorkerOpen(true)}
+        onOpenDailyInspect={() => setIsDailyInspectOpen(true)}
+        onOpenWorkerInspect={() => setIsWorkerInspectOpen(true)}
+        onOpenMaterialScan={() => setIsMaterialScanOpen(true)}
+        onOpenConsumableScan={() => setIsConsumableScanOpen(true)}
+      />
       <JobOrderSelectModal
         isOpen={isJobOrderOpen}
         onClose={() => setIsJobOrderOpen(false)}

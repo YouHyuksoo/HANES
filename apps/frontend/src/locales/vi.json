@@ -172,6 +172,17 @@
       "next": "Trang sau"
     }
   },
+  "prepGuide": {
+    "later": "Để sau",
+    "reopen": "Hướng dẫn chuẩn bị",
+    "allReady": "Đã sẵn sàng",
+    "progress": "Hoàn thành {{done}}/{{total}}",
+    "actionOpen": "Nhập {{step}}",
+    "notTarget": "Không áp dụng",
+    "doneLabel": "Xong",
+    "currentLabel": "Đang tiến hành",
+    "waitLabel": "Chờ"
+  },
   "help": {
     "title": "Trợ giúp",
     "tabUser": "Người dùng",
@@ -4120,7 +4131,14 @@
       "confirmMismatch": "Không khớp với nhãn đã phát hành.",
       "confirmSuccess": "Đã xác nhận lắp ráp.",
       "confirmFailed": "Xác nhận lắp ráp thất bại.",
-      "cancelIssue": "Hủy phát hành"
+      "cancelIssue": "Hủy phát hành",
+      "guide": {
+        "title": "Hướng dẫn chuẩn bị lắp ráp",
+        "subtitle": "Hoàn thành các bước dưới đây theo thứ tự để mở quét bán thành phẩm và phát hành nhãn thành phẩm.",
+        "allReadyDesc": "Mọi chuẩn bị đã xong. Quét mã vạch bán thành phẩm để bắt đầu lắp ráp.",
+        "hintEquip": "Chọn thiết bị lắp ráp. Thiết bị quyết định công đoạn, lệnh sản xuất và công nhân hiện tại được khôi phục.",
+        "hintJobOrder": "Chọn lệnh sản xuất thành phẩm thuộc công đoạn của thiết bị này. Cũng có thể quét số lệnh."
+      }
     },
     "equipMaterial": {
       "mountTitle": "Gắn vật tư thiết bị (Liên tục)",
@@ -4813,11 +4831,7 @@
       "guide": {
         "title": "Hướng dẫn chuẩn bị kiểm tra",
         "subtitle": "Hoàn thành các bước dưới đây theo thứ tự để mở phán định ĐẠT/KHÔNG ĐẠT.",
-        "later": "Để sau",
-        "reopen": "Hướng dẫn chuẩn bị",
-        "allReady": "Sẵn sàng kiểm tra",
         "allReadyDesc": "Mọi chuẩn bị đã xong. Quét mã vạch sản phẩm để bắt đầu kiểm tra.",
-        "progress": "Hoàn thành {{done}}/{{total}}",
         "stepEquip": "Chọn máy kiểm tra",
         "stepWorker": "Chọn công nhân",
         "stepOrder": "Chọn lệnh sản xuất",
@@ -4830,12 +4844,7 @@
         "hintDaily": "Hôm nay chưa có kiểm tra thiết bị hằng ngày. Nhập các hạng mục và đạt phán định tổng OK.",
         "hintWorkerInspect": "Công nhân trực tiếp kiểm tra máy và đăng ký kết quả.",
         "hintSampleCheck": "Quét mã vạch mẫu giới hạn (OK/NG master) để đối chiếu máy kiểm tra phán định đúng.",
-        "actionOpen": "Nhập {{step}}",
         "searchOrder": "Tìm số lệnh / sản phẩm",
-        "notTarget": "Không áp dụng",
-        "doneLabel": "Xong",
-        "currentLabel": "Đang tiến hành",
-        "waitLabel": "Chờ",
         "noTesters": "Chưa có máy kiểm tra (TESTER) nào được đăng ký. Kiểm tra dữ liệu thiết bị."
       },
       "sampleCheck": {
@@ -9854,6 +9863,25 @@
       "workerInspectAssignStep3": "Chọn loại kiểm tra là Kiểm tra thiết bị của công nhân (WORKER).",
       "workerInspectAssignStep4": "Nhấn nút Thêm hạng mục kiểm tra, chọn các hạng mục cần thiết và lưu.",
       "workerInspectAssignStep5": "Đóng và mở lại hộp thoại này để xem các hạng mục đã phân."
+    },
+    "guide": {
+      "title": "Hướng dẫn chuẩn bị làm việc",
+      "subtitle": "Hoàn thành các bước dưới đây theo thứ tự để mở nhập kết quả.",
+      "allReadyDesc": "Mọi chuẩn bị đã xong. Hãy nhập kết quả sản xuất.",
+      "stepEquip": "Chọn thiết bị",
+      "stepJobOrder": "Chọn lệnh sản xuất",
+      "stepWorker": "Chọn công nhân",
+      "stepDaily": "Kiểm tra thiết bị hằng ngày",
+      "stepWorkerInspect": "Công nhân kiểm tra thiết bị",
+      "stepMaterialScan": "Quét vật tư",
+      "stepConsumableScan": "Quét vật tư tiêu hao",
+      "hintEquip": "Chọn thiết bị sẽ ghi nhận kết quả. Lệnh sản xuất và công nhân hiện tại của thiết bị được khôi phục.",
+      "hintJobOrder": "Chọn lệnh sản xuất sẽ chạy trên thiết bị này. Khi chọn sẽ được gán cho thiết bị.",
+      "hintWorker": "Thêm ít nhất một công nhân cho thiết bị.",
+      "hintDaily": "Hôm nay chưa có kiểm tra thiết bị hằng ngày. Nhập các hạng mục và đạt phán định tổng OK.",
+      "hintWorkerInspect": "Công nhân trực tiếp kiểm tra thiết bị và đăng ký kết quả.",
+      "hintMaterialScan": "Quét mã vạch vật tư BOM để lắp vào thiết bị. Hoàn thành khi mọi hạng mục yêu cầu đã lắp.",
+      "hintConsumableScan": "Quét mã vạch phụ tùng tiêu hao để lắp. Nếu không có đối tượng thì hoàn thành ngay."
     },
     "workerInspect": {
       "check1": "Nguồn thiết bị và thiết bị an toàn hoạt động bình thường",

@@ -172,6 +172,17 @@
       "next": "다음 페이지"
     }
   },
+  "prepGuide": {
+    "later": "나중에 하기",
+    "reopen": "준비 안내",
+    "allReady": "준비 완료",
+    "progress": "{{done}}/{{total}} 완료",
+    "actionOpen": "{{step}} 입력하기",
+    "notTarget": "대상 없음",
+    "doneLabel": "완료",
+    "currentLabel": "진행 중",
+    "waitLabel": "대기"
+  },
   "help": {
     "title": "도움말",
     "tabUser": "사용자",
@@ -4672,7 +4683,14 @@
       "confirmMismatch": "발행된 라벨과 일치하지 않습니다.",
       "confirmSuccess": "조립이 확정되었습니다.",
       "confirmFailed": "조립 확정에 실패했습니다.",
-      "cancelIssue": "발행 취소"
+      "cancelIssue": "발행 취소",
+      "guide": {
+        "title": "조립 준비 안내",
+        "subtitle": "아래 순서대로 준비를 마치면 반제품 스캔과 완제품 라벨 발행이 열립니다.",
+        "allReadyDesc": "모든 준비가 끝났습니다. 반제품 바코드를 스캔해 조립을 시작하세요.",
+        "hintEquip": "조립 설비를 고르세요. 설비가 공정을 결정하고, 설비의 현재 작업지시·작업자가 함께 복원됩니다.",
+        "hintJobOrder": "이 설비 공정에 내려진 완제품 작업지시를 고르세요. 작업지시번호를 스캔해도 됩니다."
+      }
     },
     "equipMaterial": {
       "mountTitle": "설비 자재 장착 (지속)",
@@ -5365,11 +5383,7 @@
       "guide": {
         "title": "검사 준비 안내",
         "subtitle": "아래 순서대로 준비를 마치면 합격·불합격 판정이 열립니다.",
-        "later": "나중에 하기",
-        "reopen": "준비 안내",
-        "allReady": "검사 준비 완료",
         "allReadyDesc": "모든 준비가 끝났습니다. 제품 바코드를 스캔해 검사를 시작하세요.",
-        "progress": "{{done}}/{{total}} 완료",
         "stepEquip": "검사기 선택",
         "stepWorker": "작업자 선택",
         "stepOrder": "작업지시 선택",
@@ -5382,12 +5396,7 @@
         "hintDaily": "오늘 아직 설비일상점검이 없습니다. 점검 항목을 입력하고 종합판정 OK를 받으세요.",
         "hintWorkerInspect": "작업자가 검사기를 직접 점검하고 결과를 등록하세요.",
         "hintSampleCheck": "한도견본(양/불 마스터) 바코드를 스캔해 검사기가 정상 판정하는지 대조하세요.",
-        "actionOpen": "{{step}} 입력하기",
         "searchOrder": "작업지시번호·품목 검색",
-        "notTarget": "대상 없음",
-        "doneLabel": "완료",
-        "currentLabel": "진행 중",
-        "waitLabel": "대기",
         "noTesters": "등록된 검사기(TESTER)가 없습니다. 설비 기준정보를 확인하세요."
       },
       "sampleCheck": {
@@ -9894,6 +9903,25 @@
       "workerInspectAssignStep3": "점검유형을 작업자점검 또는 작업자설비점검(WORKER)으로 선택합니다.",
       "workerInspectAssignStep4": "점검항목 추가 버튼을 눌러 필요한 항목을 선택하고 저장합니다.",
       "workerInspectAssignStep5": "이 모달을 닫았다가 다시 열면 배정된 항목이 표시됩니다."
+    },
+    "guide": {
+      "title": "작업 준비 안내",
+      "subtitle": "아래 순서대로 준비를 마치면 실적 입력이 열립니다.",
+      "allReadyDesc": "모든 준비가 끝났습니다. 실적을 입력하세요.",
+      "stepEquip": "설비 선택",
+      "stepJobOrder": "작업지시 선택",
+      "stepWorker": "작업자 선택",
+      "stepDaily": "설비일상점검",
+      "stepWorkerInspect": "작업자설비점검",
+      "stepMaterialScan": "자재 스캔",
+      "stepConsumableScan": "소모품 스캔",
+      "hintEquip": "실적을 기록할 설비를 고르세요. 설비의 현재 작업지시·작업자가 함께 복원됩니다.",
+      "hintJobOrder": "이 설비에서 진행할 작업지시를 고르세요. 선택하면 설비에 할당됩니다.",
+      "hintWorker": "설비에 배정할 작업자를 1명 이상 추가하세요.",
+      "hintDaily": "오늘 아직 설비일상점검이 없습니다. 점검 항목을 입력하고 종합판정 OK를 받으세요.",
+      "hintWorkerInspect": "작업자가 설비를 직접 점검하고 결과를 등록하세요.",
+      "hintMaterialScan": "BOM 자재 바코드를 스캔해 설비에 장착하세요. 요구 품목이 모두 장착되면 완료됩니다.",
+      "hintConsumableScan": "소모성 설비부품 바코드를 스캔해 장착하세요. 대상이 없으면 바로 완료됩니다."
     },
     "workerInspect": {
       "check1": "설비 전원 및 안전장치 정상 여부",

@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle, ChevronDown, ClipboardList, Cpu,
   Maximize2, Minimize2, UserPlus, X, CheckCircle, Square, BellRing,
-  ShieldCheck, UserCheck, Pencil, Search,
+  ShieldCheck, UserCheck, Pencil, Search, Sparkles,
 } from 'lucide-react';
 import { useKioskStore } from '@/stores/kioskStore';
 import EquipSelectModal from './EquipSelectModal';
@@ -50,6 +50,14 @@ interface EquipHeaderProps {
   isCalling?: boolean;
   /** 호출 대기 경과초 (서버 기준) */
   callElapsed?: number;
+  /**
+   * 설비 선택 모달 열림을 부모가 제어할 때 넘긴다(준비 안내 모달이 같은 모달을 열기 위해).
+   * 넘기지 않으면 헤더가 스스로 관리한다.
+   */
+  equipSelectOpen?: boolean;
+  onEquipSelectOpenChange?: (open: boolean) => void;
+  /** 준비 안내 다시 열기 */
+  onOpenGuide?: () => void;
 }
 
 export default function EquipHeader({
@@ -60,11 +68,18 @@ export default function EquipHeader({
   onOpenEquipStop, onOpenManagerCall,
   isStopped = false, stopElapsed = 0,
   isCalling = false, callElapsed = 0,
+  equipSelectOpen, onEquipSelectOpenChange, onOpenGuide,
 }: EquipHeaderProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isEquipModalOpen, setIsEquipModalOpen] = useState(false);
+  const [internalEquipOpen, setInternalEquipOpen] = useState(false);
+  /** controlled(부모 제어) 우선, 아니면 내부 상태 */
+  const isEquipModalOpen = equipSelectOpen ?? internalEquipOpen;
+  const setIsEquipModalOpen = useCallback((open: boolean) => {
+    if (onEquipSelectOpenChange) onEquipSelectOpenChange(open);
+    else setInternalEquipOpen(open);
+  }, [onEquipSelectOpenChange]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const {
     selectedEquip, selectedJobOrder, selectedWorkers, interlock, savedResultCount,
@@ -322,6 +337,21 @@ export default function EquipHeader({
               )}
             </button>
           </div>
+
+          {/* 준비 안내 다시 열기 — Row1 축약 규칙: 2xl 미만은 아이콘만, 2xl 이상은 라벨까지 */}
+          {onOpenGuide && (
+            <button
+              type="button"
+              data-testid="kiosk-guide-open"
+              onClick={onOpenGuide}
+              title={t('prepGuide.reopen', '준비 안내')}
+              aria-label={t('prepGuide.reopen', '준비 안내')}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-background text-primary transition-colors hover:border-primary 2xl:w-auto 2xl:px-3"
+            >
+              <Sparkles className="h-4 w-4 shrink-0" />
+              <span className="hidden whitespace-nowrap text-sm font-bold 2xl:inline">{t('prepGuide.reopen', '준비 안내')}</span>
+            </button>
+          )}
 
           {/* 전체화면 */}
           <button

@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { Cpu, ChevronDown, Maximize2, Minimize2, RefreshCw, Scan, Search, UserRound } from "lucide-react";
+import { Cpu, ChevronDown, Maximize2, Minimize2, RefreshCw, Scan, Search, Sparkles, UserRound } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BarcodeScanInput } from "@/components/shared";
 import { Button } from "@/components/ui";
@@ -14,6 +14,9 @@ import EquipMaterialMountPanel from "./components/EquipMaterialMountPanel";
 import SgScanPanel from "./components/SgScanPanel";
 import { useAssemblyScanSession, type AssemblySgLabel } from "./hooks/useAssemblyScanSession";
 import AssemblyActionBar from "./components/AssemblyActionBar";
+import AssemblyPrepGuideModal from "./components/AssemblyPrepGuideModal";
+import { usePrepGuide } from "@/components/shared/prep-guide";
+import { buildAssemblyPrepGuideSteps } from "./assemblyPrepGuideSteps";
 import WorkInstructionView from "../input-kiosk/components/WorkInstructionView";
 import EquipSelectModal from "../input-kiosk/components/EquipSelectModal";
 import FgLabelPrintHost, { type FgLabelPrintHandle } from "../input-kiosk/components/FgLabelPrintHost";
@@ -359,6 +362,20 @@ export default function InputAssemblyPage() {
     setSgList((prev) => prev.filter((item) => item.sgBarcode !== sgBarcode));
   }, []);
 
+  /** 진입 안내 — 설비→작업지시→작업자→점검 순서로 유도하고, 끝나면 자동으로 닫힌다 */
+  const workerNames = useMemo(() => selectedWorkers.map((w) => w.workerName), [selectedWorkers]);
+  const guideSteps = useMemo(() => buildAssemblyPrepGuideSteps({
+    equipName: equipName || null,
+    orderNo: selectedOrder?.orderNo ?? null,
+    workerNames,
+    interlock,
+    dailyInspectRequired,
+    workerInspectRequired,
+    dailyInspectResult,
+    workerInspectResult,
+  }), [equipName, selectedOrder?.orderNo, workerNames, interlock, dailyInspectRequired, workerInspectRequired, dailyInspectResult, workerInspectResult]);
+  const guide = usePrepGuide(guideSteps);
+
   const canIssue =
     !!selectedOrder && !!processCode && !!equipCode && sgReady && !issuedFg && !issuing && !confirming
     && (!dailyInspectRequired || interlock.dailyInspectDone)
@@ -528,8 +545,9 @@ export default function InputAssemblyPage() {
               </button>
             </div>
 
-            {/* 2) 작업지시 — 설비 선택 후 활성화. 선택 설비의 공정에 내려진 작업지시만 조회. */}
-            <div className="min-w-[200px] flex-1">
+            {/* 2) 작업지시 — 설비 선택 후 활성화. 선택 설비의 공정에 내려진 작업지시만 조회.
+                flex-1로 남는 폭을 다 차지하면 넓은 화면에서 스캔칸만 길어져 눈에 띄지 않는다(2026-09-19 지적). 고정폭으로 둔다. */}
+            <div className="w-80 shrink-0">
               {selectedOrder ? (
                 <div className="flex h-11 min-w-0 items-center justify-between gap-2 rounded-lg border border-border bg-card px-3">
                   <div className="min-w-0 flex-1 truncate text-sm">
@@ -576,7 +594,7 @@ export default function InputAssemblyPage() {
                 </div>
               )}
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="ml-auto flex shrink-0 items-center gap-2">
               <div className="flex h-11 max-w-52 shrink-0 items-center rounded-lg border border-border bg-card px-3">
               <Button className="!h-7 min-w-0 !rounded !px-2.5 !text-xs [&>span]:truncate" size="sm" onClick={() => setWorkerModalOpen(true)} disabled={!equipCode || contextLocked} leftIcon={<UserRound className="h-4 w-4" />}>
                 <span className="truncate">{selectedWorkers.length > 0 ? `${selectedWorkers[0].workerName}${selectedWorkers.length > 1 ? ` 외 ${selectedWorkers.length - 1}` : ''}` : '작업자 선택'}</span>
@@ -602,6 +620,17 @@ export default function InputAssemblyPage() {
                 onInput={() => setWorkerInspectOpen(true)}
                 wide
               />
+              <button
+                type="button"
+                data-testid="assembly-guide-open"
+                onClick={guide.openGuide}
+                title={t("prepGuide.reopen", "준비 안내")}
+                aria-label={t("prepGuide.reopen", "준비 안내")}
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-background text-primary transition-colors hover:border-primary 2xl:w-auto 2xl:px-3"
+              >
+                <Sparkles className="h-4 w-4 shrink-0" />
+                <span className="hidden whitespace-nowrap text-sm font-bold 2xl:inline">{t("prepGuide.reopen", "준비 안내")}</span>
+              </button>
               <button
                 type="button"
                 onClick={resetAll}
@@ -675,6 +704,21 @@ export default function InputAssemblyPage() {
           onResetIssued={onResetIssued}
         />
       </div>
+
+      <AssemblyPrepGuideModal
+        open={guide.open}
+        steps={guide.steps}
+        current={guide.current}
+        doneCount={guide.doneCount}
+        allReady={guide.allReady}
+        onClose={guide.closeGuide}
+        workerNames={workerNames}
+        onOpenEquipSelect={() => setEquipModalOpen(true)}
+        onOpenJobOrder={() => setOrderSearchOpen(true)}
+        onOpenWorker={() => setWorkerModalOpen(true)}
+        onOpenDailyInspect={() => setDailyInspectOpen(true)}
+        onOpenWorkerInspect={() => setWorkerInspectOpen(true)}
+      />
 
       {/* 작업지시 선택 모달 — 공용 모달. 선택 공정 + FINISHED 조회조건. */}
       <JobOrderSelectModal

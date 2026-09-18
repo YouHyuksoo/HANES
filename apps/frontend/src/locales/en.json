@@ -172,6 +172,17 @@
       "next": "Next page"
     }
   },
+  "prepGuide": {
+    "later": "Do it later",
+    "reopen": "Setup guide",
+    "allReady": "All set",
+    "progress": "{{done}}/{{total}} done",
+    "actionOpen": "Open {{step}}",
+    "notTarget": "Not required",
+    "doneLabel": "Done",
+    "currentLabel": "In progress",
+    "waitLabel": "Waiting"
+  },
   "help": {
     "title": "Help",
     "tabUser": "User",
@@ -4138,7 +4149,14 @@
       "confirmMismatch": "Does not match the issued label.",
       "confirmSuccess": "Assembly confirmed.",
       "confirmFailed": "Failed to confirm assembly.",
-      "cancelIssue": "Cancel Issue"
+      "cancelIssue": "Cancel Issue",
+      "guide": {
+        "title": "Assembly Setup Guide",
+        "subtitle": "Complete the steps below in order to unlock SFG scanning and FG label issue.",
+        "allReadyDesc": "All preparation is done. Scan SFG barcodes to start assembly.",
+        "hintEquip": "Choose the assembly equipment. It determines the process, and its current job order and workers are restored.",
+        "hintJobOrder": "Choose a finished-goods job order for this equipment's process. Scanning the order number also works."
+      }
     },
     "equipMaterial": {
       "mountTitle": "Equipment Material Mount (Persistent)",
@@ -4831,11 +4849,7 @@
       "guide": {
         "title": "Inspection Setup Guide",
         "subtitle": "Complete the steps below in order to unlock PASS/FAIL judgment.",
-        "later": "Do it later",
-        "reopen": "Setup guide",
-        "allReady": "Ready to inspect",
         "allReadyDesc": "All preparation is done. Scan a product barcode to start inspection.",
-        "progress": "{{done}}/{{total}} done",
         "stepEquip": "Select tester",
         "stepWorker": "Select worker",
         "stepOrder": "Select job order",
@@ -4848,12 +4862,7 @@
         "hintDaily": "No daily equipment check today yet. Enter the check items and get an overall OK.",
         "hintWorkerInspect": "The worker checks the tester directly and registers the result.",
         "hintSampleCheck": "Scan the limit sample (OK/NG master) barcodes to verify the tester judges correctly.",
-        "actionOpen": "Open {{step}}",
         "searchOrder": "Search order no. / item",
-        "notTarget": "Not required",
-        "doneLabel": "Done",
-        "currentLabel": "In progress",
-        "waitLabel": "Waiting",
         "noTesters": "No tester equipment registered. Check equipment master data."
       },
       "sampleCheck": {
@@ -9872,6 +9881,25 @@
       "workerInspectAssignStep3": "Set the inspection type to Worker Equipment Inspection (WORKER).",
       "workerInspectAssignStep4": "Click Add Inspection Item, select the needed items, and save.",
       "workerInspectAssignStep5": "Close and reopen this dialog to see the assigned items."
+    },
+    "guide": {
+      "title": "Work Setup Guide",
+      "subtitle": "Complete the steps below in order to unlock result entry.",
+      "allReadyDesc": "All preparation is done. Enter production results.",
+      "stepEquip": "Select equipment",
+      "stepJobOrder": "Select job order",
+      "stepWorker": "Select worker",
+      "stepDaily": "Daily equipment check",
+      "stepWorkerInspect": "Worker equipment check",
+      "stepMaterialScan": "Material scan",
+      "stepConsumableScan": "Consumable scan",
+      "hintEquip": "Choose the equipment that will record results. Its current job order and workers are restored.",
+      "hintJobOrder": "Choose the job order to run on this equipment. It is assigned to the equipment on selection.",
+      "hintWorker": "Add at least one worker to the equipment.",
+      "hintDaily": "No daily equipment check today yet. Enter the check items and get an overall OK.",
+      "hintWorkerInspect": "The worker checks the equipment directly and registers the result.",
+      "hintMaterialScan": "Scan BOM material barcodes to mount them. Done when all required items are mounted.",
+      "hintConsumableScan": "Scan consumable part barcodes to mount them. Done immediately if none are required."
     },
     "workerInspect": {
       "check1": "Equipment power and safety devices normal",
