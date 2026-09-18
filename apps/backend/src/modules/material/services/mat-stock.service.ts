@@ -17,7 +17,10 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
-import { StockQueryDto, StockAdjustDto, StockTransferDto } from '../dto/mat-stock.dto';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
+import { StockTransaction } from '../../../entities/stock-transaction.entity';
+import { NumberingService } from '../../../shared/numbering.service';
+import { StockQueryDto, StockAdjustDto, StockTransferDto, StockAssignLocationDto } from '../dto/mat-stock.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { isMatLotIssuable } from '@harness/shared';
@@ -40,8 +43,11 @@ export class MatStockService {
     private readonly invAdjLogRepository: Repository<InvAdjLog>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
+    @InjectRepository(WarehouseLocation)
+    private readonly warehouseLocationRepository: Repository<WarehouseLocation>,
     private readonly dataSource: DataSource,
     private readonly tx: TransactionService,
+    private readonly numbering: NumberingService,
     private readonly sysConfigService: SysConfigService,
   ) {}
 
@@ -59,6 +65,22 @@ export class MatStockService {
       qb.andWhere('"QTY" >= :stockDelta AND "AVAILABLE_QTY" >= :stockDelta');
     }
     return qb.setParameters({ stockDelta: Math.abs(delta) }).execute();
+  }
+
+  /**
+   * 보관위치 명칭 맵 — 정본은 /master/warehouse 의 로케이션 기준정보다.
+   * 키는 복합 PK 그대로(창고코드 + 로케이션코드) — 로케이션코드는 창고별로 중복될 수 있다.
+   */
+  private async loadLocationNameMap(
+    stocks: Array<{ warehouseCode: string; locationCode?: string | null }>,
+    tenantWhere: Record<string, string>,
+  ): Promise<Map<string, string>> {
+    const codes = [...new Set(stocks.map((s) => s.locationCode).filter(Boolean))] as string[];
+    if (codes.length === 0) return new Map();
+    const locations = await this.warehouseLocationRepository.find({
+      where: { locationCode: In(codes), ...tenantWhere },
+    });
+    return new Map(locations.map((l) => [`${l.warehouseCode}|${l.locationCode}`, l.locationName]));
   }
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -177,6 +199,7 @@ export class MatStockService {
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
     const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w.warehouseName]));
+    const locationNameMap = await this.loadLocationNameMap(data, tenantWhere);
 
     // 공급사(업체명) 매핑: lots의 vendor 코드 = PARTNER_MASTERS.partnerCode
     const vendorCodes = [...new Set(lots.map((l) => l.vendor).filter(Boolean))];
@@ -212,6 +235,9 @@ export class MatStockService {
       return {
         ...stock,
         warehouseName: warehouseMap.get(stock.warehouseCode) || stock.warehouseCode,
+        locationName: stock.locationCode
+          ? (locationNameMap.get(`${stock.warehouseCode}|${stock.locationCode}`) ?? stock.locationCode)
+          : null,
         itemCode: stock.itemCode,
         itemName: part?.itemName ?? null,
         unit: part?.unit ?? null,
@@ -280,12 +306,19 @@ export class MatStockService {
       ...(company ? { company } : {}),
       ...(plant ? { plant } : {}),
     };
-    const [lots, parts] = await Promise.all([
+    const warehouseCodes = [...new Set(stocks.map((s) => s.warehouseCode).filter(Boolean))];
+    const [lots, parts, warehouses] = await Promise.all([
       matUids.length > 0 ? this.matLotRepository.find({ where: { matUid: In(matUids), ...tenantWhere } }) : Promise.resolve([]),
       itemCodes.length > 0 ? this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...tenantWhere } }) : Promise.resolve([]),
+      warehouseCodes.length > 0
+        ? this.warehouseRepository.find({ where: { warehouseCode: In(warehouseCodes), ...tenantWhere } })
+        : Promise.resolve([]),
     ]);
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
+    // 배분 그리드가 창고코드 대신 사람이 읽는 이름을 보여주도록 목록 조회(findAll)와 같은 방식으로 매핑한다.
+    const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w.warehouseName]));
+    const locationNameMap = await this.loadLocationNameMap(stocks, tenantWhere);
 
     let result = stocks.map((stock) => {
       const lot = stock.matUid ? lotMap.get(stock.matUid) : null;
@@ -294,6 +327,10 @@ export class MatStockService {
         ...stock,
         itemCode: stock.itemCode, itemName: part?.itemName ?? null,
         unit: part?.unit ?? null, matUid: stock.matUid,
+        warehouseName: warehouseMap.get(stock.warehouseCode) || stock.warehouseCode,
+        locationName: stock.locationCode
+          ? (locationNameMap.get(`${stock.warehouseCode}|${stock.locationCode}`) ?? stock.locationCode)
+          : null,
         recvDate: lot?.recvDate ?? null,
         // 프론트가 "어떤 날짜로 정렬됐는지"를 추측하지 않도록 기준과 두 날짜를 모두 내려준다
         manufactureDate: lot?.manufactureDate ?? null,
@@ -519,6 +556,76 @@ export class MatStockService {
       }
 
       return { fromStock, toStock };
+    });
+  }
+
+  /**
+   * PDA 창고랙 지정 — 스캔한 랙(LOCATION_CODE)으로 재고의 보관위치를 바꾼다.
+   *
+   * 품목마스터의 고정위치는 입고 시 기본값이고, 이 기능으로 변동 위치를 지정한다.
+   * 랙은 /master/warehouse 로케이션 기준정보에 있어야 하고, 재고의 창고와 같아야 한다.
+   * 수량 변화는 없지만 위치가 바뀜다는 사실은 STOCK_TRANSACTIONS 에 남긴다.
+   */
+  async assignLocation(dto: StockAssignLocationDto, company?: string, plant?: string) {
+    const { matUid, locationCode, workerCode, remark } = dto;
+    const tenantWhere = this.tenantWhere(company, plant);
+
+    return this.tx.run(async (queryRunner) => {
+      const stock = await queryRunner.manager.findOne(MatStock, {
+        where: { matUid, ...tenantWhere },
+      });
+      if (!stock) {
+        throw new NotFoundException(`재고를 찾을 수 없습니다: ${matUid}`);
+      }
+      this.assertSameTenant('보관위치 지정 대상 재고', { company, plant }, stock);
+
+      const location = await queryRunner.manager.findOne(WarehouseLocation, {
+        where: { warehouseCode: stock.warehouseCode, locationCode, ...tenantWhere },
+      });
+      if (!location) {
+        throw new BadRequestException(
+          `창고 ${stock.warehouseCode} 에 등록되지 않은 로케이션입니다: ${locationCode}`,
+        );
+      }
+
+      const previousLocationCode = stock.locationCode ?? null;
+      if (previousLocationCode === locationCode) {
+        return { matUid, warehouseCode: stock.warehouseCode, locationCode, locationName: location.locationName, changed: false };
+      }
+
+      await queryRunner.manager.update(
+        MatStock,
+        { warehouseCode: stock.warehouseCode, itemCode: stock.itemCode, matUid: stock.matUid, ...tenantWhere },
+        { locationCode },
+      );
+
+      const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
+      await queryRunner.manager.save(StockTransaction, {
+        transNo,
+        transType: 'MAT_MOVE',
+        transDate: new Date(),
+        fromWarehouseId: stock.warehouseCode,
+        toWarehouseId: stock.warehouseCode,
+        itemCode: stock.itemCode,
+        matUid: stock.matUid,
+        qty: stock.qty,
+        refType: 'LOCATION_ASSIGN',
+        refId: locationCode,
+        workerCode: workerCode ?? null,
+        remark: remark?.trim() || `보관위치 지정: ${previousLocationCode ?? '미지정'} → ${locationCode}`,
+        status: 'DONE',
+        company: stock.company,
+        plant: stock.plant,
+      });
+
+      return {
+        matUid,
+        warehouseCode: stock.warehouseCode,
+        previousLocationCode,
+        locationCode,
+        locationName: location.locationName,
+        changed: true,
+      };
     });
   }
 }

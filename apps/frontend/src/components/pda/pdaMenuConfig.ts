@@ -22,7 +22,7 @@ import {
   Download,
   Upload,
   Settings2,
-  FileSearch,
+  FileSearch, MapPin,
   type LucideIcon,
 } from "lucide-react";
 
@@ -142,6 +142,15 @@ export const pdaMaterialSubMenuItems: PdaMenuItem[] = [
     borderClass: "border-cyan-200 dark:border-cyan-800",
     iconColorClass: "text-cyan-600 dark:text-cyan-400",
     menuCode: "PDA_MAT_INV_COUNT",
+  },
+  {
+    // 창고랙 지정 — 품목 고정위치 대신 변동 보관위치를 지정한다
+    labelKey: "pda.menu.rackAssign",
+    path: "/pda/material/rack-assign",
+    icon: MapPin,
+    borderClass: "border-amber-200 dark:border-amber-800",
+    iconColorClass: "text-amber-600 dark:text-amber-400",
+    menuCode: "PDA_MAT_RACK_ASSIGN",
   },
 ];
 

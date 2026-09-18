@@ -101,3 +101,27 @@ export class StockTransferDto {
   @IsString()
   matUid?: string;
 }
+
+/**
+ * PDA 창고랙 지정 — 스캔한 랙(LOCATION_CODE)에 자재 시리얼을 지정한다.
+ * 랙 바코드는 WAREHOUSE_LOCATIONS.LOCATION_CODE 그대로 사용한다.
+ */
+export class StockAssignLocationDto {
+  @ApiProperty({ description: '자재 시리얼(MAT_UID)' })
+  @IsString()
+  matUid: string;
+
+  @ApiProperty({ description: '로케이션(랙) 코드' })
+  @IsString()
+  locationCode: string;
+
+  @ApiPropertyOptional({ description: '작업자 코드' })
+  @IsOptional()
+  @IsString()
+  workerCode?: string;
+
+  @ApiPropertyOptional({ description: '비고' })
+  @IsOptional()
+  @IsString()
+  remark?: string;
+}

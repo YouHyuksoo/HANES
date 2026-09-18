@@ -13,6 +13,7 @@
  * - PDA_MAT_ISSUING    : 자재 불출
  * - PDA_MAT_ADJUSTMENT : 자재 조정
  * - PDA_MAT_INV_COUNT  : 자재 재고실사
+ * - PDA_MAT_RACK_ASSIGN: 창고랙 지정
  * - PDA_SHIPPING       : 출하
  * - PDA_EQUIP_INSPECT  : 설비 점검
  * - PDA_PRODUCT_INV_COUNT : 제품 재고실사

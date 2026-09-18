@@ -6,7 +6,7 @@
 import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { MatStockService } from '../services/mat-stock.service';
-import { StockQueryDto, StockAdjustDto, StockTransferDto } from '../dto/mat-stock.dto';
+import { StockQueryDto, StockAdjustDto, StockTransferDto, StockAssignLocationDto } from '../dto/mat-stock.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 import { Company, Plant } from '../../../common/decorators/tenant.decorator';
 
@@ -56,5 +56,16 @@ export class MatStockController {
   async transfer(@Body() dto: StockTransferDto, @Company() company: string, @Plant() plant: string) {
     const data = await this.matStockService.transferStock(dto, company, plant);
     return ResponseUtil.success(data, '재고가 이동되었습니다.');
+  }
+
+  @Post('assign-location')
+  @ApiOperation({ summary: '보관위치 지정 (PDA 창고랙 스캔)' })
+  async assignLocation(
+    @Body() dto: StockAssignLocationDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.matStockService.assignLocation(dto, company, plant);
+    return ResponseUtil.success(data, '보관위치가 지정되었습니다.');
   }
 }

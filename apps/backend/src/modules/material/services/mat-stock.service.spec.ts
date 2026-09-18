@@ -10,7 +10,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Repository, DataSource, QueryRunner, MoreThan } from 'typeorm';
 import { MatStockService } from './mat-stock.service';
 import { MatStock } from '../../../entities/mat-stock.entity';
@@ -19,6 +19,9 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
+import { StockTransaction } from '../../../entities/stock-transaction.entity';
+import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -31,9 +34,11 @@ describe('MatStockService', () => {
   let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockInvAdjLogRepo: DeepMocked<Repository<InvAdjLog>>;
   let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
+  let mockWarehouseLocationRepo: DeepMocked<Repository<WarehouseLocation>>;
   let mockDataSource: DeepMocked<DataSource>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockTx: DeepMocked<TransactionService>;
+  let mockNumbering: DeepMocked<NumberingService>;
   let mockSysConfig: DeepMocked<SysConfigService>;
   let stockQb: any;
 
@@ -76,9 +81,12 @@ describe('MatStockService', () => {
     mockPartnerMasterRepo.find.mockResolvedValue([]);
     mockInvAdjLogRepo = createMock<Repository<InvAdjLog>>();
     mockWarehouseRepo = createMock<Repository<Warehouse>>();
+    mockWarehouseLocationRepo = createMock<Repository<WarehouseLocation>>();
     mockDataSource = createMock<DataSource>();
     mockQueryRunner = createMock<QueryRunner>();
     mockTx = createMock<TransactionService>();
+    mockNumbering = createMock<NumberingService>();
+    mockNumbering.nextInTx.mockResolvedValue('TX-0001');
     mockSysConfig = createMock<SysConfigService>();
     // 실 DB(company 40 / plant 1000) 기본값은 RCV_DATE 계열이 아니라 MFG_DATE 지만,
     // 키가 없을 때의 정규화 기본(RECEIVE_DATE)이 기존 계약이라 여기서는 null 을 돌려준다.
@@ -106,8 +114,10 @@ describe('MatStockService', () => {
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
         { provide: getRepositoryToken(InvAdjLog), useValue: mockInvAdjLogRepo },
         { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
+        { provide: getRepositoryToken(WarehouseLocation), useValue: mockWarehouseLocationRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
+        { provide: NumberingService, useValue: mockNumbering },
         { provide: SysConfigService, useValue: mockSysConfig },
       ],
     })
@@ -123,6 +133,21 @@ describe('MatStockService', () => {
 
   // ─── findAll ───
   describe('findAll', () => {
+    it('목록에도 보관위치 명칭을 내려준다', async () => {
+      mockMatStockRepo.find.mockResolvedValue([createStock({ locationCode: 'A-01-03' })]);
+      mockMatStockRepo.count.mockResolvedValue(1);
+      mockMatLotRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+      mockWarehouseRepo.find.mockResolvedValue([]);
+      mockWarehouseLocationRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', locationCode: 'A-01-03', locationName: 'A구역 1열 3단' } as WarehouseLocation,
+      ]);
+
+      const result = await target.findAll({ page: 1, limit: 10 });
+
+      expect(result.data[0].locationName).toBe('A구역 1열 3단');
+    });
+
     it('페이지네이션과 함께 재고 목록을 반환한다', async () => {
       const stock = createStock();
       mockMatStockRepo.find.mockResolvedValue([stock]);
@@ -260,6 +285,53 @@ describe('MatStockService', () => {
       const result = await target.findAvailable({ page: 1, limit: 10 });
 
       expect(result.data).toHaveLength(1);
+    });
+
+    it('보관위치(창고명·로케이션)를 함께 내려준다', async () => {
+      // 출고처리 모달의 자재 배분 그리드가 "어느 창고 어느 칸에서 꺼내는지"를 보여줘야 한다.
+      mockAvailableStocksQb([createStock({ locationCode: 'A-01-03' })]);
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-001', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001' } as MatLot,
+      ]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+      mockWarehouseRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', warehouseName: '원자재창고' } as Warehouse,
+      ]);
+
+      const result = await target.findAvailable({ page: 1, limit: 10 });
+
+      expect(result.data[0].warehouseName).toBe('원자재창고');
+      expect(result.data[0].locationCode).toBe('A-01-03');
+    });
+
+    it('로케이션 기준정보(WAREHOUSE_LOCATIONS)의 명칭을 함께 내려준다', async () => {
+      // 보관위치는 /master/warehouse 의 로케이션 기준정보가 정본이다 — 창고명처럼 이름을 보여준다.
+      mockAvailableStocksQb([createStock({ locationCode: 'A-01-03' })]);
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-001', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001' } as MatLot,
+      ]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+      mockWarehouseRepo.find.mockResolvedValue([]);
+      mockWarehouseLocationRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', locationCode: 'A-01-03', locationName: 'A구역 1열 3단' } as WarehouseLocation,
+      ]);
+
+      const result = await target.findAvailable({ page: 1, limit: 10 });
+
+      expect(result.data[0].locationName).toBe('A구역 1열 3단');
+    });
+
+    it('창고 명칭을 찾지 못하면 창고코드를 그대로 보여준다', async () => {
+      mockAvailableStocksQb([createStock()]);
+      mockMatLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-001', iqcStatus: 'PASS', status: 'NORMAL', itemCode: 'ITEM-001' } as MatLot,
+      ]);
+      mockItemMasterRepo.find.mockResolvedValue([]);
+      mockWarehouseRepo.find.mockResolvedValue([]);
+
+      const result = await target.findAvailable({ page: 1, limit: 10 });
+
+      expect(result.data[0].warehouseName).toBe('WH-01');
     });
 
     it('HOLD LOT 은 재고가 있어도 출고 가능 목록에서 제외한다', async () => {
@@ -840,4 +912,58 @@ describe('MatStockService', () => {
     });
 
   });
+
+  // ─── assignLocation (PDA 창고랙 지정) ───
+  describe('assignLocation', () => {
+    it('스캔한 랙으로 재고의 보관위치를 바꾸고 이동 이력을 남긴다', async () => {
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce({
+          warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001',
+          locationCode: 'RM-A-01-01', qty: 10, company: 'C1', plant: 'P1',
+        } as MatStock)
+        .mockResolvedValueOnce({
+          warehouseCode: 'WH-01', locationCode: 'RM-A-02-01', locationName: '원자재 A구역 2열 1단',
+        } as WarehouseLocation);
+
+      const result = await target.assignLocation(
+        { matUid: 'MAT-001', locationCode: 'RM-A-02-01' },
+        'C1',
+        'P1',
+      );
+
+      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+        MatStock,
+        expect.objectContaining({ matUid: 'MAT-001' }),
+        expect.objectContaining({ locationCode: 'RM-A-02-01' }),
+      );
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
+        StockTransaction,
+        expect.objectContaining({ transType: 'MAT_MOVE', refType: 'LOCATION_ASSIGN' }),
+      );
+      expect(result.locationCode).toBe('RM-A-02-01');
+    });
+
+    it('재고가 없는 시리얼이면 NotFoundException', async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(null);
+
+      await expect(
+        target.assignLocation({ matUid: 'NONE', locationCode: 'RM-A-02-01' }, 'C1', 'P1'),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('기준정보에 없는 랙을 스캔하면 BadRequestException', async () => {
+      // 임의 문자열을 보관위치로 넣으면 /master/warehouse 기준정보와 어긋난다.
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce({
+          warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 10,
+          company: 'C1', plant: 'P1',
+        } as MatStock)
+        .mockResolvedValueOnce(null);
+
+      await expect(
+        target.assignLocation({ matUid: 'MAT-001', locationCode: 'UNKNOWN-RACK' }, 'C1', 'P1'),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
 });
