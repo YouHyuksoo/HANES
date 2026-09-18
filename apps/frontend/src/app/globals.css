@@ -713,3 +713,151 @@ textarea {
 .login-node {
   animation: login-node-pulse 3s ease-in-out infinite;
 }
+
+/* ============================================
+   검사 준비 안내 모달 (inspection/result InspectPrepGuideModal)
+   ============================================ */
+@keyframes guide-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes guide-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 12px color-mix(in oklab, var(--primary) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 0%, transparent);
+  }
+}
+
+@keyframes guide-ring-success {
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 18px rgba(22, 163, 74, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+}
+
+@keyframes guide-pop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes guide-progress {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 40px 0;
+  }
+}
+
+@keyframes guide-step-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes guide-orb {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-24px, 18px);
+  }
+}
+
+/* CTA는 transform으로 움직이지 않는다 — 시나리오 러너/Playwright의 안정성 판정(element is not stable)을 깨뜨린다 */
+@keyframes guide-cta {
+  0%, 100% {
+    box-shadow: 0 8px 20px -6px color-mix(in oklab, var(--primary) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 14px 30px -6px color-mix(in oklab, var(--primary) 75%, transparent);
+  }
+}
+
+.guide-rise {
+  animation: guide-rise 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.guide-ring {
+  animation: guide-ring 1.6s ease-out infinite;
+}
+
+.guide-ring-success {
+  animation: guide-ring-success 1.4s ease-out infinite;
+}
+
+.guide-pop {
+  animation: guide-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.guide-progress {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 40px 100%;
+  animation: guide-progress 1.2s linear infinite;
+}
+
+.guide-step {
+  animation: guide-step-in 0.35s ease-out both;
+}
+
+.guide-panel {
+  animation: slide-up 0.3s ease-out both;
+}
+
+.guide-orb {
+  animation: guide-orb 8s ease-in-out infinite;
+}
+
+.guide-cta {
+  animation: guide-cta 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guide-rise,
+  .guide-ring,
+  .guide-ring-success,
+  .guide-pop,
+  .guide-progress,
+  .guide-step,
+  .guide-panel,
+  .guide-orb,
+  .guide-cta {
+    animation: none;
+  }
+}

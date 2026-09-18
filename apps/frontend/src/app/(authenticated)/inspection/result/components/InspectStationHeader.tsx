@@ -43,6 +43,12 @@ interface InspectStationHeaderProps {
   onOpenSampleCheckHistory: () => void;
   isFullView: boolean;
   onToggleFullscreen: () => void;
+  /**
+   * 작업자 선택 모달 열림을 부모가 제어할 때 넘긴다(준비 안내 모달이 같은 모달을 열기 위해).
+   * 넘기지 않으면 헤더가 스스로 관리한다.
+   */
+  workerSelectOpen?: boolean;
+  onWorkerSelectOpenChange?: (open: boolean) => void;
 }
 
 export default function InspectStationHeader({
@@ -57,10 +63,18 @@ export default function InspectStationHeader({
   onOpenSampleCheckHistory,
   isFullView,
   onToggleFullscreen,
+  workerSelectOpen,
+  onWorkerSelectOpenChange,
 }: InspectStationHeaderProps) {
   const { t } = useTranslation();
   const [equipOpen, setEquipOpen] = useState(false);
-  const [workerModalOpen, setWorkerModalOpen] = useState(false);
+  const [internalWorkerOpen, setInternalWorkerOpen] = useState(false);
+  /** controlled(부모 제어) 우선, 아니면 내부 상태 */
+  const workerModalOpen = workerSelectOpen ?? internalWorkerOpen;
+  const setWorkerModalOpen = useCallback((open: boolean) => {
+    if (onWorkerSelectOpenChange) onWorkerSelectOpenChange(open);
+    else setInternalWorkerOpen(open);
+  }, [onWorkerSelectOpenChange]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const equipBoxRef = useRef<HTMLDivElement>(null);
   const equipBtnRef = useRef<HTMLButtonElement>(null);
@@ -133,7 +147,7 @@ export default function InspectStationHeader({
     setWorkerModalOpen(false);
     if (workers.some((w) => w.id === worker.id)) return;
     void persistWorkers([...workers, worker]);
-  }, [workers, persistWorkers]);
+  }, [workers, persistWorkers, setWorkerModalOpen]);
 
   const handleRemoveWorker = useCallback((workerId: string) => {
     void persistWorkers(workers.filter((worker) => worker.id !== workerId));

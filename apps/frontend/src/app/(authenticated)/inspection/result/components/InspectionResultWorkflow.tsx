@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { ScanLine, RefreshCw, Search } from "lucide-react";
+import { ScanLine, RefreshCw, Search, Sparkles } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import { ComCodeBadge } from "@/components/ui";
 import api from "@/services/api";
@@ -11,10 +11,12 @@ import type { JobOrderRow } from "../types";
 import InspectPanel from "./InspectPanel";
 import ConsumablePanel from "./ConsumablePanel";
 import InspectStationHeader from "./InspectStationHeader";
+import InspectPrepGuideModal from "./InspectPrepGuideModal";
 import SampleCheckModal from "./SampleCheckModal";
 import SampleCheckHistoryModal from "./SampleCheckHistoryModal";
 import { DailyInspectModal, WorkerInspectModal } from "@/components/inspect";
 import useInspectPrepStatus from "../hooks/useInspectPrepStatus";
+import useInspectPrepGuide from "../hooks/useInspectPrepGuide";
 
 interface TesterEquip {
   equipCode: string;
@@ -80,6 +82,8 @@ export default function InspectionResultWorkflow({
   const [workerInspectOpen, setWorkerInspectOpen] = useState(false);
   const [sampleCheckOpen, setSampleCheckOpen] = useState(false);
   const [sampleHistoryOpen, setSampleHistoryOpen] = useState(false);
+  /** 작업자 선택 모달 — 헤더와 준비 안내 모달이 같은 모달을 연다 */
+  const [workerSelectOpen, setWorkerSelectOpen] = useState(false);
   /** 전체화면(chromeless) 모드 — view=full 쿼리 + 브라우저 Fullscreen API */
   const isFullView = searchParams.get("view") === "full";
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -176,6 +180,13 @@ export default function InspectionResultWorkflow({
     consumableMessage: t("inspection.result.prep.consumableNotReady"),
   });
 
+  /** 진입 안내 — 검사기→작업자→작업지시→점검→대조 순서로 유도하고, 끝나면 자동으로 닫힌다 */
+  const guide = useInspectPrepGuide({
+    hasEquip: Boolean(selectedEquipCode),
+    hasOrder: Boolean(selected),
+    prep,
+  });
+
   const inspectContext = useMemo(() => ({
     equip: selectedEquipCode
       ? {
@@ -198,6 +209,16 @@ export default function InspectionResultWorkflow({
           <p className="text-text-muted mt-1">{t(descriptionKey)}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={guide.openGuide}
+            data-testid="inspect-guide-open"
+            title={t("inspection.result.guide.reopen")}
+          >
+            <Sparkles className="w-4 h-4 mr-1 text-primary" />
+            {t("inspection.result.guide.reopen")}
+          </Button>
           <Button variant="secondary" size="sm" onClick={fetchOrders}>
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
             {t("common.refresh")}
@@ -218,6 +239,8 @@ export default function InspectionResultWorkflow({
         onOpenSampleCheckHistory={() => setSampleHistoryOpen(true)}
         isFullView={isFullView}
         onToggleFullscreen={toggleFullscreen}
+        workerSelectOpen={workerSelectOpen}
+        onWorkerSelectOpenChange={setWorkerSelectOpen}
       />
 
       <div className="grid grid-cols-12 gap-4 flex-1 min-h-0 overflow-hidden">
@@ -305,6 +328,25 @@ export default function InspectionResultWorkflow({
         </div>
       </div>
 
+      <InspectPrepGuideModal
+        open={guide.open}
+        steps={guide.steps}
+        current={guide.current}
+        doneCount={guide.doneCount}
+        allReady={guide.allReady}
+        onClose={guide.closeGuide}
+        testers={testers}
+        equipCode={selectedEquipCode}
+        onSelectEquip={handleSelectEquip}
+        orders={orders}
+        selectedOrderNo={selected?.orderNo ?? null}
+        onSelectOrder={setSelected}
+        workers={prep.workers}
+        onOpenWorkerSelect={() => setWorkerSelectOpen(true)}
+        onOpenDailyInspect={() => setDailyInspectOpen(true)}
+        onOpenWorkerInspect={() => setWorkerInspectOpen(true)}
+        onOpenSampleCheck={() => setSampleCheckOpen(true)}
+      />
       <DailyInspectModal
         isOpen={dailyInspectOpen}
         onClose={() => setDailyInspectOpen(false)}
