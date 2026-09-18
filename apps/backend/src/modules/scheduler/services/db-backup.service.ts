@@ -17,6 +17,7 @@ import { DataSource } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as archiver from 'archiver';
+import { readOracleEnv } from '../../../database/oracle-env';
 
 /** 백업 실행 파라미터 */
 interface BackupParams {
@@ -24,7 +25,7 @@ interface BackupParams {
   backupDir?: string;
   /** 이전 백업 보관 일수 (기본: 7) */
   retentionDays?: number;
-  /** Oracle 스키마명 (기본: 환경변수 ORACLE_USER 또는 'TEST') */
+  /** Oracle 스키마명 (기본: .env 의 ORACLE_USER) */
   schema?: string;
 }
 
@@ -72,7 +73,7 @@ export class DbBackupService {
   async runBackup(params?: BackupParams): Promise<{ affectedRows: number }> {
     const backupRoot = params?.backupDir ?? './backups';
     const retentionDays = params?.retentionDays ?? 7;
-    const schema = params?.schema ?? process.env.ORACLE_USER ?? 'TEST';
+    const schema = params?.schema ?? readOracleEnv().username;
 
     const timestamp = new Date()
       .toISOString()

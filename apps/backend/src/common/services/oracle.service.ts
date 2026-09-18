@@ -25,6 +25,11 @@ import {
 import { ConfigService } from '@nestjs/config';
 import * as oracledb from 'oracledb';
 import { isRecord } from '../utils/json-record.util';
+import {
+  describeOracleTarget,
+  oracleConnectString,
+  readOracleEnv,
+} from '../../database/oracle-env';
 
 /** Oracle 식별자 화이트리스트 패턴 (패키지명/프로시저명 인젝션 방지) */
 const SAFE_IDENTIFIER = /^[A-Z][A-Z0-9_$#]{0,29}$/i;
@@ -65,32 +70,19 @@ export class OracleService implements OnModuleInit, OnModuleDestroy {
 
   /** 모듈 초기화 시 별도 oracledb 커넥션 풀 생성 */
   async onModuleInit(): Promise<void> {
-    // connectString 구성 — SID / SERVICE_NAME 분기 (DatabaseModule과 동일)
-    const host = this.configService.get<string>('ORACLE_HOST', 'localhost');
-    const port = this.configService.get<number>('ORACLE_PORT', 1521);
-    const sid = this.configService.get<string>('ORACLE_SID');
-    const serviceName = this.configService.get<string>('ORACLE_SERVICE_NAME');
-
-    let connectString: string;
-    if (sid) {
-      // SID 접속: TNS Descriptor 형식 사용
-      connectString =
-        `(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=${host})(PORT=${port}))` +
-        `(CONNECT_DATA=(SID=${sid})))`;
-    } else {
-      // SERVICE_NAME 접속: EZConnect 형식
-      connectString = `${host}:${port}/${serviceName || 'JSHNSMES'}`;
-    }
+    // 접속 값은 DatabaseModule과 같은 oracle-env 헬퍼에서 읽는다.
+    const read = (key: string) => this.configService.get<string>(key);
+    const env = readOracleEnv(read);
 
     this.pool = await oracledb.createPool({
-      user: this.configService.get<string>('ORACLE_USER'),
-      password: this.configService.get<string>('ORACLE_PASSWORD'),
-      connectString,
+      user: env.username,
+      password: env.password,
+      connectString: oracleConnectString(read),
       poolMin: 1,
       poolMax: 5,
       poolIncrement: 1,
     });
-    this.logger.log(`OracleService 커넥션 풀 생성 완료 (${host}:${port})`);
+    this.logger.log(`OracleService 커넥션 풀 생성 완료 (${describeOracleTarget(read)})`);
   }
 
   /** 모듈 종료 시 커넥션 풀 정리 */

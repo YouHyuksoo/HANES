@@ -2,6 +2,8 @@
  * @file database/database.module.ts
  * @description Main Database Module - Oracle as Primary (자동 재연결 지원)
  *
+ * 접속 값은 database/oracle-env.ts 를 통해 apps/backend/.env 에서만 읽는다.
+ *
  * 초보자 가이드:
  * 1. **retryAttempts**: 초기 연결 실패 시 재시도 횟수
  * 2. **poolPingInterval**: 풀 커넥션 유효성 검사 주기(초) — 끊긴 연결 자동 감지
@@ -13,6 +15,7 @@ import { Module, Global, Logger } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SqlDebugTypeormLogger } from '../common/sql-debug/typeorm-sql-debug.logger';
+import { describeOracleTarget, oracleTypeOrmConnection } from './oracle-env';
 
 @Global()
 @Module({
@@ -22,20 +25,13 @@ import { SqlDebugTypeormLogger } from '../common/sql-debug/typeorm-sql-debug.log
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const logger = new Logger('DatabaseModule');
-        const host = configService.get<string>('ORACLE_HOST', 'localhost');
-        const port = configService.get<number>('ORACLE_PORT', 1521);
+        const read = (key: string) => configService.get<string>(key);
 
-        logger.log(`Oracle DB 연결: ${host}:${port}`);
+        logger.log(`Oracle DB 연결: ${describeOracleTarget(read)}`);
 
         return {
           type: 'oracle',
-          host,
-          port,
-          username: configService.get<string>('ORACLE_USER', 'HNSMES'),
-          password: configService.get<string>('ORACLE_PASSWORD', 'your-oracle-password'),
-          ...(configService.get<string>('ORACLE_SID')
-            ? { sid: configService.get<string>('ORACLE_SID') }
-            : { serviceName: configService.get<string>('ORACLE_SERVICE_NAME', 'JSHNSMES') }),
+          ...oracleTypeOrmConnection(read),
           synchronize: false,
           logging: ['query', 'error', 'warn'],
           logger: new SqlDebugTypeormLogger(),

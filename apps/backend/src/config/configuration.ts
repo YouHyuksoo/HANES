@@ -7,6 +7,8 @@
  * 2. **사용법**: ConfigService.get<T>('key')로 접근
  * 3. **검증**: Joi 등으로 환경변수 유효성 검사 가능
  *
+ * DB 접속(ORACLE_*)은 database/database.module.ts 가 ConfigService 로 직접 읽는다.
+ *
  * 환경변수 추가 시:
  * 1. .env 파일에 변수 추가
  * 2. 이 파일에 매핑 추가
@@ -23,16 +25,6 @@ export interface AppConfig {
   port: number;
   /** API 버전 prefix */
   apiPrefix: string;
-}
-
-/**
- * 데이터베이스 설정 인터페이스
- */
-export interface DatabaseConfig {
-  /** Oracle 연결 문자열 (TNS 또는 EZConnect) */
-  url: string;
-  /** Oracle 마이그레이션용 Direct 연결 문자열 */
-  directUrl: string;
 }
 
 /**
@@ -62,7 +54,6 @@ export interface CorsConfig {
  */
 export interface Configuration {
   app: AppConfig;
-  database: DatabaseConfig;
   jwt: JwtConfig;
   cors: CorsConfig;
 }
@@ -75,10 +66,6 @@ export default (): Configuration => ({
     nodeEnv: process.env.NODE_ENV || 'development',
     port: parseInt(process.env.PORT || '4000', 10),
     apiPrefix: process.env.API_PREFIX || 'api/v1',
-  },
-  database: {
-    url: process.env.DATABASE_URL || '',
-    directUrl: process.env.DIRECT_URL || '',
   },
   jwt: {
     secret: process.env.JWT_SECRET || 'harness-mes-secret-key-change-in-production',

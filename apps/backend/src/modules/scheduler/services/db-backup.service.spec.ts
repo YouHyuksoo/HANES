@@ -185,6 +185,36 @@ describe('DbBackupService', () => {
       expect(zipFiles[0]).toMatch(/^HANES_MES_.*\.zip$/);
     });
 
+    it('schema 파라미터가 없으면 .env 의 ORACLE_USER 를 사용해야 한다', async () => {
+      // Arrange — 접속 설정 단일 출처(oracle-env)가 스키마명을 결정한다.
+      const saved = { ...process.env };
+      process.env.ORACLE_HOST = 'db.example.com';
+      process.env.ORACLE_PORT = '1521';
+      process.env.ORACLE_USER = 'ENV_SCHEMA';
+      process.env.ORACLE_PASSWORD = 'pw';
+      process.env.ORACLE_SERVICE_NAME = 'SVC';
+      delete process.env.ORACLE_SID;
+
+      const ownerBinds: unknown[][] = [];
+      mockDataSource.query.mockImplementation(async (sql: string, binds?: unknown[]) => {
+        if (typeof sql === 'string' && sql.includes('ALL_TABLES')) {
+          ownerBinds.push(binds ?? []);
+          return [];
+        }
+        return [];
+      });
+
+      try {
+        // Act
+        await target.runBackup({ backupDir: path.join(tmpDir, 'env-schema') });
+
+        // Assert
+        expect(ownerBinds[0]).toEqual(['ENV_SCHEMA']);
+      } finally {
+        process.env = saved;
+      }
+    });
+
     it('빈 테이블만 있을 때도 정상 동작해야 한다', async () => {
       // Arrange
       let dataCallCount = 0;

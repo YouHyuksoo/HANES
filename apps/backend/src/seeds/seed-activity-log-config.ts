@@ -14,6 +14,7 @@
 
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
+import { oracleTypeOrmConnection } from '../database/oracle-env';
 
 dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
@@ -26,13 +27,7 @@ async function seedActivityLogConfig(): Promise<void> {
 
   const dataSource = new DataSource({
     type: 'oracle',
-    host: process.env.ORACLE_HOST || 'localhost',
-    port: parseInt(process.env.ORACLE_PORT || '1521', 10),
-    username: process.env.ORACLE_USER || 'HNSMES',
-    password: process.env.ORACLE_PASSWORD || '',
-    ...(process.env.ORACLE_SID
-      ? { sid: process.env.ORACLE_SID }
-      : { serviceName: process.env.ORACLE_SERVICE_NAME || 'JSHNSMES' }),
+    ...oracleTypeOrmConnection(),
     synchronize: false,
     logging: false,
     entities: [],

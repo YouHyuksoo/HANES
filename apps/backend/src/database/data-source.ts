@@ -1,20 +1,23 @@
 /**
  * @file database/data-source.ts
- * @description TypeORM DataSource 설정 - Oracle DB 연결
+ * @description TypeORM CLI용 DataSource (db:migrate:run / db:migrate:revert)
+ *
+ * 접속 환경변수는 apps/backend/.env(.env.local 우선)가 단일 출처이며,
+ * 런타임 연결(database.module.ts)과 동일한 oracle-env 헬퍼를 사용한다.
  */
 
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
+import { oracleTypeOrmConnection } from './oracle-env';
 
-dotenv.config();
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
+
+// dotenv 로드 이후에 읽어야 하므로 import 순서가 아닌 호출 시점이 중요하다.
 
 export const AppDataSource = new DataSource({
   type: 'oracle',
-  host: process.env.ORACLE_HOST || 'localhost',
-  port: parseInt(process.env.ORACLE_PORT || '1521', 10),
-  username: process.env.ORACLE_USER || 'MES_USER',
-  password: process.env.ORACLE_PASSWORD || 'password',
-  sid: process.env.ORACLE_SID || 'ORCL',
+  ...oracleTypeOrmConnection(),
   synchronize: false, // Oracle PK 충돌 방지 - 스키마 변경은 SQL로 직접 관리
   logging: process.env.NODE_ENV !== 'production',
   logger: 'advanced-console',
@@ -29,11 +32,3 @@ export const AppDataSource = new DataSource({
     queueTimeout: 60000,
   },
 });
-
-// Oracle 특화 설정
-export const oracleConfig = {
-  // 대소문자 구분 설정 (Oracle은 기본적으로 대문자)
-  caseSensitive: false,
-  // 스키마 이름
-  schema: process.env.ORACLE_USER || 'MES_USER',
-};

@@ -8,47 +8,17 @@
 
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
+import { OracleEnv, oracleTypeOrmConnection, readOracleEnv } from './oracle-env';
 
 // 환경 변수 로드
 dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 
-const ora = require('oracledb');
-
 // Oracle Thick Mode 활성화 (선택사항)
-// ora.initOracleClient({ libDir: process.env.ORACLE_CLIENT_LIB });
+// require('oracledb').initOracleClient({ libDir: process.env.ORACLE_CLIENT_LIB });
 
-interface ConnectionConfig {
-  type: 'oracle';
-  host: string;
-  port: number;
-  username: string;
-  password: string;
-  sid?: string;
-  serviceName?: string;
-}
-
-function getConfig(): ConnectionConfig {
-  const config: ConnectionConfig = {
-    type: 'oracle',
-    host: process.env.ORACLE_HOST || 'localhost',
-    port: parseInt(process.env.ORACLE_PORT || '1521', 10),
-    username: process.env.ORACLE_USER || 'MES_USER',
-    password: process.env.ORACLE_PASSWORD || '',
-  };
-
-  const sid = process.env.ORACLE_SID;
-  const serviceName = process.env.ORACLE_SERVICE_NAME;
-
-  if (sid) {
-    config.sid = sid;
-  } else if (serviceName) {
-    config.serviceName = serviceName;
-  } else {
-    config.sid = 'ORCL';
-  }
-
-  return config;
+function getConfig(): OracleEnv {
+  return readOracleEnv();
 }
 
 async function testOracleConnection() {
@@ -65,19 +35,9 @@ async function testOracleConnection() {
   console.log(`   ${config.sid ? `SID: ${config.sid}` : `Service Name: ${config.serviceName}`}`);
   console.log();
 
-  // 필수 환경 변수 확인
-  if (!config.password) {
-    console.error('❌ Error: ORACLE_PASSWORD environment variable is required');
-    process.exit(1);
-  }
-
   const dataSource = new DataSource({
     type: 'oracle',
-    host: config.host,
-    port: config.port,
-    username: config.username,
-    password: config.password,
-    ...(config.sid ? { sid: config.sid } : { serviceName: config.serviceName }),
+    ...oracleTypeOrmConnection(),
     synchronize: false,
     logging: true,
     entities: [],

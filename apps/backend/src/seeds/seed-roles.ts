@@ -27,6 +27,7 @@ dotenv.config({ path: '.env' });
 // 메뉴 코드 설정 (외부 JSON 파일 기반)
 // ---------------------------------------------------------------------------
 import * as menuConfig from './menu-config.json';
+import { oracleTypeOrmConnection } from '../database/oracle-env';
 
 /** 최상위 메뉴 코드 (부모) */
 const TOP_MENU_CODES: string[] = menuConfig.topMenuCodes;
@@ -130,13 +131,7 @@ async function seedRoles(): Promise<void> {
   // Oracle DataSource 생성 (기존 data-source.ts 패턴 참조)
   const dataSource = new DataSource({
     type: 'oracle',
-    host: process.env.ORACLE_HOST || 'localhost',
-    port: parseInt(process.env.ORACLE_PORT || '1521', 10),
-    username: process.env.ORACLE_USER || 'HNSMES',
-    password: process.env.ORACLE_PASSWORD || '',
-    ...(process.env.ORACLE_SID
-      ? { sid: process.env.ORACLE_SID }
-      : { serviceName: process.env.ORACLE_SERVICE_NAME || 'JSHNSMES' }),
+    ...oracleTypeOrmConnection(),
     synchronize: false,
     logging: false,
     entities: [],

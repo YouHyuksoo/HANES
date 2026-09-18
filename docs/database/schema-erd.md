@@ -1,13 +1,13 @@
 ---
 sources: []
-verifiedCommit: 19f912c9
+verifiedCommit: 2051791a
 generated: true
 ---
 
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-09-17 20:52:05
-- DB 사이트: `JSHANES`
+- 작성일: 2026-09-18 12:59:27
+- DB 대상: `10.1.10.35:1527 SERVICE=JSHNSMES USER=test`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
 

@@ -51,6 +51,7 @@ pnpm.cmd run typecheck:backend
 
 ## 4. DB 작업
 
+- DB 접속 설정의 단일 출처는 `apps/backend/.env`(.env.local 우선)다. 앱·마이그레이션 CLI·시드는 `src/database/oracle-env.ts`, 파이썬 스크립트·ERD 생성기는 `tools/hanes_db.py`를 사용한다. 새 스크립트에 접속값이나 사이트명을 직접 박지 않는다.
 - Oracle 작업은 `oracle-db` connector 또는 검증된 raw SQL 파일 경로를 우선한다.
 - 기본 사이트는 `JSHANES`다.
 - DDL/DML 실행 전 실제 스키마를 확인한다.

@@ -1,10 +1,14 @@
 import json
 import os
 import subprocess
+import sys
 from collections import defaultdict
 from datetime import datetime
 
 import oracledb
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from hanes_db import connect as hanes_connect, describe_target  # noqa: E402
 
 
 def _git_head():
@@ -14,7 +18,6 @@ def _git_head():
         return "UNKNOWN"
 
 
-SITE = os.environ.get("ORACLE_SITE", "MYDBPDB")
 OUTPUT = os.path.join("docs", "database", "schema-erd.md")
 
 
@@ -65,12 +68,8 @@ CODE_GROUP_OVERRIDES = {
 
 
 def connect():
-    config_path = os.path.expanduser("~/.oracle_db_config.json")
-    with open(config_path, encoding="utf-8-sig") as f:
-        config = json.load(f)
-    site = config["profiles"][SITE]
-    dsn = f"{site['host']}:{site['port']}/{site['service_name']}"
-    return oracledb.connect(user=site["user"], password=site["password"], dsn=dsn)
+    """접속 값은 apps/backend/.env 단일 출처(tools/hanes_db.py)에서 읽는다."""
+    return hanes_connect()
 
 
 def rows(cur, sql):
@@ -330,7 +329,7 @@ def main():
         "# HANES MES DB 스키마 및 ERD",
         "",
         f"- 작성일: {today}",
-        f"- DB 사이트: `{SITE}`",
+        f"- DB 대상: `{describe_target()}`",
         "- 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)",
         "- 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.",
         "",

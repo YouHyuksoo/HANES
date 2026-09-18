@@ -7,8 +7,6 @@
     "**/*spec.ts",
     "src/database/migrate-*.ts",
     "src/database/test-connection.ts",
-    "src/database/data-source.ts",
-    "src/database/oracle-data-source.ts",
     "src/modules/consumables/**/*.ts",
     "src/modules/inventory/services/warehouse.service.ts",
     "src/modules/master/services/equip-inspect.service.ts",

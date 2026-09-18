@@ -912,24 +912,30 @@ export class ErViewService {
     return filePath;
   }
 
-  private backendMigrationsDir(): string {
+  /** 백엔드는 apps/backend 에서 기동하므로 저장소 루트를 역산한다. */
+  private repoRoot(): string {
     const cwd = process.cwd();
     const isBackendCwd = path.basename(cwd).toLowerCase() === 'backend'
       && path.basename(path.dirname(cwd)).toLowerCase() === 'apps';
-    const backendRoot = isBackendCwd ? cwd : path.join(cwd, 'apps', 'backend');
-    return path.join(backendRoot, 'src', 'migrations');
+    return isBackendCwd ? path.resolve(cwd, '..', '..') : cwd;
+  }
+
+  private backendMigrationsDir(): string {
+    return path.join(this.repoRoot(), 'apps', 'backend', 'src', 'migrations');
   }
 
   private regenerateErd() {
+    // 생성기는 tools/hanes_db.py 를 통해 apps/backend/.env 를 읽는다(사이트 지정 불필요).
+    const repoRoot = this.repoRoot();
+    const script = path.join('tools', 'generate_db_schema_doc.py');
     try {
-      execFileSync('python', ['tools/generate_db_schema_doc.py'], {
-        cwd: process.cwd(),
-        env: { ...process.env, ORACLE_SITE: process.env.ORACLE_SITE ?? 'JSHANES' },
+      execFileSync('python', [script], {
+        cwd: repoRoot,
         stdio: 'pipe',
       });
       return { status: 'SUCCESS' };
     } catch (error) {
-      return { status: 'FAILED', errorMessage: String(error), command: 'ORACLE_SITE=JSHANES python tools/generate_db_schema_doc.py' };
+      return { status: 'FAILED', errorMessage: String(error), command: `python ${script}` };
     }
   }
 
