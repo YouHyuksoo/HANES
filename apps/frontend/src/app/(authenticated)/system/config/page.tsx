@@ -14,7 +14,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Settings, Package, Factory, ClipboardCheck, Cog,
-  Save, Plus, Trash2, RefreshCw, Sparkles, Database,
+  Save, Plus, Trash2, RefreshCw, Sparkles, Database, HardDrive,
 } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, Modal, ConfirmModal } from '@/components/ui';
 import { useApiQuery, useInvalidateQueries } from '@/hooks/useApi';
@@ -25,6 +25,7 @@ import ConfigItemRow from '@/components/system/ConfigItemRow';
 import AddConfigModal from '@/components/system/AddConfigModal';
 import AiConfigPanel from '@/components/system/AiConfigPanel';
 import AiEmbeddingPanel from '@/components/system/AiEmbeddingPanel';
+import DbConnectionPanel from '@/components/system/DbConnectionPanel';
 
 /** 그룹 탭 정의 */
 const CONFIG_GROUPS = [
@@ -35,6 +36,7 @@ const CONFIG_GROUPS = [
   { key: 'SYSTEM', label: 'system.config.group.SYSTEM', icon: Cog },
   { key: 'AI', label: 'system.config.group.AI', icon: Sparkles },
   { key: 'AI_EMBEDDING', label: 'Embedding', icon: Database },
+  { key: 'DB_CONNECTION', label: 'system.config.group.DB_CONNECTION', icon: HardDrive },
 ];
 
 const getConfigId = (config: SysConfigItem) => config.id ?? config.configKey;
@@ -159,6 +161,8 @@ function ConfigPage() {
           <div className="h-full overflow-y-auto"><AiConfigPanel /></div>
         ) : activeGroup === 'AI_EMBEDDING' ? (
           <div className="h-full overflow-y-auto"><AiEmbeddingPanel /></div>
+        ) : activeGroup === 'DB_CONNECTION' ? (
+          <div className="h-full overflow-y-auto"><DbConnectionPanel /></div>
         ) : (
           <Card className="h-full overflow-hidden" padding="none">
             <CardContent className="h-full overflow-y-auto p-4">

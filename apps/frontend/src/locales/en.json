@@ -1118,7 +1118,8 @@
         "QUALITY": "Quality",
         "SYSTEM": "System",
         "AI": "AI",
-        "AI_CATALOG": "AI Catalog"
+        "AI_CATALOG": "AI Catalog",
+        "DB_CONNECTION": "DB Connection"
       },
       "save": "Save Settings",
       "saveSuccess": "Settings saved successfully.",
@@ -1238,6 +1239,31 @@
     },
     "menuCategories": {
       "selectCategoryToMove": "Please select a category to move to."
+    },
+    "dbConnection": {
+      "title": "Database Connection",
+      "sourceFile": "Target file: {{file}} (applied after backend restart)",
+      "test": "Test connection",
+      "restart": "Restart backend",
+      "restartRequired": "Saved values differ from the running ones. Restart to apply.",
+      "restartConfirm": "The backend will restart. Other users’ in-flight requests will be interrupted. Continue?",
+      "restartRequested": "Restart requested. Please reconnect in a moment.",
+      "restartFailed": "Restart failed.",
+      "host": "Host",
+      "port": "Port",
+      "username": "User",
+      "password": "Password",
+      "passwordKeep": "Leave blank to keep the current password",
+      "mode": "Connect by",
+      "modeService": "Service name (SERVICE_NAME)",
+      "modeSid": "SID",
+      "serviceName": "Service name",
+      "saved": "Saved. Backup: {{file}}",
+      "saveFailed": "Save failed.",
+      "testSuccess": "Connection succeeded.",
+      "testFailed": "Connection failed.",
+      "loadFailed": "Could not load the current settings.",
+      "notice": "Values are saved only after a successful connection test. The previous file is backed up automatically."
     }
   },
   "serial": {

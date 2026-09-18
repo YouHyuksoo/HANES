@@ -1118,7 +1118,8 @@
         "QUALITY": "Chất lượng",
         "SYSTEM": "Hệ thống",
         "AI": "AI",
-        "AI_CATALOG": "Danh mục AI"
+        "AI_CATALOG": "Danh mục AI",
+        "DB_CONNECTION": "Kết nối DB"
       },
       "save": "Lưu cài đặt",
       "saveSuccess": "Cài đặt đã được lưu.",
@@ -1238,6 +1239,31 @@
     },
     "menuCategories": {
       "selectCategoryToMove": "Vui lòng chọn danh mục để di chuyển đến."
+    },
+    "dbConnection": {
+      "title": "Cài đặt kết nối cơ sở dữ liệu",
+      "sourceFile": "Tệp chỉnh sửa: {{file}} (áp dụng sau khi khởi động lại backend)",
+      "test": "Kiểm tra kết nối",
+      "restart": "Khởi động lại backend",
+      "restartRequired": "Giá trị đã lưu khác với giá trị đang chạy. Cần khởi động lại để áp dụng.",
+      "restartConfirm": "Backend sẽ khởi động lại. Yêu cầu đang xử lý của người dùng khác cũng bị ngắt. Tiếp tục?",
+      "restartRequested": "Đã yêu cầu khởi động lại. Vui lòng kết nối lại sau giây lát.",
+      "restartFailed": "Khởi động lại thất bại.",
+      "host": "Máy chủ",
+      "port": "Cổng",
+      "username": "Tài khoản",
+      "password": "Mật khẩu",
+      "passwordKeep": "Để trống để giữ mật khẩu hiện tại",
+      "mode": "Kiểu kết nối",
+      "modeService": "Tên dịch vụ (SERVICE_NAME)",
+      "modeSid": "SID",
+      "serviceName": "Tên dịch vụ",
+      "saved": "Đã lưu. Bản sao lưu: {{file}}",
+      "saveFailed": "Lưu thất bại.",
+      "testSuccess": "Kết nối thành công.",
+      "testFailed": "Kết nối thất bại.",
+      "loadFailed": "Không tải được cài đặt hiện tại.",
+      "notice": "Chỉ lưu khi kiểm tra kết nối thành công. Tệp cũ được sao lưu tự động."
     }
   },
   "serial": {

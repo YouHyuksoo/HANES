@@ -1118,7 +1118,8 @@
         "QUALITY": "품질관리",
         "SYSTEM": "시스템",
         "AI": "AI",
-        "AI_CATALOG": "AI 카탈로그"
+        "AI_CATALOG": "AI 카탈로그",
+        "DB_CONNECTION": "DB 접속"
       },
       "save": "설정 저장",
       "saveSuccess": "설정이 저장되었습니다.",
@@ -1238,6 +1239,31 @@
     },
     "menuCategories": {
       "selectCategoryToMove": "이동할 카테고리를 선택하세요."
+    },
+    "dbConnection": {
+      "title": "DB 접속 설정",
+      "sourceFile": "편집 대상 파일: {{file}} (백엔드 재시작 후 반영)",
+      "test": "연결 테스트",
+      "restart": "백엔드 재시작",
+      "restartRequired": "저장된 값이 현재 구동 중인 값과 다릅니다. 재시작해야 반영됩니다.",
+      "restartConfirm": "백엔드를 재시작합니다. 지금 작업 중인 다른 사용자의 요청도 함께 끊깁니다. 계속할까요?",
+      "restartRequested": "재시작을 요청했습니다. 잠시 후 다시 접속하세요.",
+      "restartFailed": "재시작에 실패했습니다.",
+      "host": "호스트",
+      "port": "포트",
+      "username": "계정",
+      "password": "비밀번호",
+      "passwordKeep": "비워두면 기존 비밀번호 유지",
+      "mode": "접속 방식",
+      "modeService": "서비스명 (SERVICE_NAME)",
+      "modeSid": "SID",
+      "serviceName": "서비스명",
+      "saved": "저장했습니다. 백업: {{file}}",
+      "saveFailed": "저장에 실패했습니다.",
+      "testSuccess": "접속에 성공했습니다.",
+      "testFailed": "접속에 실패했습니다.",
+      "loadFailed": "현재 설정을 불러오지 못했습니다.",
+      "notice": "연결 테스트를 통과한 경우에만 저장됩니다. 저장 전 기존 파일은 자동 백업됩니다."
     }
   },
   "serial": {

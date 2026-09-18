@@ -43,6 +43,8 @@ import { TableSchemaController } from './controllers/table-schema.controller';
 import { TableSchemaService } from './services/table-schema.service';
 import { ErViewController } from './controllers/er-view.controller';
 import { ErViewService } from './services/er-view.service';
+import { DbConnectionController } from './controllers/db-connection.controller';
+import { DbConnectionService } from './services/db-connection.service';
 
 @Module({
   imports: [
@@ -68,6 +70,7 @@ import { ErViewService } from './services/er-view.service';
     ImprRequestController,
     TableSchemaController,
     ErViewController,
+    DbConnectionController,
   ],
   providers: [
     CommConfigService,
@@ -80,6 +83,7 @@ import { ErViewService } from './services/er-view.service';
     ImprRequestService,
     TableSchemaService,
     ErViewService,
+    DbConnectionService,
   ],
   exports: [
     CommConfigService,

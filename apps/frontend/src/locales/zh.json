@@ -1118,7 +1118,8 @@
         "QUALITY": "质量管理",
         "SYSTEM": "系统",
         "AI": "AI",
-        "AI_CATALOG": "AI 目录"
+        "AI_CATALOG": "AI 目录",
+        "DB_CONNECTION": "数据库连接"
       },
       "save": "保存设置",
       "saveSuccess": "设置已保存。",
@@ -1238,6 +1239,31 @@
     },
     "menuCategories": {
       "selectCategoryToMove": "请选择要移动到的类别。"
+    },
+    "dbConnection": {
+      "title": "数据库连接设置",
+      "sourceFile": "编辑文件：{{file}}（后端重启后生效）",
+      "test": "连接测试",
+      "restart": "重启后端",
+      "restartRequired": "已保存的值与当前运行的值不同，需重启后生效。",
+      "restartConfirm": "将重启后端，其他用户正在进行的请求也会中断。是否继续？",
+      "restartRequested": "已请求重启，请稍后重新连接。",
+      "restartFailed": "重启失败。",
+      "host": "主机",
+      "port": "端口",
+      "username": "账号",
+      "password": "密码",
+      "passwordKeep": "留空则保留原密码",
+      "mode": "连接方式",
+      "modeService": "服务名 (SERVICE_NAME)",
+      "modeSid": "SID",
+      "serviceName": "服务名",
+      "saved": "已保存。备份：{{file}}",
+      "saveFailed": "保存失败。",
+      "testSuccess": "连接成功。",
+      "testFailed": "连接失败。",
+      "loadFailed": "无法加载当前设置。",
+      "notice": "仅在连接测试通过后才会保存。保存前会自动备份原文件。"
     }
   },
   "serial": {
