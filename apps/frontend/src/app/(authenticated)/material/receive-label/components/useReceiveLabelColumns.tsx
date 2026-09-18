@@ -30,6 +30,8 @@ export interface LabelableArrival {
   iqcStatus: string;
   arrivalDate: string | Date;
   labelPrinted: boolean;
+  /** 적재 예정 위치(품목마스터 고정위치) */
+  plannedLocationCode?: string | null;
 }
 
 interface UseReceiveLabelColumnsParams {
@@ -114,6 +116,13 @@ export function useReceiveLabelColumns({
         header: t('material.col.arrivalDate'), size: 100,
         meta: { filterType: 'date' as const },
         cell: ({ row }) => formatDateOnly(row.original.arrivalDate, '-'),
+      },
+      {
+        // 적재 예정 위치 — 라벨 발행 시점은 입고 전이다
+        id: 'plannedLocation', accessorKey: 'plannedLocationCode',
+        header: t('material.stock.columns.plannedLocation', '보관위치(예정)'),
+        size: 120,
+        cell: ({ row }) => <span>{row.original.plannedLocationCode || '-'}</span>,
       },
       {
         id: 'labelPrinted', accessorKey: 'labelPrinted',

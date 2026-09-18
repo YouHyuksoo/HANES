@@ -41,6 +41,9 @@ interface SessionSummary {
 interface StockForCount {
   id: string;
   warehouseCode: string;
+  warehouseName?: string;
+  locationCode?: string | null;
+  locationName?: string | null;
   itemCode: string;
   itemName?: string;
   matUid?: string;

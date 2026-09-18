@@ -122,6 +122,8 @@ export class ReceiveLabelService {
         invoiceNo: a.invoiceNo,
         iqcStatus: a.iqcStatus,
         arrivalDate: a.arrivalDate,
+        // 적재 예정 위치 — 라벨 발행 시점은 입고 전이라 실제 보관위치가 없다.
+        plannedLocationCode: part?.storageLocation?.trim() || null,
         labelPrinted: labeledArrivalKeys.has(`${a.arrivalNo}-${a.seq}`),
       };
     });

@@ -13,6 +13,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { StockQueryDto, TransactionQueryDto } from '../dto/inventory.dto';
 
@@ -39,6 +40,8 @@ export class InventoryQueryService {
     private readonly lotRepository: Repository<MatLot>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
+    @InjectRepository(WarehouseLocation)
+    private readonly warehouseLocationRepository: Repository<WarehouseLocation>,
     @InjectRepository(ItemMaster)
     private readonly itemMasterRepository: Repository<ItemMaster>,
   ) {}
@@ -68,7 +71,7 @@ export class InventoryQueryService {
 
     const stocks = await this.stockRepository.find({
       where,
-      select: ['warehouseCode', 'itemCode', 'matUid', 'qty', 'reservedQty', 'availableQty'],
+      select: ['warehouseCode', 'itemCode', 'matUid', 'qty', 'reservedQty', 'availableQty', 'locationCode'],
       order: { warehouseCode: 'ASC', itemCode: 'ASC' },
     });
 
@@ -95,6 +98,13 @@ export class InventoryQueryService {
       where: { matUid: In(matUids as string[]), ...tenantWhere },
       select: ['matUid', 'status'],
     }) : [];
+    // 보관위치 명칭은 /master/warehouse 로케이션 기준정보가 정본이다.
+    const locCodes = [...new Set(filtered.map((s) => s.locationCode).filter(Boolean))] as string[];
+    const locations = locCodes.length > 0 ? await this.warehouseLocationRepository.find({
+      where: { locationCode: In(locCodes), ...tenantWhere },
+      select: ['warehouseCode', 'locationCode', 'locationName'],
+    }) : [];
+    const locMap = new Map(locations.map((l) => [`${l.warehouseCode}|${l.locationCode}`, l.locationName] as const));
 
     const whMap = new Map(warehouses.map((w) => [w.warehouseCode, w] as const));
     const partMap = new Map(parts.map((p) => [p.itemCode, p] as const));
@@ -125,6 +135,10 @@ export class InventoryQueryService {
         warehouseCode: wh?.warehouseCode || null,
         warehouseName: wh?.warehouseName || null,
         warehouseType: wh?.warehouseType || null,
+        locationCode: s.locationCode ?? null,
+        locationName: s.locationCode
+          ? (locMap.get(`${s.warehouseCode}|${s.locationCode}`) ?? s.locationCode)
+          : null,
         lotStatus: lot?.status || null,
       };
     });
@@ -181,14 +195,33 @@ export class InventoryQueryService {
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
 
-    return transactions.map((t) => ({
-      ...t,
-      id: t.transNo,
-      fromWarehouse: t.fromWarehouseId ? whMap.get(t.fromWarehouseId) || null : null,
-      toWarehouse: t.toWarehouseId ? whMap.get(t.toWarehouseId) || null : null,
-      part: partMap.get(t.itemCode) || null,
-      lot: t.matUid ? lotMap.get(t.matUid) || null : null,
-    }));
+    // 이력을 보며 실물을 확인하려면 그 자재의 '현재' 보관위치가 필요하다.
+    // STOCK_TRANSACTIONS 에는 위치 컴럼이 없으므로 이력 시점 위치가 아니라 현재 위치다.
+    const txStocks = matUids.length > 0
+      ? await this.stockRepository.find({ where: { matUid: In(matUids as string[]), ...tenantWhere } })
+      : [];
+    const txStockMap = new Map(txStocks.map((s) => [s.matUid, s]));
+    const txLocCodes = [...new Set(txStocks.map((s) => s.locationCode).filter(Boolean))] as string[];
+    const txLocations = txLocCodes.length > 0
+      ? await this.warehouseLocationRepository.find({ where: { locationCode: In(txLocCodes), ...tenantWhere } })
+      : [];
+    const txLocMap = new Map(txLocations.map((l) => [`${l.warehouseCode}|${l.locationCode}`, l.locationName]));
+
+    return transactions.map((t) => {
+      const stock = t.matUid ? txStockMap.get(t.matUid) : null;
+      return {
+        ...t,
+        id: t.transNo,
+        fromWarehouse: t.fromWarehouseId ? whMap.get(t.fromWarehouseId) || null : null,
+        toWarehouse: t.toWarehouseId ? whMap.get(t.toWarehouseId) || null : null,
+        part: partMap.get(t.itemCode) || null,
+        lot: t.matUid ? lotMap.get(t.matUid) || null : null,
+        locationCode: stock?.locationCode ?? null,
+        locationName: stock?.warehouseCode && stock?.locationCode
+          ? (txLocMap.get(`${stock.warehouseCode}|${stock.locationCode}`) ?? stock.locationCode)
+          : null,
+      };
+    });
   }
 
   /**

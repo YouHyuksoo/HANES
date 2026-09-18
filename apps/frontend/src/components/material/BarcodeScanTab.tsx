@@ -219,6 +219,11 @@ export default function BarcodeScanTab({ fixedIssueType, excludeIssueTypes }: Ba
                     label={t('material.col.supplier', { defaultValue: '공급업체' })}
                     value={scannedLot.supplierName ?? '-'}
                   />
+                  {/* 보관위치 — 출고 작업자가 자재를 어디서 꺼내는지 바로 알아야 한다 */}
+                  <InfoItem
+                    label={t('material.issue.storageLocation', { defaultValue: '보관위치' })}
+                    value={`${scannedLot.warehouseName || scannedLot.warehouseCode || '-'}${scannedLot.locationName || scannedLot.locationCode ? ` / ${scannedLot.locationName || scannedLot.locationCode}` : ''}`}
+                  />
                 </div>
               </div>
             </div>

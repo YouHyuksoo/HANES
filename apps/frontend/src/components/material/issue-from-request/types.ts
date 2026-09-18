@@ -36,6 +36,9 @@ export interface AvailableStock {
   itemCode: string;
   warehouseCode: string;
   warehouseName?: string;
+  /** 창고 내 보관 로케이션 (기준정보: /master/warehouse) */
+  locationCode?: string | null;
+  locationName?: string | null;
   availableQty?: number;
   qty?: number;
   unit?: string;

@@ -91,6 +91,15 @@ export default function ReceivableTable({ data, isLoading, toolbarLeft }: Receiv
       meta: { filterType: "text" as const },
       cell: ({ row }) => row.original.arrivalWarehouse?.warehouseName || row.original.arrivalWarehouseCode || '-',
     },
+    {
+      // 적재 예정 위치 — 입고 전이라 실제 보관위치는 아직 없다.
+      // 별도 지정이 없으면 품목 고정위치로 들어간다(PDA 창고랙 지정으로 변경 가능).
+      id: 'plannedLocation',
+      header: t('material.stock.columns.plannedLocation', '보관위치(예정)'),
+      size: 120,
+      meta: { filterType: "text" as const },
+      cell: ({ row }) => row.original.plannedLocationCode || '-',
+    },
   ], [t]);
 
   return (

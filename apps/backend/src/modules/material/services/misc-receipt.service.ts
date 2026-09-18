@@ -6,6 +6,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { CreateMiscReceiptDto, MiscReceiptQueryDto } from '../dto/misc-receipt.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
@@ -18,6 +19,8 @@ export class MiscReceiptService {
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     @InjectRepository(MatStock)
     private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(WarehouseLocation)
+    private readonly warehouseLocationRepository: Repository<WarehouseLocation>,
     @InjectRepository(MatLot)
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(ItemMaster)
@@ -131,10 +134,22 @@ export class MiscReceiptService {
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
     const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w]));
 
+    // 입고한 자재를 다시 찾을 때 필요하므로 '현재' 보관위치를 붙인다(이력 시점 위치가 아니다).
+    const stocks = matUids.length > 0
+      ? await this.matStockRepository.find({ where: { matUid: In(matUids), ...this.tenantWhere(company, plant) } })
+      : [];
+    const stockMap = new Map(stocks.map((s) => [s.matUid, s]));
+    const locCodes = [...new Set(stocks.map((s) => s.locationCode).filter(Boolean))] as string[];
+    const locations = locCodes.length > 0
+      ? await this.warehouseLocationRepository.find({ where: { locationCode: In(locCodes), ...this.tenantWhere(company, plant) } })
+      : [];
+    const locationMap = new Map(locations.map((l) => [`${l.warehouseCode}|${l.locationCode}`, l.locationName]));
+
     const flattenedData = data.map((trans) => {
       const part = partMap.get(trans.itemCode);
       const lot = trans.matUid ? lotMap.get(trans.matUid) : null;
       const warehouse = trans.toWarehouseId ? warehouseMap.get(trans.toWarehouseId) : null;
+      const stock = trans.matUid ? stockMap.get(trans.matUid) : null;
       return {
         ...trans,
         itemCode: trans.itemCode,
@@ -143,6 +158,10 @@ export class MiscReceiptService {
         matUid: trans.matUid ?? null,
         warehouseCode: trans.toWarehouseId ?? null,
         warehouseName: warehouse?.warehouseName ?? null,
+        locationCode: stock?.locationCode ?? null,
+        locationName: stock?.warehouseCode && stock?.locationCode
+          ? (locationMap.get(`${stock.warehouseCode}|${stock.locationCode}`) ?? stock.locationCode)
+          : null,
       };
     });
 

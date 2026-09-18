@@ -17,6 +17,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Between, DataSource, EntityManager, MoreThan, Not } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
@@ -44,6 +45,8 @@ export class ReceivingService {
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(MatStock)
     private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(WarehouseLocation)
+    private readonly warehouseLocationRepository: Repository<WarehouseLocation>,
     @InjectRepository(MatArrival)
     private readonly matArrivalRepository: Repository<MatArrival>,
     @InjectRepository(MatReceiving)
@@ -247,6 +250,9 @@ export class ReceivingService {
           expiryDays: part?.expiryDate || 0,
           arrivalWarehouseCode: arrivalWarehouse?.warehouseCode || defaultWarehouse?.warehouseCode,
           arrivalWarehouseName: arrivalWarehouse?.warehouseName || defaultWarehouse?.warehouseName,
+          // 적재 예정 위치 — 입고 전이라 실제 보관위치는 없다.
+          // 입고 시 별도 지정이 없으면 품목마스터 고정위치로 들어간다(PDA 창고랙 지정으로 변경 가능).
+          plannedLocationCode: part?.storageLocation?.trim() || null,
           labelPrinted: printedLotNos.has(lot.matUid),
           certRequired: false,
           certUploaded: !!iqcLog?.certFilePath,
@@ -698,12 +704,24 @@ export class ReceivingService {
       : [];
     const partnerMap = new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
 
+    // 입고한 자재를 다시 찾을 때 필요하므로 '현재' 보관위치를 붙인다.
+    const stockRows = matUids.length > 0
+      ? await this.matStockRepository.find({ where: { matUid: In(matUids as string[]), ...tenantWhere } })
+      : [];
+    const stockMap = new Map(stockRows.map((s) => [s.matUid, s]));
+    const locCodes = [...new Set(stockRows.map((s) => s.locationCode).filter(Boolean))] as string[];
+    const locations = locCodes.length > 0
+      ? await this.warehouseLocationRepository.find({ where: { locationCode: In(locCodes), ...tenantWhere } })
+      : [];
+    const locationMap = new Map(locations.map((l) => [`${l.warehouseCode}|${l.locationCode}`, l.locationName]));
+
     // 프론트엔드가 기대하는 중첩 객체 형태로 반환
     const enrichedData = data.map((item) => {
       const part = partMap.get(item.itemCode);
       const lot = item.matUid ? lotMap.get(item.matUid) : null;
       const warehouse = item.warehouseCode ? warehouseMap.get(item.warehouseCode) : null;
       const isConcession = lot?.iqcStatus === 'FAIL' && lot?.specialAcceptYn === 'Y';
+      const stock = item.matUid ? stockMap.get(item.matUid) : null;
 
       return {
         receiveNo: item.receiveNo,
@@ -724,6 +742,10 @@ export class ReceivingService {
         isConcession,
         specialAcceptYn: lot?.specialAcceptYn ?? 'N',
         toWarehouse: warehouse ? { warehouseName: warehouse.warehouseName } : null,
+        locationCode: stock?.locationCode ?? null,
+        locationName: stock?.warehouseCode && stock?.locationCode
+          ? (locationMap.get(`${stock.warehouseCode}|${stock.locationCode}`) ?? stock.locationCode)
+          : null,
         // 공급처(LOT 입고 거래처)
         vendor: lot?.vendor ?? null,
         // 공급사명(VENDOR 코드 → PARTNER_NAME)

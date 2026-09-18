@@ -15,6 +15,8 @@ export interface ReceiptTransaction {
   matUid: string;
   vendorName?: string | null;
   warehouseName: string;
+  locationCode?: string | null;
+  locationName?: string | null;
   qty: number;
   unit: string;
   transDate: string;
@@ -96,6 +98,11 @@ export function createReceiptCancelGridColumns({
     {
       accessorKey: "warehouseName", header: t("material.receiptCancel.warehouse"), size: 100,
       meta: { filterType: "text" as const },
+    },
+    // 보관위치(현재) — 입고를 되돌리려면 그 자재를 찾아야 한다
+    {
+      accessorKey: "locationCode", header: t("material.stock.columns.location", "보관위치"), size: 110,
+      cell: ({ row }) => <span>{row.original.locationName || row.original.locationCode || "-"}</span>,
     },
     {
       accessorKey: "qty", header: t("material.receiptCancel.qty"), size: 100,

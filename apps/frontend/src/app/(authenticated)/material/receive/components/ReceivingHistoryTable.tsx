@@ -90,6 +90,14 @@ export default function ReceivingHistoryTable({ data, isLoading, toolbarLeft }: 
       cell: ({ row }) => row.original.toWarehouse?.warehouseName || '-',
     },
     {
+      // 보관위치(현재) — 입고한 자재를 다시 찾을 때 필요하다
+      id: 'location',
+      header: t('material.stock.columns.location', '보관위치'),
+      size: 110,
+      meta: { filterType: "text" as const },
+      cell: ({ row }) => row.original.locationName || row.original.locationCode || '-',
+    },
+    {
       accessorKey: 'remark',
       header: t('common.remark'),
       size: 120,

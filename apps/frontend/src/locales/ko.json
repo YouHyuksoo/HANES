@@ -3592,7 +3592,8 @@
       "splitCommittedReloadFailed": "분할은 이미 완료됐습니다. 라벨이 아직 출력되지 않았다면 [라벨 재출력]으로 뽑아 부착한 뒤 다시 조회하세요.",
       "splitLabelLoadFailed": "분할 라벨 이력을 불러오지 못했습니다. 라벨 재출력이 필요하면 다시 열어 주세요.",
       "fractionUnusable": "1 미만 · 배분 불가",
-      "splitNotPossible": "분할불가 · 라벨수량 불일치"
+      "splitNotPossible": "분할불가 · 라벨수량 불일치",
+      "storageLocation": "보관위치"
     },
     "stock": {
       "title": "자재재고현황",
@@ -3619,7 +3620,7 @@
         "partName": "품목명",
         "category": "분류",
         "warehouse": "창고",
-        "location": "위치",
+        "location": "보관위치",
         "quantity": "수량",
         "safetyStock": "안전재고",
         "status": "상태",
@@ -3628,7 +3629,8 @@
         "elapsedDays": "경과일수",
         "remainingDays": "남은유효기간",
         "shelfLifeStatus": "유효기간",
-        "dayUnit": "일"
+        "dayUnit": "일",
+        "plannedLocation": "보관위치(예정)"
       },
       "shelfLife": {
         "expired": "만료",
@@ -8942,7 +8944,8 @@
       "invCount": "자재실사",
       "productInv": "제품재고실사",
       "productReceiving": "제품박스입고",
-      "logout": "로그아웃"
+      "logout": "로그아웃",
+      "rackAssign": "창고랙 지정"
     },
     "productReceiving": {
       "fgAutoWarehouse": "완제품은 양품창고(FG 기본창고)로 자동 입고됩니다.",
@@ -9235,6 +9238,14 @@
       "error": "서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.",
       "retry": "다시 시도",
       "retrying": "서버 재확인 중"
+    },
+    "rackAssign": {
+      "title": "창고랙 지정",
+      "scanRack": "랙(로케이션) 바코드를 스캔하세요",
+      "scanMaterial": "자재 시리얼을 스캔하세요",
+      "scanRackFirst": "먼저 랙 바코드를 스캔하세요",
+      "changeRack": "랙 변경",
+      "unassigned": "미지정"
     }
   },
   "activityLog": {

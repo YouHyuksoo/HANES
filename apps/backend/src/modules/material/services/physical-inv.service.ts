@@ -20,6 +20,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { PhysicalInvSession } from '../../../entities/physical-inv-session.entity';
 import { PhysicalInvCountDetail } from '../../../entities/physical-inv-count-detail.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { parseDateStart } from '../../../shared/date.util';
@@ -51,6 +52,8 @@ export class PhysicalInvService {
     private readonly countDetailRepository: Repository<PhysicalInvCountDetail>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
+    @InjectRepository(WarehouseLocation)
+    private readonly warehouseLocationRepository: Repository<WarehouseLocation>,
     private readonly dataSource: DataSource,
     private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
@@ -235,6 +238,12 @@ export class PhysicalInvService {
 
     const partMap = new Map(parts.map((p) => [p.itemCode, p]));
     const lotMap = new Map(lots.map((l) => [l.matUid, l]));
+    // 보관위치 명칭은 /master/warehouse 로케이션 기준정보가 정본이다.
+    const locCodes = [...new Set(data.map((s) => s.locationCode).filter(Boolean))] as string[];
+    const locations = locCodes.length > 0
+      ? await this.warehouseLocationRepository.find({ where: { locationCode: In(locCodes), ...tenantWhere } })
+      : [];
+    const locMap = new Map(locations.map((l) => [`${l.warehouseCode}|${l.locationCode}`, l.locationName]));
 
     const result = data.map((stock) => {
       const part = partMap.get(stock.itemCode);
@@ -244,6 +253,9 @@ export class PhysicalInvService {
         itemCode: stock.itemCode,
         itemName: part?.itemName ?? null,
         matUid: stock.matUid,
+        locationName: stock.locationCode
+          ? (locMap.get(`${stock.warehouseCode}|${stock.locationCode}`) ?? stock.locationCode)
+          : null,
       };
     });
 

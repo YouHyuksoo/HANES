@@ -98,6 +98,19 @@ describe('ProductPhysicalInvService', () => {
       ]));
     });
 
+    it('제품 재고 목록에 보관위치와 기준정보 명칭을 포함한다', async () => {
+      // 제품 실사도 로케이션 단위로 돌며 세므로 보관위치가 필요하다.
+      const qb = createRawQueryBuilderMock();
+      mockStockRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+      await target.findStocks({ page: 1, limit: 50 } as any, 'CO', 'P01');
+
+      expect(qb.select).toHaveBeenCalledWith(expect.arrayContaining([
+        's.locationCode AS "locationCode"',
+        'wl.locationName AS "locationName"',
+      ]));
+    });
+
     it('joins reference tables by tenant-scoped keys', async () => {
       const qb = createRawQueryBuilderMock();
       mockStockRepo.createQueryBuilder.mockReturnValue(qb as any);

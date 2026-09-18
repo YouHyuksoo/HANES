@@ -5,6 +5,7 @@ import { ColumnDef, CellContext } from "@tanstack/react-table";
 import {
   createPartColumns,
   createWarehouseColumns,
+  createLocationColumn,
   createQtyColumn,
   createDateColumn,
 } from "@/lib/table-utils";
@@ -17,6 +18,8 @@ export interface StockData {
   reservedQty: number;
   availableQty: number;
   lastTransAt: string;
+  locationCode?: string | null;
+  locationName?: string | null;
   warehouse: {
     warehouseCode: string;
     warehouseName: string;
@@ -66,6 +69,8 @@ export function createStockGridColumns({
     },
     // 창고 코드, 명 (공통 유틸리티)
     ...createWarehouseColumns<StockData>(t),
+    // 보관위치 — 창고만으로는 자재를 찾지 못한다
+    createLocationColumn<StockData>(t),
     // 품목 코드, 명 (공통 유틸리티)
     ...createPartColumns<StockData>(t),
     // 현재고

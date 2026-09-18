@@ -7,6 +7,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
@@ -16,6 +17,7 @@ describe('InventoryQueryService', () => {
   let stockRepo: DeepMocked<Repository<MatStock>>;
   let lotRepo: DeepMocked<Repository<MatLot>>;
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
+  let warehouseLocationRepo: DeepMocked<Repository<WarehouseLocation>>;
   let partRepo: DeepMocked<Repository<ItemMaster>>;
 
   beforeEach(async () => {
@@ -23,6 +25,7 @@ describe('InventoryQueryService', () => {
     stockRepo = createMock<Repository<MatStock>>();
     lotRepo = createMock<Repository<MatLot>>();
     warehouseRepo = createMock<Repository<Warehouse>>();
+    warehouseLocationRepo = createMock<Repository<WarehouseLocation>>();
     partRepo = createMock<Repository<ItemMaster>>();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -32,6 +35,7 @@ describe('InventoryQueryService', () => {
         { provide: getRepositoryToken(MatStock), useValue: stockRepo },
         { provide: getRepositoryToken(MatLot), useValue: lotRepo },
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
+        { provide: getRepositoryToken(WarehouseLocation), useValue: warehouseLocationRepo },
         { provide: getRepositoryToken(ItemMaster), useValue: partRepo },
       ],
     })
@@ -42,6 +46,53 @@ describe('InventoryQueryService', () => {
   });
 
   afterEach(() => jest.clearAllMocks());
+
+  it('재고이력에도 해당 자재의 현재 보관위치를 붙인다', async () => {
+    // 이력을 보며 실물을 확인하려면 그 자재가 지금 어디 있는지가 필요하다.
+    const qb = {
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        { transNo: 'TX-001', itemCode: 'ITEM-001', matUid: 'MAT-001', toWarehouseId: 'WH-01' } as StockTransaction,
+      ]),
+    };
+    stockTransactionRepo.createQueryBuilder.mockReturnValue(qb as never);
+    warehouseRepo.find.mockResolvedValue([]);
+    partRepo.find.mockResolvedValue([]);
+    lotRepo.find.mockResolvedValue([]);
+    stockRepo.find.mockResolvedValue([
+      { matUid: 'MAT-001', warehouseCode: 'WH-01', locationCode: 'RM-A-01-01' } as MatStock,
+    ]);
+    warehouseLocationRepo.find.mockResolvedValue([
+      { warehouseCode: 'WH-01', locationCode: 'RM-A-01-01', locationName: '원자재 A구역 1열 1단' } as WarehouseLocation,
+    ]);
+
+    const result = await service.getTransactions({} as any, 'C1', 'P1');
+    const rows = Array.isArray(result) ? result : (result as { data: unknown[] }).data;
+
+    expect((rows[0] as { locationName?: string }).locationName).toBe('원자재 A구역 1열 1단');
+  });
+
+  it('현재고에 보관위치(로케이션 코드·명칭)를 포함한다', async () => {
+    // 재고현황·재고이동·폐기 화면이 공유하는 API 다 — 창고만으로는 자재를 찾지 못한다.
+    stockRepo.find.mockResolvedValue([
+      { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 10, reservedQty: 0, availableQty: 10, locationCode: 'RM-A-01-01' } as MatStock,
+    ]);
+    warehouseRepo.find.mockResolvedValue([]);
+    partRepo.find.mockResolvedValue([]);
+    lotRepo.find.mockResolvedValue([]);
+    warehouseLocationRepo.find.mockResolvedValue([
+      { warehouseCode: 'WH-01', locationCode: 'RM-A-01-01', locationName: '원자재 A구역 1열 1단' } as WarehouseLocation,
+    ]);
+
+    const result = await service.getStock({}, 'C1', 'P1');
+
+    expect(result[0].locationCode).toBe('RM-A-01-01');
+    expect(result[0].locationName).toBe('원자재 A구역 1열 1단');
+  });
 
   it('현재고 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
     stockRepo.find.mockResolvedValue([

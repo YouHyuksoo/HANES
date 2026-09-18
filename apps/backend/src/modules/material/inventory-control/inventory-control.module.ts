@@ -11,6 +11,7 @@ import { PhysicalInvCountDetail } from '../../../entities/physical-inv-count-det
 import { PhysicalInvSession } from '../../../entities/physical-inv-session.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { SystemModule } from '../../system/system.module';
 import { AdjustmentController } from '../controllers/adjustment.controller';
 import { HoldController } from '../controllers/hold.controller';
@@ -44,6 +45,7 @@ import { ShelfLifeService } from '../services/shelf-life.service';
       PhysicalInvSession,
       StockTransaction,
       Warehouse,
+      WarehouseLocation,
     ]),
   ],
   controllers: [

@@ -25,6 +25,8 @@ export interface TransactionData {
   remark?: string;
   fromWarehouse?: { warehouseCode: string; warehouseName: string };
   toWarehouse?: { warehouseCode: string; warehouseName: string };
+  locationCode?: string | null;
+  locationName?: string | null;
   part: { itemCode: string; itemName: string };
   lot?: { matUid: string };
   cancelRef?: { transNo: string };
@@ -89,6 +91,11 @@ export function createTransactionGridColumns({
       size: 100,
       meta: { filterType: 'text' as const },
       cell: ({ row }) => row.original.toWarehouse?.warehouseCode || '-',
+    },
+    // 보관위치(현재) — 이력을 보며 실물을 확인할 때 필요하다
+    {
+      accessorKey: "locationCode", header: t("material.stock.columns.location", "보관위치"), size: 110,
+      cell: ({ row }) => <span>{row.original.locationName || row.original.locationCode || "-"}</span>,
     },
     {
       accessorKey: 'itemCode',

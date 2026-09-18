@@ -6,6 +6,9 @@ import type { ColumnDef } from "@tanstack/react-table";
 interface StockForCount {
   id: string;
   warehouseCode: string;
+  warehouseName?: string;
+  locationCode?: string | null;
+  locationName?: string | null;
   itemCode: string;
   itemName?: string;
   matUid?: string;
@@ -24,6 +27,9 @@ export function createMaterialPhysicalInvGridColumns({
 }: CreateMaterialPhysicalInvGridColumnsOptions): ColumnDef<StockForCount>[] {
   return [
     { accessorKey: "warehouseName", header: t("material.physicalInv.warehouse"), size: 120, meta: { filterType: "text" as const } },
+    // 보관위치 — 실사는 로케이션 단위로 돌며 세는 작업이다
+    { accessorKey: "locationCode", header: t("material.stock.columns.location", "보관위치"), size: 120, meta: { filterType: "text" as const },
+      cell: ({ row }) => <span>{row.original.locationName || row.original.locationCode || "-"}</span> },
     { accessorKey: "itemCode", header: t("common.partCode"), size: 110, meta: { filterType: "text" as const },
       cell: ({ getValue }) => <span className="font-mono text-sm">{(getValue() as string) || "-"}</span> },
     { accessorKey: "itemName", header: t("common.partName"), size: 140, meta: { filterType: "text" as const } },

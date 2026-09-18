@@ -353,6 +353,28 @@ export function createWarehouseColumns<T>(
 /**
  * 자재 UID 컬럼 생성
  */
+/**
+ * 보관위치(로케이션) 컴럼 생성
+ *
+ * 창고만으로는 자재를 찾지 못하므로 재고·실사·이동 화면은 보관위치를 함께 보여준다.
+ * 표시값은 /master/warehouse 로케이션 기준정보의 명칭(locationName)이 정본이고,
+ * 기준정보에 없는 코드면 코드 그대로 보여준다.
+ */
+export function createLocationColumn<T>(
+  t: ReturnType<typeof useTranslation>["t"],
+  options: ColumnFactoryOptions = {}
+): ColumnDef<T, unknown> {
+  return {
+    accessorKey: "locationCode",
+    header: t("material.stock.columns.location", "보관위치"),
+    size: options.size ?? 120,
+    cell: ({ row }) => {
+      const data = row.original as { locationName?: string | null; locationCode?: string | null };
+      return <span>{data.locationName || data.locationCode || "-"}</span>;
+    },
+  };
+}
+
 export function createMatUidColumn<T>(
   t: ReturnType<typeof useTranslation>["t"],
   options: ColumnFactoryOptions = {}

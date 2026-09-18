@@ -9,6 +9,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
@@ -20,6 +21,7 @@ describe('MiscReceiptService', () => {
   let matLotRepo: DeepMocked<Repository<MatLot>>;
   let partRepo: DeepMocked<Repository<ItemMaster>>;
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
+  let warehouseLocationRepo: DeepMocked<Repository<WarehouseLocation>>;
   let dataSource: DeepMocked<DataSource>;
   let tx: DeepMocked<TransactionService>;
   let numbering: DeepMocked<NumberingService>;
@@ -31,6 +33,7 @@ describe('MiscReceiptService', () => {
     matLotRepo = createMock<Repository<MatLot>>();
     partRepo = createMock<Repository<ItemMaster>>();
     warehouseRepo = createMock<Repository<Warehouse>>();
+    warehouseLocationRepo = createMock<Repository<WarehouseLocation>>();
     dataSource = createMock<DataSource>();
     tx = createMock<TransactionService>();
     numbering = createMock<NumberingService>();
@@ -49,6 +52,7 @@ describe('MiscReceiptService', () => {
         MiscReceiptService,
         { provide: getRepositoryToken(StockTransaction), useValue: stockTxRepo },
         { provide: getRepositoryToken(MatStock), useValue: matStockRepo },
+        { provide: getRepositoryToken(WarehouseLocation), useValue: warehouseLocationRepo },
         { provide: getRepositoryToken(MatLot), useValue: matLotRepo },
         { provide: getRepositoryToken(ItemMaster), useValue: partRepo },
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
@@ -95,6 +99,38 @@ describe('MiscReceiptService', () => {
         }),
       );
     });
+  });
+
+  it('기타입고 이력에 해당 자재의 현재 보관위치를 붙인다', async () => {
+    // 입고한 자재를 다시 찾을 때 창고만으로는 부족하다. 이력 시점이 아니라 '현재' 위치다.
+    stockTxRepo.find.mockResolvedValue([
+      {
+        transNo: 'MISC-001',
+        transType: 'MISC_IN',
+        itemCode: 'ITEM-001',
+        matUid: 'MAT-001',
+        toWarehouseId: 'WH-01',
+      } as StockTransaction,
+    ]);
+    stockTxRepo.count.mockResolvedValue(1);
+    partRepo.find.mockResolvedValue([]);
+    matLotRepo.find.mockResolvedValue([]);
+    warehouseRepo.find.mockResolvedValue([]);
+    matStockRepo.find.mockResolvedValue([
+      { matUid: 'MAT-001', warehouseCode: 'WH-01', locationCode: 'RM-A-01-01' } as MatStock,
+    ]);
+    warehouseLocationRepo.find.mockResolvedValue([
+      { warehouseCode: 'WH-01', locationCode: 'RM-A-01-01', locationName: '원자재 A구역 1열 1단' } as WarehouseLocation,
+    ]);
+
+    const result = await service.findAll({ page: 1, limit: 10 } as any);
+
+    expect(result.data[0]).toEqual(
+      expect.objectContaining({
+        locationCode: 'RM-A-01-01',
+        locationName: '원자재 A구역 1열 1단',
+      }),
+    );
   });
 
   it('increments qty and availableQty atomically when stock already exists', async () => {

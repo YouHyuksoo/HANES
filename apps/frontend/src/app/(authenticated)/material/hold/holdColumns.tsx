@@ -18,6 +18,8 @@ export interface HoldLot {
   vendor: string;
   vendorName?: string | null;
   warehouseName?: string;
+  locationCode?: string | null;
+  locationName?: string | null;
 }
 
 export const formatQty = (value?: number | null) => (typeof value === "number" ? value.toLocaleString() : "0");
@@ -76,6 +78,11 @@ export function createHoldGridColumns({
       cell: ({ row }) => (
         <span className="font-semibold">{formatQty(row.original.qty)} {row.original.unit || ""}</span>
       ),
+    },
+    {
+      // 보관위치 — 홀드 자재를 찾으려면 창고보다 로케이션이 필요하다
+      accessorKey: "locationCode", header: t("material.stock.columns.location", "보관위치"), size: 120,
+      cell: ({ row }) => <span>{row.original.locationName || row.original.locationCode || "-"}</span>,
     },
     {
       accessorKey: "vendor", header: t("material.hold.vendor"), size: 100,

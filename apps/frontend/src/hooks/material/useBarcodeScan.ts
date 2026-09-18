@@ -28,6 +28,8 @@ export interface ScannedLot {
   iqcStatus: string;
   warehouseCode: string;
   warehouseName: string;
+  locationCode?: string | null;
+  locationName?: string | null;
   supplierName?: string;
 }
 

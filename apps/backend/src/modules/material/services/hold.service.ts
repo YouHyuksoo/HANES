@@ -8,6 +8,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, In, FindOptionsWhere } from 'typeorm';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { HoldActionDto, ReleaseHoldDto, HoldQueryDto } from '../dto/hold.dto';
@@ -20,6 +22,10 @@ export class HoldService {
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(MatStock)
     private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(Warehouse)
+    private readonly warehouseRepository: Repository<Warehouse>,
+    @InjectRepository(WarehouseLocation)
+    private readonly warehouseLocationRepository: Repository<WarehouseLocation>,
     @InjectRepository(ItemMaster)
     private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(PartnerMaster)
@@ -86,6 +92,20 @@ export class HoldService {
       : [];
     const stockMap = new Map(stocks.map((s) => [s.matUid, s]));
 
+    // 보관위치: 창고명·로케이션명은 /master/warehouse 기준정보가 정본이다.
+    const whCodes = [...new Set(stocks.map((s) => s.warehouseCode).filter(Boolean))];
+    const locCodes = [...new Set(stocks.map((s) => s.locationCode).filter(Boolean))] as string[];
+    const [warehouses, locations] = await Promise.all([
+      whCodes.length > 0
+        ? this.warehouseRepository.find({ where: { warehouseCode: In(whCodes), ...this.tenantWhere(company, plant) } })
+        : Promise.resolve([]),
+      locCodes.length > 0
+        ? this.warehouseLocationRepository.find({ where: { locationCode: In(locCodes), ...this.tenantWhere(company, plant) } })
+        : Promise.resolve([]),
+    ]);
+    const warehouseMap = new Map(warehouses.map((w) => [w.warehouseCode, w.warehouseName]));
+    const locationMap = new Map(locations.map((l) => [`${l.warehouseCode}|${l.locationCode}`, l.locationName]));
+
     // 공급사명 조회 (MAT_LOTS.VENDOR = PARTNER_MASTERS.PARTNER_CODE), 스코프 포함, IN 절 일괄
     const vendorCodes = Array.from(
       new Set(data.map((lot) => lot.vendor).filter((v): v is string => Boolean(v))),
@@ -106,6 +126,13 @@ export class HoldService {
         itemName: part?.itemName ?? null,
         unit: part?.unit ?? null,
         warehouseCode: stock?.warehouseCode ?? null,
+        warehouseName: stock?.warehouseCode
+          ? (warehouseMap.get(stock.warehouseCode) ?? stock.warehouseCode)
+          : null,
+        locationCode: stock?.locationCode ?? null,
+        locationName: stock?.warehouseCode && stock?.locationCode
+          ? (locationMap.get(`${stock.warehouseCode}|${stock.locationCode}`) ?? stock.locationCode)
+          : null,
         vendorName: lot.vendor ? (partnerMap.get(lot.vendor) ?? lot.vendor) : null,
       };
     });

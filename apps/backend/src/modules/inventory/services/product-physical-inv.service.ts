@@ -5,6 +5,7 @@ import { ProductStock } from '../../../entities/product-stock.entity';
 import { InvAdjLog } from '../../../entities/inv-adj-log.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { FgLabel } from '../../../entities/fg-label.entity';
 import { PhysicalInvSession } from '../../../entities/physical-inv-session.entity';
@@ -71,11 +72,19 @@ export class ProductPhysicalInvService {
       .createQueryBuilder('s')
       .leftJoin(ItemMaster, 'p', 'p.itemCode = s.itemCode AND p.company = s.company AND p.plant = s.plant')
       .leftJoin(Warehouse, 'w', 'w.warehouseCode = s.warehouseCode AND w.company = s.company AND w.plant = s.plant')
+      // 보관위치 명칭은 /master/warehouse 로케이션 기준정보가 정본이다.
+      .leftJoin(
+        WarehouseLocation,
+        'wl',
+        'wl.warehouseCode = s.warehouseCode AND wl.locationCode = s.locationCode AND wl.company = s.company AND wl.plant = s.plant',
+      )
       .select([
         's.warehouseCode || \'::\' || s.itemCode AS "id"',
         's.warehouseCode AS "warehouseCode"',
         's.warehouseCode AS "warehouseId"',
         'w.warehouseName AS "warehouseName"',
+        's.locationCode AS "locationCode"',
+        'wl.locationName AS "locationName"',
         's.itemCode AS "itemCode"',
         'p.itemName AS "itemName"',
         'p.unit AS "unit"',

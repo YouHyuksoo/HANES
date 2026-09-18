@@ -17,6 +17,8 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 
@@ -26,6 +28,8 @@ describe('MatLotService', () => {
   let mockItemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
+  let mockWarehouseRepo: DeepMocked<Repository<Warehouse>>;
+  let mockWarehouseLocationRepo: DeepMocked<Repository<WarehouseLocation>>;
   let mockMatIssueRepo: DeepMocked<Repository<MatIssue>>;
 
   const createMatLot = (overrides: Partial<MatLot> = {}): MatLot =>
@@ -61,6 +65,8 @@ describe('MatLotService', () => {
     mockItemMasterRepo = createMock<Repository<ItemMaster>>();
     mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
     mockMatStockRepo = createMock<Repository<MatStock>>();
+    mockWarehouseRepo = createMock<Repository<Warehouse>>();
+    mockWarehouseLocationRepo = createMock<Repository<WarehouseLocation>>();
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
     mockPartnerMasterRepo.find.mockResolvedValue([]);
 
@@ -71,6 +77,8 @@ describe('MatLotService', () => {
         { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
+        { provide: getRepositoryToken(Warehouse), useValue: mockWarehouseRepo },
+        { provide: getRepositoryToken(WarehouseLocation), useValue: mockWarehouseLocationRepo },
         { provide: getRepositoryToken(MatIssue), useValue: mockMatIssueRepo },
       ],
     })
@@ -238,6 +246,49 @@ describe('MatLotService', () => {
 
   // ─── findByMatUid ───
   describe('findByMatUid', () => {
+    it('재고의 보관위치(창고·로케이션)를 함께 반환한다', async () => {
+      // 스캔 출고 화면이 작업자에게 "어디서 꺼내야 하는지"를 보여주려면 둘 다 필요하다.
+      mockMatLotRepo.findOne.mockResolvedValue(createMatLot());
+      mockItemMasterRepo.findOne.mockResolvedValue(createItemMaster());
+      mockMatStockRepo.findOne.mockResolvedValue({
+        warehouseCode: 'WH-01',
+        locationCode: 'A-01-03',
+        qty: 120,
+      } as unknown as MatStock);
+      mockWarehouseRepo.findOne.mockResolvedValue({
+        warehouseCode: 'WH-01',
+        warehouseName: '원자재창고',
+      } as unknown as Warehouse);
+      mockWarehouseLocationRepo.findOne.mockResolvedValue({
+        warehouseCode: 'WH-01',
+        locationCode: 'A-01-03',
+        locationName: 'A구역 1열 3단',
+      } as unknown as WarehouseLocation);
+
+      const result = await target.findByMatUid('MAT-001');
+
+      expect(result.warehouseCode).toBe('WH-01');
+      expect(result.warehouseName).toBe('원자재창고');
+      expect(result.locationCode).toBe('A-01-03');
+      expect(result.locationName).toBe('A구역 1열 3단');
+    });
+
+    it('창고 명칭을 찾지 못하면 창고코드를 그대로 보여준다', async () => {
+      mockMatLotRepo.findOne.mockResolvedValue(createMatLot());
+      mockItemMasterRepo.findOne.mockResolvedValue(createItemMaster());
+      mockMatStockRepo.findOne.mockResolvedValue({
+        warehouseCode: 'WH-09',
+        locationCode: null,
+        qty: 5,
+      } as unknown as MatStock);
+      mockWarehouseRepo.findOne.mockResolvedValue(null);
+
+      const result = await target.findByMatUid('MAT-001');
+
+      expect(result.warehouseName).toBe('WH-09');
+      expect(result.locationCode).toBeNull();
+    });
+
     it('LOT을 matUid로 찾아 반환한다', async () => {
       const lot = createMatLot();
       mockMatLotRepo.findOne.mockResolvedValue(lot);

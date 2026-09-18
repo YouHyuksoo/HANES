@@ -115,8 +115,12 @@ export default function LotAllocationPanel({
                     <td className="px-2 py-1.5">
                       <div className="flex min-w-0 items-baseline gap-1.5">
                         <span className="truncate font-mono font-medium text-text">{lot.matUid}</span>
+                        {/* 보관위치: 창고 + 로케이션 — 창고만으로는 자재를 찾지 못한다 */}
                         <span className="shrink-0 text-[10px] text-text-muted">
                           {lot.warehouseName ?? lot.warehouseCode}
+                          {lot.locationName || lot.locationCode
+                            ? ` / ${lot.locationName || lot.locationCode}`
+                            : ''}
                         </span>
                         {i === 0 && firstIsFifoFirst && (
                           <span className="shrink-0 rounded border border-primary/40 px-1 text-[10px] text-primary">

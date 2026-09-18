@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
@@ -22,6 +24,8 @@ import { MatLotService } from '../services/mat-lot.service';
       ItemMaster,
       PartnerMaster,
       StockTransaction,
+      Warehouse,
+      WarehouseLocation,
     ]),
   ],
   controllers: [MatLotController, LotSplitController, LotMergeController],

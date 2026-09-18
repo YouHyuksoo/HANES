@@ -14,6 +14,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { IssueRequestController } from '../controllers/issue-request.controller';
 import { MatIssueController } from '../controllers/mat-issue.controller';
 import { IssueRequestAllocationService } from '../services/issue-request-allocation.service';
@@ -38,6 +39,7 @@ import { MatOutRequestService } from '../services/mat-out-request.service';
       RoutingProcess,
       StockTransaction,
       Warehouse,
+      WarehouseLocation,
     ]),
   ],
   controllers: [MatIssueController, IssueRequestController],

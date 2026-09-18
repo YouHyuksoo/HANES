@@ -566,6 +566,8 @@ export class ArrivalService {
 
       return {
         ...item,
+        // 적재 예정 위치 — 입하/입고 이력은 위치 컴럼이 없으므로 품목 고정위치를 보여준다.
+        plannedLocationCode: part?.storageLocation?.trim() || null,
         // flat 필드 (하위 호환)
         itemCode: part?.itemCode ?? item.itemCode,
         itemName: part?.itemName ?? null,
@@ -1134,6 +1136,9 @@ export class ArrivalService {
         arrivalQty: a.qty,
         currentStock,
         warehouseName: warehouse?.warehouseName || a.warehouseCode,
+        // 적재 예정 위치 — 입하 단계라 실제 보관위치는 없다.
+        // 입고 시 별도 지정이 없으면 품목마스터 고정위치로 들어간다.
+        plannedLocationCode: part?.storageLocation?.trim() || null,
         arrivalType: a.arrivalType,
         arrivalDate: a.arrivalDate,
       };

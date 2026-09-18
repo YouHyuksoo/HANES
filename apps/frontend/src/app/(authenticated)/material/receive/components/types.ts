@@ -27,6 +27,8 @@ export interface WarehouseInfo {
 
 /** 입고 가능 LOT (IQC 합격 + 미입고) */
 export interface ReceivableLot {
+  /** 적재 예정 위치(품목마스터 고정위치) */
+  plannedLocationCode?: string | null;
   matUid: string;
   itemCode: string;
   itemType: string;
@@ -62,6 +64,9 @@ export interface ReceivingRecord {
   part: PartInfo;
   lot?: LotInfo | null;
   toWarehouse?: WarehouseInfo | null;
+  /** 보관위치(현재 재고 기준) */
+  locationCode?: string | null;
+  locationName?: string | null;
   /** 공급처(LOT 입고 거래처 코드) */
   vendor?: string | null;
   /** 공급사명 */

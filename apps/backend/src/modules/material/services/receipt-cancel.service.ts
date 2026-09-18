@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, IsNull, Between, In, Like, FindOptionsWhere } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
@@ -29,6 +30,8 @@ export class ReceiptCancelService {
     private readonly stockTransactionRepository: Repository<StockTransaction>,
     @InjectRepository(MatStock)
     private readonly matStockRepository: Repository<MatStock>,
+    @InjectRepository(WarehouseLocation)
+    private readonly warehouseLocationRepository: Repository<WarehouseLocation>,
     @InjectRepository(MatLot)
     private readonly matLotRepository: Repository<MatLot>,
     @InjectRepository(ItemMaster)
@@ -119,10 +122,22 @@ export class ReceiptCancelService {
       : [];
     const partnerMap = new Map(partners.map((p) => [p.partnerCode, p.partnerName]));
 
+    // 입고를 되돌리려면 그 자재를 찾아야 하므로 현재 보관위치를 붙인다.
+    const stocks = matUids.length > 0
+      ? await this.matStockRepository.find({ where: { matUid: In(matUids), ...tenantWhere } })
+      : [];
+    const stockMap = new Map(stocks.map((s) => [s.matUid, s]));
+    const locCodes = [...new Set(stocks.map((s) => s.locationCode).filter(Boolean))] as string[];
+    const locations = locCodes.length > 0
+      ? await this.warehouseLocationRepository.find({ where: { locationCode: In(locCodes), ...tenantWhere } })
+      : [];
+    const locationMap = new Map(locations.map((l) => [`${l.warehouseCode}|${l.locationCode}`, l.locationName]));
+
     const enriched = data.map((tx) => {
       const part = partMap.get(tx.itemCode);
       const lot = tx.matUid ? lotMap.get(tx.matUid) : null;
       const vendor = lot?.vendor ?? null;
+      const stock = tx.matUid ? stockMap.get(tx.matUid) : null;
       return {
         ...tx,
         // 프론트가 취소 API 키로 사용하는 id (= 자연키 TRANS_NO). 누락 시 취소 동작 불가.
@@ -132,6 +147,10 @@ export class ReceiptCancelService {
         warehouseName: tx.toWarehouseId ? (warehouseMap.get(tx.toWarehouseId) ?? tx.toWarehouseId) : null,
         vendor,
         vendorName: vendor ? (partnerMap.get(vendor) ?? vendor) : null,
+        locationCode: stock?.locationCode ?? null,
+        locationName: stock?.warehouseCode && stock?.locationCode
+          ? (locationMap.get(`${stock.warehouseCode}|${stock.locationCode}`) ?? stock.locationCode)
+          : null,
       };
     });
 

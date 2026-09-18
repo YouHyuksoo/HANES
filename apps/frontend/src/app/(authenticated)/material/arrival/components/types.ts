@@ -45,6 +45,8 @@ export interface ArrivalRecord {
   part: PartInfo;
   lot?: LotInfo | null;
   toWarehouse?: WarehouseInfo | null;
+  /** 적재 예정 위치(품목마스터 고정위치) */
+  plannedLocationCode?: string | null;
 }
 
 /** PO 품목 (입하 가능 목록에서 사용) */

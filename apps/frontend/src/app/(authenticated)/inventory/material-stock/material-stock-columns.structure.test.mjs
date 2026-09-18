@@ -20,3 +20,9 @@ test('/inventory/material-stock page consumes the extracted column factories', (
   assert.doesNotMatch(page, /accessorKey: "warehouseName"/);
   assert.doesNotMatch(page, /header: t\("material\.stock\.groupColumns\.totalQty"\)/);
 });
+
+test('/inventory/material-stock shows the storage location next to the warehouse', () => {
+  // 창고만으로는 자재를 찾지 못한다 — 보관 로케이션을 함께 보여준다.
+  assert.match(columns, /accessorKey: "locationCode"/);
+  assert.match(columns, /material\.stock\.columns\.location/);
+});

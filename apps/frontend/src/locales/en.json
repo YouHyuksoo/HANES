@@ -3058,7 +3058,8 @@
       "splitCommittedReloadFailed": "The split is already committed. If the labels were not printed, use [Reprint Labels], attach them, then reload.",
       "splitLabelLoadFailed": "Could not load the split label history. Reopen the dialog if you need to reprint labels.",
       "fractionUnusable": "Below 1 · not allocatable",
-      "splitNotPossible": "Cannot split · label qty will not match"
+      "splitNotPossible": "Cannot split · label qty will not match",
+      "storageLocation": "Storage location"
     },
     "stock": {
       "title": "Material Stock",
@@ -3094,7 +3095,8 @@
         "elapsedDays": "Elapsed Days",
         "remainingDays": "Remaining Life",
         "shelfLifeStatus": "Shelf Life",
-        "dayUnit": "d"
+        "dayUnit": "d",
+        "plannedLocation": "Planned location"
       },
       "shelfLife": {
         "expired": "Expired",
@@ -8920,7 +8922,8 @@
       "invCount": "Inventory Count",
       "productInv": "Product Inventory",
       "productReceiving": "Product Box Receiving",
-      "logout": "Logout"
+      "logout": "Logout",
+      "rackAssign": "Rack Assignment"
     },
     "productReceiving": {
       "fgAutoWarehouse": "Finished goods are auto-received into the default FG warehouse.",
@@ -9213,6 +9216,14 @@
       "error": "Server connection failed. Please try again later.",
       "retry": "Retry",
       "retrying": "Rechecking server"
+    },
+    "rackAssign": {
+      "title": "Rack Assignment",
+      "scanRack": "Scan the rack (location) barcode",
+      "scanMaterial": "Scan the material serial",
+      "scanRackFirst": "Scan a rack barcode first",
+      "changeRack": "Change rack",
+      "unassigned": "Unassigned"
     }
   },
   "activityLog": {

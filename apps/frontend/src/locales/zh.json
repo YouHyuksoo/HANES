@@ -3040,7 +3040,8 @@
       "splitCommittedReloadFailed": "分割已提交。若标签尚未打印，请用[重新打印标签]打印并贴好后重新查询。",
       "splitLabelLoadFailed": "无法加载分割标签记录。如需重新打印标签，请重新打开。",
       "fractionUnusable": "不足 1 · 无法分配",
-      "splitNotPossible": "无法分割 · 标签数量不一致"
+      "splitNotPossible": "无法分割 · 标签数量不一致",
+      "storageLocation": "保管位置"
     },
     "stock": {
       "title": "物料库存",
@@ -3067,7 +3068,7 @@
         "partName": "零件名称",
         "category": "分类",
         "warehouse": "仓库",
-        "location": "位置",
+        "location": "保管位置",
         "quantity": "数量",
         "safetyStock": "安全库存",
         "status": "状态",
@@ -3076,7 +3077,8 @@
         "elapsedDays": "经过天数",
         "remainingDays": "剩余有效期",
         "shelfLifeStatus": "有效期",
-        "dayUnit": "天"
+        "dayUnit": "天",
+        "plannedLocation": "保管位置(预定)"
       },
       "shelfLife": {
         "expired": "过期",
@@ -8902,7 +8904,8 @@
       "invCount": "物料盘点",
       "productInv": "产品库存盘点",
       "productReceiving": "产品装箱入库",
-      "logout": "登出"
+      "logout": "登出",
+      "rackAssign": "货架指定"
     },
     "productReceiving": {
       "fgAutoWarehouse": "成品自动入库至良品仓库(FG 默认仓库)。",
@@ -9195,6 +9198,14 @@
       "error": "服务器连接失败，请稍后重试。",
       "retry": "重试",
       "retrying": "正在重新检查服务器"
+    },
+    "rackAssign": {
+      "title": "货架指定",
+      "scanRack": "请扫描货架（库位）条码",
+      "scanMaterial": "请扫描物料序列号",
+      "scanRackFirst": "请先扫描货架条码",
+      "changeRack": "更换货架",
+      "unassigned": "未指定"
     }
   },
   "activityLog": {

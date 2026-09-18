@@ -16,6 +16,7 @@ export interface ArrivalStockItem {
   arrivalQty: number;
   currentStock: number;
   warehouseName: string;
+  plannedLocationCode?: string | null;
   arrivalType: string;
   arrivalDate: string;
   manufactureDate: string | null;
@@ -127,6 +128,13 @@ export function createArrivalStockGridColumns({
         header: t("material.arrivalStock.warehouseName"),
         size: 100,
         meta: { filterType: "text" as const },
+      },
+      {
+        // 적재 예정 위치 — 입하 단계라 실제 보관위치는 아직 없다
+        accessorKey: "plannedLocationCode",
+        header: t("material.stock.columns.plannedLocation", "보관위치(예정)"),
+        size: 120,
+        cell: ({ row }) => <span>{row.original.plannedLocationCode || "-"}</span>,
       },
       {
         accessorKey: "arrivalType",

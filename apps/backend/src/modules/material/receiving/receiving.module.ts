@@ -19,6 +19,7 @@ import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity'
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { VendorBarcodeMapping } from '../../../entities/vendor-barcode-mapping.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { WorkerMaster } from '../../../entities/worker-master.entity';
 import { SystemModule } from '../../system/system.module';
 import { AqlModule } from '../../quality/aql/aql.module';
@@ -62,6 +63,7 @@ import { ReceivingService } from '../services/receiving.service';
       StockTransaction,
       VendorBarcodeMapping,
       Warehouse,
+      WarehouseLocation,
       WorkerMaster,
     ]),
   ],

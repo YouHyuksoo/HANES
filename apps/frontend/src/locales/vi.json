@@ -3040,7 +3040,8 @@
       "splitCommittedReloadFailed": "Việc tách đã được lưu. Nếu nhãn chưa in, hãy dùng [In lại nhãn], dán nhãn rồi tải lại danh sách.",
       "splitLabelLoadFailed": "Không tải được lịch sử nhãn tách. Hãy mở lại nếu cần in lại nhãn.",
       "fractionUnusable": "Dưới 1 · không phân bổ",
-      "splitNotPossible": "Không thể tách · số lượng nhãn không khớp"
+      "splitNotPossible": "Không thể tách · số lượng nhãn không khớp",
+      "storageLocation": "Vị trí lưu kho"
     },
     "stock": {
       "title": "Tồn kho vật tư",
@@ -3076,7 +3077,8 @@
         "elapsedDays": "Số ngày đã qua",
         "remainingDays": "HSD còn lại",
         "shelfLifeStatus": "Hạn SD",
-        "dayUnit": "ngày"
+        "dayUnit": "ngày",
+        "plannedLocation": "Vị trí dự kiến"
       },
       "shelfLife": {
         "expired": "Hết hạn",
@@ -8902,7 +8904,8 @@
       "invCount": "Kiểm kê vật tư",
       "productInv": "Kiểm kê sản phẩm",
       "productReceiving": "Nhập kho thùng SP",
-      "logout": "Đăng xuất"
+      "logout": "Đăng xuất",
+      "rackAssign": "Chỉ định kệ kho"
     },
     "productReceiving": {
       "fgAutoWarehouse": "Thành phẩm được tự động nhập vào kho FG mặc định.",
@@ -9195,6 +9198,14 @@
       "error": "Kết nối máy chủ thất bại. Vui lòng thử lại sau.",
       "retry": "Thử lại",
       "retrying": "Đang kiểm tra lại máy chủ"
+    },
+    "rackAssign": {
+      "title": "Chỉ định kệ kho",
+      "scanRack": "Quét mã vạch kệ (vị trí)",
+      "scanMaterial": "Quét số sê-ri vật tư",
+      "scanRackFirst": "Hãy quét mã vạch kệ trước",
+      "changeRack": "Đổi kệ",
+      "unassigned": "Chưa chỉ định"
     }
   },
   "activityLog": {

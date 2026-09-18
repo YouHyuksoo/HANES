@@ -16,6 +16,8 @@ import { MatLot } from '../../../entities/mat-lot.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { CreateMatLotDto, UpdateMatLotDto, MatLotQueryDto } from '../dto/mat-lot.dto';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
@@ -34,6 +36,10 @@ export class MatLotService {
     private readonly matStockRepository: Repository<MatStock>,
     @InjectRepository(MatIssue)
     private readonly matIssueRepository: Repository<MatIssue>,
+    @InjectRepository(Warehouse)
+    private readonly warehouseRepository: Repository<Warehouse>,
+    @InjectRepository(WarehouseLocation)
+    private readonly warehouseLocationRepository: Repository<WarehouseLocation>,
   ) {}
 
   private tenantWhere(company?: string | null, plant?: string | null) {
@@ -143,12 +149,34 @@ export class MatLotService {
       this.matStockRepository.findOne({ where: { matUid, ...tenantWhere }, order: { warehouseCode: 'ASC' } }),
     ]);
 
+    // 스캔 출고 화면은 "어느 창고 어느 로케이션에서 꺼내는지"를 같이 보여줘야 한다.
+    // 창고명·로케이션명은 /master/warehouse 기준정보가 정본이다.
+    const [warehouse, location] = await Promise.all([
+      stock?.warehouseCode
+        ? this.warehouseRepository.findOne({
+            where: { warehouseCode: stock.warehouseCode, ...tenantWhere },
+          })
+        : null,
+      stock?.warehouseCode && stock?.locationCode
+        ? this.warehouseLocationRepository.findOne({
+            where: {
+              warehouseCode: stock.warehouseCode,
+              locationCode: stock.locationCode,
+              ...tenantWhere,
+            },
+          })
+        : null,
+    ]);
+
     return {
       ...lot,
       itemCode: lot.itemCode,
       itemName: part?.itemName ?? null,
       unit: part?.unit ?? null,
       warehouseCode: stock?.warehouseCode ?? null,
+      warehouseName: warehouse?.warehouseName ?? stock?.warehouseCode ?? null,
+      locationCode: stock?.locationCode ?? null,
+      locationName: location?.locationName ?? stock?.locationCode ?? null,
       qty: stock?.qty ?? lot.currentQty,
     };
   }

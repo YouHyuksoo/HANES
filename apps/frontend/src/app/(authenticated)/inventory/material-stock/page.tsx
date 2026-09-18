@@ -34,6 +34,7 @@ export interface StockItem {
   warehouseCode: string;
   warehouseName?: string;
   locationCode?: string | null;
+  locationName?: string | null;
   itemCode: string;
   matUid?: string | null;
   qty: number;

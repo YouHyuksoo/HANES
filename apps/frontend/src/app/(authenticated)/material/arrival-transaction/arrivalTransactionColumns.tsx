@@ -17,6 +17,7 @@ export interface ArrivalTransactionRow {
   qty: number;
   warehouseCode?: string | null;
   warehouseName?: string | null;
+  plannedLocationCode?: string | null;
   refType?: string | null;
   refId?: string | null;
   cancelRefId?: string | null;
@@ -162,6 +163,13 @@ export function createArrivalTransactionGridColumns({
       size: 140,
       meta: { filterType: "text" as const },
       cell: ({ row }) => row.original.toWarehouse?.warehouseName || row.original.warehouseName || row.original.warehouseCode || "-",
+    },
+    {
+      // 적재 예정 위치 — 입하 이력은 위치 컴럼이 없다
+      accessorKey: "plannedLocationCode",
+      header: t("material.stock.columns.plannedLocation", "보관위치(예정)"),
+      size: 120,
+      cell: ({ row }) => <span>{row.original.plannedLocationCode || "-"}</span>,
     },
     {
       accessorKey: "refType",

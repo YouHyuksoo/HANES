@@ -10,6 +10,8 @@ export interface MiscReceiptRecord {
   itemCode: string;
   itemName: string;
   warehouseName: string;
+  locationCode?: string | null;
+  locationName?: string | null;
   qty: number;
   unit: string;
   remark: string;
@@ -46,6 +48,11 @@ export function createMiscReceiptGridColumns({
     {
       accessorKey: "warehouseName", header: t("material.miscReceipt.warehouse"), size: 110,
       meta: { filterType: "text" as const },
+    },
+    // 보관위치(현재) — 입고한 자재를 다시 찾을 때 필요하다
+    {
+      accessorKey: "locationCode", header: t("material.stock.columns.location", "보관위치"), size: 110,
+      cell: ({ row }) => <span>{row.original.locationName || row.original.locationCode || "-"}</span>,
     },
     {
       accessorKey: "qty", header: t("material.miscReceipt.qty"), size: 100,

@@ -109,6 +109,13 @@ export function createMaterialStockGridColumns({
       ),
     },
     {
+      // 창고만으로는 자재를 찾지 못한다 — 창고 다음에 보관 로케이션을 둔다.
+      accessorKey: "locationCode",
+      header: t("material.stock.columns.location"),
+      size: 100,
+      cell: ({ row }) => <span>{row.original.locationName || row.original.locationCode || "-"}</span>,
+    },
+    {
       accessorKey: "qty",
       header: t("material.stock.columns.quantity"),
       size: 90,

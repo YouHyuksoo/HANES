@@ -11,6 +11,7 @@ import { ItemMaster } from '../../../entities/item-master.entity';
 import { PhysicalInvSession } from '../../../entities/physical-inv-session.entity';
 import { PhysicalInvCountDetail } from '../../../entities/physical-inv-count-detail.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -26,6 +27,7 @@ describe('PhysicalInvService', () => {
   let sessionRepo: DeepMocked<Repository<PhysicalInvSession>>;
   let countDetailRepo: DeepMocked<Repository<PhysicalInvCountDetail>>;
   let warehouseRepo: DeepMocked<Repository<Warehouse>>;
+  let warehouseLocationRepo: DeepMocked<Repository<WarehouseLocation>>;
   let dataSource: DeepMocked<DataSource>;
   let tx: DeepMocked<TransactionService>;
   let queryRunner: DeepMocked<QueryRunner>;
@@ -38,6 +40,7 @@ describe('PhysicalInvService', () => {
     sessionRepo = createMock<Repository<PhysicalInvSession>>();
     countDetailRepo = createMock<Repository<PhysicalInvCountDetail>>();
     warehouseRepo = createMock<Repository<Warehouse>>();
+    warehouseLocationRepo = createMock<Repository<WarehouseLocation>>();
     dataSource = createMock<DataSource>();
     tx = createMock<TransactionService>();
     queryRunner = createMock<QueryRunner>();
@@ -63,6 +66,7 @@ describe('PhysicalInvService', () => {
         { provide: getRepositoryToken(PhysicalInvSession), useValue: sessionRepo },
         { provide: getRepositoryToken(PhysicalInvCountDetail), useValue: countDetailRepo },
         { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
+        { provide: getRepositoryToken(WarehouseLocation), useValue: warehouseLocationRepo },
         { provide: DataSource, useValue: dataSource },
         { provide: TransactionService, useValue: tx },
         { provide: NumberingService, useValue: createMock<NumberingService>() },
@@ -110,6 +114,31 @@ describe('PhysicalInvService', () => {
           matUid: 'MAT-MISSING',
         }),
       );
+    });
+
+    it('실사 대상 재고에 보관위치 명칭을 포함한다', async () => {
+      // 실사는 로케이션을 돌며 세는 작업이라 보관위치가 없으면 수행 자체가 안 된다.
+      const queryBuilder = {
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        clone: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([
+          { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 10, locationCode: 'RM-A-01-01' } as MatStock,
+        ]),
+        getCount: jest.fn().mockResolvedValue(1),
+      };
+      matStockRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+      itemMasterRepo.find.mockResolvedValue([]);
+      matLotRepo.find.mockResolvedValue([]);
+      warehouseLocationRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', locationCode: 'RM-A-01-01', locationName: '원자재 A구역 1열 1단' } as WarehouseLocation,
+      ]);
+
+      const result = await service.findStocks({ page: 1, limit: 10 });
+
+      expect(result.data[0].locationName).toBe('원자재 A구역 1열 1단');
     });
 
     it('실사 재고 목록 보강 조회도 요청 테넌트 범위로 제한한다', async () => {

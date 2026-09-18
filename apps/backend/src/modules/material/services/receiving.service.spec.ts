@@ -6,6 +6,7 @@ import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { ReceivingService } from './receiving.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
 import { MatArrival } from '../../../entities/mat-arrival.entity';
 import { MatReceiving } from '../../../entities/mat-receiving.entity';
@@ -33,6 +34,7 @@ describe('ReceivingService', () => {
   let target: ReceivingService;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
+  let mockWarehouseLocationRepo: DeepMocked<Repository<WarehouseLocation>>;
   let mockMatArrivalRepo: DeepMocked<Repository<MatArrival>>;
   let mockMatReceivingRepo: DeepMocked<Repository<MatReceiving>>;
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
@@ -53,6 +55,7 @@ describe('ReceivingService', () => {
   beforeEach(async () => {
     mockMatLotRepo = createMock<Repository<MatLot>>();
     mockMatStockRepo = createMock<Repository<MatStock>>();
+    mockWarehouseLocationRepo = createMock<Repository<WarehouseLocation>>();
     mockMatArrivalRepo = createMock<Repository<MatArrival>>();
     mockMatReceivingRepo = createMock<Repository<MatReceiving>>();
     // 업체바코드 중복 검사는 기본적으로 '미사용'으로 둔다 — 중복 차단은 전용 테스트에서 검증한다.
@@ -83,6 +86,7 @@ describe('ReceivingService', () => {
         ReceivingService,
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
+        { provide: getRepositoryToken(WarehouseLocation), useValue: mockWarehouseLocationRepo },
         { provide: getRepositoryToken(MatArrival), useValue: mockMatArrivalRepo },
         { provide: getRepositoryToken(MatReceiving), useValue: mockMatReceivingRepo },
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
@@ -107,6 +111,43 @@ describe('ReceivingService', () => {
   });
 
   afterEach(() => jest.clearAllMocks());
+
+  it('입고 이력에 해당 자재의 현재 보관위치를 붙인다', async () => {
+    // 입고한 자재를 다시 찾으려면 창고만으로는 부족하다.
+    const queryBuilder = {
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          receiveNo: 'RCV-001', seq: 1, itemCode: 'ITEM-001', matUid: 'MAT-001',
+          warehouseCode: 'WH-01', qty: 5, status: 'DONE', receiveDate: new Date('2026-05-23'),
+        } as MatReceiving,
+      ]),
+      getCount: jest.fn().mockResolvedValue(1),
+    };
+    mockMatReceivingRepo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+    mockItemMasterRepo.find.mockResolvedValue([]);
+    mockMatLotRepo.find.mockResolvedValue([]);
+    mockWarehouseRepo.find.mockResolvedValue([]);
+    mockMatStockRepo.find.mockResolvedValue([
+      { matUid: 'MAT-001', warehouseCode: 'WH-01', locationCode: 'RM-A-01-01' } as MatStock,
+    ]);
+    mockWarehouseLocationRepo.find.mockResolvedValue([
+      { warehouseCode: 'WH-01', locationCode: 'RM-A-01-01', locationName: '원자재 A구역 1열 1단' } as WarehouseLocation,
+    ]);
+
+    const result = await target.findAll({ page: 1, limit: 10 }, 'C1', 'P1');
+
+    expect(result.data[0]).toEqual(
+      expect.objectContaining({
+        locationCode: 'RM-A-01-01',
+        locationName: '원자재 A구역 1열 1단',
+      }),
+    );
+  });
 
   it('findAll 보강 조회도 요청 테넌트 범위로 제한한다', async () => {
     const queryBuilder = {
@@ -168,6 +209,41 @@ describe('ReceivingService', () => {
       iqcStatus: 'FAIL',
       specialAcceptYn: 'Y',
     }));
+  });
+
+  it('입고 대기 목록에 품목 고정위치를 적재 예정 위치로 내려준다', async () => {
+    // 입고 전이라 실제 보관위치는 없다. 별도 지정이 없으면 이 위치에 들어간다.
+    mockMatLotRepo.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          matUid: 'MAT-001', itemCode: 'ITEM-001', initQty: 10, currentQty: 10,
+          iqcStatus: 'PASS', status: 'NORMAL',
+        } as MatLot,
+      ]),
+    } as never);
+    mockStockTxRepo.createQueryBuilder.mockReturnValue({
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    } as never);
+    mockItemMasterRepo.find.mockResolvedValue([
+      { itemCode: 'ITEM-001', itemName: '커넥터A', unit: 'EA', storageLocation: 'RM-A-01-01' } as ItemMaster,
+    ]);
+    mockMatArrivalRepo.find.mockResolvedValue([]);
+    mockWarehouseRepo.findOne.mockResolvedValue(null);
+    mockWarehouseRepo.find.mockResolvedValue([]);
+
+    const result = await target.findReceivable('C1', 'P1');
+
+    expect(result[0]).toEqual(
+      expect.objectContaining({ plannedLocationCode: 'RM-A-01-01' }),
+    );
   });
 
   it('findReceivable prefers the actual arrival warehouse over the default warehouse', async () => {

@@ -197,6 +197,16 @@ export default function IssueScanPanel() {
                 <span className="text-text-muted">IQC</span>
                 <p className="font-medium text-text">{scannedLot.iqcStatus}</p>
               </div>
+              {/* 보관위치 — 작업자가 자재를 어디서 꺼내야 하는지 바로 알아야 한다 */}
+              <div className="col-span-2">
+                <span className="text-text-muted">{t('material.issue.storageLocation', { defaultValue: '보관위치' })}</span>
+                <p className="font-medium text-text truncate">
+                  {scannedLot.warehouseName || scannedLot.warehouseCode || '-'}
+                  {scannedLot.locationName || scannedLot.locationCode
+                    ? ` / ${scannedLot.locationName || scannedLot.locationCode}`
+                    : ''}
+                </p>
+              </div>
             </div>
             <div className="flex gap-1.5 pt-1 border-t border-border">
               <Button variant="secondary" size="sm" onClick={handleCancel} className="flex-1 h-8 text-xs">

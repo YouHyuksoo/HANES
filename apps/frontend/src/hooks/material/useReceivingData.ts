@@ -49,6 +49,8 @@ interface ReceivingApiRow {
   part?: { itemCode?: string; itemName?: string; unit?: string } | null;
   lot?: { matUid?: string; poNo?: string } | null;
   toWarehouse?: { warehouseName?: string } | null;
+  locationCode?: string | null;
+  locationName?: string | null;
 }
 
 interface ReceivableApiRow {

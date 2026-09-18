@@ -15,6 +15,7 @@ import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { ReceiptCancelService } from './receipt-cancel.service';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
@@ -29,6 +30,7 @@ describe('ReceiptCancelService', () => {
   let target: ReceiptCancelService;
   let mockStockTxRepo: DeepMocked<Repository<StockTransaction>>;
   let mockMatStockRepo: DeepMocked<Repository<MatStock>>;
+  let mockWarehouseLocationRepo: DeepMocked<Repository<WarehouseLocation>>;
   let mockMatLotRepo: DeepMocked<Repository<MatLot>>;
   let mockItemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let mockPartnerMasterRepo: DeepMocked<Repository<PartnerMaster>>;
@@ -42,6 +44,7 @@ describe('ReceiptCancelService', () => {
   beforeEach(async () => {
     mockStockTxRepo = createMock<Repository<StockTransaction>>();
     mockMatStockRepo = createMock<Repository<MatStock>>();
+    mockWarehouseLocationRepo = createMock<Repository<WarehouseLocation>>();
     mockMatLotRepo = createMock<Repository<MatLot>>();
     mockItemMasterRepo = createMock<Repository<ItemMaster>>();
     mockPartnerMasterRepo = createMock<Repository<PartnerMaster>>();
@@ -75,6 +78,7 @@ describe('ReceiptCancelService', () => {
         ReceiptCancelService,
         { provide: getRepositoryToken(StockTransaction), useValue: mockStockTxRepo },
         { provide: getRepositoryToken(MatStock), useValue: mockMatStockRepo },
+        { provide: getRepositoryToken(WarehouseLocation), useValue: mockWarehouseLocationRepo },
         { provide: getRepositoryToken(MatLot), useValue: mockMatLotRepo },
         { provide: getRepositoryToken(ItemMaster), useValue: mockItemMasterRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: mockPartnerMasterRepo },
@@ -103,6 +107,29 @@ describe('ReceiptCancelService', () => {
       const result = await target.findCancellable({ page: 1, limit: 10 });
 
       expect(result.data).toHaveLength(1);
+    });
+
+    it('취소 대상의 현재 보관위치를 함께 보여준다', async () => {
+      // 입고를 되돌리려면 작업자가 그 자재를 실제로 찾아야 한다.
+      mockStockTxRepo.find.mockResolvedValue([
+        { transNo: 'TX-001', itemCode: 'ITEM-001', matUid: 'MAT-001', toWarehouseId: 'WH-01' } as StockTransaction,
+      ]);
+      mockStockTxRepo.count.mockResolvedValue(1);
+      mockMatStockRepo.find.mockResolvedValue([
+        { matUid: 'MAT-001', warehouseCode: 'WH-01', locationCode: 'RM-A-01-01' } as MatStock,
+      ]);
+      mockWarehouseLocationRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', locationCode: 'RM-A-01-01', locationName: '원자재 A구역 1열 1단' } as WarehouseLocation,
+      ]);
+
+      const result = await target.findCancellable({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          locationCode: 'RM-A-01-01',
+          locationName: '원자재 A구역 1열 1단',
+        }),
+      );
     });
   });
 

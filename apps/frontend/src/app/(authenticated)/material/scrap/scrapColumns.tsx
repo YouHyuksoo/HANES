@@ -52,6 +52,14 @@ export function createScrapGridColumns(t: TFunction): ColumnDef<ScrapRecord>[] {
       size: 100,
       meta: { filterType: 'text' as const },
     },
+    // 보관위치(현재) — 폐기 전후 실물 확인에 필요하다
+    {
+      accessorKey: 'locationCode',
+      header: t('material.stock.columns.location', '보관위치'),
+      size: 110,
+      meta: { filterType: 'text' as const },
+      cell: ({ row }) => <span>{row.original.locationName || row.original.locationCode || '-'}</span>,
+    },
     {
       accessorKey: 'remark',
       header: t('material.scrap.reason'),

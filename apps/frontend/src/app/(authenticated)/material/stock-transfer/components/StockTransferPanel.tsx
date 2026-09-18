@@ -18,6 +18,8 @@ interface ScannedStock {
   matUid: string;
   warehouseCode: string;
   warehouseName: string;
+  locationCode?: string | null;
+  locationName?: string | null;
   availableQty: number;
 }
 
@@ -197,6 +199,13 @@ export default function StockTransferPanel({ onCreated }: StockTransferPanelProp
               <div>
                 <p className="text-text-muted">출발창고</p>
                 <p className="font-medium text-text truncate">{scannedStock.warehouseName}</p>
+              </div>
+              {/* 보관위치 — 창고만으로는 자재를 찾지 못한다 */}
+              <div>
+                <p className="text-text-muted">{t("material.stock.columns.location", "보관위치")}</p>
+                <p className="font-medium text-text truncate">
+                  {scannedStock.locationName || scannedStock.locationCode || "-"}
+                </p>
               </div>
               <div>
                 <p className="text-text-muted">가용수량</p>

@@ -99,6 +99,14 @@ export default function ArrivalHistoryTable({ data, isLoading, toolbarLeft, onCa
       cell: ({ row }) => row.original.toWarehouse?.warehouseName || '-',
     },
     {
+      // 적재 예정 위치 — 입하 이력은 위치 컴럼이 없으므로 품목 고정위치를 보여준다
+      id: 'plannedLocation',
+      header: t('material.stock.columns.plannedLocation', '보관위치(예정)'),
+      size: 120,
+      meta: { filterType: "text" as const },
+      cell: ({ row }) => row.original.plannedLocationCode || '-',
+    },
+    {
       accessorKey: 'status',
       header: t('common.status'),
       size: 90,

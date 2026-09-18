@@ -6,6 +6,8 @@ import { Repository } from 'typeorm';
 import { HoldService } from './hold.service';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
+import { Warehouse } from '../../../entities/warehouse.entity';
+import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { PartnerMaster } from '../../../entities/partner-master.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -15,12 +17,16 @@ describe('HoldService', () => {
   let service: HoldService;
   let matLotRepo: DeepMocked<Repository<MatLot>>;
   let matStockRepo: DeepMocked<Repository<MatStock>>;
+  let warehouseRepo: DeepMocked<Repository<Warehouse>>;
+  let warehouseLocationRepo: DeepMocked<Repository<WarehouseLocation>>;
   let partRepo: DeepMocked<Repository<ItemMaster>>;
   let partnerRepo: DeepMocked<Repository<PartnerMaster>>;
 
   beforeEach(async () => {
     matLotRepo = createMock<Repository<MatLot>>();
     matStockRepo = createMock<Repository<MatStock>>();
+    warehouseRepo = createMock<Repository<Warehouse>>();
+    warehouseLocationRepo = createMock<Repository<WarehouseLocation>>();
     partRepo = createMock<Repository<ItemMaster>>();
     partnerRepo = createMock<Repository<PartnerMaster>>();
     partnerRepo.find.mockResolvedValue([]);
@@ -30,6 +36,8 @@ describe('HoldService', () => {
         HoldService,
         { provide: getRepositoryToken(MatLot), useValue: matLotRepo },
         { provide: getRepositoryToken(MatStock), useValue: matStockRepo },
+        { provide: getRepositoryToken(Warehouse), useValue: warehouseRepo },
+        { provide: getRepositoryToken(WarehouseLocation), useValue: warehouseLocationRepo },
         { provide: getRepositoryToken(ItemMaster), useValue: partRepo },
         { provide: getRepositoryToken(PartnerMaster), useValue: partnerRepo },
       ],
@@ -62,6 +70,34 @@ describe('HoldService', () => {
           itemName: null,
           unit: null,
           warehouseCode: null,
+        }),
+      );
+    });
+
+    it('홀드 목록에 현재 보관위치(창고명·로케이션명)를 포함한다', async () => {
+      // 홀드된 자재를 실제로 찾아가려면 창고만으로는 부족하다.
+      matLotRepo.find.mockResolvedValue([
+        { matUid: 'MAT-001', itemCode: 'ITEM-001', status: 'HOLD' } as MatLot,
+      ]);
+      matLotRepo.count.mockResolvedValue(1);
+      partRepo.find.mockResolvedValue([]);
+      matStockRepo.find.mockResolvedValue([
+        { matUid: 'MAT-001', warehouseCode: 'WH-01', locationCode: 'RM-A-01-01' } as MatStock,
+      ]);
+      warehouseRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', warehouseName: '원자재창고' } as Warehouse,
+      ]);
+      warehouseLocationRepo.find.mockResolvedValue([
+        { warehouseCode: 'WH-01', locationCode: 'RM-A-01-01', locationName: '원자재 A구역 1열 1단' } as WarehouseLocation,
+      ]);
+
+      const result = await service.findAll({ page: 1, limit: 10 });
+
+      expect(result.data[0]).toEqual(
+        expect.objectContaining({
+          warehouseName: '원자재창고',
+          locationCode: 'RM-A-01-01',
+          locationName: '원자재 A구역 1열 1단',
         }),
       );
     });
