@@ -34,8 +34,10 @@ export default function PdaMenuGrid({
   if (layout === "grid") {
     const grid = (
       <div className="grid grid-cols-2 gap-3 p-4">
-        {items.map((item) => {
+        {items.map((item, index) => {
           const Icon = item.icon;
+          // 항목이 홀수면 마지막 버튼 옆 칸이 비므로 폭 전체를 쓴다.
+          const isLastOdd = items.length % 2 === 1 && index === items.length - 1;
           return (
             <button
               key={item.path}
@@ -47,6 +49,7 @@ export default function PdaMenuGrid({
                 item.borderClass,
                 "shadow-sm",
                 "active:scale-[0.97] transition-transform",
+                isLastOdd ? "col-span-2" : "",
               ].join(" ")}
             >
               <Icon className={`w-6 h-6 ${item.iconColorClass}`} />

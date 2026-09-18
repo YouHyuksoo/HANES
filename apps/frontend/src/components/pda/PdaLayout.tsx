@@ -23,7 +23,8 @@ export default function PdaLayout({ children }: PdaLayoutProps) {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
       {/* PDA 전용 컨텐츠 영역 - 사이드바 없이 전체 화면 */}
-      <main className="flex flex-col min-h-screen">
+      {/* PC 브라우저로 열어도 단말 폭을 넘지 않게 제한한다(넓은 창에서 버튼이 띄처럼 늘어난다). */}
+      <main className="flex flex-col min-h-screen max-w-md mx-auto w-full">
         {/* 네트워크 상태 배너 — 오프라인 시 빨간 배너, 복구 시 초록 배너 3초 표시 */}
         <NetworkStatusBanner />
         {/* 서버 연결 오류 배너 — DB 타임아웃/503 등 감지 시 표시 */}
