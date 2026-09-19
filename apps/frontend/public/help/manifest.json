@@ -86,6 +86,11 @@
           "path": "/master/process-capa"
         },
         {
+          "menuCode": "MST_CARRIER",
+          "title": "대차관리",
+          "path": "/master/carrier"
+        },
+        {
           "menuCode": "SYS_DOCUMENT",
           "title": "문서관리",
           "path": "/system/document"
@@ -348,6 +353,11 @@
           "menuCode": "PROD_REPAIR",
           "title": "수리관리",
           "path": "/production/repair"
+        },
+        {
+          "menuCode": "PROD_CARRIER_STATUS",
+          "title": "대차현황",
+          "path": "/production/carrier-status"
         }
       ]
     },

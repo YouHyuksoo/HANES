@@ -8744,6 +8744,16 @@
       "EXPIRED": "Expired",
       "RETIRED": "Retired"
     },
+    "CARRIER_TYPE": {
+      "CART": "Cart",
+      "TRAY": "Tray",
+      "MAGAZINE": "Magazine"
+    },
+    "CARRIER_STATUS": {
+      "EMPTY": "Empty",
+      "LOADING": "Loading",
+      "IN_TRANSIT": "In transit"
+    },
     "NCR_TARGET_TYPE": {
       "RAW_MATERIAL": "Raw Material",
       "SEMI_PRODUCT": "Semi-finished",

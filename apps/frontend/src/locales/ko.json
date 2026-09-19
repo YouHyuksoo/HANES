@@ -8766,6 +8766,16 @@
       "EXPIRED": "만료",
       "RETIRED": "폐기"
     },
+    "CARRIER_TYPE": {
+      "CART": "대차",
+      "TRAY": "트레이",
+      "MAGAZINE": "매거진"
+    },
+    "CARRIER_STATUS": {
+      "EMPTY": "빈 대차",
+      "LOADING": "적재 중",
+      "IN_TRANSIT": "이동 중"
+    },
     "NCR_TARGET_TYPE": {
       "RAW_MATERIAL": "원자재",
       "SEMI_PRODUCT": "반제품",

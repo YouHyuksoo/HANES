@@ -8726,6 +8726,16 @@
       "EXPIRED": "已过期",
       "RETIRED": "已废弃"
     },
+    "CARRIER_TYPE": {
+      "CART": "台车",
+      "TRAY": "托盘",
+      "MAGAZINE": "料盒"
+    },
+    "CARRIER_STATUS": {
+      "EMPTY": "空车",
+      "LOADING": "装载中",
+      "IN_TRANSIT": "转运中"
+    },
     "NCR_TARGET_TYPE": {
       "RAW_MATERIAL": "原材料",
       "SEMI_PRODUCT": "半成品",

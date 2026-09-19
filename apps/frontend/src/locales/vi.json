@@ -8726,6 +8726,16 @@
       "EXPIRED": "Hết hạn",
       "RETIRED": "Ngừng dùng"
     },
+    "CARRIER_TYPE": {
+      "CART": "Xe đẩy",
+      "TRAY": "Khay",
+      "MAGAZINE": "Magazine"
+    },
+    "CARRIER_STATUS": {
+      "EMPTY": "Trống",
+      "LOADING": "Đang xếp",
+      "IN_TRANSIT": "Đang chuyển"
+    },
     "NCR_TARGET_TYPE": {
       "RAW_MATERIAL": "Nguyên vật liệu",
       "SEMI_PRODUCT": "Bán thành phẩm",
