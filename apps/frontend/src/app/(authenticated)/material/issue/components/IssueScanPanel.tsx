@@ -32,6 +32,7 @@ export default function IssueScanPanel() {
     scanInput, setScanInput,
     processCode, setProcessCode,
     setOrderNo,
+    carrierNo, setCarrierNo,
     scannedLot, scanHistory, isScanning, error,
     handleScan, handleIssue, handleCancel,
     setIssueType,
@@ -130,6 +131,23 @@ export default function IssueScanPanel() {
           required
           disabled={isScanning}
         />
+
+        {/* 키팅 대차 스캔(선택) — 지정 시 출고 LOT을 그 대차에 담는다 */}
+        <div data-testid="issue-carrier-input">
+          <label className="block text-xs font-medium text-text mb-1">
+            {t('material.issue.carrierLabel', { defaultValue: '키팅 대차' })}
+          </label>
+          <BarcodeScanInput
+            value={carrierNo}
+            onChange={(v) => setCarrierNo(v.toUpperCase())}
+            onScan={(v) => setCarrierNo(v.trim().toUpperCase())}
+            placeholder={t('material.issue.carrierPlaceholder', { defaultValue: '키팅 대차 스캔 (선택)' })}
+            className="h-9 text-sm"
+            fullWidth
+            disabled={isScanning}
+          />
+          <p className="mt-1 text-[11px] text-text-muted">{t('material.issue.carrierHint', { defaultValue: '비우면 지금처럼 공정재고로만 출고됩니다. 대차를 찍으면 출고 LOT이 그 대차에 담깁니다.' })}</p>
+        </div>
 
         {/* LOT 스캔 입력 */}
         <div className="flex gap-1.5">

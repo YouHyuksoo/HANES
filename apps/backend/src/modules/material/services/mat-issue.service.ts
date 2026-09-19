@@ -326,7 +326,7 @@ export class MatIssueService {
   }
 
   async createInTx(queryRunner: QueryRunner, dto: CreateMatIssueDto, company?: string, plant?: string) {
-    const { orderNo, prodResultNo, warehouseCode, issueType, items, remark, workerId } = dto;
+    const { orderNo, prodResultNo, warehouseCode, issueType, items, remark, workerId, carrierNo } = dto;
     const results = [];
     const issueNo = await this.numbering.nextInTx(queryRunner, 'MAT_ISSUE');
     let seqCounter = 1;
@@ -493,6 +493,20 @@ export class MatIssueService {
         await queryRunner.manager.update(MatLot, { matUid: lot.matUid, ...tenantWhere }, { status: MAT_LOT_STATUS.DEPLETED });
       }
 
+      // 키팅 대차 스캔(선택) — 지정 시 출고 LOT을 그 대차에 담는다
+      if (carrierNo) {
+        await this.carrierFlow.assertLoadableInTx(queryRunner, {
+          carrierNo,
+          kind: 'MAT',
+          itemCode: lot.itemCode,
+          orderNo: null,
+          addCount: 1,
+          company: company ?? lot.company,
+          plant: plant ?? lot.plant,
+        });
+        await this.carrierFlow.stampInTx(queryRunner, 'MAT', [lot.matUid], carrierNo, company ?? lot.company, plant ?? lot.plant);
+      }
+
       // 기존 응답 형태(평탄화된 출고 행 배열)는 유지하고 행마다 warnings 만 덧붙인다
       results.push({ ...(await this.flattenIssue(savedIssue, company, plant)), warnings: policyWarnings });
     }
@@ -555,6 +569,7 @@ export class MatIssueService {
         items: [{ matUid: lot.matUid, issueQty: stockQty }],
         workerId: dto.workerId,
         remark: dto.remark ?? `바코드 스캔 출고: ${dto.matUid}`,
+        carrierNo: dto.carrierNo,
       }, company, plant);
       const issued = result[0];
 

@@ -1006,6 +1006,47 @@ describe('MatIssueService', () => {
     });
   });
 
+  describe('MatIssueService.createInTx — 원자재 대차', () => {
+    const setupManager = () => {
+      const manager = {
+        findOne: jest.fn().mockResolvedValue({
+          matUid: 'VH1-RM1', itemCode: 'ITEM-001', iqcStatus: 'PASS', status: 'NORMAL', company: '40', plant: '1000',
+          recvDate: new Date(2026, 8, 5), manufactureDate: new Date(2026, 8, 1), expireDate: null, currentQty: 10,
+        } as MatLot),
+        find: jest.fn()
+          .mockResolvedValueOnce([{ warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'VH1-RM1', qty: 10, availableQty: 10, company: '40', plant: '1000' } as MatStock])
+          .mockResolvedValueOnce([{ warehouseCode: 'W1', itemCode: 'ITEM-001', matUid: 'VH1-RM1', qty: 0, availableQty: 0, company: '40', plant: '1000' } as MatStock]),
+        create: jest.fn((entity, payload) => ({ ...payload })),
+        save: jest.fn().mockImplementation(async (entity) => entity),
+        createQueryBuilder: createManagerQueryBuilder(),
+        update: jest.fn().mockResolvedValue(undefined),
+      };
+      (mockQueryRunner as any).manager = manager;
+      mockNumbering.nextInTx.mockReset().mockResolvedValueOnce('ISS-K01').mockResolvedValueOnce('TX-K01');
+      mockMatLotRepo.findOne.mockResolvedValue({ matUid: 'VH1-RM1', itemCode: 'ITEM-001' } as MatLot);
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-001' } as ItemMaster);
+      return manager;
+    };
+    const baseDto = { issueType: 'OTHER', warehouseCode: 'W1', items: [{ matUid: 'VH1-RM1', issueQty: 10 }] } as any;
+
+    it('carrierNo가 있으면 출고 LOT에 대차를 찍고, 없으면 대차 서비스를 부르지 않는다', async () => {
+      setupManager();
+      await target.createInTx(mockQueryRunner, { ...baseDto, carrierNo: 'CR-K01' }, '40', '1000');
+
+      expect(mockCarrierFlow.assertLoadableInTx).toHaveBeenCalledWith(mockQueryRunner, {
+        carrierNo: 'CR-K01', kind: 'MAT', itemCode: 'ITEM-001', orderNo: null, addCount: 1, company: '40', plant: '1000',
+      });
+      expect(mockCarrierFlow.stampInTx).toHaveBeenCalledWith(mockQueryRunner, 'MAT', ['VH1-RM1'], 'CR-K01', '40', '1000');
+
+      jest.clearAllMocks();
+      setupManager();
+      await target.createInTx(mockQueryRunner, { ...baseDto }, '40', '1000');
+
+      expect(mockCarrierFlow.stampInTx).not.toHaveBeenCalled();
+      expect(mockCarrierFlow.assertLoadableInTx).not.toHaveBeenCalled();
+    });
+  });
+
   it('cancel restores stock to the original warehouse rows', async () => {
     mockMatIssueRepo.findOne.mockResolvedValue({
       issueNo: 'ISS-001',

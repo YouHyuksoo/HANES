@@ -66,6 +66,12 @@ export class CreateMatIssueDto {
   @IsOptional()
   @IsString()
   remark?: string;
+
+  @ApiPropertyOptional({ description: '키팅 대차번호 (선택). 지정하면 출고 LOT을 그 대차에 담는다' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  carrierNo?: string;
 }
 
 export class MatIssueQueryDto extends PaginationQueryDto {
