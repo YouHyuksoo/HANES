@@ -1,23 +1,23 @@
 ---
 sources: []
-verifiedCommit: 2051791a
+verifiedCommit: 53ed5eb0
 generated: true
 ---
 
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-09-18 12:59:27
+- 작성일: 2026-09-19 13:15:04
 - DB 대상: `10.1.10.35:1527 SERVICE=JSHNSMES USER=test`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
 
 ## 1. 요약
 
-- 테이블 수: 201
-- 컬럼 수: 3365
-- PK 보유 테이블: 194
+- 테이블 수: 202
+- 컬럼 수: 3390
+- PK 보유 테이블: 195
 - DB FK 수: 68
-- COM_CODES 그룹 수: 177
+- COM_CODES 그룹 수: 179
 
 ## 2. 모듈별 테이블
 
@@ -104,6 +104,7 @@ generated: true
 - `AQL_CODE_LETTER_SAMPLES`: ISO 2859-1 Code Letter별 표준 샘플수량 표 / PK: `COMPANY, PLANT_CD, CODE_LETTER`
 - `AQL_SAMPLING_RULES`: AQL LOT 수량별 sampling rule / PK: `COMPANY, PLANT_CD, AQL_CODE, LOT_QTY_FROM`
 - `AQL_STANDARDS`: AQL 기준 헤더 / PK: `COMPANY, PLANT_CD, AQL_CODE`
+- `CARRIER_MASTERS`: 대차/트레이/매거진 마스터 ― 생산 라벨·키팅 LOT을 담아 공정 간 이동하는 운반구 / PK: `COMPANY, PLANT_CD, CARRIER_NO`
 - `CUSTOMS_ENTRIES`: 보세 수입신고 관리 / PK: `ENTRY_NO`
 - `CUSTOMS_LOTS`: 보세 LOT 관리 (수입자재 추적) / PK: `ENTRY_NO, MAT_UID`
 - `CUSTOMS_USAGE_REPORTS`: 보세 사용량 보고 / PK: `REPORT_NO`
@@ -483,6 +484,20 @@ erDiagram
     VARCHAR2_20 STATUS NOT_NULL
     VARCHAR2_20 PRIORITY
     string more_columns
+  }
+  CARRIER_MASTERS {
+    VARCHAR2_50 COMPANY PK NOT_NULL
+    VARCHAR2_50 PLANT_CD PK NOT_NULL
+    VARCHAR2_30 CARRIER_NO PK NOT_NULL
+    VARCHAR2_20 CARRIER_TYPE NOT_NULL
+    VARCHAR2_100 CARRIER_NAME
+    NUMBER CAPACITY
+    CHAR_1 USE_YN NOT_NULL
+    VARCHAR2_500 REMARK
+    VARCHAR2_50 CREATED_BY
+    VARCHAR2_50 UPDATED_BY
+    TIMESTAMP_6 CREATED_AT NOT_NULL
+    TIMESTAMP_6 UPDATED_AT NOT_NULL
   }
   CHANGE_ORDERS {
     VARCHAR2_50 CHANGE_NO PK NOT_NULL
@@ -4643,6 +4658,20 @@ erDiagram
     TIMESTAMP_6 CREATED_AT NOT_NULL
     TIMESTAMP_6 UPDATED_AT NOT_NULL
   }
+  CARRIER_MASTERS {
+    VARCHAR2_50 COMPANY PK NOT_NULL
+    VARCHAR2_50 PLANT_CD PK NOT_NULL
+    VARCHAR2_30 CARRIER_NO PK NOT_NULL
+    VARCHAR2_20 CARRIER_TYPE NOT_NULL
+    VARCHAR2_100 CARRIER_NAME
+    NUMBER CAPACITY
+    CHAR_1 USE_YN NOT_NULL
+    VARCHAR2_500 REMARK
+    VARCHAR2_50 CREATED_BY
+    VARCHAR2_50 UPDATED_BY
+    TIMESTAMP_6 CREATED_AT NOT_NULL
+    TIMESTAMP_6 UPDATED_AT NOT_NULL
+  }
   CUSTOMS_ENTRIES {
     VARCHAR2_50 ENTRY_NO PK NOT_NULL
     VARCHAR2_50 BL_NO
@@ -6920,6 +6949,26 @@ erDiagram
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `ID` | `NUMBER` | `Y` |  |  |  |
 
+### `CARRIER_MASTERS`
+
+- 설명: 대차/트레이/매거진 마스터 ― 생산 라벨·키팅 LOT을 담아 공정 간 이동하는 운반구
+- PK: `COMPANY, PLANT_CD, CARRIER_NO`
+
+| 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
+|---|---|---|---|---|---|
+| `COMPANY` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 |  |
+| `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 |  |
+| `CARRIER_NO` | `VARCHAR2(30)` | `N` | PK |  | 대차번호(바코드 값). 수동 입력 |
+| `CARRIER_TYPE` | `VARCHAR2(20)` | `N` |  | CHECK `CARRIER_TYPE IN ('CART','TRAY','MAGAZINE')`<br>COM_CODES.CARRIER_TYPE: CART=대차, TRAY=트레이, MAGAZINE=매거진 | 운반구 유형 (COM_CODES CARRIER_TYPE: CART 대차 / TRAY 트레이 / MAGAZINE 매거진) |
+| `CARRIER_NAME` | `VARCHAR2(100)` | `Y` |  |  |  |
+| `CAPACITY` | `NUMBER` | `Y` |  | CHECK `CAPACITY IS NULL OR CAPACITY > 0` | 최대 적재 라벨/LOT 수. NULL=무제한 |
+| `USE_YN` | `CHAR(1)` | `N` |  | 기본값 `'Y'`<br>CHECK `USE_YN IN ('Y','N')`<br>COM_CODES.USE_YN: Y=사용, N=미사용<br>관례값 Y/N |  |
+| `REMARK` | `VARCHAR2(500)` | `Y` |  |  |  |
+| `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+
 ### `CHANGE_ORDERS`
 
 - 설명: 변경관리(설계 공정 변경) 요청
@@ -7766,6 +7815,7 @@ erDiagram
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `IMAGE_URL` | `VARCHAR2(500)` | `Y` |  |  | 설비 사진 파일 URL (/uploads/equips/...) |
 | `CURRENT_WORKER_CODES` | `VARCHAR2(1000)` | `Y` |  |  | 현재 설비에 배치된 작업자 코드 목록(콤마 구분). 표시 정보는 WORKER_MASTERS에서 재조회한다. |
+| `CUR_CARRIER_NO` | `VARCHAR2(30)` | `Y` |  |  | 설비의 현재 출력 대차번호(재진입 복원용) |
 
 ### `EQUIP_PROTOCOLS`
 
@@ -7898,6 +7948,9 @@ erDiagram
 | `INSPECT_RESULT_ID` | `VARCHAR2(30)` | `Y` |  |  |  |
 | `BOX_NO` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `STRUCTURE_YN` | `VARCHAR2(1)` | `Y` |  |  |  |
+| `CARRIER_NO` | `VARCHAR2(30)` | `Y` |  |  | 현재 담긴 대차번호(CARRIER_MASTERS). 소비/취소 시 NULL |
+| `CARRIER_LOADED_AT` | `TIMESTAMP(6)` | `Y` |  |  | 대차 적재 일시 |
+| `CARRIER_SLIP_NO` | `VARCHAR2(30)` | `Y` |  |  | 이동전표번호 |
 
 ### `GAUGE_MASTERS`
 
@@ -8919,6 +8972,9 @@ erDiagram
 | `MFG_PARTNER_CODE` | `VARCHAR2(50)` | `Y` |  |  | 제조사 거래처코드 (PARTNER_MASTERS.PARTNER_CODE, PARTNER_TYPE=MFG) |
 | `SPECIAL_ACCEPT_YN` | `VARCHAR2(1)` | `N` |  | 기본값 `'N'` | 특채여부: Y=특별채택(불합격 자재 양품입고 허용), N=일반 |
 | `SPECIAL_ACCEPT_WORKER_CODE` | `VARCHAR2(50)` | `Y` | FK->WORKER_MASTERS(COMPANY, PLANT_CD, WORKER_CODE) |  | 특채 처리 작업자 코드 (WORKER_MASTERS.WORKER_CODE 참조) |
+| `CARRIER_NO` | `VARCHAR2(30)` | `Y` |  |  | 키팅 출고 시 담긴 대차번호. 설비 장착/출고 취소 시 NULL |
+| `CARRIER_LOADED_AT` | `TIMESTAMP(6)` | `Y` |  |  | 대차 적재 일시 |
+| `CARRIER_SLIP_NO` | `VARCHAR2(30)` | `Y` |  |  | 이동전표번호(원자재 대차는 선택) |
 
 ### `MAT_RECEIVINGS`
 
@@ -9848,6 +9904,7 @@ erDiagram
 | `RESULT_NO` | `VARCHAR2(30)` | `N` | PK | 기본값 `NULL` |  |
 | `SHIFT_CODE` | `VARCHAR2(20)` | `Y` |  |  |  |
 | `PRODUCTION_TYPE` | `VARCHAR2(20)` | `N` |  | 기본값 `'MASS'`<br>CHECK `PRODUCTION_TYPE IN ('TRIAL', 'MASS')` | 생산유형: TRIAL=시생산, MASS=양산 |
+| `CARRIER_NO` | `VARCHAR2(30)` | `Y` |  |  | 실적 시점 출력 대차번호(보존용) |
 
 ### `PURCHASE_ORDERS`
 
@@ -10418,6 +10475,8 @@ erDiagram
 | `SUBCON_VENDOR_CODE` | `VARCHAR2(50)` | `Y` |  |  | 외주 공정 기본 외주처 코드 (VENDOR_MASTERS.VENDOR_CODE) |
 | `ISSUE_LABEL_TYPE` | `VARCHAR2(20)` | `Y` |  | 기본값 `'NONE'` |  |
 | `JOB_ORDER_YN` | `VARCHAR2(1)` | `N` |  | 기본값 `'Y'`<br>CHECK `JOB_ORDER_YN IN ('Y', 'N')` | 공정 작업지시 생성 여부: Y=JOB_ORDERS OPERATION 생성, N=검사/참조 공정으로 작업지시 미생성 |
+| `CARRIER_LOAD_YN` | `CHAR(1)` | `Y` |  | 기본값 `'N'` | 출력측: 이 공정 실적 라벨을 대차에 담는다 Y/N (라벨 발행 공정만 Y 가능) |
+| `CARRIER_AUTO_INPUT_YN` | `CHAR(1)` | `Y` |  | 기본값 `'N'` | 입력측: 이 공정에서 대차 스캔 시 담긴 것을 자동 투입한다 Y/N |
 
 ### `SAMPLE_INSPECT_RESULTS`
 
@@ -10632,6 +10691,9 @@ erDiagram
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `RESULT_NO` | `VARCHAR2(50)` | `Y` |  |  | 발행 생산실적 번호(배치 단위 추적·멱등 키) |
 | `LABEL_TYPE` | `VARCHAR2(20)` | `Y` |  | 기본값 `'SG'` |  |
+| `CARRIER_NO` | `VARCHAR2(30)` | `Y` |  |  | 현재 담긴 대차번호(CARRIER_MASTERS). 소비/취소 시 NULL |
+| `CARRIER_LOADED_AT` | `TIMESTAMP(6)` | `Y` |  |  | 대차 적재 일시 |
+| `CARRIER_SLIP_NO` | `VARCHAR2(30)` | `Y` |  |  | 이동전표번호. 발행되면 추가 적재 불가·자동투입 허용 |
 
 ### `SHIFT_PATTERNS`
 

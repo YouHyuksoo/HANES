@@ -33,6 +33,7 @@ python tools/generate_db_schema_doc.py
 | 2 | `2026-05-26_physical_inv_session_uniq.sql` | PHYSICAL_INV_SESSIONS partial unique index — 단일 IN_PROGRESS 보장 |
 | 3 | `2026-05-26_seed_iqc_and_reset_inventory_flow.sql` | IQC 시드 + 입출고 flow 데이터 reset (Codex T-006) |
 | 4 | `2026-05-26_reset_hanes_item_bom_seed.sql` | ITEM_MASTERS / BOM_MASTERS 시드 reset (Codex T-005) |
+| 5 | `2026-09-19_carrier_flow.sql` | 대차 마스터·라벨/LOT 대차 컬럼·이동전표 시퀀스·CARRIER_TYPE 코드·메뉴 |
 
 ## 적용 시점 주의 (cutover race)
 

@@ -130,6 +130,14 @@ verifiedCommit: 2e8d7f56
 - 규칙 행 등록: `apps/backend/src/migrations/2026-09-03_numbering_max_plus_one_fix.sql`
 - 중간 도입 시 `CURRENT_SEQ` 는 **당일 이미 발급된 최대 시퀀스**로 초기화해야 기존 번호와 충돌하지 않는다.
 
+## 5-1. 이동전표번호 (대차)
+
+| 채번 | 형식 | 시퀀스 | 리셋 |
+|---|---|---|---|
+| `CARRIER_SLIP` | `CS` + YYMMDD + `-` + 5자리 | `SEQ_CARRIER_SLIP` (전역) | 없음 (날짜는 가독성용, 유일성은 시퀀스) |
+
+- 구현: `NumberingService.nextCarrierSlipNo`. 발행 시 대차에 담긴 라벨/LOT의 `CARRIER_SLIP_NO`에 같은 번호를 찍는다. 재발행은 같은 번호.
+
 ## 6. 스코프 채번 (월·예정일 단위 재시작)
 
 `PP-YYYYMM-NNN`(생산계획), `PM|CBM-YYYYMMDD-NNN`(설비보전 WO)는 **사용자가 지정한 계획월·예정일**마다
