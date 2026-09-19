@@ -114,6 +114,14 @@ export class CreateRoutingProcessDto {
   @IsIn(['NONE', 'BUNDLE', 'SG', 'FG'])
   issueLabelType?: string;
 
+  @ApiPropertyOptional({ description: '출력측: 실적 라벨을 대차에 담는다 (라벨 발행 공정만 Y)', default: 'N' })
+  @IsOptional() @IsString() @IsIn([...USE_YN_VALUES])
+  carrierLoadYn?: string;
+
+  @ApiPropertyOptional({ description: '입력측: 대차 스캔 시 담긴 것을 자동 투입한다', default: 'N' })
+  @IsOptional() @IsString() @IsIn([...USE_YN_VALUES])
+  carrierAutoInputYn?: string;
+
   @ApiPropertyOptional({ description: '자주검사 여부', default: 'N' })
   @IsOptional()
   @IsString()

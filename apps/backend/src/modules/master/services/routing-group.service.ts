@@ -19,6 +19,7 @@ import { BomMaster } from '../../../entities/bom-master.entity';
 import { RoutingMaterial } from '../../../entities/routing-material.entity';
 import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
 import { ProcessMaster } from '../../../entities/process-master.entity';
+import { assertCarrierLoadFlag } from './routing-carrier-flag.rules';
 import {
   CreateRoutingGroupDto, UpdateRoutingGroupDto, RoutingGroupQueryDto,
   CreateRoutingProcessDto, UpdateRoutingProcessDto,
@@ -234,6 +235,7 @@ export class RoutingGroupService {
     });
     if (existing) throw new ConflictException(`?대? 議댁옱?섎뒗 怨듭젙?쒖꽌: ${dto.routingCode} / seq ${dto.seq}`);
     const processMaster = await this.resolveProcessMaster(dto.processCode, company, plant);
+    assertCarrierLoadFlag(dto.carrierLoadYn, dto.issueLabelType ?? 'NONE');
 
     const proc = this.processRepo.create({
       routingCode: dto.routingCode,
@@ -249,6 +251,8 @@ export class RoutingGroupService {
       setupTime: dto.setupTime ?? null,
       sampleInspectYn: dto.sampleInspectYn ?? 'N',
       issueLabelType: dto.issueLabelType ?? 'NONE',
+      carrierLoadYn: dto.carrierLoadYn ?? 'N',
+      carrierAutoInputYn: dto.carrierAutoInputYn ?? 'N',
       useYn: dto.useYn ?? 'Y',
       qcSelfYn: dto.qcSelfYn ?? 'N',
       inspectMethod: dto.inspectMethod ?? 'DIRECT',
@@ -288,6 +292,8 @@ export class RoutingGroupService {
       | 'setupTime'
       | 'sampleInspectYn'
       | 'issueLabelType'
+      | 'carrierLoadYn'
+      | 'carrierAutoInputYn'
       | 'useYn'
       | 'qcSelfYn'
       | 'inspectMethod'
@@ -305,12 +311,15 @@ export class RoutingGroupService {
       ...(dto.setupTime !== undefined ? { setupTime: dto.setupTime } : {}),
       ...(dto.sampleInspectYn !== undefined ? { sampleInspectYn: dto.sampleInspectYn } : {}),
       ...(dto.issueLabelType !== undefined ? { issueLabelType: dto.issueLabelType } : {}),
+      ...(dto.carrierLoadYn !== undefined ? { carrierLoadYn: dto.carrierLoadYn } : {}),
+      ...(dto.carrierAutoInputYn !== undefined ? { carrierAutoInputYn: dto.carrierAutoInputYn } : {}),
       ...(dto.useYn !== undefined ? { useYn: dto.useYn } : {}),
       ...(dto.qcSelfYn !== undefined ? { qcSelfYn: dto.qcSelfYn } : {}),
       ...(dto.inspectMethod !== undefined ? { inspectMethod: dto.inspectMethod } : {}),
       ...(dto.destructiveYn !== undefined ? { destructiveYn: dto.destructiveYn } : {}),
       ...(dto.sampleQty !== undefined ? { sampleQty: dto.sampleQty } : {}),
     };
+    assertCarrierLoadFlag(dto.carrierLoadYn ?? existing.carrierLoadYn, dto.issueLabelType ?? existing.issueLabelType);
     await this.processRepo.update({ routingCode, seq, ...this.tenantWhere(company, plant) }, updateData);
     return this.processRepo.findOne({ where: { routingCode, seq, ...this.tenantWhere(company, plant) } });
   }
