@@ -2921,6 +2921,19 @@
       "daysAgoSuffix": "일 경과",
       "expiringWithin": "{{days}}일 내 만료"
     },
+    "carrier": {
+      "title": "대차관리",
+      "subtitle": "대차·트레이·매거진을 등록하고 QR 라벨을 출력합니다.",
+      "carrierNo": "대차번호",
+      "carrierType": "유형",
+      "carrierName": "이름",
+      "capacity": "수용량",
+      "capacityUnlimited": "무제한",
+      "capacityHint": "수용량을 비우면 무제한입니다. 값이 있으면 가득 찼을 때 실적 저장이 막힙니다.",
+      "searchPlaceholder": "대차번호·이름 검색",
+      "qrLabelTitle": "대차 QR 라벨",
+      "qrLabelHeader": "대차"
+    },
     "limitSample": {
       "title": "양불마스터",
       "subtitle": "양품·불량 한도견본을 등록하고 유효기간·승인·사진을 관리합니다.",

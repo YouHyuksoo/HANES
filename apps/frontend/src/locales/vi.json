@@ -2385,6 +2385,19 @@
       "daysAgoSuffix": " ngày trước",
       "expiringWithin": "Hết hạn trong {{days}} ngày"
     },
+    "carrier": {
+      "title": "Quản lý xe đẩy",
+      "subtitle": "Đăng ký xe đẩy, khay, magazine và in nhãn QR.",
+      "carrierNo": "Số xe đẩy",
+      "carrierType": "Loại",
+      "carrierName": "Tên",
+      "capacity": "Sức chứa",
+      "capacityUnlimited": "Không giới hạn",
+      "capacityHint": "Để trống sức chứa nghĩa là không giới hạn. Nếu đặt, khi đầy sẽ chặn lưu kết quả.",
+      "searchPlaceholder": "Tìm số xe đẩy hoặc tên",
+      "qrLabelTitle": "Nhãn QR xe đẩy",
+      "qrLabelHeader": "XE ĐẨY"
+    },
     "limitSample": {
       "title": "Dữ liệu mẫu OK/NG",
       "subtitle": "Đăng ký mẫu giới hạn OK/NG và quản lý hiệu lực, phê duyệt, ảnh.",

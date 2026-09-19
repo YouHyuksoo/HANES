@@ -2403,6 +2403,19 @@
       "daysAgoSuffix": "d ago",
       "expiringWithin": "Expiring within {{days}}d"
     },
+    "carrier": {
+      "title": "Carrier Master",
+      "subtitle": "Register carts, trays and magazines and print QR labels.",
+      "carrierNo": "Carrier No.",
+      "carrierType": "Type",
+      "carrierName": "Name",
+      "capacity": "Capacity",
+      "capacityUnlimited": "Unlimited",
+      "capacityHint": "Leave capacity empty for unlimited. If set, saving results is blocked when full.",
+      "searchPlaceholder": "Search carrier no. or name",
+      "qrLabelTitle": "Carrier QR Label",
+      "qrLabelHeader": "CARRIER"
+    },
     "limitSample": {
       "title": "Limit Samples",
       "subtitle": "Register OK/NG limit samples and manage validity, approval and photos.",

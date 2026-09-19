@@ -2385,6 +2385,19 @@
       "daysAgoSuffix": "天前",
       "expiringWithin": "{{days}}天内到期"
     },
+    "carrier": {
+      "title": "台车管理",
+      "subtitle": "登记台车、托盘、料盒并打印二维码标签。",
+      "carrierNo": "台车编号",
+      "carrierType": "类型",
+      "carrierName": "名称",
+      "capacity": "容量",
+      "capacityUnlimited": "不限",
+      "capacityHint": "容量留空表示不限。设置后装满时将阻止保存实绩。",
+      "searchPlaceholder": "搜索台车编号/名称",
+      "qrLabelTitle": "台车二维码标签",
+      "qrLabelHeader": "台车"
+    },
     "limitSample": {
       "title": "良品不良样品主数据",
       "subtitle": "登记良品/不良限度样品，管理有效期、批准和照片。",
