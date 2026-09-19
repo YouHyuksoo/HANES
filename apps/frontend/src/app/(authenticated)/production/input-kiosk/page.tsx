@@ -46,6 +46,7 @@ import DefectInputModal from './components/DefectInputModal';
 import SelfInspectModal from './components/SelfInspectModal';
 import SgLabelPrintHost, { type SgLabelPrintHandle } from './components/SgLabelPrintHost';
 import EquipStopModal from './components/EquipStopModal';
+import EquipActionButtons from './components/EquipActionButtons';
 import ManagerCallModal from './components/ManagerCallModal';
 import { useEquipStop, formatElapsed } from './hooks/useEquipStop';
 import { normalizeEquipOptions, type EquipOption } from './utils/equipOptions';
@@ -539,12 +540,6 @@ export default function InputKioskPage() {
         workerInspectAt={workerInspectAt}
         dailyInspectResult={dailyInspectResult}
         workerInspectResult={workerInspectResult}
-        onOpenEquipStop={() => setIsEquipStopOpen(true)}
-        onOpenManagerCall={() => setIsManagerCallOpen(true)}
-        isStopped={equipStop.isStopped}
-        stopElapsed={equipStop.stopElapsed}
-        isCalling={equipStop.isCalling}
-        callElapsed={equipStop.callElapsed}
         equipSelectOpen={isEquipSelectOpen}
         onEquipSelectOpenChange={setIsEquipSelectOpen}
         onOpenGuide={guide.openGuide}
@@ -607,11 +602,24 @@ export default function InputKioskPage() {
 
         {/* 우측: 양품조건 + 작업이력 */}
         <div className="min-w-0 overflow-hidden flex flex-col bg-surface border-l-2 border-border">
-          <WorkHistoryPanel
-            key={historyKey}
-            stopHistory={equipStop.history}
-            stopSummary={equipStop.summary}
+          {/* WorkHistoryPanel은 h-full이라 형제(액션 버튼)가 있으면 밀어낸다 — flex-1 래퍼로 남는 높이만 준다 */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <WorkHistoryPanel
+              key={historyKey}
+              stopHistory={equipStop.history}
+              stopSummary={equipStop.summary}
+              onOpenEquipStop={() => setIsEquipStopOpen(true)}
+            />
+          </div>
+          {/* 설비정지 / 관리자호출 — 우측 제일 하단(2026-09-19 지시로 헤더에서 이동) */}
+          <EquipActionButtons
+            hasEquip={!!selectedEquip}
             onOpenEquipStop={() => setIsEquipStopOpen(true)}
+            onOpenManagerCall={() => setIsManagerCallOpen(true)}
+            isStopped={equipStop.isStopped}
+            stopElapsed={equipStop.stopElapsed}
+            isCalling={equipStop.isCalling}
+            callElapsed={equipStop.callElapsed}
           />
         </div>
       </div>

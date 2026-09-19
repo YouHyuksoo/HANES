@@ -12,7 +12,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle, ChevronDown, ClipboardList, Cpu,
-  Maximize2, Minimize2, UserPlus, X, CheckCircle, Square, BellRing,
+  Maximize2, Minimize2, UserPlus, X, CheckCircle,
   ShieldCheck, UserCheck, Pencil, Search, Sparkles,
 } from 'lucide-react';
 import { useKioskStore } from '@/stores/kioskStore';
@@ -21,7 +21,6 @@ import EquipSelectModal from './EquipSelectModal';
 import { HeaderCheckItem } from '@/components/inspect';
 import type { EquipOption } from '../utils/equipOptions';
 import { inspectStatusDetail, isInspectNg } from '../utils/inspectStatus';
-import { formatElapsed } from '../hooks/useEquipStop';
 
 interface EquipHeaderProps {
   equips: EquipOption[];
@@ -39,18 +38,6 @@ interface EquipHeaderProps {
   dailyInspectResult?: string | null;
   /** 작업자설비점검 종합판정(PASS/FAIL). 점검 기록이 없으면 null */
   workerInspectResult?: string | null;
-  /** 설비정지 팝업 열기 */
-  onOpenEquipStop: () => void;
-  /** 관리자호출 팝업 열기 */
-  onOpenManagerCall: () => void;
-  /** 진행중 설비정지 여부 */
-  isStopped?: boolean;
-  /** 정지 경과초 (서버 기준) */
-  stopElapsed?: number;
-  /** 진행중 관리자호출 여부 */
-  isCalling?: boolean;
-  /** 호출 대기 경과초 (서버 기준) */
-  callElapsed?: number;
   /**
    * 설비 선택 모달 열림을 부모가 제어할 때 넘긴다(준비 안내 모달이 같은 모달을 열기 위해).
    * 넘기지 않으면 헤더가 스스로 관리한다.
@@ -68,9 +55,6 @@ export default function EquipHeader({
   onSelectEquip, onRemoveWorker,
   dailyInspectAt, workerInspectAt,
   dailyInspectResult, workerInspectResult,
-  onOpenEquipStop, onOpenManagerCall,
-  isStopped = false, stopElapsed = 0,
-  isCalling = false, callElapsed = 0,
   equipSelectOpen, onEquipSelectOpenChange, onOpenGuide, outputCarrier,
 }: EquipHeaderProps) {
   const { t } = useTranslation();
@@ -280,65 +264,6 @@ export default function EquipHeader({
               responsiveCompact
               icon={UserCheck}
             />
-          </div>
-
-          {/* 설비정지 / 관리자호출 — 헤더 우측 고정.
-              헤더 Row1 축약 규칙을 따른다: 2xl 미만은 아이콘만(작업지시/작업자 칸을 밀어내지 않도록),
-              2xl 이상은 라벨까지 펼친다. 진행 중이면 폭에 상관없이 경과시간을 붙인다. */}
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              data-testid="kiosk-equip-stop-open"
-              onClick={onOpenEquipStop}
-              disabled={!selectedEquip}
-              title={selectedEquip
-                ? `${t('kiosk.equipStop.title', '설비정지')}${isStopped ? ` · ${formatElapsed(stopElapsed)}` : ''}`
-                : t('kiosk.header.selectEquipFirst', '설비를 먼저 선택하세요.')}
-              aria-label={t('kiosk.equipStop.title', '설비정지')}
-              className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border-2 transition-colors disabled:cursor-not-allowed disabled:border-border disabled:text-black/40 dark:disabled:text-white/40 ${
-                isStopped
-                  ? 'border-red-600 px-2.5 text-red-600 dark:border-red-400 dark:text-red-400'
-                  : 'w-11 2xl:w-auto 2xl:px-3 border-border text-black/70 hover:border-red-500 hover:text-red-600 dark:text-white/70 dark:hover:border-red-400 dark:hover:text-red-400'
-              }`}
-            >
-              <Square className="h-4 w-4 shrink-0" />
-              {isStopped ? (
-                <span className="flex flex-col items-start leading-tight">
-                  <span className="hidden text-[11px] 2xl:block">{t('kiosk.equipStop.stopping', '정지 중')}</span>
-                  <span data-testid="kiosk-header-stop-elapsed" className="font-mono text-sm font-bold tabular-nums">
-                    {formatElapsed(stopElapsed)}
-                  </span>
-                </span>
-              ) : (
-                <span className="hidden whitespace-nowrap text-sm font-bold 2xl:inline">{t('kiosk.equipStop.title', '설비정지')}</span>
-              )}
-            </button>
-
-            <button
-              type="button"
-              data-testid="kiosk-manager-call-open"
-              onClick={onOpenManagerCall}
-              disabled={!selectedEquip}
-              title={selectedEquip
-                ? `${t('kiosk.managerCall.title', '관리자호출')}${isCalling ? ` · ${formatElapsed(callElapsed)}` : ''}`
-                : t('kiosk.header.selectEquipFirst', '설비를 먼저 선택하세요.')}
-              aria-label={t('kiosk.managerCall.title', '관리자호출')}
-              className={`inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border-2 transition-colors disabled:cursor-not-allowed disabled:border-border disabled:text-black/40 dark:disabled:text-white/40 ${
-                isCalling
-                  ? 'border-amber-600 px-2.5 text-amber-600 dark:border-amber-400 dark:text-amber-400'
-                  : 'w-11 2xl:w-auto 2xl:px-3 border-border text-black/70 hover:border-amber-500 hover:text-amber-600 dark:text-white/70 dark:hover:border-amber-400 dark:hover:text-amber-400'
-              }`}
-            >
-              <BellRing className="h-4 w-4 shrink-0" />
-              {isCalling ? (
-                <span className="flex flex-col items-start leading-tight">
-                  <span className="hidden text-[11px] 2xl:block">{t('kiosk.managerCall.calling', '호출 중')}</span>
-                  <span className="font-mono text-sm font-bold tabular-nums">{formatElapsed(callElapsed)}</span>
-                </span>
-              ) : (
-                <span className="hidden whitespace-nowrap text-sm font-bold 2xl:inline">{t('kiosk.managerCall.title', '관리자호출')}</span>
-              )}
-            </button>
           </div>
 
           {outputCarrier && <OutputCarrierSlot state={outputCarrier} compact />}
