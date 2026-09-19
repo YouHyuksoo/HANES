@@ -13,17 +13,16 @@ import { useTranslation } from "react-i18next";
 import { X, Printer } from "lucide-react";
 import { Button, ComCodeBadge } from "@/components/ui";
 import api from "@/services/api";
-import { CarrierSlipPrintModal, type CarrierStatusView } from "@/components/shared/carrier";
+import { CarrierSlipPrintModal, formatCarrierDateTime as fmt, type CarrierStatusView } from "@/components/shared/carrier";
 
 interface Props {
   carrierNo: string | null;
   onClose: () => void;
+  /** 이동전표 발행 등으로 이 대차의 상태가 바뀌었을 때 부모(목록)에게 알린다 — 목록 재조회용 */
+  onChanged?: () => void;
 }
 
-/** 서버 타임스탬프(ISO)를 "YYYY-MM-DD HH:mm:ss" 로 자른다 */
-const fmt = (v?: string | null) => (v ? String(v).replace("T", " ").slice(0, 19) : "-");
-
-export default function CarrierContentsPanel({ carrierNo, onClose }: Props) {
+export default function CarrierContentsPanel({ carrierNo, onClose, onChanged }: Props) {
   const { t } = useTranslation();
   const [view, setView] = useState<CarrierStatusView | null>(null);
   const [loading, setLoading] = useState(false);
@@ -124,7 +123,7 @@ export default function CarrierContentsPanel({ carrierNo, onClose }: Props) {
         </>
       )}
 
-      <CarrierSlipPrintModal isOpen={slipOpen} carrierNo={carrierNo} onClose={() => setSlipOpen(false)} />
+      <CarrierSlipPrintModal isOpen={slipOpen} carrierNo={carrierNo} onClose={() => { setSlipOpen(false); void fetchView(); onChanged?.(); }} />
     </div>
   );
 }

@@ -10,10 +10,9 @@ import QRCode from "react-qr-code";
 import { Modal, Button } from "@/components/ui";
 import api from "@/services/api";
 import type { CarrierSlipView } from "./carrierTypes";
+import { formatCarrierDateTime as fmt } from "./formatDateTime";
 
 interface Props { isOpen: boolean; carrierNo: string | null; onClose: () => void; }
-
-const fmt = (v?: string | null) => (v ? String(v).replace("T", " ").slice(0, 19) : "-");
 
 export default function CarrierSlipPrintModal({ isOpen, carrierNo, onClose }: Props) {
   const { t } = useTranslation();

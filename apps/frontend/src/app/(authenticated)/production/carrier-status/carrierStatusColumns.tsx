@@ -7,6 +7,7 @@ import type { TFunction } from "i18next";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ComCodeBadge } from "@/components/ui";
 import StatusHeaderHelp from "@/components/shared/StatusHeaderHelp";
+import { formatCarrierDateTime } from "@/components/shared/carrier";
 
 export interface CarrierStatusRow {
   carrierNo: string;
@@ -23,11 +24,6 @@ export interface CarrierStatusRow {
   slipNo: string | null;
   loadProcessCode: string | null;
   lastLoadedAt: string | null;
-}
-
-/** 서버가 내려주는 타임스탬프(ISO)를 "YYYY-MM-DD HH:mm:ss" 로 자른다 — @/utils/date 에는 datetime 포맷이 없다 */
-function formatDateTime(value?: string | null): string {
-  return value ? String(value).replace("T", " ").slice(0, 19) : "-";
 }
 
 export function createCarrierStatusColumns({ t }: { t: TFunction }): ColumnDef<CarrierStatusRow>[] {
@@ -49,6 +45,6 @@ export function createCarrierStatusColumns({ t }: { t: TFunction }): ColumnDef<C
     { accessorKey: "totalQty", header: t("production.carrierStatus.totalQty"), size: 90, meta: { align: "right" as const },
       cell: ({ getValue }) => <span className="tabular-nums">{(getValue() as number).toLocaleString()}</span> },
     { accessorKey: "slipNo", header: t("carrier.slipNo"), size: 140, cell: ({ getValue }) => <span className="font-mono">{(getValue() as string | null) ?? "-"}</span> },
-    { accessorKey: "lastLoadedAt", header: t("production.carrierStatus.lastLoadedAt"), size: 150, cell: ({ getValue }) => formatDateTime(getValue() as string | null) },
+    { accessorKey: "lastLoadedAt", header: t("production.carrierStatus.lastLoadedAt"), size: 150, cell: ({ getValue }) => formatCarrierDateTime(getValue() as string | null) },
   ];
 }

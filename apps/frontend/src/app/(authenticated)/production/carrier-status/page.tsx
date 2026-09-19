@@ -60,7 +60,13 @@ export default function CarrierStatusPage() {
   }, [page, statusFilter, processFilter, barcodeQuery, searchText]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { setPage(1); }, [statusFilter, processFilter, barcodeQuery, searchText]);
+
+  // 필터가 바뀔 때 setPage(1)을 별도 useEffect로 뒤따라 부르면 fetchData가 두 번(옛 page→새 page) 실행된다.
+  // 필터 변경과 page 리셋을 같은 이벤트 핸들러에서 함께 반영해 React가 한 번에 배치하도록 한다 → 요청 1회.
+  const handleStatusFilterChange = useCallback((value: string) => { setStatusFilter(value); setPage(1); }, []);
+  const handleProcessFilterChange = useCallback((value: string) => { setProcessFilter(value); setPage(1); }, []);
+  const handleBarcodeQueryChange = useCallback((value: string) => { setBarcodeQuery(value); setPage(1); }, []);
+  const handleSearchTextChange = useCallback((value: string) => { setSearchText(value); setPage(1); }, []);
 
   const statusOptions = useMemo(() => [
     { value: "ACTIVE", label: t("production.carrierStatus.active") },
@@ -98,14 +104,14 @@ export default function CarrierStatusPage() {
               toolbarLeft={
                 <div className="flex gap-3 items-center flex-1 min-w-0 flex-wrap">
                   <div className="w-40">
-                    <Select options={statusOptions} value={statusFilter} onChange={setStatusFilter} fullWidth />
+                    <Select options={statusOptions} value={statusFilter} onChange={handleStatusFilterChange} fullWidth />
                   </div>
-                  <ProcessSelect value={processFilter} onChange={setProcessFilter} labelPrefix={t("production.carrierStatus.loadProcess")} />
+                  <ProcessSelect value={processFilter} onChange={handleProcessFilterChange} labelPrefix={t("production.carrierStatus.loadProcess")} />
                   <div className="w-56">
                     <BarcodeScanInput
                       value={barcodeQuery}
-                      onChange={setBarcodeQuery}
-                      onScan={(v) => setBarcodeQuery(v)}
+                      onChange={handleBarcodeQueryChange}
+                      onScan={(v) => handleBarcodeQueryChange(v)}
                       placeholder={t("production.carrierStatus.findByBarcode")}
                       maintainFocus={false}
                       blinkIndicator={false}
@@ -114,7 +120,7 @@ export default function CarrierStatusPage() {
                   </div>
                   <div className="w-56">
                     <Input placeholder={t("common.search")} value={searchText}
-                      onChange={e => setSearchText(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
+                      onChange={e => handleSearchTextChange(e.target.value)} leftIcon={<Search className="w-4 h-4" />} fullWidth />
                   </div>
                   <ServerPager page={page} total={total} limit={PAGE_SIZE} onPageChange={setPage} disabled={loading} className="flex-shrink-0 ml-auto" />
                 </div>
@@ -124,7 +130,7 @@ export default function CarrierStatusPage() {
         </Card>
       </div>
 
-      <CarrierContentsPanel carrierNo={selectedNo} onClose={() => setSelectedNo(null)} />
+      <CarrierContentsPanel carrierNo={selectedNo} onClose={() => setSelectedNo(null)} onChanged={fetchData} />
     </div>
   );
 }
