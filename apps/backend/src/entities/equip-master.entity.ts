@@ -74,6 +74,10 @@ export class EquipMaster {
   @Column({ type: 'varchar2', name: 'CURRENT_WORKER_CODES', length: 1000, nullable: true })
   currentWorkerCodes: string | null;
 
+  /** 설비의 현재 출력 대차번호(재진입 복원용). 전표 발행 시 NULL */
+  @Column({ type: 'varchar2', name: 'CUR_CARRIER_NO', length: 30, nullable: true })
+  curCarrierNo: string | null;
+
   @Column({ name: 'USE_YN', length: 1, default: 'Y' })
   useYn: string;
 

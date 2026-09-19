@@ -72,6 +72,10 @@ export class ProdResult {
   @Column({ type: 'varchar2', name: 'PROCESS_CODE', length: 255, nullable: true })
   processCode: string | null;
 
+  /** 실적 시점 출력 대차번호(보존). 라벨이 꺼내진 뒤에도 남는다 */
+  @Column({ type: 'varchar2', name: 'CARRIER_NO', length: 30, nullable: true })
+  carrierNo: string | null;
+
   @Column({ name: 'GOOD_QTY', type: 'int', default: 0 })
   goodQty: number;
 

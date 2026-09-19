@@ -107,6 +107,7 @@ import { InspectItemSpec } from '../../entities/inspect-item-spec.entity';
 import { InspectAid } from '../../entities/inspect-aid.entity';
 import { LimitSample } from '../../entities/limit-sample.entity';
 import { LimitSampleImage } from '../../entities/limit-sample-image.entity';
+import { CarrierMaster } from '../../entities/carrier-master.entity';
 import { AqlStandard } from '../../entities/aql-standard.entity';
 import { AqlSamplingRule } from '../../entities/aql-sampling-rule.entity';
 import { IqcAqlPolicy } from '../../entities/iqc-aql-policy.entity';
@@ -156,6 +157,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
       InspectAid,
       LimitSample,
       LimitSampleImage,
+      CarrierMaster,
       AqlStandard,
       AqlSamplingRule,
       IqcAqlPolicy,

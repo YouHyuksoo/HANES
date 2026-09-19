@@ -52,6 +52,17 @@ export class FgLabel {
   @Column({ type: 'varchar2', name: 'BOX_NO', length: 50, nullable: true })
   boxNo: string | null;
 
+  /** 현재 담긴 대차번호(CARRIER_MASTERS). 소비·취소 시 NULL — 대차 위치의 단일 출처 */
+  @Column({ type: 'varchar2', name: 'CARRIER_NO', length: 30, nullable: true })
+  carrierNo: string | null;
+
+  @Column({ name: 'CARRIER_LOADED_AT', type: 'timestamp', nullable: true })
+  carrierLoadedAt: Date | null;
+
+  /** 이동전표번호. 발행되면 추가 적재 불가, 생산 대차는 자동투입 허용 조건 */
+  @Column({ type: 'varchar2', name: 'CARRIER_SLIP_NO', length: 30, nullable: true })
+  carrierSlipNo: string | null;
+
   @Column({ name: 'REPRINT_COUNT', type: 'int', default: 0 })
   reprintCount: number;
 

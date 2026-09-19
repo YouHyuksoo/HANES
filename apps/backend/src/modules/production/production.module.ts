@@ -78,6 +78,7 @@ import { SampleInspectResult } from '../../entities/sample-inspect-result.entity
 import { LabelPrintLog } from '../../entities/label-print-log.entity';
 import { ProdPlan } from '../../entities/prod-plan.entity';
 import { MatLot } from '../../entities/mat-lot.entity';
+import { CarrierMaster } from '../../entities/carrier-master.entity';
 import { StockTransaction } from '../../entities/stock-transaction.entity';
 import { RepairOrder } from '../../entities/repair-order.entity';
 import { RepairUsedPart } from '../../entities/repair-used-part.entity';
@@ -122,7 +123,7 @@ import { KioskMaterialService } from './services/kiosk-material.service';
 @Module({
   imports: [
     IssueModule,
-    TypeOrmModule.forFeature([JobOrder, ProdResult, ItemMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, RoutingMaterial, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult, JobMaterialLot, ConsumableUsageMap, ConsumableStock, WorkerMaster, HarnessDrawingMaster, HarnessDrawingRevision, HarnessCircuitSpec, SgLabel, ProductGenealogy, EquipInspectItemPool]),
+    TypeOrmModule.forFeature([JobOrder, ProdResult, ItemMaster, EquipMaster, EquipBomRel, EquipBomItem, MatIssue, ConsumableMaster, User, InspectResult, BoxMaster, MatStock, BomMaster, SampleInspectResult, LabelPrintLog, ProdPlan, MatLot, StockTransaction, RepairOrder, RepairUsedPart, RoutingGroup, RoutingProcess, RoutingMaterial, FgLabel, CustomerOrder, CustomerOrderItem, ShiftPattern, ProcessCapa, WorkCalendar, WorkCalendarDay, SimulationHeader, SimulationPlan, SimulationSchedule, ProcessMaster, ProductStock, SelfInspectItem, SelfInspectResult, JobMaterialLot, ConsumableUsageMap, ConsumableStock, WorkerMaster, HarnessDrawingMaster, HarnessDrawingRevision, HarnessCircuitSpec, SgLabel, ProductGenealogy, EquipInspectItemPool, CarrierMaster]),
     InventoryModule,
     SystemModule,
     EquipmentModule,

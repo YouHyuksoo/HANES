@@ -82,6 +82,14 @@ export class RoutingProcess {
   @Column({ name: 'SAMPLE_QTY', type: 'number', default: 1, nullable: true })
   sampleQty: number | null;
 
+  /** 출력측: 이 공정 실적 라벨을 대차에 담는다(라벨 발행 공정만 Y 가능) */
+  @Column({ name: 'CARRIER_LOAD_YN', length: 1, default: 'N' })
+  carrierLoadYn: string;
+
+  /** 입력측: 이 공정에서 대차 스캔 시 담긴 것을 자동 투입한다 */
+  @Column({ name: 'CARRIER_AUTO_INPUT_YN', length: 1, default: 'N' })
+  carrierAutoInputYn: string;
+
   @Column({ type: 'varchar2', name: 'CREATED_BY', length: 50, nullable: true })
   createdBy: string | null;
 
