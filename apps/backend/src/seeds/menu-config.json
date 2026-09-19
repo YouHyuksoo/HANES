@@ -48,6 +48,7 @@
       "MST_VENDOR_BARCODE",
       "MST_PROCESS_CAPA",
       "MST_VALIDATION",
+      "MST_CARRIER",
       "SYS_DOCUMENT"
     ],
     "MATERIAL": [
@@ -120,6 +121,7 @@
       "PROD_WIP_MAT_STOCK",
       "PROD_WIP_MAT_TRANS",
       "PROD_PRODUCT_TRANS",
+      "PROD_CARRIER_STATUS",
       "QC_REWORK",
       "QC_REWORK_HISTORY",
       "PROD_REPAIR"

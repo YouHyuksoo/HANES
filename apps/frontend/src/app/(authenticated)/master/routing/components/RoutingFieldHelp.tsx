@@ -29,6 +29,8 @@ export const ROUTING_FIELD_HELP = {
     db: "ROUTING_PROCESSES.ISSUE_LABEL_TYPE",
     description: "이 공정 완료 시 발행할 라벨 종류를 지정합니다. 없음·묶음 추적 라벨·반제품(SFG)·완제품(FG) 중 하나를 선택합니다(한 공정 한 종류).",
   },
+  carrierLoadYn: { db: "ROUTING_PROCESSES.CARRIER_LOAD_YN", description: "이 공정 실적으로 발행된 라벨을 스캔한 출력 대차에 담습니다. 라벨 발행 공정에서만 켤 수 있고, 켜면 출력 대차 없이는 실적을 저장할 수 없습니다." },
+  carrierAutoInputYn: { db: "ROUTING_PROCESSES.CARRIER_AUTO_INPUT_YN", description: "이 공정에서 대차를 스캔하면 담긴 라벨/LOT 전부를 자동으로 투입(장착)합니다. 중간 공정은 적재와 자동투입을 모두 켭니다." },
 } as const;
 
 export type RoutingFieldKey = keyof typeof ROUTING_FIELD_HELP;

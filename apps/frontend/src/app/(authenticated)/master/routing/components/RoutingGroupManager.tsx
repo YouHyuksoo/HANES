@@ -71,6 +71,8 @@ const EMPTY_PROCESS = {
   setupTime: "",
   sampleInspectYn: "N",
   issueLabelType: "NONE",
+  carrierLoadYn: "N",
+  carrierAutoInputYn: "N",
   executionType: "IN_HOUSE",
   jobOrderYn: "Y",
   subconVendorCode: "",
@@ -347,6 +349,8 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess, 
       setupTime: process.setupTime != null ? String(process.setupTime) : "",
       sampleInspectYn: process.sampleInspectYn || "N",
       issueLabelType: process.issueLabelType || "NONE",
+      carrierLoadYn: process.carrierLoadYn || "N",
+      carrierAutoInputYn: process.carrierAutoInputYn || "N",
       executionType: process.executionType || "IN_HOUSE",
       jobOrderYn: process.jobOrderYn || "Y",
       subconVendorCode: process.subconVendorCode || "",
@@ -371,6 +375,8 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess, 
       setupTime: processForm.setupTime ? Number(processForm.setupTime) : undefined,
       sampleInspectYn: processForm.sampleInspectYn || "N",
       issueLabelType: processForm.issueLabelType || "NONE",
+      carrierLoadYn: processForm.carrierLoadYn || "N",
+      carrierAutoInputYn: processForm.carrierAutoInputYn || "N",
       executionType: processForm.executionType,
       jobOrderYn: processForm.jobOrderYn || "Y",
       subconVendorCode: processForm.executionType === "SUBCON" ? processForm.subconVendorCode || undefined : undefined,
@@ -598,6 +604,16 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess, 
                               {t("master.routing.fgLabelShort")}
                             </span>
                           )}
+                          {process.carrierLoadYn === 'Y' && (
+                            <span className="inline-flex items-center rounded border border-primary px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                              {t("master.routing.carrierLoadShort", "대차↑")}
+                            </span>
+                          )}
+                          {process.carrierAutoInputYn === 'Y' && (
+                            <span className="inline-flex items-center rounded border border-primary px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                              {t("master.routing.carrierInputShort", "대차↓")}
+                            </span>
+                          )}
                           {(!process.issueLabelType || process.issueLabelType === 'NONE') && (
                             <span className="text-text-muted text-[10px]">-</span>
                           )}
@@ -747,7 +763,7 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess, 
             <FieldLabel field="labelIssue" label={t("master.routing.labelIssue")} className="block text-sm font-medium text-text dark:text-gray-300 mb-2" />
             <select
               value={processForm.issueLabelType || "NONE"}
-              onChange={(e) => setProcessForm((f) => ({ ...f, issueLabelType: e.target.value }))}
+              onChange={(e) => setProcessForm((f) => ({ ...f, issueLabelType: e.target.value, carrierLoadYn: e.target.value === "NONE" ? "N" : f.carrierLoadYn }))}
               className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-text dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
             >
               <option value="NONE">{t("master.routing.issueLabelTypeNone", "없음")}</option>
@@ -755,6 +771,39 @@ export default function RoutingGroupManager({ selectedProcess, onSelectProcess, 
               <option value="SG">{t("master.routing.issueLabelTypeSg", "반제품(SFG) 라벨")}</option>
               <option value="FG">{t("master.routing.issueLabelTypeFg", "완제품(FG) 라벨")}</option>
             </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FieldLabel field="carrierLoadYn" label={t("master.routing.carrierLoadYn", "대차 적재(출력측)")} />
+              <label className="flex items-center gap-2 h-10 cursor-pointer">
+                <input
+                  type="checkbox"
+                  data-testid="routing-carrier-load"
+                  checked={processForm.carrierLoadYn === "Y"}
+                  disabled={!processForm.issueLabelType || processForm.issueLabelType === "NONE"}
+                  onChange={(e) => setProcessForm((f) => ({ ...f, carrierLoadYn: e.target.checked ? "Y" : "N" }))}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                />
+                <span className="text-sm text-text">
+                  {processForm.carrierLoadYn === "Y" ? t("master.routing.carrierOn", "사용") : t("master.routing.carrierOff", "미사용")}
+                </span>
+              </label>
+            </div>
+            <div>
+              <FieldLabel field="carrierAutoInputYn" label={t("master.routing.carrierAutoInputYn", "대차 자동투입(입력측)")} />
+              <label className="flex items-center gap-2 h-10 cursor-pointer">
+                <input
+                  type="checkbox"
+                  data-testid="routing-carrier-input"
+                  checked={processForm.carrierAutoInputYn === "Y"}
+                  onChange={(e) => setProcessForm((f) => ({ ...f, carrierAutoInputYn: e.target.checked ? "Y" : "N" }))}
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                />
+                <span className="text-sm text-text">
+                  {processForm.carrierAutoInputYn === "Y" ? t("master.routing.carrierOn", "사용") : t("master.routing.carrierOff", "미사용")}
+                </span>
+              </label>
+            </div>
           </div>
         </div>
         <div className="flex justify-end gap-2 pt-6">

@@ -34,6 +34,8 @@ export interface RoutingProcessItem {
   setupTime: number | null;
   sampleInspectYn: string;
   issueLabelType: string;
+  carrierLoadYn?: string;
+  carrierAutoInputYn?: string;
   useYn: string;
 }
 
