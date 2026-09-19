@@ -17,6 +17,8 @@ import { dirname, join } from 'node:path';
 const here = dirname(fileURLToPath(import.meta.url));
 const checkItem = readFileSync(join(here, '../../../../../components/inspect/HeaderCheckItem.tsx'), 'utf8');
 const header = readFileSync(join(here, 'EquipHeader.tsx'), 'utf8');
+// 작업자 영역은 3화면 공용 WorkerSlot 으로 분리됐다 — 신호(세로 보더 색)는 그 파일에서 본다
+const workerSlot = readFileSync(join(here, 'WorkerSlot.tsx'), 'utf8');
 
 test('점검 카드는 상태축 하나로 테두리·문구색·버튼톤을 함께 정한다', () => {
   assert.match(checkItem, /const tone = notTarget \? 'muted' : done \? 'done' : 'todo'/);
@@ -35,16 +37,17 @@ test('끝난 점검은 입력 버튼을 primary 로 두지 않는다', () => {
 });
 
 test('작업자 영역도 같은 신호를 쓰고 파스텔 배경을 쓰지 않는다', () => {
-  assert.match(header, /selectedWorkers\.length > 0[\s\S]{0,120}border-l-4 border-l-green-600/);
+  assert.match(header, /<WorkerSlot workers=\{selectedWorkers\}/, '헤더는 공용 WorkerSlot 을 써야 한다');
+  assert.match(workerSlot, /workers\.length > 0[\s\S]{0,120}border-l-4 border-l-green-600/);
   assert.ok(
-    !/bg-green-100/.test(header),
+    !/bg-green-100/.test(workerSlot),
     '작업자 칩에 파스텔 배경(bg-green-100) 금지 — 테두리와 글자색으로 구분한다',
   );
-  assert.match(header, /border border-green-600[^"]*text-green-700/);
+  assert.match(workerSlot, /border border-green-600[^"]*text-green-700/);
 });
 
 test('작업자 없음 경고는 미완료와 같은 빨강을 쓴다', () => {
   // 주황/빨강이 섞이면 "덜 급한 것"처럼 읽힌다. 실적입력을 막는 조건은 전부 같은 색이어야 한다.
-  assert.match(header, /text-red-600 dark:text-red-400">\s*<AlertTriangle[\s\S]{0,120}workerRequired/);
-  assert.ok(!/text-orange-500[\s\S]{0,200}workerRequired/.test(header), '작업자 필요 경고에 주황 금지');
+  assert.match(workerSlot, /text-red-600 dark:text-red-400" title=\{t\('kiosk\.header\.workerRequired'\)\}>\s*<AlertTriangle/);
+  assert.ok(!/text-orange-500[\s\S]{0,200}workerRequired/.test(workerSlot), '작업자 필요 경고에 주황 금지');
 });

@@ -15,7 +15,8 @@ test('/production/result action column is first and uses icon-only buttons', () 
   assert.match(columns, /import \{ Edit2, Trash2 \} from "lucide-react";/);
   assert.match(columns, /<Edit2 className="w-4 h-4 text-primary" \/>/);
   assert.match(columns, /<Trash2 className="w-4 h-4 text-red-500" \/>/);
-  assert.match(columns, /className="p-1 hover:bg-surface rounded disabled:opacity-30/);
+  // 비활성 사유 툴팁(c98ed7b2)으로 disabled:pointer-events-none 이 앞에 붙는다 — 아이콘 버튼 규칙만 본다
+  assert.match(columns, /className="[^"]*p-1 hover:bg-surface rounded disabled:opacity-30/);
   assert.match(columns, /aria-label=\{t\('common\.edit'\)\}/);
   assert.match(columns, /aria-label=\{t\('common\.delete'\)\}/);
   assert.doesNotMatch(columns, /from "@\/components\/ui"[\s\S]*Button/);
