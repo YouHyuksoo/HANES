@@ -5,13 +5,14 @@
  *
  * 초보자 가이드:
  * 1. 목록에서 행을 클릭하면 carrierNo가 내려오고, GET /production/carriers/:no 로 CarrierStatusView를 조회한다.
- * 2. 상단 액션: 닫기, 이동전표(CarrierSlipPrintModal 재사용 — 전표 재발행 API를 호출한다).
+ * 2. 상단 액션: 닫기, 이동전표(CarrierSlipPrintModal 재사용). 이 화면은 모니터링용이라 미발행 대차는 확인 모달을 먼저 띄운다
+ *    — 전표 발행은 대차를 잠그고 설비의 출력 대차 지정을 푸는 되돌릴 수 없는 행위다. 이미 발행된 대차는 바로 재발행한다.
  * 3. 담긴 내용이 0건이면(빈 대차) 안내 문구만 표시한다.
  */
 import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Printer } from "lucide-react";
-import { Button, ComCodeBadge } from "@/components/ui";
+import { Button, ComCodeBadge, ConfirmModal } from "@/components/ui";
 import api from "@/services/api";
 import { CarrierSlipPrintModal, formatCarrierDateTime as fmt, type CarrierStatusView } from "@/components/shared/carrier";
 
@@ -27,6 +28,8 @@ export default function CarrierContentsPanel({ carrierNo, onClose, onChanged }: 
   const [view, setView] = useState<CarrierStatusView | null>(null);
   const [loading, setLoading] = useState(false);
   const [slipOpen, setSlipOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const alreadyIssued = !!view?.slipNo;
 
   const fetchView = useCallback(async () => {
     if (!carrierNo) { setView(null); return; }
@@ -54,8 +57,14 @@ export default function CarrierContentsPanel({ carrierNo, onClose, onChanged }: 
           {view && <p className="text-xs text-text-muted truncate">{view.carrierType}{view.carrierName ? ` · ${view.carrierName}` : ""}</p>}
         </div>
         <div className="flex items-center gap-2 ml-2 shrink-0">
-          <Button size="sm" variant="secondary" onClick={() => setSlipOpen(true)}>
-            <Printer className="w-3.5 h-3.5 mr-1" />{t("carrier.slipTitle", "대차 이동전표")}
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={loading || !view}
+            onClick={() => (alreadyIssued ? setSlipOpen(true) : setConfirmOpen(true))}
+          >
+            <Printer className="w-3.5 h-3.5 mr-1" />
+            {alreadyIssued ? t("carrier.reprint") : t("carrier.slipTitle", "대차 이동전표")}
           </Button>
           <Button size="sm" variant="secondary" onClick={onClose}>
             <X className="w-4 h-4" />
@@ -123,6 +132,13 @@ export default function CarrierContentsPanel({ carrierNo, onClose, onChanged }: 
         </>
       )}
 
+      <ConfirmModal
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={() => { setConfirmOpen(false); setSlipOpen(true); }}
+        title={t("carrier.slip")}
+        message={t("production.carrierStatus.slipIssueConfirm")}
+      />
       <CarrierSlipPrintModal isOpen={slipOpen} carrierNo={carrierNo} onClose={() => { setSlipOpen(false); void fetchView(); onChanged?.(); }} />
     </div>
   );

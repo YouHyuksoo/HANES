@@ -26,8 +26,13 @@ test('상태 배지는 ComCodeBadge(CARRIER_STATUS), page는 thin', () => {
   assert.match(panel, /CarrierSlipPrintModal/);
 });
 
+test('미발행 대차의 이동전표 버튼은 ConfirmModal로 한 번 더 확인한다', () => {
+  assert.match(panel, /ConfirmModal/);
+  assert.match(panel, /production\.carrierStatus\.slipIssueConfirm/);
+});
+
 test('i18n production.carrierStatus 키', () => {
-  for (const k of ['title', 'subtitle', 'findByBarcode', 'loadedCount', 'totalQty', 'lastLoadedAt', 'contents', 'noContents']) {
+  for (const k of ['title', 'subtitle', 'findByBarcode', 'loadedCount', 'totalQty', 'lastLoadedAt', 'contents', 'noContents', 'slipIssueConfirm']) {
     for (const { lang, json } of locales) assert.ok(json.production?.carrierStatus?.[k], `${lang}: production.carrierStatus.${k} 누락`);
   }
 });

@@ -164,3 +164,15 @@
 | 상태 도출 | 대차 내용 조회는 SG_LABELS, FG_LABELS, MAT_LOTS 세 테이블을 UNION ALL 한다. 한 대차에 라벨과 원자재 LOT이 섞이는 것은 막는다(담을 때 종류 불일치면 400) |
 
 세 화면 원칙은 유지된다. 가공 화면은 출력측(SG 라벨 적재·전표)과 입력측(원자재 대차 일괄 장착) 모두를 갖는다.
+
+## 13. 보완 — 출하 포장도 소비 지점 (최종 리뷰)
+
+FG 라벨은 박스 포장(`BoxService.closeBox`, FG_LABELS.STATUS='PACKED') 시점에 대차에서 꺼낸다.
+포장이 대차 해제를 하지 않으면 조립 FG를 담은 대차가 영원히 IN_TRANSIT으로 남아 재사용되지 않는다.
+
+| 항목 | 결정 |
+|---|---|
+| 해제 지점 | `closeBox`가 FG_LABELS를 PACKED로 올리는 같은 트랜잭션·같은 배치에서 `CarrierFlowService.clearInTx(qr, 'FG', batch, ...)` 호출 |
+| 테넌트 | `box.company` / `box.plant`를 쓴다. `closeBox`의 company/plant 인자는 optional이라 undefined면 전 테넌트를 건드린다 |
+| 조회 방어 | 대차 내용 조회(CONTENTS_SQL)와 현황 목록 집계의 FG 가지에 `STATUS NOT IN ('PACKED','SHIPPED')`를 건다. 과거 데이터나 해제 누락이 있어도 포장·출하된 FG는 대차에 남아 보이지 않는다 |
+| 범위 밖 | `reopenBox`(PACKED→VISUAL_PASS 복원)와 출하 취소(SHIPPED→PACKED)는 대차로 되돌리지 않는다. 대차 적재는 생산 공정 간 이동 수단이지 출하 취소의 복구 대상이 아니다 |

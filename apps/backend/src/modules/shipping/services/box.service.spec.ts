@@ -17,6 +17,7 @@ import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
 import { ProdResult } from '../../../entities/prod-result.entity';
+import { CarrierFlowService } from '../../production/services/carrier-flow.service';
 
 describe('BoxService', () => {
   let target: BoxService;
@@ -31,6 +32,7 @@ describe('BoxService', () => {
   let mockTx: DeepMocked<TransactionService>;
   let mockQueryRunner: DeepMocked<QueryRunner>;
   let mockSysConfig: DeepMocked<SysConfigService>;
+  let mockCarrierFlow: { clearInTx: jest.Mock; stampInTx: jest.Mock; assertLoadableInTx: jest.Mock };
 
   function mockPackableFgWip(labels: FgLabel[]) {
     const qb = {
@@ -57,6 +59,7 @@ describe('BoxService', () => {
     mockTx = createMock<TransactionService>();
     mockQueryRunner = createMock<QueryRunner>();
     mockSysConfig = createMock<SysConfigService>();
+    mockCarrierFlow = { clearInTx: jest.fn(), stampInTx: jest.fn(), assertLoadableInTx: jest.fn() };
     mockSysConfig.isEnabled.mockResolvedValue(false);
     (mockBoxRepo.manager.findOne as jest.Mock).mockResolvedValue(null);
 
@@ -98,6 +101,7 @@ describe('BoxService', () => {
         { provide: TransactionService, useValue: mockTx },
         { provide: NumberingService, useValue: { nextBoxNo: jest.fn().mockResolvedValue('BX-TEST') } },
         { provide: SysConfigService, useValue: mockSysConfig },
+        { provide: CarrierFlowService, useValue: mockCarrierFlow },
       ],
     })
       .setLogger(new MockLoggerService())
@@ -381,6 +385,8 @@ describe('BoxService', () => {
       { fgBarcode: expect.anything(), company: 'C1', plant: 'P1' },
       { status: 'PACKED', boxNo: 'BOX-001' },
     );
+    // 포장된 FG는 같은 트랜잭션에서 대차에서 해제된다 — 안 하면 대차가 영원히 IN_TRANSIT으로 남는다.
+    expect(mockCarrierFlow.clearInTx).toHaveBeenCalledWith(mockQueryRunner, 'FG', ['FG-001'], 'C1', 'P1');
   });
 
   it('closeBox rejects a serial that is no longer eligible in FG_WIP', async () => {
@@ -632,6 +638,9 @@ describe('BoxService', () => {
       OqcRequestBox,
       expect.objectContaining({ boxNo: 'BOX-001', qty: 2 }),
     );
+    // 인자 company/plant가 없어도 대차 해제는 box.company/box.plant로 테넌트를 건다.
+    // (인자를 그대로 넘기면 undefined가 되어 clearInTx의 where에서 테넌트 필터가 빠진다)
+    expect(mockCarrierFlow.clearInTx).toHaveBeenCalledWith(mockQueryRunner, 'FG', ['FG-001', 'FG-002'], 'HANES', 'P01');
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     expect(mockQueryRunner.commitTransaction).not.toHaveBeenCalled();

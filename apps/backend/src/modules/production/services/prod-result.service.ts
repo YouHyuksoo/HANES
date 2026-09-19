@@ -72,7 +72,7 @@ import { EquipInspectService } from '../../equipment/services/equip-inspect.serv
 import { EquipInspectGateService, type InspectGateScope } from '../../equipment/services/equip-inspect-gate.service';
 import { formatYmdLocal } from '../../../shared/date.util';
 import { CarrierFlowService } from './carrier-flow.service';
-import { assertCarrierGate } from './carrier-gate.rules';
+import { assertCarrierGate, isKioskCarrierGateApplicable } from './carrier-gate.rules';
 
 const SELF_INSPECT_BATCH_WINDOW_MS = 10_000;
 /** 설비점검 인터록 판정은 EquipInspectGateService 단일 출처를 쓴다(sys-config 키·매핑 규칙 포함). */
@@ -886,7 +886,8 @@ export class ProdResultService {
       routingStep = step;
     }
     // 출력 대차 게이트 — 공정 CARRIER_LOAD_YN='Y'면 대차 없이 실적을 저장할 수 없다.
-    assertCarrierGate(routingStep, dto.carrierNo);
+    // 단 실적 경로는 SG/BUNDLE 라벨만 발행하므로 ISSUE_LABEL_TYPE이 FG/NONE인 공정은 게이트 대상이 아니다.
+    if (isKioskCarrierGateApplicable(routingStep)) assertCarrierGate(routingStep, dto.carrierNo);
 
     // 작업자 존재 확인 (옵션)
     // PROD_RESULTS.worker 관계는 WORKER_MASTERS.workerCode를 참조하므로 작업자마스터를 우선 조회한다.
@@ -1028,7 +1029,7 @@ export class ProdResultService {
       });
 
       // 출력 대차 적재 — 이 실적으로 발행된 SG 라벨을 스캔된 대차에 담는다(공정 CARRIER_LOAD_YN=Y).
-      if (dto.carrierNo && routingStep?.carrierLoadYn === 'Y') {
+      if (dto.carrierNo && routingStep?.carrierLoadYn === 'Y' && isKioskCarrierGateApplicable(routingStep)) {
         const issued = await queryRunner.manager.find(SgLabel, {
           where: { resultNo: saved.resultNo, company: jobOrder.company, plant: jobOrder.plant },
           select: ['sgBarcode'],

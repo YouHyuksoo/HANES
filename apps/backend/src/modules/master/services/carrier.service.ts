@@ -13,6 +13,22 @@ export function normalizeCarrierNo(raw: string): string {
   return raw.trim().toUpperCase();
 }
 
+/** 라벨 접두어로 시작하는 대차번호는 스캔 화면이 라벨로 먼저 해석해 대차로 인식되지 않는다 — 등록 단계에서 막는다. */
+const LABEL_LIKE_CARRIER_NO = [/^(SG|FG)\d/, /^VH1-RM/];
+
+export function assertNotLabelLikeCarrierNo(carrierNo: string): void {
+  if (LABEL_LIKE_CARRIER_NO.some((re) => re.test(carrierNo))) {
+    throw new BadRequestException('대차번호는 라벨 접두어(SG/FG/VH1-RM)로 시작할 수 없습니다.');
+  }
+}
+
+/** 대차에 남아 있는 참조 수 — SG/FG 라벨과 원자재 LOT 3테이블 */
+const REFERENCE_COUNT_SQL = `
+  SELECT COUNT(*) CNT FROM (
+    SELECT 1 FROM SG_LABELS WHERE COMPANY = :1 AND PLANT_CD = :2 AND CARRIER_NO = :3
+    UNION ALL SELECT 1 FROM FG_LABELS WHERE COMPANY = :4 AND PLANT_CD = :5 AND CARRIER_NO = :6
+    UNION ALL SELECT 1 FROM MAT_LOTS WHERE COMPANY = :7 AND PLANT_CD = :8 AND CARRIER_NO = :9)`;
+
 @Injectable()
 export class CarrierService {
   constructor(@InjectRepository(CarrierMaster) private readonly repo: Repository<CarrierMaster>) {}
@@ -49,6 +65,7 @@ export class CarrierService {
   async create(dto: CreateCarrierDto, company: string, plant: string, userId: string) {
     const carrierNo = normalizeCarrierNo(dto.carrierNo);
     if (!carrierNo) throw new BadRequestException('대차번호는 필수입니다.');
+    assertNotLabelLikeCarrierNo(carrierNo);
     this.assertCapacity(dto.capacity);
     const existing = await this.repo.findOne({ where: { company, plant, carrierNo } });
     if (existing) throw new ConflictException(`이미 존재하는 대차번호입니다: ${carrierNo}`);
@@ -80,6 +97,16 @@ export class CarrierService {
 
   async delete(carrierNo: string, company: string, plant: string) {
     const row = await this.findOneOrFail(carrierNo, company, plant);
+    // 담긴 라벨/LOT이 있으면 물리 삭제 시 CARRIER_NO가 고아로 남는다(FK 없음) — 먼저 비우게 한다.
+    // CarrierFlowService(production)를 master 모듈로 끌어오면 순환 의존이 생기므로 manager 질의 1회로 센다.
+    const refRows: Array<{ CNT: number }> = await this.repo.manager.query(REFERENCE_COUNT_SQL, [
+      company, plant, row.carrierNo,
+      company, plant, row.carrierNo,
+      company, plant, row.carrierNo,
+    ]);
+    if (Number(refRows[0]?.CNT ?? 0) > 0) {
+      throw new BadRequestException('담긴 라벨/LOT이 있는 대차는 삭제할 수 없습니다. 먼저 비우세요.');
+    }
     await this.repo.remove(row);
     return { carrierNo: row.carrierNo, deleted: true };
   }

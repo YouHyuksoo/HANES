@@ -28,6 +28,7 @@ import {
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
+import { CarrierFlowService } from '../../production/services/carrier-flow.service';
 import { calcStorageDays, isLongStored, resolveLongStockDays } from '../../inventory/rules/product-storage.rules';
 
 @Injectable()
@@ -52,6 +53,7 @@ export class BoxService {
     private readonly tx: TransactionService,
     private readonly numbering: NumberingService,
     private readonly sysConfig: SysConfigService,
+    private readonly carrierFlow: CarrierFlowService,
   ) {}
 
   private tenantWhere(company?: string, plant?: string) {
@@ -780,6 +782,9 @@ export class BoxService {
                 { fgBarcode: In(batch), ...this.tenantWhere(company, plant) },
                 { status: 'PACKED', boxNo: id },
               );
+              // 포장된 FG는 대차에서 꺼낸 것으로 본다 — 해제하지 않으면 대차가 영원히 IN_TRANSIT으로 남는다(설계 13절).
+              // 테넌트는 box.company/box.plant를 쓴다. 인자 company/plant는 optional이라 undefined면 전 테넌트를 건드린다.
+              await this.carrierFlow.clearInTx(queryRunner, 'FG', batch, box.company, box.plant);
             }
           }
         } catch {

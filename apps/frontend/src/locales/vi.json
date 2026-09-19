@@ -4753,7 +4753,8 @@
       "totalQty": "Tổng SL",
       "lastLoadedAt": "Xếp gần nhất",
       "contents": "Nội dung",
-      "noContents": "Xe trống."
+      "noContents": "Xe trống.",
+      "slipIssueConfirm": "Phát hành phiếu chuyển sẽ khóa xe này không xếp thêm và bỏ chỉ định xe đầu ra của thiết bị. Phát hành ngay?"
     },
     "specSetup": {
       "drawingNo": "Số bản vẽ",

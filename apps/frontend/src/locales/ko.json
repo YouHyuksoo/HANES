@@ -4927,7 +4927,8 @@
       "totalQty": "합계 수량",
       "lastLoadedAt": "최근 적재",
       "contents": "담긴 내용",
-      "noContents": "빈 대차입니다."
+      "noContents": "빈 대차입니다.",
+      "slipIssueConfirm": "이동전표를 발행하면 이 대차에 더 담을 수 없고 설비의 출력 대차 지정이 풀립니다. 발행할까요?"
     },
     "inputManual": {
       "selectJobOrder": "작업지시 선택",

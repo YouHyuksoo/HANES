@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Printer } from "lucide-react";
 import QRCode from "react-qr-code";
+import toast from "react-hot-toast";
 import { Modal, Button } from "@/components/ui";
 import api from "@/services/api";
 import type { CarrierSlipView } from "./carrierTypes";
@@ -27,14 +28,17 @@ export default function CarrierSlipPrintModal({ isOpen, carrierNo, onClose }: Pr
       try {
         const res = await api.post(`/production/carriers/${encodeURIComponent(carrierNo)}/slip`, {}, { skipSuccessToast: true });
         if (alive) setSlip(res.data?.data ?? null);
-      } catch {
+      } catch (error: unknown) {
+        // 발행 실패(빈 대차·미등록 대차 등)를 빈 모달로 삼키지 않고 서버 메시지를 그대로 보여준다.
+        const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        toast.error(message ?? t("carrier.notCarrier"));
         if (alive) setSlip(null);
       } finally {
         if (alive) setLoading(false);
       }
     })();
     return () => { alive = false; };
-  }, [isOpen, carrierNo]);
+  }, [isOpen, carrierNo, t]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t("carrier.slipTitle", "대차 이동전표")} size="xl">

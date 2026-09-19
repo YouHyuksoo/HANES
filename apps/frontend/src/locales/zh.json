@@ -4753,7 +4753,8 @@
       "totalQty": "合计数量",
       "lastLoadedAt": "最近装载",
       "contents": "装载内容",
-      "noContents": "空车。"
+      "noContents": "空车。",
+      "slipIssueConfirm": "发行转运单后该台车不能再装载，并会解除设备的输出台车指定。是否发行？"
     },
     "specSetup": {
       "drawingNo": "图号",

@@ -56,11 +56,14 @@ import { OqcRequest } from '../../entities/oqc-request.entity';
 import { OqcRequestBox } from '../../entities/oqc-request-box.entity';
 import { InventoryModule } from '../inventory/inventory.module';
 import { SystemModule } from '../system/system.module';
+// 박스 포장(closeBox) 시 FG 라벨을 대차에서 해제한다. CarrierFlowModule은 TypeOrmModule만 import해 순환이 없다.
+import { CarrierFlowModule } from '../production/carrier-flow.module';
 
 @Module({
   imports: [
     InventoryModule,
     SystemModule,
+    CarrierFlowModule,
     TypeOrmModule.forFeature([
       BoxMaster,
       PalletMaster,

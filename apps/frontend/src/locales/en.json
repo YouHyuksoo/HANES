@@ -4771,7 +4771,8 @@
       "totalQty": "Total qty",
       "lastLoadedAt": "Last loaded",
       "contents": "Contents",
-      "noContents": "Carrier is empty."
+      "noContents": "Carrier is empty.",
+      "slipIssueConfirm": "Issuing a transfer slip locks this carrier against further loading and releases it from the equipment's output slot. Issue now?"
     },
     "specSetup": {
       "drawingNo": "Drawing No.",
