@@ -12,6 +12,8 @@ import { judgeRestoredJobOrder } from "@/components/production/jobOrderRestore";
 import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
 import { OutputCarrierSlot, useCarrierProcessFlags, useOutputCarrier } from "@/components/shared/carrier";
 import JobOrderSelectTrigger from "@/components/production/JobOrderSelectTrigger";
+import EquipSelectTrigger from "@/components/production/EquipSelectTrigger";
+import { OutputCarrierSlot, useCarrierProcessFlags, useOutputCarrier } from "@/components/shared/carrier";
 import EquipMaterialMountPanel from "./components/EquipMaterialMountPanel";
 import SgScanPanel from "./components/SgScanPanel";
 import { useAssemblyScanSession, type AssemblySgLabel } from "./hooks/useAssemblyScanSession";
@@ -531,12 +533,12 @@ export default function InputAssemblyPage() {
           <div className="flex h-14 min-w-[980px] flex-nowrap items-center gap-3 whitespace-nowrap bg-surface/50 px-3">
             {/* 1) 설비 — 가장 먼저 선택. 설비가 공정을 결정(설비→공정)하고 작업지시 조회조건이 된다. */}
             <div className="w-52 shrink-0">
-              <label className="sr-only">
-                {t("production.inputAssembly.equip", "설비")}
-              </label>
-              <button
-                type="button"
-                onClick={() => setEquipModalOpen(true)}
+              {/* 1) 설비 — 가공 키오스크와 같은 공용 트리거(2026-09-19 세 화면 통일). 목록·스캔은 EquipSelectModal이 맡는다. */}
+              <EquipSelectTrigger
+                equipCode={equipCode}
+                equipName={equipName}
+                processCode={processCode}
+                processName={processName}
                 disabled={contextLocked}
                 className={`flex h-11 w-full items-center gap-2 rounded-lg border-2 px-3 text-left transition-colors ${
                   equipCode

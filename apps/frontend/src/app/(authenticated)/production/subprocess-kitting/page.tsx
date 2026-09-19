@@ -19,6 +19,8 @@ import { judgeRestoredJobOrder } from "@/components/production/jobOrderRestore";
 import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
 import { OutputCarrierSlot, useCarrierProcessFlags, useOutputCarrier } from "@/components/shared/carrier";
 import JobOrderSelectTrigger from "@/components/production/JobOrderSelectTrigger";
+import EquipSelectTrigger from "@/components/production/EquipSelectTrigger";
+import { OutputCarrierSlot, useCarrierProcessFlags, useOutputCarrier } from "@/components/shared/carrier";
 import InputSgScanPanel from "./components/InputSgScanPanel";
 import SubKitActionBar from "./components/SubKitActionBar";
 import EquipMaterialMountPanel from "../input-assembly/components/EquipMaterialMountPanel";
@@ -604,38 +606,16 @@ export default function SubprocessKittingPage() {
           <div className="flex h-14 min-w-[980px] flex-nowrap items-center gap-3 whitespace-nowrap bg-surface/50 px-4">
             {/* 1) 설비 — 가장 먼저 선택. 설비가 공정을 결정(설비→공정)하고 작업지시 조회조건이 된다. */}
             <div className="w-52 shrink-0">
-              <label className="sr-only">
-                {t("production.inputAssembly.equip", "설비")}
-              </label>
-              <button
-                type="button"
-                onClick={() => setEquipModalOpen(true)}
-                className={`flex h-11 w-full items-center gap-2 rounded-lg border-2 px-3 text-left transition-colors ${
-                  equipCode
-                    ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
-                    : "border-dashed border-border hover:border-primary"
-                }`}
-              >
-                <Cpu className="h-5 w-5 shrink-0 text-primary" />
-                <div className="min-w-0 flex-1">
-                  {equipCode ? (
-                    <>
-                      <div className="truncate text-sm font-extrabold text-text">{equipName}</div>
-                      <div className="truncate text-[11px] text-text-muted">
-                        {equipCode}
-                        {processName && (
-                          <span className="ml-1 font-semibold text-primary">· {processName}</span>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <span className="text-sm text-text-muted">
-                      {t("kiosk.header.selectEquip", "설비 선택")}
-                    </span>
-                  )}
-                </div>
-                <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
-              </button>
+              {/* 1) 설비 — 가공 키오스크와 같은 공용 트리거(2026-09-19 세 화면 통일). 목록·스캔은 EquipSelectModal이 맡는다. */}
+              <EquipSelectTrigger
+                equipCode={equipCode}
+                equipName={equipName}
+                processCode={processCode}
+                processName={processName}
+                onOpen={() => setEquipModalOpen(true)}
+                testId="subkit-equip-open"
+                className="w-full"
+              />
             </div>
 
             {/* 2) 작업지시 — 가공 키오스크와 같은 공용 트리거(2026-09-19 세 화면 통일). 조회·스캔은 JobOrderSelectModal이 맡는다. */}
