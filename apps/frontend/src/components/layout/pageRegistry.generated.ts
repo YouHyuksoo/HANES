@@ -247,6 +247,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/master/carrier": {
+      const mod = await import("./page-registries/master__carrier.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/master/code": {
       const mod = await import("./page-registries/master__code.generated");
       component = mod.getPageComponent();
@@ -604,6 +609,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
     }
     case "/product/receive": {
       const mod = await import("./page-registries/product__receive.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/production/carrier-status": {
+      const mod = await import("./page-registries/production__carrier-status.generated");
       component = mod.getPageComponent();
       break;
     }
