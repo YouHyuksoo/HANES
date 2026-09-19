@@ -4742,6 +4742,19 @@
       "title": "实绩录入(加工)",
       "description": "在现场设备终端录入生产实绩"
     },
+    "carrierStatus": {
+      "title": "台车状态",
+      "subtitle": "实时查看各台车的位置与装载内容。",
+      "active": "活动（不含空车）",
+      "findByBarcode": "按条码查找台车",
+      "kind": "种类",
+      "loadProcess": "装载工序",
+      "loadedCount": "装载数",
+      "totalQty": "合计数量",
+      "lastLoadedAt": "最近装载",
+      "contents": "装载内容",
+      "noContents": "空车。"
+    },
     "specSetup": {
       "drawingNo": "图号",
       "erpItemNo": "ERP 物料号",

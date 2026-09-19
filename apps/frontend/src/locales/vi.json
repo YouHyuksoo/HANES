@@ -4742,6 +4742,19 @@
       "title": "Nhập kết quả (Gia công)",
       "description": "Nhập kết quả sản xuất tại kiosk thiết bị hiện trường"
     },
+    "carrierStatus": {
+      "title": "Tình trạng xe đẩy",
+      "subtitle": "Xem vị trí và nội dung từng xe đẩy theo thời gian thực.",
+      "active": "Đang dùng (trừ xe trống)",
+      "findByBarcode": "Tìm xe theo mã vạch",
+      "kind": "Loại",
+      "loadProcess": "Công đoạn xếp",
+      "loadedCount": "Số lượng xếp",
+      "totalQty": "Tổng SL",
+      "lastLoadedAt": "Xếp gần nhất",
+      "contents": "Nội dung",
+      "noContents": "Xe trống."
+    },
     "specSetup": {
       "drawingNo": "Số bản vẽ",
       "erpItemNo": "Mã ERP",

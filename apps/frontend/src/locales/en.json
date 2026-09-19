@@ -4760,6 +4760,19 @@
       "title": "Result Input (Machining)",
       "description": "Enter production results at the on-site equipment kiosk"
     },
+    "carrierStatus": {
+      "title": "Carrier Status",
+      "subtitle": "See where each carrier is and what it holds in real time.",
+      "active": "Active (exclude empty)",
+      "findByBarcode": "Find carrier by barcode",
+      "kind": "Kind",
+      "loadProcess": "Load process",
+      "loadedCount": "Loaded",
+      "totalQty": "Total qty",
+      "lastLoadedAt": "Last loaded",
+      "contents": "Contents",
+      "noContents": "Carrier is empty."
+    },
     "specSetup": {
       "drawingNo": "Drawing No.",
       "erpItemNo": "ERP Item No.",

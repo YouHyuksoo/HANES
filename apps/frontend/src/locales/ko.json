@@ -4916,6 +4916,19 @@
       "title": "실적입력 (가공)",
       "description": "현장 설비 키오스크에서 생산실적을 입력합니다"
     },
+    "carrierStatus": {
+      "title": "대차현황",
+      "subtitle": "대차별 현재 위치와 담긴 내용을 실시간으로 확인합니다.",
+      "active": "활성(빈 대차 제외)",
+      "findByBarcode": "바코드로 대차 찾기",
+      "kind": "종류",
+      "loadProcess": "적재 공정",
+      "loadedCount": "적재수",
+      "totalQty": "합계 수량",
+      "lastLoadedAt": "최근 적재",
+      "contents": "담긴 내용",
+      "noContents": "빈 대차입니다."
+    },
     "inputManual": {
       "selectJobOrder": "작업지시 선택",
       "searchJobOrderPlaceholder": "지시번호, 품목코드, 품목명 검색...",
