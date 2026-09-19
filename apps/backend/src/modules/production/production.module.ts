@@ -119,6 +119,7 @@ import { EquipMaterialController } from './controllers/equip-material.controller
 import { EquipMaterialService } from './services/equip-material.service';
 import { KioskMaterialController } from './controllers/kiosk-material.controller';
 import { KioskMaterialService } from './services/kiosk-material.service';
+import { CarrierFlowModule } from './carrier-flow.module';
 
 @Module({
   imports: [
@@ -127,6 +128,7 @@ import { KioskMaterialService } from './services/kiosk-material.service';
     InventoryModule,
     SystemModule,
     EquipmentModule,
+    CarrierFlowModule,
   ],
   controllers: [
     JobOrderController,
@@ -175,6 +177,7 @@ import { KioskMaterialService } from './services/kiosk-material.service';
     ProdPlanService,
     AutoIssueService,
     RepairService,
+    CarrierFlowModule,
     ProductionSpecificationService,
   ],
 })
