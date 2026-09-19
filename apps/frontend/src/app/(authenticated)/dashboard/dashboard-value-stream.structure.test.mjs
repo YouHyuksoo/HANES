@@ -14,6 +14,7 @@ const read = (p) => readFileSync(join(__dirname, p), "utf8");
 const page = read("page.tsx");
 const hook = read("components/useDashboardData.ts");
 const attention = read("components/buildAttention.ts");
+const skins = read("components/skins.ts");
 
 // 1. 페이지는 배선만: 데이터 훅/큐 빌더를 소비하고, 구 카드 컴포넌트를 쓰지 않는다
 assert.match(page, /useDashboardData\(\)/);
@@ -28,6 +29,11 @@ for (const url of ['"/dashboard/summary"', '"/monitoring/boards/production"', '"
 assert.match(hook, /Promise\.allSettled/, "일부 API 실패 시에도 나머지를 표시해야 합니다.");
 assert.match(hook, /getTodayLocal/, "오늘 날짜는 로컬 기준 헬퍼를 써야 합니다 (toISOString 금지).");
 assert.doesNotMatch(hook, /toISOString\(\)/);
+
+// 2-1. 생산 Daily 대시보드는 기본 화이트 스킨을 제공해야 한다.
+assert.match(skins, /id: "white"/);
+assert.match(skins, /label: "D"/);
+assert.match(skins, /DASHBOARD_DEFAULT_SKIN: DashboardSkinId = "white"/);
 
 // 3. 조치 큐: 심각도 정렬 + 0건 제외
 assert.match(attention, /critical: 0, high: 1, medium: 2, low: 3/);

@@ -703,7 +703,8 @@
     "skin": {
       "control": "Control tower",
       "departure": "Departure board",
-      "datawall": "Data wall"
+      "datawall": "Data wall",
+      "white": "White"
     },
     "tvMode": "TV mode",
     "title": "Dashboard",

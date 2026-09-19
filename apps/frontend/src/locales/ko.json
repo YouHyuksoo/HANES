@@ -703,7 +703,8 @@
     "skin": {
       "control": "관제탑",
       "departure": "출발 전광판",
-      "datawall": "데이터 월"
+      "datawall": "데이터 월",
+      "white": "화이트"
     },
     "tvMode": "TV 모드",
     "title": "대시보드",

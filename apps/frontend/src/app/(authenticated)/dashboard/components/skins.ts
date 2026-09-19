@@ -1,6 +1,6 @@
 /**
  * @file src/app/(authenticated)/dashboard/components/skins.ts
- * @description 대시보드 스킨 3종 — 모니터링 보드와 같은 톤 규칙(A 다크 네온 / B 앰버 모노 / C 다크 편집).
+ * @description 대시보드 스킨 4종 — A/B/C 다크 팔레트와 D 화이트 팔레트.
  *
  * 왜 CSS 변수 오버라이드인가:
  * 대시보드 컴포넌트 5개(PulseLine/ValueStream/RhythmStrip/InspectRails/AttentionQueue)는
@@ -9,18 +9,18 @@
  * 래퍼 한 겹에서 변수만 바꾸면 컴포넌트를 한 줄도 고치지 않고 스킨이 통째로 바뀐다.
  * 스킨을 추가할 때도 이 파일에 항목 하나만 늘리면 된다.
  *
- * 모든 스킨은 다크 배경이다(모니터링 보드 규칙: 흰색/라이트 배경 금지).
+ * D 화이트는 생산 Daily 화면의 밝은 현장 환경을 위한 라이트 팔레트다.
  */
 import type { CSSProperties } from "react";
 
-export type DashboardSkinId = "control" | "departure" | "datawall";
+export type DashboardSkinId = "control" | "departure" | "datawall" | "white";
 
-export const DASHBOARD_SKIN_IDS = ["control", "departure", "datawall"] as const;
+export const DASHBOARD_SKIN_IDS = ["control", "departure", "datawall", "white"] as const;
 
 export interface DashboardSkin {
   id: DashboardSkinId;
-  /** 전환 버튼 글자 — 모니터링과 같은 A/B/C */
-  label: "A" | "B" | "C";
+  /** 전환 버튼 글자 — 기존 A/B/C + 화이트 D */
+  label: "A" | "B" | "C" | "D";
   /** 툴팁·설정용 i18n 키 */
   titleKey: string;
   /** 래퍼에 얹는 토큰 오버라이드 */
@@ -100,7 +100,28 @@ export const DASHBOARD_SKINS: readonly DashboardSkin[] = [
       "--info": "#8fb4cf",
     }),
   },
+  {
+    // D 화이트 — 흰 배경과 짙은 슬레이트 글자로 생산 현장에서도 읽기 쉽다.
+    id: "white",
+    label: "D",
+    titleKey: "dashboard.skin.white",
+    vars: vars({
+      "--background": "#f8fafc",
+      "--card": "#ffffff",
+      "--surface": "#f1f5f9",
+      "--muted": "#e2e8f0",
+      "--border": "#cbd5e1",
+      "--text": "#0f172a",
+      "--text-muted": "#64748b",
+      "--primary": "#0369a1",
+      "--primary-foreground": "#ffffff",
+      "--success": "#15803d",
+      "--warning": "#b45309",
+      "--error": "#b91c1c",
+      "--info": "#1d4ed8",
+    }),
+  },
 ];
 
 export const DASHBOARD_SKIN_STORAGE_KEY = "dashboard:skin";
-export const DASHBOARD_DEFAULT_SKIN: DashboardSkinId = "control";
+export const DASHBOARD_DEFAULT_SKIN: DashboardSkinId = "white";

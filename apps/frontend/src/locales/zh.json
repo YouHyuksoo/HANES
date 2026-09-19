@@ -703,7 +703,8 @@
     "skin": {
       "control": "管制塔",
       "departure": "航班牌",
-      "datawall": "数据墙"
+      "datawall": "数据墙",
+      "white": "白色"
     },
     "tvMode": "电视模式",
     "title": "仪表盘",

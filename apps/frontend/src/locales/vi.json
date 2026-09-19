@@ -703,7 +703,8 @@
     "skin": {
       "control": "Tháp điều khiển",
       "departure": "Bảng khởi hành",
-      "datawall": "Tường dữ liệu"
+      "datawall": "Tường dữ liệu",
+      "white": "Trắng"
     },
     "tvMode": "Chế độ TV",
     "title": "Bảng điều khiển",
