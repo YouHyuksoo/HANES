@@ -1,24 +1,23 @@
 "use client";
 
-import { UserRound } from "lucide-react";
-import { Button } from "@/components/ui";
+import type { Worker } from "@/components/worker/WorkerSelector";
 import KioskProductivity from "./KioskProductivity";
+import WorkerSlot from "./WorkerSlot";
 
-/** Column tracks must match each screen's material / instruction / scan panels. */
-export default function AssemblyResultRow({ orderNo, planQty, workerNames, disabled, onSelectWorkers, refreshKey, responsive = false }: {
-  orderNo?: string; planQty?: number; workerNames: string[]; disabled: boolean;
-  onSelectWorkers: () => void; refreshKey: number; responsive?: boolean;
+/**
+ * 서브조립·조립 화면의 작업자 + 생산실적 행. 가공 키오스크 헤더 Row2와 같은 WorkerSlot을 쓴다.
+ * Column tracks must match each screen's material / instruction / scan panels.
+ */
+export default function AssemblyResultRow({ orderNo, planQty, workers, hasEquip, locked = false, onSelectWorkers, onRemoveWorker, refreshKey, responsive = false }: {
+  orderNo?: string; planQty?: number; workers: Worker[]; hasEquip: boolean; locked?: boolean;
+  onSelectWorkers: () => void; onRemoveWorker: (workerId: string) => void; refreshKey: number; responsive?: boolean;
 }) {
   return <div data-testid="kiosk-result-row" className={`grid shrink-0 items-center bg-surface py-3 border-t border-border ${responsive
     ? 'grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)_340px] gap-3'
     : 'grid-cols-[300px_minmax(0,1fr)_340px] gap-px'}`}>
-    <div className="min-w-0 px-4" data-testid="kiosk-worker-region">
-      <div className="flex min-h-11 min-w-0 items-center rounded-lg border border-border bg-card px-3">
-        <Button data-testid="kiosk-worker-open" className="!h-7 min-w-0 max-w-full !rounded !px-2.5 !text-xs [&>span]:truncate" size="sm" onClick={onSelectWorkers} disabled={disabled} leftIcon={<UserRound className="h-4 w-4 shrink-0" />}>
-          <span className="truncate" title={workerNames.join(', ')}>{workerNames.length ? `${workerNames[0]}${workerNames.length > 1 ? ` 외 ${workerNames.length - 1}` : ''}` : '작업자 선택'}</span>
-        </Button>
-      </div>
+    <div className="min-w-0 px-4">
+      <WorkerSlot workers={workers} hasEquip={hasEquip} locked={locked} onOpenWorker={onSelectWorkers} onRemoveWorker={onRemoveWorker} />
     </div>
-    <KioskProductivity orderNo={orderNo} workers={workerNames.length} refreshKey={refreshKey} showTotal planQty={planQty} />
+    <KioskProductivity orderNo={orderNo} workers={workers.length} refreshKey={refreshKey} showTotal planQty={planQty} />
   </div>;
 }

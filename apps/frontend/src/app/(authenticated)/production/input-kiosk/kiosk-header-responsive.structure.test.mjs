@@ -17,8 +17,15 @@ const checkItemPath = resolve(
   "apps/frontend/src/components/inspect/HeaderCheckItem.tsx",
 );
 
+const workerSlotPath = resolve(
+  repoRoot,
+  "apps/frontend/src/app/(authenticated)/production/input-kiosk/components/WorkerSlot.tsx",
+);
+
 const header = readFileSync(headerPath, "utf8");
 const checkItem = readFileSync(checkItemPath, "utf8");
+// 작업자 칸은 3화면 공용 WorkerSlot 으로 빠졌다 — 헤더는 그 컴포넌트를 쓰기만 한다.
+const workerSlot = readFileSync(workerSlotPath, "utf8");
 
 test("HeaderCheckItem은 responsiveCompact로 아이콘 모드를 제공한다", () => {
   assert.match(checkItem, /responsiveCompact\?:\s*boolean/);
@@ -79,9 +86,10 @@ test("작업지시 선택·변경 버튼은 좁은 화면에서 아이콘만 남
   assert.match(header, /hidden shrink-0 rounded bg-primary\/10[^"]*2xl:inline/);
 });
 test("작업자추가 버튼은 좁은 화면에서 아이콘만 남는다", () => {
-  const idx = header.indexOf('data-testid="kiosk-worker-open"');
+  assert.match(header, /<WorkerSlot workers=\{selectedWorkers\}/, "헤더는 공용 WorkerSlot 을 써야 한다");
+  const idx = workerSlot.indexOf('data-testid="kiosk-worker-open"');
   assert.ok(idx > 0, "작업자추가 버튼이 있어야 한다");
-  const block = header.slice(idx, idx + 900);
+  const block = workerSlot.slice(idx, idx + 900);
   // 유휴 상태: h-7 w-7 정사각 → 2xl+ 에서 폭 자동 + 라벨 복귀
   assert.match(block, /h-7 w-7 shrink-0/);
   assert.match(block, /2xl:h-auto 2xl:w-auto 2xl:px-2\.5/);
@@ -92,13 +100,13 @@ test("작업자추가 버튼은 좁은 화면에서 아이콘만 남는다", () 
 
 test("작업자 배정 상태는 접혀도 읽힌다", () => {
   // 미배정 경고: 문구만 접고 경고 아이콘은 유지, 문구는 title 로 남긴다
-  const warnIdx = header.indexOf("<AlertTriangle className=\"h-3.5 w-3.5 shrink-0\" />");
+  const warnIdx = workerSlot.indexOf("<AlertTriangle className=\"h-3.5 w-3.5 shrink-0\" />");
   assert.ok(warnIdx > 0, "작업자 미배정 경고가 있어야 한다");
-  const warnBlock = header.slice(warnIdx - 300, warnIdx + 400);
+  const warnBlock = workerSlot.slice(warnIdx - 300, warnIdx + 400);
   assert.match(warnBlock, /title=\{t\('kiosk\.header\.workerRequired'\)\}/);
   assert.match(warnBlock, /<span className="hidden 2xl:inline">\{t\('kiosk\.header\.workerRequired'\)\}<\/span>/);
   // 배정된 작업자 이름은 좁은 화면에서 잘리고 title 로 전체 이름을 보장한다
-  assert.match(header, /max-w-\[64px\] truncate 2xl:max-w-none" title=\{w\.workerName\}/);
+  assert.match(workerSlot, /max-w-\[64px\] truncate 2xl:max-w-none" title=\{w\.workerName\}/);
 });
 
 test("진행중 경과시간은 아이콘 옆에 계속 보인다", () => {

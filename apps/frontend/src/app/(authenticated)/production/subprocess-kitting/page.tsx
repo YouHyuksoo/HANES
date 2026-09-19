@@ -29,6 +29,7 @@ import WorkInstructionView from "../input-kiosk/components/WorkInstructionView";
 import EquipSelectModal from "../input-kiosk/components/EquipSelectModal";
 import { normalizeEquipOptions, type EquipOption } from "../input-kiosk/utils/equipOptions";
 import { useKioskStore } from "@/stores/kioskStore";
+import { useEquipWorkers } from "../input-kiosk/hooks/useEquipWorkers";
 import { useSysConfigStore } from "@/stores/sysConfigStore";
 import WorkerSelectModal from "@/components/worker/WorkerSelectModal";
 import type { Worker } from "@/components/worker/WorkerSelector";
@@ -126,7 +127,7 @@ const isSubkitSelectableOrder = (order: JobOrderPick, currentProcessCode: string
 
 export default function SubprocessKittingPage() {
   const { t } = useTranslation();
-  const { selectedWorkers, interlock, setSelectedEquip: setKioskEquip, setSelectedJobOrder: setKioskOrder, setSelectedWorkers, setInterlock } = useKioskStore();
+  const { interlock, setSelectedEquip: setKioskEquip, setSelectedJobOrder: setKioskOrder, setInterlock } = useKioskStore();
   const sysConfigLoaded = useSysConfigStore((state) => state.isLoaded);
   const sysConfigRequired = useSysConfigStore((state) => state.isEnabled);
   const fetchSysConfigs = useSysConfigStore((state) => state.fetchConfigs);
@@ -140,6 +141,7 @@ export default function SubprocessKittingPage() {
   // 설비 선택으로 공정을 도출한다(설비→공정). processCode는 설비 선택 시 자동 설정.
   const [processCode, setProcessCode] = useState("");
   const [equipCode, setEquipCode] = useState("");
+  const { selectedWorkers, addWorker, removeWorker, restoreWorkers, clearWorkers } = useEquipWorkers(equipCode || undefined);
   const [equipName, setEquipName] = useState("");
   const [processName, setProcessName] = useState("");
   const [equips, setEquips] = useState<EquipOption[]>([]);
@@ -273,6 +275,7 @@ export default function SubprocessKittingPage() {
       const current = equipRes.data?.data ?? {};
       setEquipCurCarrierNo(current.curCarrierNo ?? null);
       const currentJobOrderId = current.currentJobOrderId ?? equip.currentJobOrderId ?? null;
+      await restoreWorkers(current.currentWorkerCodes ?? equip.currentWorkerCodes ?? null);
 
       if (currentJobOrderId) {
         const orderRes = await api.get(
@@ -312,7 +315,7 @@ export default function SubprocessKittingPage() {
       toast.error(t("production.subprocess.restoreError", "설비 현재 작업 상태를 불러오지 못했습니다."));
       setTimeout(() => orderScanRef.current?.focus(), 80);
     }
-  }, [persistCurrentJobOrder, selectOrder, setKioskEquip, t]);
+  }, [persistCurrentJobOrder, restoreWorkers, selectOrder, setKioskEquip, t]);
 
   useEffect(() => {
     if (initialRestoreDoneRef.current || equips.length === 0) return;
@@ -329,9 +332,9 @@ export default function SubprocessKittingPage() {
   }, [restoreEquipmentCurrentState]);
 
   const handleWorkerSelect = useCallback((worker: Worker) => {
-    setSelectedWorkers([...selectedWorkers, worker].filter((item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index));
     setWorkerModalOpen(false);
-  }, [selectedWorkers, setSelectedWorkers]);
+    void addWorker(worker);
+  }, [addWorker]);
 
   // 종합판정(OVERALL_RESULT). 점검 기록은 있으나 판정이 PASS가 아닌 상태를 구분해 표시/차단한다.
   const [dailyInspectResult, setDailyInspectResult] = useState<string | null>(null);
@@ -443,7 +446,7 @@ export default function SubprocessKittingPage() {
     setIssuedSg(null);
     setResultQuality("GOOD");
     setKioskEquip(null);
-    setSelectedWorkers([]);
+    clearWorkers();
     window.localStorage.removeItem(SUBKIT_SELECTED_EQUIP_KEY);
     if (prevEquipCode) {
       void persistCurrentJobOrder(null, prevEquipCode).catch(() => {
@@ -675,8 +678,8 @@ export default function SubprocessKittingPage() {
       </Card>
 
       <AssemblyResultRow orderNo={selectedOrder?.orderNo} planQty={selectedOrder?.planQty}
-        workerNames={selectedWorkers.map(worker => worker.workerName)}
-        disabled={!equipCode} onSelectWorkers={() => setWorkerModalOpen(true)}
+        workers={selectedWorkers} hasEquip={Boolean(equipCode)}
+        onSelectWorkers={() => setWorkerModalOpen(true)} onRemoveWorker={(id) => void removeWorker(id)}
         refreshKey={productivityRevision} responsive />
 
       {/* 본문 3영역 — input-kiosk 스타일: 좌(설비 자재 장착) | 중앙(작업지도서) | 우(이전 공정 SFG 스캔).

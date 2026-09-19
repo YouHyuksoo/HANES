@@ -25,8 +25,8 @@ import api from '@/services/api';
 import { judgeRestoredJobOrder, releaseEquipJobOrder } from '@/components/production/jobOrderRestore';
 import WorkerSelectModal from '@/components/worker/WorkerSelectModal';
 import JobOrderSelectModal, { JobOrder } from '@/components/production/JobOrderSelectModal';
-import type { Worker } from '@/components/worker/WorkerSelector';
 import EquipHeader from './components/EquipHeader';
+import { useEquipWorkers } from './hooks/useEquipWorkers';
 import KioskPrepGuideModal from './components/KioskPrepGuideModal';
 import { usePrepGuide } from '@/components/shared/prep-guide';
 import { useCarrierProcessFlags, useOutputCarrier } from '@/components/shared/carrier';
@@ -80,10 +80,11 @@ export default function InputKioskPage() {
   const { t } = useTranslation();
   const {
     selectedEquip, selectedJobOrder, interlock, savedResultCount, hasPendingDelegate,
-    selectedWorkers, midInspectDone, lotSize,
-    addWorker, removeWorker, setSelectedEquip, setSelectedJobOrder, setSelectedWorkers,
+    midInspectDone, lotSize,
+    setSelectedEquip, setSelectedJobOrder,
     setInterlock, setSavedResultCount, setHasPendingDelegate, setMidInspectDone,
   } = useKioskStore();
+  const { selectedWorkers, workerNames, addWorker: handleWorkerConfirm, removeWorker: handleRemoveWorker, restoreWorkers, clearWorkers } = useEquipWorkers(selectedEquip?.equipCode);
 
   const [equips, setEquips] = useState<EquipOption[]>([]);
 
@@ -118,34 +119,6 @@ export default function InputKioskPage() {
       .then(res => setEquips(normalizeEquipOptions(res.data)))
       .catch(() => setEquips([]));
   }, []);
-
-  const parseCurrentWorkerCodes = useCallback((value?: string | null) => {
-    return [...new Set((value ?? '').split(',').map(code => code.trim()).filter(Boolean))];
-  }, []);
-
-  const loadCurrentWorkers = useCallback(async (currentWorkerCodes?: string | null): Promise<Worker[]> => {
-    const codes = parseCurrentWorkerCodes(currentWorkerCodes);
-    const workers = await Promise.all(codes.map(async (code) => {
-      const res = await api.get(`/master/workers/${encodeURIComponent(code)}`);
-      const worker = res.data?.data;
-      return {
-        id: worker?.workerCode ?? code,
-        workerCode: worker?.workerCode ?? code,
-        workerName: worker?.workerName ?? code,
-        dept: worker?.dept,
-      } as Worker;
-    }));
-    return workers;
-  }, [parseCurrentWorkerCodes]);
-
-  const persistCurrentWorkerCodes = useCallback(async (workers: Worker[]) => {
-    if (!selectedEquip?.equipCode) return;
-    await api.patch(
-      `/equipment/equips/${selectedEquip.equipCode}/workers`,
-      { workerCodes: workers.map(worker => worker.id) },
-      { suppressErrorModal: true },
-    );
-  }, [selectedEquip?.equipCode]);
 
   const restoreEquipmentCurrentState = useCallback(async (equip: EquipOption) => {
     restoredEquipRef.current = equip.equipCode;
@@ -183,15 +156,14 @@ export default function InputKioskPage() {
         setSelectedJobOrder(null);
       }
 
-      const workers = await loadCurrentWorkers(currentWorkerCodes);
-      setSelectedWorkers(workers);
+      await restoreWorkers(currentWorkerCodes);
     } catch {
       setEquipCurCarrierNo(null);
       setSelectedJobOrder(null);
-      setSelectedWorkers([]);
+      clearWorkers();
       toast.error(t('kiosk.header.restoreError', '설비 현재 상태를 불러오지 못했습니다.'));
     }
-  }, [loadCurrentWorkers, setSelectedEquip, setSelectedJobOrder, setSelectedWorkers, t]);
+  }, [clearWorkers, restoreWorkers, setSelectedEquip, setSelectedJobOrder, t]);
 
   useEffect(() => {
     if (!selectedEquip?.equipCode) {
@@ -378,31 +350,6 @@ export default function InputKioskPage() {
     }
   }, [selectedEquip, setSelectedJobOrder, t]);
 
-  const handleWorkerConfirm = useCallback(async (worker: Worker) => {
-    const nextWorkers = selectedWorkers.some(w => w.id === worker.id)
-      ? selectedWorkers
-      : [...selectedWorkers, worker];
-    addWorker(worker);
-    setIsWorkerOpen(false);
-    try {
-      await persistCurrentWorkerCodes(nextWorkers);
-    } catch {
-      setSelectedWorkers(selectedWorkers);
-      toast.error(t('kiosk.header.workerAssignError', '현재 작업자 저장에 실패했습니다.'));
-    }
-  }, [addWorker, persistCurrentWorkerCodes, selectedWorkers, setSelectedWorkers, t]);
-
-  const handleRemoveWorker = useCallback(async (workerId: string) => {
-    const nextWorkers = selectedWorkers.filter(worker => worker.id !== workerId);
-    removeWorker(workerId);
-    try {
-      await persistCurrentWorkerCodes(nextWorkers);
-    } catch {
-      setSelectedWorkers(selectedWorkers);
-      toast.error(t('kiosk.header.workerAssignError', '현재 작업자 저장에 실패했습니다.'));
-    }
-  }, [persistCurrentWorkerCodes, removeWorker, selectedWorkers, setSelectedWorkers, t]);
-
   /** 출력 대차 — 공정 CARRIER_LOAD_YN=Y일 때만 슬롯이 보이고, 실적 저장에 carrierNo가 실린다 */
   const carrierFlags = useCarrierProcessFlags({ orderNo: selectedJobOrder?.orderNo, processCode: selectedEquip?.processCode });
   const carrierRequired = carrierFlags?.carrierLoadYn === "Y";
@@ -440,7 +387,6 @@ export default function InputKioskPage() {
   const allInterlockDone = isAllInterlockDone(interlock);
 
   /** 진입 안내 — 설비→작업지시→작업자→점검→스캔 순서로 유도하고, 끝나면 자동으로 닫힌다 */
-  const workerNames = useMemo(() => selectedWorkers.map(w => w.workerName), [selectedWorkers]);
   const guideSteps = useMemo(() => buildKioskPrepGuideSteps({
     equipName: selectedEquip?.equipName ?? null,
     orderNo: selectedJobOrder?.orderNo ?? null,
@@ -683,7 +629,7 @@ export default function InputKioskPage() {
       <WorkerSelectModal
         isOpen={isWorkerOpen}
         onClose={() => setIsWorkerOpen(false)}
-        onConfirm={handleWorkerConfirm}
+        onConfirm={(worker) => { setIsWorkerOpen(false); void handleWorkerConfirm(worker); }}
       />
       <DailyInspectModal
         isOpen={isDailyInspectOpen}

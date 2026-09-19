@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 const inputBar = readFileSync(new URL('./components/ProductionInputBar.tsx', import.meta.url), 'utf8');
+const workersHook = readFileSync(new URL('./hooks/useEquipWorkers.ts', import.meta.url), 'utf8');
 
 test('input kiosk checks daily inspection by backend operational work date', () => {
   assert.match(source, /\/equipment\/daily-inspect\/check/);
@@ -40,8 +41,10 @@ test('input kiosk restores current job order and workers from equipment master k
   assert.match(source, /currentJobOrderId/);
   assert.match(source, /currentWorkerCodes/);
   assert.match(source, /\/production\/job-orders\/order-no\/\$\{encodeURIComponent\(currentJobOrderId\)\}/);
-  assert.match(source, /\/master\/workers\/\$\{encodeURIComponent\(code\)\}/);
-  assert.match(source, /\/equipment\/equips\/\$\{selectedEquip\.equipCode\}\/workers/);
+  // 작업자 조회/저장 API는 3화면 공용 훅(useEquipWorkers)에만 있고 페이지는 restoreWorkers 로 위임한다
+  assert.match(source, /restoreWorkers\(currentWorkerCodes\)/);
+  assert.match(workersHook, /\/master\/workers\/\$\{encodeURIComponent\(code\)\}/);
+  assert.match(workersHook, /\/equipment\/equips\/\$\{encodeURIComponent\(equipCode\)\}\/workers/);
 });
 
 test('input kiosk restores self inspection completion state from result history', () => {

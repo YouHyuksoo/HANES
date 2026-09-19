@@ -11,14 +11,15 @@ import { useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import {
-  AlertTriangle, ChevronDown, ClipboardList, Cpu,
-  Maximize2, Minimize2, UserPlus, X, CheckCircle,
+  ChevronDown, ClipboardList, Cpu,
+  Maximize2, Minimize2,
   ShieldCheck, UserCheck, Pencil, Search, Sparkles,
 } from 'lucide-react';
 import { useKioskStore } from '@/stores/kioskStore';
 import { OutputCarrierSlot, type OutputCarrierState } from '@/components/shared/carrier';
 import EquipSelectModal from './EquipSelectModal';
 import KioskProductivity from './KioskProductivity';
+import WorkerSlot from './WorkerSlot';
 import { HeaderCheckItem } from '@/components/inspect';
 import type { EquipOption } from '../utils/equipOptions';
 import { inspectStatusDetail, isInspectNg } from '../utils/inspectStatus';
@@ -273,40 +274,8 @@ export default function EquipHeader({
         {/* ── Row 2: 생산실적 (중앙, 크게) — 헤더 1행과 톤을 달리해 숫자 영역이 도드라지게 ── */}
         <div data-testid="kiosk-result-row" className="grid grid-cols-[320px_minmax(0,1fr)_320px] items-center py-3 bg-surface border-t border-border/60">
           <div className="min-w-0 px-4">
-            {/* 작업자: 생산실적 왼쪽에 배치 */}
-            {/* 작업자도 점검 카드와 같은 신호를 쓴다 — 왼쪽 굵은 세로 보더.
-                없으면 빨강, 배정돼 있으면 초록. 배경 파스텔은 쓰지 않는다. */}
-            <div className={`flex min-h-11 min-w-0 flex-wrap items-center gap-1.5 py-1.5 rounded-lg border border-border bg-card pl-2 pr-1.5 2xl:pr-3 ${
-              selectedWorkers.length > 0
-                ? 'border-l-4 border-l-green-600 dark:border-l-green-400'
-                : selectedEquip
-                  ? 'border-l-4 border-l-red-500 dark:border-l-red-400'
-                  : 'border-l-4 border-l-border'
-            }`}>
-              <UserPlus className="h-4 w-4 shrink-0 text-primary" />
-              {selectedWorkers.map(w => (
-                <span key={w.id} className="inline-flex items-center gap-1 rounded-full border border-green-600 px-2 py-0.5 text-xs font-bold text-green-700 dark:border-green-400 dark:text-green-400">
-                  <CheckCircle className="h-3 w-3 shrink-0" />
-                  <span className="max-w-[64px] truncate 2xl:max-w-none" title={w.workerName}>{w.workerName}</span>
-                  <button onClick={() => onRemoveWorker(w.id)} className="ml-0.5 transition-colors hover:text-red-500">
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              ))}
-              <button data-testid="kiosk-worker-open" onClick={onOpenWorker} disabled={!selectedEquip}
-                title={selectedEquip ? t('kiosk.header.addWorker') : t('kiosk.header.selectEquipFirst', '설비를 먼저 선택하세요.')}
-                aria-label={t('kiosk.header.addWorker')}
-                className={`inline-flex h-7 w-7 shrink-0 items-center justify-center gap-1 rounded bg-primary py-1 text-xs font-semibold text-white 2xl:h-auto 2xl:w-auto 2xl:px-2.5 transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-surface disabled:text-black/60 dark:text-white/60 ${selectedEquip && selectedWorkers.length === 0 ? 'animate-pulse' : ''}`}>
-                <UserPlus className="h-3.5 w-3.5 shrink-0 2xl:h-3 2xl:w-3" />
-                <span className="hidden 2xl:inline">{t('kiosk.header.addWorker')}</span>
-              </button>
-              {selectedWorkers.length === 0 && selectedEquip && (
-                <span className="flex items-center gap-1 whitespace-nowrap text-xs font-bold text-red-600 dark:text-red-400" title={t('kiosk.header.workerRequired')}>
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                  <span className="hidden 2xl:inline">{t('kiosk.header.workerRequired')}</span>
-                </span>
-              )}
-            </div>
+            {/* 작업자: 생산실적 왼쪽에 배치 — 3화면 공용 WorkerSlot */}
+            <WorkerSlot workers={selectedWorkers} hasEquip={Boolean(selectedEquip)} onOpenWorker={onOpenWorker} onRemoveWorker={onRemoveWorker} />
           </div>
           <div className="flex min-w-0 flex-wrap items-center justify-center gap-3 px-3 xl:gap-5">
           {selectedJobOrder ? (
