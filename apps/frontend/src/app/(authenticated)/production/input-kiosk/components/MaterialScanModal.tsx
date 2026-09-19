@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 import { Package, CheckCircle2 } from 'lucide-react';
 import { Modal, Button } from '@/components/ui';
 import { BarcodeScanInput } from '@/components/shared';
+import { useCarrierAutoInput } from '@/components/shared/carrier';
 import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
 import { filterBomMaterials, type BomItem, type MountedMaterial } from './MaterialListPanel';
@@ -25,9 +26,11 @@ interface MaterialScanModalProps {
   isOpen: boolean;
   onClose: () => void;
   onDone: () => void;
+  equipCode: string | null;
+  carrierAutoInputYn: boolean;
 }
 
-export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialScanModalProps) {
+export default function MaterialScanModal({ isOpen, onClose, onDone, equipCode, carrierAutoInputYn }: MaterialScanModalProps) {
   const { t } = useTranslation();
   const {
     selectedEquip, selectedJobOrder,
@@ -106,19 +109,18 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
     setInterlock('materialScanDone', bomItems.every(b => mountedByItem.has(b.childItemCode)));
   }, [isOpen, bomItems, mountedByItem, setInterlock]);
 
-  const handleScan = useCallback(async (rawMatUid?: string) => {
-    const matUid = (rawMatUid ?? scanInput).replace(/\r?\n|\r/g, '').trim();
-    if (!matUid || !selectedJobOrder?.orderNo) return;
-    setScanInput('');
-
+  /** LOT 하나 장착 — 낱개 스캔과 대차 자동장착이 같은 함수를 쓴다. 성공 토스트는 호출자(낱개 경로)가 띄운다. */
+  const mountOne = useCallback(async (matUid: string): Promise<boolean> => {
+    if (!selectedJobOrder?.orderNo) return false;
     try {
       await api.post(
         `/production/job-orders/${selectedJobOrder.orderNo}/material-mounts/scan`,
         { matUid, equipCode: selectedEquip?.equipCode },
+        { skipSuccessToast: true },
       );
       mountedHereRef.current.push(matUid);
       bumpMaterialMountRefresh();
-      toast.success(t('kiosk.material.scanOk'));
+      return true;
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '';
       if (msg.includes('오장착')) {
@@ -126,9 +128,27 @@ export default function MaterialScanModal({ isOpen, onClose, onDone }: MaterialS
       } else {
         toast.error(msg || t('kiosk.material.lotNotFound'));
       }
+      return false;
     }
+  }, [selectedJobOrder, selectedEquip, bumpMaterialMountRefresh, t]);
+
+  const carrierAuto = useCarrierAutoInput({ equipCode, enabled: carrierAutoInputYn, handleBarcode: mountOne });
+
+  const handleScan = useCallback(async (rawMatUid?: string) => {
+    const raw = (rawMatUid ?? scanInput).replace(/\r?\n|\r/g, '').trim();
+    if (!raw) return;
+    setScanInput('');
+
+    const { handled } = await carrierAuto.run(raw);
+    if (handled) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+      return;
+    }
+
+    const ok = await mountOne(raw);
+    if (ok) toast.success(t('kiosk.material.scanOk'));
     setTimeout(() => inputRef.current?.focus(), 50);
-  }, [scanInput, selectedJobOrder, selectedEquip, bumpMaterialMountRefresh, t]);
+  }, [scanInput, carrierAuto, mountOne, t]);
 
   /**
    * 취소 — 이번 모달에서 장착한 자재를 되돌린 뒤 닫는다.

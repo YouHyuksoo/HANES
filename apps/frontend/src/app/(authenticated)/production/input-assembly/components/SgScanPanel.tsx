@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { Scan, Trash2 } from "lucide-react";
 import { BarcodeScanInput } from "@/components/shared";
+import { useCarrierAutoInput } from "@/components/shared/carrier";
 import { Button, ComCodeBadge } from "@/components/ui";
 import api from "@/services/api";
 
@@ -38,6 +39,8 @@ export default function SgScanPanel({
   onReset,
   disabled,
   ready,
+  equipCode,
+  carrierAutoInputYn,
 }: {
   orderNo: string | undefined;
   sgList: SgLabelInfo[];
@@ -49,6 +52,8 @@ export default function SgScanPanel({
   onReset: () => void;
   disabled: boolean;
   ready: boolean;
+  equipCode: string;
+  carrierAutoInputYn: boolean;
 }): JSX.Element {
   const { t } = useTranslation();
 
@@ -63,44 +68,36 @@ export default function SgScanPanel({
     return () => { mounted.current = false; };
   }, []);
 
-  const handleScan = useCallback(
-    async (raw: string) => {
-      const trimmed = raw.trim();
-      if (!trimmed || disabled || scanning.current) return;
-
+  /** SFG 라벨 하나 검증 후 추가 — 낱개 스캔과 대차 자동투입이 같은 함수를 쓴다. */
+  const addOne = useCallback(
+    async (barcode: string): Promise<boolean> => {
       if (!orderNo) {
         toast.error(t("production.inputAssembly.requireOrder", "작업지시를 선택하세요."));
-        setScanInput("");
-        return;
+        return false;
       }
 
-      if (sgList.some((item) => item.sgBarcode === trimmed)) {
+      if (sgList.some((item) => item.sgBarcode === barcode)) {
         toast.error(t("production.inputAssembly.scanDuplicate", "이미 스캔된 라벨입니다."));
-        setScanInput("");
-        return;
+        return false;
       }
 
-      if (/^FG\d/i.test(trimmed)) {
+      if (/^FG\d/i.test(barcode)) {
         toast.error(
           t("production.inputAssembly.scanIsFgLabel", "완제품(FG) 바코드입니다. 반제품(SFG) 라벨을 스캔하세요."),
         );
-        setScanInput("");
-        return;
+        return false;
       }
 
-      scanning.current = true;
-      setLoading(true);
       try {
         const res = await api.get(
-          `/production/subprocess-kitting/sg-label/${encodeURIComponent(trimmed)}`,
+          `/production/subprocess-kitting/sg-label/${encodeURIComponent(barcode)}`,
         );
         const data = res.data?.data as SgLabelInfo;
-        if (!mounted.current) return;
+        if (!mounted.current) return false;
 
         if (data.remainQty <= 0) {
           toast.error(t("production.kitting.warnZeroQty", "잔량이 없는 SFG 라벨입니다."));
-          setScanInput("");
-          return;
+          return false;
         }
 
         const validStatuses = ["IN_STOCK", "MOUNTED"];
@@ -108,8 +105,7 @@ export default function SgScanPanel({
           toast.error(
             `${t("production.kitting.warnInvalidStatus", "사용할 수 없는 SFG 라벨 상태입니다.")} (${data.status})`,
           );
-          setScanInput("");
-          return;
+          return false;
         }
 
         if (
@@ -119,17 +115,39 @@ export default function SgScanPanel({
           toast.error(
             t("production.inputAssembly.scanNotInBom", "BOM에 없는 반제품입니다 (오투입)"),
           );
-          setScanInput("");
-          return;
+          return false;
         }
 
         onAdd(data);
-        setScanInput("");
+        return true;
       } catch (error: unknown) {
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           t("production.inputAssembly.scanNotFound", "SFG 라벨을 찾을 수 없습니다.");
         toast.error(message);
+        return false;
+      }
+    },
+    [components, onAdd, orderNo, sgList, t],
+  );
+
+  const carrierAuto = useCarrierAutoInput({ equipCode, enabled: carrierAutoInputYn, handleBarcode: addOne });
+
+  const handleScan = useCallback(
+    async (raw: string) => {
+      const trimmed = raw.trim();
+      if (!trimmed || disabled || scanning.current) return;
+
+      scanning.current = true;
+      setLoading(true);
+      try {
+        const { handled } = await carrierAuto.run(trimmed);
+        if (handled) {
+          setScanInput("");
+          return;
+        }
+
+        await addOne(trimmed);
         setScanInput("");
       } finally {
         scanning.current = false;
@@ -137,7 +155,7 @@ export default function SgScanPanel({
         scanRef.current?.focus();
       }
     },
-    [components, disabled, onAdd, orderNo, sgList, t],
+    [addOne, carrierAuto, disabled],
   );
 
   return (

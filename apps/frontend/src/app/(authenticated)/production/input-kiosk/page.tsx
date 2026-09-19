@@ -691,6 +691,8 @@ export default function InputKioskPage() {
         isOpen={isMaterialScanOpen}
         onClose={() => setIsMaterialScanOpen(false)}
         onDone={() => setIsMaterialScanOpen(false)}
+        equipCode={selectedEquip?.equipCode ?? null}
+        carrierAutoInputYn={carrierFlags?.carrierAutoInputYn === "Y"}
       />
       <ConsumableScanModal
         isOpen={isConsumableScanOpen}

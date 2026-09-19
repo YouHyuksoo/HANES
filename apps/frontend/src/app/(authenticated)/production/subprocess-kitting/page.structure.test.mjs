@@ -142,3 +142,10 @@ test('서브조립 화면은 출력 대차 슬롯을 두고 확정에 carrierNo�
   assert.match(page, /<OutputCarrierSlot/);
   assert.match(page, /carrierNo: outputCarrier\.carrier\?\.carrierNo \?\? undefined/);
 });
+
+test('SG 스캔 패널은 대차 스캔 시 담긴 SG를 기존 낱개 처리기로 반복 추가한다', () => {
+  const panel = readFileSync(new URL('./components/InputSgScanPanel.tsx', import.meta.url), 'utf8');
+  assert.match(panel, /useCarrierAutoInput\(/);
+  assert.match(panel, /handleBarcode: addOne/);
+  assert.match(panel, /const \{ handled \} = await carrierAuto\.run\(/);
+});

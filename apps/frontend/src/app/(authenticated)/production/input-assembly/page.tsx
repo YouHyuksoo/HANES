@@ -707,6 +707,8 @@ export default function InputAssemblyPage() {
           onReset={() => setSgList([])}
           disabled={issuing || confirming}
           ready={sgReady}
+          equipCode={equipCode}
+          carrierAutoInputYn={carrierFlags?.carrierAutoInputYn === "Y"}
         />
         </div>
       </div>

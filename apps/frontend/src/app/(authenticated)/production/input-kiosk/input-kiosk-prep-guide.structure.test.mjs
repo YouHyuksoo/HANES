@@ -58,6 +58,14 @@ test('키오스크는 출력 대차 슬롯을 헤더에 두고 실적 저장에 
   assert.match(steps, /notTarget: !carrierRequired/);
 });
 
+test('자재 스캔 모달은 대차 스캔 시 담긴 LOT을 기존 장착 처리기로 반복 호출한다', () => {
+  const modal = read('./components/MaterialScanModal.tsx');
+  assert.match(modal, /useCarrierAutoInput\(/);
+  assert.match(modal, /handleBarcode: mountOne/);
+  assert.match(modal, /const \{ handled \} = await carrierAuto\.run\(raw\)/);
+  assert.doesNotMatch(modal, /\/production\/carriers\/[^`]*\/mount/, '대차용 별도 장착 API를 만들지 않는다');
+});
+
 test('i18n 4개 언어에 kiosk.guide 키가 모두 있다', () => {
   const required = [
     'title', 'subtitle', 'allReadyDesc',

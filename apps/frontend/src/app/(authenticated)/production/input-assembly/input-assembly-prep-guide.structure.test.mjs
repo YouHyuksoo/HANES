@@ -44,6 +44,13 @@ test('조립 화면은 출력 대차 슬롯을 두고 확정에 carrierNo를 싣
   assert.match(steps, /"carrier"/);
 });
 
+test('SG 스캔 패널은 대차 스캔 시 담긴 SG를 기존 낱개 처리기로 반복 추가한다', () => {
+  const panel = readFileSync(new URL('./components/SgScanPanel.tsx', import.meta.url), 'utf8');
+  assert.match(panel, /useCarrierAutoInput\(/);
+  assert.match(panel, /handleBarcode: addOne/);
+  assert.match(panel, /const \{ handled \} = await carrierAuto\.run\(/);
+});
+
 test('i18n 4개 언어에 production.inputAssembly.guide 키가 모두 있다', () => {
   const required = ['title', 'subtitle', 'allReadyDesc', 'hintEquip', 'hintJobOrder', 'stepCarrier', 'hintCarrier'];
   for (const lang of ['ko', 'en', 'zh', 'vi']) {

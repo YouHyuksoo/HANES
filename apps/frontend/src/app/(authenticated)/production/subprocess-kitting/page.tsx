@@ -763,6 +763,8 @@ export default function SubprocessKittingPage() {
           components={requirements?.components ?? []}
           onAdd={addSg}
           onRemove={removeSg}
+          equipCode={equipCode}
+          carrierAutoInputYn={carrierFlags?.carrierAutoInputYn === "Y"}
         />
       </div>
 
