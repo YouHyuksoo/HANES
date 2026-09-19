@@ -11,6 +11,7 @@ import api from "@/services/api";
 import { judgeRestoredJobOrder } from "@/components/production/jobOrderRestore";
 import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
 import { OutputCarrierSlot, useCarrierProcessFlags, useOutputCarrier } from "@/components/shared/carrier";
+import JobOrderSelectTrigger from "@/components/production/JobOrderSelectTrigger";
 import EquipMaterialMountPanel from "./components/EquipMaterialMountPanel";
 import SgScanPanel from "./components/SgScanPanel";
 import { useAssemblyScanSession, type AssemblySgLabel } from "./hooks/useAssemblyScanSession";
@@ -568,51 +569,14 @@ export default function InputAssemblyPage() {
             {/* 2) 작업지시 — 설비 선택 후 활성화. 선택 설비의 공정에 내려진 작업지시만 조회.
                 flex-1로 남는 폭을 다 차지하면 넓은 화면에서 스캔칸만 길어져 눈에 띄지 않는다(2026-09-19 지적). 고정폭으로 둔다. */}
             <div className="w-80 shrink-0">
-              {selectedOrder ? (
-                <div className="flex h-11 min-w-0 items-center justify-between gap-2 rounded-lg border border-border bg-card px-3">
-                  <div className="min-w-0 flex-1 truncate text-sm">
-                    <span className="font-mono text-sm font-bold text-text">{selectedOrder.orderNo}</span>
-                    <span className="text-xs text-text-muted">
-                      {" · "}
-                      {selectedOrder.itemCode}
-                      {selectedOrder.itemName ? ` · ${selectedOrder.itemName}` : ""}
-                    </span>
-                  </div>
-                  <Button className="!h-7 shrink-0 !rounded !px-2.5 !text-xs" size="sm" onClick={clearOrder} disabled={contextLocked}>
-                    {t("common.change", "변경")}
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-border bg-card px-2">
-                  <div className="min-w-0 flex-1">
-                    <BarcodeScanInput
-                      ref={orderScanRef}
-                      aria-label={t("production.subprocess.orderScanLabel", "작업지시번호 스캔 또는 입력 후 Enter")}
-                      className="!h-8 !text-xs"
-                      value={orderScan}
-                      onChange={setOrderScan}
-                      onScan={fetchOrderByNo}
-                      placeholder={
-                        equipCode
-                          ? "W-20260001"
-                          : t("production.subprocess.requireEquipFirst", "설비를 먼저 선택하세요.")
-                      }
-                      disabled={!equipCode}
-                      fullWidth
-                    />
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setOrderSearchOpen(true)}
-                    leftIcon={<Search className="w-4 h-4" />}
-                    disabled={!equipCode}
-                    className="!h-7 shrink-0 !rounded !px-2.5 !text-xs"
-                  >
-                    {t("common.search")}
-                  </Button>
-                </div>
-              )}
+              <JobOrderSelectTrigger
+                orderNo={selectedOrder?.orderNo}
+                itemName={selectedOrder?.itemName ?? selectedOrder?.itemCode}
+                hasEquip={!!equipCode}
+                disabled={contextLocked}
+                onOpen={() => setOrderSearchOpen(true)}
+                testId="assembly-joborder-open"
+              />
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2">
               <div className="flex h-11 max-w-52 shrink-0 items-center rounded-lg border border-border bg-card px-3">

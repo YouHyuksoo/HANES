@@ -18,6 +18,7 @@ import api from "@/services/api";
 import { judgeRestoredJobOrder } from "@/components/production/jobOrderRestore";
 import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
 import { OutputCarrierSlot, useCarrierProcessFlags, useOutputCarrier } from "@/components/shared/carrier";
+import JobOrderSelectTrigger from "@/components/production/JobOrderSelectTrigger";
 import InputSgScanPanel from "./components/InputSgScanPanel";
 import SubKitActionBar from "./components/SubKitActionBar";
 import EquipMaterialMountPanel from "../input-assembly/components/EquipMaterialMountPanel";
@@ -637,60 +638,16 @@ export default function SubprocessKittingPage() {
               </button>
             </div>
 
-            {/* 2) 작업지시 — 설비 선택 후 활성화. 선택 설비의 공정에 내려진 작업지시만 조회. */}
-            <div className="min-w-[200px] flex-1">
-              {selectedOrder ? (
-                <div className="flex h-11 min-w-0 items-center justify-between gap-2 rounded-lg border border-border bg-card px-3">
-                  <div className="flex min-w-0 flex-1 items-center gap-2 text-sm">
-                    <span className={`shrink-0 rounded border px-2 py-1 text-xs font-semibold ${getOrderKindMeta(selectedOrder.orderKind).className}`}>
-                      {getOrderKindMeta(selectedOrder.orderKind).label}
-                    </span>
-                    <div className="min-w-0 flex-1 truncate">
-                      <span className="font-mono text-sm font-bold text-text">{selectedOrder.orderNo}</span>
-                      <span className="text-xs text-text-muted">
-                        {" · "}
-                        {selectedOrder.itemCode}
-                        {selectedOrder.itemName ? ` · ${selectedOrder.itemName}` : ""}
-                        {" · "}
-                        {getOrderKindMeta(selectedOrder.orderKind).description}
-                      </span>
-                    </div>
-                  </div>
-                  <Button className="!h-7 shrink-0 !rounded !px-2.5 !text-xs" size="sm" onClick={clearOrder}>
-                    {t("common.change", "변경")}
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-border bg-card px-2">
-                  <div className="min-w-0 flex-1">
-                    <BarcodeScanInput
-                      ref={orderScanRef}
-                      aria-label={t("production.subprocess.orderScanLabel", "작업지시번호 스캔 또는 입력 후 Enter")}
-                      className="!h-8 !text-xs"
-                      value={orderScan}
-                      onChange={setOrderScan}
-                      onScan={fetchOrderByNo}
-                      placeholder={
-                        equipCode
-                          ? "W-20260001"
-                          : t("production.subprocess.requireEquipFirst", "설비를 먼저 선택하세요.")
-                      }
-                      disabled={!equipCode}
-                      fullWidth
-                    />
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setOrderSearchOpen(true)}
-                    leftIcon={<Search className="w-4 h-4" />}
-                    disabled={!equipCode}
-                    className="!h-7 shrink-0 !rounded !px-2.5 !text-xs"
-                  >
-                    {t("common.search")}
-                  </Button>
-                </div>
-              )}
+            {/* 2) 작업지시 — 가공 키오스크와 같은 공용 트리거(2026-09-19 세 화면 통일). 조회·스캔은 JobOrderSelectModal이 맡는다. */}
+            <div className="w-80 shrink-0">
+              <JobOrderSelectTrigger
+                orderNo={selectedOrder?.orderNo}
+                itemName={selectedOrder?.itemName ?? selectedOrder?.itemCode}
+                processType={selectedOrder ? getOrderKindMeta(selectedOrder.orderKind).label : null}
+                hasEquip={!!equipCode}
+                onOpen={() => setOrderSearchOpen(true)}
+                testId="subkit-joborder-open"
+              />
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
