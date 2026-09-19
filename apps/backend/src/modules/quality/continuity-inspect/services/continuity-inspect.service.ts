@@ -35,6 +35,7 @@ import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
 import { TransactionService } from '../../../../shared/transaction.service';
 import { SysConfigService } from '../../../system/services/sys-config.service';
 import { EquipInspectGateService } from '../../../equipment/services/equip-inspect-gate.service';
+import { EquipStopService } from '../../../equipment/services/equip-stop.service';
 import { InspectSampleCheckService } from './inspect-sample-check.service';
 import { EquipMaster } from '../../../../entities/equip-master.entity';
 import { parseCsvList } from '../../../../common/utils/csv-list.util';
@@ -70,6 +71,7 @@ export class ContinuityInspectService {
     private readonly tx: TransactionService,
     private readonly equipInspectGateService: EquipInspectGateService,
     private readonly inspectSampleCheckService: InspectSampleCheckService,
+    private readonly equipStopService: EquipStopService,
   ) {}
 
   /**
@@ -98,7 +100,22 @@ export class ContinuityInspectService {
   }
 
   /**
+   * 설비정지 게이트 — EQUIP_STOP_EVENTS 에 진행중(OPEN) 정지가 있으면 검사를 받지 않는다.
+   * 생산실적(ProdResultService.assertEquipNotStopped)과 같은 규칙. 정지 해제는 검사 화면의 설비정지 팝업에서 한다.
+   */
+  private async assertEquipNotStopped(equipCode: string, company?: string, plant?: string): Promise<void> {
+    if (!company || !plant) return;
+    const open = await this.equipStopService.findOpenStop(equipCode, company, plant);
+    if (open) {
+      throw new BadRequestException(
+        `설비가 정지 중입니다. 정지를 해제한 뒤 검사를 등록하세요. (설비 ${equipCode})`,
+      );
+    }
+  }
+
+  /**
    * 검사 등록 준비 게이트 — 화면 우회 호출(API 직접 호출)도 같은 규칙으로 막는다.
+   * 0. 설비정지: 진행중 정지가 있으면 가장 먼저 막는다
    * 1. 설비일상점검(DAILY) / 작업자설비점검(WORKER): EquipInspectGateService 단일 출처
    * 2. 양불마스터 대조: 작업지시 x 검사기 x 조업일 x 교대 기준 최신 기록이 PASS 여야 한다
    * equipCode가 없으면(검사기 미선택 경로) 게이트를 적용하지 않는다.
@@ -116,6 +133,7 @@ export class ContinuityInspectService {
   ): Promise<void> {
     const equipCode = dto.equipCode?.trim();
     if (!equipCode) return;
+    await this.assertEquipNotStopped(equipCode, company, plant);
     await this.assertWorkerAssigned(equipCode, dto.workerId ?? null, company, plant);
     await this.equipInspectGateService.assertGate(
       { equipCode, orderNo: dto.orderNo ?? undefined, scope: 'INSPECTION' },
@@ -148,12 +166,16 @@ export class ContinuityInspectService {
         { company, plant },
       )
       : null;
-    const blockReason = gate.blockReason ?? sampleCheck?.blockReason ?? null;
+    const openStop = equipCode ? await this.equipStopService.findOpenStop(equipCode, company, plant) : null;
+    const stopped = Boolean(openStop);
+    const blockReason = (stopped ? '설비가 정지 중입니다. 정지를 해제한 뒤 검사를 등록하세요.' : null)
+      ?? gate.blockReason ?? sampleCheck?.blockReason ?? null;
     return {
       equipCode,
       gate,
       sampleCheck,
-      ready: Boolean(equipCode) && !gate.blocked && (sampleCheck?.done ?? false),
+      stopped,
+      ready: Boolean(equipCode) && !stopped && !gate.blocked && (sampleCheck?.done ?? false),
       blockReason,
     };
   }

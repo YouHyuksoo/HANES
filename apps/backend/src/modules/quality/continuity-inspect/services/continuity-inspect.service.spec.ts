@@ -13,6 +13,7 @@ import { ProdResult } from '../../../../entities/prod-result.entity';
 import { EquipMaster } from '../../../../entities/equip-master.entity';
 import { EquipInspectGateService } from '../../../equipment/services/equip-inspect-gate.service';
 import { InspectSampleCheckService } from './inspect-sample-check.service';
+import { EquipStopService } from '../../../equipment/services/equip-stop.service';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
 import { SysConfigService } from '../../../system/services/sys-config.service';
 import { MockLoggerService } from '@test/mock-logger.service';
@@ -75,6 +76,8 @@ describe('ContinuityInspectService', () => {
         { provide: TransactionService, useValue: mockTx },
         { provide: EquipInspectGateService, useValue: mockEquipInspectGate },
         { provide: InspectSampleCheckService, useValue: mockSampleCheckService },
+        // 설비정지 게이트 — 기본은 정지 없음
+        { provide: EquipStopService, useValue: { findOpenStop: jest.fn().mockResolvedValue(null) } },
       ],
     })
       .setLogger(new MockLoggerService())

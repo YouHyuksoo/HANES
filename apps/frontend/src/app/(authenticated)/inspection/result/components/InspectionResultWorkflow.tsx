@@ -21,6 +21,10 @@ import { DailyInspectModal, WorkerInspectModal } from "@/components/inspect";
 import useInspectPrepStatus from "../hooks/useInspectPrepStatus";
 import { usePrepGuide } from "@/components/shared/prep-guide";
 import { buildPrepGuideSteps } from "../hooks/prepGuideSteps";
+import { useEquipStop, formatElapsed } from "@/app/(authenticated)/production/input-kiosk/hooks/useEquipStop";
+import EquipActionButtons from "@/app/(authenticated)/production/input-kiosk/components/EquipActionButtons";
+import EquipStopModal from "@/app/(authenticated)/production/input-kiosk/components/EquipStopModal";
+import ManagerCallModal from "@/app/(authenticated)/production/input-kiosk/components/ManagerCallModal";
 
 interface TesterEquip {
   equipCode: string;
@@ -88,6 +92,11 @@ export default function InspectionResultWorkflow({
   const [sampleHistoryOpen, setSampleHistoryOpen] = useState(false);
   /** 작업자 선택 모달 — 헤더와 준비 안내 모달이 같은 모달을 연다 */
   const [workerSelectOpen, setWorkerSelectOpen] = useState(false);
+  /** 설비정지 / 관리자호출 — 가공 키오스크와 같은 훅·모달. 경과시간 기준은 서버라 새로고침해도 이어진다 */
+  const [equipStopOpen, setEquipStopOpen] = useState(false);
+  const [managerCallOpen, setManagerCallOpen] = useState(false);
+  const equipStop = useEquipStop(selectedEquipCode || null, selected?.orderNo ?? null);
+  const selectedEquipName = testers.find((e) => e.equipCode === selectedEquipCode)?.equipName ?? selectedEquipCode;
   /** 전체화면(chromeless) 모드 — view=full 쿼리 + 브라우저 Fullscreen API */
   const isFullView = searchParams.get("view") === "full";
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -255,6 +264,14 @@ ORDER BY jo.PRIORITY ASC, jo.PLAN_DATE ASC`}
   });
 
   /** 진입 안내 — 검사기→작업자→작업지시→점검→대조 순서로 유도하고, 끝나면 자동으로 닫힌다 */
+  /** 정지 중이면 판정 버튼을 막는다 — 가공 키오스크의 실적입력 차단과 같은 규칙 */
+  const inspectPrep = useMemo(
+    () => equipStop.isStopped
+      ? { ...prep, ready: false, blockReason: t("kiosk.equipStop.blockReason", "설비가 정지 중입니다. 정지를 해제한 뒤 실적을 등록하세요.") }
+      : prep,
+    [equipStop.isStopped, prep, t],
+  );
+
   const guideSteps = useMemo(
     () => buildPrepGuideSteps({ hasEquip: Boolean(selectedEquipCode), hasOrder: Boolean(selected), prep }),
     [selectedEquipCode, selected, prep],
@@ -363,27 +380,53 @@ ORDER BY jo.PRIORITY ASC, jo.PLAN_DATE ASC`}
           )}
         </div>
 
-        <div className="col-span-8 overflow-hidden flex flex-col">
-          {selected ? (
-            <InspectPanel
-              key={`${inspectType}-${selected.orderNo}`}
-              order={selected}
-              inspectType={inspectType}
-              equipCode={selectedEquipCode || undefined}
-              prep={prep}
-            />
-          ) : (
-            <Card className="flex-1 flex items-center justify-center">
-              <CardContent>
-                <div className="text-center text-text-muted">
-                  <ScanLine className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p>{t(selectOrderKey)}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        <div className="col-span-8 overflow-hidden flex flex-col gap-2">
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+            {selected ? (
+              <InspectPanel
+                key={`${inspectType}-${selected.orderNo}`}
+                order={selected}
+                inspectType={inspectType}
+                equipCode={selectedEquipCode || undefined}
+                prep={inspectPrep}
+              />
+            ) : (
+              <Card className="flex-1 flex items-center justify-center">
+                <CardContent>
+                  <div className="text-center text-text-muted">
+                    <ScanLine className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p>{t(selectOrderKey)}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+          {/* 설비정지 / 관리자호출 — 가공 키오스크와 같이 우측 제일 하단 */}
+          <EquipActionButtons
+            hasEquip={Boolean(selectedEquipCode)}
+            onOpenEquipStop={() => setEquipStopOpen(true)}
+            onOpenManagerCall={() => setManagerCallOpen(true)}
+            isStopped={equipStop.isStopped}
+            stopElapsed={equipStop.stopElapsed}
+            isCalling={equipStop.isCalling}
+            callElapsed={equipStop.callElapsed}
+          />
         </div>
       </div>
+
+      {/* 설비정지 배너 — 팝업을 닫아도 정지 중임이 화면에서 사라지지 않게 한다 */}
+      {equipStop.isStopped && (
+        <button
+          type="button"
+          onClick={() => setEquipStopOpen(true)}
+          data-testid="kiosk-stop-banner"
+          className="flex w-full items-center justify-center gap-2 bg-red-600 px-4 py-2 text-sm font-bold text-white"
+        >
+          <span className="animate-pulse">●</span>
+          {t("kiosk.equipStop.banner", "설비 정지 중 — 실적 입력이 차단됩니다. 눌러서 해제하세요.")}
+          <span className="font-mono tabular-nums">{formatElapsed(equipStop.stopElapsed)}</span>
+        </button>
+      )}
 
       <InspectPrepGuideModal
         open={guide.open}
@@ -415,6 +458,31 @@ ORDER BY jo.PRIORITY ASC, jo.PLAN_DATE ASC`}
         onClose={() => setWorkerInspectOpen(false)}
         onDone={() => { setWorkerInspectOpen(false); void prep.refresh(); }}
         context={inspectContext}
+      />
+      <EquipStopModal
+        isOpen={equipStopOpen}
+        onClose={() => setEquipStopOpen(false)}
+        equipCode={selectedEquipCode || null}
+        equipName={selectedEquipName || null}
+        openStop={equipStop.openStop}
+        stopElapsed={equipStop.stopElapsed}
+        history={equipStop.history}
+        summary={equipStop.summary}
+        loading={equipStop.loading}
+        onStart={equipStop.startStop}
+        onUpdateReason={equipStop.updateReason}
+        onRelease={equipStop.releaseStop}
+        onRefreshHistory={() => void equipStop.refreshHistory()}
+      />
+      <ManagerCallModal
+        isOpen={managerCallOpen}
+        onClose={() => setManagerCallOpen(false)}
+        equipCode={selectedEquipCode || null}
+        equipName={selectedEquipName || null}
+        openCall={equipStop.openCall}
+        callElapsed={equipStop.callElapsed}
+        loading={equipStop.loading}
+        onCall={equipStop.createCall}
       />
       {selected && selectedEquipCode && (
         <SampleCheckModal

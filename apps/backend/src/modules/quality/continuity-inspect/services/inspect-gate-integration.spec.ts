@@ -3,11 +3,16 @@ import { ContinuityInspectService } from './continuity-inspect.service';
 
 type GateArgs = { equipCode?: string | null; orderNo?: string | null; inspectType?: string | null; itemCode?: string | null; workerId?: string | null };
 
-function buildService(gate: unknown, sample: unknown, equipRepo: unknown = { findOne: jest.fn().mockResolvedValue({ equipCode: 'EQ-1', currentWorkerCodes: 'W-100,W-200' }) }): ContinuityInspectService & {
+function buildService(
+  gate: unknown,
+  sample: unknown,
+  equipRepo: unknown = { findOne: jest.fn().mockResolvedValue({ equipCode: 'EQ-1', currentWorkerCodes: 'W-100,W-200' }) },
+  equipStop: unknown = { findOpenStop: jest.fn().mockResolvedValue(null) },
+): ContinuityInspectService & {
   assertInspectPrepGate: (dto: GateArgs, company?: string, plant?: string) => Promise<void>;
 } {
   const service = Object.create(ContinuityInspectService.prototype) as ContinuityInspectService;
-  Object.assign(service, { equipInspectGateService: gate, inspectSampleCheckService: sample, equipMasterRepo: equipRepo });
+  Object.assign(service, { equipInspectGateService: gate, inspectSampleCheckService: sample, equipMasterRepo: equipRepo, equipStopService: equipStop });
   return service as ContinuityInspectService & {
     assertInspectPrepGate: (dto: GateArgs, company?: string, plant?: string) => Promise<void>;
   };
@@ -15,6 +20,21 @@ function buildService(gate: unknown, sample: unknown, equipRepo: unknown = { fin
 
 describe('ContinuityInspectService 검사 등록 게이트', () => {
   const dto: GateArgs & { workerId?: string | null } = { workerId: "W-100", equipCode: 'EQ-1', orderNo: 'W1', inspectType: 'CONTINUITY', itemCode: 'ITEM-1' };
+
+  it('설비가 정지 중이면 작업자·점검·대조를 보지 않고 가장 먼저 차단한다', async () => {
+    const gate = { assertGate: jest.fn() };
+    const sample = { assertReady: jest.fn() };
+    const equipRepo = { findOne: jest.fn() };
+    const equipStop = { findOpenStop: jest.fn().mockResolvedValue({ stopId: 7, equipCode: 'EQ-1', status: 'OPEN' }) };
+    const service = buildService(gate, sample, equipRepo, equipStop);
+
+    await expect(service.assertInspectPrepGate(dto, 'C1', 'P1'))
+      .rejects.toThrow('설비가 정지 중입니다. 정지를 해제한 뒤 검사를 등록하세요. (설비 EQ-1)');
+    expect(equipStop.findOpenStop).toHaveBeenCalledWith('EQ-1', 'C1', 'P1');
+    expect(equipRepo.findOne).not.toHaveBeenCalled();
+    expect(gate.assertGate).not.toHaveBeenCalled();
+    expect(sample.assertReady).not.toHaveBeenCalled();
+  });
 
   it('설비점검 게이트가 막으면 양불 대조를 확인하지 않고 차단한다', async () => {
     const gate = {
