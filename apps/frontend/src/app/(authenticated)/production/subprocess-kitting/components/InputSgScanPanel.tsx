@@ -54,6 +54,9 @@ export default function InputSgScanPanel({
   const [loading, setLoading] = useState(false);
 
   const scanRef = useRef<HTMLInputElement>(null);
+  /** 대차 스캔은 handleScan 하나가 N번 네트워크 왕복을 한다 — 그동안 재진입 스캔이
+   *  같은 sgList 스냅샷으로 addOne을 또 돌려 중복 추가되는 것을 막는다. */
+  const scanning = useRef(false);
 
   /** SFG 라벨 하나 검증 후 추가 — 낱개 스캔과 대차 자동투입이 같은 함수를 쓴다. */
   const addOne = useCallback(
@@ -126,16 +129,21 @@ export default function InputSgScanPanel({
   const handleScan = useCallback(
     async (raw: string) => {
       const trimmed = raw.trim();
-      if (!trimmed) return;
+      if (!trimmed || scanning.current) return;
 
-      const { handled } = await carrierAuto.run(trimmed);
-      if (handled) {
+      scanning.current = true;
+      try {
+        const { handled } = await carrierAuto.run(trimmed);
+        if (handled) {
+          setScanInput("");
+          return;
+        }
+
+        await addOne(trimmed);
         setScanInput("");
-        return;
+      } finally {
+        scanning.current = false;
       }
-
-      await addOne(trimmed);
-      setScanInput("");
     },
     [addOne, carrierAuto],
   );

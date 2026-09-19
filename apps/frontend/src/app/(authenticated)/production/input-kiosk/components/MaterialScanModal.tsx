@@ -115,7 +115,7 @@ export default function MaterialScanModal({ isOpen, onClose, onDone, equipCode, 
     try {
       await api.post(
         `/production/job-orders/${selectedJobOrder.orderNo}/material-mounts/scan`,
-        { matUid, equipCode: selectedEquip?.equipCode },
+        { matUid, equipCode: equipCode ?? selectedEquip?.equipCode },
         { skipSuccessToast: true },
       );
       mountedHereRef.current.push(matUid);
@@ -130,7 +130,7 @@ export default function MaterialScanModal({ isOpen, onClose, onDone, equipCode, 
       }
       return false;
     }
-  }, [selectedJobOrder, selectedEquip, bumpMaterialMountRefresh, t]);
+  }, [selectedJobOrder, equipCode, selectedEquip, bumpMaterialMountRefresh, t]);
 
   const carrierAuto = useCarrierAutoInput({ equipCode, enabled: carrierAutoInputYn, handleBarcode: mountOne });
 
