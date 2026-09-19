@@ -17,6 +17,7 @@ import { Button, Card, CardContent, Select } from "@/components/ui";
 import api from "@/services/api";
 import { judgeRestoredJobOrder } from "@/components/production/jobOrderRestore";
 import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
+import { OutputCarrierSlot, useCarrierProcessFlags, useOutputCarrier } from "@/components/shared/carrier";
 import InputSgScanPanel from "./components/InputSgScanPanel";
 import SubKitActionBar from "./components/SubKitActionBar";
 import EquipMaterialMountPanel from "../input-assembly/components/EquipMaterialMountPanel";
@@ -153,6 +154,10 @@ export default function SubprocessKittingPage() {
   const [confirming, setConfirming] = useState(false);
   const [resultQuality, setResultQuality] = useState<"GOOD" | "DEFECT">("GOOD");
 
+  const carrierFlags = useCarrierProcessFlags({ orderNo: selectedOrder?.orderNo, processCode });
+  const [equipCurCarrierNo, setEquipCurCarrierNo] = useState<string | null>(null);
+  const outputCarrier = useOutputCarrier({ equipCode: equipCode || null, enabled: carrierFlags?.carrierLoadYn === "Y", initialCarrierNo: equipCurCarrierNo });
+
   const orderScanRef = useRef<HTMLInputElement>(null);
   const sgPrinterRef = useRef<SgLabelPrintHandle>(null);
   const restoredEquipRef = useRef<string | null>(null);
@@ -262,6 +267,7 @@ export default function SubprocessKittingPage() {
     try {
       const equipRes = await api.get(`/equipment/equips/${encodeURIComponent(equip.equipCode)}`);
       const current = equipRes.data?.data ?? {};
+      setEquipCurCarrierNo(current.curCarrierNo ?? null);
       const currentJobOrderId = current.currentJobOrderId ?? equip.currentJobOrderId ?? null;
 
       if (currentJobOrderId) {
@@ -298,6 +304,7 @@ export default function SubprocessKittingPage() {
       }
       setTimeout(() => orderScanRef.current?.focus(), 80);
     } catch {
+      setEquipCurCarrierNo(null);
       toast.error(t("production.subprocess.restoreError", "설비 현재 작업 상태를 불러오지 못했습니다."));
       setTimeout(() => orderScanRef.current?.focus(), 80);
     }
@@ -421,6 +428,7 @@ export default function SubprocessKittingPage() {
     setSelectedOrder(null);
     setOrderScan("");
     setProcessCode("");
+    setEquipCurCarrierNo(null);
     setEquipCode("");
     setEquipName("");
     setProcessName("");
@@ -535,21 +543,24 @@ export default function SubprocessKittingPage() {
           circuitNo: circuitNo || undefined,
           goodQty: resultQuality === "GOOD" ? 1 : 0,
           defectQty: resultQuality === "DEFECT" ? 1 : 0,
+          carrierNo: outputCarrier.carrier?.carrierNo ?? undefined,
         });
         toast.success(t("production.subprocess.confirmSuccess", "서브 키팅이 확정되었습니다."));
         setSgList([]);
         setIssuedSg(null);
         setResultQuality("GOOD");
+        void outputCarrier.refresh();
       } catch (error: unknown) {
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           t("production.subprocess.confirmFailed", "서브 키팅 확정에 실패했습니다.");
+        if (message.startsWith("대차 교체")) outputCarrier.onCapacityRejected();
         toast.error(message);
       } finally {
         setConfirming(false);
       }
     },
-    [circuitNo, circuits.length, equipCode, issuedSg, processCode, resultQuality, selectedOrder, sgList, t],
+    [circuitNo, circuits.length, equipCode, issuedSg, processCode, resultQuality, selectedOrder, sgList, t, outputCarrier],
   );
 
   const onResetIssued = useCallback(() => {
@@ -684,6 +695,7 @@ export default function SubprocessKittingPage() {
                 <span className="truncate">{selectedWorkers.length > 0 ? `${selectedWorkers[0].workerName}${selectedWorkers.length > 1 ? ` 외 ${selectedWorkers.length - 1}` : ''}` : '작업자 선택'}</span>
               </Button>
               </div>
+              <OutputCarrierSlot state={outputCarrier} />
               <HeaderCheckItem
                 label="설비 일상점검"
                 done={!dailyInspectRequired || interlock.dailyInspectDone}

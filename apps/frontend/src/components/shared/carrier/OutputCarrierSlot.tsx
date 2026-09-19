@@ -34,7 +34,7 @@ export default function OutputCarrierSlot({ state, compact = false }: Props) {
         <>
           <span className="font-mono text-sm font-bold text-text">{c.carrierNo}</span>
           <span className={`whitespace-nowrap text-xs font-semibold ${statusColor}`}>
-            {c.status === "IN_TRANSIT" ? t("carrier.inTransit", "이동 중") : c.loadedCount > 0 ? t("carrier.loaded", "적재 {{count}}").replace("{{count}}", capacityText) : t("carrier.empty", "빈 대차")}
+            {c.status === "IN_TRANSIT" ? t("carrier.inTransit", "이동 중") : c.loadedCount > 0 ? t("carrier.loaded", "적재 {{n}}", { n: capacityText }) : t("carrier.empty", "빈 대차")}
           </span>
           <button type="button" data-testid="carrier-slot-slip" onClick={() => setSlipOpen(true)} disabled={c.loadedCount === 0}
             title={t("carrier.slip", "이동전표")} aria-label={t("carrier.slip", "이동전표")}

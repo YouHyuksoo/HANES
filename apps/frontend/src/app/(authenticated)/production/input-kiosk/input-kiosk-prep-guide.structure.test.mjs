@@ -44,6 +44,20 @@ test('페이지가 공용 훅으로 안내를 띄우고 헤더의 설비 선택 
   assert.match(btn, /hidden whitespace-nowrap text-sm font-bold 2xl:inline/, '넓을 때는 라벨을 보여준다');
 });
 
+test('키오스크는 출력 대차 슬롯을 헤더에 두고 실적 저장에 carrierNo를 싣는다', () => {
+  const page = read('./page.tsx');
+  const header = read('./components/EquipHeader.tsx');
+  const bar = read('./components/ProductionInputBar.tsx');
+  const steps = read('./utils/kioskPrepGuideSteps.ts');
+  assert.match(page, /useCarrierProcessFlags\(/);
+  assert.match(page, /useOutputCarrier\(/);
+  assert.match(header, /<OutputCarrierSlot/);
+  assert.match(bar, /carrierNo: outputCarrierNo \?\? undefined/);
+  assert.match(bar, /onCapacityRejected/);
+  assert.match(steps, /"carrier"/);
+  assert.match(steps, /notTarget: !carrierRequired/);
+});
+
 test('i18n 4개 언어에 kiosk.guide 키가 모두 있다', () => {
   const required = [
     'title', 'subtitle', 'allReadyDesc',

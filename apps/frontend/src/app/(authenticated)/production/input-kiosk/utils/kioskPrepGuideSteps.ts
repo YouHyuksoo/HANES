@@ -18,6 +18,7 @@ export type KioskGuideStepKey =
   | "worker"
   | "daily"
   | "workerInspect"
+  | "carrier"
   | "materialScan"
   | "consumableScan";
 
@@ -30,6 +31,8 @@ export interface KioskGuideInput {
   interlock: KioskInterlock;
   dailyInspectAt: string | null;
   workerInspectAt: string | null;
+  carrierRequired: boolean;
+  carrierNo: string | null;
 }
 
 export function buildKioskPrepGuideSteps({
@@ -39,6 +42,8 @@ export function buildKioskPrepGuideSteps({
   interlock,
   dailyInspectAt,
   workerInspectAt,
+  carrierRequired,
+  carrierNo,
 }: KioskGuideInput): KioskGuideStep[] {
   const hasEquip = Boolean(equipName);
   const hasOrder = Boolean(orderNo);
@@ -55,6 +60,7 @@ export function buildKioskPrepGuideSteps({
       runnable: hasEquip && hasOrder && hasWorker && interlock.dailyInspectDone,
       detail: workerInspectAt ?? undefined,
     },
+    { key: "carrier", done: Boolean(carrierNo), runnable: hasEquip && hasOrder, notTarget: !carrierRequired, detail: carrierNo ?? undefined },
     { key: "materialScan", done: hasOrder && interlock.materialScanDone, runnable: hasOrder },
     { key: "consumableScan", done: hasEquip && interlock.consumableScanDone, runnable: hasEquip },
   ];

@@ -16,6 +16,7 @@ import {
   ShieldCheck, UserCheck, Pencil, Search, Sparkles,
 } from 'lucide-react';
 import { useKioskStore } from '@/stores/kioskStore';
+import { OutputCarrierSlot, type OutputCarrierState } from '@/components/shared/carrier';
 import EquipSelectModal from './EquipSelectModal';
 import { HeaderCheckItem } from '@/components/inspect';
 import type { EquipOption } from '../utils/equipOptions';
@@ -58,6 +59,8 @@ interface EquipHeaderProps {
   onEquipSelectOpenChange?: (open: boolean) => void;
   /** 준비 안내 다시 열기 */
   onOpenGuide?: () => void;
+  /** 출력 대차 슬롯 상태 — 공정 CARRIER_LOAD_YN=Y일 때만 표시된다 */
+  outputCarrier?: OutputCarrierState;
 }
 
 export default function EquipHeader({
@@ -68,7 +71,7 @@ export default function EquipHeader({
   onOpenEquipStop, onOpenManagerCall,
   isStopped = false, stopElapsed = 0,
   isCalling = false, callElapsed = 0,
-  equipSelectOpen, onEquipSelectOpenChange, onOpenGuide,
+  equipSelectOpen, onEquipSelectOpenChange, onOpenGuide, outputCarrier,
 }: EquipHeaderProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -337,6 +340,8 @@ export default function EquipHeader({
               )}
             </button>
           </div>
+
+          {outputCarrier && <OutputCarrierSlot state={outputCarrier} compact />}
 
           {/* 준비 안내 다시 열기 — Row1 축약 규칙: 2xl 미만은 아이콘만, 2xl 이상은 라벨까지 */}
           {onOpenGuide && (

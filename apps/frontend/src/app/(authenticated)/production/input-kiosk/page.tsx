@@ -29,6 +29,7 @@ import type { Worker } from '@/components/worker/WorkerSelector';
 import EquipHeader from './components/EquipHeader';
 import KioskPrepGuideModal from './components/KioskPrepGuideModal';
 import { usePrepGuide } from '@/components/shared/prep-guide';
+import { OutputCarrierSlot, useCarrierProcessFlags, useOutputCarrier } from '@/components/shared/carrier';
 import { buildKioskPrepGuideSteps } from './utils/kioskPrepGuideSteps';
 import MaterialListPanel from './components/MaterialListPanel';
 import WorkInstructionView from './components/WorkInstructionView';
@@ -156,6 +157,7 @@ export default function InputKioskPage() {
     try {
       const equipRes = await api.get(`/equipment/equips/${encodeURIComponent(equip.equipCode)}`);
       const current = equipRes.data?.data ?? {};
+      setEquipCurCarrierNo(current.curCarrierNo ?? null);
       const currentJobOrderId = current.currentJobOrderId ?? equip.currentJobOrderId ?? null;
       const currentWorkerCodes = current.currentWorkerCodes ?? equip.currentWorkerCodes ?? null;
 
@@ -183,6 +185,7 @@ export default function InputKioskPage() {
       const workers = await loadCurrentWorkers(currentWorkerCodes);
       setSelectedWorkers(workers);
     } catch {
+      setEquipCurCarrierNo(null);
       setSelectedJobOrder(null);
       setSelectedWorkers([]);
       toast.error(t('kiosk.header.restoreError', '설비 현재 상태를 불러오지 못했습니다.'));
@@ -428,6 +431,12 @@ export default function InputKioskPage() {
 
   const allInterlockDone = isAllInterlockDone(interlock);
 
+  /** 출력 대차 — 공정 CARRIER_LOAD_YN=Y일 때만 슬롯이 보이고, 실적 저장에 carrierNo가 실린다 */
+  const carrierFlags = useCarrierProcessFlags({ orderNo: selectedJobOrder?.orderNo, processCode: selectedEquip?.processCode });
+  const carrierRequired = carrierFlags?.carrierLoadYn === "Y";
+  const [equipCurCarrierNo, setEquipCurCarrierNo] = useState<string | null>(null);
+  const outputCarrier = useOutputCarrier({ equipCode: selectedEquip?.equipCode, enabled: carrierRequired, initialCarrierNo: equipCurCarrierNo });
+
   /** 진입 안내 — 설비→작업지시→작업자→점검→스캔 순서로 유도하고, 끝나면 자동으로 닫힌다 */
   const workerNames = useMemo(() => selectedWorkers.map(w => w.workerName), [selectedWorkers]);
   const guideSteps = useMemo(() => buildKioskPrepGuideSteps({
@@ -437,7 +446,9 @@ export default function InputKioskPage() {
     interlock,
     dailyInspectAt,
     workerInspectAt,
-  }), [selectedEquip?.equipName, selectedJobOrder?.orderNo, workerNames, interlock, dailyInspectAt, workerInspectAt]);
+    carrierRequired,
+    carrierNo: outputCarrier.carrier?.carrierNo ?? null,
+  }), [selectedEquip?.equipName, selectedJobOrder?.orderNo, workerNames, interlock, dailyInspectAt, workerInspectAt, carrierRequired, outputCarrier.carrier?.carrierNo]);
   const guide = usePrepGuide(guideSteps);
 
   // 중물 알림/차단 임계값 (QC_SELF 공통코드)
@@ -536,6 +547,7 @@ export default function InputKioskPage() {
         equipSelectOpen={isEquipSelectOpen}
         onEquipSelectOpenChange={setIsEquipSelectOpen}
         onOpenGuide={guide.openGuide}
+        outputCarrier={outputCarrier}
       />
 
       {/* ② ③ ④ 메인 3패널 */}
@@ -585,6 +597,8 @@ export default function InputKioskPage() {
                 interlockDone={allInterlockDone && !hasPendingDelegate && !isMidBlock && !equipStop.isStopped}
                 disabledReasons={submitDisabledReasons}
                 productionType={productionType}
+                outputCarrierNo={outputCarrier.carrier?.carrierNo ?? null}
+                onCapacityRejected={outputCarrier.onCapacityRejected}
               />
             </div>
           </div>
@@ -647,6 +661,7 @@ export default function InputKioskPage() {
         onOpenWorkerInspect={() => setIsWorkerInspectOpen(true)}
         onOpenMaterialScan={() => setIsMaterialScanOpen(true)}
         onOpenConsumableScan={() => setIsConsumableScanOpen(true)}
+        onFocusCarrier={() => document.querySelector<HTMLInputElement>('[data-testid="carrier-slot-scan"] input, [data-testid="carrier-slot-scan"]')?.focus()}
       />
       <JobOrderSelectModal
         isOpen={isJobOrderOpen}

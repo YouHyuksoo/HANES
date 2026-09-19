@@ -36,6 +36,14 @@ test('페이지가 공용 훅으로 안내를 띄우고 상단 바에 다시 열
   assert.match(page, /onOpenJobOrder=\{\(\) => setOrderSearchOpen\(true\)\}/, '작업지시는 상단 바와 같은 모달을 연다');
 });
 
+test('조립 화면은 출력 대차 슬롯을 두고 확정에 carrierNo를 싣는다', () => {
+  const page = read('./page.tsx');
+  const steps = read('./assemblyPrepGuideSteps.ts');
+  assert.match(page, /<OutputCarrierSlot/);
+  assert.match(page, /carrierNo: outputCarrier\.carrier\?\.carrierNo \?\? undefined/);
+  assert.match(steps, /"carrier"/);
+});
+
 test('i18n 4개 언어에 production.inputAssembly.guide 키가 모두 있다', () => {
   const required = ['title', 'subtitle', 'allReadyDesc', 'hintEquip', 'hintJobOrder'];
   for (const lang of ['ko', 'en', 'zh', 'vi']) {

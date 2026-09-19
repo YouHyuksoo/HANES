@@ -187,7 +187,7 @@
     "slotLabel": "Xe đẩy đầu ra",
     "scanPlaceholder": "Quét xe đẩy",
     "empty": "Trống",
-    "loaded": "Đã xếp {{count}}",
+    "loaded": "Đã xếp {{n}}",
     "inTransit": "Đang chuyển",
     "slip": "Phiếu chuyển",
     "clear": "Bỏ xe đẩy",
@@ -4182,7 +4182,9 @@
         "subtitle": "Hoàn thành các bước dưới đây theo thứ tự để mở quét bán thành phẩm và phát hành nhãn thành phẩm.",
         "allReadyDesc": "Mọi chuẩn bị đã xong. Quét mã vạch bán thành phẩm để bắt đầu lắp ráp.",
         "hintEquip": "Chọn thiết bị lắp ráp. Thiết bị quyết định công đoạn, lệnh sản xuất và công nhân hiện tại được khôi phục.",
-        "hintJobOrder": "Chọn lệnh sản xuất thành phẩm thuộc công đoạn của thiết bị này. Cũng có thể quét số lệnh."
+        "hintJobOrder": "Chọn lệnh sản xuất thành phẩm thuộc công đoạn của thiết bị này. Cũng có thể quét số lệnh.",
+        "stepCarrier": "Quét xe đẩy đầu ra",
+        "hintCarrier": "Công đoạn này xếp nhãn kết quả lên xe đẩy. Quét xe trống hoặc xe cùng mã hàng/lệnh."
       }
     },
     "equipMaterial": {
@@ -9918,6 +9920,7 @@
       "stepWorker": "Chọn công nhân",
       "stepDaily": "Kiểm tra thiết bị hằng ngày",
       "stepWorkerInspect": "Công nhân kiểm tra thiết bị",
+      "stepCarrier": "Quét xe đẩy đầu ra",
       "stepMaterialScan": "Quét vật tư",
       "stepConsumableScan": "Quét vật tư tiêu hao",
       "hintEquip": "Chọn thiết bị sẽ ghi nhận kết quả. Lệnh sản xuất và công nhân hiện tại của thiết bị được khôi phục.",
@@ -9925,6 +9928,7 @@
       "hintWorker": "Thêm ít nhất một công nhân cho thiết bị.",
       "hintDaily": "Hôm nay chưa có kiểm tra thiết bị hằng ngày. Nhập các hạng mục và đạt phán định tổng OK.",
       "hintWorkerInspect": "Công nhân trực tiếp kiểm tra thiết bị và đăng ký kết quả.",
+      "hintCarrier": "Công đoạn này xếp nhãn kết quả lên xe đẩy. Quét xe trống hoặc xe cùng mã hàng/lệnh.",
       "hintMaterialScan": "Quét mã vạch vật tư BOM để lắp vào thiết bị. Hoàn thành khi mọi hạng mục yêu cầu đã lắp.",
       "hintConsumableScan": "Quét mã vạch phụ tùng tiêu hao để lắp. Nếu không có đối tượng thì hoàn thành ngay."
     },

@@ -13,7 +13,7 @@
 import { assignPrepGuideStatuses, type PrepGuideRawStep, type PrepGuideStep } from "@/components/shared/prep-guide";
 import type { KioskInterlock } from "@/stores/kioskStore";
 
-export type AssemblyGuideStepKey = "equip" | "jobOrder" | "worker" | "daily" | "workerInspect";
+export type AssemblyGuideStepKey = "equip" | "jobOrder" | "worker" | "daily" | "workerInspect" | "carrier";
 
 export type AssemblyGuideStep = PrepGuideStep<AssemblyGuideStepKey>;
 
@@ -26,6 +26,8 @@ export interface AssemblyGuideInput {
   workerInspectRequired: boolean;
   dailyInspectResult: string | null;
   workerInspectResult: string | null;
+  carrierRequired: boolean;
+  carrierNo: string | null;
 }
 
 export function buildAssemblyPrepGuideSteps({
@@ -37,6 +39,8 @@ export function buildAssemblyPrepGuideSteps({
   workerInspectRequired,
   dailyInspectResult,
   workerInspectResult,
+  carrierRequired,
+  carrierNo,
 }: AssemblyGuideInput): AssemblyGuideStep[] {
   const hasEquip = Boolean(equipName);
   const hasOrder = Boolean(orderNo);
@@ -61,6 +65,7 @@ export function buildAssemblyPrepGuideSteps({
       notTarget: !workerInspectRequired,
       detail: workerInspectResult ?? undefined,
     },
+    { key: "carrier", done: Boolean(carrierNo), runnable: hasEquip && hasOrder, notTarget: !carrierRequired, detail: carrierNo ?? undefined },
   ];
 
   return assignPrepGuideStatuses(raw);

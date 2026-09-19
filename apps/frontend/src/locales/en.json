@@ -187,7 +187,7 @@
     "slotLabel": "Output carrier",
     "scanPlaceholder": "Scan carrier",
     "empty": "Empty",
-    "loaded": "Loaded {{count}}",
+    "loaded": "Loaded {{n}}",
     "inTransit": "In transit",
     "slip": "Transfer slip",
     "clear": "Release carrier",
@@ -4200,7 +4200,9 @@
         "subtitle": "Complete the steps below in order to unlock SFG scanning and FG label issue.",
         "allReadyDesc": "All preparation is done. Scan SFG barcodes to start assembly.",
         "hintEquip": "Choose the assembly equipment. It determines the process, and its current job order and workers are restored.",
-        "hintJobOrder": "Choose a finished-goods job order for this equipment's process. Scanning the order number also works."
+        "hintJobOrder": "Choose a finished-goods job order for this equipment's process. Scanning the order number also works.",
+        "stepCarrier": "Scan output carrier",
+        "hintCarrier": "This process loads result labels onto a carrier. Scan an empty carrier or one holding the same item and order."
       }
     },
     "equipMaterial": {
@@ -9936,6 +9938,7 @@
       "stepWorker": "Select worker",
       "stepDaily": "Daily equipment check",
       "stepWorkerInspect": "Worker equipment check",
+      "stepCarrier": "Scan output carrier",
       "stepMaterialScan": "Material scan",
       "stepConsumableScan": "Consumable scan",
       "hintEquip": "Choose the equipment that will record results. Its current job order and workers are restored.",
@@ -9943,6 +9946,7 @@
       "hintWorker": "Add at least one worker to the equipment.",
       "hintDaily": "No daily equipment check today yet. Enter the check items and get an overall OK.",
       "hintWorkerInspect": "The worker checks the equipment directly and registers the result.",
+      "hintCarrier": "This process loads result labels onto a carrier. Scan an empty carrier or one holding the same item and order.",
       "hintMaterialScan": "Scan BOM material barcodes to mount them. Done when all required items are mounted.",
       "hintConsumableScan": "Scan consumable part barcodes to mount them. Done immediately if none are required."
     },

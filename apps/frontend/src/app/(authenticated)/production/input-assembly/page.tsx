@@ -10,6 +10,7 @@ import { Button } from "@/components/ui";
 import api from "@/services/api";
 import { judgeRestoredJobOrder } from "@/components/production/jobOrderRestore";
 import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
+import { OutputCarrierSlot, useCarrierProcessFlags, useOutputCarrier } from "@/components/shared/carrier";
 import EquipMaterialMountPanel from "./components/EquipMaterialMountPanel";
 import SgScanPanel from "./components/SgScanPanel";
 import { useAssemblyScanSession, type AssemblySgLabel } from "./hooks/useAssemblyScanSession";
@@ -160,6 +161,7 @@ export default function InputAssemblyPage() {
     try {
       const equipRes = await api.get(`/equipment/equips/${encodeURIComponent(equip.equipCode)}`);
       const current = equipRes.data?.data ?? {};
+      setEquipCurCarrierNo(current.curCarrierNo ?? null);
       const currentJobOrderId = current.currentJobOrderId ?? equip.currentJobOrderId ?? null;
 
       if (currentJobOrderId) {
@@ -190,6 +192,7 @@ export default function InputAssemblyPage() {
       }
       setTimeout(() => orderScanRef.current?.focus(), 80);
     } catch {
+      setEquipCurCarrierNo(null);
       toast.error(t("production.subprocess.restoreError", "설비 현재 작업 상태를 불러오지 못했습니다."));
       setTimeout(() => orderScanRef.current?.focus(), 80);
     }
@@ -336,6 +339,7 @@ export default function InputAssemblyPage() {
     setSelectedOrder(null);
     setOrderScan("");
     setProcessCode("");
+    setEquipCurCarrierNo(null);
     setEquipCode("");
     setEquipName("");
     setProcessName("");
@@ -362,6 +366,12 @@ export default function InputAssemblyPage() {
     setSgList((prev) => prev.filter((item) => item.sgBarcode !== sgBarcode));
   }, []);
 
+  /** 출력 대차 — 공정 CARRIER_LOAD_YN=Y일 때만 슬롯이 보이고, FG 확정에 carrierNo가 실린다 */
+  const carrierFlags = useCarrierProcessFlags({ orderNo: selectedOrder?.orderNo, processCode });
+  const carrierRequired = carrierFlags?.carrierLoadYn === "Y";
+  const [equipCurCarrierNo, setEquipCurCarrierNo] = useState<string | null>(null);
+  const outputCarrier = useOutputCarrier({ equipCode: equipCode || null, enabled: carrierRequired, initialCarrierNo: equipCurCarrierNo });
+
   /** 진입 안내 — 설비→작업지시→작업자→점검 순서로 유도하고, 끝나면 자동으로 닫힌다 */
   const workerNames = useMemo(() => selectedWorkers.map((w) => w.workerName), [selectedWorkers]);
   const guideSteps = useMemo(() => buildAssemblyPrepGuideSteps({
@@ -373,7 +383,9 @@ export default function InputAssemblyPage() {
     workerInspectRequired,
     dailyInspectResult,
     workerInspectResult,
-  }), [equipName, selectedOrder?.orderNo, workerNames, interlock, dailyInspectRequired, workerInspectRequired, dailyInspectResult, workerInspectResult]);
+    carrierRequired,
+    carrierNo: outputCarrier.carrier?.carrierNo ?? null,
+  }), [equipName, selectedOrder?.orderNo, workerNames, interlock, dailyInspectRequired, workerInspectRequired, dailyInspectResult, workerInspectResult, carrierRequired, outputCarrier.carrier?.carrierNo]);
   const guide = usePrepGuide(guideSteps);
 
   const canIssue =
@@ -455,6 +467,7 @@ export default function InputAssemblyPage() {
           equipCode,
           processCode,
           sgBarcodes: sgList.map((s) => s.sgBarcode),
+          carrierNo: outputCarrier.carrier?.carrierNo ?? undefined,
         });
         toast.success(t("production.inputAssembly.confirmSuccess", "조립이 확정되었습니다."));
         // FG 라벨 데이터는 항상 발행되며, 인쇄 여부는 백엔드 printFg(라우팅 ISSUE_LABEL_TYPE='FG')로 제어한다.
@@ -471,10 +484,12 @@ export default function InputAssemblyPage() {
         }
         applyConfirmed(confirmData?.sgLabels);
         setIssuedFg(null);
+        void outputCarrier.refresh();
       } catch (error: unknown) {
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           t("production.inputAssembly.confirmFailed", "조립 확정에 실패했습니다.");
+        if (message.startsWith("대차 교체")) outputCarrier.onCapacityRejected();
         toast.error(message);
         await refreshAfterFailure();
       } finally {
@@ -482,7 +497,7 @@ export default function InputAssemblyPage() {
         setConfirming(false);
       }
     },
-    [equipCode, issuedFg, processCode, selectedOrder, sgList, sgReady, applyConfirmed, refreshAfterFailure, t],
+    [equipCode, issuedFg, processCode, selectedOrder, sgList, sgReady, applyConfirmed, refreshAfterFailure, t, outputCarrier],
   );
 
   const onResetIssued = useCallback(() => {
@@ -620,6 +635,7 @@ export default function InputAssemblyPage() {
                 onInput={() => setWorkerInspectOpen(true)}
                 wide
               />
+              <OutputCarrierSlot state={outputCarrier} compact />
               <button
                 type="button"
                 data-testid="assembly-guide-open"
@@ -718,6 +734,7 @@ export default function InputAssemblyPage() {
         onOpenWorker={() => setWorkerModalOpen(true)}
         onOpenDailyInspect={() => setDailyInspectOpen(true)}
         onOpenWorkerInspect={() => setWorkerInspectOpen(true)}
+        onFocusCarrier={() => document.querySelector<HTMLInputElement>('[data-testid="carrier-slot-scan"] input, [data-testid="carrier-slot-scan"]')?.focus()}
       />
 
       {/* 작업지시 선택 모달 — 공용 모달. 선택 공정 + FINISHED 조회조건. */}

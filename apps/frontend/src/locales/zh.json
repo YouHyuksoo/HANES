@@ -187,7 +187,7 @@
     "slotLabel": "输出台车",
     "scanPlaceholder": "扫描台车",
     "empty": "空车",
-    "loaded": "已装 {{count}}",
+    "loaded": "已装 {{n}}",
     "inTransit": "转运中",
     "slip": "转运单",
     "clear": "解除台车",
@@ -4182,7 +4182,9 @@
         "subtitle": "按以下顺序完成准备后，即可扫描半成品并发行成品标签。",
         "allReadyDesc": "所有准备已完成。请扫描半成品条码开始组装。",
         "hintEquip": "请选择组装设备。设备决定工序，设备当前的工单和作业者将一并恢复。",
-        "hintJobOrder": "请选择下达到此设备工序的成品工单。也可以扫描工单号。"
+        "hintJobOrder": "请选择下达到此设备工序的成品工单。也可以扫描工单号。",
+        "stepCarrier": "扫描输出台车",
+        "hintCarrier": "本工序将实绩标签装入台车。请扫描空车或同品目/同工单的台车。"
       }
     },
     "equipMaterial": {
@@ -9918,6 +9920,7 @@
       "stepWorker": "选择作业者",
       "stepDaily": "设备日常点检",
       "stepWorkerInspect": "作业者设备点检",
+      "stepCarrier": "扫描输出台车",
       "stepMaterialScan": "物料扫描",
       "stepConsumableScan": "耗材扫描",
       "hintEquip": "请选择用于记录实绩的设备。设备当前的工单和作业者将一并恢复。",
@@ -9925,6 +9928,7 @@
       "hintWorker": "请为设备添加至少一名作业者。",
       "hintDaily": "今天尚未进行设备日常点检。请录入点检项目并获得综合判定OK。",
       "hintWorkerInspect": "请作业者直接点检设备并登记结果。",
+      "hintCarrier": "本工序将实绩标签装入台车。请扫描空车或同品目/同工单的台车。",
       "hintMaterialScan": "请扫描BOM物料条码并安装到设备。所有必需品目安装完成后即完成。",
       "hintConsumableScan": "请扫描耗材部件条码并安装。若无对象则立即完成。"
     },

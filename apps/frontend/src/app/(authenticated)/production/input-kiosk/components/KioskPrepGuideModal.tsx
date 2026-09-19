@@ -12,7 +12,7 @@
  */
 import { useTranslation } from "react-i18next";
 import {
-  CheckCircle2, ClipboardList, Cpu, PackageSearch, ScanBarcode, ShieldCheck, UserCheck, UserPlus,
+  CheckCircle2, ClipboardList, Cpu, PackageSearch, ScanBarcode, ShieldCheck, ShoppingCart, UserCheck, UserPlus,
   type LucideIcon,
 } from "lucide-react";
 import { PrepGuideModal, type PrepGuideStepView } from "@/components/shared/prep-guide";
@@ -33,6 +33,7 @@ interface KioskPrepGuideModalProps {
   onOpenWorkerInspect: () => void;
   onOpenMaterialScan: () => void;
   onOpenConsumableScan: () => void;
+  onFocusCarrier: () => void;
 }
 
 const STEP_ICON: Record<KioskGuideStepKey, LucideIcon> = {
@@ -41,6 +42,7 @@ const STEP_ICON: Record<KioskGuideStepKey, LucideIcon> = {
   worker: UserPlus,
   daily: ShieldCheck,
   workerInspect: UserCheck,
+  carrier: ShoppingCart,
   materialScan: ScanBarcode,
   consumableScan: PackageSearch,
 };
@@ -51,6 +53,7 @@ const STEP_LABEL_KEY: Record<KioskGuideStepKey, string> = {
   worker: "kiosk.guide.stepWorker",
   daily: "kiosk.guide.stepDaily",
   workerInspect: "kiosk.guide.stepWorkerInspect",
+  carrier: "kiosk.guide.stepCarrier",
   materialScan: "kiosk.guide.stepMaterialScan",
   consumableScan: "kiosk.guide.stepConsumableScan",
 };
@@ -61,6 +64,7 @@ const STEP_HINT_KEY: Record<KioskGuideStepKey, string> = {
   worker: "kiosk.guide.hintWorker",
   daily: "kiosk.guide.hintDaily",
   workerInspect: "kiosk.guide.hintWorkerInspect",
+  carrier: "kiosk.guide.hintCarrier",
   materialScan: "kiosk.guide.hintMaterialScan",
   consumableScan: "kiosk.guide.hintConsumableScan",
 };
@@ -80,6 +84,7 @@ export default function KioskPrepGuideModal({
   onOpenWorkerInspect,
   onOpenMaterialScan,
   onOpenConsumableScan,
+  onFocusCarrier,
 }: KioskPrepGuideModalProps) {
   const { t } = useTranslation();
 
@@ -89,6 +94,7 @@ export default function KioskPrepGuideModal({
     worker: onOpenWorker,
     daily: onOpenDailyInspect,
     workerInspect: onOpenWorkerInspect,
+    carrier: onFocusCarrier,
     materialScan: onOpenMaterialScan,
     consumableScan: onOpenConsumableScan,
   };

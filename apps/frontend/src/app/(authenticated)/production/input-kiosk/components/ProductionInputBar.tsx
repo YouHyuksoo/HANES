@@ -26,6 +26,10 @@ interface ProductionInputBarProps {
   interlockDone?: boolean;
   disabledReasons?: string[];
   productionType: 'TRIAL' | 'MASS';
+  /** 출력 대차 번호 — 실적 저장 요청에 실려 대차에 라벨을 적재한다 */
+  outputCarrierNo: string | null;
+  /** 대차 용량 초과(400 "대차 교체")를 받았을 때 슬롯을 비운다 */
+  onCapacityRejected: () => void;
 }
 
 const LOT_OPTIONS = [1, 5, 10, 20, 50, 100];
@@ -36,6 +40,8 @@ export default function ProductionInputBar({
   interlockDone = true,
   disabledReasons = [],
   productionType,
+  outputCarrierNo,
+  onCapacityRejected,
 }: ProductionInputBarProps) {
   const { t } = useTranslation();
   const {
@@ -125,6 +131,7 @@ export default function ProductionInputBar({
         prdUid: serialNo || undefined,
         goodQty: good,
         defectQty: defect,
+        carrierNo: outputCarrierNo ?? undefined,
         ...(pendingDefects.length > 0 && {
           defects: pendingDefects.map(d => ({
             defectCode: d.defectCode,
@@ -146,14 +153,16 @@ export default function ProductionInputBar({
       const savedResultNo = (res?.data?.data?.resultNo ?? '') as string;
       if (savedResultNo) onResultSaved?.(savedResultNo);
     } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
-        ?? t('kiosk.input.saveError');
+      const message = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "";
+      if (message.startsWith("대차 교체")) onCapacityRejected();
+      const msg = message || t('kiosk.input.saveError');
       toast.error(msg);
     } finally {
       setSaving(false);
     }
   }, [canSave, goodQty, defectQty, totalQty, pendingDefects, selectedJobOrder, selectedEquip,
-      selectedWorkers, serialNo, incrementSerial, clearPendingDefects, onSaved, onResultSaved, t]);
+      selectedWorkers, serialNo, incrementSerial, clearPendingDefects, onSaved, onResultSaved, t,
+      outputCarrierNo, onCapacityRejected]);
 
   return (
     <div className="h-full bg-card flex-shrink-0">

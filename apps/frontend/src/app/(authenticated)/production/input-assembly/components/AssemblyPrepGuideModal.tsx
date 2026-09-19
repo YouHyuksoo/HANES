@@ -11,7 +11,7 @@
  * 3. 모든 실행은 상단 바가 쓰는 같은 모달(설비 선택·작업지시·작업자·점검)을 연다.
  */
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, ClipboardList, Cpu, ShieldCheck, UserCheck, UserPlus, type LucideIcon } from "lucide-react";
+import { CheckCircle2, ClipboardList, Cpu, ShieldCheck, ShoppingCart, UserCheck, UserPlus, type LucideIcon } from "lucide-react";
 import { PrepGuideModal, type PrepGuideStepView } from "@/components/shared/prep-guide";
 import type { AssemblyGuideStep, AssemblyGuideStepKey } from "../assemblyPrepGuideSteps";
 
@@ -28,6 +28,7 @@ interface AssemblyPrepGuideModalProps {
   onOpenWorker: () => void;
   onOpenDailyInspect: () => void;
   onOpenWorkerInspect: () => void;
+  onFocusCarrier: () => void;
 }
 
 const STEP_ICON: Record<AssemblyGuideStepKey, LucideIcon> = {
@@ -36,6 +37,7 @@ const STEP_ICON: Record<AssemblyGuideStepKey, LucideIcon> = {
   worker: UserPlus,
   daily: ShieldCheck,
   workerInspect: UserCheck,
+  carrier: ShoppingCart,
 };
 
 const STEP_LABEL_KEY: Record<AssemblyGuideStepKey, string> = {
@@ -44,6 +46,7 @@ const STEP_LABEL_KEY: Record<AssemblyGuideStepKey, string> = {
   worker: "kiosk.guide.stepWorker",
   daily: "kiosk.guide.stepDaily",
   workerInspect: "kiosk.guide.stepWorkerInspect",
+  carrier: "production.inputAssembly.guide.stepCarrier",
 };
 
 const STEP_HINT_KEY: Record<AssemblyGuideStepKey, string> = {
@@ -52,6 +55,7 @@ const STEP_HINT_KEY: Record<AssemblyGuideStepKey, string> = {
   worker: "kiosk.guide.hintWorker",
   daily: "kiosk.guide.hintDaily",
   workerInspect: "kiosk.guide.hintWorkerInspect",
+  carrier: "production.inputAssembly.guide.hintCarrier",
 };
 
 export default function AssemblyPrepGuideModal({
@@ -67,6 +71,7 @@ export default function AssemblyPrepGuideModal({
   onOpenWorker,
   onOpenDailyInspect,
   onOpenWorkerInspect,
+  onFocusCarrier,
 }: AssemblyPrepGuideModalProps) {
   const { t } = useTranslation();
 
@@ -76,6 +81,7 @@ export default function AssemblyPrepGuideModal({
     worker: onOpenWorker,
     daily: onOpenDailyInspect,
     workerInspect: onOpenWorkerInspect,
+    carrier: onFocusCarrier,
   };
 
   const views: PrepGuideStepView<AssemblyGuideStepKey>[] = steps.map((s) => ({

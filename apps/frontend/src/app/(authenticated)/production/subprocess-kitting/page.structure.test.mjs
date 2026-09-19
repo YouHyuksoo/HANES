@@ -136,3 +136,9 @@ test('/production/subprocess-kitting: job order selection persists to equipment 
   assert.match(source, /\/equipment\/equips\/\$\{encodeURIComponent\(targetEquipCode\)\}\/job-order/);
   assert.match(source, /\{ orderNo \}/);
 });
+
+test('서브조립 화면은 출력 대차 슬롯을 두고 확정에 carrierNo를 싣는다', () => {
+  const page = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+  assert.match(page, /<OutputCarrierSlot/);
+  assert.match(page, /carrierNo: outputCarrier\.carrier\?\.carrierNo \?\? undefined/);
+});
