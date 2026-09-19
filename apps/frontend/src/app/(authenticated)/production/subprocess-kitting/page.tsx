@@ -11,13 +11,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { Cpu, ChevronDown, Package, RefreshCw, Scan, Search, UserRound } from "lucide-react";
+import { Cpu, ChevronDown, Package, RefreshCw, Scan, Search } from "lucide-react";
+import AssemblyResultRow from "../input-kiosk/components/AssemblyResultRow";
 import { BarcodeScanInput } from "@/components/shared";
 import { Button, Card, CardContent, Select } from "@/components/ui";
 import api from "@/services/api";
 import { judgeRestoredJobOrder } from "@/components/production/jobOrderRestore";
 import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
-import { OutputCarrierSlot, useCarrierProcessFlags, useOutputCarrier } from "@/components/shared/carrier";
 import JobOrderSelectTrigger from "@/components/production/JobOrderSelectTrigger";
 import EquipSelectTrigger from "@/components/production/EquipSelectTrigger";
 import { OutputCarrierSlot, useCarrierProcessFlags, useOutputCarrier } from "@/components/shared/carrier";
@@ -153,6 +153,7 @@ export default function SubprocessKittingPage() {
   const [requirements, setRequirements] = useState<AssemblyRequirements | null>(null);
   const [sgList, setSgList] = useState<SgLabelInfo[]>([]);
   const [issuedSg, setIssuedSg] = useState<string | null>(null);
+  const [productivityRevision, setProductivityRevision] = useState(0);
   const [issuing, setIssuing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [resultQuality, setResultQuality] = useState<"GOOD" | "DEFECT">("GOOD");
@@ -552,6 +553,7 @@ export default function SubprocessKittingPage() {
         setSgList([]);
         setIssuedSg(null);
         setResultQuality("GOOD");
+        setProductivityRevision(value => value + 1);
         void outputCarrier.refresh();
       } catch (error: unknown) {
         const message =
@@ -631,11 +633,6 @@ export default function SubprocessKittingPage() {
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
-              <div className="flex h-11 max-w-52 shrink-0 items-center rounded-lg border border-border bg-card px-3">
-              <Button className="!h-7 min-w-0 !rounded !px-2.5 !text-xs [&>span]:truncate" size="sm" onClick={() => setWorkerModalOpen(true)} disabled={!equipCode} leftIcon={<UserRound className="h-4 w-4" />}>
-                <span className="truncate">{selectedWorkers.length > 0 ? `${selectedWorkers[0].workerName}${selectedWorkers.length > 1 ? ` 외 ${selectedWorkers.length - 1}` : ''}` : '작업자 선택'}</span>
-              </Button>
-              </div>
               <OutputCarrierSlot state={outputCarrier} />
               <HeaderCheckItem
                 label="설비 일상점검"
@@ -676,6 +673,11 @@ export default function SubprocessKittingPage() {
           </div>
         </CardContent>
       </Card>
+
+      <AssemblyResultRow orderNo={selectedOrder?.orderNo} planQty={selectedOrder?.planQty}
+        workerNames={selectedWorkers.map(worker => worker.workerName)}
+        disabled={!equipCode} onSelectWorkers={() => setWorkerModalOpen(true)}
+        refreshKey={productivityRevision} responsive />
 
       {/* 본문 3영역 — input-kiosk 스타일: 좌(설비 자재 장착) | 중앙(작업지도서) | 우(이전 공정 SFG 스캔).
           좌·우는 고정폭으로 축소하고 중앙 작업지도서를 넓게 둔다. */}

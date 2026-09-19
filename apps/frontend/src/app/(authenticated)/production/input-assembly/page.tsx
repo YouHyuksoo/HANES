@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
-import { Cpu, ChevronDown, Maximize2, Minimize2, RefreshCw, Scan, Search, Sparkles, UserRound } from "lucide-react";
+import { Cpu, ChevronDown, Maximize2, Minimize2, RefreshCw, Scan, Search, Sparkles } from "lucide-react";
+import AssemblyResultRow from "../input-kiosk/components/AssemblyResultRow";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BarcodeScanInput } from "@/components/shared";
 import { Button } from "@/components/ui";
 import api from "@/services/api";
 import { judgeRestoredJobOrder } from "@/components/production/jobOrderRestore";
 import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
-import { OutputCarrierSlot, useCarrierProcessFlags, useOutputCarrier } from "@/components/shared/carrier";
 import JobOrderSelectTrigger from "@/components/production/JobOrderSelectTrigger";
 import EquipSelectTrigger from "@/components/production/EquipSelectTrigger";
 import { OutputCarrierSlot, useCarrierProcessFlags, useOutputCarrier } from "@/components/shared/carrier";
@@ -112,6 +112,7 @@ export default function InputAssemblyPage() {
   const { sgList, setSgList, continuous, setContinuous, ready: sgReady, applyConfirmed, refreshAfterFailure } =
     useAssemblyScanSession(requirements?.components ?? []);
   const [issuedFg, setIssuedFg] = useState<string | null>(null);
+  const [productivityRevision, setProductivityRevision] = useState(0);
   const [issuing, setIssuing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const actionPending = useRef(false);
@@ -488,6 +489,7 @@ export default function InputAssemblyPage() {
         }
         applyConfirmed(confirmData?.sgLabels);
         setIssuedFg(null);
+        setProductivityRevision(value => value + 1);
         void outputCarrier.refresh();
       } catch (error: unknown) {
         const message =
@@ -546,8 +548,7 @@ export default function InputAssemblyPage() {
               />
             </div>
 
-            {/* 2) 작업지시 — 설비 선택 후 활성화. 선택 설비의 공정에 내려진 작업지시만 조회.
-                flex-1로 남는 폭을 다 차지하면 넓은 화면에서 스캔칸만 길어져 눈에 띄지 않는다(2026-09-19 지적). 고정폭으로 둔다. */}
+            {/* 2) 작업지시 — 가공 키오스크와 같은 공용 트리거(2026-09-19 세 화면 통일). 조회·스캔은 JobOrderSelectModal이 맡는다. */}
             <div className="w-80 shrink-0">
               <JobOrderSelectTrigger
                 orderNo={selectedOrder?.orderNo}
@@ -559,11 +560,6 @@ export default function InputAssemblyPage() {
               />
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              <div className="flex h-11 max-w-52 shrink-0 items-center rounded-lg border border-border bg-card px-3">
-              <Button className="!h-7 min-w-0 !rounded !px-2.5 !text-xs [&>span]:truncate" size="sm" onClick={() => setWorkerModalOpen(true)} disabled={!equipCode || contextLocked} leftIcon={<UserRound className="h-4 w-4" />}>
-                <span className="truncate">{selectedWorkers.length > 0 ? `${selectedWorkers[0].workerName}${selectedWorkers.length > 1 ? ` 외 ${selectedWorkers.length - 1}` : ''}` : '작업자 선택'}</span>
-              </Button>
-              </div>
               <HeaderCheckItem
                 label="설비 일상점검"
                 done={!dailyInspectRequired || interlock.dailyInspectDone}
@@ -618,6 +614,11 @@ export default function InputAssemblyPage() {
             </div>
           </div>
       </div>
+
+      <AssemblyResultRow orderNo={selectedOrder?.orderNo} planQty={selectedOrder?.planQty}
+        workerNames={selectedWorkers.map(worker => worker.workerName)}
+        disabled={!equipCode || contextLocked} onSelectWorkers={() => setWorkerModalOpen(true)}
+        refreshKey={productivityRevision} />
 
       {/* 본문 3영역 — input-kiosk 스타일: 좌(설비 자재 장착) | 중앙(작업지도서) | 우(반제품 SFG 스캔).
           좌·우는 고정폭, 중앙 작업지도서를 넓게. 각 패널은 내부에서 스크롤하며 바깥으로 넘치지 않는다. */}
