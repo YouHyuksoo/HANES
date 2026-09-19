@@ -7,11 +7,13 @@ import json
 import sys
 import os
 
-CONFIG_PATH = os.path.expanduser("~/.oracle_db_config.json")
+# Oracle 접속 원본은 ~/.infra/servers.json 하나뿐 (inventory_lib 경유). 레거시 ~/.oracle_db_config.json 은 읽지 않는다.
+sys.path.insert(0, os.path.join(os.path.expanduser("~"), ".infra"))
+import inventory_lib  # noqa: E402
+CONFIG_PATH = inventory_lib.inventory_path()  # ~/.infra/servers.json (읽기는 inventory_lib 로만)
 
 def load_config():
-    with open(CONFIG_PATH, "r") as f:
-        return json.load(f)
+    return inventory_lib.legacy_oracle_config()
 
 def get_connection(site_name):
     config = load_config()

@@ -8,7 +8,7 @@ gen-live-schema.py — 라이브 Oracle DB에서 실측한 스키마 DDL을 파�
 
 사용법:
   python scripts/gen-live-schema.py [site] [out_path]
-    site     : ~/.oracle_db_config.json 프로파일명 (기본 JSHANES)
+    site     : servers.json(inventory) 프로필명 (기본 JSHANES)
     out_path : 출력 파일 경로 (기본 apps/backend/src/database/create-hanes-schema.sql)
 """
 import json
@@ -19,6 +19,9 @@ import datetime
 import oracledb
 
 
+# Oracle 접속 원본은 ~/.infra/servers.json 하나뿐 (inventory_lib 경유). 레거시 ~/.oracle_db_config.json 은 읽지 않는다.
+sys.path.insert(0, os.path.join(os.path.expanduser("~"), ".infra"))
+import inventory_lib  # noqa: E402
 def get_clob(v):
     return v.read() if hasattr(v, "read") else (v or "")
 
@@ -27,8 +30,7 @@ def main():
     site_name = sys.argv[1] if len(sys.argv) > 1 else "JSHANES"
     out_path = sys.argv[2] if len(sys.argv) > 2 else "apps/backend/src/database/create-hanes-schema.sql"
 
-    with open(os.path.expanduser("~/.oracle_db_config.json")) as f:
-        config = json.load(f)
+    config = inventory_lib.legacy_oracle_config()
     site = config["profiles"][site_name]
 
     conn = oracledb.connect(

@@ -2,7 +2,12 @@ import json
 import oracledb
 from pathlib import Path
 
-cfg = json.loads((Path.home() / '.oracle_db_config.json').read_text())
+import os
+import sys
+# Oracle 접속 원본은 ~/.infra/servers.json 하나뿐 (inventory_lib 경유). 레거시 ~/.oracle_db_config.json 은 읽지 않는다.
+sys.path.insert(0, os.path.join(os.path.expanduser("~"), ".infra"))
+import inventory_lib  # noqa: E402
+cfg = inventory_lib.legacy_oracle_config()
 sites = cfg.get('profiles', cfg.get('sites', {})
 
 )
