@@ -40,6 +40,8 @@ import { InspectAidController } from './controllers/inspect-aid.controller';
 import { LimitSampleController } from './controllers/limit-sample.controller';
 import { InspectAidService } from './services/inspect-aid.service';
 import { LimitSampleService } from './services/limit-sample.service';
+import { CarrierController } from './controllers/carrier.controller';
+import { CarrierService } from './services/carrier.service';
 import { EquipBomController } from './controllers/equip-bom.controller';
 import { EquipBomService } from './services/equip-bom.service';
 import { WorkInstructionController } from './controllers/work-instruction.controller';
@@ -190,6 +192,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     InspectItemSpecController,
     InspectAidController,
     LimitSampleController,
+    CarrierController,
     EquipBomController,
     WorkInstructionController,
     TransferRuleController,
@@ -224,6 +227,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     InspectItemSpecService,
     InspectAidService,
     LimitSampleService,
+    CarrierService,
     EquipBomService,
     WorkInstructionService,
     TransferRuleService,
@@ -258,6 +262,7 @@ import { WorkCalendarDay } from '../../entities/work-calendar-day.entity';
     InspectItemSpecService,
     InspectAidService,
     LimitSampleService,
+    CarrierService,
     EquipBomService,
     WorkInstructionService,
     TransferRuleService,
