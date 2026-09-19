@@ -25,6 +25,7 @@ import { EquipInspectService } from '../../equipment/services/equip-inspect.serv
 import { EquipInspectGateService } from '../../equipment/services/equip-inspect-gate.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { CarrierFlowService } from './carrier-flow.service';
 
 describe('ProdResultService delete policy', () => {
   let target: ProdResultService;
@@ -65,6 +66,7 @@ describe('ProdResultService delete policy', () => {
         // 설비점검 인터락은 EquipInspectGateService가 단일 출처다. 이 스위트는 인터락 자체를 검증하지 않으므로 통과 모킹.
         { provide: EquipInspectGateService, useValue: createMock<EquipInspectGateService>({ assertGate: jest.fn().mockResolvedValue(undefined) }) },
         { provide: TransactionService, useValue: mockTx },
+        { provide: CarrierFlowService, useValue: { assertLoadableInTx: jest.fn(), stampInTx: jest.fn(), clearInTx: jest.fn() } },
       ],
     }).setLogger(new MockLoggerService()).compile();
 

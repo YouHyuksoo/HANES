@@ -25,6 +25,7 @@ import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.
 import { EquipInspectService } from '../../equipment/services/equip-inspect.service';
 import { EquipInspectGateService } from '../../equipment/services/equip-inspect-gate.service';
 import { MockLoggerService } from '@test/mock-logger.service';
+import { CarrierFlowService } from './carrier-flow.service';
 
 describe('ProdResultService update policy', () => {
   let target: ProdResultService;
@@ -58,6 +59,7 @@ describe('ProdResultService update policy', () => {
         { provide: WipMatStockService, useValue: createMock<WipMatStockService>() },
         { provide: NumberingService, useValue: createMock<NumberingService>() },
         { provide: TransactionService, useValue: mockTx },
+        { provide: CarrierFlowService, useValue: { assertLoadableInTx: jest.fn(), stampInTx: jest.fn(), clearInTx: jest.fn() } },
         { provide: SysConfigService, useValue: createMock<SysConfigService>() },
         { provide: getRepositoryToken(EquipInspectItemPool), useValue: createMock<Repository<EquipInspectItemPool>>({ find: jest.fn().mockResolvedValue([]) }) },
         { provide: EquipInspectService, useValue: createMock<EquipInspectService>() },

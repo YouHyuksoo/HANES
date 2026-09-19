@@ -33,6 +33,8 @@ import { ConfirmAssemblyDto, ConfirmSubKitDto } from '../dto/subprocess-kitting.
 import { ProductionSpecificationService } from './production-specification.service';
 import { HarnessCircuitSpec } from '../../../entities/harness-circuit-spec.entity';
 import { ProdResultService } from './prod-result.service';
+import { CarrierFlowService } from './carrier-flow.service';
+import { assertCarrierGate } from './carrier-gate.rules';
 
 const FG_WIP_WAREHOUSE = 'FG_WIP';   // 완제품 공정창고
 const SFG_WIP_WAREHOUSE = 'SFG_WIP'; // 반제품 공정창고
@@ -57,6 +59,7 @@ export class SubprocessKittingService {
     private readonly autoIssueService: AutoIssueService,
     private readonly productionSpec: ProductionSpecificationService,
     private readonly prodResultService: ProdResultService,
+    private readonly carrierFlow: CarrierFlowService,
   ) {}
 
   /**
@@ -238,6 +241,12 @@ export class SubprocessKittingService {
         throw new BadRequestException('홀딩된 작업지시에는 조립을 확정할 수 없습니다.');
       }
 
+      // 출력 대차 게이트 — 공정 CARRIER_LOAD_YN='Y'면 대차 없이 조립을 확정할 수 없다.
+      const step = await qr.manager.findOne(RoutingProcess, {
+        where: { routingCode: jobOrder.routingCode, processCode, ...tenantWhere },
+      });
+      assertCarrierGate(step, dto.carrierNo);
+
       const bomRows = await qr.manager.find(BomMaster, {
         where: {
           parentItemCode: jobOrder.itemCode,
@@ -395,9 +404,16 @@ export class SubprocessKittingService {
         endAt: now,
         equipCode,
         workerId: workerId ?? null,
+        carrierNo: dto.carrierNo?.trim().toUpperCase() ?? null,
         company,
         plant,
       });
+
+      // 출력 대차 적재 — 확정으로 발행된 FG 라벨을 스캔된 대차에 담는다(공정 CARRIER_LOAD_YN=Y).
+      if (dto.carrierNo && step?.carrierLoadYn === 'Y') {
+        await this.carrierFlow.assertLoadableInTx(qr, { carrierNo: dto.carrierNo, kind: 'FG', itemCode: jobOrder.itemCode, orderNo, addCount: 1, company, plant });
+        await this.carrierFlow.stampInTx(qr, 'FG', [fgBarcode], dto.carrierNo, company, plant);
+      }
 
       // 6-1. 작업지시 GOOD_QTY/DEFECT_QTY 집계와 상태를 실적 합계로 동기화(prod-result.service와 동일 경로).
       await this.prodResultService.syncJobOrderFromResultsInTx(qr, orderNo, company, plant);
@@ -583,6 +599,12 @@ export class SubprocessKittingService {
         throw new BadRequestException('홀딩된 작업지시에는 키팅을 확정할 수 없습니다.');
       }
 
+      // 출력 대차 게이트 — 공정 CARRIER_LOAD_YN='Y'면 대차 없이 키팅을 확정할 수 없다.
+      const step = await qr.manager.findOne(RoutingProcess, {
+        where: { routingCode: jobOrder.routingCode, processCode, ...tenantWhere },
+      });
+      assertCarrierGate(step, dto.carrierNo);
+
       // 회로 필수 검증 — 회로가 있는 품목이면 circuitNo 없이 확정 불가.
       // 회로 정보는 아래 genealogy(SG→입력SFG, SG→MAT_LOT)의 CIRCUIT_NO로만 남으므로,
       // 누락 시 추적 데이터가 비게 된다. 프론트 가드와 대칭으로 서버에서도 강제한다.
@@ -722,6 +744,12 @@ export class SubprocessKittingService {
       newSg.currentProcessCode = processCode;
       await qr.manager.save(SgLabel, newSg);
 
+      // 출력 대차 적재 — 새로 승격된 SFG 라벨을 스캔된 대차에 담는다(공정 CARRIER_LOAD_YN=Y, 양품만).
+      if (dto.carrierNo && step?.carrierLoadYn === 'Y' && qualityStatus !== 'DEFECT') {
+        await this.carrierFlow.assertLoadableInTx(qr, { carrierNo: dto.carrierNo, kind: 'SG', itemCode: newSg.itemCode, orderNo, addCount: 1, company, plant });
+        await this.carrierFlow.stampInTx(qr, 'SG', [newSgBarcode], dto.carrierNo, company, plant);
+      }
+
       // 7. ProdResult 저장
       const now = new Date();
       await qr.manager.save(ProdResult, {
@@ -735,6 +763,7 @@ export class SubprocessKittingService {
         endAt: now,
         equipCode: equipCode ?? null,
         workerId: workerId ?? null,
+        carrierNo: dto.carrierNo?.trim().toUpperCase() ?? null,
         company,
         plant,
       });

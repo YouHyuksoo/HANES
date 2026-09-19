@@ -17,6 +17,7 @@ import { AutoIssueService } from './auto-issue.service';
 import { ProductionSpecificationService } from './production-specification.service';
 import { ProdResultService } from './prod-result.service';
 import { SubprocessKittingService } from './subprocess-kitting.service';
+import { CarrierFlowService } from './carrier-flow.service';
 
 describe('SubprocessKittingService BOM effective date', () => {
   let service: SubprocessKittingService;
@@ -43,6 +44,7 @@ describe('SubprocessKittingService BOM effective date', () => {
         { provide: AutoIssueService, useValue: createMock<AutoIssueService>() },
         { provide: ProductionSpecificationService, useValue: createMock<ProductionSpecificationService>() },
         { provide: ProdResultService, useValue: createMock<ProdResultService>() },
+        { provide: CarrierFlowService, useValue: { assertLoadableInTx: jest.fn(), stampInTx: jest.fn(), clearInTx: jest.fn() } },
       ],
     }).compile();
 
@@ -177,6 +179,7 @@ describe('SubprocessKittingService 설비점검 인터록 게이트', () => {
         { provide: AutoIssueService, useValue: createMock<AutoIssueService>() },
         { provide: ProductionSpecificationService, useValue: createMock<ProductionSpecificationService>() },
         { provide: ProdResultService, useValue: prodResultService },
+        { provide: CarrierFlowService, useValue: { assertLoadableInTx: jest.fn(), stampInTx: jest.fn(), clearInTx: jest.fn() } },
       ],
     }).compile();
 

@@ -71,6 +71,8 @@ import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.
 import { EquipInspectService } from '../../equipment/services/equip-inspect.service';
 import { EquipInspectGateService, type InspectGateScope } from '../../equipment/services/equip-inspect-gate.service';
 import { formatYmdLocal } from '../../../shared/date.util';
+import { CarrierFlowService } from './carrier-flow.service';
+import { assertCarrierGate } from './carrier-gate.rules';
 
 const SELF_INSPECT_BATCH_WINDOW_MS = 10_000;
 /** 설비점검 인터록 판정은 EquipInspectGateService 단일 출처를 쓴다(sys-config 키·매핑 규칙 포함). */
@@ -115,6 +117,7 @@ export class ProdResultService {
     private readonly equipInspectItemPoolRepository: Repository<EquipInspectItemPool>,
     private readonly equipInspectService: EquipInspectService,
     private readonly equipInspectGateService: EquipInspectGateService,
+    private readonly carrierFlow: CarrierFlowService,
   ) {
     this.shiftResolver = new ShiftResolver(this.shiftPatternRepo);
   }
@@ -860,6 +863,7 @@ export class ProdResultService {
     }
 
     // 실적 공정이 작업지시 라우팅에 존재하는지 검증 — 엉뚱한 공정 실적 차단(예외 배제)
+    let routingStep: RoutingProcess | null = null;
     if (dto.processCode) {
       if (!jobOrder.routingCode) {
         throw new BadRequestException(
@@ -879,7 +883,10 @@ export class ProdResultService {
           `공정 '${dto.processCode}'가 작업지시 라우팅(${jobOrder.routingCode})에 없습니다: ${dto.orderNo}`,
         );
       }
+      routingStep = step;
     }
+    // 출력 대차 게이트 — 공정 CARRIER_LOAD_YN='Y'면 대차 없이 실적을 저장할 수 없다.
+    assertCarrierGate(routingStep, dto.carrierNo);
 
     // 작업자 존재 확인 (옵션)
     // PROD_RESULTS.worker 관계는 WORKER_MASTERS.workerCode를 참조하므로 작업자마스터를 우선 조회한다.
@@ -923,6 +930,7 @@ export class ProdResultService {
         status: 'DONE',
         productionType,
         remark: dto.remark,
+        carrierNo: dto.carrierNo?.trim().toUpperCase() ?? null,
         company: jobOrder.company,
         plant: jobOrder.plant,
       });
@@ -1018,6 +1026,21 @@ export class ProdResultService {
         qtyPerBundle: dto.qtyPerBundle,
         workerId: dto.workerId ?? undefined,
       });
+
+      // 출력 대차 적재 — 이 실적으로 발행된 SG 라벨을 스캔된 대차에 담는다(공정 CARRIER_LOAD_YN=Y).
+      if (dto.carrierNo && routingStep?.carrierLoadYn === 'Y') {
+        const issued = await queryRunner.manager.find(SgLabel, {
+          where: { resultNo: saved.resultNo, company: jobOrder.company, plant: jobOrder.plant },
+          select: ['sgBarcode'],
+        });
+        if (issued.length > 0) {
+          await this.carrierFlow.assertLoadableInTx(queryRunner, {
+            carrierNo: dto.carrierNo, kind: 'SG', itemCode: jobOrder.itemCode, orderNo: jobOrder.orderNo,
+            addCount: issued.length, company: jobOrder.company, plant: jobOrder.plant,
+          });
+          await this.carrierFlow.stampInTx(queryRunner, 'SG', issued.map((l) => l.sgBarcode), dto.carrierNo, jobOrder.company, jobOrder.plant);
+        }
+      }
     });
 
     return this.prodResultRepository.findOne({

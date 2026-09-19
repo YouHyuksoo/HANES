@@ -34,6 +34,7 @@ import { TransactionService } from '../../../shared/transaction.service';
 import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
 import { EquipInspectService } from '../../equipment/services/equip-inspect.service';
 import { EquipInspectGateService } from '../../equipment/services/equip-inspect-gate.service';
+import { CarrierFlowService } from './carrier-flow.service';
 
 describe('ProdResultService', () => {
   let service: ProdResultService;
@@ -121,6 +122,7 @@ describe('ProdResultService', () => {
         { provide: SysConfigService, useValue: sysConfigService },
         { provide: getRepositoryToken(ShiftPattern), useValue: shiftPatternRepo },
         { provide: TransactionService, useValue: tx },
+        { provide: CarrierFlowService, useValue: { assertLoadableInTx: jest.fn(), stampInTx: jest.fn(), clearInTx: jest.fn() } },
         { provide: getRepositoryToken(EquipInspectItemPool), useValue: equipInspectItemPoolRepo },
         { provide: EquipInspectService, useValue: equipInspectService },
         {

@@ -12,6 +12,7 @@ import {
   ArrayNotEmpty,
   IsInt,
   Min,
+  MaxLength,
 } from 'class-validator';
 
 
@@ -52,6 +53,11 @@ export class ConfirmAssemblyDto {
   @IsOptional()
   @IsString()
   circuitNo?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  carrierNo?: string;
 }
 
 /**
@@ -113,4 +119,9 @@ export class ConfirmSubKitDto {
   @IsInt()
   @Min(0)
   defectQty?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  carrierNo?: string;
 }

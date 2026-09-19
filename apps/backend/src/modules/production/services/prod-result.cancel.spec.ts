@@ -29,6 +29,7 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { TransactionService } from '../../../shared/transaction.service';
 import { ProductTransaction } from '../../../entities/product-transaction.entity';
 import { DefectLog } from '../../../entities/defect-log.entity';
+import { CarrierFlowService } from './carrier-flow.service';
 
 describe('ProdResultService cancel flow', () => {
   let target: ProdResultService;
@@ -80,6 +81,7 @@ describe('ProdResultService cancel flow', () => {
         // 설비점검 인터락은 EquipInspectGateService가 단일 출처다. 이 스위트는 인터락 자체를 검증하지 않으므로 통과 모킹.
         { provide: EquipInspectGateService, useValue: createMock<EquipInspectGateService>({ assertGate: jest.fn().mockResolvedValue(undefined) }) },
         { provide: TransactionService, useValue: mockTx },
+        { provide: CarrierFlowService, useValue: { assertLoadableInTx: jest.fn(), stampInTx: jest.fn(), clearInTx: jest.fn() } },
       ],
     })
       .setLogger(new MockLoggerService())

@@ -25,6 +25,7 @@ import { EquipInspectGateService } from '../../equipment/services/equip-inspect-
 import { ShiftPattern } from '../../../entities/shift-pattern.entity';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { CarrierFlowService } from './carrier-flow.service';
 
 describe('ProdResultService complete workflow', () => {
   let target: ProdResultService;
@@ -74,6 +75,7 @@ describe('ProdResultService complete workflow', () => {
         { provide: EquipInspectGateService, useValue: createMock<EquipInspectGateService>({ assertGate: jest.fn().mockResolvedValue(undefined) }) },
         { provide: getRepositoryToken(ShiftPattern), useValue: createMock<Repository<ShiftPattern>>() },
         { provide: TransactionService, useValue: tx },
+        { provide: CarrierFlowService, useValue: { assertLoadableInTx: jest.fn(), stampInTx: jest.fn(), clearInTx: jest.fn() } },
       ],
     })
       .setLogger(new MockLoggerService())

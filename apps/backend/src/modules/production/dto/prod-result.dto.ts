@@ -141,6 +141,12 @@ export class CreateProdResultDto {
   @Min(1)
   qtyPerBundle?: number;
 
+  @ApiPropertyOptional({ description: '출력 대차번호 — 공정 CARRIER_LOAD_YN=Y면 필수. 발행되는 라벨에 스탬프' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  carrierNo?: string;
+
   @ApiPropertyOptional({
     type: [ProdResultDefectDto],
     description: '불량 상세 목록 (불량입력 시). 제공되면 합계로 defectQty를 산정하고 DefectLog를 함께 저장한다.',
