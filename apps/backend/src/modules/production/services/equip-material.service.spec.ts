@@ -11,6 +11,7 @@ import { TransactionService } from '../../../shared/transaction.service';
 import { ProcMatStockService } from '../../inventory/services/proc-mat-stock.service';
 import { WipMatStockService } from '../../inventory/services/wip-mat-stock.service';
 import { EquipMaterialService } from './equip-material.service';
+import { CarrierFlowService } from './carrier-flow.service';
 
 describe('EquipMaterialService', () => {
   let target: EquipMaterialService;
@@ -19,6 +20,7 @@ describe('EquipMaterialService', () => {
   let wipMatStockService: DeepMocked<WipMatStockService>;
   let procMatStockService: DeepMocked<ProcMatStockService>;
   let tx: DeepMocked<TransactionService>;
+  let carrierFlow: DeepMocked<CarrierFlowService>;
   let qr: QueryRunner;
   let manager: QueryRunner['manager'];
 
@@ -28,6 +30,7 @@ describe('EquipMaterialService', () => {
     wipMatStockService = createMock<WipMatStockService>();
     procMatStockService = createMock<ProcMatStockService>();
     tx = createMock<TransactionService>();
+    carrierFlow = createMock<CarrierFlowService>();
     manager = createMock<QueryRunner['manager']>();
     qr = { manager } as QueryRunner;
 
@@ -43,6 +46,7 @@ describe('EquipMaterialService', () => {
         { provide: WipMatStockService, useValue: wipMatStockService },
         { provide: ProcMatStockService, useValue: procMatStockService },
         { provide: TransactionService, useValue: tx },
+        { provide: CarrierFlowService, useValue: carrierFlow },
       ],
     }).setLogger(new MockLoggerService()).compile();
 

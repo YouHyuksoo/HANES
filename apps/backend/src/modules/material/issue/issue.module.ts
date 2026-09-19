@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { InventoryModule } from '../../inventory/inventory.module';
 import { SystemModule } from '../../system/system.module';
 import { LotModule } from '../lot/lot.module';
+import { CarrierFlowModule } from '../../production/carrier-flow.module';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
@@ -27,6 +28,7 @@ import { MatOutRequestService } from '../services/mat-out-request.service';
     InventoryModule,
     SystemModule,
     LotModule,
+    CarrierFlowModule,
     TypeOrmModule.forFeature([
       JobOrder,
       BomMaster,

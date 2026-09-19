@@ -1236,6 +1236,11 @@ export class ProdResultService {
     await this.reverseAutoIssue(queryRunner, prodResult.resultNo, company, plant);
     await this.reverseProductStock(queryRunner, prodResult.resultNo, company, plant);
 
+    // 조립 실적 취소 — FG 라벨이 대차에 담겨 있었으면 꺼낸다(SG는 아래에서 delete되므로 별도 처리 없음)
+    if (prodResult.prdUid) {
+      await this.carrierFlow.clearInTx(queryRunner, 'FG', [prodResult.prdUid], company ?? prodResult.company, plant ?? prodResult.plant);
+    }
+
     const sgLabels = await queryRunner.manager.find(SgLabel, {
       where: {
         resultNo: prodResult.resultNo,

@@ -349,6 +349,9 @@ export class SubprocessKittingService {
         });
       }
 
+      // 입력 SG는 소비되는 순간 대차에서 꺼낸다(대차 스캔이든 낱개 스캔이든 같은 지점).
+      await this.carrierFlow.clearInTx(qr, 'SG', [...new Set(plan.allocations.map((a) => a.sgBarcode))], company, plant);
+
       // 5. 설비 WIP 자재 BOM 소요량 차감 + genealogy(FG→MAT_LOT) per lot.
       //    제품 수량 1 고정이므로 qtyPer = 1개분 소요량.
       //    차감으로 확정된 LOT 목록을 먼저 모은 뒤 genealogy ID를 일괄 채번(N+1 회피).
@@ -695,6 +698,9 @@ export class SubprocessKittingService {
           plant,
         });
       }
+
+      // 입력 SG는 소비되는 순간 대차에서 꺼낸다(대차 스캔이든 낱개 스캔이든 같은 지점).
+      await this.carrierFlow.clearInTx(qr, 'SG', sgLabels.map((s) => s.sgBarcode), company, plant);
 
       // 5. 설비 WIP 자재 BOM 소요량 차감 + genealogy(SG→MAT_LOT) per lot.
       //    설비를 선택한 경우에만 차감(자재를 걸어 쓰는 흐름). 제품 수량 1 고정.

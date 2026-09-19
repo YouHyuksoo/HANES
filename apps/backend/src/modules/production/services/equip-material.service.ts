@@ -18,6 +18,7 @@ import { ProcMatStockService } from '../../inventory/services/proc-mat-stock.ser
 import { WipMatStock } from '../../../entities/wip-mat-stock.entity';
 import { EquipMaster } from '../../../entities/equip-master.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
+import { CarrierFlowService } from './carrier-flow.service';
 
 /** 장착된 자재 행 */
 export interface MountedRow {
@@ -41,6 +42,7 @@ export class EquipMaterialService {
     private readonly wipMatStockService: WipMatStockService,
     private readonly procMatStockService: ProcMatStockService,
     private readonly tx: TransactionService,
+    private readonly carrierFlow: CarrierFlowService,
   ) {}
 
   /**
@@ -139,9 +141,12 @@ export class EquipMaterialService {
         plant,
       });
 
-      // 6. 품목명 조회(Best-effort)
+      // 6. 키팅 대차에서 꺼낸다 — 장착되는 순간 LOT의 대차 소속을 비운다(설계 12절). 대차에 없던 LOT은 영향 없음.
+      await this.carrierFlow.clearInTx(qr, 'MAT', [matUid], company, plant);
+
+      // 7. 품목명 조회(Best-effort)
       const part = await this.itemMasterRepo.findOne({
-        where: { itemCode },
+        where: { itemCode, company, plant },
         select: ['itemCode', 'itemName'],
       });
 
@@ -171,7 +176,7 @@ export class EquipMaterialService {
 
     const itemCodes = [...new Set(positive.map((s) => s.itemCode))];
     const parts = await this.itemMasterRepo.find({
-      where: { itemCode: In(itemCodes) },
+      where: { itemCode: In(itemCodes), company, plant },
       select: ['itemCode', 'itemName'],
     });
     const nameMap = new Map(parts.map((p) => [p.itemCode, p.itemName]));
@@ -206,7 +211,7 @@ export class EquipMaterialService {
 
     const itemCodes = [...new Set(rows.map((r) => r.itemCode))];
     const parts = await this.itemMasterRepo.find({
-      where: { itemCode: In(itemCodes) },
+      where: { itemCode: In(itemCodes), company, plant },
       select: ['itemCode', 'itemName'],
     });
     const nameMap = new Map(parts.map((p) => [p.itemCode, p.itemName]));

@@ -16,6 +16,7 @@ import { TransactionService } from '../../../shared/transaction.service';
 import { ProcMatStockService } from '../../inventory/services/proc-mat-stock.service';
 import { IssueRequestAllocationService } from './issue-request-allocation.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
+import { CarrierFlowService } from '../../production/services/carrier-flow.service';
 
 /** FIFO 후보 LOT(MAT_STOCKS JOIN MAT_LOTS) raw row 를 돌려주는 QueryBuilder mock */
 const createFifoCandidateQueryBuilder = (rows: Array<Record<string, unknown>>) => ({
@@ -76,6 +77,7 @@ describe('MatIssueService', () => {
   let mockProcMatStockService: DeepMocked<ProcMatStockService>;
   let mockAllocation: DeepMocked<IssueRequestAllocationService>;
   let mockSysConfigService: DeepMocked<SysConfigService>;
+  let mockCarrierFlow: DeepMocked<CarrierFlowService>;
 
   const emptyAllocation = { allocations: [], allocatedQty: 0, unallocatedQty: 0 };
 
@@ -96,6 +98,7 @@ describe('MatIssueService', () => {
     mockSysConfigService = createMock<SysConfigService>();
     // 정책 키 미설정(null) = 기본값(FIFO_ENABLED=Y, RECEIVE_DATE, BLOCK, EXPIRED_ISSUE_BLOCK=Y)
     mockSysConfigService.getValue.mockResolvedValue(null);
+    mockCarrierFlow = createMock<CarrierFlowService>();
     // FIFO 후보 LOT 기본값: 없음(테스트별로 덮어쓴다)
     mockMatStockRepo.createQueryBuilder.mockReturnValue(createFifoCandidateQueryBuilder([]) as any);
 
@@ -122,6 +125,7 @@ describe('MatIssueService', () => {
         { provide: ProcMatStockService, useValue: mockProcMatStockService },
         { provide: IssueRequestAllocationService, useValue: mockAllocation },
         { provide: SysConfigService, useValue: mockSysConfigService },
+        { provide: CarrierFlowService, useValue: mockCarrierFlow },
       ],
     })
       .setLogger(new MockLoggerService())

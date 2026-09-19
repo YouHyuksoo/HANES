@@ -23,6 +23,7 @@ import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { ProcMatStockService } from '../../inventory/services/proc-mat-stock.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { IssueRequestAllocationService } from './issue-request-allocation.service';
+import { CarrierFlowService } from '../../production/services/carrier-flow.service';
 import {
   FifoCriteria,
   findOlderIssuableLot,
@@ -76,6 +77,7 @@ export class MatIssueService {
     private readonly procMatStockService: ProcMatStockService,
     private readonly issueRequestAllocation: IssueRequestAllocationService,
     private readonly sysConfigService: SysConfigService,
+    private readonly carrierFlow: CarrierFlowService,
   ) {}
 
   /** 출고 정책 설정 읽기 — 키 없음(null)은 각 기본값으로. 출고 1건당 1회 호출 */
@@ -706,6 +708,8 @@ export class MatIssueService {
           { matUid: rawIssue.matUid, ...tenantWhere },
           { status: MAT_LOT_STATUS.NORMAL, currentQty: (lotRow?.currentQty ?? 0) + rawIssue.issueQty },
         );
+        // 출고 취소 — 대차에 담겨 있던 LOT이면 꺼낸다(대차에 없던 LOT은 영향 없음).
+        await this.carrierFlow.clearInTx(queryRunner, 'MAT', [rawIssue.matUid], rawIssue.company, rawIssue.plant);
       }
 
       return { issueNo, seq, status: 'CANCELED' };
