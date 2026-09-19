@@ -29,7 +29,7 @@ import type { Worker } from '@/components/worker/WorkerSelector';
 import EquipHeader from './components/EquipHeader';
 import KioskPrepGuideModal from './components/KioskPrepGuideModal';
 import { usePrepGuide } from '@/components/shared/prep-guide';
-import { OutputCarrierSlot, useCarrierProcessFlags, useOutputCarrier } from '@/components/shared/carrier';
+import { useCarrierProcessFlags, useOutputCarrier } from '@/components/shared/carrier';
 import { buildKioskPrepGuideSteps } from './utils/kioskPrepGuideSteps';
 import MaterialListPanel from './components/MaterialListPanel';
 import WorkInstructionView from './components/WorkInstructionView';
@@ -402,7 +402,13 @@ export default function InputKioskPage() {
     }
   }, [persistCurrentWorkerCodes, removeWorker, selectedWorkers, setSelectedWorkers, t]);
 
-  // 실적 저장 후 처리 — 서버 기준 진행수량 재동기화 + 초물 자주검사 자동 트리거
+  /** 출력 대차 — 공정 CARRIER_LOAD_YN=Y일 때만 슬롯이 보이고, 실적 저장에 carrierNo가 실린다 */
+  const carrierFlags = useCarrierProcessFlags({ orderNo: selectedJobOrder?.orderNo, processCode: selectedEquip?.processCode });
+  const carrierRequired = carrierFlags?.carrierLoadYn === "Y";
+  const [equipCurCarrierNo, setEquipCurCarrierNo] = useState<string | null>(null);
+  const outputCarrier = useOutputCarrier({ equipCode: selectedEquip?.equipCode, enabled: carrierRequired, initialCarrierNo: equipCurCarrierNo });
+
+  // 실적 저장 후 처리 — 서버 기준 진행수량 재동기화 + 초물 자주검사 자동 트리거 + 대차 적재수 갱신
   const handleSaved = useCallback(() => {
     // 초물 전체 PASS 전까지는 시생산이며, 실적 저장 후 초물검사를 계속 유도한다(항목 없는 공정은 제외).
     if (!firstInspectDone && selfInspectItemCounts.FIRST !== 0) {
@@ -410,7 +416,8 @@ export default function InputKioskPage() {
     }
     refreshProgress();
     setHistoryKey(k => k + 1);
-  }, [firstInspectDone, refreshProgress, selfInspectItemCounts.FIRST]);
+    void outputCarrier.refresh();
+  }, [firstInspectDone, refreshProgress, selfInspectItemCounts.FIRST, outputCarrier]);
 
   // 실적 저장 성공 시: 라우팅 발행공정이면 백엔드가 발행한 SFG 라벨을 조회해 Print Agent로 자동 출력.
   const sgPrinterRef = useRef<SgLabelPrintHandle>(null);
@@ -430,12 +437,6 @@ export default function InputKioskPage() {
   const handleOpenDefect = useCallback(() => setIsDefectOpen(true), []);
 
   const allInterlockDone = isAllInterlockDone(interlock);
-
-  /** 출력 대차 — 공정 CARRIER_LOAD_YN=Y일 때만 슬롯이 보이고, 실적 저장에 carrierNo가 실린다 */
-  const carrierFlags = useCarrierProcessFlags({ orderNo: selectedJobOrder?.orderNo, processCode: selectedEquip?.processCode });
-  const carrierRequired = carrierFlags?.carrierLoadYn === "Y";
-  const [equipCurCarrierNo, setEquipCurCarrierNo] = useState<string | null>(null);
-  const outputCarrier = useOutputCarrier({ equipCode: selectedEquip?.equipCode, enabled: carrierRequired, initialCarrierNo: equipCurCarrierNo });
 
   /** 진입 안내 — 설비→작업지시→작업자→점검→스캔 순서로 유도하고, 끝나면 자동으로 닫힌다 */
   const workerNames = useMemo(() => selectedWorkers.map(w => w.workerName), [selectedWorkers]);
@@ -661,7 +662,7 @@ export default function InputKioskPage() {
         onOpenWorkerInspect={() => setIsWorkerInspectOpen(true)}
         onOpenMaterialScan={() => setIsMaterialScanOpen(true)}
         onOpenConsumableScan={() => setIsConsumableScanOpen(true)}
-        onFocusCarrier={() => document.querySelector<HTMLInputElement>('[data-testid="carrier-slot-scan"] input, [data-testid="carrier-slot-scan"]')?.focus()}
+        onFocusCarrier={() => { guide.closeGuide(); setTimeout(() => document.querySelector<HTMLInputElement>('[data-testid="carrier-slot-scan"]')?.focus(), 0); }}
       />
       <JobOrderSelectModal
         isOpen={isJobOrderOpen}

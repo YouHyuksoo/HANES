@@ -45,7 +45,7 @@ test('조립 화면은 출력 대차 슬롯을 두고 확정에 carrierNo를 싣
 });
 
 test('i18n 4개 언어에 production.inputAssembly.guide 키가 모두 있다', () => {
-  const required = ['title', 'subtitle', 'allReadyDesc', 'hintEquip', 'hintJobOrder'];
+  const required = ['title', 'subtitle', 'allReadyDesc', 'hintEquip', 'hintJobOrder', 'stepCarrier', 'hintCarrier'];
   for (const lang of ['ko', 'en', 'zh', 'vi']) {
     const json = JSON.parse(readFileSync(new URL(`../../../../locales/${lang}.json`, import.meta.url), 'utf8'));
     const guide = json.production?.inputAssembly?.guide;

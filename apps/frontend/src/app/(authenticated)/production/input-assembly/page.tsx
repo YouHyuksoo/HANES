@@ -98,6 +98,13 @@ export default function InputAssemblyPage() {
   const [dailyInspectOpen, setDailyInspectOpen] = useState(false);
   const [workerInspectOpen, setWorkerInspectOpen] = useState(false);
 
+  /** 출력 대차 — 공정 CARRIER_LOAD_YN=Y일 때만 슬롯이 보이고, FG 확정에 carrierNo가 실린다.
+   *  restoreEquipmentCurrentState/resetAll이 setEquipCurCarrierNo를 쓰므로 그 함수들보다 먼저 선언한다. */
+  const carrierFlags = useCarrierProcessFlags({ orderNo: selectedOrder?.orderNo, processCode });
+  const carrierRequired = carrierFlags?.carrierLoadYn === "Y";
+  const [equipCurCarrierNo, setEquipCurCarrierNo] = useState<string | null>(null);
+  const outputCarrier = useOutputCarrier({ equipCode: equipCode || null, enabled: carrierRequired, initialCarrierNo: equipCurCarrierNo });
+
   const [requirements, setRequirements] = useState<AssemblyRequirements | null>(null);
   const { sgList, setSgList, continuous, setContinuous, ready: sgReady, applyConfirmed, refreshAfterFailure } =
     useAssemblyScanSession(requirements?.components ?? []);
@@ -366,12 +373,6 @@ export default function InputAssemblyPage() {
     setSgList((prev) => prev.filter((item) => item.sgBarcode !== sgBarcode));
   }, []);
 
-  /** 출력 대차 — 공정 CARRIER_LOAD_YN=Y일 때만 슬롯이 보이고, FG 확정에 carrierNo가 실린다 */
-  const carrierFlags = useCarrierProcessFlags({ orderNo: selectedOrder?.orderNo, processCode });
-  const carrierRequired = carrierFlags?.carrierLoadYn === "Y";
-  const [equipCurCarrierNo, setEquipCurCarrierNo] = useState<string | null>(null);
-  const outputCarrier = useOutputCarrier({ equipCode: equipCode || null, enabled: carrierRequired, initialCarrierNo: equipCurCarrierNo });
-
   /** 진입 안내 — 설비→작업지시→작업자→점검 순서로 유도하고, 끝나면 자동으로 닫힌다 */
   const workerNames = useMemo(() => selectedWorkers.map((w) => w.workerName), [selectedWorkers]);
   const guideSteps = useMemo(() => buildAssemblyPrepGuideSteps({
@@ -489,8 +490,12 @@ export default function InputAssemblyPage() {
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           t("production.inputAssembly.confirmFailed", "조립 확정에 실패했습니다.");
-        if (message.startsWith("대차 교체")) outputCarrier.onCapacityRejected();
-        toast.error(message);
+        if (message.startsWith("대차 교체")) {
+          // 대차 용량 초과 안내는 onCapacityRejected가 자체 토스트로 띄운다(중복 토스트 방지).
+          outputCarrier.onCapacityRejected();
+        } else {
+          toast.error(message);
+        }
         await refreshAfterFailure();
       } finally {
         actionPending.current = false;
@@ -734,7 +739,7 @@ export default function InputAssemblyPage() {
         onOpenWorker={() => setWorkerModalOpen(true)}
         onOpenDailyInspect={() => setDailyInspectOpen(true)}
         onOpenWorkerInspect={() => setWorkerInspectOpen(true)}
-        onFocusCarrier={() => document.querySelector<HTMLInputElement>('[data-testid="carrier-slot-scan"] input, [data-testid="carrier-slot-scan"]')?.focus()}
+        onFocusCarrier={() => { guide.closeGuide(); setTimeout(() => document.querySelector<HTMLInputElement>('[data-testid="carrier-slot-scan"]')?.focus(), 0); }}
       />
 
       {/* 작업지시 선택 모달 — 공용 모달. 선택 공정 + FINISHED 조회조건. */}

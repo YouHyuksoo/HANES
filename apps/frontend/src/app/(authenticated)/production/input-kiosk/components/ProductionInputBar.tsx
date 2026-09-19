@@ -154,9 +154,12 @@ export default function ProductionInputBar({
       if (savedResultNo) onResultSaved?.(savedResultNo);
     } catch (e: unknown) {
       const message = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "";
-      if (message.startsWith("대차 교체")) onCapacityRejected();
-      const msg = message || t('kiosk.input.saveError');
-      toast.error(msg);
+      if (message.startsWith("대차 교체")) {
+        // 대차 용량 초과 안내는 onCapacityRejected가 자체 토스트로 띄운다(중복 토스트 방지).
+        onCapacityRejected();
+      } else {
+        toast.error(message || t('kiosk.input.saveError'));
+      }
     } finally {
       setSaving(false);
     }

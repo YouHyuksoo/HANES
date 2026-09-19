@@ -554,8 +554,12 @@ export default function SubprocessKittingPage() {
         const message =
           (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
           t("production.subprocess.confirmFailed", "서브 키팅 확정에 실패했습니다.");
-        if (message.startsWith("대차 교체")) outputCarrier.onCapacityRejected();
-        toast.error(message);
+        if (message.startsWith("대차 교체")) {
+          // 대차 용량 초과 안내는 onCapacityRejected가 자체 토스트로 띄운다(중복 토스트 방지).
+          outputCarrier.onCapacityRejected();
+        } else {
+          toast.error(message);
+        }
       } finally {
         setConfirming(false);
       }

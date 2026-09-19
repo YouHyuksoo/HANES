@@ -61,8 +61,8 @@ test('키오스크는 출력 대차 슬롯을 헤더에 두고 실적 저장에 
 test('i18n 4개 언어에 kiosk.guide 키가 모두 있다', () => {
   const required = [
     'title', 'subtitle', 'allReadyDesc',
-    'stepEquip', 'stepJobOrder', 'stepWorker', 'stepDaily', 'stepWorkerInspect', 'stepMaterialScan', 'stepConsumableScan',
-    'hintEquip', 'hintJobOrder', 'hintWorker', 'hintDaily', 'hintWorkerInspect', 'hintMaterialScan', 'hintConsumableScan',
+    'stepEquip', 'stepJobOrder', 'stepWorker', 'stepDaily', 'stepWorkerInspect', 'stepCarrier', 'stepMaterialScan', 'stepConsumableScan',
+    'hintEquip', 'hintJobOrder', 'hintWorker', 'hintDaily', 'hintWorkerInspect', 'hintCarrier', 'hintMaterialScan', 'hintConsumableScan',
   ];
   for (const lang of ['ko', 'en', 'zh', 'vi']) {
     const json = JSON.parse(readFileSync(new URL(`../../../../locales/${lang}.json`, import.meta.url), 'utf8'));
