@@ -3,9 +3,12 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
+import { ColumnDef } from "@tanstack/react-table";
 import { ScanLine, RefreshCw, Search, Sparkles } from "lucide-react";
 import { Card, CardContent, Button, Input } from "@/components/ui";
 import { ComCodeBadge } from "@/components/ui";
+import DataGrid from "@/components/data-grid/DataGrid";
+import { useComCodeLabel } from "@/hooks/useComCode";
 import api from "@/services/api";
 import type { JobOrderRow } from "../types";
 import InspectPanel from "./InspectPanel";
@@ -170,6 +173,76 @@ export default function InspectionResultWorkflow({
     );
   }, [orders, debouncedSearch]);
 
+  /** 상태별 그룹 — 진행중(RUNNING/IN_PROGRESS) 위, 대기중(WAITING) 아래, 섞지 않고 영역 분리 */
+  const runningOrders = useMemo(() => filtered.filter((o) => o.status === "RUNNING" || o.status === "IN_PROGRESS"), [filtered]);
+  const waitingOrders = useMemo(() => filtered.filter((o) => o.status === "WAITING"), [filtered]);
+  const runningLabel = useComCodeLabel("JOB_ORDER_STATUS", "RUNNING");
+  const waitingLabel = useComCodeLabel("JOB_ORDER_STATUS", "WAITING");
+
+  /** 그리드 컬럼 — 지시번호 / 품명 / 상태 / 계획 / 양품 / 불량 */
+  const columns = useMemo<ColumnDef<JobOrderRow>[]>(() => [
+    {
+      accessorKey: "orderNo", header: t("production.result.orderNo"), size: 120,
+      cell: ({ getValue }) => <span className="font-mono font-semibold text-text">{getValue() as string}</span>,
+    },
+    {
+      id: "itemName", header: t("master.part.partName"), size: 140,
+      accessorFn: (o) => o.itemName ?? o.itemCode,
+      cell: ({ getValue }) => <span className="text-xs text-text-muted truncate">{getValue() as string}</span>,
+    },
+    {
+      accessorKey: "status", header: t("common.status"), size: 80,
+      cell: ({ getValue }) => <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={getValue() as string} />,
+      meta: { align: "center" },
+    },
+    {
+      accessorKey: "planQty", header: t("inspection.result.planQty"), size: 70,
+      cell: ({ getValue }) => <span className="tabular-nums text-xs">{(getValue() as number | undefined)?.toLocaleString() ?? "-"}</span>,
+      meta: { align: "right", filterType: "number" },
+    },
+    {
+      accessorKey: "goodQty", header: t("inspection.result.pass"), size: 70,
+      cell: ({ getValue }) => <span className="tabular-nums text-xs text-green-600 dark:text-green-400">{(getValue() as number | undefined)?.toLocaleString() ?? "-"}</span>,
+      meta: { align: "right", filterType: "number" },
+    },
+    {
+      accessorKey: "defectQty", header: t("inspection.result.fail"), size: 70,
+      cell: ({ getValue }) => <span className="tabular-nums text-xs text-red-600 dark:text-red-400">{(getValue() as number | undefined)?.toLocaleString() ?? "-"}</span>,
+      meta: { align: "right", filterType: "number" },
+    },
+  ], [t]);
+
+  /** 상태 그룹 헤더 */
+  const renderGroupHeader = (label: string, count: number) => (
+    <div className="flex items-center gap-2 px-1 pt-2 pb-1 first:pt-0">
+      <span className="text-xs font-semibold text-text">{label}</span>
+      <span className="text-xs text-text-muted tabular-nums">{count}</span>
+      <div className="flex-1 border-t border-border" />
+    </div>
+  );
+
+  /** 상태 그룹별 작업지시 그리드 */
+  const renderOrderGrid = (rows: JobOrderRow[]) => (
+    <DataGrid
+      data={rows}
+      columns={columns}
+      pageSize={100}
+      enableColumnFilter={false}
+      enableColumnResizing={false}
+      enableColumnReordering={false}
+      onRowClick={(row) => setSelected(row)}
+      selectedRowId={selected?.orderNo}
+      getRowId={(row) => row.orderNo}
+      sqlQuery={`SELECT *
+FROM JOB_ORDERS jo
+JOIN ITEM_MASTERS p ON p.ITEM_CODE = jo.ITEM_CODE
+WHERE jo.COMPANY = :company
+  AND jo.PLANT_CD = :plant
+  AND jo.STATUS IN ('RUNNING', 'IN_PROGRESS', 'WAITING')${finishedOnly ? "\n  AND p.ITEM_TYPE = 'FINISHED'" : ""}
+ORDER BY jo.PRIORITY ASC, jo.PLAN_DATE ASC`}
+    />
+  );
+
   /** 준비 상태(작업자·설비점검·양불대조·소모품) 단일 소스 */
   const prep = useInspectPrepStatus({
     orderNo: selected?.orderNo,
@@ -261,35 +334,18 @@ export default function InspectionResultWorkflow({
                     {t("common.noData")}
                   </p>
                 )}
-                {filtered.map((o) => (
-                  <button
-                    key={o.orderNo}
-                    onClick={() => setSelected(o)}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-lg mb-1 transition-colors text-sm
-                      ${selected?.orderNo === o.orderNo
-                        ? "bg-primary/10 dark:bg-primary/20 border border-primary/30"
-                        : "hover:bg-gray-100 dark:hover:bg-slate-700 border border-transparent"
-                      }`}
-                  >
-                    <div className="flex justify-between items-center gap-2">
-                      <span className="font-mono font-semibold text-text truncate">{o.orderNo}</span>
-                      <ComCodeBadge groupCode="JOB_ORDER_STATUS" code={o.status} />
-                    </div>
-                    <div className="flex items-center justify-between gap-2 mt-0.5">
-                      <span className="text-text-muted truncate text-xs min-w-0">{o.itemName ?? o.itemCode}</span>
-                      <span
-                        className="flex items-center gap-1 text-xs shrink-0 tabular-nums"
-                        title={`${t("inspection.result.planQty")} ${o.planQty?.toLocaleString() ?? "-"} / ${t("inspection.result.pass")} ${o.goodQty?.toLocaleString() ?? "-"} / ${t("inspection.result.fail")} ${o.defectQty?.toLocaleString() ?? "-"}`}
-                      >
-                        <span className="text-text-muted">{o.planQty?.toLocaleString() ?? "-"}</span>
-                        <span className="text-text-muted/40">/</span>
-                        <span className="text-green-600 dark:text-green-400">{o.goodQty?.toLocaleString() ?? "-"}</span>
-                        <span className="text-text-muted/40">/</span>
-                        <span className="text-red-600 dark:text-red-400">{o.defectQty?.toLocaleString() ?? "-"}</span>
-                      </span>
-                    </div>
-                  </button>
-                ))}
+                {runningOrders.length > 0 && (
+                  <>
+                    {renderGroupHeader(runningLabel, runningOrders.length)}
+                    {renderOrderGrid(runningOrders)}
+                  </>
+                )}
+                {waitingOrders.length > 0 && (
+                  <>
+                    {renderGroupHeader(waitingLabel, waitingOrders.length)}
+                    {renderOrderGrid(waitingOrders)}
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>

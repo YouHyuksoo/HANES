@@ -344,7 +344,15 @@ export default function VisualInspectPanel({ order }: Props) {
               </Button>
             </div>
           }
-          sqlQuery={`SELECT *\nFROM INSPECT_RESULTS\nWHERE COMPANY = '40'\n  AND PLANT_CD = '1000'\n  AND INSPECT_TYPE = 'VISUAL'\nORDER BY INSPECT_TIME DESC`}
+          sqlQuery={`SELECT *
+FROM INSPECT_RESULTS
+WHERE (FG_BARCODE IN (SELECT FG_BARCODE FROM FG_LABELS WHERE ORDER_NO = :orderNo)
+    OR PROD_RESULT_ID IN (SELECT RESULT_NO FROM PROD_RESULTS WHERE ORDER_NO = :orderNo))
+  AND COMPANY = :company
+  AND PLANT_CD = :plant
+  AND INSPECT_TYPE = 'VISUAL'
+ORDER BY INSPECT_TIME DESC
+FETCH FIRST 20 ROWS ONLY`}
         />
       </CardContent></Card>
 
