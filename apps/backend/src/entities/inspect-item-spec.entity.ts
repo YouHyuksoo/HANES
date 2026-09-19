@@ -52,6 +52,10 @@ export class InspectItemSpec {
   @Column({ name: 'MAX_CURRENT_MA', type: 'decimal', precision: 10, scale: 3, nullable: true })
   maxCurrentMa: number | null;
 
+  /** 절연저항 하한 (MΩ) — 내전압 검사기에서 절연저항을 같이 측정한다 */
+  @Column({ name: 'MIN_INSULATION_MOHM', type: 'decimal', precision: 10, scale: 3, nullable: true })
+  minInsulationMohm: number | null;
+
   @Column({ name: 'TORQUE_LSL', type: 'decimal', precision: 10, scale: 3, nullable: true })
   torqueLsl: number | null;
 

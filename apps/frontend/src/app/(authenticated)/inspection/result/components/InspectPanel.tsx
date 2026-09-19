@@ -21,13 +21,16 @@ import { Card, CardContent, Button, Input } from "@/components/ui";
 import { BarcodeScanInput } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
-import type { JobOrderRow, InspectHistoryRow } from "../types";
+import {
+  EMPTY_MEASURE_FORM, MEASURE_FIELDS, formatMeasuredSummary, isMeasuredInspectType,
+  type InspectMeasureForm, type JobOrderRow, type InspectHistoryRow,
+} from "../types";
 import type { InspectPrepState } from "../hooks/useInspectPrepStatus";
 import FailModal from "./FailModal";
 
 interface Props {
   order: JobOrderRow;
-  inspectType?: "CONTINUITY" | "TERMINAL";
+  inspectType?: "CONTINUITY" | "TERMINAL" | "HIPOT" | "LEAK";
   /** 선택된 검사기(설비) 코드 — 검사 실적 기록 + 미선택 시 검사 차단 */
   equipCode?: string;
   /** 준비 상태 단일 객체 — 작업자/설비점검/양불대조/소모품을 모두 포함한다 */
@@ -49,6 +52,18 @@ export default function InspectPanel({
 
   /** 검사는 조립(서브공정) 키팅에서 발행된 FG 라벨을 스캔해 판정한다. (항상 스캔 모드) */
   const isScanMode = true;
+  /** 내전압·리크는 회로라벨 대신 측정값이 판정 근거다 — 서버가 품목 스펙과 대조해 합/불을 확정한다 */
+  const isMeasured = isMeasuredInspectType(inspectType);
+  const [measure, setMeasure] = useState<InspectMeasureForm>(EMPTY_MEASURE_FORM);
+  const measureFields = isMeasured ? MEASURE_FIELDS[inspectType as "HIPOT" | "LEAK"] : [];
+  const measureReady = measureFields.every(({ key, required }) => !required || measure[key].trim() !== "");
+  /** 빈 칸은 보내지 않고, 채운 칸만 숫자로 바꿔 보낸다 */
+  const measurePayload = (): Record<string, number> => Object.fromEntries(
+    measureFields
+      .map(({ key }) => [key, measure[key].trim()] as const)
+      .filter(([, v]) => v !== "" && Number.isFinite(Number(v)))
+      .map(([k, v]) => [k, Number(v)]),
+  );
 
   /** 바코드 스캔 모드 상태 */
   const [scannedBarcode, setScannedBarcode] = useState("");
@@ -71,10 +86,11 @@ export default function InspectPanel({
   const fetchPending = useCallback(async () => {
     if (!isScanMode) return;
     try {
-      const res = await api.get(`/quality/continuity-inspect/pending/${order.orderNo}`);
+      // 검사유형별 대기 — 이 유형의 결과가 아직 없는 ISSUED 라벨
+      const res = await api.get(`/quality/continuity-inspect/pending/${order.orderNo}`, { params: { inspectType } });
       setPendingBarcodes(res.data?.data ?? []);
     } catch { /* 에러 무시 */ }
-  }, [order.orderNo, isScanMode]);
+  }, [order.orderNo, isScanMode, inspectType]);
 
   useEffect(() => {
     refresh();
@@ -82,6 +98,7 @@ export default function InspectPanel({
     setLastBarcode(null);
     setScannedBarcode("");
     setCircuitLabel("");
+    setMeasure(EMPTY_MEASURE_FORM);
   }, [refresh, fetchPending]);
 
   /** PASS 검사 등록 (제품 라벨 스캔 → 판정 갱신) */
@@ -95,17 +112,19 @@ export default function InspectPanel({
       };
       if (isScanMode && scannedBarcode) {
         payload.fgBarcode = scannedBarcode;
-        payload.circuitLabel = circuitLabel;
+        if (!isMeasured) payload.circuitLabel = circuitLabel;
       }
+      if (isMeasured) Object.assign(payload, measurePayload());
       const res = await api.post("/quality/continuity-inspect/inspect", payload);
       setLastBarcode(res.data?.data?.fgBarcode ?? (scannedBarcode || null));
       setScannedBarcode("");
       setCircuitLabel("");
+      setMeasure(EMPTY_MEASURE_FORM);
       await Promise.all([refresh(), fetchPending()]);
       if (isScanMode) scanInputRef.current?.focus();
     } catch { /* 에러 무시 */ }
     finally { setInspecting(false); }
-  }, [order, refresh, fetchPending, isScanMode, scannedBarcode, circuitLabel, inspectType, equipCode, prep.workers]);
+  }, [order, refresh, fetchPending, isScanMode, scannedBarcode, circuitLabel, inspectType, equipCode, prep.workers, isMeasured, measure]);
 
   /** FAIL 검사 등록 (모달에서 호출) */
   const handleFailSubmit = useCallback(async (errorCode: string, errorDetail: string) => {
@@ -120,24 +139,28 @@ export default function InspectPanel({
       if (isScanMode && scannedBarcode) {
         payload.fgBarcode = scannedBarcode;
       }
+      if (isMeasured) Object.assign(payload, measurePayload());
       await api.post("/quality/continuity-inspect/inspect", payload);
       setFailModalOpen(false);
       setScannedBarcode("");
       setCircuitLabel("");
+      setMeasure(EMPTY_MEASURE_FORM);
       await Promise.all([refresh(), fetchPending()]);
       if (isScanMode) scanInputRef.current?.focus();
     } catch { /* 에러 무시 */ }
     finally { setInspecting(false); }
-  }, [order, refresh, fetchPending, isScanMode, scannedBarcode, inspectType, equipCode, prep.workers]);
+  }, [order, refresh, fetchPending, isScanMode, scannedBarcode, inspectType, equipCode, prep.workers, isMeasured, measure]);
 
-  /** 제품 바코드 입력 Enter → 회로라벨 입력칸으로 포커스 이동 */
+  /** 제품 바코드 입력 Enter → 회로라벨(통전·단자) 또는 첫 측정칸(내전압·리크)으로 포커스 이동 */
+  const firstMeasureRef = useRef<HTMLInputElement>(null);
   const handleFgBarcodeScan = useCallback((rawBarcode: string) => {
     const barcode = rawBarcode.replace(/\r?\n|\r/g, "").trim();
     if (barcode) {
       setScannedBarcode(barcode);
-      circuitInputRef.current?.focus();
+      if (isMeasured) firstMeasureRef.current?.focus();
+      else circuitInputRef.current?.focus();
     }
-  }, []);
+  }, [isMeasured]);
 
   const handleCircuitLabelScan = useCallback((rawLabel: string) => {
     setCircuitLabel(rawLabel.replace(/\r?\n|\r/g, "").trim());
@@ -164,6 +187,12 @@ export default function InspectPanel({
     },
     { accessorKey: "fgBarcode", header: t("inspection.result.fgBarcode"), size: 170,
       cell: ({ getValue }) => <span className="font-mono text-xs">{(getValue() as string | null) ?? "-"}</span> },
+    ...(isMeasured ? [{
+      id: "measured", header: t("inspection.result.measuredCol", "측정값"), size: 200,
+      cell: ({ row }: { row: { original: InspectHistoryRow } }) => (
+        <span className="font-mono text-xs">{formatMeasuredSummary(row.original.inspectType, row.original.inspectData)}</span>
+      ),
+    }] : []),
     { accessorKey: "circuitLabel", header: t("inspection.result.circuitLabel"), size: 140,
       cell: ({ getValue }) => <span className="font-mono text-xs">{(getValue() as string | null) ?? "-"}</span> },
     { accessorKey: "errorCode", header: t("inspection.result.errorCode"), size: 100,
@@ -189,8 +218,9 @@ export default function InspectPanel({
   const prepBlocked = !prep.ready;
   /** 스캔 모드에서 제품 바코드 미입력 시 PASS/FAIL 비활성화 */
   const scanDisabled = (isScanMode && !scannedBarcode.trim()) || equipRequired || consumableBlocked || prepBlocked;
-  /** 스캔 모드 PASS는 회로라벨까지 필수 */
-  const passDisabled = scanDisabled || (isScanMode && !circuitLabel.trim());
+  /** 스캔 모드 PASS는 회로라벨(통전·단자) 또는 필수 측정값(내전압·리크)까지 필수 */
+  const passDisabled = scanDisabled || (isScanMode && (isMeasured ? !measureReady : !circuitLabel.trim()));
+  const measurementRequiredReason = t("inspection.result.measurementRequired", "측정값을 입력하세요");
   const scanDisabledReason = t(
     "inspection.result.scanRequired",
     "바코드를 먼저 스캔해주세요."
@@ -239,8 +269,24 @@ export default function InspectPanel({
                 />
               </div>
 
-              {/* 회로라벨 스캔 (합격 시 필수) */}
-              <div className="min-w-0">
+              {/* 내전압·리크: 회로라벨 대신 측정값 입력 — 서버가 품목 스펙과 대조해 판정한다 */}
+              {isMeasured && (
+                <div className="min-w-0 grid grid-cols-2 gap-2" data-testid="inspect-measure-inputs">
+                  {measureFields.map(({ key, required }, index) => (
+                    <Input
+                      key={key}
+                      ref={index === 0 ? firstMeasureRef : undefined}
+                      label={`${t(`inspection.result.measure.${key}`)}${required ? " *" : ""}`}
+                      value={measure[key]}
+                      onChange={(e) => setMeasure((prev) => ({ ...prev, [key]: e.target.value }))}
+                      inputMode="decimal"
+                      fullWidth
+                    />
+                  ))}
+                </div>
+              )}
+              {/* 회로라벨 스캔 (통전·단자 합격 시 필수) */}
+              {!isMeasured && <div className="min-w-0">
                 <div className="flex items-center gap-1.5 mb-1">
                   <ScanBarcode className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                   <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 truncate">
@@ -255,11 +301,13 @@ export default function InspectPanel({
                   placeholder={t("inspection.result.scanCircuitLabel")}
                   fullWidth
                 />
-              </div>
+              </div>}
             </div>
-            <p className="mt-1.5 text-xs text-text-muted">
-              {t("inspection.result.circuitSourceHelp", "현장 회로라벨 바코드를 스캔하세요. 이미 사용한 라벨은 중복 등록되지 않습니다.")}
-            </p>
+            {!isMeasured && (
+              <p className="mt-1.5 text-xs text-text-muted">
+                {t("inspection.result.circuitSourceHelp", "현장 회로라벨 바코드를 스캔하세요. 이미 사용한 라벨은 중복 등록되지 않습니다.")}
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -302,9 +350,11 @@ export default function InspectPanel({
                 ? interlockReason
                 : scanDisabled
                   ? scanDisabledReason
-                  : isScanMode && !circuitLabel.trim()
-                    ? circuitRequiredReason
-                    : t("inspection.result.passBtn")
+                  : isScanMode && isMeasured && !measureReady
+                    ? measurementRequiredReason
+                    : isScanMode && !isMeasured && !circuitLabel.trim()
+                      ? circuitRequiredReason
+                      : t("inspection.result.passBtn")
           }
           className="flex-1 flex items-center justify-center gap-3 py-5 rounded-xl
             bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700

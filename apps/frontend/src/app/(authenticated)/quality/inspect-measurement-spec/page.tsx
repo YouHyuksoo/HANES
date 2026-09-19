@@ -55,7 +55,7 @@ export default function InspectMeasurementSpecPage() {
       chargeBar: String(row.chargeBar ?? ""), chargeTolBar: "",
       holdSeconds: String(row.holdSeconds ?? ""), minHoldBar: String(row.minHoldBar ?? ""),
       testVoltageKv: String(row.testVoltageKv ?? ""), testSeconds: "",
-      maxCurrentMa: String(row.maxCurrentMa ?? ""),
+      maxCurrentMa: String(row.maxCurrentMa ?? ""), minInsulationMohm: String(row.minInsulationMohm ?? ""),
       torqueLsl: String(row.torqueLsl ?? ""), torqueUsl: String(row.torqueUsl ?? ""),
       torqueUnit: "kgf.m", remark: "", useYn: row.useYn,
     });
@@ -73,7 +73,7 @@ export default function InspectMeasurementSpecPage() {
         chargeBar: toNum(form.chargeBar), chargeTolBar: toNum(form.chargeTolBar),
         holdSeconds: toNum(form.holdSeconds), minHoldBar: toNum(form.minHoldBar),
         testVoltageKv: toNum(form.testVoltageKv), testSeconds: toNum(form.testSeconds),
-        maxCurrentMa: toNum(form.maxCurrentMa),
+        maxCurrentMa: toNum(form.maxCurrentMa), minInsulationMohm: toNum(form.minInsulationMohm),
         torqueLsl: toNum(form.torqueLsl), torqueUsl: toNum(form.torqueUsl),
         torqueUnit: form.torqueUnit || null, remark: form.remark || null, useYn: form.useYn,
       };

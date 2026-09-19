@@ -41,6 +41,8 @@ export class CreateInspectItemSpecDto {
   testSeconds?: number | null;
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsNumber()
   maxCurrentMa?: number | null;
+  @ApiPropertyOptional({ description: '절연저항 하한 (MΩ) — HIPOT' }) @IsOptional() @Type(() => Number) @IsNumber()
+  minInsulationMohm?: number | null;
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsNumber()
   torqueLsl?: number | null;
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsNumber()

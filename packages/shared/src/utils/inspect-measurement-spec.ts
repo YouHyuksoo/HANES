@@ -1,6 +1,7 @@
 /**
  * @file inspect-measurement-spec.ts
- * @description 통합검사 리크/내전압/토크 실측값을 품목 스펙과 대조한다.
+ * @description 리크/내전압(절연저항 포함)/토크 실측값을 품목 스펙과 대조한다.
+ *              통합검사와 내전압·리크 전용 검사 화면이 같은 함수를 쓴다.
  *              스펙이 없으면 null을 반환해 작업자 합/불을 유지한다.
  */
 export type InspectMeasurementType = 'LEAK' | 'HIPOT' | 'TORQUE';
@@ -16,6 +17,8 @@ export interface InspectItemSpecValues {
   testVoltageKv?: number | null;
   testSeconds?: number | null;
   maxCurrentMa?: number | null;
+  /** 절연저항 하한 (MΩ) — 내전압 검사기에서 같이 측정한다 */
+  minInsulationMohm?: number | null;
   torqueLsl?: number | null;
   torqueUsl?: number | null;
 }
@@ -27,6 +30,8 @@ export interface InspectMeasuredValues {
   voltageKv?: number | null;
   currentMa?: number | null;
   testSeconds?: number | null;
+  /** 절연저항 실측 (MΩ) */
+  insulationMohm?: number | null;
   torque?: number | null;
 }
 
@@ -93,6 +98,17 @@ export function judgeInspectMeasurement(
     const specSec = num(spec.testSeconds);
     if (sec !== null && specSec !== null && sec < specSec) {
       return { passYn: 'N', reason: `인가시간 ${sec}s < ${specSec}s` };
+    }
+    // 절연저항: 스펙에 하한이 있으면 실측이 필수이고 하한 이상이어야 한다
+    const minIns = num(spec.minInsulationMohm);
+    if (minIns !== null) {
+      const ins = num(m.insulationMohm);
+      if (ins === null) {
+        return { passYn: 'N', reason: '절연저항 측정값이 없습니다.' };
+      }
+      if (ins < minIns) {
+        return { passYn: 'N', reason: `절연저항 ${ins} MΩ < 하한 ${minIns} MΩ` };
+      }
     }
     return { passYn: 'Y' };
   }

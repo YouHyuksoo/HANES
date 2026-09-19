@@ -131,6 +131,8 @@
       "INSP_STRUCTURE",
       "INSP_RESULT",
       "INSP_TERMINAL_RESULT",
+      "INSP_HIPOT_RESULT",
+      "INSP_LEAK_RESULT",
       "INSP_HISTORY",
       "INSP_PROTOCOL"
     ],

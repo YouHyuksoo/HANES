@@ -48,11 +48,40 @@ export class ContinuityInspectDto {
   @IsString()
   passYn: string;
 
-  @ApiPropertyOptional({ description: '검사 유형', enum: ['CONTINUITY', 'TERMINAL'], default: 'CONTINUITY' })
+  @ApiPropertyOptional({ description: '검사 유형 (통전/단자/내전압/리크 스테이션)', enum: ['CONTINUITY', 'TERMINAL', 'HIPOT', 'LEAK'], default: 'CONTINUITY' })
   @IsOptional()
   @IsString()
-  @IsIn(['CONTINUITY', 'TERMINAL'])
+  @IsIn(['CONTINUITY', 'TERMINAL', 'HIPOT', 'LEAK'])
   inspectType?: string;
+
+  // ── 측정값 (HIPOT/LEAK 스테이션) — 품목 스펙(INSPECT_ITEM_SPECS)과 대조해 자동 판정한다 ──
+  @ApiPropertyOptional({ description: '내전압 (kV)' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  voltageKv?: number;
+
+  @ApiPropertyOptional({ description: '내전압 누설전류 (mA)' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  currentMa?: number;
+
+  @ApiPropertyOptional({ description: '내전압 인가시간 (s)' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  testSeconds?: number;
+
+  @ApiPropertyOptional({ description: '절연저항 (MΩ) — 내전압 검사기에서 같이 측정' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  insulationMohm?: number;
+
+  @ApiPropertyOptional({ description: '리크 주입압 (bar)' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  chargeBar?: number;
+
+  @ApiPropertyOptional({ description: '리크 유지 후 측정압 (bar)' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  holdBar?: number;
+
+  @ApiPropertyOptional({ description: '리크 유지시간 (s)' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  holdSeconds?: number;
 
   @ApiPropertyOptional({ description: '불량 코드', maxLength: 50 })
   @IsOptional()
@@ -322,6 +351,9 @@ export class IntegratedInspectStepDto {
   @ApiPropertyOptional({ description: '내전압 인가시간 (s)' })
   @IsOptional() @Type(() => Number) @IsNumber()
   testSeconds?: number;
+  @ApiPropertyOptional({ description: '절연저항 (MΩ) — HIPOT 스텝에서 같이 측정' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  insulationMohm?: number;
   @ApiPropertyOptional({ description: '체결 토크' })
   @IsOptional() @Type(() => Number) @IsNumber()
   torque?: number;

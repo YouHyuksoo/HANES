@@ -495,6 +495,8 @@
     "inspection.structure": "结构检查",
     "inspection.result": "通电检查管理",
     "inspection.terminalResult": "端子检查",
+    "inspection.hipotResult": "耐压检查",
+    "inspection.leakResult": "泄漏检查",
     "inspection.history": "通电检查记录",
     "inspection.protocol": "检测协议设置",
     "inspection.equip": "检测设备联动管理",
@@ -2381,6 +2383,22 @@
       "stripLengthMin": "剥线长度最小",
       "stripLengthMax": "剥线长度最大",
       "applicatorCode": "应用器"
+    },
+    "inspectItemSpec": {
+      "itemCode": "品目代码",
+      "inspectType": "检查类型",
+      "connectorKey": "连接器",
+      "chargeBar": "充气压 bar",
+      "chargeTolBar": "充气压公差",
+      "holdSeconds": "保持时间 s",
+      "minHoldBar": "合格下限压 bar",
+      "testVoltageKv": "试验电压 kV",
+      "testSeconds": "施加时间 s",
+      "maxCurrentMa": "允许电流 mA",
+      "minInsulationMohm": "绝缘电阻下限 MΩ",
+      "torqueLsl": "扭矩下限",
+      "torqueUsl": "扭矩上限",
+      "torqueUnit": "扭矩单位"
     },
     "inspectAid": {
       "title": "检验辅助工具管理",
@@ -4855,6 +4873,17 @@
       "circuitLabel": "电路标签",
       "scanCircuitLabel": "扫描电路标签",
       "circuitSourceHelp": "请扫描现场使用的电路标签条码，已使用的标签将按重复数据拒绝。",
+      "measurementRequired": "请输入测量值",
+      "measuredCol": "测量值",
+      "measure": {
+        "voltageKv": "电压 kV",
+        "currentMa": "电流 mA",
+        "testSeconds": "施加时间 s",
+        "insulationMohm": "绝缘电阻 MΩ",
+        "chargeBar": "充气压 bar",
+        "holdBar": "测量压 bar",
+        "holdSeconds": "保持时间 s"
+      },
       "circuitRequired": "合格需先扫描电路标签。",
       "consumablesTitle": "消耗性设备部件",
       "consumableScanPlaceholder": "请扫描耗材条码(UID)",
@@ -4942,6 +4971,18 @@
       "description": "查看端子检查结果和合格率。",
       "searchPlaceholder": "搜索工单号/品目...",
       "selectOrder": "请选择端子检查工单"
+    },
+    "hipotResult": {
+      "title": "耐压检查实绩",
+      "description": "查看耐压/绝缘电阻检查结果和合格率。",
+      "searchPlaceholder": "搜索工单号/品目...",
+      "selectOrder": "请选择耐压检查工单"
+    },
+    "leakResult": {
+      "title": "泄漏检查实绩",
+      "description": "查看泄漏(气密)检查结果和合格率。",
+      "searchPlaceholder": "搜索工单号/品目...",
+      "selectOrder": "请选择泄漏检查工单"
     },
     "protocol": {
       "title": "检测协议设置",
@@ -8104,6 +8145,11 @@
       "FAIL": "不合格"
     },
     "INSPECT_TYPE": {
+      "HIPOT": "耐压",
+      "LEAK": "泄漏",
+      "TERMINAL": "端子",
+      "STRUCTURE": "结构",
+      "TORQUE": "扭矩",
       "CONTINUITY": "导通",
       "INSULATION": "绝缘",
       "HI_POT": "耐压",

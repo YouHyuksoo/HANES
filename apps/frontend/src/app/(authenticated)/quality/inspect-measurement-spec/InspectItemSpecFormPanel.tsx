@@ -14,6 +14,8 @@ export interface InspectItemSpecForm {
   testVoltageKv: string;
   testSeconds: string;
   maxCurrentMa: string;
+  /** 절연저항 하한 MΩ — HIPOT 검사기에서 절연저항을 같이 판정한다 */
+  minInsulationMohm: string;
   torqueLsl: string;
   torqueUsl: string;
   torqueUnit: string;
@@ -25,7 +27,7 @@ export function emptyInspectItemSpecForm(): InspectItemSpecForm {
   return {
     itemCode: "", inspectType: "LEAK", connectorKey: "*",
     chargeBar: "0.7", chargeTolBar: "0.2", holdSeconds: "2", minHoldBar: "0.3",
-    testVoltageKv: "3", testSeconds: "2", maxCurrentMa: "2",
+    testVoltageKv: "3", testSeconds: "2", maxCurrentMa: "2", minInsulationMohm: "",
     torqueLsl: "", torqueUsl: "", torqueUnit: "kgf.m",
     remark: "", useYn: "Y",
   };
@@ -80,6 +82,7 @@ export default function InspectItemSpecFormPanel({ form, onChange, onSave, onCan
           {num("testVoltageKv", t("master.inspectItemSpec.testVoltageKv"))}
           {num("testSeconds", t("master.inspectItemSpec.testSeconds"))}
           {num("maxCurrentMa", t("master.inspectItemSpec.maxCurrentMa"))}
+          {num("minInsulationMohm", t("master.inspectItemSpec.minInsulationMohm"))}
         </div>
       )}
       {form.inspectType === "TORQUE" && (

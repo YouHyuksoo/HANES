@@ -73,7 +73,7 @@ const EMPTY_GATE: InspectGateState = {
 interface UseInspectPrepStatusArgs {
   orderNo?: string;
   itemCode?: string;
-  inspectType: "CONTINUITY" | "TERMINAL";
+  inspectType: "CONTINUITY" | "TERMINAL" | "HIPOT" | "LEAK";
   equipCode?: string;
   /** 작업자 미선택 안내 문구 */
   noWorkerMessage: string;

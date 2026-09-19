@@ -620,6 +620,57 @@ export class ContinuityInspectService {
    * - PASS: 회로라벨 필수 + 중복 차단 → dto.fgBarcode(조립 발행 ISSUED 라벨) 스캔 조회 → 판정/검사정보 갱신
    * - FAIL: InspectResult 등록 + dto.fgBarcode 있으면 ISSUED 라벨에 불합격 기록
    */
+  /** 측정값을 스펙과 대조하는 검사유형 — 회로라벨 대신 측정값이 판정 근거다 */
+  private static readonly MEASURED_TYPES = new Set(['HIPOT', 'LEAK']);
+
+  /**
+   * HIPOT/LEAK 스테이션 — 품목 스펙(INSPECT_ITEM_SPECS)이 있으면 실측값으로 합/불을 다시 판정한다.
+   * 통합검사(integratedInspect)와 같은 judgeInspectMeasurement 를 쓴다. 스펙이 없으면 작업자 판정을 유지한다.
+   * 스펙 불합격이면 errorCode 'SPEC' 로 기록해 불량코드 필수 규칙을 만족시킨다.
+   */
+  private async applyMeasurementJudgement(
+    queryRunner: QueryRunner,
+    dto: ContinuityInspectDto,
+    company?: string,
+    plant?: string,
+  ): Promise<{ passYn: string; errorCode?: string; errorDetail?: string; inspectData: string | null }> {
+    const inspectType = dto.inspectType ?? 'CONTINUITY';
+    if (!ContinuityInspectService.MEASURED_TYPES.has(inspectType)) {
+      return { passYn: dto.passYn, errorCode: dto.errorCode, errorDetail: dto.errorDetail, inspectData: null };
+    }
+    const measured = {
+      voltageKv: dto.voltageKv ?? null,
+      currentMa: dto.currentMa ?? null,
+      testSeconds: dto.testSeconds ?? null,
+      insulationMohm: dto.insulationMohm ?? null,
+      chargeBar: dto.chargeBar ?? null,
+      holdBar: dto.holdBar ?? null,
+      holdSeconds: dto.holdSeconds ?? null,
+    };
+    const inspectData = JSON.stringify(measured);
+    const specRows = await queryRunner.manager.find(InspectItemSpec, {
+      where: {
+        itemCode: dto.itemCode,
+        inspectType,
+        useYn: 'Y',
+        ...(company ? { company } : {}),
+        ...(plant ? { plant } : {}),
+      },
+    });
+    const spec = specRows.find((row) => row.connectorKey === '*') ?? specRows[0] ?? null;
+    const judged = judgeInspectMeasurement(spec, measured);
+    if (!judged || judged.passYn === 'Y') {
+      // 스펙이 없거나 스펙을 만족하면 작업자 판정을 그대로 둔다(외관 파손 등으로 불합격을 고를 수 있다)
+      return { passYn: dto.passYn, errorCode: dto.errorCode, errorDetail: dto.errorDetail, inspectData };
+    }
+    return {
+      passYn: 'N',
+      errorCode: dto.errorCode?.trim() ? dto.errorCode : 'SPEC',
+      errorDetail: dto.errorDetail || judged.reason,
+      inspectData,
+    };
+  }
+
   async inspect(
     dto: ContinuityInspectDto,
     company?: string,
@@ -662,9 +713,14 @@ export class ContinuityInspectService {
         plant: jobOrder.plant,
       });
 
-      /** 1-2. 합격 시 회로라벨 필수 + 중복 차단 */
-      const circuitLabel = dto.circuitLabel?.trim() || null;
-      if (dto.passYn === 'Y') {
+      /** 1-1. HIPOT/LEAK 는 실측값을 스펙과 대조해 판정을 확정한다(스펙 불합격이면 작업자 합격도 뒤집힌다) */
+      const verdict = await this.applyMeasurementJudgement(queryRunner, dto, company, plant);
+      dto = { ...dto, passYn: verdict.passYn, errorCode: verdict.errorCode, errorDetail: verdict.errorDetail };
+      const isMeasuredType = ContinuityInspectService.MEASURED_TYPES.has(dto.inspectType ?? 'CONTINUITY');
+
+      /** 1-2. 합격 시 회로라벨 필수 + 중복 차단 — 회로 검사기 출력 라벨이라 통전/단자에만 있다. 측정형은 측정값이 근거다 */
+      const circuitLabel = isMeasuredType ? null : (dto.circuitLabel?.trim() || null);
+      if (dto.passYn === 'Y' && !isMeasuredType) {
         if (!circuitLabel) {
           throw new BadRequestException('합격 시 회로라벨 스캔이 필요합니다.');
         }
@@ -695,7 +751,7 @@ export class ContinuityInspectService {
       if (dto.fgBarcode) {
         inspectedLabel = await this.mutableLabelInTx(queryRunner, dto.fgBarcode, company, plant);
         if (inspectedLabel.status !== 'ISSUED') {
-          throw new BadRequestException(`ISSUED 상태의 FG 라벨만 통전검사할 수 있습니다: ${dto.fgBarcode}`);
+          throw new BadRequestException(`ISSUED 상태의 FG 라벨만 검사할 수 있습니다: ${dto.fgBarcode}`);
         }
         if (inspectedLabel.orderNo !== dto.orderNo) {
           throw new BadRequestException('FG 라벨의 작업지시가 검사 작업지시와 일치하지 않습니다.');
@@ -713,6 +769,7 @@ export class ContinuityInspectService {
         passYn: dto.passYn,
         errorCode: dto.errorCode ?? null,
         errorDetail: dto.errorDetail ?? null,
+        inspectData: verdict.inspectData,
         circuitLabel,
         inspectorId: dto.workerId ?? null,
         equipCode: dto.equipCode ?? null,
@@ -800,7 +857,25 @@ export class ContinuityInspectService {
    * 작업지시별 검사 대기 FG 라벨 목록 조회.
    * 조립(서브공정) 키팅에서 발행(ISSUED)됐으나 아직 통전검사를 하지 않은(inspectPassYn IS NULL) 라벨.
    */
-  async getPendingLabels(orderNo: string, company?: string, plant?: string) {
+  async getPendingLabels(orderNo: string, company?: string, plant?: string, inspectType?: string) {
+    // 검사유형이 오면 "그 유형의 결과가 아직 없는 ISSUED 라벨"이 대기다.
+    // FG_LABELS.INSPECT_PASS_YN 은 플래그 하나라 통전·단자·내전압·리크 스테이션이 서로 대기목록을 지우는 문제를 피한다.
+    if (inspectType) {
+      const qb = this.fgLabelRepo
+        .createQueryBuilder('fg')
+        .where('fg.orderNo = :orderNo', { orderNo })
+        .andWhere("fg.status = 'ISSUED'")
+        .andWhere(
+          `NOT EXISTS (SELECT 1 FROM INSPECT_RESULTS ir
+             WHERE ir.FG_BARCODE = fg.FG_BARCODE AND ir.INSPECT_TYPE = :inspectType
+               AND ir.COMPANY = fg.COMPANY AND ir.PLANT_CD = fg.PLANT_CD)`,
+          { inspectType },
+        )
+        .orderBy('fg.issuedAt', 'ASC');
+      if (company) qb.andWhere('fg.company = :company', { company });
+      if (plant) qb.andWhere('fg.plant = :plant', { plant });
+      return qb.getMany();
+    }
     return this.fgLabelRepo.find({
       where: {
         orderNo,
@@ -926,6 +1001,7 @@ export class ContinuityInspectService {
             voltageKv: step.voltageKv,
             currentMa: step.currentMa,
             testSeconds: step.testSeconds,
+            insulationMohm: step.insulationMohm,
             torque: step.torque,
           });
           if (judged) {

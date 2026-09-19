@@ -389,13 +389,15 @@ export class ContinuityInspectController {
   }
 
   @Get('pending/:orderNo')
-  @ApiOperation({ summary: 'List pending FG labels by order' })
+  @ApiOperation({ summary: 'List pending FG labels by order (inspectType 지정 시 그 유형 결과가 없는 라벨)' })
+  @ApiQuery({ name: 'inspectType', required: false, description: 'CONTINUITY | TERMINAL | HIPOT | LEAK' })
   async getPendingLabels(
     @Param('orderNo') orderNo: string,
     @Company() company: string,
     @Plant() plant: string,
+    @Query('inspectType') inspectType?: string,
   ) {
-    const data = await this.continuityInspectService.getPendingLabels(orderNo, company, plant);
+    const data = await this.continuityInspectService.getPendingLabels(orderNo, company, plant, inspectType || undefined);
     return ResponseUtil.success(data);
   }
 

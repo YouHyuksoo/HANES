@@ -495,6 +495,8 @@
     "inspection.structure": "Kiểm tra cấu trúc",
     "inspection.result": "Quản lý KT thông điện",
     "inspection.terminalResult": "Kiểm tra terminal",
+    "inspection.hipotResult": "Kiểm tra cao áp",
+    "inspection.leakResult": "Kiểm tra rò rỉ",
     "inspection.history": "Lịch sử KT thông điện",
     "inspection.protocol": "Giao thức thiết bị KT",
     "inspection.equip": "Quản lý liên kết thiết bị",
@@ -2381,6 +2383,22 @@
       "stripLengthMin": "Tuốt vỏ tối thiểu",
       "stripLengthMax": "Tuốt vỏ tối đa",
       "applicatorCode": "Applicator"
+    },
+    "inspectItemSpec": {
+      "itemCode": "Mã sản phẩm",
+      "inspectType": "Loại kiểm tra",
+      "connectorKey": "Đầu nối",
+      "chargeBar": "Áp nạp bar",
+      "chargeTolBar": "Dung sai áp nạp",
+      "holdSeconds": "Thời gian giữ s",
+      "minHoldBar": "Áp giữ tối thiểu bar",
+      "testVoltageKv": "Điện áp thử kV",
+      "testSeconds": "Thời gian thử s",
+      "maxCurrentMa": "Dòng cho phép mA",
+      "minInsulationMohm": "Cách điện tối thiểu MΩ",
+      "torqueLsl": "Mô-men tối thiểu",
+      "torqueUsl": "Mô-men tối đa",
+      "torqueUnit": "Đơn vị mô-men"
     },
     "inspectAid": {
       "title": "Quản lý dụng cụ hỗ trợ kiểm tra",
@@ -4855,6 +4873,17 @@
       "circuitLabel": "Nhãn mạch",
       "scanCircuitLabel": "Quét nhãn mạch",
       "circuitSourceHelp": "Quét mã vạch nhãn mạch đang dùng tại hiện trường. Nhãn đã dùng sẽ bị từ chối do trùng lặp.",
+      "measurementRequired": "Nhập giá trị đo",
+      "measuredCol": "Giá trị đo",
+      "measure": {
+        "voltageKv": "Điện áp kV",
+        "currentMa": "Dòng điện mA",
+        "testSeconds": "Thời gian thử s",
+        "insulationMohm": "Cách điện MΩ",
+        "chargeBar": "Áp nạp bar",
+        "holdBar": "Áp giữ bar",
+        "holdSeconds": "Thời gian giữ s"
+      },
       "circuitRequired": "Quét nhãn mạch để đạt.",
       "consumablesTitle": "Phụ tùng thiết bị tiêu hao",
       "consumableScanPlaceholder": "Quét mã vạch vật tư tiêu hao (UID)",
@@ -4942,6 +4971,18 @@
       "description": "Xem kết quả kiểm tra terminal và tỷ lệ đạt.",
       "searchPlaceholder": "Tìm số lệnh SX / sản phẩm...",
       "selectOrder": "Chọn lệnh sản xuất để kiểm tra terminal"
+    },
+    "hipotResult": {
+      "title": "Kết quả kiểm tra cao áp",
+      "description": "Xem kết quả kiểm tra cao áp / điện trở cách điện và tỷ lệ đạt.",
+      "searchPlaceholder": "Tìm số lệnh SX / sản phẩm...",
+      "selectOrder": "Chọn lệnh sản xuất để kiểm tra cao áp"
+    },
+    "leakResult": {
+      "title": "Kết quả kiểm tra rò rỉ",
+      "description": "Xem kết quả kiểm tra rò rỉ (kín khí) và tỷ lệ đạt.",
+      "searchPlaceholder": "Tìm số lệnh SX / sản phẩm...",
+      "selectOrder": "Chọn lệnh sản xuất để kiểm tra rò rỉ"
     },
     "protocol": {
       "title": "Cài đặt giao thức KT",
@@ -8104,6 +8145,11 @@
       "FAIL": "Không đạt"
     },
     "INSPECT_TYPE": {
+      "HIPOT": "Cao áp",
+      "LEAK": "Rò rỉ",
+      "TERMINAL": "Terminal",
+      "STRUCTURE": "Cấu trúc",
+      "TORQUE": "Mô-men",
       "CONTINUITY": "Liên tục",
       "INSULATION": "Cách điện",
       "HI_POT": "Chịu áp",

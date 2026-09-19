@@ -12,6 +12,7 @@ export interface InspectItemSpecRow {
   holdSeconds: number | null;
   testVoltageKv: number | null;
   maxCurrentMa: number | null;
+  minInsulationMohm?: number | null;
   torqueLsl: number | null;
   torqueUsl: number | null;
   useYn: string;

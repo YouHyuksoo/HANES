@@ -190,6 +190,8 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "INSP_STRUCTURE", labelKey: "menu.inspection.structure", path: "/inspection/structure" },
       { code: "INSP_RESULT", labelKey: "menu.inspection.result", path: "/inspection/result" },
       { code: "INSP_TERMINAL_RESULT", labelKey: "menu.inspection.terminalResult", path: "/inspection/terminal-result" },
+      { code: "INSP_HIPOT_RESULT", labelKey: "menu.inspection.hipotResult", path: "/inspection/hipot-result" },
+      { code: "INSP_LEAK_RESULT", labelKey: "menu.inspection.leakResult", path: "/inspection/leak-result" },
       { code: "INSP_HISTORY", labelKey: "menu.inspection.history", path: "/inspection/history" },
       { code: "INSP_PROTOCOL", labelKey: "menu.inspection.protocol", path: "/inspection/protocol" },
     ],

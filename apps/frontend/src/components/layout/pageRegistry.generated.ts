@@ -152,6 +152,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/inspection/hipot-result": {
+      const mod = await import("./page-registries/inspection__hipot-result.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/inspection/history": {
       const mod = await import("./page-registries/inspection__history.generated");
       component = mod.getPageComponent();
@@ -159,6 +164,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
     }
     case "/inspection/integrated": {
       const mod = await import("./page-registries/inspection__integrated.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inspection/leak-result": {
+      const mod = await import("./page-registries/inspection__leak-result.generated");
       component = mod.getPageComponent();
       break;
     }

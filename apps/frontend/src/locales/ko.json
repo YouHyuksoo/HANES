@@ -496,6 +496,8 @@
     "inspection.structure": "구조검사",
     "inspection.result": "통전검사",
     "inspection.terminalResult": "단자검사",
+    "inspection.hipotResult": "내전압검사",
+    "inspection.leakResult": "리크검사",
     "inspection.history": "검사이력",
     "inspection.protocol": "검사기프로토콜",
     "inspection.equip": "검사기연동관리",
@@ -2914,6 +2916,7 @@
       "testVoltageKv": "시험전압 kV",
       "testSeconds": "인가시간 s",
       "maxCurrentMa": "허용전류 mA",
+      "minInsulationMohm": "절연저항 하한 MΩ",
       "torqueLsl": "토크 하한",
       "torqueUsl": "토크 상한",
       "torqueUnit": "토크 단위"
@@ -5407,6 +5410,17 @@
       "circuitLabel": "회로라벨",
       "scanCircuitLabel": "회로라벨 스캔",
       "circuitSourceHelp": "현장 회로라벨 바코드를 스캔하세요. 이미 사용한 라벨은 중복 등록되지 않습니다.",
+      "measurementRequired": "측정값을 입력하세요",
+      "measuredCol": "측정값",
+      "measure": {
+        "voltageKv": "전압 kV",
+        "currentMa": "전류 mA",
+        "testSeconds": "인가시간 s",
+        "insulationMohm": "절연저항 MΩ",
+        "chargeBar": "주입압 bar",
+        "holdBar": "측정압 bar",
+        "holdSeconds": "유지시간 s"
+      },
       "circuitRequired": "합격하려면 회로라벨을 스캔해주세요.",
       "consumablesTitle": "소모성 설비부품",
       "consumableScanPlaceholder": "소모품 바코드(UID)를 스캔하세요",
@@ -5494,6 +5508,18 @@
       "description": "단자검사 결과와 합격률을 확인합니다.",
       "searchPlaceholder": "작업지시번호/품목 검색...",
       "selectOrder": "단자검사할 작업지시를 선택하세요"
+    },
+    "hipotResult": {
+      "title": "내전압검사 실적",
+      "description": "내전압·절연저항 검사 결과와 합격률을 확인합니다.",
+      "searchPlaceholder": "작업지시번호/품목 검색...",
+      "selectOrder": "내전압검사할 작업지시를 선택하세요"
+    },
+    "leakResult": {
+      "title": "리크검사 실적",
+      "description": "리크(기밀) 검사 결과와 합격률을 확인합니다.",
+      "searchPlaceholder": "작업지시번호/품목 검색...",
+      "selectOrder": "리크검사할 작업지시를 선택하세요"
     },
     "protocol": {
       "title": "검사기 프로토콜 설정",
@@ -8143,6 +8169,11 @@
       "FAIL": "불합격"
     },
     "INSPECT_TYPE": {
+      "HIPOT": "내전압",
+      "LEAK": "리크",
+      "TERMINAL": "단자",
+      "STRUCTURE": "구조",
+      "TORQUE": "토크",
       "CONTINUITY": "도통",
       "INSULATION": "절연",
       "HI_POT": "내압",

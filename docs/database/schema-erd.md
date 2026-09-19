@@ -1,12 +1,12 @@
 ---
 sources: []
-verifiedCommit: 53ed5eb0
+verifiedCommit: b1f883a4
 generated: true
 ---
 
 # HANES MES DB 스키마 및 ERD
 
-- 작성일: 2026-09-19 13:15:04
+- 작성일: 2026-09-20 02:09:07
 - DB 대상: `10.1.10.35:1527 SERVICE=JSHNSMES USER=test`
 - 기준: Oracle data dictionary (`USER_TABLES`, `USER_TAB_COLUMNS`, `USER_CONSTRAINTS`, `USER_CONS_COLUMNS`, comments, `COM_CODES`)
 - 주의: DB에 물리 FK가 적은 구조이므로 `DB FK 관계`와 `추정 관계`를 분리했다.
@@ -14,7 +14,7 @@ generated: true
 ## 1. 요약
 
 - 테이블 수: 202
-- 컬럼 수: 3390
+- 컬럼 수: 3391
 - PK 보유 테이블: 195
 - DB FK 수: 68
 - COM_CODES 그룹 수: 179
@@ -7723,7 +7723,7 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 |  |
 | `ITEM_CODE` | `VARCHAR2(30)` | `N` | PK |  |  |
 | `ITEM_NAME` | `VARCHAR2(200)` | `N` |  |  |  |
-| `INSPECT_TYPE` | `VARCHAR2(20)` | `N` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자 |  |
+| `INSPECT_TYPE` | `VARCHAR2(20)` | `N` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자, STRUCTURE=구조, TORQUE=토크 |  |
 | `EQUIP_TYPE` | `VARCHAR2(50)` | `Y` |  | COM_CODES.EQUIP_TYPE: COMMON=공통, AUTO_CRIMP=자동압착기, SINGLE_CUT=단선절단기, MULTI_CUT=다선절단기, TWIST=트위스트기, SOLDER=솔더링기, HOUSING=하우징기, TESTER=검사기, LABEL_PRINTER=라벨프린터, INSPECTION=검사설비, PACKING=포장기, OTHER=기타 | 설비유형 (COM_CODES EQUIP_TYPE). 기준항목을 설비유형으로 분류 |
 | `ITEM_TYPE` | `VARCHAR2(20)` | `N` |  | 기본값 `'VISUAL'`<br>COM_CODES.ITEM_TYPE: RAW_MATERIAL=원자재, SEMI_PRODUCT=반제품, FINISHED=완제품, CONSUMABLE=소모품 |  |
 | `CRITERIA` | `VARCHAR2(500)` | `Y` |  |  |  |
@@ -7751,7 +7751,7 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | PK<br>FK->EQUIP_MASTERS(COMPANY, PLANT_CD, EQUIP_CODE); EQUIP_INSPECT_ITEM_MASTERS(COMPANY, PLANT_CD, ITEM_CODE) | 테넌트 범위 컬럼 |  |
 | `EQUIP_CODE` | `VARCHAR2(36)` | `N` | PK<br>FK->EQUIP_MASTERS(COMPANY, PLANT_CD, EQUIP_CODE) |  |  |
 | `ITEM_CODE` | `VARCHAR2(30)` | `N` | PK<br>FK->EQUIP_INSPECT_ITEM_MASTERS(COMPANY, PLANT_CD, ITEM_CODE) |  |  |
-| `INSPECT_TYPE` | `VARCHAR2(20)` | `N` | PK | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자 |  |
+| `INSPECT_TYPE` | `VARCHAR2(20)` | `N` | PK | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자, STRUCTURE=구조, TORQUE=토크 |  |
 | `USE_YN` | `VARCHAR2(1)` | `N` |  | 기본값 `'Y'`<br>COM_CODES.USE_YN: Y=사용, N=미사용<br>관례값 Y/N |  |
 | `SORT_SEQ` | `NUMBER` | `Y` |  |  |  |
 | `CREATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
@@ -7767,7 +7767,7 @@ erDiagram
 | 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
 |---|---|---|---|---|---|
 | `EQUIP_CODE` | `VARCHAR2(50)` | `N` | PK |  | 설비ID (FK -> EQUIP_MASTERS) |
-| `INSPECT_TYPE` | `VARCHAR2(50)` | `N` | PK | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자 | 점검유형 (DAILY/WEEKLY/MONTHLY) |
+| `INSPECT_TYPE` | `VARCHAR2(50)` | `N` | PK | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자, STRUCTURE=구조, TORQUE=토크 | 점검유형 (DAILY/WEEKLY/MONTHLY) |
 | `INSPECT_DATE` | `DATE` | `N` | PK |  | 점검일시 |
 | `INSPECTOR_NAME` | `VARCHAR2(100)` | `Y` |  |  | 점검자명 |
 | `OVERALL_RESULT` | `VARCHAR2(50)` | `N` |  | 기본값 `'PASS'` | 종합판정 [공통코드:INSPECT_JUDGE] (PASS/FAIL/CONDITIONAL) |
@@ -8126,7 +8126,7 @@ erDiagram
 | `COMPANY` | `VARCHAR2(50)` | `N` | UK | 테넌트 범위 컬럼 |  |
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | UK | 테넌트 범위 컬럼 |  |
 | `ITEM_CODE` | `VARCHAR2(50)` | `N` | UK |  |  |
-| `INSPECT_TYPE` | `VARCHAR2(20)` | `N` | UK | CHECK `INSPECT_TYPE IN ('LEAK','HIPOT','TORQUE')`<br>COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자 |  |
+| `INSPECT_TYPE` | `VARCHAR2(20)` | `N` | UK | CHECK `INSPECT_TYPE IN ('LEAK','HIPOT','TORQUE')`<br>COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자, STRUCTURE=구조, TORQUE=토크 |  |
 | `CONNECTOR_KEY` | `VARCHAR2(50)` | `N` | UK | 기본값 `'*'` |  |
 | `CHARGE_BAR` | `NUMBER(10,3)` | `Y` |  |  | 리크 주입압 목표 (bar), THN 0.7 |
 | `CHARGE_TOL_BAR` | `NUMBER(10,3)` | `Y` |  |  |  |
@@ -8146,6 +8146,7 @@ erDiagram
 | `UPDATED_BY` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `CREATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
 | `UPDATED_AT` | `TIMESTAMP(6)` | `N` |  | 기본값 `SYSTIMESTAMP` |  |
+| `MIN_INSULATION_MOHM` | `NUMBER(10,3)` | `Y` |  |  | 절연저항 하한 (MΩ) - HIPOT 스펙에서 같이 판정 |
 
 ### `INSPECT_RESULTS`
 
@@ -8156,7 +8157,7 @@ erDiagram
 |---|---|---|---|---|---|
 | `PROD_RESULT_ID` | `VARCHAR2(36)` | `Y` |  |  | 생산실적ID (FK -> PROD_RESULTS) |
 | `SERIAL_NO` | `VARCHAR2(50)` | `Y` |  |  | 시리얼번호 |
-| `INSPECT_TYPE` | `VARCHAR2(50)` | `Y` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자 | 검사유형 (INLINE/FINAL/VISUAL) |
+| `INSPECT_TYPE` | `VARCHAR2(50)` | `Y` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자, STRUCTURE=구조, TORQUE=토크 | 검사유형 (INLINE/FINAL/VISUAL) |
 | `PASS_YN` | `VARCHAR2(1)` | `N` |  | 기본값 `'Y'` | 합격여부 [공통코드:JUDGE_YN] (Y/N) |
 | `ERROR_CODE` | `VARCHAR2(50)` | `Y` |  |  | 에러코드 |
 | `ERROR_DETAIL` | `VARCHAR2(500)` | `Y` |  |  | 에러상세 |
@@ -8186,7 +8187,7 @@ erDiagram
 | `PLANT_CD` | `VARCHAR2(50)` | `N` | PK | 테넌트 범위 컬럼 |  |
 | `CHECK_NO` | `VARCHAR2(30)` | `N` | PK |  | 대조번호 (PKG_SEQ_GENERATOR docType SMP_CHK) |
 | `ORDER_NO` | `VARCHAR2(50)` | `N` |  |  |  |
-| `INSPECT_TYPE` | `VARCHAR2(30)` | `N` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자 |  |
+| `INSPECT_TYPE` | `VARCHAR2(30)` | `N` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자, STRUCTURE=구조, TORQUE=토크 |  |
 | `EQUIP_CODE` | `VARCHAR2(50)` | `N` |  |  |  |
 | `ITEM_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
 | `WORK_DATE` | `DATE` | `N` |  |  | 조업일 (설비점검 조업일 window 기준) |
@@ -8353,7 +8354,7 @@ erDiagram
 |---|---|---|---|---|---|
 | `ARRIVAL_NO` | `VARCHAR2(100)` | `Y` |  |  | LOT번호 |
 | `ITEM_CODE` | `VARCHAR2(255)` | `N` |  |  | 품목ID (FK -> PART_MASTERS) |
-| `INSPECT_TYPE` | `VARCHAR2(50)` | `N` |  | 기본값 `'INITIAL'`<br>COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자 | 검사유형 (INITIAL=초기검사, RETEST=재검사, CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관) |
+| `INSPECT_TYPE` | `VARCHAR2(50)` | `N` |  | 기본값 `'INITIAL'`<br>COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자, STRUCTURE=구조, TORQUE=토크 | 검사유형 (INITIAL=초기검사, RETEST=재검사, CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관) |
 | `RESULT` | `VARCHAR2(50)` | `N` |  | 기본값 `'PASS'` | 검사결과 (PASS=합격, FAIL=불합격) |
 | `DETAILS` | `CLOB` | `Y` |  |  | 검사상세 (JSON) |
 | `INSPECTOR_NAME` | `VARCHAR2(100)` | `Y` |  |  | 검사자명 |
@@ -8744,7 +8745,7 @@ erDiagram
 | `ITEM_CODE` | `VARCHAR2(50)` | `Y` |  |  | 대상 품목코드 (ITEM_MASTERS.ITEM_CODE, NULL이면 공용 견본) |
 | `PROCESS_CODE` | `VARCHAR2(50)` | `Y` |  |  | 적용 공정코드 (PROCESS_MASTERS.PROCESS_CODE, 선택) |
 | `DEFECT_CODE` | `VARCHAR2(50)` | `Y` |  |  | 불량견본(NG)의 대표 불량코드 (DEFECT_CODE_MASTERS.DEFECT_CODE, 선택) |
-| `INSPECT_TYPE` | `VARCHAR2(30)` | `Y` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자 | 적용 검사유형 (COM_CODES INSPECT_TYPE, NULL이면 전 검사유형 공통) |
+| `INSPECT_TYPE` | `VARCHAR2(30)` | `Y` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자, STRUCTURE=구조, TORQUE=토크 | 적용 검사유형 (COM_CODES INSPECT_TYPE, NULL이면 전 검사유형 공통) |
 | `LOCATION` | `VARCHAR2(200)` | `Y` |  |  | 보관 위치 |
 | `VALID_FROM` | `DATE` | `Y` |  |  | 유효기간 시작일 |
 | `VALID_TO` | `DATE` | `Y` |  |  | 유효기간 종료일 (만료/임박 판정 기준) |
@@ -10488,7 +10489,7 @@ erDiagram
 | `ORDER_NO` | `VARCHAR2(50)` | `N` | PK |  |  |
 | `INSPECT_DATE` | `DATE` | `N` |  |  |  |
 | `INSPECTOR_NAME` | `VARCHAR2(100)` | `N` |  |  |  |
-| `INSPECT_TYPE` | `VARCHAR2(50)` | `Y` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자 |  |
+| `INSPECT_TYPE` | `VARCHAR2(50)` | `Y` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자, STRUCTURE=구조, TORQUE=토크 |  |
 | `SAMPLE_NO` | `NUMBER` | `N` | PK |  |  |
 | `MEASURED_VALUE` | `VARCHAR2(100)` | `Y` |  |  |  |
 | `SPEC_UPPER` | `VARCHAR2(50)` | `Y` |  |  |  |
