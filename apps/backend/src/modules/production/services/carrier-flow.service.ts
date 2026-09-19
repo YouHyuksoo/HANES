@@ -22,7 +22,7 @@ import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { normalizeCarrierNo } from '../../master/services/carrier.service';
 import {
-  assertCanAutoInput, assertCanLoad, carrierKindOf, deriveCarrierStatus,
+  assertCanAutoInput, assertCanLoad, carrierKindOf, deriveCarrierStatus, isProductionKind,
   type CarrierContentKind, type CarrierContentRow, type CarrierStatus,
 } from './carrier-flow.rules';
 import { CarrierListQueryDto } from '../dto/carrier-flow.dto';
@@ -74,18 +74,30 @@ export interface CarrierListRow {
   lastLoadedAt: Date | null;
 }
 
-/** 3테이블 UNION ALL — 대차에 지금 담긴 것. MAT는 orderNo 없음, qty=CURRENT_QTY */
+/**
+ * 3테이블 UNION ALL — 대차에 지금 담긴 것. MAT는 orderNo 없음, qty=CURRENT_QTY
+ * Oracle은 UNION ALL 결과에 바로 ORDER BY <별칭>을 걸 수 없다(첫 번째 가지의 별칭만 보이고
+ * 나머지 가지에서는 안 보여 ORA-00904가 난다) — 반드시 바깥 SELECT * FROM (...)으로 감싼 뒤 정렬한다.
+ */
 const CONTENTS_SQL = `
-  SELECT 'SG' AS KIND, s.SG_BARCODE AS BARCODE, s.ITEM_CODE, s.ORDER_NO, s.REMAIN_QTY AS QTY,
-         s.CARRIER_LOADED_AT AS LOADED_AT, s.CARRIER_SLIP_NO AS SLIP_NO, s.ISSUE_PROCESS_CODE
-    FROM SG_LABELS s WHERE s.COMPANY = :1 AND s.PLANT_CD = :2 AND s.CARRIER_NO = :3
-  UNION ALL
-  SELECT 'FG', f.FG_BARCODE, f.ITEM_CODE, f.ORDER_NO, 1, f.CARRIER_LOADED_AT, f.CARRIER_SLIP_NO, NULL
-    FROM FG_LABELS f WHERE f.COMPANY = :4 AND f.PLANT_CD = :5 AND f.CARRIER_NO = :6
-  UNION ALL
-  SELECT 'MAT', m.MAT_UID, m.ITEM_CODE, NULL, m.CURRENT_QTY, m.CARRIER_LOADED_AT, m.CARRIER_SLIP_NO, NULL
-    FROM MAT_LOTS m WHERE m.COMPANY = :7 AND m.PLANT_CD = :8 AND m.CARRIER_NO = :9
-  ORDER BY LOADED_AT, BARCODE`;
+  SELECT * FROM (
+    SELECT 'SG' AS KIND, s.SG_BARCODE AS BARCODE, s.ITEM_CODE, s.ORDER_NO, s.REMAIN_QTY AS QTY,
+           s.CARRIER_LOADED_AT AS LOADED_AT, s.CARRIER_SLIP_NO AS SLIP_NO, s.ISSUE_PROCESS_CODE
+      FROM SG_LABELS s WHERE s.COMPANY = :1 AND s.PLANT_CD = :2 AND s.CARRIER_NO = :3
+    UNION ALL
+    SELECT 'FG', f.FG_BARCODE, f.ITEM_CODE, f.ORDER_NO, 1, f.CARRIER_LOADED_AT, f.CARRIER_SLIP_NO, NULL
+      FROM FG_LABELS f WHERE f.COMPANY = :4 AND f.PLANT_CD = :5 AND f.CARRIER_NO = :6
+    UNION ALL
+    SELECT 'MAT', m.MAT_UID, m.ITEM_CODE, NULL, m.CURRENT_QTY, m.CARRIER_LOADED_AT, m.CARRIER_SLIP_NO, NULL
+      FROM MAT_LOTS m WHERE m.COMPANY = :7 AND m.PLANT_CD = :8 AND m.CARRIER_NO = :9
+  ) ORDER BY LOADED_AT, BARCODE`;
+
+/** Oracle IN 절 바인드 한도(1000)를 넘지 않도록 배열을 나눈다 */
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
 
 @Injectable()
 export class CarrierFlowService {
@@ -128,7 +140,7 @@ export class CarrierFlowService {
     }));
     const itemCodes = [...new Set(rows.map((r) => r.itemCode))];
     if (itemCodes.length > 0) {
-      const items = await this.itemRepo.find({ where: { itemCode: In(itemCodes) }, select: ['itemCode', 'itemName'] });
+      const items = await this.itemRepo.find({ where: { itemCode: In(itemCodes), company, plant }, select: ['itemCode', 'itemName'] });
       const nameMap = new Map(items.map((i) => [i.itemCode, i.itemName]));
       for (const r of rows) r.itemName = nameMap.get(r.itemCode) ?? null;
     }
@@ -204,7 +216,12 @@ export class CarrierFlowService {
       ? await this.jobOrderRepo.findOne({ where: { orderNo: equip.currentJobOrderId, company, plant } })
       : null;
     // 담긴 것이 있으면 설비의 현재 작업지시·품목과 같아야 한다(생산 대차 규칙). 종류는 기존 내용을 따른다.
-    const kind: CarrierContentKind = carrierKindOf(rows) ?? 'SG';
+    const existingKind = carrierKindOf(rows);
+    if (!jobOrder && isProductionKind(existingKind)) {
+      // 설비에 작업지시가 없으면 비교 기준이 없다 — rows[0].itemCode로 자기 자신과 비교해 항상 통과하던 구멍을 막는다.
+      throw new BadRequestException('설비에 작업지시가 없습니다. 작업지시를 먼저 선택하세요.');
+    }
+    const kind: CarrierContentKind = existingKind ?? 'SG';
     assertCanLoad({
       rows, kind,
       itemCode: jobOrder?.itemCode ?? rows[0]?.itemCode ?? '',
@@ -237,23 +254,32 @@ export class CarrierFlowService {
   async stampInTx(qr: QueryRunner, kind: CarrierContentKind, barcodes: string[], carrierNo: string, company: string, plant: string): Promise<void> {
     if (barcodes.length === 0) return;
     const patch = { carrierNo: normalizeCarrierNo(carrierNo), carrierLoadedAt: new Date(), carrierSlipNo: null };
-    if (kind === 'SG') await qr.manager.update(SgLabel, { sgBarcode: In(barcodes), company, plant }, patch);
-    else if (kind === 'FG') await qr.manager.update(FgLabel, { fgBarcode: In(barcodes), company, plant }, patch);
-    else await qr.manager.update(MatLot, { matUid: In(barcodes), company, plant }, patch);
+    for (const group of chunk(barcodes, 1000)) {
+      if (kind === 'SG') await qr.manager.update(SgLabel, { sgBarcode: In(group), company, plant }, patch);
+      else if (kind === 'FG') await qr.manager.update(FgLabel, { fgBarcode: In(group), company, plant }, patch);
+      else await qr.manager.update(MatLot, { matUid: In(group), company, plant }, patch);
+    }
   }
 
   /** 소비·취소 시 대차 컬럼을 비운다 (같은 트랜잭션). 대차에 없던 바코드는 영향 없음 */
   async clearInTx(qr: QueryRunner, kind: CarrierContentKind, barcodes: string[], company: string, plant: string): Promise<void> {
     if (barcodes.length === 0) return;
     const patch = { carrierNo: null, carrierLoadedAt: null, carrierSlipNo: null };
-    if (kind === 'SG') await qr.manager.update(SgLabel, { sgBarcode: In(barcodes), company, plant }, patch);
-    else if (kind === 'FG') await qr.manager.update(FgLabel, { fgBarcode: In(barcodes), company, plant }, patch);
-    else await qr.manager.update(MatLot, { matUid: In(barcodes), company, plant }, patch);
+    for (const group of chunk(barcodes, 1000)) {
+      if (kind === 'SG') await qr.manager.update(SgLabel, { sgBarcode: In(group), company, plant }, patch);
+      else if (kind === 'FG') await qr.manager.update(FgLabel, { fgBarcode: In(group), company, plant }, patch);
+      else await qr.manager.update(MatLot, { matUid: In(group), company, plant }, patch);
+    }
   }
 
   async issueSlip(carrierNo: string, userId: string, company: string, plant: string): Promise<CarrierSlipView> {
     const master = await this.findCarrierOrFail(carrierNo, company, plant);
     return this.tx.run(async (qr) => {
+      // 동시에 두 요청이 같은 대차의 이동전표를 발행하면 둘 다 existing=null을 보고 번호를 두 개 채번할 수 있다 — 행 락으로 직렬화.
+      await qr.manager.query(
+        'SELECT CARRIER_NO FROM CARRIER_MASTERS WHERE COMPANY = :1 AND PLANT_CD = :2 AND CARRIER_NO = :3 FOR UPDATE',
+        [company, plant, master.carrierNo],
+      );
       const rows = await this.getContents(master.carrierNo, company, plant, qr);
       if (rows.length === 0) throw new BadRequestException('빈 대차입니다. 담긴 것이 없어 이동전표를 발행할 수 없습니다.');
       const existing = rows.find((r) => r.slipNo)?.slipNo ?? null;
@@ -263,9 +289,11 @@ export class CarrierFlowService {
         for (const r of rows) byKind.set(r.kind, [...(byKind.get(r.kind) ?? []), r.barcode]);
         for (const [kind, barcodes] of byKind) {
           const patch = { carrierSlipNo: slipNo };
-          if (kind === 'SG') await qr.manager.update(SgLabel, { sgBarcode: In(barcodes), company, plant }, patch);
-          else if (kind === 'FG') await qr.manager.update(FgLabel, { fgBarcode: In(barcodes), company, plant }, patch);
-          else await qr.manager.update(MatLot, { matUid: In(barcodes), company, plant }, patch);
+          for (const group of chunk(barcodes, 1000)) {
+            if (kind === 'SG') await qr.manager.update(SgLabel, { sgBarcode: In(group), company, plant }, patch);
+            else if (kind === 'FG') await qr.manager.update(FgLabel, { fgBarcode: In(group), company, plant }, patch);
+            else await qr.manager.update(MatLot, { matUid: In(group), company, plant }, patch);
+          }
         }
         for (const r of rows) r.slipNo = slipNo;
         // 전표가 나간 대차는 더 담지 않는다 — 설비의 출력 대차 지정을 푼다
@@ -318,15 +346,16 @@ export class CarrierFlowService {
     else if (carrierStatus) having.push(`${statusExpr} = ${bind(carrierStatus)}`);
     if (processCode) having.push(`a.LOAD_PROCESS_CODE = ${bind(processCode)}`);
 
+    // 집계 서브쿼리는 파생 테이블이라 바깥 c 별칭을 참조(상관 서브쿼리)할 수 없다 — 테넌트 바인드를 직접 건다(전체 테넌트 스캔 방지).
     const base = `
       FROM CARRIER_MASTERS c
       LEFT JOIN (
         SELECT CARRIER_NO, COMPANY, PLANT_CD, MIN(KIND) KIND, MIN(ITEM_CODE) ITEM_CODE, MIN(ORDER_NO) ORDER_NO,
                COUNT(*) LOADED_COUNT, SUM(QTY) TOTAL_QTY, MAX(SLIP_NO) SLIP_NO, MIN(ISSUE_PROCESS_CODE) LOAD_PROCESS_CODE, MAX(LOADED_AT) LAST_LOADED_AT
           FROM (
-            SELECT CARRIER_NO, COMPANY, PLANT_CD, 'SG' KIND, ITEM_CODE, ORDER_NO, REMAIN_QTY QTY, CARRIER_SLIP_NO SLIP_NO, ISSUE_PROCESS_CODE, CARRIER_LOADED_AT LOADED_AT FROM SG_LABELS WHERE CARRIER_NO IS NOT NULL
-            UNION ALL SELECT CARRIER_NO, COMPANY, PLANT_CD, 'FG', ITEM_CODE, ORDER_NO, 1, CARRIER_SLIP_NO, NULL, CARRIER_LOADED_AT FROM FG_LABELS WHERE CARRIER_NO IS NOT NULL
-            UNION ALL SELECT CARRIER_NO, COMPANY, PLANT_CD, 'MAT', ITEM_CODE, NULL, CURRENT_QTY, CARRIER_SLIP_NO, NULL, CARRIER_LOADED_AT FROM MAT_LOTS WHERE CARRIER_NO IS NOT NULL
+            SELECT CARRIER_NO, COMPANY, PLANT_CD, 'SG' KIND, ITEM_CODE, ORDER_NO, REMAIN_QTY QTY, CARRIER_SLIP_NO SLIP_NO, ISSUE_PROCESS_CODE, CARRIER_LOADED_AT LOADED_AT FROM SG_LABELS WHERE CARRIER_NO IS NOT NULL AND COMPANY = ${bind(company)} AND PLANT_CD = ${bind(plant)}
+            UNION ALL SELECT CARRIER_NO, COMPANY, PLANT_CD, 'FG', ITEM_CODE, ORDER_NO, 1, CARRIER_SLIP_NO, NULL, CARRIER_LOADED_AT FROM FG_LABELS WHERE CARRIER_NO IS NOT NULL AND COMPANY = ${bind(company)} AND PLANT_CD = ${bind(plant)}
+            UNION ALL SELECT CARRIER_NO, COMPANY, PLANT_CD, 'MAT', ITEM_CODE, NULL, CURRENT_QTY, CARRIER_SLIP_NO, NULL, CARRIER_LOADED_AT FROM MAT_LOTS WHERE CARRIER_NO IS NOT NULL AND COMPANY = ${bind(company)} AND PLANT_CD = ${bind(plant)}
           ) GROUP BY CARRIER_NO, COMPANY, PLANT_CD
       ) a ON a.CARRIER_NO = c.CARRIER_NO AND a.COMPANY = c.COMPANY AND a.PLANT_CD = c.PLANT_CD
       WHERE ${where.join(' AND ')}${having.length ? ' AND ' + having.join(' AND ') : ''}`;
@@ -340,7 +369,7 @@ export class CarrierFlowService {
        ${base} ORDER BY a.LAST_LOADED_AT DESC NULLS LAST, c.CARRIER_NO
        OFFSET ${bind(offset)} ROWS FETCH NEXT ${bind(limit)} ROWS ONLY`, params);
     const itemCodes = [...new Set(dataRows.map((r) => r.ITEM_CODE).filter((v): v is string => typeof v === 'string'))];
-    const items = itemCodes.length ? await this.itemRepo.find({ where: { itemCode: In(itemCodes) }, select: ['itemCode', 'itemName'] }) : [];
+    const items = itemCodes.length ? await this.itemRepo.find({ where: { itemCode: In(itemCodes), company, plant }, select: ['itemCode', 'itemName'] }) : [];
     const nameMap = new Map(items.map((i) => [i.itemCode, i.itemName]));
     return {
       data: dataRows.map((r) => ({
