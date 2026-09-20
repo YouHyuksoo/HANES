@@ -79,6 +79,74 @@ export function oracleConnectString(read: EnvReader = processEnvReader): string 
   return `${env.host}:${env.port}/${env.serviceName}`;
 }
 
+/** oracledb 풀 커넥션 — sessionCallback 이 받는 최소 형태 */
+export interface OraclePoolConnectionLike {
+  callTimeout?: number;
+}
+
+export interface OraclePoolExtra {
+  poolMax: number;
+  poolMin: number;
+  poolIncrement: number;
+  /** 유휴 커넥션을 풀에서 정리하기까지의 시간(초) */
+  poolTimeout: number;
+  /** 풀이 가득 찼을 때 요청이 커넥션을 기다리는 최대 시간(ms). 넘기면 NJS-040 */
+  queueTimeout: number;
+  stmtCacheSize: number;
+  /** 새 커넥션 수립 타임아웃(초) — 네트워크 끊김을 빨리 감지 */
+  connectTimeout: number;
+  /**
+   * TCP keepalive 주기 — **단위는 분**(oracledb thin 은 ×60000 해서 setKeepAlive 에 넘긴다).
+   * 1 = 1분. 0 이면 keepalive 를 켜지 않아 죽은 소켓이 OS 기본(2시간)까지 남는다.
+   */
+  expireTime: number;
+  /** 풀에서 꺼낼 때 커넥션 핑 검사 주기(초). 이 시간 이상 놀았던 커넥션만 핑한다 */
+  poolPingInterval: number;
+  /** 핑 자체의 타임아웃(ms) — 죽은 소켓에 핑이 매달리지 않게 */
+  poolPingTimeout: number;
+  /** 새 세션마다 callTimeout 을 심는다 — 죽은 소켓 위의 진행 중 쿼리가 무한정 기다리지 않게 */
+  sessionCallback: (conn: OraclePoolConnectionLike, requestedTag: string, cb: (err?: Error) => void) => void;
+}
+
+/** 정수 환경변수. 비어 있거나 숫자가 아니면 기본값 */
+function intEnv(read: EnvReader, key: string, fallback: number): number {
+  const raw = read(key)?.trim();
+  if (!raw) return fallback;
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+/**
+ * oracledb 풀 옵션 단일 출처 — 런타임(DatabaseModule)과 CLI(data-source)가 같은 값을 쓴다.
+ *
+ * 왜 이 값들인가(2026-09-20 VPN 구간 끊김으로 NJS-040 queueTimeout 30초 대량 발생):
+ * - 죽은 소켓을 붙든 커넥션이 풀을 다 차지하면 새 요청이 queueTimeout 까지 기다렸다 500 이 난다.
+ * - connectTimeout / poolPingTimeout / expireTime(1분) 으로 끊긴 커넥션을 빨리 걸러내고,
+ * - callTimeout 으로 이미 나간 쿼리도 상한 안에 실패시켜 커넥션을 풀에 돌려준다
+ *   (callTimeout 초과 커넥션은 드라이버가 사용불가로 표시해 반납 시 폐기한다).
+ *
+ * 환경변수로 조정: ORACLE_POOL_MAX, ORACLE_QUEUE_TIMEOUT_MS, ORACLE_CALL_TIMEOUT_MS
+ */
+export function oraclePoolExtra(read: EnvReader = processEnvReader): OraclePoolExtra {
+  const callTimeoutMs = intEnv(read, 'ORACLE_CALL_TIMEOUT_MS', 30000);
+  return {
+    poolMax: intEnv(read, 'ORACLE_POOL_MAX', 10),
+    poolMin: 2,
+    poolIncrement: 1,
+    poolTimeout: 60,
+    queueTimeout: intEnv(read, 'ORACLE_QUEUE_TIMEOUT_MS', 30000),
+    stmtCacheSize: 30,
+    connectTimeout: 10,
+    expireTime: 1,
+    poolPingInterval: 10,
+    poolPingTimeout: 3000,
+    sessionCallback: (conn, _requestedTag, cb) => {
+      conn.callTimeout = callTimeoutMs;
+      cb();
+    },
+  };
+}
+
 /** 로그용 요약 (비밀번호 제외) */
 export function describeOracleTarget(read: EnvReader = processEnvReader): string {
   const env = readOracleEnv(read);

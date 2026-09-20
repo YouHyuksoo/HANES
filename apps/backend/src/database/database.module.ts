@@ -15,7 +15,7 @@ import { Module, Global, Logger } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SqlDebugTypeormLogger } from '../common/sql-debug/typeorm-sql-debug.logger';
-import { describeOracleTarget, oracleTypeOrmConnection } from './oracle-env';
+import { describeOracleTarget, oracleTypeOrmConnection, oraclePoolExtra } from './oracle-env';
 
 @Global()
 @Module({
@@ -44,18 +44,8 @@ import { describeOracleTarget, oracleTypeOrmConnection } from './oracle-env';
           retryAttempts: 15,
           retryDelay: 5000,
 
-          // oracledb 연결 풀 옵션 — DB 끊김 후 자동 복구 핵심 설정
-          extra: {
-            poolMax: 10,
-            poolMin: 2,
-            poolIncrement: 1,
-            poolTimeout: 60,          // 유휴 커넥션 대기 시간(초)
-            queueTimeout: 30000,      // 풀 가득 찼을 때 대기 시간(ms)
-            stmtCacheSize: 30,
-            connectTimeout: 10,       // 개별 연결 타임아웃(초) — 네트워크 끊김 빠른 감지
-            expireTime: 30,           // 유휴 커넥션 만료(초) — 끊긴 연결 자동 정리
-            poolPingInterval: 10,     // 사용 전 커넥션 핑 검사 주기(초) — 죽은 연결 감지
-          },
+          // oracledb 연결 풀 옵션 — DB 끊김 후 자동 복구. 값·근거는 oracle-env.ts oraclePoolExtra 단일 출처
+          extra: oraclePoolExtra(read),
           metadataTableName: 'typeorm_metadata',
         };
       },

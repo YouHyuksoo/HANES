@@ -8,7 +8,7 @@
 
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
-import { oracleTypeOrmConnection } from './oracle-env';
+import { oracleTypeOrmConnection, oraclePoolExtra } from './oracle-env';
 
 dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
@@ -24,11 +24,6 @@ export const AppDataSource = new DataSource({
   entities: [__dirname + '/../entities/*.entity{.ts,.js}'],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
   migrationsRun: false,
-  extra: {
-    poolMax: 10,
-    poolMin: 2,
-    poolIncrement: 1,
-    poolTimeout: 60,
-    queueTimeout: 60000,
-  },
+  // 풀 옵션은 런타임과 같은 단일 출처(oracle-env.ts). CLI 는 마이그레이션이 길어 queueTimeout 만 넉넉히 둔다
+  extra: { ...oraclePoolExtra(), queueTimeout: 60000 },
 });
