@@ -1,5 +1,6 @@
 import type { QueryRunner, Logger as TypeOrmLogger } from 'typeorm';
 import { recordSqlDebugQuery } from './sql-debug-context';
+import { requestMetricsStore } from '../metrics/request-metrics.store';
 
 export class SqlDebugTypeormLogger implements TypeOrmLogger {
   logQuery(query: string, parameters?: unknown[], _queryRunner?: QueryRunner): void {
@@ -16,12 +17,13 @@ export class SqlDebugTypeormLogger implements TypeOrmLogger {
   }
 
   logQuerySlow(
-    _time: number,
-    _query: string,
+    time: number,
+    query: string,
     _parameters?: unknown[],
     _queryRunner?: QueryRunner,
   ): void {
-    // Slow-query handling remains controlled by TypeORM maxQueryExecutionTime.
+    // maxQueryExecutionTime(3초) 초과 쿼리를 /system/health 느린 쿼리 표로 보낸다
+    requestMetricsStore.recordSlowQuery(time, query);
   }
 
   logSchemaBuild(_message: string, _queryRunner?: QueryRunner): void {

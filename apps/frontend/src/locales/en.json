@@ -584,6 +584,7 @@
     "system.document": "Document Control",
     "system.training": "Training",
     "system.erView": "ER VIEW",
+    "system.health": "System Health",
     "system.menuCategory": "Menu Category Management",
     "root": "Root",
     "system.improvementRequests": "Improvement Requests",
@@ -1006,6 +1007,97 @@
     }
   },
   "system": {
+    "health": {
+      "title": "System Health Monitor",
+      "subtitle": "Active sessions, request load, DB connection pool, Oracle sessions and process resources at a glance, with a capacity verdict for 100 sessions.",
+      "refresh": "Refresh",
+      "pause": "Pause",
+      "resume": "Resume",
+      "interval": "Interval",
+      "updatedAt": "updated",
+      "fork": "single process",
+      "sections": {
+        "assess": "Assessment",
+        "kpi": "Key Metrics",
+        "pool": "DB Connection Pool",
+        "oracle": "Oracle Sessions",
+        "load": "Request Load (last 15 min)",
+        "slow": "Slow Queries",
+        "errors": "Recent Errors",
+        "process": "Process",
+        "help": "How to read"
+      },
+      "kpi": {
+        "activeUsers": "Active users (5m)",
+        "ips": "IPs",
+        "rps": "Requests/sec (1m)",
+        "errorRate": "5xx rate (5m)",
+        "p95": "Latency p95 (5m)",
+        "dbPing": "DB round trip",
+        "loop": "Event loop p99",
+        "pool": "Pool in use / max",
+        "warnAt": "warn at",
+        "windowHint": "windows: 1m · 5m · 15m"
+      },
+      "pool": {
+        "inUse": "In use",
+        "open": "Open",
+        "queueLen": "Queue",
+        "timeouts": "Queue timeouts",
+        "enqueued": "Enqueued / requests",
+        "queueMs": "Queue time ms"
+      },
+      "oracle": {
+        "total": "Total sessions",
+        "mine": "App sessions",
+        "active": "active",
+        "blocked": "Blocked",
+        "seconds": "Elapsed (s)",
+        "event": "Wait event",
+        "sql": "SQL"
+      },
+      "load": {
+        "method": "Method",
+        "route": "Route",
+        "count": "Calls",
+        "perMin": "Per min",
+        "avg": "Avg ms",
+        "p95": "p95 ms",
+        "max": "Max ms",
+        "queries": "Queries/req",
+        "maxQueries": "Max queries",
+        "errors": "5xx",
+        "legend": "Highlight"
+      },
+      "slow": {
+        "at": "Time",
+        "ms": "Elapsed ms",
+        "sql": "SQL",
+        "none": "No query exceeded 3 seconds."
+      },
+      "err": {
+        "at": "Time",
+        "status": "Status",
+        "message": "Message",
+        "none": "No recent 5xx errors."
+      },
+      "process": {
+        "memory": "Memory RSS",
+        "heap": "Heap",
+        "cpu": "CPU",
+        "uptime": "Uptime",
+        "loop": "Event loop",
+        "fork": "single process"
+      },
+      "help": {
+        "h1": "Active users = distinct users who sent a request in the window. This is the real concurrency toward the 100-session goal.",
+        "h2": "Pool utilization over 70% or any queue/queue timeouts (NJS-040): raise ORACLE_POOL_MAX or fix slow queries first.",
+        "h3": "DB round trip over 300 ms points to the app↔DB network (VPN), not code. When it fails every request queues and then returns 500.",
+        "h4": "Event loop p99 over 100 ms means the single Node process is blocked (Excel, large serialization). Over 500 ms, consider cluster mode.",
+        "h5": "Routes with 8+ queries per request are N+1 suspects; 30+ calls per minute is polling load. Collapse polling with a 5-second server cache.",
+        "h6": "Metrics live in this backend process memory: they reset on restart and are per instance under PM2 cluster."
+      }
+    },
     "department": {
       "title": "Department Management",
       "subtitle": "Manage department information.",

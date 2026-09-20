@@ -242,7 +242,8 @@
       "SYS_SCHEDULER",
       "SYS_ER_VIEW",
       "SYS_MENU_CATEGORY",
-      "SYS_IMPR_REQ"
+      "SYS_IMPR_REQ",
+      "SYS_HEALTH"
     ]
   }
 }

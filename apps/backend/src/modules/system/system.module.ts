@@ -45,6 +45,8 @@ import { ErViewController } from './controllers/er-view.controller';
 import { ErViewService } from './services/er-view.service';
 import { DbConnectionController } from './controllers/db-connection.controller';
 import { DbConnectionService } from './services/db-connection.service';
+import { SystemHealthController } from './controllers/system-health.controller';
+import { SystemHealthService } from './services/system-health.service';
 
 @Module({
   imports: [
@@ -61,6 +63,7 @@ import { DbConnectionService } from './services/db-connection.service';
     ]),
   ],
   controllers: [
+    SystemHealthController,
     CommConfigController,
     SysConfigController,
     ActivityLogController,
@@ -73,6 +76,7 @@ import { DbConnectionService } from './services/db-connection.service';
     DbConnectionController,
   ],
   providers: [
+    SystemHealthService,
     CommConfigService,
     SerialTestService,
     SysConfigService,

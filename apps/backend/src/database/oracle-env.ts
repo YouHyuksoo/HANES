@@ -104,6 +104,8 @@ export interface OraclePoolExtra {
   poolPingInterval: number;
   /** 핑 자체의 타임아웃(ms) — 죽은 소켓에 핑이 매달리지 않게 */
   poolPingTimeout: number;
+  /** pool.getStatistics() 활성 — /system/health 가 큐 길이·NJS-040 누적을 읽는다(비용은 카운터 증가뿐) */
+  enableStatistics: boolean;
   /** 새 세션마다 callTimeout 을 심는다 — 죽은 소켓 위의 진행 중 쿼리가 무한정 기다리지 않게 */
   sessionCallback: (conn: OraclePoolConnectionLike, requestedTag: string, cb: (err?: Error) => void) => void;
 }
@@ -140,6 +142,7 @@ export function oraclePoolExtra(read: EnvReader = processEnvReader): OraclePoolE
     expireTime: 1,
     poolPingInterval: 10,
     poolPingTimeout: 3000,
+    enableStatistics: true,
     sessionCallback: (conn, _requestedTag, cb) => {
       conn.callTimeout = callTimeoutMs;
       cb();

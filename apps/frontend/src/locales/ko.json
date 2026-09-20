@@ -585,6 +585,7 @@
     "system.document": "문서관리",
     "system.training": "교육훈련",
     "system.erView": "ER VIEW",
+    "system.health": "시스템 상태",
     "system.menuCategory": "메뉴 카테고리 관리",
     "root": "최상위",
     "system.improvementRequests": "개선요청 관리",
@@ -1006,6 +1007,97 @@
     }
   },
   "system": {
+    "health": {
+      "title": "시스템 상태 모니터",
+      "subtitle": "접속 세션·요청 부하·DB 커넥션 풀·Oracle 세션·프로세스 자원을 한눈에 보고 100 세션 감당 여부를 판정합니다.",
+      "refresh": "새로고침",
+      "pause": "일시정지",
+      "resume": "재개",
+      "interval": "갱신 주기",
+      "updatedAt": "갱신",
+      "fork": "단일 프로세스",
+      "sections": {
+        "assess": "판정",
+        "kpi": "핵심 지표",
+        "pool": "DB 커넥션 풀",
+        "oracle": "Oracle 세션",
+        "load": "요청 부하 (최근 15분)",
+        "slow": "느린 쿼리",
+        "errors": "최근 에러",
+        "process": "프로세스",
+        "help": "읽는 법"
+      },
+      "kpi": {
+        "activeUsers": "활성 사용자 (5분)",
+        "ips": "IP",
+        "rps": "요청/초 (1분)",
+        "errorRate": "5xx 비율 (5분)",
+        "p95": "응답 p95 (5분)",
+        "dbPing": "DB 왕복",
+        "loop": "이벤트루프 p99",
+        "pool": "풀 사용 / 최대",
+        "warnAt": "경고",
+        "windowHint": "구간: 1분 · 5분 · 15분"
+      },
+      "pool": {
+        "inUse": "사용 중",
+        "open": "열림",
+        "queueLen": "대기열",
+        "timeouts": "대기 타임아웃",
+        "enqueued": "대기 발생 / 요청",
+        "queueMs": "대기 시간 ms"
+      },
+      "oracle": {
+        "total": "전체 세션",
+        "mine": "앱 세션",
+        "active": "활성",
+        "blocked": "락 대기",
+        "seconds": "경과(초)",
+        "event": "대기 이벤트",
+        "sql": "SQL"
+      },
+      "load": {
+        "method": "메서드",
+        "route": "경로",
+        "count": "호출",
+        "perMin": "분당",
+        "avg": "평균 ms",
+        "p95": "p95 ms",
+        "max": "최대 ms",
+        "queries": "쿼리/요청",
+        "maxQueries": "최대 쿼리",
+        "errors": "5xx",
+        "legend": "강조 기준"
+      },
+      "slow": {
+        "at": "시각",
+        "ms": "소요 ms",
+        "sql": "SQL",
+        "none": "3초를 넘긴 쿼리가 없습니다."
+      },
+      "err": {
+        "at": "시각",
+        "status": "상태",
+        "message": "메시지",
+        "none": "최근 5xx 에러가 없습니다."
+      },
+      "process": {
+        "memory": "메모리 RSS",
+        "heap": "힙",
+        "cpu": "CPU",
+        "uptime": "가동",
+        "loop": "이벤트루프",
+        "fork": "단일 프로세스"
+      },
+      "help": {
+        "h1": "활성 사용자는 구간 안에 요청을 보낸 서로 다른 사용자 수입니다. 100 세션 목표의 실제 동시 사용량이 이것입니다.",
+        "h2": "풀 사용률이 70%를 넘거나 대기열·대기 타임아웃(NJS-040)이 생기면 ORACLE_POOL_MAX 를 올리거나 느린 쿼리를 먼저 정리합니다.",
+        "h3": "DB 왕복이 300ms 를 넘으면 코드가 아니라 앱↔DB 네트워크(VPN)를 의심합니다. 실패면 모든 요청이 큐 대기 후 500 이 됩니다.",
+        "h4": "이벤트루프 p99 가 100ms 를 넘으면 단일 Node 프로세스가 막힌 것입니다(엑셀·대량 직렬화). 500ms 이상이면 클러스터 전환을 검토합니다.",
+        "h5": "요청당 쿼리가 8개 이상인 경로는 N+1 의심, 분당 30회 이상은 폴링 부하입니다. 폴링은 서버 캐시(5초)로 합칩니다.",
+        "h6": "지표는 이 백엔드 프로세스 메모리에 있습니다. 재시작하면 초기화되고, PM2 클러스터에서는 인스턴스별 값입니다."
+      }
+    },
     "department": {
       "title": "부서 관리",
       "subtitle": "조직의 부서 정보를 관리합니다.",

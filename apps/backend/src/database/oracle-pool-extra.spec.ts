@@ -14,6 +14,7 @@ describe('oraclePoolExtra', () => {
       poolMax: 10, poolMin: 2, poolIncrement: 1, poolTimeout: 60,
       queueTimeout: 30000, stmtCacheSize: 30,
       connectTimeout: 10, poolPingInterval: 10, poolPingTimeout: 3000,
+      enableStatistics: true,
     });
     // expireTime 은 분 단위 — 30 이면 30분이라 무의미했다. 1분이어야 한다.
     expect(extra.expireTime).toBe(1);

@@ -584,6 +584,7 @@
     "system.document": "文档管理",
     "system.training": "培训管理",
     "system.erView": "ER VIEW",
+    "system.health": "系统状态",
     "system.menuCategory": "菜单类别管理",
     "root": "顶级",
     "system.improvementRequests": "改善申请管理",
@@ -1006,6 +1007,97 @@
     }
   },
   "system": {
+    "health": {
+      "title": "系统状态监控",
+      "subtitle": "一屏查看接入会话、请求负载、DB连接池、Oracle会话和进程资源，并判定能否承载100个会话。",
+      "refresh": "刷新",
+      "pause": "暂停",
+      "resume": "继续",
+      "interval": "刷新周期",
+      "updatedAt": "更新",
+      "fork": "单进程",
+      "sections": {
+        "assess": "判定",
+        "kpi": "核心指标",
+        "pool": "DB连接池",
+        "oracle": "Oracle会话",
+        "load": "请求负载（最近15分钟）",
+        "slow": "慢查询",
+        "errors": "最近错误",
+        "process": "进程",
+        "help": "如何解读"
+      },
+      "kpi": {
+        "activeUsers": "活跃用户（5分钟）",
+        "ips": "IP",
+        "rps": "请求/秒（1分钟）",
+        "errorRate": "5xx比例（5分钟）",
+        "p95": "响应p95（5分钟）",
+        "dbPing": "DB往返",
+        "loop": "事件循环p99",
+        "pool": "连接池使用/上限",
+        "warnAt": "警告",
+        "windowHint": "区间：1分·5分·15分"
+      },
+      "pool": {
+        "inUse": "使用中",
+        "open": "已打开",
+        "queueLen": "队列",
+        "timeouts": "队列超时",
+        "enqueued": "排队/请求",
+        "queueMs": "排队时间 ms"
+      },
+      "oracle": {
+        "total": "全部会话",
+        "mine": "应用会话",
+        "active": "活跃",
+        "blocked": "锁等待",
+        "seconds": "耗时(秒)",
+        "event": "等待事件",
+        "sql": "SQL"
+      },
+      "load": {
+        "method": "方法",
+        "route": "路径",
+        "count": "调用",
+        "perMin": "每分钟",
+        "avg": "平均 ms",
+        "p95": "p95 ms",
+        "max": "最大 ms",
+        "queries": "查询/请求",
+        "maxQueries": "最大查询",
+        "errors": "5xx",
+        "legend": "高亮标准"
+      },
+      "slow": {
+        "at": "时间",
+        "ms": "耗时 ms",
+        "sql": "SQL",
+        "none": "没有超过3秒的查询。"
+      },
+      "err": {
+        "at": "时间",
+        "status": "状态",
+        "message": "消息",
+        "none": "最近没有5xx错误。"
+      },
+      "process": {
+        "memory": "内存 RSS",
+        "heap": "堆",
+        "cpu": "CPU",
+        "uptime": "运行时间",
+        "loop": "事件循环",
+        "fork": "单进程"
+      },
+      "help": {
+        "h1": "活跃用户是区间内发出请求的不同用户数，即100会话目标下的实际并发量。",
+        "h2": "连接池使用率超过70%或出现队列/队列超时(NJS-040)时，先提高ORACLE_POOL_MAX或整理慢查询。",
+        "h3": "DB往返超过300ms应怀疑应用↔DB网络(VPN)而非代码。失败时所有请求排队后返回500。",
+        "h4": "事件循环p99超过100ms表示单个Node进程被阻塞(Excel、大量序列化)。超过500ms应考虑集群。",
+        "h5": "每请求查询8个以上的路径疑似N+1，每分钟30次以上为轮询负载。轮询用5秒服务端缓存合并。",
+        "h6": "指标保存在本后端进程内存中，重启即清零；PM2集群下为各实例的值。"
+      }
+    },
     "department": {
       "title": "部门管理",
       "subtitle": "管理组织部门信息。",

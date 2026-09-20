@@ -584,6 +584,7 @@
     "system.document": "Quản lý tài liệu",
     "system.training": "Quản lý đào tạo",
     "system.erView": "ER VIEW",
+    "system.health": "Tình trạng hệ thống",
     "system.menuCategory": "Quản lý danh mục menu",
     "root": "Cấp cao nhất",
     "system.improvementRequests": "Quản lý yêu cầu cải tiến",
@@ -1006,6 +1007,97 @@
     }
   },
   "system": {
+    "health": {
+      "title": "Giám sát tình trạng hệ thống",
+      "subtitle": "Xem phiên đang kết nối, tải yêu cầu, pool kết nối DB, phiên Oracle và tài nguyên tiến trình trên một màn hình, kèm đánh giá khả năng chịu 100 phiên.",
+      "refresh": "Làm mới",
+      "pause": "Tạm dừng",
+      "resume": "Tiếp tục",
+      "interval": "Chu kỳ",
+      "updatedAt": "cập nhật",
+      "fork": "một tiến trình",
+      "sections": {
+        "assess": "Đánh giá",
+        "kpi": "Chỉ số chính",
+        "pool": "Pool kết nối DB",
+        "oracle": "Phiên Oracle",
+        "load": "Tải yêu cầu (15 phút gần nhất)",
+        "slow": "Truy vấn chậm",
+        "errors": "Lỗi gần đây",
+        "process": "Tiến trình",
+        "help": "Cách đọc"
+      },
+      "kpi": {
+        "activeUsers": "Người dùng hoạt động (5 phút)",
+        "ips": "IP",
+        "rps": "Yêu cầu/giây (1 phút)",
+        "errorRate": "Tỷ lệ 5xx (5 phút)",
+        "p95": "Độ trễ p95 (5 phút)",
+        "dbPing": "Vòng đi DB",
+        "loop": "Event loop p99",
+        "pool": "Pool đang dùng / tối đa",
+        "warnAt": "cảnh báo",
+        "windowHint": "khoảng: 1p · 5p · 15p"
+      },
+      "pool": {
+        "inUse": "Đang dùng",
+        "open": "Đã mở",
+        "queueLen": "Hàng đợi",
+        "timeouts": "Hết giờ hàng đợi",
+        "enqueued": "Xếp hàng / yêu cầu",
+        "queueMs": "Thời gian đợi ms"
+      },
+      "oracle": {
+        "total": "Tổng phiên",
+        "mine": "Phiên ứng dụng",
+        "active": "hoạt động",
+        "blocked": "Chờ khóa",
+        "seconds": "Đã chạy (giây)",
+        "event": "Sự kiện chờ",
+        "sql": "SQL"
+      },
+      "load": {
+        "method": "Phương thức",
+        "route": "Đường dẫn",
+        "count": "Lượt gọi",
+        "perMin": "Mỗi phút",
+        "avg": "TB ms",
+        "p95": "p95 ms",
+        "max": "Tối đa ms",
+        "queries": "Truy vấn/yêu cầu",
+        "maxQueries": "Truy vấn tối đa",
+        "errors": "5xx",
+        "legend": "Tô đậm khi"
+      },
+      "slow": {
+        "at": "Thời điểm",
+        "ms": "Mất ms",
+        "sql": "SQL",
+        "none": "Không có truy vấn vượt 3 giây."
+      },
+      "err": {
+        "at": "Thời điểm",
+        "status": "Trạng thái",
+        "message": "Thông báo",
+        "none": "Không có lỗi 5xx gần đây."
+      },
+      "process": {
+        "memory": "Bộ nhớ RSS",
+        "heap": "Heap",
+        "cpu": "CPU",
+        "uptime": "Thời gian chạy",
+        "loop": "Event loop",
+        "fork": "một tiến trình"
+      },
+      "help": {
+        "h1": "Người dùng hoạt động = số người dùng khác nhau đã gửi yêu cầu trong khoảng thời gian; đây là mức đồng thời thực tế so với mục tiêu 100 phiên.",
+        "h2": "Pool dùng trên 70% hoặc có hàng đợi/hết giờ hàng đợi (NJS-040): tăng ORACLE_POOL_MAX hoặc xử lý truy vấn chậm trước.",
+        "h3": "Vòng đi DB trên 300 ms là dấu hiệu mạng ứng dụng↔DB (VPN), không phải mã. Khi thất bại mọi yêu cầu xếp hàng rồi trả 500.",
+        "h4": "Event loop p99 trên 100 ms nghĩa là tiến trình Node đơn bị chặn (Excel, tuần tự hóa lớn). Trên 500 ms nên cân nhắc cluster.",
+        "h5": "Đường dẫn có 8+ truy vấn mỗi yêu cầu nghi N+1; 30+ lượt mỗi phút là tải polling. Gộp polling bằng cache máy chủ 5 giây.",
+        "h6": "Chỉ số nằm trong bộ nhớ tiến trình backend này: reset khi khởi động lại và là giá trị theo từng instance khi chạy PM2 cluster."
+      }
+    },
     "department": {
       "title": "Quản lý phòng ban",
       "subtitle": "Quản lý thông tin phòng ban.",

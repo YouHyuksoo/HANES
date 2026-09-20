@@ -362,6 +362,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "SYS_ER_VIEW", labelKey: "menu.system.erView", path: "/system/er-view" },
       { code: "SYS_MENU_CATEGORY", labelKey: "menu.system.menuCategory", path: "/system/menu-categories" },
       { code: "SYS_IMPR_REQ", labelKey: "menu.system.improvementRequests", path: "/system/improvement-requests" },
+      { code: "SYS_HEALTH", labelKey: "menu.system.health", path: "/system/health" },
     ],
   },
 ];

@@ -22,6 +22,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { SqlDebugInterceptor } from './common/interceptors/sql-debug.interceptor';
+import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
 import { join } from 'path';
 
 async function bootstrap() {
@@ -64,6 +65,8 @@ async function bootstrap() {
     app.useGlobalInterceptors(new LoggingInterceptor());
   }
   app.useGlobalInterceptors(new SqlDebugInterceptor());
+  // 요청 지표(경로·소요·쿼리 수·사용자) — /system/health 의 데이터 원천. SqlDebug 안쪽이어야 쿼리 수를 읽는다
+  app.useGlobalInterceptors(new MetricsInterceptor());
   app.useGlobalInterceptors(new TransformInterceptor());
 
   // Swagger 설정
