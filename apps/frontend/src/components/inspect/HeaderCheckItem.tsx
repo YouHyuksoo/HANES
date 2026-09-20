@@ -32,6 +32,8 @@ interface HeaderCheckItemProps {
   disabledReason?: string;
   onInput: () => void;
   wide?: boolean;
+  /** 고정폭(w-36/w-48) 대신 부모 flex 안에서 남는 폭을 채운다. 좁은 열에 두 장을 나란히 둘 때 글자가 접히지 않게 한다. */
+  fluid?: boolean;
   /** 시나리오 드라이버가 입력 버튼을 집는다 */
   testId?: string;
   /**
@@ -54,6 +56,7 @@ export default function HeaderCheckItem({
   disabledReason,
   onInput,
   wide = false,
+  fluid = false,
   testId,
   responsiveCompact = false,
   icon: Icon = ClipboardCheck,
@@ -96,7 +99,7 @@ export default function HeaderCheckItem({
 
   const fullCard = (
     <div
-      className={`flex h-11 shrink-0 items-center justify-between gap-2 rounded-lg border border-border ${edgeCls} bg-card pl-2 pr-2.5 ${wide ? 'w-48' : 'w-36'}`}
+      className={`flex h-11 shrink-0 items-center justify-between gap-2 rounded-lg border border-border ${edgeCls} bg-card pl-2 pr-2.5 ${fluid ? 'min-w-0 flex-1' : wide ? 'w-48' : 'w-36'}`}
       title={isDisabled ? (reasonText ?? '') : ''}
     >
       <div className="min-w-0 flex-1">

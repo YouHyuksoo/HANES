@@ -34,7 +34,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [showConnectionCheck, setShowConnectionCheck] = useState(false);
   const errorCountRef = useRef(0);
   const isKioskWorkView =
-    pathname === "/production/input-kiosk" && searchParams.get("view") === "work";
+    (pathname === "/production/input-kiosk" || pathname === "/production/input-kiosk-b") && searchParams.get("view") === "work";
   /** view=full: 헤더/사이드바/탭을 모두 숨기는 전체화면(chromeless) 모드 — 검사 키오스크 등 */
   const isFullscreenView = searchParams.get("view") === "full";
   const isChromeless = isKioskWorkView || isFullscreenView;

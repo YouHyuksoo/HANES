@@ -11,7 +11,8 @@ import test from "node:test";
 const base = resolve(import.meta.dirname, "..");
 const read = (p) => readFileSync(resolve(base, p), "utf8");
 
-const kioskPage = read("input-kiosk/page.tsx");
+// 상태 로직은 hooks/useInputKioskController.ts 로 옮겨졌다(2026-09-20, B 배치와 공유). 페이지+훅을 함께 검사한다.
+const kioskPage = read("input-kiosk/page.tsx") + read("input-kiosk/hooks/useInputKioskController.ts");
 const header = read("input-kiosk/components/EquipHeader.tsx");
 const resultRow = read("input-kiosk/components/AssemblyResultRow.tsx");
 const subkitPage = read("subprocess-kitting/page.tsx");

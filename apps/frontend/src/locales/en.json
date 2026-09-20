@@ -592,7 +592,8 @@
     "material.receiveLabel": "Receiving Label",
     "quality.ncr": "Nonconformance Report",
     "production.labelReprint": "Label Reprint",
-    "consumables.safetyAlert": "Safety Stock Pre-Alert"
+    "consumables.safetyAlert": "Safety Stock Pre-Alert",
+    "production.inputKioskB": "Input (Machining) B"
   },
   "header": {
     "theme": "Theme",
@@ -4929,6 +4930,10 @@
       "reprint": "Reprint",
       "searchPlaceholder": "Search barcode, part, work order...",
       "selectRow": "Select {{barcode}}"
+    },
+    "inputKioskB": {
+      "title": "Result Input (Machining) B",
+      "description": "Work-order stepper layout draft. Shares state and gate logic with Result Input (Machining)"
     }
   },
   "inspection": {
@@ -10220,6 +10225,22 @@
       "ackRemarkPlaceholder": "How it was handled",
       "callFailed": "Failed to register the call.",
       "ackFailed": "Failed to mark the call handled."
+    },
+    "stepper": {
+      "title": "Today's Work",
+      "step1": "Equipment Check",
+      "step2": "Material Lot Registration",
+      "material": "Material",
+      "consumable": "Consumable",
+      "worker": "Worker",
+      "planQty": "Plan",
+      "mass": "Mass production",
+      "trial": "Trial production",
+      "activateAfter": "Enabled after step {{steps}} is complete",
+      "tabMaterial": "Material · Consumables",
+      "tabHistory": "Quality Criteria · History",
+      "metricsFailed": "Failed to load productivity metrics",
+      "registerDefect": "Register defect code"
     }
   },
   "requestInspect": {

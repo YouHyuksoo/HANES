@@ -592,7 +592,8 @@
     "material.receiveLabel": "Phát hành nhãn nhập kho",
     "quality.ncr": "Báo cáo không phù hợp",
     "production.labelReprint": "In lại nhãn",
-    "consumables.safetyAlert": "Cảnh báo sớm tồn kho an toàn"
+    "consumables.safetyAlert": "Cảnh báo sớm tồn kho an toàn",
+    "production.inputKioskB": "Nhập kết quả (gia công) B"
   },
   "header": {
     "theme": "Giao diện",
@@ -4926,6 +4927,10 @@
       "reprint": "In lại",
       "searchPlaceholder": "Tìm mã vạch, mã hàng, lệnh SX...",
       "selectRow": "Chọn {{barcode}}"
+    },
+    "inputKioskB": {
+      "title": "Nhập kết quả (Gia công) B",
+      "description": "Bản bố cục dạng bước theo trình tự công việc. Dùng chung logic trạng thái với Nhập kết quả (Gia công)"
     }
   },
   "inspection": {
@@ -10217,6 +10222,22 @@
       "ackRemarkPlaceholder": "Đã xử lý thế nào",
       "callFailed": "Đăng ký gọi quản lý thất bại.",
       "ackFailed": "Xử lý cuộc gọi thất bại."
+    },
+    "stepper": {
+      "title": "Công việc hôm nay",
+      "step1": "Kiểm tra thiết bị",
+      "step2": "Đăng ký lô vật tư",
+      "material": "Vật tư",
+      "consumable": "Vật tư tiêu hao",
+      "worker": "Công nhân",
+      "planQty": "Kế hoạch",
+      "mass": "Sản xuất hàng loạt",
+      "trial": "Sản xuất thử",
+      "activateAfter": "Kích hoạt sau khi hoàn thành bước {{steps}}",
+      "tabMaterial": "Vật tư · Tiêu hao",
+      "tabHistory": "Điều kiện đạt · Lịch sử",
+      "metricsFailed": "Không tải được chỉ số năng suất",
+      "registerDefect": "Đăng ký mã lỗi"
     }
   },
   "requestInspect": {

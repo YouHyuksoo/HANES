@@ -18,7 +18,8 @@ const labelPage = readFileSync(here('../../../master/label/page.tsx'), 'utf8');
 assert.match(labelPage, /sg_label:\s*"sg"/, 'page sourceCategoryMap must map sg_label -> sg');
 
 // 2) 키오스크 실적 저장 성공 시 resultNo를 상위로 전달해야 한다.
-const inputBar = readFileSync(here('./ProductionInputBar.tsx'), 'utf8');
+// 입력 상태·저장 로직은 hooks/useProductionResultSubmit.ts 로 옮겨졌다(2026-09-20, B 배치와 공유). 바+훅을 함께 검사한다.
+const inputBar = readFileSync(here('./ProductionInputBar.tsx'), 'utf8') + readFileSync(here('../hooks/useProductionResultSubmit.ts'), 'utf8');
 assert.match(inputBar, /onResultSaved\?:\s*\(resultNo:\s*string\)\s*=>/, 'ProductionInputBar must accept onResultSaved');
 assert.match(inputBar, /const res = await api\.post\('\/production\/prod-results'/, 'POST response must be captured');
 assert.match(inputBar, /res\?\.data\?\.data\?\.resultNo/, 'resultNo must be read from response');
@@ -32,7 +33,8 @@ assert.match(host, /category:\s*"sg"/, 'host must load the sg label template');
 assert.doesNotMatch(host, /window\.print\(/, 'host must NOT use window.print (agent output only)');
 
 // 4) 키오스크 페이지가 호스트를 마운트하고 onResultSaved를 배선해야 한다.
-const page = readFileSync(here('../page.tsx'), 'utf8');
+// 모달·라벨 호스트는 components/InputKioskModals.tsx 로 옮겨졌다(2026-09-20, B 배치와 공유). 페이지+모달 묶음을 함께 검사한다.
+const page = readFileSync(here('../page.tsx'), 'utf8') + readFileSync(here('./InputKioskModals.tsx'), 'utf8') + readFileSync(here('../hooks/useInputKioskController.ts'), 'utf8');
 assert.match(page, /<SgLabelPrintHost ref=\{sgPrinterRef\}/, 'kiosk page must mount SgLabelPrintHost');
 assert.match(page, /onResultSaved=\{handleResultSaved\}/, 'kiosk page must wire onResultSaved');
 assert.match(page, /sgPrinterRef\.current\?\.printByResultNo/, 'handleResultSaved must call printByResultNo');

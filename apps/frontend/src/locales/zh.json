@@ -592,7 +592,8 @@
     "material.receiveLabel": "入库标签发行",
     "quality.ncr": "不合格报告",
     "production.labelReprint": "标签重新打印",
-    "consumables.safetyAlert": "安全库存预警"
+    "consumables.safetyAlert": "安全库存预警",
+    "production.inputKioskB": "实绩录入(加工) B"
   },
   "header": {
     "theme": "主题",
@@ -4926,6 +4927,10 @@
       "reprint": "补打",
       "searchPlaceholder": "搜索条码·品号·工单...",
       "selectRow": "选择 {{barcode}}"
+    },
+    "inputKioskB": {
+      "title": "实绩录入(加工) B",
+      "description": "作业顺序步骤式布局方案。状态与门控逻辑与实绩录入(加工)相同"
     }
   },
   "inspection": {
@@ -10217,6 +10222,22 @@
       "ackRemarkPlaceholder": "如何处理的",
       "callFailed": "登记呼叫失败。",
       "ackFailed": "处理呼叫失败。"
+    },
+    "stepper": {
+      "title": "今日作业",
+      "step1": "设备点检",
+      "step2": "物料批次登记",
+      "material": "物料",
+      "consumable": "耗材",
+      "worker": "作业者",
+      "planQty": "计划",
+      "mass": "量产",
+      "trial": "试生产",
+      "activateAfter": "完成第{{steps}}步后启用",
+      "tabMaterial": "物料 · 耗材",
+      "tabHistory": "良品条件 · 作业履历",
+      "metricsFailed": "生产性指标查询失败",
+      "registerDefect": "登记不良代码"
     }
   },
   "requestInspect": {

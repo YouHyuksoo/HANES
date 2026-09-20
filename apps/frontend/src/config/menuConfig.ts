@@ -165,6 +165,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "PROD_ORDER_RESULT", labelKey: "menu.production.orderResult", path: "/production/order-result" },
       { code: "PROD_PROGRESS", labelKey: "menu.production.progress", path: "/production/progress" },
       { code: "PROD_INPUT_KIOSK", labelKey: "menu.production.inputKiosk", path: "/production/input-kiosk" },
+      { code: "PROD_INPUT_KIOSK_B", labelKey: "menu.production.inputKioskB", path: "/production/input-kiosk-b" },
       { code: "PROD_INPUT_INSPECT", labelKey: "menu.production.inputInspect", path: "/production/input-inspect" },
       { code: "PROD_INPUT_EQUIP", labelKey: "menu.production.inputEquip", path: "/production/input-equip" },
       { code: "PROD_RESULT_SUMMARY", labelKey: "menu.production.resultSummary", path: "/production/result-summary" },

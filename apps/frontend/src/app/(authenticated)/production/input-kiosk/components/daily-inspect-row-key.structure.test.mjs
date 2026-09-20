@@ -34,6 +34,7 @@ test('MaterialScanModal only re-evaluates the material interlock while open (def
 });
 
 test('ProductionInputBar derives good qty from total minus defects at submit time (defect found with 18)', () => {
-  const b = readFileSync(new URL('./ProductionInputBar.tsx', import.meta.url), 'utf8');
+  // 입력 상태·저장 로직은 hooks/useProductionResultSubmit.ts 로 옮겨졌다(2026-09-20, B 배치와 공유). 바+훅을 함께 검사한다.
+  const b = readFileSync(new URL('./ProductionInputBar.tsx', import.meta.url), 'utf8') + readFileSync(new URL('../hooks/useProductionResultSubmit.ts', import.meta.url), 'utf8');
   assert.match(b, /const good = total > 0 \? Math\.max\(0, total - defect\) : parseQty\(goodQty\);/);
 });

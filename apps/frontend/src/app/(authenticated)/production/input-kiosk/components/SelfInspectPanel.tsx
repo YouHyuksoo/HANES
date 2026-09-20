@@ -23,6 +23,8 @@ interface SelfInspectPanelProps {
   lastInspectDone: boolean;
   midNotifyPct: number;
   midBlockPct: number;
+  /** 제목 줄과 중물 안내 줄을 숨긴다 — 바깥(B 배치 단계 헤더)이 같은 정보를 보여줄 때 중복을 피한다 */
+  hideHeader?: boolean;
 }
 
 interface ResultRow {
@@ -133,6 +135,7 @@ export default function SelfInspectPanel({
   lastInspectDone,
   midNotifyPct,
   midBlockPct,
+  hideHeader = false,
 }: SelfInspectPanelProps) {
   const { t } = useTranslation();
   const { selectedJobOrder, interlock, savedResultCount, midInspectDone } = useKioskStore();
@@ -180,6 +183,7 @@ export default function SelfInspectPanel({
 
   return (
     <div className="flex h-full flex-col gap-1.5 p-2">
+      {!hideHeader && <>
       {/* 헤더: 제목 + 시점 트리거 */}
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1 text-xs font-bold text-text">
@@ -199,6 +203,7 @@ export default function SelfInspectPanel({
           pct: midBlockPct,
         })}
       </div>
+      </>}
       <div className="grid grid-cols-3 gap-1">
         <TimingBtn
           timing="FIRST"

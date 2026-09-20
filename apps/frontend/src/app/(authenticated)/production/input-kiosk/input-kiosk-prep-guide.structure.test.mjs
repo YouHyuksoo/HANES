@@ -27,7 +27,8 @@ test('키오스크 안내는 공용 PrepGuideModal 위의 얇은 매핑이고 �
 });
 
 test('페이지가 공용 훅으로 안내를 띄우고 헤더의 설비 선택 모달을 제어한다', () => {
-  const page = read('./page.tsx');
+  // 상태 로직은 hooks/useInputKioskController.ts, 모달은 components/InputKioskModals.tsx 로 옮겨졌다(2026-09-20, B 배치와 공유)
+  const page = read('./page.tsx') + read('./hooks/useInputKioskController.ts') + read('./components/InputKioskModals.tsx');
   assert.match(page, /KioskPrepGuideModal/, '안내 모달을 렌더해야 한다');
   assert.match(page, /usePrepGuide\(guideSteps\)/, '공용 usePrepGuide를 써야 한다');
   assert.match(page, /buildKioskPrepGuideSteps\(/, '단계는 순수 함수로 계산해야 한다');
@@ -45,9 +46,11 @@ test('페이지가 공용 훅으로 안내를 띄우고 헤더의 설비 선택 
 });
 
 test('키오스크는 출력 대차 슬롯을 헤더에 두고 실적 저장에 carrierNo를 싣는다', () => {
-  const page = read('./page.tsx');
+  // 상태 로직은 hooks/useInputKioskController.ts, 모달은 components/InputKioskModals.tsx 로 옮겨졌다(2026-09-20, B 배치와 공유)
+  const page = read('./page.tsx') + read('./hooks/useInputKioskController.ts') + read('./components/InputKioskModals.tsx');
   const header = read('./components/EquipHeader.tsx');
-  const bar = read('./components/ProductionInputBar.tsx');
+  // 입력 상태·저장 로직은 hooks/useProductionResultSubmit.ts 로 옮겨졌다(2026-09-20, B 배치와 공유). 바+훅을 함께 검사한다.
+  const bar = read('./components/ProductionInputBar.tsx') + read('./hooks/useProductionResultSubmit.ts');
   const steps = read('./utils/kioskPrepGuideSteps.ts');
   assert.match(page, /useCarrierProcessFlags\(/);
   assert.match(page, /useOutputCarrier\(/);

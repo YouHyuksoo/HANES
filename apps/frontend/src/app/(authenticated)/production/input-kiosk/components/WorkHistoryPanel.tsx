@@ -7,7 +7,9 @@
  * 초보자 가이드:
  * - 양품조건: 작업지시의 itemCode → by-item API로 routingCode+seq 조회 →
  *             GET /master/routing-groups/:code/processes/:seq/conditions
- * - 작업이력: GET /production/prod-results?orderNo=&limit=10
+ * - 작업이력: GET /production/prod-results?orderNo=&limit=10 — 조회는 hooks/useProdResultHistory 가 담당.
+ *             부모가 history 를 내려주면(B 배치: 하단 합계 띠와 공유) 자체 조회를 생략한다.
+ * - 합계 카드(양품/불량/유실): hideSummary=true 면 그리지 않는다(B 배치는 페이지 하단 띠에 그린다).
  * - 유실 이력: 설비정지 훅(useEquipStop)이 가진 당일 이력을 page.tsx에서 내려받는다.
  *              합계는 서버 집계값을 그대로 쓴다(메모리 재집계 금지).
  */
@@ -18,6 +20,7 @@ import api from '@/services/api';
 import { useKioskStore } from '@/stores/kioskStore';
 import { useComCodeList, useComCodeLabel } from '@/hooks/useComCode';
 import { formatDuration, type EquipStopEvent, type EquipStopSummary } from '../hooks/useEquipStop';
+import { useProdResultHistory, sumHistory, type HistoryItem } from '../hooks/useProdResultHistory';
 
 interface QualityCondition {
   conditionSeq: number;
@@ -26,19 +29,6 @@ interface QualityCondition {
   maxValue: number | null;
   unit: string | null;
   equipInterfaceYn: string;
-}
-
-interface HistoryItem {
-  // 목록 API(GET /production/prod-results)는 PK를 resultNo로 반환한다(id 필드 없음)
-  resultNo: string;
-  // 생산실적의 제품 바코드는 PROD_RESULTS.PRD_UID로 반환된다.
-  prdUid?: string;
-  goodQty: number;
-  defectQty: number;
-  workerName?: string;
-  startAt?: string;
-  endAt?: string;
-  createdAt?: string;
 }
 
 function formatHistoryTime(value?: string) {
@@ -56,6 +46,10 @@ interface WorkHistoryPanelProps {
   stopSummary?: EquipStopSummary;
   /** 유실 이력 줄을 누르면 설비정지 팝업을 연다 */
   onOpenEquipStop?: () => void;
+  /** 부모가 조회한 최근 실적 목록. 넘기면 자체 조회를 생략한다(B 배치) */
+  history?: HistoryItem[];
+  /** 양품/불량/유실 합계 카드를 숨긴다(B 배치는 페이지 하단 띠에 그린다) */
+  hideSummary?: boolean;
 }
 
 /** 유실 이력은 좁은 패널이라 최근 것만 보여준다. 전체는 설비정지 팝업에서 본다. */
@@ -65,10 +59,13 @@ export default function WorkHistoryPanel({
   stopHistory = [],
   stopSummary,
   onOpenEquipStop,
+  history: historyProp,
+  hideSummary = false,
 }: WorkHistoryPanelProps) {
   const { t } = useTranslation();
   const { selectedEquip, selectedJobOrder } = useKioskStore();
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const own = useProdResultHistory(selectedEquip?.equipCode, selectedJobOrder?.orderNo, { enabled: !historyProp });
+  const history = historyProp ?? own.history;
   const [conditions, setConditions] = useState<QualityCondition[]>([]);
   const conditionCodes = useComCodeList('QUALITY_CONDITION');
 
@@ -98,25 +95,7 @@ export default function WorkHistoryPanel({
       .catch(() => setConditions([]));
   }, [selectedJobOrder?.itemCode, selectedJobOrder?.processCode]);
 
-  const fetchHistory = () => {
-    if (!selectedEquip?.equipCode || !selectedJobOrder?.orderNo) {
-      setHistory([]);
-      return;
-    }
-    const params: Record<string, string> = { limit: '10' };
-    params.orderNo = selectedJobOrder.orderNo;
-    api.get('/production/prod-results', { params })
-      .then(res => setHistory(res.data?.data ?? []))
-      .catch(() => {});
-  };
-
-  useEffect(() => {
-    fetchHistory();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedEquip?.equipCode, selectedJobOrder?.orderNo]);
-
-  const totalGood = history.reduce((s, h) => s + h.goodQty, 0);
-  const totalDefect = history.reduce((s, h) => s + h.defectQty, 0);
+  const { totalGood, totalDefect } = sumHistory(history);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -167,7 +146,7 @@ export default function WorkHistoryPanel({
       </div>
 
       {/* 요약 통계 — 양품/불량/유실 */}
-      <div className="grid grid-cols-3 gap-2 px-3 py-2 border-b border-border/50 shrink-0">
+      {!hideSummary && <div className="grid grid-cols-3 gap-2 px-3 py-2 border-b border-border/50 shrink-0">
         <div className="bg-card border border-border rounded p-2 text-center">
           <p className="text-lg font-bold text-green-600 dark:text-green-400 tabular-nums">
             {totalGood.toLocaleString()}
@@ -190,7 +169,7 @@ export default function WorkHistoryPanel({
           </p>
           <p className="text-xs text-text-muted">{t('kiosk.history.lossTotal', '유실 합계')}</p>
         </div>
-      </div>
+      </div>}
 
       {/* 작업이력 목록 */}
       <div className="flex-1 overflow-y-auto min-h-0">

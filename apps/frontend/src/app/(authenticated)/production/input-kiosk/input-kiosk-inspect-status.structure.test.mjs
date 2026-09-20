@@ -2,8 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const source = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
-const inputBar = readFileSync(new URL('./components/ProductionInputBar.tsx', import.meta.url), 'utf8');
+// 상태 로직은 hooks/useInputKioskController.ts 로 옮겨졌다(2026-09-20, B 배치와 공유). 페이지+훅을 함께 검사한다.
+const source = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8')
+  + readFileSync(new URL('./hooks/useInputKioskController.ts', import.meta.url), 'utf8');
+// 입력 상태·저장 로직은 hooks/useProductionResultSubmit.ts 로 옮겨졌다(2026-09-20, B 배치와 공유). 바+훅을 함께 검사한다.
+const inputBar = readFileSync(new URL('./components/ProductionInputBar.tsx', import.meta.url), 'utf8') + readFileSync(new URL('./hooks/useProductionResultSubmit.ts', import.meta.url), 'utf8');
 const workersHook = readFileSync(new URL('./hooks/useEquipWorkers.ts', import.meta.url), 'utf8');
 
 test('input kiosk checks daily inspection by backend operational work date', () => {
@@ -64,7 +67,8 @@ test('input kiosk ignores FIRST pending delegates for production blocking before
 });
 
 test('input kiosk passes current automatic production type to the production input bar', () => {
-  assert.match(source, /const productionType = firstInspectDone \? 'MASS' : 'TRIAL';/);
+  // 훅 반환 객체에서 리터럴이 string 으로 넓어지지 않도록 타입 주석을 붙였다(2026-09-20)
+  assert.match(source, /const productionType: 'TRIAL' \| 'MASS' = firstInspectDone \? 'MASS' : 'TRIAL';/);
   assert.match(source, /productionType=\{productionType\}/);
 });
 
