@@ -15,7 +15,8 @@ const read = (p) => readFileSync(resolve(base, p), "utf8");
 const kioskPage = read("input-kiosk/page.tsx") + read("input-kiosk/hooks/useInputKioskController.ts");
 const header = read("input-kiosk/components/EquipHeader.tsx");
 const resultRow = read("input-kiosk/components/AssemblyResultRow.tsx");
-const subkitPage = read("subprocess-kitting/page.tsx");
+// 서브조립도 상태 로직이 hooks/useSubprocessKittingController.ts 로 옮겨졌다(2026-09-21, B 배치와 공유).
+const subkitPage = read("subprocess-kitting/page.tsx") + read("subprocess-kitting/hooks/useSubprocessKittingController.ts");
 const assemblyPage = read("input-assembly/page.tsx");
 const hook = read("input-kiosk/hooks/useEquipWorkers.ts");
 

@@ -593,7 +593,10 @@
     "quality.ncr": "Nonconformance Report",
     "production.labelReprint": "Label Reprint",
     "consumables.safetyAlert": "Safety Stock Pre-Alert",
-    "production.inputKioskB": "Input (Machining) B"
+    "production.inputKioskB": "Input (Machining) B",
+    "favorites.manageFolders": "Manage folders",
+    "favorites.empty": "No favorites yet. Click ★ next to a menu to add one.",
+    "production.kittingB": "Result Input (Sub-process) B"
   },
   "header": {
     "theme": "Theme",
@@ -4244,7 +4247,16 @@
       "confirmMismatch": "Does not match the issued label.",
       "confirmSuccess": "Sub-kitting confirmed.",
       "confirmFailed": "Failed to confirm sub-kitting.",
-      "cancelIssue": "Cancel Issue"
+      "cancelIssue": "Cancel Issue",
+      "inputSgScan": "Previous Process SFG Scan",
+      "stepperTitle": "Kitting Work Steps",
+      "scannedSg": "Input SFG",
+      "issueAndConfirm": "Issue & Confirm",
+      "awaitIssue": "Before issue",
+      "awaitConfirm": "Awaiting physical scan",
+      "stepMaterialHint": "Scan the materials mounted on the equipment in the lower-left mount panel.",
+      "stepSgHint": "Collect previous-process SFG labels in the lower-right scan panel, and pick the circuit in the top bar.",
+      "issuedSgLabel": "Issued SFG"
     },
     "fgLabel": {
       "prepareFailed": "Failed to prepare the FG label print view.",
@@ -4303,7 +4315,8 @@
         "hintJobOrder": "Choose a finished-goods job order for this equipment's process. Scanning the order number also works.",
         "stepCarrier": "Scan output carrier",
         "hintCarrier": "This process loads result labels onto a carrier. Scan an empty carrier or one holding the same item and order."
-      }
+      },
+      "equipMaterialMount": "Equipment Material Mount"
     },
     "equipMaterial": {
       "mountTitle": "Equipment Material Mount (Persistent)",
@@ -9870,7 +9883,8 @@
       "workerRequiredForInspect": "Please add at least one worker.",
       "selectJobOrderHint": "Select a work order to view production results.",
       "inputDisabled": "Input is disabled.",
-      "orderLifecycleHint": "Order starts automatically on the first result · completes automatically when good qty reaches the plan (early close in Job Order Management)"
+      "orderLifecycleHint": "Order starts automatically on the first result · completes automatically when good qty reaches the plan (early close in Job Order Management)",
+      "inspectNotRequired": "Not a required inspection in system settings."
     },
     "equip": {
       "modalTitle": "Select Equipment",
@@ -9881,7 +9895,8 @@
       "scanSubHint": "Scan with barcode scanner or type and press Enter",
       "orManual": "or select manually",
       "searchPlaceholder": "Search by name or code...",
-      "noResult": "No results found"
+      "noResult": "No results found",
+      "title": "Equipment"
     },
     "material": {
       "bomList": "Material List",

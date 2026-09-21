@@ -593,7 +593,10 @@
     "quality.ncr": "부적합 보고서",
     "production.labelReprint": "라벨 재발행",
     "consumables.safetyAlert": "안전재고 사전알림",
-    "production.inputKioskB": "실적입력(가공) B안"
+    "production.inputKioskB": "실적입력(가공) B안",
+    "favorites.manageFolders": "폴더 관리",
+    "favorites.empty": "즐겨찾기가 없습니다. 메뉴 옆 ★를 눌러 추가하세요.",
+    "production.kittingB": "실적입력(서브공정) B안"
   },
   "header": {
     "theme": "테마",
@@ -4778,7 +4781,16 @@
       "confirmMismatch": "발행된 라벨과 일치하지 않습니다.",
       "confirmSuccess": "서브 키팅이 확정되었습니다.",
       "confirmFailed": "서브 키팅 확정에 실패했습니다.",
-      "cancelIssue": "발행 취소"
+      "cancelIssue": "발행 취소",
+      "inputSgScan": "이전 공정 SFG 스캔",
+      "stepperTitle": "키팅 작업 순서",
+      "scannedSg": "투입 SFG",
+      "issueAndConfirm": "키팅 실행 · 확정",
+      "awaitIssue": "발행 전",
+      "awaitConfirm": "실물 스캔 대기",
+      "stepMaterialHint": "왼쪽 아래 자재 장착 패널에서 설비에 물린 자재를 스캔하세요.",
+      "stepSgHint": "오른쪽 아래 스캔 패널에서 이전 공정 SFG 라벨을 담고, 회로는 위 띠에서 고르세요.",
+      "issuedSgLabel": "발행된 SFG"
     },
     "fgLabel": {
       "prepareFailed": "FG 라벨 출력 화면을 준비하지 못했습니다.",
@@ -4837,7 +4849,8 @@
         "hintJobOrder": "이 설비 공정에 내려진 완제품 작업지시를 고르세요. 작업지시번호를 스캔해도 됩니다.",
         "stepCarrier": "출력 대차 스캔",
         "hintCarrier": "이 공정은 실적 라벨을 대차에 담습니다. 빈 대차 또는 같은 품목·작업지시의 대차를 스캔하세요."
-      }
+      },
+      "equipMaterialMount": "설비 자재 장착"
     },
     "equipMaterial": {
       "mountTitle": "설비 자재 장착 (지속)",
@@ -9892,7 +9905,8 @@
       "workerRequiredForInspect": "작업자를 1명 이상 추가하세요.",
       "selectJobOrderHint": "작업지시를 선택하면 생산실적이 표시됩니다.",
       "inputDisabled": "입력할 수 없습니다.",
-      "orderLifecycleHint": "최초 실적입력 시 작업지시 자동 시작 · 양품이 계획수량에 도달하면 자동 종료 (조기 종료는 작업지시관리에서)"
+      "orderLifecycleHint": "최초 실적입력 시 작업지시 자동 시작 · 양품이 계획수량에 도달하면 자동 종료 (조기 종료는 작업지시관리에서)",
+      "inspectNotRequired": "환경설정에서 필수 점검이 아닙니다."
     },
     "equip": {
       "modalTitle": "설비 선택",
@@ -9903,7 +9917,8 @@
       "scanSubHint": "바코드 스캐너로 스캔하거나 직접 입력 후 Enter",
       "orManual": "또는 직접 선택",
       "searchPlaceholder": "설비명 또는 코드 검색...",
-      "noResult": "검색 결과가 없습니다"
+      "noResult": "검색 결과가 없습니다",
+      "title": "설비"
     },
     "material": {
       "bomList": "자재리스트",

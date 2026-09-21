@@ -593,7 +593,10 @@
     "quality.ncr": "不合格报告",
     "production.labelReprint": "标签重新打印",
     "consumables.safetyAlert": "安全库存预警",
-    "production.inputKioskB": "实绩录入(加工) B"
+    "production.inputKioskB": "实绩录入(加工) B",
+    "favorites.manageFolders": "管理文件夹",
+    "favorites.empty": "暂无收藏。点击菜单旁的★添加。",
+    "production.kittingB": "实绩录入（子工序） B"
   },
   "header": {
     "theme": "主题",
@@ -4241,7 +4244,16 @@
       "confirmMismatch": "与发行的标签不一致。",
       "confirmSuccess": "子配套已确认。",
       "confirmFailed": "子配套确认失败。",
-      "cancelIssue": "取消发行"
+      "cancelIssue": "取消发行",
+      "inputSgScan": "上工序 SFG 扫描",
+      "stepperTitle": "配料作业顺序",
+      "scannedSg": "投入 SFG",
+      "issueAndConfirm": "配料执行 · 确定",
+      "awaitIssue": "发行前",
+      "awaitConfirm": "等待实物扫描",
+      "stepMaterialHint": "请在左下方装载面板扫描设备上已装的物料。",
+      "stepSgHint": "在右下方扫描面板收集上工序 SFG 标签，并在顶部选择回路。",
+      "issuedSgLabel": "已发行 SFG"
     },
     "fgLabel": {
       "prepareFailed": "无法准备 FG 标签打印画面。",
@@ -4300,7 +4312,8 @@
         "hintJobOrder": "请选择下达到此设备工序的成品工单。也可以扫描工单号。",
         "stepCarrier": "扫描输出台车",
         "hintCarrier": "本工序将实绩标签装入台车。请扫描空车或同品目/同工单的台车。"
-      }
+      },
+      "equipMaterialMount": "设备物料装载"
     },
     "equipMaterial": {
       "mountTitle": "设备物料装载（持续）",
@@ -9867,7 +9880,8 @@
       "workerRequiredForInspect": "请至少添加一名作业员。",
       "selectJobOrderHint": "选择工单后将显示生产实绩。",
       "inputDisabled": "无法输入。",
-      "orderLifecycleHint": "首次录入实绩时自动开始 · 良品达到计划数量时自动结束（提前结束请在作业指示管理中操作）"
+      "orderLifecycleHint": "首次录入实绩时自动开始 · 良品达到计划数量时自动结束（提前结束请在作业指示管理中操作）",
+      "inspectNotRequired": "系统设置中非必检项。"
     },
     "equip": {
       "modalTitle": "选择设备",
@@ -9878,7 +9892,8 @@
       "scanSubHint": "使用条码扫描枪扫描，或输入后按Enter",
       "orManual": "或手动选择",
       "searchPlaceholder": "按名称或代码搜索...",
-      "noResult": "未找到结果"
+      "noResult": "未找到结果",
+      "title": "设备"
     },
     "material": {
       "bomList": "材料清单",

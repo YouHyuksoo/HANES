@@ -7,7 +7,13 @@ const pagePath = join(
   process.cwd(),
   'apps/frontend/src/app/(authenticated)/production/subprocess-kitting/page.tsx',
 );
-const source = readFileSync(pagePath, 'utf8');
+const hookPath = join(
+  process.cwd(),
+  'apps/frontend/src/app/(authenticated)/production/subprocess-kitting/hooks/useSubprocessKittingController.ts',
+);
+// 상태·저장 로직은 컨트롤러 훅으로 분리됐다(배치 시안 subprocess-kitting-b 와 공유).
+// 화면 규약은 배치(page.tsx) + 로직(훅) 합본에서 검사한다 — input-kiosk 와 같은 방식.
+const source = readFileSync(pagePath, 'utf8') + readFileSync(hookPath, 'utf8');
 const jobOrderModalPath = join(
   process.cwd(),
   'apps/frontend/src/components/production/JobOrderSelectModal.tsx',
@@ -138,7 +144,8 @@ test('/production/subprocess-kitting: job order selection persists to equipment 
 });
 
 test('서브조립 화면은 출력 대차 슬롯을 두고 확정에 carrierNo를 싣는다', () => {
-  const page = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+  const page = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8')
+    + readFileSync(new URL('./hooks/useSubprocessKittingController.ts', import.meta.url), 'utf8');
   assert.match(page, /<OutputCarrierSlot/);
   assert.match(page, /carrierNo: outputCarrier\.carrier\?\.carrierNo \?\? undefined/);
 });

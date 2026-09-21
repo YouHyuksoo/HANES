@@ -105,6 +105,7 @@
       "PROD_SIMULATION",
       "PROD_SPEC_SETUP",
       "PROD_KITTING",
+      "PROD_KITTING_B",
       "PROD_INPUT_ASSEMBLY",
       "PROD_ORDER",
       "PROD_RESULT",

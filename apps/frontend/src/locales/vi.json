@@ -593,7 +593,10 @@
     "quality.ncr": "Báo cáo không phù hợp",
     "production.labelReprint": "In lại nhãn",
     "consumables.safetyAlert": "Cảnh báo sớm tồn kho an toàn",
-    "production.inputKioskB": "Nhập kết quả (gia công) B"
+    "production.inputKioskB": "Nhập kết quả (gia công) B",
+    "favorites.manageFolders": "Quản lý thư mục",
+    "favorites.empty": "Chưa có mục yêu thích. Nhấn ★ bên cạnh menu để thêm.",
+    "production.kittingB": "Nhập kết quả (công đoạn phụ) B"
   },
   "header": {
     "theme": "Giao diện",
@@ -4241,7 +4244,16 @@
       "confirmMismatch": "Không khớp với nhãn đã phát.",
       "confirmSuccess": "Đã xác nhận sub-kitting.",
       "confirmFailed": "Xác nhận sub-kitting thất bại.",
-      "cancelIssue": "Hủy phát hành"
+      "cancelIssue": "Hủy phát hành",
+      "inputSgScan": "Quét SFG công đoạn trước",
+      "stepperTitle": "Trình tự công việc kitting",
+      "scannedSg": "SFG đầu vào",
+      "issueAndConfirm": "Thực hiện & xác nhận",
+      "awaitIssue": "Trước khi phát hành",
+      "awaitConfirm": "Chờ quét nhãn thực tế",
+      "stepMaterialHint": "Quét vật tư đã gá trên thiết bị ở bảng gá phía dưới bên trái.",
+      "stepSgHint": "Thu thập nhãn SFG công đoạn trước ở bảng quét phía dưới bên phải, chọn mạch ở thanh phía trên.",
+      "issuedSgLabel": "SFG đã phát hành"
     },
     "fgLabel": {
       "prepareFailed": "Không thể chuẩn bị màn hình in nhãn FG.",
@@ -4300,7 +4312,8 @@
         "hintJobOrder": "Chọn lệnh sản xuất thành phẩm thuộc công đoạn của thiết bị này. Cũng có thể quét số lệnh.",
         "stepCarrier": "Quét xe đẩy đầu ra",
         "hintCarrier": "Công đoạn này xếp nhãn kết quả lên xe đẩy. Quét xe trống hoặc xe cùng mã hàng/lệnh."
-      }
+      },
+      "equipMaterialMount": "Gá vật tư thiết bị"
     },
     "equipMaterial": {
       "mountTitle": "Gắn vật tư thiết bị (Liên tục)",
@@ -9867,7 +9880,8 @@
       "workerRequiredForInspect": "Vui lòng thêm ít nhất một công nhân.",
       "selectJobOrderHint": "Chọn lệnh sản xuất để xem kết quả sản xuất.",
       "inputDisabled": "Không thể nhập.",
-      "orderLifecycleHint": "Tự động bắt đầu khi nhập kết quả đầu tiên · tự động kết thúc khi lượng tốt đạt kế hoạch (kết thúc sớm tại Quản lý lệnh sản xuất)"
+      "orderLifecycleHint": "Tự động bắt đầu khi nhập kết quả đầu tiên · tự động kết thúc khi lượng tốt đạt kế hoạch (kết thúc sớm tại Quản lý lệnh sản xuất)",
+      "inspectNotRequired": "Không phải hạng mục kiểm tra bắt buộc trong cấu hình."
     },
     "equip": {
       "modalTitle": "Chọn thiết bị",
@@ -9878,7 +9892,8 @@
       "scanSubHint": "Quét bằng máy quét hoặc nhập và nhấn Enter",
       "orManual": "hoặc chọn thủ công",
       "searchPlaceholder": "Tìm theo tên hoặc mã...",
-      "noResult": "Không có kết quả"
+      "noResult": "Không có kết quả",
+      "title": "Thiết bị"
     },
     "material": {
       "bomList": "Danh sách vật liệu",
