@@ -47,10 +47,7 @@
 ## 4. 프로젝트 기본 정보
 
 - 이름: HANES MES
-- 스택: NestJS + TypeORM + Oracle Database + Turborepo
-- 패키지 매니저: `pnpm`
 - DB 사이트: `JSHANES` (`10.1.10.35:1527/JSHNSMES`)
-- 마이그레이션 위치: `apps/backend/src/migrations/`
 - 프론트 개발 서버 기본 포트: `3002`
 
 ## 5. DB와 마이그레이션 규칙
@@ -170,14 +167,6 @@
 - 리뷰와 판단 전 `git log --oneline -3`으로 HEAD를 확인한다.
 - 현재 파일 내용을 다시 읽고 판단한다.
 - 이미 해결된 문제를 현재 문제라고 주장하지 않는다.
-
-### 2026-06-17 - jsPDF + autotable 한글 폰트
-
-- `html2canvas`는 Tailwind CSS `lab()` 색상 함수 파싱 실패로 사용하지 않는다.
-- jsPDF + autotable 한글 출력은 TTF를 VFS에 넣고 `Identity-H` CID 인코딩으로 등록한다.
-- autotable의 `styles.font`, `headStyles.font`, `bodyStyles.font`, `alternateRowStyles.font`, `didParseCell`에 같은 폰트를 지정한다.
-- Regular 폰트만 등록했다면 `headStyles.fontStyle = "normal"`을 명시한다. 기본 bold fallback 때문에 헤더만 깨질 수 있다.
-- 관련 파일: `apps/frontend/src/hooks/useExport.ts`, `public/fonts/NotoSansKR-*.ttf`
 
 ### 2026-02-24 - 도구 식별과 스킬 경로
 
