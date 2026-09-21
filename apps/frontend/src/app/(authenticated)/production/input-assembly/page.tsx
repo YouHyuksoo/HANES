@@ -7,9 +7,7 @@
  * 상태·게이트·저장 로직은 hooks/useInputAssemblyController.ts 에 있다(같은 로직을 쓰는
  * 배치 시안 input-assembly-b 와 공유). 이 파일은 배치와 전체화면(view=full) 토글만 담당한다.
  */
-import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Maximize2, Minimize2, RefreshCw, Sparkles } from "lucide-react";
 import AssemblyResultRow from "../input-kiosk/components/AssemblyResultRow";
 import { Button } from "@/components/ui";
@@ -28,6 +26,7 @@ import WorkerSelectModal from "@/components/worker/WorkerSelectModal";
 import DailyInspectModal from "../input-kiosk/components/DailyInspectModal";
 import WorkerInspectModal from "../input-kiosk/components/WorkerInspectModal";
 import { HeaderCheckItem } from "@/components/inspect";
+import { useFullViewToggle } from "@/components/layout/useFullViewToggle";
 import EquipActionButtons from "../input-kiosk/components/EquipActionButtons";
 import EquipStopModal from "../input-kiosk/components/EquipStopModal";
 import ManagerCallModal from "../input-kiosk/components/ManagerCallModal";
@@ -54,19 +53,8 @@ export default function InputAssemblyPage() {
     fgPrinterRef,
   } = c;
 
-  // 전체화면(view=full) — 라우트 경로가 화면마다 달라 훅에 넣지 않는다.
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const isFullView = searchParams.get("view") === "full";
-  const toggleFullView = useCallback(() => {
-    if (isFullView) {
-      router.push("/production/input-assembly");
-      if (document.fullscreenElement) void document.exitFullscreen();
-      return;
-    }
-    router.push("/production/input-assembly?view=full");
-    void document.documentElement.requestFullscreen?.();
-  }, [isFullView, router]);
+  // 전체화면(view=full) — 라우트만 다르고 동작은 다섯 화면이 같다. 공용 훅 한 곳에서 관리한다.
+  const { isFullView, isBrowserFullscreen, toggle: toggleFullView } = useFullViewToggle("/production/input-assembly");
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-background">
@@ -120,7 +108,7 @@ export default function InputAssemblyPage() {
                 onInput={() => setWorkerInspectOpen(true)}
                 wide
               />
-              <OutputCarrierSlot state={outputCarrier} compact />
+              <OutputCarrierSlot state={outputCarrier} compact flags={carrierFlags} />
               <button
                 type="button"
                 data-testid="assembly-guide-open"
@@ -149,7 +137,7 @@ export default function InputAssemblyPage() {
                 aria-label={isFullView ? t("fab.exitFullscreen", "전체화면 종료") : t("fab.fullscreen", "전체화면 보기")}
                 className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-text-muted transition-colors hover:border-primary hover:text-primary"
               >
-                {isFullView ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                {isFullView || isBrowserFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
               </button>
             </div>
           </div>

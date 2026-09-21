@@ -14,8 +14,9 @@
  *   첫 단계이므로 스테퍼 ①단계 안에 있다(2026-09-21 지시).
  */
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, ClipboardList, Cpu, Pencil, RefreshCw, Sparkles, Waypoints } from 'lucide-react';
+import { ChevronDown, ClipboardList, Cpu, Maximize2, Minimize2, Pencil, RefreshCw, Sparkles, Waypoints } from 'lucide-react';
 import { OutputCarrierSlot } from '@/components/shared/carrier';
+import { useFullViewToggle } from '@/components/layout/useFullViewToggle';
 import EquipSelectModal from '../../input-kiosk/components/EquipSelectModal';
 import {
   getOrderKindMeta,
@@ -24,6 +25,7 @@ import {
 
 export default function KitContextBar({ c }: { c: SubprocessKittingController }) {
   const { t } = useTranslation();
+  const fullView = useFullViewToggle('/production/subprocess-kitting-b');
   const {
     equipCode, equipName, processCode, processName, selectedOrder,
     circuitNo, setCircuitNo, circuits, circuitOptions, outputCarrier,
@@ -114,7 +116,7 @@ export default function KitContextBar({ c }: { c: SubprocessKittingController })
 
         {/* 대차 · 초기화 */}
         <div className="flex shrink-0 items-center gap-2 px-4">
-          <OutputCarrierSlot state={outputCarrier} compact />
+          <OutputCarrierSlot state={outputCarrier} compact flags={c.carrierFlags} />
           <button
             type="button"
             data-testid="subkit-guide-open"
@@ -124,6 +126,16 @@ export default function KitContextBar({ c }: { c: SubprocessKittingController })
           >
             <Sparkles className="h-4 w-4" />
             <span className="hidden whitespace-nowrap xl:inline">{t('prepGuide.reopen', '준비 안내')}</span>
+          </button>
+          <button
+            type="button"
+            data-testid="subkit-b-fullview"
+            onClick={fullView.toggle}
+            title={fullView.isFullView ? t('fab.exitFullscreen', '전체화면 종료') : t('fab.fullscreen', '전체화면 보기')}
+            aria-label={fullView.isFullView ? t('fab.exitFullscreen', '전체화면 종료') : t('fab.fullscreen', '전체화면 보기')}
+            className={`${ghostBtn} h-9 w-9 justify-center px-0`}
+          >
+            {fullView.isFullView || fullView.isBrowserFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </button>
           <button type="button" data-testid="subkit-b-reset" onClick={c.resetAll} title={t('common.reset')} className={`${ghostBtn} h-9`}>
             <RefreshCw className="h-4 w-4" />

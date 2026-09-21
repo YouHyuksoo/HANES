@@ -60,6 +60,7 @@ export default function InputKioskPage() {
         onEquipSelectOpenChange={setIsEquipSelectOpen}
         onOpenGuide={guide.openGuide}
         outputCarrier={outputCarrier}
+        carrierFlags={c.carrierFlags}
       />
 
       {/* ② ③ ④ 메인 3패널 */}

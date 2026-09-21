@@ -80,7 +80,9 @@
     "date": "Ngày",
     "yes": "Có",
     "no": "Không",
-    "unit": "Đơn vị",
+    "unit": {
+      "ea": "EA"
+    },
     "remark": "Ghi chú",
     "description": "Mô tả",
     "active": "Hoạt động",
@@ -172,7 +174,8 @@
       "prev": "Trang trước",
       "next": "Trang sau"
     },
-    "actionProcessingHelp": "Đang xử lý. Vui lòng đợi hoàn tất."
+    "actionProcessingHelp": "Đang xử lý. Vui lòng đợi hoàn tất.",
+    "used": "Sử dụng"
   },
   "prepGuide": {
     "later": "Để sau",
@@ -207,7 +210,11 @@
     "barcode": "Mã vạch",
     "loadedAt": "Thời gian xếp",
     "stepScan": "Quét xe đẩy đầu ra",
-    "stepHint": "Công đoạn này xếp nhãn kết quả lên xe đẩy. Quét xe trống hoặc xe cùng mã hàng/lệnh."
+    "stepHint": "Công đoạn này xếp nhãn kết quả lên xe đẩy. Quét xe trống hoặc xe cùng mã hàng/lệnh.",
+    "offPending": "Chờ xe đẩy",
+    "offProcess": "Không dùng xe đẩy",
+    "offPendingHint": "Chọn lệnh sản xuất và công đoạn để biết có dùng xe đẩy hay không.",
+    "offProcessHint": "Công đoạn này không dùng xếp xe đẩy. Bật trong quản lý routing để hiện ô quét."
   },
   "help": {
     "title": "Trợ giúp",
@@ -9909,7 +9916,9 @@
       "selectJobOrderHint": "Chọn lệnh sản xuất để xem kết quả sản xuất.",
       "inputDisabled": "Không thể nhập.",
       "orderLifecycleHint": "Tự động bắt đầu khi nhập kết quả đầu tiên · tự động kết thúc khi lượng tốt đạt kế hoạch (kết thúc sớm tại Quản lý lệnh sản xuất)",
-      "inspectNotRequired": "Không phải hạng mục kiểm tra bắt buộc trong cấu hình."
+      "inspectNotRequired": "Không phải hạng mục kiểm tra bắt buộc trong cấu hình.",
+      "restoreError": "Không tải được trạng thái hiện tại của thiết bị.",
+      "workerAssignError": "Không lưu được công nhân hiện tại."
     },
     "equip": {
       "modalTitle": "Chọn thiết bị",
@@ -9921,7 +9930,11 @@
       "orManual": "hoặc chọn thủ công",
       "searchPlaceholder": "Tìm theo tên hoặc mã...",
       "noResult": "Không có kết quả",
-      "title": "Thiết bị"
+      "title": "Thiết bị",
+      "noProcess": "Chưa gán công đoạn",
+      "noLine": "Chưa gán chuyền",
+      "useFilter": "Tình trạng sử dụng",
+      "unusedHint": "Thiết bị không sử dụng không thể chọn khi nhập sản xuất."
     },
     "material": {
       "bomList": "Danh sách vật liệu",
@@ -9952,7 +9965,9 @@
       "cancelAllConfirm": "Hủy toàn bộ {{count}} lô vật tư đã nhập?",
       "reverting": "Đang hoàn tác...",
       "reverted": "Đã tháo vật tư đã lắp trong lần này.",
-      "revertFailed": "Một số vật tư không thể tháo: {{list}}"
+      "revertFailed": "Một số vật tư không thể tháo: {{list}}",
+      "noWaitingLot": "Không có LOT chờ gá",
+      "waitingPickHint": "Chọn LOT của hạng mục chưa gá sẽ gá như khi quét."
     },
     "sgLabel": {
       "prepareFailed": "Không thể chuẩn bị màn hình in nhãn SFG.",

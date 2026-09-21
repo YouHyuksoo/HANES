@@ -12,40 +12,21 @@
  *   첫 단계이므로 스테퍼 ①단계 안에 있다(2026-09-21 지시, 서브공정 B안과 같은 구조).
  * - 전체화면(view=work)은 기존 화면과 같은 규칙이다. MainLayout 이 /production/input-kiosk* 를 chromeless 로 본다.
  */
-import { useCallback, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ClipboardList, Cpu, Maximize2, Minimize2, Pencil, Sparkles } from 'lucide-react';
 import { OutputCarrierSlot } from '@/components/shared/carrier';
 import EquipSelectModal from '../../input-kiosk/components/EquipSelectModal';
+import { useFullViewToggle } from '@/components/layout/useFullViewToggle';
 import type { InputKioskController } from '../../input-kiosk/hooks/useInputKioskController';
 
 const ROUTE = '/production/input-kiosk-b';
 
 export default function KioskContextBar({ c }: { c: InputKioskController }) {
   const { t } = useTranslation();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const isWorkView = searchParams.get('view') === 'work';
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  // 가공만 view=work 를 쓴다 — MainLayout 의 경로 화이트리스트에 박힌 기존 규칙이라 param 으로 넘긴다.
+  const { isFullView: isWorkView, isBrowserFullscreen: isFullscreen, toggle: handleToggleWorkView } =
+    useFullViewToggle(ROUTE, 'work');
   const { selectedEquip, selectedJobOrder } = c;
-
-  useEffect(() => {
-    const handle = () => setIsFullscreen(Boolean(document.fullscreenElement));
-    handle();
-    document.addEventListener('fullscreenchange', handle);
-    return () => document.removeEventListener('fullscreenchange', handle);
-  }, []);
-
-  const handleToggleWorkView = useCallback(() => {
-    if (isWorkView) {
-      router.push(ROUTE);
-      if (document.fullscreenElement) void document.exitFullscreen();
-      return;
-    }
-    router.push(`${ROUTE}?view=work`);
-    void document.documentElement.requestFullscreen();
-  }, [isWorkView, router]);
 
   const cell = 'flex h-full min-w-0 flex-col justify-center border-r border-white/15 px-4';
   const label = 'text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400';
@@ -112,7 +93,7 @@ export default function KioskContextBar({ c }: { c: InputKioskController }) {
 
         {/* 대차 · 준비 안내 · 전체화면 */}
         <div className="flex shrink-0 items-center gap-2 px-4">
-          <OutputCarrierSlot state={c.outputCarrier} compact />
+          <OutputCarrierSlot state={c.outputCarrier} compact flags={c.carrierFlags} />
           <button
             type="button"
             data-testid="kiosk-guide-open"

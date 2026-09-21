@@ -14,13 +14,15 @@
  *   첫 단계이므로 스테퍼 ①단계 안에 있다(2026-09-21 지시).
  */
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, ClipboardList, Cpu, Pencil, RefreshCw, Sparkles } from 'lucide-react';
+import { ChevronDown, ClipboardList, Cpu, Maximize2, Minimize2, Pencil, RefreshCw, Sparkles } from 'lucide-react';
 import { OutputCarrierSlot } from '@/components/shared/carrier';
+import { useFullViewToggle } from '@/components/layout/useFullViewToggle';
 import EquipSelectModal from '../../input-kiosk/components/EquipSelectModal';
 import type { InputAssemblyController } from '../../input-assembly/hooks/useInputAssemblyController';
 
 export default function AsmContextBar({ c }: { c: InputAssemblyController }) {
   const { t } = useTranslation();
+  const fullView = useFullViewToggle('/production/input-assembly-b');
   const {
     equipCode, equipName, processCode, processName, selectedOrder, outputCarrier,
   } = c;
@@ -87,7 +89,7 @@ export default function AsmContextBar({ c }: { c: InputAssemblyController }) {
 
         {/* 대차 · 초기화 */}
         <div className="flex shrink-0 items-center gap-2 px-4">
-          <OutputCarrierSlot state={outputCarrier} compact />
+          <OutputCarrierSlot state={outputCarrier} compact flags={c.carrierFlags} />
           <button
             type="button"
             data-testid="assembly-guide-open"
@@ -97,6 +99,16 @@ export default function AsmContextBar({ c }: { c: InputAssemblyController }) {
           >
             <Sparkles className="h-4 w-4" />
             <span className="hidden whitespace-nowrap xl:inline">{t('prepGuide.reopen', '준비 안내')}</span>
+          </button>
+          <button
+            type="button"
+            data-testid="asm-b-fullview"
+            onClick={fullView.toggle}
+            title={fullView.isFullView ? t('fab.exitFullscreen', '전체화면 종료') : t('fab.fullscreen', '전체화면 보기')}
+            aria-label={fullView.isFullView ? t('fab.exitFullscreen', '전체화면 종료') : t('fab.fullscreen', '전체화면 보기')}
+            className={`${ghostBtn} h-9 w-9 justify-center px-0`}
+          >
+            {fullView.isFullView || fullView.isBrowserFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </button>
           <button type="button" data-testid="asm-b-reset" onClick={c.resetAll} title={t('common.reset')} className={`${ghostBtn} h-9`}>
             <RefreshCw className="h-4 w-4" />

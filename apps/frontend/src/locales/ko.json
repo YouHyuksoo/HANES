@@ -80,7 +80,9 @@
     "date": "날짜",
     "yes": "예",
     "no": "아니오",
-    "unit": "단위",
+    "unit": {
+      "ea": "EA"
+    },
     "remark": "비고",
     "description": "설명",
     "active": "활성",
@@ -172,7 +174,8 @@
       "prev": "이전 페이지",
       "next": "다음 페이지"
     },
-    "actionProcessingHelp": "처리 중입니다. 완료될 때까지 기다려 주세요."
+    "actionProcessingHelp": "처리 중입니다. 완료될 때까지 기다려 주세요.",
+    "used": "사용"
   },
   "prepGuide": {
     "later": "나중에 하기",
@@ -207,7 +210,11 @@
     "barcode": "바코드",
     "loadedAt": "적재일시",
     "stepScan": "출력 대차 스캔",
-    "stepHint": "이 공정은 실적 라벨을 대차에 담습니다. 빈 대차 또는 같은 품목·작업지시의 대차를 스캔하세요."
+    "stepHint": "이 공정은 실적 라벨을 대차에 담습니다. 빈 대차 또는 같은 품목·작업지시의 대차를 스캔하세요.",
+    "offPending": "대차 대기",
+    "offProcess": "대차 미사용",
+    "offPendingHint": "작업지시와 공정을 고르면 대차 사용 여부가 표시됩니다.",
+    "offProcessHint": "이 공정은 대차 적재를 쓰지 않습니다. 라우팅 관리에서 대차 적재를 켜면 스캔칸이 나타납니다."
   },
   "help": {
     "title": "도움말",
@@ -9934,7 +9941,9 @@
       "selectJobOrderHint": "작업지시를 선택하면 생산실적이 표시됩니다.",
       "inputDisabled": "입력할 수 없습니다.",
       "orderLifecycleHint": "최초 실적입력 시 작업지시 자동 시작 · 양품이 계획수량에 도달하면 자동 종료 (조기 종료는 작업지시관리에서)",
-      "inspectNotRequired": "환경설정에서 필수 점검이 아닙니다."
+      "inspectNotRequired": "환경설정에서 필수 점검이 아닙니다.",
+      "restoreError": "설비 현재 상태를 불러오지 못했습니다.",
+      "workerAssignError": "현재 작업자 저장에 실패했습니다."
     },
     "equip": {
       "modalTitle": "설비 선택",
@@ -9946,7 +9955,11 @@
       "orManual": "또는 직접 선택",
       "searchPlaceholder": "설비명 또는 코드 검색...",
       "noResult": "검색 결과가 없습니다",
-      "title": "설비"
+      "title": "설비",
+      "noProcess": "공정 미지정",
+      "noLine": "라인 미지정",
+      "useFilter": "사용여부",
+      "unusedHint": "미사용 설비는 생산입력에 선택할 수 없습니다."
     },
     "material": {
       "bomList": "자재리스트",
@@ -9977,7 +9990,9 @@
       "cancelAllConfirm": "투입된 자재 {{count}}건을 모두 취소하시겠습니까?",
       "reverting": "되돌리는 중...",
       "reverted": "이번에 장착한 자재를 해제했습니다.",
-      "revertFailed": "장착 해제하지 못한 자재가 있습니다: {{list}}"
+      "revertFailed": "장착 해제하지 못한 자재가 있습니다: {{list}}",
+      "noWaitingLot": "장착 대기 LOT 없음",
+      "waitingPickHint": "미장착 품목의 LOT를 선택하면 스캔과 동일하게 장착합니다."
     },
     "sgLabel": {
       "prepareFailed": "SFG 라벨 출력 화면을 준비하지 못했습니다.",

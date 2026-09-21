@@ -80,7 +80,9 @@
     "date": "Date",
     "yes": "Yes",
     "no": "No",
-    "unit": "Unit",
+    "unit": {
+      "ea": "EA"
+    },
     "remark": "Remark",
     "description": "Description",
     "active": "Active",
@@ -172,7 +174,8 @@
       "prev": "Previous page",
       "next": "Next page"
     },
-    "actionProcessingHelp": "Processing. Please wait until it finishes."
+    "actionProcessingHelp": "Processing. Please wait until it finishes.",
+    "used": "Used"
   },
   "prepGuide": {
     "later": "Do it later",
@@ -207,7 +210,11 @@
     "barcode": "Barcode",
     "loadedAt": "Loaded at",
     "stepScan": "Scan output carrier",
-    "stepHint": "This process loads result labels onto a carrier. Scan an empty carrier or one holding the same item and order."
+    "stepHint": "This process loads result labels onto a carrier. Scan an empty carrier or one holding the same item and order.",
+    "offPending": "Carrier pending",
+    "offProcess": "Carrier not used",
+    "offPendingHint": "Pick a job order and process to see whether carriers are used.",
+    "offProcessHint": "This process does not use carrier loading. Enable it in routing management to get the scan box."
   },
   "help": {
     "title": "Help",
@@ -9912,7 +9919,9 @@
       "selectJobOrderHint": "Select a work order to view production results.",
       "inputDisabled": "Input is disabled.",
       "orderLifecycleHint": "Order starts automatically on the first result · completes automatically when good qty reaches the plan (early close in Job Order Management)",
-      "inspectNotRequired": "Not a required inspection in system settings."
+      "inspectNotRequired": "Not a required inspection in system settings.",
+      "restoreError": "Could not load the equipment's current state.",
+      "workerAssignError": "Failed to save the current workers."
     },
     "equip": {
       "modalTitle": "Select Equipment",
@@ -9924,7 +9933,11 @@
       "orManual": "or select manually",
       "searchPlaceholder": "Search by name or code...",
       "noResult": "No results found",
-      "title": "Equipment"
+      "title": "Equipment",
+      "noProcess": "No process",
+      "noLine": "No line",
+      "useFilter": "In use",
+      "unusedHint": "Unused equipment cannot be selected for production input."
     },
     "material": {
       "bomList": "Material List",
@@ -9955,7 +9968,9 @@
       "cancelAllConfirm": "Cancel all {{count}} input material lot(s)?",
       "reverting": "Reverting...",
       "reverted": "Materials mounted in this session were unmounted.",
-      "revertFailed": "Some materials could not be unmounted: {{list}}"
+      "revertFailed": "Some materials could not be unmounted: {{list}}",
+      "noWaitingLot": "No LOT waiting to mount",
+      "waitingPickHint": "Picking a LOT of an unmounted item mounts it just like scanning."
     },
     "sgLabel": {
       "prepareFailed": "Failed to prepare the SFG label print view.",

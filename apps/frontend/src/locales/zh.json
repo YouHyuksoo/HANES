@@ -80,7 +80,9 @@
     "date": "日期",
     "yes": "是",
     "no": "否",
-    "unit": "单位",
+    "unit": {
+      "ea": "EA"
+    },
     "remark": "备注",
     "description": "描述",
     "active": "启用",
@@ -172,7 +174,8 @@
       "prev": "上一页",
       "next": "下一页"
     },
-    "actionProcessingHelp": "处理中，请等待完成。"
+    "actionProcessingHelp": "处理中，请等待完成。",
+    "used": "使用"
   },
   "prepGuide": {
     "later": "稍后进行",
@@ -207,7 +210,11 @@
     "barcode": "条码",
     "loadedAt": "装载时间",
     "stepScan": "扫描输出台车",
-    "stepHint": "本工序将实绩标签装入台车。请扫描空车或同品目/同工单的台车。"
+    "stepHint": "本工序将实绩标签装入台车。请扫描空车或同品目/同工单的台车。",
+    "offPending": "台车待定",
+    "offProcess": "不使用台车",
+    "offPendingHint": "选择工单与工序后会显示是否使用台车。",
+    "offProcessHint": "该工序不使用台车装载。在工艺路线管理中启用后会出现扫描框。"
   },
   "help": {
     "title": "帮助",
@@ -9909,7 +9916,9 @@
       "selectJobOrderHint": "选择工单后将显示生产实绩。",
       "inputDisabled": "无法输入。",
       "orderLifecycleHint": "首次录入实绩时自动开始 · 良品达到计划数量时自动结束（提前结束请在作业指示管理中操作）",
-      "inspectNotRequired": "系统设置中非必检项。"
+      "inspectNotRequired": "系统设置中非必检项。",
+      "restoreError": "无法载入设备当前状态。",
+      "workerAssignError": "保存当前作业者失败。"
     },
     "equip": {
       "modalTitle": "选择设备",
@@ -9921,7 +9930,11 @@
       "orManual": "或手动选择",
       "searchPlaceholder": "按名称或代码搜索...",
       "noResult": "未找到结果",
-      "title": "设备"
+      "title": "设备",
+      "noProcess": "未指定工序",
+      "noLine": "未指定线体",
+      "useFilter": "使用与否",
+      "unusedHint": "未使用的设备无法在生产录入中选择。"
     },
     "material": {
       "bomList": "材料清单",
@@ -9952,7 +9965,9 @@
       "cancelAllConfirm": "确认取消已投入的 {{count}} 项物料吗？",
       "reverting": "正在撤销...",
       "reverted": "已解除本次装载的物料。",
-      "revertFailed": "部分物料无法解除装载：{{list}}"
+      "revertFailed": "部分物料无法解除装载：{{list}}",
+      "noWaitingLot": "无待装载 LOT",
+      "waitingPickHint": "选择未装载品目的 LOT 即等同于扫描装载。"
     },
     "sgLabel": {
       "prepareFailed": "无法准备 SFG 标签打印画面。",

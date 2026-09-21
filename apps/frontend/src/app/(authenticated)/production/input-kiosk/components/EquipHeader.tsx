@@ -16,7 +16,7 @@ import {
   ShieldCheck, UserCheck, Pencil, Search, Sparkles,
 } from 'lucide-react';
 import { useKioskStore } from '@/stores/kioskStore';
-import { OutputCarrierSlot, type OutputCarrierState } from '@/components/shared/carrier';
+import { OutputCarrierSlot, type OutputCarrierState, type CarrierProcessFlags } from '@/components/shared/carrier';
 import EquipSelectModal from './EquipSelectModal';
 import KioskProductivity from './KioskProductivity';
 import WorkerSlot from './WorkerSlot';
@@ -50,6 +50,8 @@ interface EquipHeaderProps {
   onOpenGuide?: () => void;
   /** 출력 대차 슬롯 상태 — 공정 CARRIER_LOAD_YN=Y일 때만 표시된다 */
   outputCarrier?: OutputCarrierState;
+  /** 공정 대차 플래그 — 슬롯이 꺼진 이유(미선택/공정 미사용)를 구분해 보여주려면 필요하다 */
+  carrierFlags?: CarrierProcessFlags | null;
 }
 
 export default function EquipHeader({
@@ -57,7 +59,7 @@ export default function EquipHeader({
   onSelectEquip, onRemoveWorker,
   dailyInspectAt, workerInspectAt,
   dailyInspectResult, workerInspectResult,
-  equipSelectOpen, onEquipSelectOpenChange, onOpenGuide, outputCarrier,
+  equipSelectOpen, onEquipSelectOpenChange, onOpenGuide, outputCarrier, carrierFlags,
 }: EquipHeaderProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -234,7 +236,7 @@ export default function EquipHeader({
             />
           </div>
 
-          {outputCarrier && <OutputCarrierSlot state={outputCarrier} compact />}
+          {outputCarrier && <OutputCarrierSlot state={outputCarrier} compact flags={carrierFlags} />}
 
           {/* 준비 안내 다시 열기 — Row1 축약 규칙: 2xl 미만은 아이콘만, 2xl 이상은 라벨까지 */}
           {onOpenGuide && (

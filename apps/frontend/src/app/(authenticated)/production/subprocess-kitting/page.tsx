@@ -12,7 +12,7 @@
  * 배치 시안 subprocess-kitting-b 와 공유). 이 파일은 배치를 그리는 역할만 한다.
  */
 import { useTranslation } from "react-i18next";
-import { Package, RefreshCw, Sparkles } from "lucide-react";
+import { Maximize2, Minimize2, Package, RefreshCw, Sparkles } from "lucide-react";
 import AssemblyResultRow from "../input-kiosk/components/AssemblyResultRow";
 import { Button, Card, CardContent, Select } from "@/components/ui";
 import JobOrderSelectModal, { type JobOrder } from "@/components/production/JobOrderSelectModal";
@@ -34,6 +34,7 @@ import ManagerCallModal from "../input-kiosk/components/ManagerCallModal";
 import { formatElapsed } from "../input-kiosk/hooks/useEquipStop";
 import KittingPrepGuideModal from "./components/KittingPrepGuideModal";
 import { HeaderCheckItem } from "@/components/inspect";
+import { useFullViewToggle } from "@/components/layout/useFullViewToggle";
 import {
   getOrderKindMeta,
   toJobOrderPick,
@@ -43,6 +44,7 @@ import {
 export default function SubprocessKittingPage() {
   const { t } = useTranslation();
   const c = useSubprocessKittingController();
+  const fullView = useFullViewToggle("/production/subprocess-kitting");
   const {
     selectedOrder, selectedWorkers, removeWorker,
     processCode, processName, equipCode, equipName, equips,
@@ -90,6 +92,16 @@ export default function SubprocessKittingPage() {
           <Button
             variant="secondary"
             size="sm"
+            data-testid="subkit-fullview"
+            onClick={fullView.toggle}
+            title={fullView.isFullView ? t("fab.exitFullscreen", "전체화면 종료") : t("fab.fullscreen", "전체화면 보기")}
+            leftIcon={fullView.isFullView || fullView.isBrowserFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          >
+            {t("fab.fullscreen", "전체화면")}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={resetAll}
             leftIcon={<RefreshCw className="w-4 h-4" />}
           >
@@ -129,7 +141,7 @@ export default function SubprocessKittingPage() {
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
-              <OutputCarrierSlot state={outputCarrier} />
+              <OutputCarrierSlot state={outputCarrier} flags={carrierFlags} />
               <HeaderCheckItem
                 label="설비 일상점검"
                 done={!dailyInspectRequired || interlock.dailyInspectDone}
