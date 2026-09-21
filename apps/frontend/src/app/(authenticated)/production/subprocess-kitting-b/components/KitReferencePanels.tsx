@@ -9,6 +9,8 @@
  *   "SFG를 몇 개 담았는지"를 번갈아 확인해야 해서 현장에서 손이 멈춘다(input-kiosk-b 와 같은 판단).
  * - 두 패널은 기존 화면(A안)의 EquipMaterialMountPanel, InputSgScanPanel 을 그대로 쓴다.
  *   B 안은 배치만 다르고 스캔 규칙·API는 A안과 동일하다.
+ * - 자재 장착은 여기서 현황을 보고, 스캔은 스테퍼 ③단계의 [자재 스캔] 버튼 → 모달에서 한다.
+ *   가공 B안이 MaterialListPanel(목록) + 버튼→MaterialScanModal(스캔) 로 나눈 것과 같은 구조다(2026-09-21 지시).
  * - 상자 규칙은 input-kiosk-b 와 같다: 굵은 테두리 + 어두운 슬레이트 제목 띠. 파스텔 배경은 쓰지 않는다.
  */
 import { useTranslation } from 'react-i18next';

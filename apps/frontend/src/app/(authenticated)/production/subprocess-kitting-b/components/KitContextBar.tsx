@@ -2,17 +2,19 @@
 
 /**
  * @file production/subprocess-kitting-b/components/KitContextBar.tsx
- * @description B 배치 상단 컨텍스트 띠 — 설비 · 작업지시 · 회로 · 작업자 · 대차 · 초기화
+ * @description B 배치 상단 컨텍스트 띠 — 설비 · 작업지시 · 회로 · 대차 · 준비 안내 · 초기화
  *
  * 초보자 가이드:
- * - "지금 어느 설비에서 어떤 지시를 누가 어느 회로로 만드는가"만 담는 띠다. 어두운 슬레이트 배경으로
+ * - "지금 어느 설비에서 어떤 지시를 어느 회로로 만드는가"만 담는 띠다. 어두운 슬레이트 배경으로
  *   아래 작업 영역(흰 카드)과 면으로 구분한다. 강조색(primary)은 여기서 쓰지 않는다.
  * - input-kiosk-b 의 KioskContextBar 와 같은 규칙(셀 구분선 · 라벨 위 값 아래 · ghost 버튼)을 쓴다.
  * - 가공 키오스크와 달리 이 라우트는 chromeless 대상이 아니므로 전체화면 버튼은 두지 않는다.
  * - 설비 선택 모달은 이 띠가 직접 연다(설비 버튼 바로 옆에서 닫히는 흐름이 자연스럽다).
+ * - 작업자는 여기 두지 않는다. 공용 WorkerSlot 은 밝은 카드 배경용이고, 작업자 배정은 작업 순서의
+ *   첫 단계이므로 스테퍼 ①단계 안에 있다(2026-09-21 지시).
  */
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, ClipboardList, Cpu, Pencil, RefreshCw, UserPlus, Waypoints, X } from 'lucide-react';
+import { ChevronDown, ClipboardList, Cpu, Pencil, RefreshCw, Sparkles, Waypoints } from 'lucide-react';
 import { OutputCarrierSlot } from '@/components/shared/carrier';
 import EquipSelectModal from '../../input-kiosk/components/EquipSelectModal';
 import {
@@ -23,7 +25,7 @@ import {
 export default function KitContextBar({ c }: { c: SubprocessKittingController }) {
   const { t } = useTranslation();
   const {
-    equipCode, equipName, processCode, processName, selectedOrder, selectedWorkers,
+    equipCode, equipName, processCode, processName, selectedOrder,
     circuitNo, setCircuitNo, circuits, circuitOptions, outputCarrier,
   } = c;
 
@@ -110,34 +112,19 @@ export default function KitContextBar({ c }: { c: SubprocessKittingController })
           </span>
         </div>
 
-        {/* 작업자 */}
-        <div data-testid="subkit-b-worker-region" className={`${cell} max-w-[360px] shrink-0`}>
-          <span className={label}>{t('kiosk.stepper.worker', '작업자')}</span>
-          <span className="flex min-w-0 flex-wrap items-center gap-1.5">
-            {selectedWorkers.map((worker) => (
-              <span key={worker.id} className="inline-flex items-center gap-1 rounded-full border border-emerald-400/70 px-2 py-0.5 text-xs font-bold text-emerald-200">
-                <span className="max-w-[96px] truncate" title={worker.workerName}>{worker.workerName}</span>
-                <button type="button" onClick={() => void c.removeWorker(worker.id)} aria-label={t('common.delete')} className="hover:text-red-300">
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-            <button
-              type="button"
-              data-testid="subkit-b-worker-open"
-              onClick={() => c.setWorkerModalOpen(true)}
-              disabled={!equipCode}
-              title={equipCode ? t('kiosk.header.addWorker') : t('kiosk.header.selectEquipFirst', '설비를 먼저 선택하세요.')}
-              className={`${ghostBtn} ${equipCode && selectedWorkers.length === 0 ? 'animate-pulse border-red-400 text-red-200' : ''}`}
-            >
-              <UserPlus className="h-3 w-3" />{t('kiosk.header.addWorker')}
-            </button>
-          </span>
-        </div>
-
         {/* 대차 · 초기화 */}
         <div className="flex shrink-0 items-center gap-2 px-4">
           <OutputCarrierSlot state={outputCarrier} compact />
+          <button
+            type="button"
+            data-testid="subkit-guide-open"
+            onClick={c.guide.openGuide}
+            title={t('prepGuide.reopen', '준비 안내')}
+            className={`${ghostBtn} h-9`}
+          >
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden whitespace-nowrap xl:inline">{t('prepGuide.reopen', '준비 안내')}</span>
+          </button>
           <button type="button" data-testid="subkit-b-reset" onClick={c.resetAll} title={t('common.reset')} className={`${ghostBtn} h-9`}>
             <RefreshCw className="h-4 w-4" />
             <span className="hidden whitespace-nowrap xl:inline">{t('common.reset')}</span>

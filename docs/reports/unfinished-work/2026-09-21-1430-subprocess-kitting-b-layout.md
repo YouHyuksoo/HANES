@@ -3,7 +3,7 @@
 - 작성시각: 2026-09-21 14:30 KST
 - 작성자: claude
 - 작업 범위: `/production/subprocess-kitting-b` 신규 라우트 + A안 컨트롤러 훅 분리 + 메뉴 등록
-- 현재 상태: 검증대기 (ko 렌더 확인 완료 / en·zh·vi 렌더 미확인, 설비정지 추가 여부 사용자 대기)
+- 현재 상태: 검증대기 (ko 렌더 aside 실측 확인 / en·zh·vi 렌더 미확인)
 
 ## 완료한 것
 
@@ -56,7 +56,8 @@
 | `input-kiosk/shared-worker-slot.structure.test.mjs` | 2/2 통과 |
 | 프론트 구조 테스트 전수 | 실패 10건 — **전부 기존 실패**. HEAD(3311009e) worktree 에서 동일 10건이 동일 개수로 실패함을 대조 확인. 이번 작업으로 인한 회귀 0건 |
 | DB 적용 | pre 0 → post 1, 멱등 재실행 확인 |
-| i18n 4-locale 키 감사 | 45키 × 4 locale 누락 0, BOM 없음 |
+| i18n 4-locale 키 감사 | 135키 × 4 locale 누락 0, BOM 없음 |
+| `subprocess-kitting.service.spec.ts` | 9/9 (설비정지 게이트 2건 신규) |
 | 화면 렌더 (ko) | 사용자가 확인 — 메뉴 노출 OK, ④단계 배치 깨짐 발견·수정 완료 |
 | **화면 렌더 (en/zh/vi)** | **미실행** |
 
@@ -81,15 +82,39 @@ dev 서버는 사용자가 watch 출력을 봐야 하므로 이쪽에서 띄우�
   **A안 `SubKitActionBar` 는 무변경** — 동작·API·호출 함수는 동일하고 배치만 다르다.
   발행 전(판정+발행)과 발행 후(발행번호+실물 스캔+취소)를 한 화면에 같이 두지 않고 갈랐다.
 
-## 사용자 대기 중인 결정
+## 이후 추가로 반영한 것 (같은 세션)
 
-- **설비정지 · 관리자호출을 키팅 화면에 넣을지.** 현재 A안·B안 모두 없다(원래 없었다).
-  `useEquipStop` / `EquipActionButtons` / `ManagerCallModal` 은 실적입력(가공) A·B 와
-  통전·단자검사(`inspection/result`, 커밋 b1f883a4)에만 있다.
-  넣는다면 `inspection/result` 선례대로:
-  ① 공용 훅에 `useEquipStop` 추가(→ A·B 동시 적용) ② 정지 중 `canIssue` 차단 + 배너
-  ③ B안은 하단 지표 띠 우측에 `EquipActionButtons` ④ 서버 `issue-sg-label`/`confirm-subkit` 정지 게이트(백엔드 변경)
-  ①~③(프론트만)과 ④까지 중 어디까지 할지 미정.
+- **설비정지 · 관리자호출** — 실적입력(가공)과 동일하게 적용, **백엔드 게이트 포함**.
+  공용 훅에 `useEquipStop` → A안·B안 동시. `canIssue` 에 `!isStopped` 추가.
+  서버는 `issueSgLabel` · `confirmSubKit` 두 곳에 `assertEquipNotStopped`(가공 실적과 같은 함수).
+  발행 단계에도 건 이유: 발행만 통과시키면 라벨은 채번됐는데 확정이 막혀 ISSUED 유실 라벨이 남는다.
+- **준비 안내** — 조립과 같은 구조(`usePrepGuide` + `PrepGuideModal` 공용).
+  단계: 설비 → 작업지시 → **회로** → 작업자 → 일상점검 → 작업자설비점검 → 대차.
+  회로는 품목에 회로가 없으면 `notTarget` — 발행·확정 가드와 같은 조건.
+- **B안 스테퍼 5단계** — 작업자와 설비점검은 계층이 달라 분리(사용자 지시).
+  ① 작업자 ② 설비 점검 ③ 설비 자재 장착 ④ 이전 공정 SFG 스캔 ⑤ 키팅 실행·확정.
+  작업자는 공용 `WorkerSlot` 사용(컨텍스트 띠의 수제 칩 제거 → 3화면 통일 규칙 준수).
+- **자재 장착을 가공 방식으로 통일** — 스테퍼 ③에 `[자재 스캔]` 버튼 → `KitMaterialMountModal`.
+  모달 안에 기존 `EquipMaterialMountPanel` 을 그대로 띄운다. A안·조립 화면은 무변경.
+- **세로형 `KitResultEntry`** — A안 `SubKitActionBar` 의 `lg:flex-row` 가 뷰포트 기준이라
+  440px 열에서 안내 문구가 한 글자 폭으로 찌그러졌다. A안 컴포넌트는 건드리지 않았다.
+
+## 가공 B안(input-kiosk-b) 도 함께 손봄
+
+- 작업자를 컨텍스트 띠 → 스테퍼 ①단계로 이동, 5단계로 재번호(서브공정과 같은 구조).
+- `SelfInspectPanel` 시점 버튼 3줄 → 2줄(아이콘을 라벨 왼쪽으로). **가공 A안도 같이 적용된다** — 공용 컴포넌트.
+- `KioskResultEntry` 폭·높이 축소.
+- 스테퍼 ④(공정샘플검사)를 `flex-1 min-h-0` 으로 바꿔 남는 공간을 흡수하게 했다.
+  고정 px 로는 화면 크기가 바뀔 때마다 스크롤이 생겼다. aside 실측: 넘침 83px → 0px, 검사 패널 92 → 155px.
+
+## 라우트 추가 시 함정 (이번에 실제로 겪음)
+
+`/production/subprocess-kitting-b` 메뉴를 눌러도 직전 화면이 그대로 남는 증상이 있었다.
+원인은 **`pageRegistry.generated.ts` 미등록**이다. 이 프로젝트는 탭 유지(`TabKeepAlive`)를 위해
+Next 라우터 대신 `history.pushState` + 생성 레지스트리로 페이지를 찾으므로, 등록이 빠지면
+URL·탭은 바뀌는데 본문이 렌더되지 않고 **에러도 나지 않는다.**
+`predev`/`prebuild` 에 걸려 있어 dev 재시작 시 자동 생성되지만, dev 를 띄운 채 라우트를 추가하면
+`node apps/frontend/scripts/gen-page-registry.mjs` 를 직접 실행해야 한다. (CLAUDE.md 6절에 기록)
 
 ## 주의사항
 

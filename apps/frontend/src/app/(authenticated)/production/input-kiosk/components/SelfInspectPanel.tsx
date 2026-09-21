@@ -108,20 +108,24 @@ function TimingBtn({ timing, label, done, disabled, disabledReason, notify, bloc
       onClick={onClick}
       disabled={disabled && !done}
       title={done ? label : (disabledReason || label)}
-      className={`flex flex-col items-center gap-0.5 rounded border-2 px-1 py-1 text-xs font-semibold transition-all ${cls}`}
+      className={`flex flex-col items-start gap-0.5 rounded border-2 px-1.5 py-1 text-xs font-semibold transition-all ${cls}`}
     >
-      <span>{label}</span>
-      {done ? (
-        <CheckCircle2 className="h-3 w-3" />
-      ) : block ? (
-        <span className="text-[9px] font-bold">{t('kiosk.selfInspect.blockBadge', '차단!')}</span>
+      {/* 1줄: 아이콘(왼쪽) + 라벨. 2줄: 상태 배지 또는 잠금 사유.
+          예전에는 라벨/아이콘/사유가 각각 줄을 차지해 3줄이었다(2026-09-21 지적). */}
+      <span className="flex w-full items-center gap-1">
+        {done ? (
+          <CheckCircle2 className="h-3 w-3 shrink-0" />
+        ) : (
+          <FlaskConical className="h-3 w-3 shrink-0 opacity-60" />
+        )}
+        <span className="min-w-0 truncate">{label}</span>
+      </span>
+      {block ? (
+        <span className="text-[9px] font-bold leading-none">{t('kiosk.selfInspect.blockBadge', '차단!')}</span>
       ) : notify ? (
-        <span className="text-[9px] font-bold">{t('kiosk.selfInspect.notifyBadge', '권장↑')}</span>
-      ) : (
-        <FlaskConical className="h-3 w-3 opacity-60" />
-      )}
-      {!done && disabled && disabledReason ? (
-        <span className="text-[9px] text-text-muted leading-none" title={disabledReason}>
+        <span className="text-[9px] font-bold leading-none">{t('kiosk.selfInspect.notifyBadge', '권장↑')}</span>
+      ) : !done && disabled && disabledReason ? (
+        <span className="w-full truncate text-[9px] leading-none text-text-muted" title={disabledReason}>
           {disabledReason}
         </span>
       ) : null}

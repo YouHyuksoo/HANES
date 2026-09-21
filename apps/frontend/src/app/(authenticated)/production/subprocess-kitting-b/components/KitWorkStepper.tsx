@@ -2,7 +2,8 @@
 
 /**
  * @file production/subprocess-kitting-b/components/KitWorkStepper.tsx
- * @description B 배치 우측 열 — 실제 작업 순서(설비 점검 → 자재 장착 → 이전 공정 SFG → 키팅 실행·확정) 스테퍼
+ * @description B 배치 우측 열 — 작업 순서 스테퍼 5단계
+ *   ① 작업자 ② 설비 점검 ③ 설비 자재 장착 ④ 이전 공정 SFG 스캔 ⑤ 키팅 실행·확정
  *
  * 초보자 가이드:
  * - 위에서 아래로 읽는 순서가 곧 작업 순서다. 단계 번호 배지는 완료(초록)/현재 막힘(빨강)/대기(회색)
@@ -13,10 +14,13 @@
  * - ④단계는 세로형 KitResultEntry 를 쓰고 열 하단에 고정한다(화면이 낮아도 버튼이 보인다).
  *   A안 가로 바(SubKitActionBar)는 lg:flex-row 가 뷰포트 기준이라 이 좁은 열에서 글자가 세로로 찌그러진다.
  */
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, ShieldCheck, UserCheck, XCircle } from 'lucide-react';
+import { CheckCircle2, Scan, ShieldCheck, UserCheck, XCircle } from 'lucide-react';
 import { HeaderCheckItem } from '@/components/inspect';
+import WorkerSlot from '../../input-kiosk/components/WorkerSlot';
 import KitResultEntry from './KitResultEntry';
+import KitMaterialMountModal from './KitMaterialMountModal';
 import type { SubprocessKittingController } from '../../subprocess-kitting/hooks/useSubprocessKittingController';
 
 type StepState = 'done' | 'blocked' | 'idle';
@@ -47,7 +51,7 @@ function StepHeader({ n, state, title, right }: { n: number; state: StepState; t
 export default function KitWorkStepper({ c }: { c: SubprocessKittingController }) {
   const { t } = useTranslation();
   const {
-    equipCode, selectedOrder, selectedWorkers, interlock,
+    equipCode, selectedOrder, selectedWorkers, removeWorker, interlock,
     dailyInspectRequired, workerInspectRequired, dailyInspectResult, workerInspectResult,
     inspectDoneDetail, inspectNgDetail,
     sgList, issuedSg, circuits, circuitNo,
@@ -55,15 +59,25 @@ export default function KitWorkStepper({ c }: { c: SubprocessKittingController }
     resultQuality, setResultQuality,
   } = c;
 
-  // 단계 완료 여부 — 컨트롤러 값 그대로 (A안 canIssue 가드와 같은 조건을 단계로 쪼갠 것뿐이다)
-  const step1Done = (!dailyInspectRequired || interlock.dailyInspectDone) && (!workerInspectRequired || interlock.workerInspectDone);
-  const step2Done = !!selectedOrder && !!equipCode;
-  const step3Done = sgList.length > 0 && (circuits.length === 0 || !!circuitNo);
-  const step4Done = !!issuedSg;
-  const dones = [step1Done, step2Done, step3Done, step4Done];
-  const firstOpen = dones.findIndex((done) => !done); // -1 = 전부 완료
-  const stateOf = (i: number): StepState => (dones[i] ? 'done' : i === firstOpen ? 'blocked' : 'idle');
-  const pendingSteps = dones.slice(0, 3).map((done, i) => (done ? null : i + 1)).filter((n): n is number => n !== null);
+  const [materialMountOpen, setMaterialMountOpen] = useState(false);
+
+  // 단계 완료 여부 — 컨트롤러 값 그대로. 여기서 새 규칙을 만들지 않는다.
+  // 작업자(①)와 설비점검(②)은 성격이 다르므로 단계를 나눈다(2026-09-21 지시).
+  const doneWorker = selectedWorkers.length > 0;
+  const doneInspect = (!dailyInspectRequired || interlock.dailyInspectDone) && (!workerInspectRequired || interlock.workerInspectDone);
+  const doneSg = sgList.length > 0 && (circuits.length === 0 || !!circuitNo);
+  const doneIssue = !!issuedSg;
+
+  // ③ 자재 장착은 완료 신호가 없다 — EquipMaterialMountPanel 이 장착 완료를 컨트롤러에 알려주지 않고,
+  //    canIssue 게이트에도 들어가지 않는다. 그래서 "완료"를 주장하지 않고 진행 체인에서도 뺀다.
+  //    (가공은 interlock.materialScanDone 이 있어 완료 표시가 가능하다. 키팅에 같은 인터록을 만들려면 별도 작업.)
+  const gateDones = [doneWorker, doneInspect, doneSg, doneIssue];
+  const gateStepNo = [1, 2, 4, 5];
+  const firstOpenGate = gateDones.findIndex((done) => !done); // -1 = 전부 완료
+  const stateOfGate = (i: number): StepState => (gateDones[i] ? 'done' : i === firstOpenGate ? 'blocked' : 'idle');
+  const pendingSteps = gateDones.slice(0, 3)
+    .map((done, i) => (done ? null : gateStepNo[i]))
+    .filter((n): n is number => n !== null);
 
   const workerInspectDisabledReason = !workerInspectRequired
     ? t('kiosk.header.inspectNotRequired', '환경설정에서 필수 점검이 아닙니다.')
@@ -74,6 +88,9 @@ export default function KitWorkStepper({ c }: { c: SubprocessKittingController }
         : selectedWorkers.length === 0
           ? t('kiosk.header.workerRequiredForInspect', '작업자를 먼저 선택하세요.')
           : undefined;
+
+  // 스캔 버튼 — 가공 B안 ②단계와 같은 규칙(높이·테두리·굵기)
+  const scanBtn = 'inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded border px-3 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-40';
 
   const stateText = (done: boolean, label: string) => (
     <span className={`inline-flex items-center gap-1 ${done ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -98,9 +115,28 @@ export default function KitWorkStepper({ c }: { c: SubprocessKittingController }
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        {/* ① 설비 점검 */}
+        {/* ① 작업자 */}
         <section className="flex flex-col gap-2 border-b border-border px-4 py-3">
-          <StepHeader n={1} state={stateOf(0)} title={t('kiosk.stepper.step1', '설비 점검')} />
+          <StepHeader
+            n={1}
+            state={stateOfGate(0)}
+            title={t('kiosk.stepper.worker', '작업자')}
+            right={stateText(doneWorker, t('kiosk.stepper.worker', '작업자'))}
+          />
+          {/* 실적입력 3화면 공용 WorkerSlot */}
+          <div className="pl-10">
+            <WorkerSlot
+              workers={selectedWorkers}
+              hasEquip={!!equipCode}
+              onOpenWorker={() => c.setWorkerModalOpen(true)}
+              onRemoveWorker={(id) => void removeWorker(id)}
+            />
+          </div>
+        </section>
+
+        {/* ② 설비 점검 */}
+        <section className="flex flex-col gap-2 border-b border-border px-4 py-3">
+          <StepHeader n={2} state={stateOfGate(1)} title={t('kiosk.stepper.step1', '설비 점검')} />
           <div className="flex gap-2 pl-10">
             <HeaderCheckItem
               label={t('kiosk.header.dailyInspect', '설비 일상점검')}
@@ -129,24 +165,35 @@ export default function KitWorkStepper({ c }: { c: SubprocessKittingController }
           </div>
         </section>
 
-        {/* ② 설비 자재 장착 — 실제 스캔 입력은 왼쪽 참조 영역에 있다 */}
-        <section className="flex flex-col gap-2 border-b border-border px-4 py-3">
-          <StepHeader
-            n={2}
-            state={stateOf(1)}
-            title={t('production.inputAssembly.equipMaterialMount', '설비 자재 장착')}
-            right={stateText(step2Done, t('kiosk.stepper.material', '자재'))}
-          />
-          <p className="pl-10 text-xs text-text-muted">
-            {t('production.subprocess.stepMaterialHint', '왼쪽 아래 자재 장착 패널에서 설비에 물린 자재를 스캔하세요.')}
-          </p>
-        </section>
-
-        {/* ③ 이전 공정 SFG 스캔 + 회로 */}
+        {/* ③ 설비 자재 장착 — 가공 ②단계와 같은 버튼→모달 방식 */}
         <section className="flex flex-col gap-2 border-b border-border px-4 py-3">
           <StepHeader
             n={3}
-            state={stateOf(2)}
+            state="idle"
+            title={t('production.inputAssembly.equipMaterialMount', '설비 자재 장착')}
+          />
+          <div className="flex gap-2 pl-10">
+            <button
+              type="button"
+              data-testid="subkit-material-scan-open"
+              onClick={() => setMaterialMountOpen(true)}
+              disabled={!equipCode}
+              title={equipCode
+                ? t('production.equipMaterial.mountTitle', '설비 자재 장착 (지속)')
+                : t('kiosk.header.selectEquipFirst', '설비를 먼저 선택하세요.')}
+              className={`${scanBtn} border-slate-900 bg-slate-900 text-white hover:bg-slate-800 dark:border-white dark:bg-white dark:text-slate-900`}
+            >
+              <Scan className="h-3.5 w-3.5" />
+              {t('production.subprocess.materialScan', '자재 스캔')}
+            </button>
+          </div>
+        </section>
+
+        {/* ④ 이전 공정 SFG 스캔 + 회로 */}
+        <section className="flex flex-col gap-2 border-b border-border px-4 py-3">
+          <StepHeader
+            n={4}
+            state={stateOfGate(2)}
             title={t('production.subprocess.inputSgScan', '이전 공정 SFG 스캔')}
             right={
               <span className="flex gap-3">
@@ -161,11 +208,11 @@ export default function KitWorkStepper({ c }: { c: SubprocessKittingController }
         </section>
       </div>
 
-      {/* ④ 키팅 실행 · 확정 — 스크롤 영역 밖(열 하단 고정) */}
+      {/* ⑤ 키팅 실행 · 확정 — 스크롤 영역 밖(열 하단 고정) */}
       <section className="flex shrink-0 flex-col gap-2 border-t-2 border-slate-300 px-4 pt-3 pb-3 dark:border-slate-600">
         <StepHeader
-          n={4}
-          state={stateOf(3)}
+          n={5}
+          state={stateOfGate(3)}
           title={t('production.subprocess.issueAndConfirm', '키팅 실행 · 확정')}
           right={<span className="text-text-muted">{issuedSg ? t('production.subprocess.awaitConfirm', '실물 스캔 대기') : t('production.subprocess.awaitIssue', '발행 전')}</span>}
         />
@@ -188,6 +235,14 @@ export default function KitWorkStepper({ c }: { c: SubprocessKittingController }
           )}
         </div>
       </section>
+
+      <KitMaterialMountModal
+        isOpen={materialMountOpen}
+        onClose={() => setMaterialMountOpen(false)}
+        equipCode={equipCode}
+        orderNo={selectedOrder?.orderNo}
+        itemCode={selectedOrder?.itemCode}
+      />
     </div>
   );
 }

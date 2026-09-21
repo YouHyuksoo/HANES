@@ -100,6 +100,7 @@
     "filter": "Bộ lọc",
     "remarkPlaceholder": "Nhập ghi chú",
     "partCode": "Mã linh kiện",
+    "itemCode": "Mã hàng",
     "partName": "Tên linh kiện",
     "partSearch": "Tìm kiếm linh kiện",
     "partSearchPlaceholder": "Nhập mã hoặc tên linh kiện...",
@@ -4253,7 +4254,21 @@
       "awaitConfirm": "Chờ quét nhãn thực tế",
       "stepMaterialHint": "Quét vật tư đã gá trên thiết bị ở bảng gá phía dưới bên trái.",
       "stepSgHint": "Thu thập nhãn SFG công đoạn trước ở bảng quét phía dưới bên phải, chọn mạch ở thanh phía trên.",
-      "issuedSgLabel": "SFG đã phát hành"
+      "issuedSgLabel": "SFG đã phát hành",
+      "stepWorkerInspect": "Công nhân & kiểm tra thiết bị",
+      "materialScan": "Quét vật tư",
+      "assignOrderFailed": "Không lưu được lệnh sản xuất hiện tại của thiết bị.",
+      "clearOrderFailed": "Không hủy được lệnh sản xuất hiện tại của thiết bị.",
+      "restoreError": "Không tải được trạng thái làm việc hiện tại của thiết bị.",
+      "guide": {
+        "title": "Chuẩn bị kitting",
+        "subtitle": "Hoàn tất các bước dưới đây để phát hành nhãn SFG.",
+        "allReadyDesc": "Đã chuẩn bị xong. Hãy quét SFG công đoạn trước.",
+        "stepCircuit": "Chọn mạch",
+        "hintEquip": "Chọn thiết bị. Thiết bị quyết định công đoạn và điều kiện tra cứu lệnh sản xuất.",
+        "hintJobOrder": "Chọn lệnh sản xuất bán thành phẩm cho công đoạn này. Có thể quét mã lệnh.",
+        "hintCircuit": "Mặt hàng này tạo SFG theo từng mạch. Hãy chọn mạch trước khi phát hành hoặc xác nhận."
+      }
     },
     "fgLabel": {
       "prepareFailed": "Không thể chuẩn bị màn hình in nhãn FG.",

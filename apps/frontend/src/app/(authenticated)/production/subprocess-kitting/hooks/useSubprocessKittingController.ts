@@ -26,6 +26,9 @@ import { useSysConfigStore } from "@/stores/sysConfigStore";
 import type { Worker } from "@/components/worker/WorkerSelector";
 import { inspectStatusDetail, isInspectNg } from "../../input-kiosk/utils/inspectStatus";
 import { normalizeScannedOrderNo } from "@/utils/scanned-order-no";
+import { useEquipStop } from "../../input-kiosk/hooks/useEquipStop";
+import { usePrepGuide } from "@/components/shared/prep-guide";
+import { buildKittingPrepGuideSteps } from "../kittingPrepGuideSteps";
 
 
 export interface AssemblyComponent {
@@ -154,6 +157,11 @@ export function useSubprocessKittingController() {
   const carrierFlags = useCarrierProcessFlags({ orderNo: selectedOrder?.orderNo, processCode });
   const [equipCurCarrierNo, setEquipCurCarrierNo] = useState<string | null>(null);
   const outputCarrier = useOutputCarrier({ equipCode: equipCode || null, enabled: carrierFlags?.carrierLoadYn === "Y", initialCarrierNo: equipCurCarrierNo });
+
+  // 설비정지 · 관리자호출 — 실적입력(가공)과 같은 훅·같은 API. 정지 중에는 발행/확정을 막는다.
+  const equipStop = useEquipStop(equipCode || null, selectedOrder?.orderNo ?? null);
+  const [isEquipStopOpen, setIsEquipStopOpen] = useState(false);
+  const [isManagerCallOpen, setIsManagerCallOpen] = useState(false);
 
   const orderScanRef = useRef<HTMLInputElement>(null);
   const sgPrinterRef = useRef<SgLabelPrintHandle>(null);
@@ -455,8 +463,10 @@ export function useSubprocessKittingController() {
     setSgList((prev) => prev.filter((item) => item.sgBarcode !== sgBarcode));
   }, []);
 
+  // 발행 가능 조건. 설비정지 중이면 막는다 — 서버(issueSgLabel/confirmSubKit)에도 같은 게이트가 걸려 있다.
   const canIssue =
     !!selectedOrder && !!processCode && !!equipCode && sgList.length > 0 && !issuedSg
+    && !equipStop.isStopped
     && (!dailyInspectRequired || interlock.dailyInspectDone)
     && (!workerInspectRequired || interlock.workerInspectDone);
 
@@ -570,6 +580,28 @@ export function useSubprocessKittingController() {
     setIssuedSg(null);
   }, []);
 
+  // 준비 안내 — 실적입력(가공)·(조립)과 같은 공용 usePrepGuide. 판정은 화면 게이트와 같은 상태로 계산한다.
+  const guideSteps = useMemo(() => buildKittingPrepGuideSteps({
+    equipName: equipName || null,
+    orderNo: selectedOrder?.orderNo ?? null,
+    circuitNo: circuitNo || null,
+    circuitCount: circuits.length,
+    workerNames: selectedWorkers.map((w) => w.workerName),
+    interlock,
+    dailyInspectRequired,
+    workerInspectRequired,
+    dailyInspectResult,
+    workerInspectResult,
+    carrierRequired: carrierFlags?.carrierLoadYn === "Y",
+    carrierNo: outputCarrier.carrier?.carrierNo ?? null,
+  }), [
+    equipName, selectedOrder?.orderNo, circuitNo, circuits.length, selectedWorkers,
+    interlock, dailyInspectRequired, workerInspectRequired,
+    dailyInspectResult, workerInspectResult,
+    carrierFlags?.carrierLoadYn, outputCarrier.carrier?.carrierNo,
+  ]);
+  const guide = usePrepGuide(guideSteps);
+
   return {
     // 선택 상태
     selectedOrder, orderScan, setOrderScan, orderSearchOpen, setOrderSearchOpen,
@@ -587,6 +619,10 @@ export function useSubprocessKittingController() {
     resultQuality, setResultQuality, productivityRevision,
     // 대차
     carrierFlags, outputCarrier,
+    // 설비정지 · 관리자호출
+    equipStop, isEquipStopOpen, setIsEquipStopOpen, isManagerCallOpen, setIsManagerCallOpen,
+    // 준비 안내
+    guide,
     // 동작
     selectOrder, fetchOrderByNo, clearOrder, resetAll,
     handleEquipSelect, handleWorkerSelect, restoreEquipmentCurrentState,

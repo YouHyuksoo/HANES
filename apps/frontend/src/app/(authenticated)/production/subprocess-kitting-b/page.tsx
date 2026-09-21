@@ -20,6 +20,11 @@ import WorkInstructionView from '../input-kiosk/components/WorkInstructionView';
 import SgLabelPrintHost from '../input-kiosk/components/SgLabelPrintHost';
 import DailyInspectModal from '../input-kiosk/components/DailyInspectModal';
 import WorkerInspectModal from '../input-kiosk/components/WorkerInspectModal';
+import EquipActionButtons from '../input-kiosk/components/EquipActionButtons';
+import EquipStopModal from '../input-kiosk/components/EquipStopModal';
+import ManagerCallModal from '../input-kiosk/components/ManagerCallModal';
+import { formatElapsed } from '../input-kiosk/hooks/useEquipStop';
+import KittingPrepGuideModal from '../subprocess-kitting/components/KittingPrepGuideModal';
 import WorkerSelectModal from '@/components/worker/WorkerSelectModal';
 import JobOrderSelectModal, { type JobOrder } from '@/components/production/JobOrderSelectModal';
 import {
@@ -38,7 +43,8 @@ export default function SubprocessKittingBPage() {
     selectedOrder, selectedWorkers, processCode, sgList, productivityRevision,
     orderSearchOpen, setOrderSearchOpen, workerModalOpen, setWorkerModalOpen,
     dailyInspectOpen, setDailyInspectOpen, workerInspectOpen, setWorkerInspectOpen,
-    equipCode, refreshInspectStatus, selectOrder, handleWorkerSelect, sgPrinterRef,
+    equipCode, equipName, refreshInspectStatus, selectOrder, handleWorkerSelect, sgPrinterRef,
+    equipStop, isEquipStopOpen, setIsEquipStopOpen, isManagerCallOpen, setIsManagerCallOpen, guide,
   } = c;
 
   return (
@@ -69,16 +75,43 @@ export default function SubprocessKittingBPage() {
         </div>
       </div>
 
-      {/* ④ 하단 — 지표 띠(한 양식) */}
-      <div className="flex h-16 shrink-0 items-stretch border-t border-border bg-card px-2">
-        <KitMetricsStrip
-          orderNo={selectedOrder?.orderNo}
-          planQty={selectedOrder?.planQty}
-          workers={selectedWorkers.length}
-          refreshKey={productivityRevision}
-          scannedSg={sgList.length}
-        />
+      {/* ④ 하단 — 지표 띠(한 양식) + 비상 액션 */}
+      <div className="flex h-16 shrink-0 items-stretch border-t border-border bg-card">
+        <div className="flex min-w-0 flex-1 items-stretch px-2">
+          <KitMetricsStrip
+            orderNo={selectedOrder?.orderNo}
+            planQty={selectedOrder?.planQty}
+            workers={selectedWorkers.length}
+            refreshKey={productivityRevision}
+            scannedSg={sgList.length}
+          />
+        </div>
+        <div className="w-[464px] shrink-0">
+          <EquipActionButtons
+            hasEquip={!!equipCode}
+            onOpenEquipStop={() => setIsEquipStopOpen(true)}
+            onOpenManagerCall={() => setIsManagerCallOpen(true)}
+            isStopped={equipStop.isStopped}
+            stopElapsed={equipStop.stopElapsed}
+            isCalling={equipStop.isCalling}
+            callElapsed={equipStop.callElapsed}
+          />
+        </div>
       </div>
+
+      {/* 설비정지 배너 — 정지 중에는 발행/확정이 막힌다. 눌러서 해제한다(가공 키오스크와 동일). */}
+      {equipStop.isStopped && (
+        <button
+          type="button"
+          onClick={() => setIsEquipStopOpen(true)}
+          data-testid="subkit-b-stop-banner"
+          className="flex w-full items-center justify-center gap-2 bg-red-600 px-4 py-2 text-sm font-bold text-white"
+        >
+          <span className="animate-pulse">●</span>
+          {t('kiosk.equipStop.banner', '설비 정지 중 — 실적 입력이 차단됩니다. 눌러서 해제하세요.')}
+          <span className="font-mono tabular-nums">{formatElapsed(equipStop.stopElapsed)}</span>
+        </button>
+      )}
 
       {/* 모달 — 설비 선택은 컨텍스트 띠가 직접 연다. 나머지는 A안과 같은 공용 모달. */}
       <JobOrderSelectModal
@@ -108,6 +141,49 @@ export default function SubprocessKittingBPage() {
         isOpen={workerInspectOpen}
         onClose={() => setWorkerInspectOpen(false)}
         onDone={() => { setWorkerInspectOpen(false); void refreshInspectStatus(); }}
+      />
+
+      <EquipStopModal
+        isOpen={isEquipStopOpen}
+        onClose={() => setIsEquipStopOpen(false)}
+        equipCode={equipCode || undefined}
+        equipName={equipName || undefined}
+        openStop={equipStop.openStop}
+        stopElapsed={equipStop.stopElapsed}
+        history={equipStop.history}
+        summary={equipStop.summary}
+        loading={equipStop.loading}
+        onStart={equipStop.startStop}
+        onUpdateReason={equipStop.updateReason}
+        onRelease={equipStop.releaseStop}
+        onRefreshHistory={() => void equipStop.refreshHistory()}
+      />
+      <ManagerCallModal
+        isOpen={isManagerCallOpen}
+        onClose={() => setIsManagerCallOpen(false)}
+        equipCode={equipCode || undefined}
+        equipName={equipName || undefined}
+        openCall={equipStop.openCall}
+        callElapsed={equipStop.callElapsed}
+        loading={equipStop.loading}
+        onCall={equipStop.createCall}
+      />
+
+      <KittingPrepGuideModal
+        open={guide.open}
+        steps={guide.steps}
+        current={guide.current}
+        doneCount={guide.doneCount}
+        allReady={guide.allReady}
+        onClose={guide.closeGuide}
+        workerNames={selectedWorkers.map((w) => w.workerName)}
+        onOpenEquipSelect={() => c.setEquipModalOpen(true)}
+        onOpenJobOrder={() => setOrderSearchOpen(true)}
+        onOpenWorker={() => setWorkerModalOpen(true)}
+        onOpenDailyInspect={() => setDailyInspectOpen(true)}
+        onOpenWorkerInspect={() => setWorkerInspectOpen(true)}
+        onFocusCircuit={() => { guide.closeGuide(); setTimeout(() => document.querySelector<HTMLSelectElement>('[data-testid="subkit-b-circuit"]')?.focus(), 0); }}
+        onFocusCarrier={() => { guide.closeGuide(); setTimeout(() => document.querySelector<HTMLInputElement>('[data-testid="carrier-slot-scan"]')?.focus(), 0); }}
       />
 
       {/* SFG(반제품) 라벨 자동 출력 호스트 — A안과 동일, 오프스크린 렌더 후 Print Agent 전송 */}

@@ -100,6 +100,7 @@
     "filter": "필터",
     "remarkPlaceholder": "비고 입력",
     "partCode": "품목코드",
+    "itemCode": "품번",
     "partName": "품목명",
     "partSearch": "품목 검색",
     "partSearchPlaceholder": "품목코드 또는 품목명 입력...",
@@ -4790,7 +4791,21 @@
       "awaitConfirm": "실물 스캔 대기",
       "stepMaterialHint": "왼쪽 아래 자재 장착 패널에서 설비에 물린 자재를 스캔하세요.",
       "stepSgHint": "오른쪽 아래 스캔 패널에서 이전 공정 SFG 라벨을 담고, 회로는 위 띠에서 고르세요.",
-      "issuedSgLabel": "발행된 SFG"
+      "issuedSgLabel": "발행된 SFG",
+      "stepWorkerInspect": "작업자 · 설비 점검",
+      "materialScan": "자재 스캔",
+      "assignOrderFailed": "설비 현재 작업지시 저장에 실패했습니다.",
+      "clearOrderFailed": "설비 현재 작업지시 해제에 실패했습니다.",
+      "restoreError": "설비 현재 작업 상태를 불러오지 못했습니다.",
+      "guide": {
+        "title": "키팅 준비",
+        "subtitle": "아래 순서대로 준비하면 SFG 라벨을 발행할 수 있습니다.",
+        "allReadyDesc": "준비가 끝났습니다. 이전 공정 SFG 를 스캔하세요.",
+        "stepCircuit": "회로 선택",
+        "hintEquip": "작업할 설비를 고르세요. 설비가 공정과 작업지시 조회 조건을 정합니다.",
+        "hintJobOrder": "이 설비 공정에 내려진 반제품 작업지시를 고르세요. 작업지시번호를 스캔해도 됩니다.",
+        "hintCircuit": "이 품목은 회로별로 SFG 를 만듭니다. 발행·확정 전에 회로를 고르세요."
+      }
     },
     "fgLabel": {
       "prepareFailed": "FG 라벨 출력 화면을 준비하지 못했습니다.",

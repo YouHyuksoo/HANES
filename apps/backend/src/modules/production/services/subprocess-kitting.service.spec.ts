@@ -228,6 +228,36 @@ describe('SubprocessKittingService 설비점검 인터록 게이트', () => {
     expect(tx.run).not.toHaveBeenCalled();
   });
 
+  it('서브 키팅 확정은 설비정지 게이트가 거부하면 트랜잭션에 들어가지 않는다', async () => {
+    prodResultService.assertEquipInspectGate.mockResolvedValueOnce(undefined);
+    prodResultService.assertEquipNotStopped.mockRejectedValueOnce(
+      new BadRequestException('설비가 정지 중입니다. 정지를 해제한 뒤 실적을 등록하세요. (설비 EQ-3)'),
+    );
+
+    await expect(
+      service.confirmSubKit(
+        { newSgBarcode: 'SG-NEW', orderNo: 'JO-003', equipCode: 'EQ-3', processCode: 'SUBK', inputSgBarcodes: ['SG-001'] },
+        'C1',
+        'P1',
+      ),
+    ).rejects.toThrow('설비가 정지 중입니다');
+    expect(prodResultService.assertEquipNotStopped).toHaveBeenCalledWith('EQ-3', 'C1', 'P1');
+    expect(tx.run).not.toHaveBeenCalled();
+  });
+
+  it('SFG 라벨 발행도 설비정지 게이트가 거부하면 채번하지 않는다', async () => {
+    // 발행만 통과시키면 라벨은 채번됐는데 확정이 막혀 ISSUED 유실 라벨이 남는다.
+    prodResultService.assertEquipNotStopped.mockRejectedValueOnce(
+      new BadRequestException('설비가 정지 중입니다. 정지를 해제한 뒤 실적을 등록하세요. (설비 EQ-4)'),
+    );
+
+    await expect(
+      service.issueSgLabel({ orderNo: 'JO-004', processCode: 'SUBK', equipCode: 'EQ-4' }, 'C1', 'P1'),
+    ).rejects.toThrow('설비가 정지 중입니다');
+    expect(prodResultService.assertEquipNotStopped).toHaveBeenCalledWith('EQ-4', 'C1', 'P1');
+    expect(tx.run).not.toHaveBeenCalled();
+  });
+
   it('게이트가 통과하면 조립 확정은 트랜잭션으로 진행한다', async () => {
     prodResultService.assertEquipInspectGate.mockResolvedValueOnce(undefined);
     tx.run.mockResolvedValueOnce({ resultNo: 'R1', fgBarcode: 'FG-001', printFg: false, sgLabels: [] });

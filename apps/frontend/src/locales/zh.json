@@ -100,6 +100,7 @@
     "filter": "筛选",
     "remarkPlaceholder": "请输入备注",
     "partCode": "零件代码",
+    "itemCode": "品号",
     "partName": "零件名称",
     "partSearch": "品目搜索",
     "partSearchPlaceholder": "输入品目代码或名称...",
@@ -4253,7 +4254,21 @@
       "awaitConfirm": "等待实物扫描",
       "stepMaterialHint": "请在左下方装载面板扫描设备上已装的物料。",
       "stepSgHint": "在右下方扫描面板收集上工序 SFG 标签，并在顶部选择回路。",
-      "issuedSgLabel": "已发行 SFG"
+      "issuedSgLabel": "已发行 SFG",
+      "stepWorkerInspect": "作业者 · 设备点检",
+      "materialScan": "物料扫描",
+      "assignOrderFailed": "保存设备当前工单失败。",
+      "clearOrderFailed": "解除设备当前工单失败。",
+      "restoreError": "无法载入设备当前作业状态。",
+      "guide": {
+        "title": "配料准备",
+        "subtitle": "按下列顺序准备后即可发行 SFG 标签。",
+        "allReadyDesc": "准备完成。请扫描上工序 SFG。",
+        "stepCircuit": "选择回路",
+        "hintEquip": "请选择作业设备。设备决定工序与工单查询条件。",
+        "hintJobOrder": "请选择该工序的半成品工单，也可扫描工单号。",
+        "hintCircuit": "此品目按回路生成 SFG。发行或确定前请先选择回路。"
+      }
     },
     "fgLabel": {
       "prepareFailed": "无法准备 FG 标签打印画面。",

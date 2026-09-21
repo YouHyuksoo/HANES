@@ -10,6 +10,7 @@
  *   중복(단계 헤더 오른쪽에 이미 표시)을 없앴다(2026-09-20 지적).
  * - 불량 상세는 한 줄: 등록 없음 안내 또는 등록된 불량 칩 + [불량코드 등록] 버튼. 실적 저장 시 함께 전송된다.
  * - 강조색(primary)은 이 화면에서 저장 버튼 한 곳뿐이다.
+ * - 입력 칸·버튼 폭과 높이는 한 단계씩 줄여 잡았다. 열이 좁아 원래 크기로는 4단계가 밀렸다(2026-09-21 지적).
  * - 저장 버튼은 입력 3줄 오른쪽에 세로로 붙인다. 아래에 두면 열이 넘칠 때 스크롤해야 보였다(2026-09-20 지적).
  */
 import { useTranslation } from 'react-i18next';
@@ -33,37 +34,37 @@ export default function KioskResultEntry({ onOpenDefect, defectDisabled, ...subm
   } = useProductionResultSubmit(submitInput);
 
   const label = 'text-[11px] font-semibold uppercase tracking-[0.04em] text-text-muted';
-  const qtyBox = 'h-11 w-full rounded border text-center text-xl font-bold tabular-nums focus:outline-none';
+  const qtyBox = 'h-9 w-full rounded border text-center text-base font-bold tabular-nums focus:outline-none';
 
   return (
-    <div data-testid="kiosk-b-result-entry" className="flex items-stretch gap-2">
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
+    <div data-testid="kiosk-b-result-entry" className="flex items-stretch gap-1.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
       {/* 묶음단위 · 시리얼 */}
-      <div className="grid grid-cols-[88px_minmax(0,1fr)] gap-2">
-        <label className="flex flex-col gap-1">
+      <div className="grid grid-cols-[72px_minmax(0,1fr)] gap-1.5">
+        <label className="flex flex-col gap-0.5">
           <span className={label}>{t('kiosk.input.lotSize')}</span>
           <span className="relative">
             <select
               value={lotSize}
               onChange={e => setLotSize(Number(e.target.value))}
-              className="h-10 w-full appearance-none rounded border border-border bg-surface pl-3 pr-7 text-base font-bold tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-8 w-full appearance-none rounded border border-border bg-surface pl-2 pr-6 text-sm font-bold tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
             >
               {lotOptions.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
             <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
           </span>
         </label>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-0.5">
           <span className={label}>SERIAL NO</span>
-          <div className="flex h-10 items-center rounded border border-border bg-surface px-3 font-mono text-sm font-bold text-text">
+          <div className="flex h-8 items-center rounded border border-border bg-surface px-2 font-mono text-xs font-bold text-text">
             <span className="truncate">{serialNo || <span className="font-sans font-normal text-text-muted">{t('kiosk.input.selectJobOrderFirst')}</span>}</span>
           </div>
         </div>
       </div>
 
       {/* 작업수 · 양품 · 불량 */}
-      <div className="grid grid-cols-3 gap-2">
-        <label className="flex flex-col gap-1">
+      <div className="grid grid-cols-3 gap-1.5">
+        <label className="flex flex-col gap-0.5">
           <span className={label}>{t('kiosk.input.totalQty')}</span>
           <input
             type="text"
@@ -75,7 +76,7 @@ export default function KioskResultEntry({ onOpenDefect, defectDisabled, ...subm
             className={`${qtyBox} border-border bg-surface text-text focus:ring-2 focus:ring-primary`}
           />
         </label>
-        <label className="flex flex-col gap-1">
+        <label className="flex flex-col gap-0.5">
           <span className={`${label} text-green-700 dark:text-green-400`}>{t('kiosk.input.goodQty')}</span>
           <input
             type="text"
@@ -86,7 +87,7 @@ export default function KioskResultEntry({ onOpenDefect, defectDisabled, ...subm
             className={`${qtyBox} cursor-default border-green-600 bg-card text-green-700 dark:border-green-500 dark:text-green-400`}
           />
         </label>
-        <label className="flex flex-col gap-1">
+        <label className="flex flex-col gap-0.5">
           <span className={`${label} text-red-600 dark:text-red-400`}>{t('kiosk.input.defectQty')}</span>
           {pendingDefectTotal > 0 ? (
             <div className={`${qtyBox} flex cursor-default items-center justify-center border-red-600 bg-card text-red-600 dark:border-red-500 dark:text-red-400`} title={t('kiosk.input.defectHint')}>
@@ -106,7 +107,7 @@ export default function KioskResultEntry({ onOpenDefect, defectDisabled, ...subm
       </div>
 
       {/* 불량 상세 — 한 줄 */}
-      <div className="flex min-h-9 items-center gap-2 rounded border border-dashed border-border px-2">
+      <div className="flex min-h-7 items-center gap-1.5 rounded border border-dashed border-border px-2">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 py-1 text-xs">
           {pendingDefects.length === 0 ? (
             <span className="text-text-muted">{t('kiosk.defect.empty', '등록된 불량 없음')}</span>
@@ -137,9 +138,9 @@ export default function KioskResultEntry({ onOpenDefect, defectDisabled, ...subm
         onClick={handleSubmit}
         disabled={!canSave || saving}
         title={buttonTitle}
-        className="flex w-24 shrink-0 flex-col items-center justify-center gap-2 rounded-md bg-primary text-base font-black tracking-[0.04em] text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-surface disabled:text-text-muted"
+        className="flex w-20 shrink-0 flex-col items-center justify-center gap-1.5 rounded-md bg-primary text-sm font-black tracking-[0.02em] text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-surface disabled:text-text-muted"
       >
-        <Save className="h-6 w-6" />
+        <Save className="h-5 w-5" />
         <span className="whitespace-nowrap">{saving ? t('common.saving') : t('kiosk.input.submit')}</span>
       </button>
     </div>

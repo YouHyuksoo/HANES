@@ -2,18 +2,20 @@
 
 /**
  * @file production/input-kiosk-b/components/KioskContextBar.tsx
- * @description B 배치 상단 컨텍스트 띠 — 설비 · 작업지시 · 작업자 · 대차 · 준비 안내 · 전체화면
+ * @description B 배치 상단 컨텍스트 띠 — 설비 · 작업지시 · 대차 · 준비 안내 · 전체화면
  *
  * 초보자 가이드:
  * - "지금 무엇을 어디서 누가 만드는가"만 담는 읽기 전용 성격의 띠다. 어두운 슬레이트 배경으로
  *   아래 작업 영역(흰 카드)과 면으로 구분한다. 강조색(primary)은 여기서 쓰지 않는다.
  * - 설비 선택 모달은 준비 안내 모달과 같은 모달을 열어야 하므로 열림 상태를 컨트롤러가 갖는다.
+ * - 작업자는 여기 두지 않는다. 공용 WorkerSlot 은 밝은 카드 배경용이고, 작업자 배정은 작업 순서의
+ *   첫 단계이므로 스테퍼 ①단계 안에 있다(2026-09-21 지시, 서브공정 B안과 같은 구조).
  * - 전체화면(view=work)은 기존 화면과 같은 규칙이다. MainLayout 이 /production/input-kiosk* 를 chromeless 로 본다.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, ClipboardList, Cpu, Maximize2, Minimize2, Pencil, Sparkles, UserPlus, X } from 'lucide-react';
+import { ChevronDown, ClipboardList, Cpu, Maximize2, Minimize2, Pencil, Sparkles } from 'lucide-react';
 import { OutputCarrierSlot } from '@/components/shared/carrier';
 import EquipSelectModal from '../../input-kiosk/components/EquipSelectModal';
 import type { InputKioskController } from '../../input-kiosk/hooks/useInputKioskController';
@@ -26,7 +28,7 @@ export default function KioskContextBar({ c }: { c: InputKioskController }) {
   const searchParams = useSearchParams();
   const isWorkView = searchParams.get('view') === 'work';
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const { selectedEquip, selectedJobOrder, selectedWorkers } = c;
+  const { selectedEquip, selectedJobOrder } = c;
 
   useEffect(() => {
     const handle = () => setIsFullscreen(Boolean(document.fullscreenElement));
@@ -105,31 +107,6 @@ export default function KioskContextBar({ c }: { c: InputKioskController }) {
           </span>
           <span className="truncate text-[10px] text-slate-400">
             {t('kiosk.header.orderLifecycleHint', '최초 실적입력 시 작업지시 자동 시작 · 양품이 계획수량에 도달하면 자동 종료 (조기 종료는 작업지시관리에서)')}
-          </span>
-        </div>
-
-        {/* 작업자 */}
-        <div data-testid="kiosk-worker-region" className={`${cell} max-w-[420px] shrink-0`}>
-          <span className={label}>{t('kiosk.stepper.worker', '작업자')}</span>
-          <span className="flex min-w-0 flex-wrap items-center gap-1.5">
-            {selectedWorkers.map(w => (
-              <span key={w.id} className="inline-flex items-center gap-1 rounded-full border border-emerald-400/70 px-2 py-0.5 text-xs font-bold text-emerald-200">
-                <span className="max-w-[96px] truncate" title={w.workerName}>{w.workerName}</span>
-                <button type="button" onClick={() => c.handleRemoveWorker(w.id)} aria-label={t('common.delete')} className="hover:text-red-300">
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-            <button
-              type="button"
-              data-testid="kiosk-worker-open"
-              onClick={() => c.setIsWorkerOpen(true)}
-              disabled={!selectedEquip}
-              title={selectedEquip ? t('kiosk.header.addWorker') : t('kiosk.header.selectEquipFirst', '설비를 먼저 선택하세요.')}
-              className={`${ghostBtn} ${selectedEquip && selectedWorkers.length === 0 ? 'animate-pulse border-red-400 text-red-200' : ''}`}
-            >
-              <UserPlus className="h-3 w-3" />{t('kiosk.header.addWorker')}
-            </button>
           </span>
         </div>
 

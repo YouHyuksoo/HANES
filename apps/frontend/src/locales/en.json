@@ -100,6 +100,7 @@
     "filter": "Filter",
     "remarkPlaceholder": "Enter remark",
     "partCode": "Part Code",
+    "itemCode": "Item Code",
     "partName": "Part Name",
     "partSearch": "Part Search",
     "partSearchPlaceholder": "Enter part code or name...",
@@ -4256,7 +4257,21 @@
       "awaitConfirm": "Awaiting physical scan",
       "stepMaterialHint": "Scan the materials mounted on the equipment in the lower-left mount panel.",
       "stepSgHint": "Collect previous-process SFG labels in the lower-right scan panel, and pick the circuit in the top bar.",
-      "issuedSgLabel": "Issued SFG"
+      "issuedSgLabel": "Issued SFG",
+      "stepWorkerInspect": "Workers & Equipment Check",
+      "materialScan": "Material Scan",
+      "assignOrderFailed": "Failed to save the equipment's current job order.",
+      "clearOrderFailed": "Failed to clear the equipment's current job order.",
+      "restoreError": "Could not load the equipment's current work state.",
+      "guide": {
+        "title": "Kitting Preparation",
+        "subtitle": "Complete the steps below to issue an SFG label.",
+        "allReadyDesc": "Preparation complete. Scan the previous-process SFG labels.",
+        "stepCircuit": "Select Circuit",
+        "hintEquip": "Pick the equipment. It determines the process and the job-order filter.",
+        "hintJobOrder": "Pick a semi-product job order for this process. Scanning the order number also works.",
+        "hintCircuit": "This item produces one SFG per circuit. Pick the circuit before issuing or confirming."
+      }
     },
     "fgLabel": {
       "prepareFailed": "Failed to prepare the FG label print view.",

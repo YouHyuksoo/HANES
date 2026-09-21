@@ -463,6 +463,10 @@ export class SubprocessKittingService {
   ): Promise<{ sgBarcode: string }> {
     const tenantWhere = { company, plant };
 
+    // 설비정지 게이트 — 확정(confirmSubKit)과 같은 규칙을 발행 단계에도 건다.
+    // 정지 중에 발행만 통과시키면 라벨은 채번됐는데 확정이 막혀 ISSUED 상태 유실 라벨이 남는다.
+    await this.prodResultService.assertEquipNotStopped(dto.equipCode, company, plant);
+
     return this.tx.run(async (qr) => {
       // 1. 작업지시 조회 + 반제품 검증
       const jobOrder = await qr.manager.findOne(JobOrder, {
@@ -549,6 +553,8 @@ export class SubprocessKittingService {
 
     // 설비점검 인터록 서버 게이트 — 조립 확정과 동일하게 트랜잭션 전에 검사한다.
     await this.prodResultService.assertEquipInspectGate({ equipCode, orderNo }, company, plant, 'SUBASSEMBLY');
+    // 설비정지 게이트 — 가공 실적(create)과 같은 규칙. 정지구간 유실시간이 실적과 겹치면 집계가 무의미해진다.
+    await this.prodResultService.assertEquipNotStopped(equipCode, company, plant);
 
     return this.tx.run(async (qr) => {
       // 1. 새 SgLabel 조회 — status='ISSUED' + orderNo 일치 확인
