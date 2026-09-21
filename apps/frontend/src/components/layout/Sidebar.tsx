@@ -17,7 +17,6 @@ import { type MenuConfigItem } from "@/config/menuConfig";
 import { useMenuTree } from "@/hooks/useMenuTree";
 import { useMenuFavorites } from "@/hooks/useMenuFavorites";
 import SidebarMenu from "./SidebarMenu";
-import { FavoriteSidebar } from "./FavoriteSidebar";
 
 /**
  * 하단 고정 영역(전체 도움말 위)으로 분리하는 관리자 성격 메뉴 그룹.
@@ -44,7 +43,8 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
   const { t } = useTranslation();
   const pathname = usePathname();
   const { items, isMenuDisabled } = useMenuTree();
-  const { favorites, isFavorite, toggleFavorite } = useMenuFavorites();
+  // 즐겨찾기 목록 표시는 헤더 드롭다운(FavoriteMenuDropdown)으로 옮겼다. 사이드바는 메뉴 옆 ★ 토글만 담당한다.
+  const { isFavorite, toggleFavorite } = useMenuFavorites();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(["DASHBOARD", "FAVORITES"]);
 
   const toggleMenu = (menuCode: string) => {
@@ -75,8 +75,6 @@ function Sidebar({ isOpen, onClose, collapsed }: SidebarProps) {
         style={{ width: sidebarWidth }}
       >
         <nav className="min-h-0 flex-1 overflow-y-auto p-3">
-          <FavoriteSidebar items={items} favorites={favorites} collapsed={collapsed} pathname={pathname}
-            isMenuDisabled={isMenuDisabled} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} onClose={onClose} />
           <SidebarMenu
             items={regularItems}
             collapsed={collapsed}

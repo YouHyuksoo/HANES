@@ -25,6 +25,7 @@ import SerialIndicator from "./SerialIndicator";
 import PrintAgentIndicator from "./PrintAgentIndicator";
 import HelpButton from "@/components/help/HelpButton";
 import HeaderMenuSearch from "./HeaderMenuSearch";
+import FavoriteMenuDropdown from "./FavoriteMenuDropdown";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -138,9 +139,10 @@ function Header({ onMenuToggle, collapsed, onToggleCollapse }: HeaderProps) {
         )}
       </div>
 
-      {/* Center Section - Search */}
-      <div className="hidden md:flex flex-1 max-w-md mx-8">
-        <HeaderMenuSearch />
+      {/* Center Section - 즐겨찾기 드롭다운 + Search (즐겨찾기는 사이드바에서 헤더로 옮김, 2026-09-20) */}
+      <div className="hidden md:flex flex-1 items-center gap-2 max-w-xl mx-8">
+        <FavoriteMenuDropdown />
+        <div className="min-w-0 flex-1"><HeaderMenuSearch /></div>
       </div>
 
       {/* Right Section - Actions */}
