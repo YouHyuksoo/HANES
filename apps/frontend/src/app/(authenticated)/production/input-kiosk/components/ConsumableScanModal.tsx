@@ -48,7 +48,6 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
 
   /** 이번 모달에서 장착한 conUid — 취소 시 이것만 되돌린다. */
   const mountedHereRef = useRef<string[]>([]);
-  const [reverting, setReverting] = useState(false);
 
   const handleScan = useCallback(async (rawConUid?: string) => {
     const conUid = (rawConUid ?? scanInput).replace(/\r?\n|\r/g, '').trim();
@@ -76,33 +75,14 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
   }, [scanInput, selectedJobOrder, selectedEquip?.equipCode, bumpConsumableRefresh, t]);
 
   /**
-   * 취소 — 이번 모달에서 장착한 소모품을 되돌린 뒤 닫는다(자재 스캔 모달과 같은 규칙).
-   * 열기 전부터 장착돼 있던 소모품은 건드리지 않는다.
+   * 닫기 — 장착한 소모품을 되돌리지 않는다(자재 스캔 모달과 같은 규칙, 2026-09-21 지시).
+   * 소모품 장착도 실물을 설비에 물리는 행위라 모달을 닫는다고 빠지지 않는다.
+   * 잘못 장착한 소모품은 소모품 목록에서 개별 해제한다.
    */
-  const handleCancel = useCallback(async () => {
-    const targets = [...mountedHereRef.current];
-    if (targets.length === 0 || !selectedJobOrder?.orderNo) { onClose(); return; }
-
-    setReverting(true);
-    const failed: string[] = [];
-    for (const conUid of targets) {
-      try {
-        await api.delete(`/production/job-orders/${selectedJobOrder.orderNo}/consumables/${encodeURIComponent(conUid)}`);
-      } catch {
-        failed.push(conUid);
-      }
-    }
-    mountedHereRef.current = failed;
-    setReverting(false);
-    bumpConsumableRefresh();
-
-    if (failed.length > 0) {
-      toast.error(t('kiosk.consumable.revertFailed', '장착 해제하지 못한 소모품이 있습니다: {{list}}', { list: failed.join(', ') }));
-      return;
-    }
-    toast.success(t('kiosk.consumable.reverted', '이번에 장착한 소모품을 해제했습니다.'));
+  const handleCancel = useCallback(() => {
+    mountedHereRef.current = [];
     onClose();
-  }, [selectedJobOrder, onClose, bumpConsumableRefresh, t]);
+  }, [onClose]);
 
   return (
     <Modal isOpen={isOpen} onClose={handleCancel} title={t('kiosk.prep.consumableScanTitle')} size="lg">
@@ -161,8 +141,8 @@ export default function ConsumableScanModal({ isOpen, onClose, onDone }: Consuma
 
         {/* 완료 버튼 */}
         <div className="flex justify-end gap-2 pt-2 border-t border-border">
-          <Button variant="ghost" onClick={handleCancel} disabled={reverting}>
-            {reverting ? t('kiosk.material.reverting', '되돌리는 중...') : t('common.cancel')}
+          <Button variant="ghost" onClick={handleCancel}>
+            {t('common.close')}
           </Button>
           <Button
             data-testid="kiosk-consumable-scan-done"

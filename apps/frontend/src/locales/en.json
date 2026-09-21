@@ -9970,7 +9970,8 @@
       "reverted": "Materials mounted in this session were unmounted.",
       "revertFailed": "Some materials could not be unmounted: {{list}}",
       "noWaitingLot": "No LOT waiting to mount",
-      "waitingPickHint": "Picking a LOT of an unmounted item mounts it just like scanning."
+      "waitingPickHint": "Picking a LOT of an unmounted item mounts it just like scanning.",
+      "mounting": "Mounting"
     },
     "sgLabel": {
       "prepareFailed": "Failed to prepare the SFG label print view.",

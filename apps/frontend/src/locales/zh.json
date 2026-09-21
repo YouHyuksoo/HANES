@@ -9967,7 +9967,8 @@
       "reverted": "已解除本次装载的物料。",
       "revertFailed": "部分物料无法解除装载：{{list}}",
       "noWaitingLot": "无待装载 LOT",
-      "waitingPickHint": "选择未装载品目的 LOT 即等同于扫描装载。"
+      "waitingPickHint": "选择未装载品目的 LOT 即等同于扫描装载。",
+      "mounting": "装载中"
     },
     "sgLabel": {
       "prepareFailed": "无法准备 SFG 标签打印画面。",

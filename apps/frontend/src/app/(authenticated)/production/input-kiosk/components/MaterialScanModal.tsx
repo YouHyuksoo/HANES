@@ -14,7 +14,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { Package, CheckCircle2 } from 'lucide-react';
+import { Package, CheckCircle2, Loader2 } from 'lucide-react';
 import { Modal, Button } from '@/components/ui';
 import { BarcodeScanInput } from '@/components/shared';
 import { useCarrierAutoInput } from '@/components/shared/carrier';
@@ -42,7 +42,8 @@ export default function MaterialScanModal({ isOpen, onClose, onDone, equipCode, 
   const [scanInput, setScanInput] = useState('');
   /** 이번 모달에서 장착한 matUid — 취소 시 이것만 되돌린다(열기 전부터 장착돼 있던 건 건드리지 않는다). */
   const mountedHereRef = useRef<string[]>([]);
-  const [reverting, setReverting] = useState(false);
+  /** 선택 장착 진행 중인 LOT — 누른 카드에 스피너를 띄우고 중복 클릭을 막는다(2026-09-21 지적). */
+  const [pendingUid, setPendingUid] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -150,36 +151,33 @@ export default function MaterialScanModal({ isOpen, onClose, onDone, equipCode, 
     setTimeout(() => inputRef.current?.focus(), 50);
   }, [scanInput, carrierAuto, mountOne, t]);
 
+  /** 장착 대기 목록에서 고른 LOT 을 장착한다 — 진행 중 스피너를 띄우고 중복 클릭을 막는다. */
+  const handlePick = useCallback(async (matUid: string) => {
+    if (pendingUid) return;
+    setPendingUid(matUid);
+    try {
+      await handleScan(matUid);
+    } finally {
+      setPendingUid(null);
+    }
+  }, [pendingUid, handleScan]);
+
   /**
-   * 취소 — 이번 모달에서 장착한 자재를 되돌린 뒤 닫는다.
-   * 스캔은 즉시 서버에 반영(설비 WIP 이동)되므로, 되돌리지 않으면 '취소'가 거짓말이 된다.
-   * 열기 전부터 장착돼 있던 자재는 이번 세션 기록에 없으므로 그대로 둔다.
+   * 닫기 — 장착한 자재를 되돌리지 않는다(2026-09-21 지시).
+   *
+   * 왜 되돌리지 않나:
+   * - 자재 장착은 실물을 설비에 물리는 행위다. 모달을 닫았다고 실물이 빠지지 않는다.
+   *   화면만 해제하면 서버 재고와 현장이 어긋난다.
+   * - BOM 전체를 못 채우고 닫아도 "여기까지 장착됨"이 맞는 상태다. 다음에 이어서 채운다.
+   * - 잘못 장착한 자재는 자재 목록 패널의 전체 취소/개별 해제로 푼다. 그쪽이 해제의 단일 경로다.
+   *
+   * 예전에는 이번 세션 장착분을 unmount 로 되돌렸는데, 이미 예약(reservedQty)이 걸렸거나
+   * 잔량이 없으면 서버가 거부해 "장착 해제하지 못한 자재가 있습니다" 만 남기고 모달이 닫히지도 않았다.
    */
-  const handleCancel = useCallback(async () => {
-    const targets = [...mountedHereRef.current];
-    if (targets.length === 0 || !selectedEquip?.equipCode) { onClose(); return; }
-
-    setReverting(true);
-    const failed: string[] = [];
-    for (const matUid of targets) {
-      try {
-        await api.post('/production/equip-material/unmount', { equipCode: selectedEquip.equipCode, matUid });
-      } catch {
-        failed.push(matUid);
-      }
-    }
-    mountedHereRef.current = failed;
-    setReverting(false);
-    bumpMaterialMountRefresh();
-
-    if (failed.length > 0) {
-      // 조용히 닫으면 사용자는 되돌려진 줄 안다. 남은 건 이름을 대고 모달을 열어 둔다.
-      toast.error(t('kiosk.material.revertFailed', '장착 해제하지 못한 자재가 있습니다: {{list}}', { list: failed.join(', ') }));
-      return;
-    }
-    toast.success(t('kiosk.material.reverted', '이번에 장착한 자재를 해제했습니다.'));
+  const handleCancel = useCallback(() => {
+    mountedHereRef.current = [];
     onClose();
-  }, [selectedEquip, onClose, bumpMaterialMountRefresh, t]);
+  }, [onClose]);
 
   return (
     <Modal isOpen={isOpen} onClose={handleCancel} title={t('kiosk.prep.materialScan')} size="2xl">
@@ -215,29 +213,35 @@ export default function MaterialScanModal({ isOpen, onClose, onDone, equipCode, 
               </div>
             ) : (
               <div className="space-y-2">
-                {waitingRowsToShow.map(row => (
-                  <button
-                    key={row.matUid}
-                    type="button"
-                    onClick={() => handleScan(row.matUid)}
-                    title={`${row.itemName ?? row.itemCode} · ${row.availableQty.toLocaleString()}`}
-                    className="w-full rounded border border-border bg-card px-3 py-2 text-left transition-colors hover:border-primary hover:bg-primary/5"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate font-mono text-sm font-bold text-text">{row.itemCode}</span>
-                      <span className="shrink-0 rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                        {t('common.select', '선택')}
-                      </span>
-                    </div>
-                    <div className="mt-1 flex items-center gap-2 text-xs">
-                      <span className="min-w-0 flex-1 truncate text-text-muted">{row.itemName ?? '-'}</span>
-                      <span className="shrink-0 font-mono text-text">{row.matUid}</span>
-                    </div>
-                    <p className="mt-1 text-xs text-text-muted">
-                      {t('production.equipMaterial.remainQty', '잔량')}: {row.availableQty.toLocaleString()}
-                    </p>
-                  </button>
-                ))}
+                {waitingRowsToShow.map(row => {
+                  const busy = pendingUid === row.matUid;
+                  return (
+                    <button
+                      key={row.matUid}
+                      type="button"
+                      onClick={() => void handlePick(row.matUid)}
+                      disabled={pendingUid !== null}
+                      title={`${row.itemCode} · ${row.itemName ?? '-'} · ${row.matUid} · ${t('production.equipMaterial.remainQty', '잔량')} ${row.availableQty.toLocaleString()}`}
+                      className="w-full rounded border border-border bg-card px-3 py-2 text-left transition-colors hover:border-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {/* 2줄 고정 — 1줄: 품번 + 품명 + 액션, 2줄: LOT + 잔량 (2026-09-21 지시) */}
+                      <div className="flex items-center gap-2">
+                        <span className="shrink-0 font-mono text-sm font-bold text-text">{row.itemCode}</span>
+                        <span className="min-w-0 flex-1 truncate text-xs text-text-muted">{row.itemName ?? '-'}</span>
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                          {busy && <Loader2 className="h-3 w-3 animate-spin" />}
+                          {busy ? t('kiosk.material.mounting', '장착 중') : t('common.select', '선택')}
+                        </span>
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-2 text-xs">
+                        <span className="min-w-0 flex-1 truncate font-mono text-text">{row.matUid}</span>
+                        <span className="shrink-0 tabular-nums text-text-muted">
+                          {t('production.equipMaterial.remainQty', '잔량')} {row.availableQty.toLocaleString()}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -297,8 +301,8 @@ export default function MaterialScanModal({ isOpen, onClose, onDone, equipCode, 
           </ul>
 
           <div className="flex justify-end gap-2 pt-2 border-t border-border">
-            <Button variant="ghost" onClick={handleCancel} disabled={reverting}>
-              {reverting ? t('kiosk.material.reverting', '되돌리는 중...') : t('common.cancel')}
+            <Button variant="ghost" onClick={handleCancel} disabled={pendingUid !== null}>
+              {t('common.close')}
             </Button>
             <Button
               variant="primary"

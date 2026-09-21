@@ -9992,7 +9992,8 @@
       "reverted": "이번에 장착한 자재를 해제했습니다.",
       "revertFailed": "장착 해제하지 못한 자재가 있습니다: {{list}}",
       "noWaitingLot": "장착 대기 LOT 없음",
-      "waitingPickHint": "미장착 품목의 LOT를 선택하면 스캔과 동일하게 장착합니다."
+      "waitingPickHint": "미장착 품목의 LOT를 선택하면 스캔과 동일하게 장착합니다.",
+      "mounting": "장착 중"
     },
     "sgLabel": {
       "prepareFailed": "SFG 라벨 출력 화면을 준비하지 못했습니다.",

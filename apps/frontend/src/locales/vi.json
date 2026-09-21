@@ -9967,7 +9967,8 @@
       "reverted": "Đã tháo vật tư đã lắp trong lần này.",
       "revertFailed": "Một số vật tư không thể tháo: {{list}}",
       "noWaitingLot": "Không có LOT chờ gá",
-      "waitingPickHint": "Chọn LOT của hạng mục chưa gá sẽ gá như khi quét."
+      "waitingPickHint": "Chọn LOT của hạng mục chưa gá sẽ gá như khi quét.",
+      "mounting": "Đang gá"
     },
     "sgLabel": {
       "prepareFailed": "Không thể chuẩn bị màn hình in nhãn SFG.",
