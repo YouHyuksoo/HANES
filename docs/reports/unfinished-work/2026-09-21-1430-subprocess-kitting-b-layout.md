@@ -1,8 +1,9 @@
-# 미완료 작업 기록: 실적입력(서브공정) 키팅 B 배치 시안
+# 미완료 작업 기록: 실적입력 B 배치 시안 3종(가공·서브공정·조립)
 
 - 작성시각: 2026-09-21 14:30 KST
 - 작성자: claude
-- 작업 범위: `/production/subprocess-kitting-b` 신규 라우트 + A안 컨트롤러 훅 분리 + 메뉴 등록
+- 작업 범위: `/production/subprocess-kitting-b`, `/production/input-assembly-b` 신규 라우트 +
+  각 A안 컨트롤러 훅 분리 + 메뉴 등록 + 설비정지·관리자호출(백엔드 게이트 포함) + 준비 안내
 - 현재 상태: 검증대기 (ko 렌더 aside 실측 확인 / en·zh·vi 렌더 미확인)
 
 ## 완료한 것
@@ -56,8 +57,9 @@
 | `input-kiosk/shared-worker-slot.structure.test.mjs` | 2/2 통과 |
 | 프론트 구조 테스트 전수 | 실패 10건 — **전부 기존 실패**. HEAD(3311009e) worktree 에서 동일 10건이 동일 개수로 실패함을 대조 확인. 이번 작업으로 인한 회귀 0건 |
 | DB 적용 | pre 0 → post 1, 멱등 재실행 확인 |
-| i18n 4-locale 키 감사 | 135키 × 4 locale 누락 0, BOM 없음 |
-| `subprocess-kitting.service.spec.ts` | 9/9 (설비정지 게이트 2건 신규) |
+| i18n 4-locale 키 감사 | 180키 × 4 locale 누락 0, BOM 없음 |
+| `subprocess-kitting.service.spec.ts` | 11/11 (설비정지 게이트 4건 신규: 키팅 2 · 조립 2) |
+| 조립 구조 테스트 | flow 9/9, prep-guide 6/6 |
 | 화면 렌더 (ko) | 사용자가 확인 — 메뉴 노출 OK, ④단계 배치 깨짐 발견·수정 완료 |
 | **화면 렌더 (en/zh/vi)** | **미실행** |
 
@@ -106,6 +108,36 @@ dev 서버는 사용자가 watch 출력을 봐야 하므로 이쪽에서 띄우�
 - `KioskResultEntry` 폭·높이 축소.
 - 스테퍼 ④(공정샘플검사)를 `flex-1 min-h-0` 으로 바꿔 남는 공간을 흡수하게 했다.
   고정 px 로는 화면 크기가 바뀔 때마다 스크롤이 생겼다. aside 실측: 넘침 83px → 0px, 검사 패널 92 → 155px.
+
+## 실적입력(조립) B안 — 같은 방식으로 추가
+
+- `/production/input-assembly-b` 신규 라우트. `input-assembly/page.tsx` 737줄 →
+  배치 전용 268줄 + `hooks/useInputAssemblyController.ts`. 전체화면(view=full) 토글은
+  라우트 경로가 화면마다 달라 훅에 넣지 않고 각 page 에 남겼다.
+- 구성은 서브공정 B안과 동일. 조립엔 회로가 없어 컨텍스트 띠의 회로 셀과 지시구분 배지를 뺐고,
+  ⑤단계는 판정 토글 없이 FG 발행 버튼 하나다.
+- 메뉴 `PROD_INPUT_ASSEMBLY_B`: SORT_ORDER=61, ROLE_MENU_PERMISSIONS MANAGER/OPERATOR **CAN_ACCESS='Y'**.
+  화면마다 A안 상태를 따랐다 — 조립 A안은 'Y', 키오스크 B안은 '1', 키팅 A안은 권한 행 자체가 없다.
+- 훅 분리로 깨진 구조 테스트 3건(`input-assembly-flow`, `input-assembly-prep-guide`,
+  `shared-worker-slot`)을 page+훅 합본으로 고쳤다. 단언은 약화하지 않았다.
+
+## 설비정지·관리자호출 — 조립에도 적용
+
+서버 `issueLabel`(FG 발행)·`confirmAssembly` 에 `assertEquipNotStopped` 를 걸었다.
+`confirmAssembly` 는 앞서 doubt 로 짚어둔 누락 건이다. 테스트 포함 11/11.
+
+## 용어 통일
+
+스테퍼 제목이 화면마다 달랐다(가공 "오늘의 작업" / 서브공정 "키팅 작업 순서" / 조립 "조립 작업 순서").
+세 화면 모두 `kiosk.stepper.title` = "작업 순서" 하나를 쓰도록 **키 자체를 합치고** 화면별 중복 키를 제거했다.
+화면별 키를 남기면 또 갈라진다.
+
+## 알려진 기존 실패 (내 변경과 무관)
+
+`apps/frontend/src/components/shared/barcode-scan-input.structure.test.mjs` 1건.
+`input-assembly/page.tsx` 가 `<BarcodeScanInput` 을 렌더해야 한다고 단언하는데, 원본도 import 만 하고
+렌더하지 않았다(HEAD worktree 대조 확인). 스캔 UI 는 `SgScanPanel` 로 빠져 있어 테스트의 파일 목록이 낡았다.
+고칠지는 사용자 판단 대기.
 
 ## 라우트 추가 시 함정 (이번에 실제로 겪음)
 

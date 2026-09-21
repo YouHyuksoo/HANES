@@ -107,6 +107,7 @@
       "PROD_KITTING",
       "PROD_KITTING_B",
       "PROD_INPUT_ASSEMBLY",
+      "PROD_INPUT_ASSEMBLY_B",
       "PROD_ORDER",
       "PROD_RESULT",
       "PROD_ORDER_RESULT",

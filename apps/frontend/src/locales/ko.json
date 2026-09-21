@@ -171,7 +171,8 @@
       "summary": "{{page}} / {{totalPages}} 페이지 · 총 {{total}}건",
       "prev": "이전 페이지",
       "next": "다음 페이지"
-    }
+    },
+    "actionProcessingHelp": "처리 중입니다. 완료될 때까지 기다려 주세요."
   },
   "prepGuide": {
     "later": "나중에 하기",
@@ -597,7 +598,8 @@
     "production.inputKioskB": "실적입력(가공) B안",
     "favorites.manageFolders": "폴더 관리",
     "favorites.empty": "즐겨찾기가 없습니다. 메뉴 옆 ★를 눌러 추가하세요.",
-    "production.kittingB": "실적입력(서브공정) B안"
+    "production.kittingB": "실적입력(서브공정) B안",
+    "production.inputAssemblyB": "실적입력(조립) B안"
   },
   "header": {
     "theme": "테마",
@@ -4784,7 +4786,6 @@
       "confirmFailed": "서브 키팅 확정에 실패했습니다.",
       "cancelIssue": "발행 취소",
       "inputSgScan": "이전 공정 SFG 스캔",
-      "stepperTitle": "키팅 작업 순서",
       "scannedSg": "투입 SFG",
       "issueAndConfirm": "키팅 실행 · 확정",
       "awaitIssue": "발행 전",
@@ -4865,7 +4866,18 @@
         "stepCarrier": "출력 대차 스캔",
         "hintCarrier": "이 공정은 실적 라벨을 대차에 담습니다. 빈 대차 또는 같은 품목·작업지시의 대차를 스캔하세요."
       },
-      "equipMaterialMount": "설비 자재 장착"
+      "equipMaterialMount": "설비 자재 장착",
+      "sgScan": "반제품 SFG 스캔",
+      "scannedSg": "투입 SFG",
+      "materialScan": "자재 스캔",
+      "issueAndConfirm": "FG 발행 · 확정",
+      "issueFgLabel": "FG 라벨 발행",
+      "issuedFgLabel": "발행된 FG",
+      "awaitIssue": "발행 전",
+      "awaitConfirm": "실물 스캔 대기",
+      "stepSgHint": "오른쪽 아래 스캔 패널에서 BOM 이 요구하는 반제품 SFG 라벨을 모두 담으세요.",
+      "finishIssuedHelp": "발행된 FG 라벨을 스캔하여 확정하거나 발행을 취소하세요.",
+      "sgNotReadyHelp": "필요한 반제품을 스캔하고 잔량을 확인하세요."
     },
     "equipMaterial": {
       "mountTitle": "설비 자재 장착 (지속)",
@@ -4882,7 +4894,8 @@
       "mountFailed": "자재 장착에 실패했습니다.",
       "unmountSuccess": "자재가 해제되었습니다.",
       "unmountFailed": "자재 해제에 실패했습니다.",
-      "loadFailed": "장착된 자재 조회에 실패했습니다."
+      "loadFailed": "장착된 자재 조회에 실패했습니다.",
+      "expectedBom": "작업지시 BOM 장착 품목"
     },
     "order": {
       "title": "작업지시 관리",
@@ -10279,7 +10292,7 @@
       "ackFailed": "응대 처리에 실패했습니다."
     },
     "stepper": {
-      "title": "오늘의 작업",
+      "title": "작업 순서",
       "step1": "설비 점검",
       "step2": "자재 로트 등록",
       "material": "자재",
@@ -10700,5 +10713,9 @@
     "loadError": "시나리오 목록을 불러오지 못했습니다.",
     "loadOneError": "시나리오를 불러오지 못했습니다.",
     "startError": "시나리오를 시작하지 못했습니다."
+  },
+  "sgLabel": {
+    "typeBundle": "묶음",
+    "typeCircuit": "회로"
   }
 }

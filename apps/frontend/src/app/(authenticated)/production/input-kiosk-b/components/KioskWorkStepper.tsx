@@ -104,7 +104,7 @@ export default function KioskWorkStepper({ c }: { c: InputKioskController }) {
     <div data-testid="kiosk-b-stepper" className="flex h-full min-h-0 flex-col overflow-hidden rounded-md border-2 border-slate-300 bg-card dark:border-slate-600">
       {/* 헤더 — 오늘의 작업 + 진행. 참조 상자·작업지도서 상자와 같은 어두운 제목 띠 */}
       <div className="flex h-12 shrink-0 items-center justify-between bg-slate-800 px-4 text-white dark:bg-slate-700">
-        <span className="text-sm font-bold">{t('kiosk.stepper.title', '오늘의 작업')}</span>
+        <span className="text-sm font-bold">{t('kiosk.stepper.title', '작업 순서')}</span>
         {selectedJobOrder ? (
           <span className="flex items-baseline gap-1.5">
             <span className="text-2xl font-black leading-none tabular-nums">{savedResultCount.toLocaleString()}</span>

@@ -171,7 +171,8 @@
       "summary": "第 {{page}} / {{totalPages}} 页 · 共 {{total}} 条",
       "prev": "上一页",
       "next": "下一页"
-    }
+    },
+    "actionProcessingHelp": "处理中，请等待完成。"
   },
   "prepGuide": {
     "later": "稍后进行",
@@ -597,7 +598,8 @@
     "production.inputKioskB": "实绩录入(加工) B",
     "favorites.manageFolders": "管理文件夹",
     "favorites.empty": "暂无收藏。点击菜单旁的★添加。",
-    "production.kittingB": "实绩录入（子工序） B"
+    "production.kittingB": "实绩录入（子工序） B",
+    "production.inputAssemblyB": "实绩录入（组装） B"
   },
   "header": {
     "theme": "主题",
@@ -4247,7 +4249,6 @@
       "confirmFailed": "子配套确认失败。",
       "cancelIssue": "取消发行",
       "inputSgScan": "上工序 SFG 扫描",
-      "stepperTitle": "配料作业顺序",
       "scannedSg": "投入 SFG",
       "issueAndConfirm": "配料执行 · 确定",
       "awaitIssue": "发行前",
@@ -4328,7 +4329,18 @@
         "stepCarrier": "扫描输出台车",
         "hintCarrier": "本工序将实绩标签装入台车。请扫描空车或同品目/同工单的台车。"
       },
-      "equipMaterialMount": "设备物料装载"
+      "equipMaterialMount": "设备物料装载",
+      "sgScan": "半成品 SFG 扫描",
+      "scannedSg": "投入 SFG",
+      "materialScan": "物料扫描",
+      "issueAndConfirm": "FG 发行 · 确定",
+      "issueFgLabel": "发行 FG 标签",
+      "issuedFgLabel": "已发行 FG",
+      "awaitIssue": "发行前",
+      "awaitConfirm": "等待实物扫描",
+      "stepSgHint": "请在右下方扫描面板收齐 BOM 所需的全部半成品 SFG 标签。",
+      "finishIssuedHelp": "请扫描已发行的 FG 标签以确定，或取消发行。",
+      "sgNotReadyHelp": "请扫描所需半成品并确认余量。"
     },
     "equipMaterial": {
       "mountTitle": "设备物料装载（持续）",
@@ -4345,7 +4357,8 @@
       "mountFailed": "物料装载失败。",
       "unmountSuccess": "物料已解除。",
       "unmountFailed": "物料解除失败。",
-      "loadFailed": "装载物料查询失败。"
+      "loadFailed": "装载物料查询失败。",
+      "expectedBom": "工单 BOM 装载品目"
     },
     "order": {
       "title": "作业指示管理",
@@ -10254,7 +10267,7 @@
       "ackFailed": "处理呼叫失败。"
     },
     "stepper": {
-      "title": "今日作业",
+      "title": "作业顺序",
       "step1": "设备点检",
       "step2": "物料批次登记",
       "material": "物料",
@@ -10675,5 +10688,9 @@
     "loadError": "无法加载场景列表。",
     "loadOneError": "无法加载场景。",
     "startError": "无法启动场景。"
+  },
+  "sgLabel": {
+    "typeBundle": "捆",
+    "typeCircuit": "回路"
   }
 }

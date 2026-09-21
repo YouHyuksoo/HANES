@@ -7,7 +7,13 @@ const pagePath = join(
   process.cwd(),
   'apps/frontend/src/app/(authenticated)/production/input-assembly/page.tsx',
 );
-const source = readFileSync(pagePath, 'utf8');
+const hookPath = join(
+  process.cwd(),
+  'apps/frontend/src/app/(authenticated)/production/input-assembly/hooks/useInputAssemblyController.ts',
+);
+// 상태·저장 로직은 컨트롤러 훅으로 분리됐다(배치 시안 input-assembly-b 와 공유).
+// 화면 규약은 배치(page.tsx) + 로직(훅) 합본에서 검사한다 — input-kiosk 와 같은 방식.
+const source = readFileSync(pagePath, 'utf8') + readFileSync(hookPath, 'utf8');
 const jobOrderModalPath = join(
   process.cwd(),
   'apps/frontend/src/components/production/JobOrderSelectModal.tsx',

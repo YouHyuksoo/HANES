@@ -171,7 +171,8 @@
       "summary": "Page {{page}} / {{totalPages}} · {{total}} total",
       "prev": "Previous page",
       "next": "Next page"
-    }
+    },
+    "actionProcessingHelp": "Processing. Please wait until it finishes."
   },
   "prepGuide": {
     "later": "Do it later",
@@ -597,7 +598,8 @@
     "production.inputKioskB": "Input (Machining) B",
     "favorites.manageFolders": "Manage folders",
     "favorites.empty": "No favorites yet. Click ★ next to a menu to add one.",
-    "production.kittingB": "Result Input (Sub-process) B"
+    "production.kittingB": "Result Input (Sub-process) B",
+    "production.inputAssemblyB": "Result Input (Assembly) B"
   },
   "header": {
     "theme": "Theme",
@@ -4250,7 +4252,6 @@
       "confirmFailed": "Failed to confirm sub-kitting.",
       "cancelIssue": "Cancel Issue",
       "inputSgScan": "Previous Process SFG Scan",
-      "stepperTitle": "Kitting Work Steps",
       "scannedSg": "Input SFG",
       "issueAndConfirm": "Issue & Confirm",
       "awaitIssue": "Before issue",
@@ -4331,7 +4332,18 @@
         "stepCarrier": "Scan output carrier",
         "hintCarrier": "This process loads result labels onto a carrier. Scan an empty carrier or one holding the same item and order."
       },
-      "equipMaterialMount": "Equipment Material Mount"
+      "equipMaterialMount": "Equipment Material Mount",
+      "sgScan": "Semi-product SFG Scan",
+      "scannedSg": "Input SFG",
+      "materialScan": "Material Scan",
+      "issueAndConfirm": "Issue & Confirm FG",
+      "issueFgLabel": "Issue FG Label",
+      "issuedFgLabel": "Issued FG",
+      "awaitIssue": "Before issue",
+      "awaitConfirm": "Awaiting physical scan",
+      "stepSgHint": "Collect every semi-product SFG label the BOM requires in the lower-right scan panel.",
+      "finishIssuedHelp": "Scan the issued FG label to confirm, or cancel the issue.",
+      "sgNotReadyHelp": "Scan the required semi-products and check remaining quantities."
     },
     "equipMaterial": {
       "mountTitle": "Equipment Material Mount (Persistent)",
@@ -4348,7 +4360,8 @@
       "mountFailed": "Failed to mount material.",
       "unmountSuccess": "Material unmounted.",
       "unmountFailed": "Failed to unmount material.",
-      "loadFailed": "Failed to load mounted materials."
+      "loadFailed": "Failed to load mounted materials.",
+      "expectedBom": "Job-order BOM Mount Items"
     },
     "order": {
       "title": "Work Order Management",
@@ -10257,7 +10270,7 @@
       "ackFailed": "Failed to mark the call handled."
     },
     "stepper": {
-      "title": "Today's Work",
+      "title": "Work Steps",
       "step1": "Equipment Check",
       "step2": "Material Lot Registration",
       "material": "Material",
@@ -10678,5 +10691,9 @@
     "loadError": "Failed to load the scenario list.",
     "loadOneError": "Failed to load the scenario.",
     "startError": "Failed to start the scenario."
+  },
+  "sgLabel": {
+    "typeBundle": "Bundle",
+    "typeCircuit": "Circuit"
   }
 }

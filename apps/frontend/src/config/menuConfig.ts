@@ -161,6 +161,7 @@ export const menuConfig: MenuConfigItem[] = [
       { code: "PROD_KITTING", labelKey: "menu.production.kitting", path: "/production/subprocess-kitting" },
       { code: "PROD_KITTING_B", labelKey: "menu.production.kittingB", path: "/production/subprocess-kitting-b" },
       { code: "PROD_INPUT_ASSEMBLY", labelKey: "menu.production.inputAssembly", path: "/production/input-assembly" },
+      { code: "PROD_INPUT_ASSEMBLY_B", labelKey: "menu.production.inputAssemblyB", path: "/production/input-assembly-b" },
       { code: "PROD_ORDER", labelKey: "menu.production.order", path: "/production/order" },
       { code: "PROD_RESULT", labelKey: "menu.production.result", path: "/production/result" },
       { code: "PROD_ORDER_RESULT", labelKey: "menu.production.orderResult", path: "/production/order-result" },

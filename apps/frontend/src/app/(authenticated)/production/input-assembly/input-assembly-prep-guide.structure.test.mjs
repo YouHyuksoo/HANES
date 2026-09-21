@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const read = (rel) => readFileSync(new URL(rel, import.meta.url), 'utf8');
+// 준비 안내 배선은 컨트롤러 훅으로 옮겨졌다(배치 시안 input-assembly-b 와 공유).
+const readPage = () => read('./page.tsx') + read('./hooks/useInputAssemblyController.ts');
 
 test('조립 준비 안내 단계는 순수 함수가 계산하고 공용 배정 규칙을 쓴다(반제품 스캔은 준비 단계가 아니다)', () => {
   const src = read('./assemblyPrepGuideSteps.ts');
@@ -27,7 +29,7 @@ test('조립 안내는 공용 PrepGuideModal 위의 얇은 매핑이고 가공 �
 });
 
 test('페이지가 공용 훅으로 안내를 띄우고 상단 바에 다시 열기 버튼이 있다', () => {
-  const page = read('./page.tsx');
+  const page = readPage();
   assert.match(page, /AssemblyPrepGuideModal/, '안내 모달을 렌더해야 한다');
   assert.match(page, /usePrepGuide\(guideSteps\)/, '공용 usePrepGuide를 써야 한다');
   assert.match(page, /buildAssemblyPrepGuideSteps\(/, '단계는 순수 함수로 계산해야 한다');
@@ -37,7 +39,7 @@ test('페이지가 공용 훅으로 안내를 띄우고 상단 바에 다시 열
 });
 
 test('조립 화면은 출력 대차 슬롯을 두고 확정에 carrierNo를 싣는다', () => {
-  const page = read('./page.tsx');
+  const page = readPage();
   const steps = read('./assemblyPrepGuideSteps.ts');
   assert.match(page, /<OutputCarrierSlot/);
   assert.match(page, /carrierNo: outputCarrier\.carrier\?\.carrierNo \?\? undefined/);

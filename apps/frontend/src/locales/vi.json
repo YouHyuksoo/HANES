@@ -171,7 +171,8 @@
       "summary": "Trang {{page}} / {{totalPages}} · tổng {{total}}",
       "prev": "Trang trước",
       "next": "Trang sau"
-    }
+    },
+    "actionProcessingHelp": "Đang xử lý. Vui lòng đợi hoàn tất."
   },
   "prepGuide": {
     "later": "Để sau",
@@ -597,7 +598,8 @@
     "production.inputKioskB": "Nhập kết quả (gia công) B",
     "favorites.manageFolders": "Quản lý thư mục",
     "favorites.empty": "Chưa có mục yêu thích. Nhấn ★ bên cạnh menu để thêm.",
-    "production.kittingB": "Nhập kết quả (công đoạn phụ) B"
+    "production.kittingB": "Nhập kết quả (công đoạn phụ) B",
+    "production.inputAssemblyB": "Nhập kết quả (lắp ráp) B"
   },
   "header": {
     "theme": "Giao diện",
@@ -4247,7 +4249,6 @@
       "confirmFailed": "Xác nhận sub-kitting thất bại.",
       "cancelIssue": "Hủy phát hành",
       "inputSgScan": "Quét SFG công đoạn trước",
-      "stepperTitle": "Trình tự công việc kitting",
       "scannedSg": "SFG đầu vào",
       "issueAndConfirm": "Thực hiện & xác nhận",
       "awaitIssue": "Trước khi phát hành",
@@ -4328,7 +4329,18 @@
         "stepCarrier": "Quét xe đẩy đầu ra",
         "hintCarrier": "Công đoạn này xếp nhãn kết quả lên xe đẩy. Quét xe trống hoặc xe cùng mã hàng/lệnh."
       },
-      "equipMaterialMount": "Gá vật tư thiết bị"
+      "equipMaterialMount": "Gá vật tư thiết bị",
+      "sgScan": "Quét SFG bán thành phẩm",
+      "scannedSg": "SFG đầu vào",
+      "materialScan": "Quét vật tư",
+      "issueAndConfirm": "Phát hành & xác nhận FG",
+      "issueFgLabel": "Phát hành nhãn FG",
+      "issuedFgLabel": "FG đã phát hành",
+      "awaitIssue": "Trước khi phát hành",
+      "awaitConfirm": "Chờ quét nhãn thực tế",
+      "stepSgHint": "Thu thập đủ mọi nhãn SFG bán thành phẩm mà BOM yêu cầu ở bảng quét phía dưới bên phải.",
+      "finishIssuedHelp": "Quét nhãn FG đã phát hành để xác nhận, hoặc hủy phát hành.",
+      "sgNotReadyHelp": "Quét bán thành phẩm cần thiết và kiểm tra số lượng còn lại."
     },
     "equipMaterial": {
       "mountTitle": "Gắn vật tư thiết bị (Liên tục)",
@@ -4345,7 +4357,8 @@
       "mountFailed": "Gắn vật tư thất bại.",
       "unmountSuccess": "Đã tháo vật tư.",
       "unmountFailed": "Tháo vật tư thất bại.",
-      "loadFailed": "Tải vật tư đã gắn thất bại."
+      "loadFailed": "Tải vật tư đã gắn thất bại.",
+      "expectedBom": "Hạng mục gá theo BOM của lệnh sản xuất"
     },
     "order": {
       "title": "Quản lý lệnh sản xuất",
@@ -10254,7 +10267,7 @@
       "ackFailed": "Xử lý cuộc gọi thất bại."
     },
     "stepper": {
-      "title": "Công việc hôm nay",
+      "title": "Trình tự công việc",
       "step1": "Kiểm tra thiết bị",
       "step2": "Đăng ký lô vật tư",
       "material": "Vật tư",
@@ -10675,5 +10688,9 @@
     "loadError": "Không tải được danh sách kịch bản.",
     "loadOneError": "Không tải được kịch bản.",
     "startError": "Không khởi động được kịch bản."
+  },
+  "sgLabel": {
+    "typeBundle": "Bó",
+    "typeCircuit": "Mạch"
   }
 }

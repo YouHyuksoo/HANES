@@ -228,6 +228,33 @@ describe('SubprocessKittingService 설비점검 인터록 게이트', () => {
     expect(tx.run).not.toHaveBeenCalled();
   });
 
+  it('조립 확정은 설비정지 게이트가 거부하면 트랜잭션에 들어가지 않는다', async () => {
+    prodResultService.assertEquipInspectGate.mockResolvedValueOnce(undefined);
+    prodResultService.assertEquipNotStopped.mockRejectedValueOnce(
+      new BadRequestException('설비가 정지 중입니다. 정지를 해제한 뒤 실적을 등록하세요. (설비 EQ-5)'),
+    );
+
+    await expect(
+      service.confirmAssembly(
+        { fgBarcode: 'FG-005', orderNo: 'JO-005', equipCode: 'EQ-5', processCode: 'CONAS', sgBarcodes: ['SG-001'] },
+        'C1',
+        'P1',
+      ),
+    ).rejects.toThrow('설비가 정지 중입니다');
+    expect(prodResultService.assertEquipNotStopped).toHaveBeenCalledWith('EQ-5', 'C1', 'P1');
+    expect(tx.run).not.toHaveBeenCalled();
+  });
+
+  it('FG 라벨 발행도 설비정지 게이트가 거부하면 채번하지 않는다', async () => {
+    prodResultService.assertEquipNotStopped.mockRejectedValueOnce(
+      new BadRequestException('설비가 정지 중입니다. 정지를 해제한 뒤 실적을 등록하세요. (설비 EQ-6)'),
+    );
+
+    await expect(service.issueLabel('JO-006', 'EQ-6', 'C1', 'P1')).rejects.toThrow('설비가 정지 중입니다');
+    expect(prodResultService.assertEquipNotStopped).toHaveBeenCalledWith('EQ-6', 'C1', 'P1');
+    expect(tx.run).not.toHaveBeenCalled();
+  });
+
   it('서브 키팅 확정은 설비정지 게이트가 거부하면 트랜잭션에 들어가지 않는다', async () => {
     prodResultService.assertEquipInspectGate.mockResolvedValueOnce(undefined);
     prodResultService.assertEquipNotStopped.mockRejectedValueOnce(
