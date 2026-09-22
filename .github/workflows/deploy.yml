@@ -38,18 +38,6 @@ jobs:
       - name: Configure Git safe directory
         run: git config --global --add safe.directory C:/Project/HANES
 
-      - name: Stop HANES processes only
-        run: |
-          set PM2_HOME=C:\Users\Administrator\.pm2
-          pm2 stop hanes-frontend 2>nul || echo "hanes-frontend not running"
-          pm2 stop hanes-backend 2>nul || echo "hanes-backend not running"
-          pm2 delete hanes-frontend 2>nul || echo "hanes-frontend not registered"
-          pm2 delete hanes-backend 2>nul || echo "hanes-backend not registered"
-          pm2 stop hanes-proxy 2>nul || echo "hanes-proxy not running"
-          pm2 delete hanes-proxy 2>nul || echo "hanes-proxy not registered"
-        shell: cmd
-        continue-on-error: true
-
       - name: Pull latest code
         run: |
           git fetch origin main
@@ -59,11 +47,9 @@ jobs:
         run: pnpm install --frozen-lockfile
         shell: cmd
 
-      - name: Build
-        run: pnpm build
-        shell: cmd
-
-      # 배포 게이트. 실패하면 PM2 기동까지 가지 않는다(2026-09-15 정책 변경 —
+      # 배포 게이트. 운영 프로세스를 내리기 전에 모두 통과해야 한다(2026-09-23 정책 변경).
+      # 실패해도 기존 빌드와 PM2 프로세스는 계속 서비스한다.
+      # 이전에는 프로세스를 먼저 내린 뒤 실패하면 PM2 기동까지 가지 않았다(2026-09-15 정책 변경 —
       # 이전에는 continue-on-error 로 통과시켰고, 그 사이 수리 기능이 통째로 죽어 있는 것을 놓쳤다).
       # 환경 의존 테스트(시리얼포트, 백업 ZIP 등)가 러너에서 튀면 그 테스트를 고치거나 격리한다.
       - name: Backend Jest
@@ -91,6 +77,24 @@ jobs:
           node tools\generate-consumable-master-seed-images.mjs
           node tools\generate-equip-inspect-item-seed-images.mjs
           node tools\generate-work-instruction-seed-images.mjs
+        shell: cmd
+
+      # 공유 체크아웃에서 Next 빌드가 .next를 교체하므로 검증을 모두 통과한 뒤 운영 프로세스를 내린다.
+      # 중단 이후 단계는 빌드·기동뿐이라 테스트 실패가 운영 중단으로 번지지 않는다.
+      - name: Stop HANES processes only
+        run: |
+          set PM2_HOME=C:\Users\Administrator\.pm2
+          pm2 stop hanes-frontend 2>nul || echo "hanes-frontend not running"
+          pm2 stop hanes-backend 2>nul || echo "hanes-backend not running"
+          pm2 delete hanes-frontend 2>nul || echo "hanes-frontend not registered"
+          pm2 delete hanes-backend 2>nul || echo "hanes-backend not registered"
+          pm2 stop hanes-proxy 2>nul || echo "hanes-proxy not running"
+          pm2 delete hanes-proxy 2>nul || echo "hanes-proxy not registered"
+        shell: cmd
+        continue-on-error: true
+
+      - name: Build
+        run: pnpm build
         shell: cmd
 
       # HTTPS 리버스 프록시(443 → 3100) 준비: caddy.exe 다운로드(없을 때만), 인증서 폴더, 방화벽 443, 포트 점유 확인.
