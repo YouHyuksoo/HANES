@@ -116,7 +116,7 @@ export default function InspectionResultWorkflow({
     if (saved) setSelectedEquipCode(saved);
 
     api
-      .get("/equipment/equips/type/TESTER")
+      .get("/equipment/equips/type/TESTER", { params: { inspectType } })
       .then((res) => {
         const list = normalizeTesters(res.data?.data ?? []);
         setTesters(list);
@@ -131,7 +131,7 @@ export default function InspectionResultWorkflow({
         }
       })
       .catch(() => setTesters([]));
-  }, [equipStorageKey]);
+  }, [equipStorageKey, inspectType]);
 
   /** 전체화면 토글 — view=full 라우팅 + Fullscreen API (키오스크와 동일 패턴) */
   const toggleFullscreen = useCallback(() => {

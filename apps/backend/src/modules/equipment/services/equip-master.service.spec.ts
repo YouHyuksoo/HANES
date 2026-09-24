@@ -87,7 +87,26 @@ describe('EquipMasterService', () => {
     });
   });
 
+  describe('findByType', () => {
+    it('검사유형을 지정하면 같은 유형의 활성 검사기만 조회한다', async () => {
+      mockEquipRepo.find.mockResolvedValue([]);
+
+      await target.findByType('TESTER', 'CO', 'P01', 'TORQUE');
+
+      expect(mockEquipRepo.find).toHaveBeenCalledWith({
+        where: { equipType: 'TESTER', inspectType: 'TORQUE', useYn: 'Y', company: 'CO', plant: 'P01' },
+        order: { equipCode: 'ASC' },
+      });
+    });
+  });
+
   describe('create', () => {
+    it('검사기는 검사유형 없이 등록할 수 없다', async () => {
+      mockEquipRepo.findOne.mockResolvedValue(null);
+
+      await expect(target.create({ equipCode: 'EQ-T', equipName: 'Tester', equipType: 'TESTER' } as any))
+        .rejects.toThrow('검사기 유형을 선택해야 합니다.');
+    });
     it('should create equip', async () => {
       mockEquipRepo.findOne.mockResolvedValue(null);
       const saved = { equipCode: 'EQ-001' } as any;

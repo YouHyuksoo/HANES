@@ -10,6 +10,7 @@ export const EQUIP_FIELD_HELP = {
   equipCode: { db: "EQUIP_MASTERS.EQUIP_CODE", description: "MES 내부에서 설비를 식별하는 고유 코드입니다. 등록 후에는 변경할 수 없습니다." },
   equipName: { db: "EQUIP_MASTERS.EQUIP_NAME", description: "현장에서 설비를 식별할 설비명입니다." },
   equipType: { db: "EQUIP_MASTERS.EQUIP_TYPE", description: "단선절단, 검사기 등 설비 유형 분류입니다." },
+  inspectType: { db: "EQUIP_MASTERS.INSPECT_TYPE", description: "검사기에서 수행하는 검사유형입니다. 관련 검사 화면의 설비 선택을 제한합니다." },
   commType: { db: "EQUIP_MASTERS.COMM_TYPE", description: "MES와 설비가 데이터를 주고받는 통신 방식입니다(TCP, MQTT, Serial, 없음)." },
   lineCode: { db: "EQUIP_MASTERS.LINE_CODE", description: "설비가 배치된 생산 라인입니다." },
   ipAddress: { db: "EQUIP_MASTERS.IP_ADDRESS", description: "TCP·MQTT 통신 시 설비에 접속할 IP 주소입니다." },

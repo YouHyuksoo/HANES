@@ -34,6 +34,9 @@ export class EquipMaster {
   @Column({ type: 'varchar2', name: 'EQUIP_TYPE', length: 50 })
   equipType: string;
 
+  @Column({ type: 'varchar2', name: 'INSPECT_TYPE', length: 50, nullable: true })
+  inspectType: string | null;
+
   @Column({ type: 'varchar2', name: 'MODEL_NAME', length: 100, nullable: true })
   modelName: string | null;
 

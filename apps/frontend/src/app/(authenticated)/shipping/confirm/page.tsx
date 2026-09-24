@@ -162,7 +162,7 @@ export default function BoxShipPage() {
       )}
 
       {/* body: three-column */}
-      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr_320px] gap-6 flex-1 min-h-0 overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr_320px] lg:grid-rows-[minmax(0,1fr)] gap-6 flex-1 min-h-0 overflow-hidden">
         {/* left: order list */}
         <Card className="overflow-hidden flex flex-col min-h-0" padding="none">
           <CardContent className="h-full p-3 flex flex-col overflow-hidden">
@@ -253,7 +253,7 @@ export default function BoxShipPage() {
         </CardContent></Card>
 
         {/* right: selected box serials */}
-        <Card padding="none">
+        <Card className="min-h-0 overflow-hidden" padding="none">
           <CardContent className="p-3 h-full flex flex-col min-h-0">
             <div className="mb-2 flex-shrink-0">
               <h2 className="text-sm font-semibold text-text">{t("shipping.confirm.boxDetail", "박스 상세")}</h2>

@@ -8,7 +8,7 @@
  * 3. **EquipBomRel**: 설비-BOM 연결 정보
  */
 
-import type { CommTypeValue, EquipStatusValue, EquipTypeValue } from "@harness/shared";
+import type { CommTypeValue, EquipStatusValue, EquipTypeValue, InspectTypeValue } from "@harness/shared";
 
 // ========================================
 // 설비 마스터 타입
@@ -22,6 +22,7 @@ export interface EquipMaster {
   equipCode: string;
   equipName: string;
   equipType: EquipType;
+  inspectType?: InspectTypeValue | null;
   modelName?: string;
   imageUrl?: string | null;
   maker?: string;
@@ -99,4 +100,3 @@ export const EQUIP_STATUS_LABELS: Record<EquipStatus, string> = {
   MAINT: '정비중',
   STOP: '가동중지',
 };
-

@@ -47,6 +47,7 @@ interface FormState {
   equipCode: string;
   equipName: string;
   equipType: EquipType;
+  inspectType: string;
   lineCode: string;
   modelName: string;
   imageUrl?: string | null;
@@ -64,6 +65,7 @@ const EMPTY_FORM: FormState = {
   equipCode: "",
   equipName: "",
   equipType: "SINGLE_CUT",
+  inspectType: "",
   lineCode: "",
   modelName: "",
   maker: "",
@@ -82,6 +84,7 @@ export default function EquipMasterTab() {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [inspectTypeFilter, setInspectTypeFilter] = useState("");
   const [useYnFilter, setUseYnFilter] = useState("Y");
   const [lineFilter, setLineFilter] = useState("");
   const [commFilter, setCommFilter] = useState("");
@@ -107,6 +110,7 @@ export default function EquipMasterTab() {
       const params: Record<string, string> = { limit: "100" };
       if (searchText) params.search = searchText;
       if (typeFilter) params.equipType = typeFilter;
+      if (inspectTypeFilter) params.inspectType = inspectTypeFilter;
       if (lineFilter) params.lineCode = lineFilter;
       if (commFilter) params.commType = commFilter;
       if (useYnFilter) params.useYn = useYnFilter;
@@ -121,7 +125,7 @@ export default function EquipMasterTab() {
     } finally {
       setLoading(false);
     }
-  }, [searchText, typeFilter, lineFilter, commFilter, useYnFilter]);
+  }, [searchText, typeFilter, inspectTypeFilter, lineFilter, commFilter, useYnFilter]);
 
   useEffect(() => {
     fetchEquipments();
@@ -151,6 +155,7 @@ export default function EquipMasterTab() {
       equipCode: equip.equipCode,
       equipName: equip.equipName,
       equipType: equip.equipType,
+      inspectType: equip.inspectType || "",
       lineCode: equip.lineCode || "",
       modelName: equip.modelName || "",
       imageUrl: equip.imageUrl || null,
@@ -223,6 +228,7 @@ export default function EquipMasterTab() {
         equipCode: form.equipCode,
         equipName: form.equipName,
         equipType: form.equipType,
+        inspectType: form.equipType === "TESTER" ? form.inspectType || null : null,
         lineCode: form.lineCode || undefined,
         modelName: form.modelName || undefined,
         imageUrl: form.imageUrl || undefined,
@@ -313,6 +319,13 @@ export default function EquipMasterTab() {
       cell: ({ getValue }) => {
         const v = getValue() as EquipType;
         return <span className="text-xs">{t(`master.equip.${v.toLowerCase()}`, v)}</span>;
+      },
+    },
+    {
+      accessorKey: "inspectType", header: t("master.equip.inspectType", "검사유형"), size: 100,
+      cell: ({ getValue }) => {
+        const value = getValue() as string | null | undefined;
+        return value ? <ComCodeBadge groupCode="INSPECT_TYPE" code={value} /> : <span className="text-text-muted">-</span>;
       },
     },
     {
@@ -407,6 +420,7 @@ export default function EquipMasterTab() {
                   </div>
                   <UseYnSelect value={useYnFilter} onChange={setUseYnFilter} aria-label={t("common.useYn", "사용여부")} />
                   <ComCodeSelect groupCode="EQUIP_TYPE" value={typeFilter} onChange={setTypeFilter} labelPrefix={t("master.equip.type", "유형")} />
+                  <ComCodeSelect groupCode="INSPECT_TYPE" value={inspectTypeFilter} onChange={setInspectTypeFilter} labelPrefix={t("master.equip.inspectType", "검사유형")} />
                   <LineSelect value={lineFilter} onChange={setLineFilter} placeholder={t("master.equip.line", "라인")} />
                   <ComCodeSelect groupCode="COMM_TYPE" value={commFilter} onChange={setCommFilter} labelPrefix={t("master.equip.commTypeShort", "통신")} />
                 </div>
@@ -426,7 +440,7 @@ export default function EquipMasterTab() {
               <Button size="sm" variant="secondary" onClick={() => guard(() => setPanelOpen(false))}>
                 {t("common.cancel", "취소")}
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={!form.equipCode.trim() || !form.equipName.trim() || !form.equipType}>
+              <Button size="sm" onClick={handleSave} disabled={!form.equipCode.trim() || !form.equipName.trim() || !form.equipType || (form.equipType === "TESTER" && !form.inspectType)}>
                 {t("common.save", "저장")}
               </Button>
             </div>
@@ -437,7 +451,10 @@ export default function EquipMasterTab() {
               <div className="grid grid-cols-2 gap-3">
                 <FieldInput field="equipCode" label={t("master.equip.equipCode", "설비코드")} value={form.equipCode} onChange={(e) => setForm({ ...form, equipCode: e.target.value })} disabled={!!editing} required />
                 <FieldInput field="equipName" label={t("master.equip.equipName", "설비명")} value={form.equipName} onChange={(e) => setForm({ ...form, equipName: e.target.value })} required />
-                <FieldComCodeSelect field="equipType" groupCode="EQUIP_TYPE" includeAll={false} label={t("master.equip.type", "유형")} value={form.equipType} onChange={(v) => setForm({ ...form, equipType: v as EquipType })} required />
+                <FieldComCodeSelect field="equipType" groupCode="EQUIP_TYPE" includeAll={false} label={t("master.equip.type", "유형")} value={form.equipType} onChange={(v) => setForm({ ...form, equipType: v as EquipType, inspectType: v === "TESTER" ? form.inspectType : "" })} required />
+                {form.equipType === "TESTER" && (
+                  <FieldComCodeSelect field="inspectType" groupCode="INSPECT_TYPE" includeAll={false} label={t("master.equip.inspectType", "검사유형")} value={form.inspectType} onChange={(v) => setForm({ ...form, inspectType: v })} required />
+                )}
                 <FieldComCodeSelect field="commType" groupCode="COMM_TYPE" includeAll={false} label={t("master.equip.commType", "통신방식")} value={form.commType} onChange={(v) => setForm({ ...form, commType: v as CommType })} />
                 <FieldLineSelect field="lineCode" label={t("master.equip.line", "라인")} value={form.lineCode} onChange={(v) => setForm({ ...form, lineCode: v })} wrapperClassName="col-span-2" />
               </div>

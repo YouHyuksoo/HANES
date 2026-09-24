@@ -32,7 +32,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { EQUIP_STATUS_VALUES, COMM_TYPE_VALUES, EQUIP_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
+import { EQUIP_STATUS_VALUES, COMM_TYPE_VALUES, EQUIP_TYPE_VALUES, INSPECT_TYPE_VALUES, USE_YN_VALUES } from '@harness/shared';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
 /**
@@ -58,6 +58,12 @@ export class CreateEquipMasterDto {
   @IsString()
   @IsIn([...EQUIP_TYPE_VALUES])
   equipType: string;
+
+  @ApiPropertyOptional({ description: '검사기 검사유형', enum: INSPECT_TYPE_VALUES })
+  @IsOptional()
+  @IsString()
+  @IsIn([...INSPECT_TYPE_VALUES])
+  inspectType?: string | null;
 
   @ApiPropertyOptional({ description: '모델명', maxLength: 100 })
   @IsOptional()
@@ -198,6 +204,12 @@ export class EquipMasterQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   equipType?: string;
+
+  @ApiPropertyOptional({ description: '검사기 검사유형', enum: INSPECT_TYPE_VALUES })
+  @IsOptional()
+  @IsString()
+  @IsIn([...INSPECT_TYPE_VALUES])
+  inspectType?: string;
 
   @ApiPropertyOptional({ description: '라인 코드' })
   @IsOptional()

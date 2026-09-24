@@ -18,6 +18,7 @@
 
 import {
   Injectable,
+  BadRequestException,
   NotFoundException,
   ConflictException,
   Logger,
@@ -86,6 +87,7 @@ export class EquipMasterService {
       page = 1,
       limit = 20,
       equipType,
+      inspectType,
       lineCode,
       status,
       commType,
@@ -98,6 +100,7 @@ export class EquipMasterService {
     const qb = this.equipMasterRepository.createQueryBuilder('e');
 
     if (equipType) qb.andWhere('e.equipType = :equipType', { equipType });
+    if (inspectType) qb.andWhere('e.inspectType = :inspectType', { inspectType });
     if (lineCode) qb.andWhere('e.lineCode = :lineCode', { lineCode });
     if (query.processCode) qb.andWhere('e.processCode = :processCode', { processCode: query.processCode });
     if (status) qb.andWhere('e.status = :status', { status });
@@ -186,11 +189,15 @@ export class EquipMasterService {
     if (existing) {
       throw new ConflictException(`이미 존재하는 설비 코드입니다: ${dto.equipCode}`);
     }
+    if (dto.equipType === 'TESTER' && !dto.inspectType) {
+      throw new BadRequestException('검사기 유형을 선택해야 합니다.');
+    }
 
     const equip = this.equipMasterRepository.create({
       equipCode: dto.equipCode,
       equipName: dto.equipName,
       equipType: dto.equipType,
+      inspectType: dto.equipType === 'TESTER' ? dto.inspectType ?? null : null,
       modelName: dto.modelName,
       imageUrl: dto.imageUrl ?? null,
       maker: dto.maker,
@@ -213,12 +220,19 @@ export class EquipMasterService {
    * 설비 수정
    */
   async update(equipCode: string, dto: UpdateEquipMasterDto, company?: string, plant?: string) {
-    await this.findById(equipCode, company, plant);
+    const current = await this.findById(equipCode, company, plant);
+    const nextEquipType = dto.equipType ?? current.equipType;
+    const nextInspectType = dto.inspectType !== undefined ? dto.inspectType : current.inspectType;
+    if (nextEquipType === 'TESTER' && !nextInspectType) {
+      throw new BadRequestException('검사기 유형을 선택해야 합니다.');
+    }
 
     const updateData: Partial<EquipMaster> = {};
 
     if (dto.equipName !== undefined) updateData.equipName = dto.equipName;
     if (dto.equipType !== undefined) updateData.equipType = dto.equipType;
+    if (dto.inspectType !== undefined) updateData.inspectType = dto.inspectType;
+    if (dto.equipType !== undefined && dto.equipType !== 'TESTER') updateData.inspectType = null;
       if (dto.modelName !== undefined) updateData.modelName = dto.modelName;
     if (dto.imageUrl !== undefined) updateData.imageUrl = dto.imageUrl;
       if (dto.maker !== undefined) updateData.maker = dto.maker;
@@ -302,9 +316,9 @@ export class EquipMasterService {
   /**
    * 유형별 설비 목록 조회
    */
-  async findByType(equipType: string, company?: string, plant?: string) {
+  async findByType(equipType: string, company?: string, plant?: string, inspectType?: string) {
     const equips = await this.equipMasterRepository.find({
-      where: { equipType, useYn: 'Y', ...this.tenantWhere(company, plant) },
+      where: { equipType, ...(inspectType ? { inspectType } : {}), useYn: 'Y', ...this.tenantWhere(company, plant) },
       order: { equipCode: 'ASC' },
     });
     return equips.map((equip) => this.withClientId(equip));

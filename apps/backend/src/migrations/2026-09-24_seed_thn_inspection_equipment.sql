@@ -1,0 +1,54 @@
+-- THN 신규 검사공정 전용 검사기 기준정보 시드
+-- 대상: JSHANES / COMPANY 40 / PLANT 1000
+-- 실물 장비의 IP·통신규격·제조사·모델은 확인 전이므로 임의 등록하지 않는다.
+
+MERGE INTO EQUIP_MASTERS t
+USING (
+  SELECT 'EQ-TORQUE-01' AS EQUIP_CODE, '토크 검사기 #1' AS EQUIP_NAME FROM DUAL UNION ALL
+  SELECT 'EQ-VISION-01', '비전 검사기 #1' FROM DUAL UNION ALL
+  SELECT 'EQ-RELAY-01', '릴레이 기능 검사기 #1' FROM DUAL
+) s
+ON (
+  t.COMPANY = '40'
+  AND t.PLANT_CD = '1000'
+  AND t.EQUIP_CODE = s.EQUIP_CODE
+)
+WHEN MATCHED THEN UPDATE SET
+  t.EQUIP_NAME = s.EQUIP_NAME,
+  t.EQUIP_TYPE = 'TESTER',
+  t.LINE_CODE = NULL,
+  t.STATUS = 'NORMAL',
+  t.USE_YN = 'Y',
+  t.UPDATED_BY = 'thn-inspection-seed',
+  t.UPDATED_AT = SYSTIMESTAMP
+WHEN NOT MATCHED THEN INSERT (
+  EQUIP_CODE,
+  EQUIP_NAME,
+  EQUIP_TYPE,
+  LINE_CODE,
+  STATUS,
+  USE_YN,
+  COMPANY,
+  PLANT_CD,
+  CREATED_BY,
+  UPDATED_BY,
+  CREATED_AT,
+  UPDATED_AT
+) VALUES (
+  s.EQUIP_CODE,
+  s.EQUIP_NAME,
+  'TESTER',
+  NULL,
+  'NORMAL',
+  'Y',
+  '40',
+  '1000',
+  'thn-inspection-seed',
+  'thn-inspection-seed',
+  SYSTIMESTAMP,
+  SYSTIMESTAMP
+)
+/
+
+COMMIT
+/

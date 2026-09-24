@@ -97,8 +97,9 @@ export class EquipMasterController {
     @Param('equipType') equipType: string,
     @Company() company: string,
     @Plant() plant: string,
+    @Query('inspectType') inspectType?: string,
   ) {
-    const data = await this.equipMasterService.findByType(equipType, company, plant);
+    const data = await this.equipMasterService.findByType(equipType, company, plant, inspectType);
     return ResponseUtil.success(data);
   }
 
