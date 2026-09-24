@@ -177,6 +177,11 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
       component = mod.getPageComponent();
       break;
     }
+    case "/inspection/relay-result": {
+      const mod = await import("./page-registries/inspection__relay-result.generated");
+      component = mod.getPageComponent();
+      break;
+    }
     case "/inspection/result": {
       const mod = await import("./page-registries/inspection__result.generated");
       component = mod.getPageComponent();
@@ -189,6 +194,16 @@ async function loadPageComponent(path: string): Promise<ComponentType | null> {
     }
     case "/inspection/terminal-result": {
       const mod = await import("./page-registries/inspection__terminal-result.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inspection/torque-result": {
+      const mod = await import("./page-registries/inspection__torque-result.generated");
+      component = mod.getPageComponent();
+      break;
+    }
+    case "/inspection/vision-result": {
+      const mod = await import("./page-registries/inspection__vision-result.generated");
       component = mod.getPageComponent();
       break;
     }

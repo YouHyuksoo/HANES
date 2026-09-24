@@ -506,6 +506,9 @@
     "inspection.terminalResult": "端子检查",
     "inspection.hipotResult": "耐压检查",
     "inspection.leakResult": "泄漏检查",
+    "inspection.torqueResult": "保险丝/扭矩检查",
+    "inspection.visionResult": "视觉检查",
+    "inspection.relayResult": "继电器功能检查",
     "inspection.history": "通电检查记录",
     "inspection.protocol": "检测协议设置",
     "inspection.equip": "检测设备联动管理",
@@ -5027,7 +5030,8 @@
         "insulationMohm": "绝缘电阻 MΩ",
         "chargeBar": "充气压 bar",
         "holdBar": "测量压 bar",
-        "holdSeconds": "保持时间 s"
+        "holdSeconds": "保持时间 s",
+        "torque": "紧固扭矩 N·m"
       },
       "circuitRequired": "合格需先扫描电路标签。",
       "consumablesTitle": "消耗性设备部件",
@@ -5129,6 +5133,9 @@
       "searchPlaceholder": "搜索工单号/品目...",
       "selectOrder": "请选择泄漏检查工单"
     },
+    "torqueResult": { "title": "保险丝/扭矩检查实绩", "description": "检查保险丝插入并记录紧固扭矩。", "searchPlaceholder": "搜索工单号/品目...", "selectOrder": "请选择扭矩检查工单" },
+    "visionResult": { "title": "视觉检查实绩", "description": "判定继电器、保险丝及模块的遗漏或重复。", "searchPlaceholder": "搜索工单号/品目...", "selectOrder": "请选择视觉检查工单" },
+    "relayResult": { "title": "继电器功能检查实绩", "description": "记录继电器动作功能判定。", "searchPlaceholder": "搜索工单号/品目...", "selectOrder": "请选择继电器检查工单" },
     "protocol": {
       "title": "检测协议设置",
       "subtitle": "通电检测设备通信协议管理",
@@ -8295,6 +8302,8 @@
       "TERMINAL": "端子",
       "STRUCTURE": "结构",
       "TORQUE": "扭矩",
+      "VISION": "视觉",
+      "RELAY_FUNCTION": "继电器功能",
       "CONTINUITY": "导通",
       "INSULATION": "绝缘",
       "HI_POT": "耐压",

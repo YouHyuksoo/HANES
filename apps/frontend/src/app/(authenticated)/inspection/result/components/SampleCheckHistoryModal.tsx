@@ -40,7 +40,7 @@ interface SampleCheckHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   orderNo: string;
-  inspectType: "CONTINUITY" | "TERMINAL" | "HIPOT" | "LEAK";
+  inspectType: "CONTINUITY" | "TERMINAL" | "HIPOT" | "LEAK" | "TORQUE" | "VISION" | "RELAY_FUNCTION";
 }
 
 function formatDateTime(value: string | null): string {

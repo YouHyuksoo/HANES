@@ -621,7 +621,9 @@ export class ContinuityInspectService {
    * - FAIL: InspectResult 등록 + dto.fgBarcode 있으면 ISSUED 라벨에 불합격 기록
    */
   /** 측정값을 스펙과 대조하는 검사유형 — 회로라벨 대신 측정값이 판정 근거다 */
-  private static readonly MEASURED_TYPES = new Set(['HIPOT', 'LEAK']);
+  private static readonly MEASURED_TYPES = new Set(['HIPOT', 'LEAK', 'TORQUE']);
+  /** 검사기 출력 회로라벨이 합격 증적인 검사유형 */
+  private static readonly CIRCUIT_LABEL_TYPES = new Set(['CONTINUITY', 'TERMINAL']);
 
   /**
    * HIPOT/LEAK 스테이션 — 품목 스펙(INSPECT_ITEM_SPECS)이 있으면 실측값으로 합/불을 다시 판정한다.
@@ -646,6 +648,7 @@ export class ContinuityInspectService {
       chargeBar: dto.chargeBar ?? null,
       holdBar: dto.holdBar ?? null,
       holdSeconds: dto.holdSeconds ?? null,
+      torque: dto.torque ?? null,
     };
     const inspectData = JSON.stringify(measured);
     const specRows = await queryRunner.manager.find(InspectItemSpec, {
@@ -719,8 +722,9 @@ export class ContinuityInspectService {
       const isMeasuredType = ContinuityInspectService.MEASURED_TYPES.has(dto.inspectType ?? 'CONTINUITY');
 
       /** 1-2. 합격 시 회로라벨 필수 + 중복 차단 — 회로 검사기 출력 라벨이라 통전/단자에만 있다. 측정형은 측정값이 근거다 */
-      const circuitLabel = isMeasuredType ? null : (dto.circuitLabel?.trim() || null);
-      if (dto.passYn === 'Y' && !isMeasuredType) {
+      const requiresCircuitLabel = ContinuityInspectService.CIRCUIT_LABEL_TYPES.has(dto.inspectType ?? 'CONTINUITY');
+      const circuitLabel = requiresCircuitLabel ? (dto.circuitLabel?.trim() || null) : null;
+      if (dto.passYn === 'Y' && requiresCircuitLabel) {
         if (!circuitLabel) {
           throw new BadRequestException('합격 시 회로라벨 스캔이 필요합니다.');
         }

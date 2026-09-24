@@ -62,7 +62,7 @@ export type InspectResultValue = typeof INSPECT_RESULT_VALUES[number];
 
 // ===== 검사 유형 =====
 /** 검사유형 — 화면·INSPECT_RESULTS.INSPECT_TYPE·INSPECT_ITEM_SPECS 가 같은 코드를 쓴다. 절연저항은 HIPOT 안에서 측정한다 */
-export const INSPECT_TYPE_VALUES = ['CONTINUITY', 'TERMINAL', 'HIPOT', 'LEAK', 'STRUCTURE', 'TORQUE', 'VISUAL'] as const;
+export const INSPECT_TYPE_VALUES = ['CONTINUITY', 'TERMINAL', 'HIPOT', 'LEAK', 'STRUCTURE', 'TORQUE', 'VISUAL', 'VISION', 'RELAY_FUNCTION'] as const;
 export type InspectTypeValue = typeof INSPECT_TYPE_VALUES[number];
 
 // ===== 검사 방법 =====

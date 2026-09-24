@@ -57,14 +57,15 @@ export interface InspectMeasureForm {
   chargeBar: string;
   holdBar: string;
   holdSeconds: string;
+  torque: string;
 }
 
 export const EMPTY_MEASURE_FORM: InspectMeasureForm = {
-  voltageKv: "", currentMa: "", testSeconds: "", insulationMohm: "", chargeBar: "", holdBar: "", holdSeconds: "",
+  voltageKv: "", currentMa: "", testSeconds: "", insulationMohm: "", chargeBar: "", holdBar: "", holdSeconds: "", torque: "",
 };
 
 /** 검사유형별 측정 항목 — 순서대로 입력칸을 그린다. required 는 판정 버튼 활성 조건 */
-export const MEASURE_FIELDS: Record<"HIPOT" | "LEAK", Array<{ key: keyof InspectMeasureForm; required: boolean }>> = {
+export const MEASURE_FIELDS: Record<"HIPOT" | "LEAK" | "TORQUE", Array<{ key: keyof InspectMeasureForm; required: boolean }>> = {
   HIPOT: [
     { key: "voltageKv", required: true },
     { key: "currentMa", required: true },
@@ -76,10 +77,15 @@ export const MEASURE_FIELDS: Record<"HIPOT" | "LEAK", Array<{ key: keyof Inspect
     { key: "holdBar", required: true },
     { key: "holdSeconds", required: false },
   ],
+  TORQUE: [{ key: "torque", required: true }],
 };
 
-export function isMeasuredInspectType(inspectType: string): inspectType is "HIPOT" | "LEAK" {
-  return inspectType === "HIPOT" || inspectType === "LEAK";
+export function isMeasuredInspectType(inspectType: string): inspectType is "HIPOT" | "LEAK" | "TORQUE" {
+  return inspectType === "HIPOT" || inspectType === "LEAK" || inspectType === "TORQUE";
+}
+
+export function isCircuitLabelInspectType(inspectType: string): inspectType is "CONTINUITY" | "TERMINAL" {
+  return inspectType === "CONTINUITY" || inspectType === "TERMINAL";
 }
 
 /** 이력 그리드용 측정값 요약 — "3kV · 0.8mA · 950MΩ" / "0.7bar · 0.68bar · 2s" */
@@ -88,7 +94,7 @@ export function formatMeasuredSummary(inspectType: string | null, inspectData: s
   let data: Record<string, unknown>;
   try { data = JSON.parse(inspectData) as Record<string, unknown>; } catch { return ""; }
   const unit: Record<keyof InspectMeasureForm, string> = {
-    voltageKv: "kV", currentMa: "mA", testSeconds: "s", insulationMohm: "MΩ", chargeBar: "bar", holdBar: "bar", holdSeconds: "s",
+    voltageKv: "kV", currentMa: "mA", testSeconds: "s", insulationMohm: "MΩ", chargeBar: "bar", holdBar: "bar", holdSeconds: "s", torque: "N·m",
   };
   return MEASURE_FIELDS[inspectType]
     .map(({ key }) => (data[key] === null || data[key] === undefined || data[key] === "") ? null : `${data[key]}${unit[key]}`)

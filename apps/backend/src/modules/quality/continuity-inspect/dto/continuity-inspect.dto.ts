@@ -48,10 +48,10 @@ export class ContinuityInspectDto {
   @IsString()
   passYn: string;
 
-  @ApiPropertyOptional({ description: '검사 유형 (통전/단자/내전압/리크 스테이션)', enum: ['CONTINUITY', 'TERMINAL', 'HIPOT', 'LEAK'], default: 'CONTINUITY' })
+  @ApiPropertyOptional({ description: '검사 유형', enum: ['CONTINUITY', 'TERMINAL', 'HIPOT', 'LEAK', 'TORQUE', 'VISION', 'RELAY_FUNCTION'], default: 'CONTINUITY' })
   @IsOptional()
   @IsString()
-  @IsIn(['CONTINUITY', 'TERMINAL', 'HIPOT', 'LEAK'])
+  @IsIn(['CONTINUITY', 'TERMINAL', 'HIPOT', 'LEAK', 'TORQUE', 'VISION', 'RELAY_FUNCTION'])
   inspectType?: string;
 
   // ── 측정값 (HIPOT/LEAK 스테이션) — 품목 스펙(INSPECT_ITEM_SPECS)과 대조해 자동 판정한다 ──
@@ -82,6 +82,10 @@ export class ContinuityInspectDto {
   @ApiPropertyOptional({ description: '리크 유지시간 (s)' })
   @IsOptional() @Type(() => Number) @IsNumber()
   holdSeconds?: number;
+
+  @ApiPropertyOptional({ description: '체결 토크' })
+  @IsOptional() @Type(() => Number) @IsNumber()
+  torque?: number;
 
   @ApiPropertyOptional({ description: '불량 코드', maxLength: 50 })
   @IsOptional()

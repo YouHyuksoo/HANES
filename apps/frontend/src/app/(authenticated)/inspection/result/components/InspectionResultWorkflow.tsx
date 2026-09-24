@@ -49,7 +49,7 @@ interface Props {
   descriptionKey: string;
   searchPlaceholderKey: string;
   selectOrderKey: string;
-  inspectType: "CONTINUITY" | "TERMINAL" | "HIPOT" | "LEAK";
+  inspectType: "CONTINUITY" | "TERMINAL" | "HIPOT" | "LEAK" | "TORQUE" | "VISION" | "RELAY_FUNCTION";
   /** 좌측 작업지시 목록을 완제품(FINISHED) 작업지시로만 제한 */
   finishedOnly?: boolean;
 }

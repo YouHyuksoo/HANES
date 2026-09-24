@@ -507,6 +507,9 @@
     "inspection.terminalResult": "단자검사",
     "inspection.hipotResult": "내전압검사",
     "inspection.leakResult": "리크검사",
+    "inspection.torqueResult": "퓨즈삽입/토크검사",
+    "inspection.visionResult": "비전검사",
+    "inspection.relayResult": "릴레이 기능검사",
     "inspection.history": "검사이력",
     "inspection.protocol": "검사기프로토콜",
     "inspection.equip": "검사기연동관리",
@@ -5564,7 +5567,8 @@
         "insulationMohm": "절연저항 MΩ",
         "chargeBar": "주입압 bar",
         "holdBar": "측정압 bar",
-        "holdSeconds": "유지시간 s"
+        "holdSeconds": "유지시간 s",
+        "torque": "체결 토크 N·m"
       },
       "circuitRequired": "합격하려면 회로라벨을 스캔해주세요.",
       "consumablesTitle": "소모성 설비부품",
@@ -5666,6 +5670,9 @@
       "searchPlaceholder": "작업지시번호/품목 검색...",
       "selectOrder": "리크검사할 작업지시를 선택하세요"
     },
+    "torqueResult": { "title": "퓨즈삽입/토크검사 실적", "description": "퓨즈 삽입과 체결 토크를 검사하고 실측값을 기록합니다.", "searchPlaceholder": "작업지시번호/품목 검색...", "selectOrder": "토크검사할 작업지시를 선택하세요" },
+    "visionResult": { "title": "비전검사 실적", "description": "릴레이·퓨즈·블록의 누락과 이중 삽입을 판정합니다.", "searchPlaceholder": "작업지시번호/품목 검색...", "selectOrder": "비전검사할 작업지시를 선택하세요" },
+    "relayResult": { "title": "릴레이 기능검사 실적", "description": "릴레이 작동 기능의 합격 여부를 기록합니다.", "searchPlaceholder": "작업지시번호/품목 검색...", "selectOrder": "릴레이 기능검사할 작업지시를 선택하세요" },
     "protocol": {
       "title": "검사기 프로토콜 설정",
       "subtitle": "통전검사기 통신 프로토콜 관리",
@@ -8319,6 +8326,8 @@
       "TERMINAL": "단자",
       "STRUCTURE": "구조",
       "TORQUE": "토크",
+      "VISION": "비전",
+      "RELAY_FUNCTION": "릴레이 기능",
       "CONTINUITY": "도통",
       "INSULATION": "절연",
       "HI_POT": "내압",

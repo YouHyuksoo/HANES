@@ -45,13 +45,13 @@ test("메뉴 4소스(menuConfig·validator·seed·registry)에 두 메뉴가 같
 });
 
 test("측정형 검사는 회로라벨 대신 측정값을 입력받고 필수값이 차야 합격 버튼이 열린다", () => {
-  assert.match(types, /MEASURE_FIELDS: Record<"HIPOT" \| "LEAK"/);
+  assert.match(types, /MEASURE_FIELDS: Record<"HIPOT" \| "LEAK" \| "TORQUE"/);
   assert.match(types, /HIPOT: \[[\s\S]*?insulationMohm[\s\S]*?\]/, "절연저항은 내전압 측정 항목에 같이 있다");
   assert.match(panel, /const isMeasured = isMeasuredInspectType\(inspectType\)/);
   assert.match(panel, /data-testid="inspect-measure-inputs"/);
-  assert.match(panel, /if \(!isMeasured\) payload\.circuitLabel = circuitLabel;/);
+  assert.match(panel, /if \(requiresCircuitLabel\) payload\.circuitLabel = circuitLabel;/);
   assert.match(panel, /if \(isMeasured\) Object\.assign\(payload, measurePayload\(\)\);/);
-  assert.match(panel, /isMeasured \? !measureReady : !circuitLabel\.trim\(\)/);
+  assert.match(panel, /isMeasured \? !measureReady : requiresCircuitLabel && !circuitLabel\.trim\(\)/);
   // 대기 라벨은 검사유형별로 가져온다
   assert.match(panel, /pending\/\$\{order\.orderNo\}`, \{ params: \{ inspectType \} \}/);
   // 이력에 측정값 요약 컬럼
@@ -59,14 +59,14 @@ test("측정형 검사는 회로라벨 대신 측정값을 입력받고 필수�
 });
 
 test("서버는 HIPOT/LEAK 를 받아 스펙으로 판정하고 회로라벨을 요구하지 않는다", () => {
-  assert.match(dto, /@IsIn\(\['CONTINUITY', 'TERMINAL', 'HIPOT', 'LEAK'\]\)/);
+  assert.match(dto, /@IsIn\(\['CONTINUITY', 'TERMINAL', 'HIPOT', 'LEAK', 'TORQUE', 'VISION', 'RELAY_FUNCTION'\]\)/);
   for (const f of ["voltageKv", "currentMa", "testSeconds", "insulationMohm", "chargeBar", "holdBar", "holdSeconds"]) {
     assert.match(dto, new RegExp(`\\b${f}\\?: number;`), `ContinuityInspectDto.${f}`);
   }
-  assert.match(service, /MEASURED_TYPES = new Set\(\['HIPOT', 'LEAK'\]\)/);
+  assert.match(service, /MEASURED_TYPES = new Set\(\['HIPOT', 'LEAK', 'TORQUE'\]\)/);
   assert.match(service, /const verdict = await this\.applyMeasurementJudgement\(queryRunner, dto, company, plant\);/);
-  assert.match(service, /const circuitLabel = isMeasuredType \? null : \(dto\.circuitLabel\?\.trim\(\) \|\| null\);/);
-  assert.match(service, /if \(dto\.passYn === 'Y' && !isMeasuredType\) \{/);
+  assert.match(service, /const circuitLabel = requiresCircuitLabel \? \(dto\.circuitLabel\?\.trim\(\) \|\| null\) : null;/);
+  assert.match(service, /if \(dto\.passYn === 'Y' && requiresCircuitLabel\) \{/);
   assert.match(service, /inspectData: verdict\.inspectData,/);
   // 대기 라벨: 그 유형의 결과가 없는 ISSUED 라벨
   assert.match(service, /async getPendingLabels\(orderNo: string, company\?: string, plant\?: string, inspectType\?: string\)/);

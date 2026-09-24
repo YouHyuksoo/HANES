@@ -81,6 +81,17 @@ describe('HIPOT/LEAK 실측값 판정', () => {
     expect(v).toMatchObject({ passYn: 'N', errorCode: 'SPEC' });
     expect(v.errorDetail).toContain('측정압 0.1 bar < 하한 0.3 bar');
   });
+
+  it('토크 실측값을 TORQUE 스펙으로 판정하고 이력 데이터에 남긴다', async () => {
+    const { qr, judge } = buildService([{ inspectType: 'TORQUE', connectorKey: '*', torqueLsl: 0.45, torqueUsl: 0.55 }]);
+    const ok = await judge(qr, { ...base, inspectType: 'TORQUE', torque: 0.5 }, 'C1', 'P1');
+    expect(ok.passYn).toBe('Y');
+    expect(JSON.parse(ok.inspectData!)).toMatchObject({ torque: 0.5 });
+
+    const ng = await judge(qr, { ...base, inspectType: 'TORQUE', torque: 0.7 }, 'C1', 'P1');
+    expect(ng).toMatchObject({ passYn: 'N', errorCode: 'SPEC' });
+    expect(ng.errorDetail).toContain('토크 0.7 > 상한 0.55');
+  });
 });
 
 describe('검사유형별 대기 라벨', () => {

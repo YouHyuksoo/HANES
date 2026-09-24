@@ -41,7 +41,7 @@ interface SampleCheckModalProps {
   orderNo: string;
   itemCode: string;
   equipCode: string;
-  inspectType: "CONTINUITY" | "TERMINAL" | "HIPOT" | "LEAK";
+  inspectType: "CONTINUITY" | "TERMINAL" | "HIPOT" | "LEAK" | "TORQUE" | "VISION" | "RELAY_FUNCTION";
   workerId?: string | null;
 }
 

@@ -506,6 +506,9 @@
     "inspection.terminalResult": "Terminal Inspect",
     "inspection.hipotResult": "Hi-Pot Inspection",
     "inspection.leakResult": "Leak Inspection",
+    "inspection.torqueResult": "Fuse/Torque Inspection",
+    "inspection.visionResult": "Vision Inspection",
+    "inspection.relayResult": "Relay Function Inspection",
     "inspection.history": "Inspect History",
     "inspection.protocol": "Tester Protocol",
     "inspection.equip": "Equipment Link Mgmt",
@@ -5030,7 +5033,8 @@
         "insulationMohm": "Insulation MΩ",
         "chargeBar": "Charge bar",
         "holdBar": "Hold bar",
-        "holdSeconds": "Hold time s"
+        "holdSeconds": "Hold time s",
+        "torque": "Fastening torque N·m"
       },
       "circuitRequired": "Scan the circuit label to pass.",
       "consumablesTitle": "Consumable Equipment Parts",
@@ -5132,6 +5136,9 @@
       "searchPlaceholder": "Search order no / item...",
       "selectOrder": "Select a job order for leak inspection"
     },
+    "torqueResult": { "title": "Fuse/Torque Inspection Results", "description": "Inspect fuse insertion and record fastening torque.", "searchPlaceholder": "Search order no / item...", "selectOrder": "Select a job order for torque inspection" },
+    "visionResult": { "title": "Vision Inspection Results", "description": "Judge missing or duplicate relays, fuses, and blocks.", "searchPlaceholder": "Search order no / item...", "selectOrder": "Select a job order for vision inspection" },
+    "relayResult": { "title": "Relay Function Inspection Results", "description": "Record relay operation test results.", "searchPlaceholder": "Search order no / item...", "selectOrder": "Select a job order for relay inspection" },
     "protocol": {
       "title": "Tester Protocol Settings",
       "subtitle": "Continuity tester communication protocol management",
@@ -8298,6 +8305,8 @@
       "TERMINAL": "Terminal",
       "STRUCTURE": "Structure",
       "TORQUE": "Torque",
+      "VISION": "Vision",
+      "RELAY_FUNCTION": "Relay Function",
       "CONTINUITY": "Continuity",
       "INSULATION": "Insulation",
       "HI_POT": "Hi-Pot",

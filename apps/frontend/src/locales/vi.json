@@ -506,6 +506,9 @@
     "inspection.terminalResult": "Kiểm tra terminal",
     "inspection.hipotResult": "Kiểm tra cao áp",
     "inspection.leakResult": "Kiểm tra rò rỉ",
+    "inspection.torqueResult": "Kiểm tra cầu chì/mô-men",
+    "inspection.visionResult": "Kiểm tra thị giác",
+    "inspection.relayResult": "Kiểm tra chức năng relay",
     "inspection.history": "Lịch sử KT thông điện",
     "inspection.protocol": "Giao thức thiết bị KT",
     "inspection.equip": "Quản lý liên kết thiết bị",
@@ -5027,7 +5030,8 @@
         "insulationMohm": "Cách điện MΩ",
         "chargeBar": "Áp nạp bar",
         "holdBar": "Áp giữ bar",
-        "holdSeconds": "Thời gian giữ s"
+        "holdSeconds": "Thời gian giữ s",
+        "torque": "Mô-men siết N·m"
       },
       "circuitRequired": "Quét nhãn mạch để đạt.",
       "consumablesTitle": "Phụ tùng thiết bị tiêu hao",
@@ -5129,6 +5133,9 @@
       "searchPlaceholder": "Tìm số lệnh SX / sản phẩm...",
       "selectOrder": "Chọn lệnh sản xuất để kiểm tra rò rỉ"
     },
+    "torqueResult": { "title": "Kết quả kiểm tra cầu chì/mô-men", "description": "Kiểm tra lắp cầu chì và ghi mô-men siết.", "searchPlaceholder": "Tìm số lệnh SX / sản phẩm...", "selectOrder": "Chọn lệnh sản xuất để kiểm tra mô-men" },
+    "visionResult": { "title": "Kết quả kiểm tra thị giác", "description": "Phát hiện thiếu hoặc lắp đôi relay, cầu chì và block.", "searchPlaceholder": "Tìm số lệnh SX / sản phẩm...", "selectOrder": "Chọn lệnh sản xuất để kiểm tra thị giác" },
+    "relayResult": { "title": "Kết quả kiểm tra chức năng relay", "description": "Ghi kết quả hoạt động của relay.", "searchPlaceholder": "Tìm số lệnh SX / sản phẩm...", "selectOrder": "Chọn lệnh sản xuất để kiểm tra relay" },
     "protocol": {
       "title": "Cài đặt giao thức KT",
       "subtitle": "Quản lý giao thức truyền thông thiết bị kiểm tra",
@@ -8295,6 +8302,8 @@
       "TERMINAL": "Terminal",
       "STRUCTURE": "Cấu trúc",
       "TORQUE": "Mô-men",
+      "VISION": "Thị giác",
+      "RELAY_FUNCTION": "Chức năng relay",
       "CONTINUITY": "Liên tục",
       "INSULATION": "Cách điện",
       "HI_POT": "Chịu áp",
