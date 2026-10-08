@@ -1,7 +1,8 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>개발 설계서</title><style>
 :root{--bg:#fff;--fg:#1f2933;--mut:#5f6b7a;--line:#d8dee6;--head:#eef3f9;--pri:#1f4e8c;--alt:#f7f9fc;--tip:#e8f5e9;--warn:#fff4d6;--code:#f0f4f8}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#14181d;--fg:#e4e8ee;--mut:#9aa6b4;--line:#2f3844;--head:#1d2733;--pri:#7fb0ee;--alt:#191f26;--tip:#17301d;--warn:#3a3112;--code:#1d2733}}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#14181d;--fg:#e4e8ee;--mut:#9aa6b4;--line:#2f3844;--head:#1d2733;--pri:#7fb0ee;--alt:#191f26;--tip:#17301d;--warn:#3a3112;--code:#1d2733;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#14181d;--fg:#e4e8ee;--mut:#9aa6b4;--line:#2f3844;--head:#1d2733;--pri:#7fb0ee;--alt:#191f26;--tip:#17301d;--warn:#3a3112;--code:#1d2733;color-scheme:dark}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.65 -apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif}
 .wrap{display:flex;max-width:1280px;margin:0 auto}
 nav.toc{position:sticky;top:0;align-self:flex-start;height:100vh;overflow:auto;width:290px;flex:none;padding:20px 12px 40px 16px;border-right:1px solid var(--line);font-size:13px}
