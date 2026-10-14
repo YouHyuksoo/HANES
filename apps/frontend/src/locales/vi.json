@@ -80,9 +80,8 @@
     "date": "Ngày",
     "yes": "Có",
     "no": "Không",
-    "unit": {
-      "ea": "EA"
-    },
+    "unit": "Đơn vị",
+    "unitEa": "EA",
     "remark": "Ghi chú",
     "description": "Mô tả",
     "active": "Hoạt động",

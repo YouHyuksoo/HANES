@@ -80,9 +80,8 @@
     "date": "日期",
     "yes": "是",
     "no": "否",
-    "unit": {
-      "ea": "EA"
-    },
+    "unit": "单位",
+    "unitEa": "EA",
     "remark": "备注",
     "description": "描述",
     "active": "启用",

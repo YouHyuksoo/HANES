@@ -80,9 +80,8 @@
     "date": "Date",
     "yes": "Yes",
     "no": "No",
-    "unit": {
-      "ea": "EA"
-    },
+    "unit": "Unit",
+    "unitEa": "EA",
     "remark": "Remark",
     "description": "Description",
     "active": "Active",

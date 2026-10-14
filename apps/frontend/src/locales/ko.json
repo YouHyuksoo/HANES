@@ -80,9 +80,8 @@
     "date": "날짜",
     "yes": "예",
     "no": "아니오",
-    "unit": {
-      "ea": "EA"
-    },
+    "unit": "단위",
+    "unitEa": "EA",
     "remark": "비고",
     "description": "설명",
     "active": "활성",

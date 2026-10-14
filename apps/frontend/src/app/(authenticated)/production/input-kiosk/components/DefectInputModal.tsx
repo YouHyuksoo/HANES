@@ -134,7 +134,7 @@ export default function DefectInputModal({ isOpen, onClose }: DefectInputModalPr
                   <AlertOctagon className="w-4 h-4 text-red-500 shrink-0" />
                   <span className="flex-1 text-sm font-medium text-text">{d.defectName}</span>
                   <span className="text-sm font-bold text-red-600 dark:text-red-400 tabular-nums shrink-0">
-                    {(d.qty ?? 0).toLocaleString()} {t('common.unit.ea')}
+                    {(d.qty ?? 0).toLocaleString()} {t('common.unitEa')}
                   </span>
                   <button
                     onClick={() => removePendingDefect(d.defectCode)}
