@@ -8341,6 +8341,12 @@
       "HI_POT": "耐压",
       "VISUAL": "外观"
     },
+    "CRIMP_VISUAL_CHECK": {
+      "SHAPE": "压接形状",
+      "MIXUP": "混料",
+      "MISSING": "漏装",
+      "APPEARANCE": "外观不良"
+    },
     "INSPECT_METHOD": {
       "VISUAL": "目视检查",
       "MEASUREMENT": "测量检查",
@@ -8357,12 +8363,6 @@
       "ETC": "其他"
     },
     "BOM_SIDE": {
-    "CRIMP_VISUAL_CHECK": {
-      "SHAPE": "压接形状",
-      "MIXUP": "混料",
-      "MISSING": "漏装",
-      "APPEARANCE": "外观不良"
-    },
       "N": "N/A",
       "L": "左",
       "R": "右"

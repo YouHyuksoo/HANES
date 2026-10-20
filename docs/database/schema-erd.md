@@ -8176,6 +8176,7 @@ erDiagram
 | `INSPECT_TIME` | `TIMESTAMP(6)` | `N` |  |  |  |
 | `CIRCUIT_LABEL` | `VARCHAR2(200)` | `Y` |  |  | 회로라벨: 설비 출력 바코드, 스캔 모드 PASS 시 매핑 |
 | `EQUIP_CODE` | `VARCHAR2(50)` | `Y` |  |  | 검사 설비(검사기) 코드 - 검사 화면에서 선택한 TESTER 설비 |
+| `ORDER_NO` | `VARCHAR2(50)` | `Y` |  |  | 작업지시번호 - 작업지시 단위 검사(절압물검사 TERMINAL)에서 직접 기록 |
 
 ### `INSPECT_SAMPLE_CHECKS`
 
@@ -8381,7 +8382,6 @@ erDiagram
 | `AQL_INSPECTION_MODE` | `VARCHAR2(20)` | `Y` |  |  |  |
 | `AQL_SAMPLE_QTY` | `NUMBER` | `Y` |  |  |  |
 | `AQL_MAJOR_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
-| `ORDER_NO` | `VARCHAR2(50)` | `Y` |  |  | 작업지시번호 - 작업지시 단위 검사(절압물검사 TERMINAL)에서 직접 기록 |
 | `AQL_MAJOR_AC` | `NUMBER` | `Y` |  |  |  |
 | `AQL_MAJOR_RE` | `NUMBER` | `Y` |  |  |  |
 | `AQL_MINOR_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |

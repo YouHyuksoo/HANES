@@ -8365,6 +8365,12 @@
       "HI_POT": "내압",
       "VISUAL": "외관"
     },
+    "CRIMP_VISUAL_CHECK": {
+      "SHAPE": "압착형상",
+      "MIXUP": "이종",
+      "MISSING": "누락",
+      "APPEARANCE": "외관불량"
+    },
     "INSPECT_METHOD": {
       "VISUAL": "육안검사",
       "MEASUREMENT": "계측검사",
@@ -8381,12 +8387,6 @@
       "ETC": "기타"
     },
     "BOM_SIDE": {
-    "CRIMP_VISUAL_CHECK": {
-      "SHAPE": "압착형상",
-      "MIXUP": "이종",
-      "MISSING": "누락",
-      "APPEARANCE": "외관불량"
-    },
       "N": "N/A",
       "L": "좌(Left)",
       "R": "우(Right)"

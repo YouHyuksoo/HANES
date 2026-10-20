@@ -8341,6 +8341,12 @@
       "HI_POT": "Chịu áp",
       "VISUAL": "Ngoại quan"
     },
+    "CRIMP_VISUAL_CHECK": {
+      "SHAPE": "Hình dạng bấm cốt",
+      "MIXUP": "Lẫn mã",
+      "MISSING": "Thiếu",
+      "APPEARANCE": "Lỗi ngoại quan"
+    },
     "INSPECT_METHOD": {
       "VISUAL": "Kiểm tra bằng mắt",
       "MEASUREMENT": "Đo lường",
@@ -8357,12 +8363,6 @@
       "ETC": "Khác"
     },
     "BOM_SIDE": {
-    "CRIMP_VISUAL_CHECK": {
-      "SHAPE": "Hình dạng bấm cốt",
-      "MIXUP": "Lẫn mã",
-      "MISSING": "Thiếu",
-      "APPEARANCE": "Lỗi ngoại quan"
-    },
       "N": "N/A",
       "L": "Trái",
       "R": "Phải"

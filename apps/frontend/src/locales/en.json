@@ -8344,6 +8344,12 @@
       "HI_POT": "Hi-Pot",
       "VISUAL": "Visual"
     },
+    "CRIMP_VISUAL_CHECK": {
+      "SHAPE": "Crimp Shape",
+      "MIXUP": "Mix-up",
+      "MISSING": "Missing Part",
+      "APPEARANCE": "Appearance Defect"
+    },
     "INSPECT_METHOD": {
       "VISUAL": "Visual",
       "MEASUREMENT": "Measurement",
@@ -8360,12 +8366,6 @@
       "ETC": "Other"
     },
     "BOM_SIDE": {
-    "CRIMP_VISUAL_CHECK": {
-      "SHAPE": "Crimp Shape",
-      "MIXUP": "Mix-up",
-      "MISSING": "Missing Part",
-      "APPEARANCE": "Appearance Defect"
-    },
       "N": "N/A",
       "L": "Left",
       "R": "Right"

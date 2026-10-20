@@ -38,13 +38,13 @@ export class InspectResult {
   @Column({ type: 'varchar2', name: 'SERIAL_NO', length: 50, nullable: true })
   serialNo: string | null;
 
+  @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true, comment: '작업지시번호 - 작업지시 단위 검사(절압물검사 TERMINAL)에서 직접 기록' })
+  orderNo: string | null;
+
   @Column({ type: 'varchar2', name: 'INSPECT_TYPE', length: 50, nullable: true })
   inspectType: string | null;
 
   @Column({ type: 'varchar2', name: 'INSPECT_SCOPE', length: 20, nullable: true, comment: '검사범위 (FULL: 전수검사, SAMPLE: 샘플링검사)' })
-  @Column({ type: 'varchar2', name: 'ORDER_NO', length: 50, nullable: true, comment: '작업지시번호 - 작업지시 단위 검사(절압물검사 TERMINAL)에서 직접 기록' })
-  orderNo: string | null;
-
   inspectScope: string | null;
 
   @Column({ name: 'PASS_YN', length: 1, default: 'Y' })
