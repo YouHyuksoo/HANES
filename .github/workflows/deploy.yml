@@ -47,6 +47,12 @@ jobs:
         run: pnpm install --frozen-lockfile
         shell: cmd
 
+      # 게이트(Jest·typecheck)는 pnpm build 보다 먼저 돈다. 백엔드·프론트는 @harness/shared 를 dist 로 읽으므로
+      # 러너에 남은 이전 dist 로 검증하면 새 shared export 가 undefined 가 되어 게이트가 실패한다(2026-10-20).
+      - name: Build shared package
+        run: pnpm --filter @harness/shared build
+        shell: cmd
+
       # 배포 게이트. 운영 프로세스를 내리기 전에 모두 통과해야 한다(2026-09-23 정책 변경).
       # 실패해도 기존 빌드와 PM2 프로세스는 계속 서비스한다.
       # 이전에는 프로세스를 먼저 내린 뒤 실패하면 PM2 기동까지 가지 않았다(2026-09-15 정책 변경 —
