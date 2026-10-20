@@ -502,7 +502,7 @@
     "inspection.integrated": "综合检查",
     "inspection.structure": "结构检查",
     "inspection.result": "通电检查管理",
-    "inspection.terminalResult": "端子检查",
+    "inspection.terminalResult": "切压品检查",
     "inspection.hipotResult": "耐压检查",
     "inspection.leakResult": "泄漏检查",
     "inspection.torqueResult": "保险丝/扭矩检查",
@@ -5115,10 +5115,43 @@
       }
     },
     "terminalResult": {
-      "title": "端子检查实绩",
-      "description": "查看端子检查结果和合格率。",
+      "title": "切压品检查",
+      "description": "按端子压接规格对压接工单的切压品(切断·压接半成品)进行首/中/末件判定。",
       "searchPlaceholder": "搜索工单号/品目...",
-      "selectOrder": "请选择端子检查工单"
+      "selectOrder": "请选择要检查的压接工单",
+      "orders": "压接工单",
+      "inspectCount": "检查",
+      "inspector": "检查员",
+      "inspectorPlaceholder": "选择检查员",
+      "timing": "时点",
+      "sides": "按端子压接测量",
+      "terminal": "端子",
+      "wire": "电线",
+      "pullForce": "拉拔力(N)",
+      "specRange": "规格",
+      "noTerminal": "工单品目的BOM中没有端子。",
+      "sideStatus": {
+        "NO_WIRE": "BOM中找不到电线。",
+        "MULTI_WIRE": "BOM中有2种以上电线，无法确定。",
+        "NO_SPEC": "没有该端子+电线组合的压接规格。",
+        "DUP_SPEC": "该端子+电线组合的压接规格有2条以上。"
+      },
+      "specMissingHint": "请确认端子压接规格或BOM。",
+      "visualChecks": "外观判定",
+      "remark": "备注",
+      "remarkPlaceholder": "不良详情或特殊事项",
+      "missingInput": "需输入检查员、全部测量值和外观判定后才能登记。",
+      "expectPass": "预计合格",
+      "expectFail": "预计不合格",
+      "save": "登记判定",
+      "history": "检查履历",
+      "historyEmpty": "该工单没有切压品检查履历。",
+      "inspectedAt": "检查时间",
+      "result": "判定",
+      "resultPass": "合格",
+      "resultFail": "不合格",
+      "errorDetail": "判定内容",
+      "loadFailed": "无法加载检查标准。"
     },
     "hipotResult": {
       "title": "耐压检查实绩",
@@ -5207,11 +5240,11 @@
       "scopeFull": "全数",
       "scopeSample": "抽样",
       "typeVisual": "外观检验",
-      "typeTerminal": "端子检验",
+      "typeTerminal": "切压品检查",
       "typeContinuity": "导通检验",
       "inspectType": "检验类型",
       "title": "检验履历",
-      "subtitle": "查询外观检验、端子检验、导通检验履历",
+      "subtitle": "查询外观检查、切压品检查、导通检查履历",
       "viewChart": "图表查看",
       "viewGrid": "列表查看",
       "chart": {
@@ -8298,7 +8331,7 @@
     "INSPECT_TYPE": {
       "HIPOT": "耐压",
       "LEAK": "泄漏",
-      "TERMINAL": "端子",
+      "TERMINAL": "切压品",
       "STRUCTURE": "结构",
       "TORQUE": "扭矩",
       "VISION": "视觉",
@@ -8324,6 +8357,12 @@
       "ETC": "其他"
     },
     "BOM_SIDE": {
+    "CRIMP_VISUAL_CHECK": {
+      "SHAPE": "压接形状",
+      "MIXUP": "混料",
+      "MISSING": "漏装",
+      "APPEARANCE": "外观不良"
+    },
       "N": "N/A",
       "L": "左",
       "R": "右"
@@ -9063,6 +9102,7 @@
     "BOM_TYPE": "BOM类型",
     "WAREHOUSE_TYPE": "仓库类型",
     "INVENTORY_MOVE_TYPE": "库存移动类型",
+    "CRIMP_VISUAL_CHECK": "切压品外观判定",
     "MOLD_STATUS": "模具状态",
     "GENERAL_STATUS": "一般状态",
     "USE_YN": "使用与否",

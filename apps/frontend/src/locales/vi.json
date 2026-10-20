@@ -502,7 +502,7 @@
     "inspection.integrated": "Kiểm tra tích hợp",
     "inspection.structure": "Kiểm tra cấu trúc",
     "inspection.result": "Quản lý KT thông điện",
-    "inspection.terminalResult": "Kiểm tra terminal",
+    "inspection.terminalResult": "Kiểm tra dây bấm cốt",
     "inspection.hipotResult": "Kiểm tra cao áp",
     "inspection.leakResult": "Kiểm tra rò rỉ",
     "inspection.torqueResult": "Kiểm tra cầu chì/mô-men",
@@ -5115,10 +5115,43 @@
       }
     },
     "terminalResult": {
-      "title": "Kết quả kiểm tra terminal",
-      "description": "Xem kết quả kiểm tra terminal và tỷ lệ đạt.",
+      "title": "Kiểm tra dây bấm cốt",
+      "description": "Đánh giá dây đã cắt·bấm cốt (bán thành phẩm) của lệnh bấm cốt theo quy cách bấm cốt từng đầu cốt ở mẫu đầu/giữa/cuối.",
       "searchPlaceholder": "Tìm số lệnh SX / sản phẩm...",
-      "selectOrder": "Chọn lệnh sản xuất để kiểm tra terminal"
+      "selectOrder": "Chọn lệnh sản xuất bấm cốt để kiểm tra",
+      "orders": "Lệnh SX bấm cốt",
+      "inspectCount": "Đã kiểm",
+      "inspector": "Người kiểm tra",
+      "inspectorPlaceholder": "Chọn người kiểm tra",
+      "timing": "Thời điểm",
+      "sides": "Đo bấm cốt theo đầu cốt",
+      "terminal": "Đầu cốt",
+      "wire": "Dây",
+      "pullForce": "Lực kéo (N)",
+      "specRange": "Quy cách",
+      "noTerminal": "BOM của sản phẩm trong lệnh không có đầu cốt.",
+      "sideStatus": {
+        "NO_WIRE": "Không tìm thấy dây trong BOM.",
+        "MULTI_WIRE": "BOM có từ 2 loại dây trở lên nên không xác định được.",
+        "NO_SPEC": "Chưa có quy cách bấm cốt cho tổ hợp đầu cốt + dây này.",
+        "DUP_SPEC": "Có từ 2 quy cách bấm cốt cho tổ hợp đầu cốt + dây này."
+      },
+      "specMissingHint": "Hãy kiểm tra quy cách bấm cốt hoặc BOM.",
+      "visualChecks": "Đánh giá ngoại quan",
+      "remark": "Ghi chú",
+      "remarkPlaceholder": "Chi tiết lỗi hoặc ghi chú",
+      "missingInput": "Cần nhập người kiểm tra, toàn bộ giá trị đo và đánh giá ngoại quan để đăng ký.",
+      "expectPass": "Dự kiến ĐẠT",
+      "expectFail": "Dự kiến KHÔNG ĐẠT",
+      "save": "Đăng ký kết quả",
+      "history": "Lịch sử kiểm tra",
+      "historyEmpty": "Lệnh này chưa có lịch sử kiểm tra dây bấm cốt.",
+      "inspectedAt": "Thời gian kiểm",
+      "result": "Kết quả",
+      "resultPass": "Đạt",
+      "resultFail": "Không đạt",
+      "errorDetail": "Nội dung đánh giá",
+      "loadFailed": "Không tải được tiêu chuẩn kiểm tra."
     },
     "hipotResult": {
       "title": "Kết quả kiểm tra cao áp",
@@ -5207,11 +5240,11 @@
       "scopeFull": "Toàn bộ",
       "scopeSample": "Mẫu",
       "typeVisual": "Kiểm tra ngoại quan",
-      "typeTerminal": "Kiểm tra đầu cốt",
+      "typeTerminal": "Kiểm tra dây bấm cốt",
       "typeContinuity": "Kiểm tra thông mạch",
       "inspectType": "Loại kiểm tra",
       "title": "Lịch sử kiểm tra",
-      "subtitle": "Tra cứu lịch sử kiểm tra ngoại quan, đầu cốt, thông mạch",
+      "subtitle": "Tra cứu lịch sử kiểm tra ngoại quan, dây bấm cốt và thông mạch",
       "viewChart": "Xem biểu đồ",
       "viewGrid": "Xem danh sách",
       "chart": {
@@ -8298,7 +8331,7 @@
     "INSPECT_TYPE": {
       "HIPOT": "Cao áp",
       "LEAK": "Rò rỉ",
-      "TERMINAL": "Terminal",
+      "TERMINAL": "Dây bấm cốt",
       "STRUCTURE": "Cấu trúc",
       "TORQUE": "Mô-men",
       "VISION": "Thị giác",
@@ -8324,6 +8357,12 @@
       "ETC": "Khác"
     },
     "BOM_SIDE": {
+    "CRIMP_VISUAL_CHECK": {
+      "SHAPE": "Hình dạng bấm cốt",
+      "MIXUP": "Lẫn mã",
+      "MISSING": "Thiếu",
+      "APPEARANCE": "Lỗi ngoại quan"
+    },
       "N": "N/A",
       "L": "Trái",
       "R": "Phải"
@@ -9063,6 +9102,7 @@
     "BOM_TYPE": "Loại BOM",
     "WAREHOUSE_TYPE": "Loại kho",
     "INVENTORY_MOVE_TYPE": "Loại di chuyển kho",
+    "CRIMP_VISUAL_CHECK": "Đánh giá ngoại quan dây bấm cốt",
     "MOLD_STATUS": "Trạng thái khuôn",
     "GENERAL_STATUS": "Trạng thái chung",
     "USE_YN": "Sử dụng hay không",

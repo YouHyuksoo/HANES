@@ -39,14 +39,15 @@ test("검사 저장 계약은 TORQUE, VISION, RELAY_FUNCTION을 허용한다", (
   }
   assert.match(dto, /torque\?: number;/);
   assert.match(service, /MEASURED_TYPES = new Set\(\['HIPOT', 'LEAK', 'TORQUE'\]\)/);
-  assert.match(service, /CIRCUIT_LABEL_TYPES = new Set\(\['CONTINUITY', 'TERMINAL'\]\)/);
+  // 절압물검사(TERMINAL)는 작업지시 단위라 FG 회로라벨 경로에서 빠졌다 — terminal-result/page.structure.test.mjs
+  assert.match(service, /CIRCUIT_LABEL_TYPES = new Set\(\['CONTINUITY'\]\)/);
 });
 
 test("토크는 측정형이고 비전·릴레이 기능검사는 수동 판정형이다", () => {
   assert.match(types, /Record<"HIPOT" \| "LEAK" \| "TORQUE"/);
   assert.match(types, /TORQUE:[\s\S]*?torque/);
   assert.match(types, /isCircuitLabelInspectType/);
-  assert.match(types, /CONTINUITY[\s\S]*TERMINAL/);
+  assert.doesNotMatch(types, /"TERMINAL"/);
 });
 
 test("4개 언어에 신규 메뉴·화면·공통코드 번역이 있다", () => {

@@ -19,6 +19,7 @@
  * - PpapModule: PPAP 관리
  * - FaiModule: 초물검사 관리
  * - ContinuityInspectModule: 통전검사/FG라벨 관리
+ * - CrimpInspectModule: 절압물검사(압착 규격 판정)
  *
  * ## 하위호환성
  * 기존 코드에서 QualityModule을 직접 사용하는 경우,
@@ -38,6 +39,7 @@ import { SpcModule } from './spc/spc.module';
 import { PpapModule } from './ppap/ppap.module';
 import { FaiModule } from './fai/fai.module';
 import { ContinuityInspectModule } from './continuity-inspect/continuity-inspect.module';
+import { CrimpInspectModule } from './crimp-inspect/crimp-inspect.module';
 import { AqlModule } from './aql/aql.module';
 import { DefectCodesModule } from './defect-codes/defect-codes.module';
 import { ControlPlanDocumentModule } from './control-plan/control-plan.module';
@@ -56,6 +58,7 @@ import { NcrModule } from './ncr/ncr.module';
     PpapModule,
     FaiModule,
     ContinuityInspectModule,
+    CrimpInspectModule,
     AqlModule,
     DefectCodesModule,
     ControlPlanDocumentModule,

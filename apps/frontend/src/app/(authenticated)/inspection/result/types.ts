@@ -84,8 +84,8 @@ export function isMeasuredInspectType(inspectType: string): inspectType is "HIPO
   return inspectType === "HIPOT" || inspectType === "LEAK" || inspectType === "TORQUE";
 }
 
-export function isCircuitLabelInspectType(inspectType: string): inspectType is "CONTINUITY" | "TERMINAL" {
-  return inspectType === "CONTINUITY" || inspectType === "TERMINAL";
+export function isCircuitLabelInspectType(inspectType: string): inspectType is "CONTINUITY" {
+  return inspectType === "CONTINUITY";
 }
 
 /** 이력 그리드용 측정값 요약 — "3kV · 0.8mA · 950MΩ" / "0.7bar · 0.68bar · 2s" */

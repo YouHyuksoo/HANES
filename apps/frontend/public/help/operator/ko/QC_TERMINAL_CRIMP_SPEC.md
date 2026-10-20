@@ -11,7 +11,7 @@ related: [MST_PART, QC_SELF_INSPECT_HISTORY, QC_CONTROL_PLAN]
 # 단자별 압착 규격 — 운영 가이드
 
 ## 시스템 목적·역할
-단자 품목 × 전선 사이즈별 압착 상하한을 **단일 마스터**로 보관합니다. 기존 `PROCESS_MAPS.CRIMP_HEIGHT`(공정 조건값)와 `CONTROL_PLAN_ITEMS.SPECIFICATION`(자유 텍스트)은 판정 기준으로 쓰기 어려워, 고객 감사(11P·12P) 대응으로 신설했습니다. 자주검사·계측 수신 판정은 `GET /master/terminal-crimp-specs/resolve`로 이 마스터를 조회하도록 열어 두었고, 검사 화면 연동 자체는 후속 범위입니다.
+단자 품목 × 전선 사이즈별 압착 상하한을 **단일 마스터**로 보관합니다. 기존 `PROCESS_MAPS.CRIMP_HEIGHT`(공정 조건값)와 `CONTROL_PLAN_ITEMS.SPECIFICATION`(자유 텍스트)은 판정 기준으로 쓰기 어려워, 고객 감사(11P·12P) 대응으로 신설했습니다. [절압물검사](`INSP_TERMINAL_RESULT`, `POST /quality/crimp-inspect`)가 이 마스터로 서버 판정합니다. 매칭은 (`TERMINAL_ITEM_CODE`, `WIRE_ITEM_CODE`) 정확 일치 1건이며, `WIRE_ITEM_CODE`가 빈 행은 쓰지 않습니다. 자주검사·계측 수신 판정 연동(`GET /master/terminal-crimp-specs/resolve`)은 아직 후속 범위입니다.
 
 ## 데이터 구조
 ```

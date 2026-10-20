@@ -538,7 +538,7 @@
         },
         {
           "menuCode": "INSP_TERMINAL_RESULT",
-          "title": "단자검사결과",
+          "title": "절압물검사",
           "path": "/inspection/terminal-result"
         },
         {

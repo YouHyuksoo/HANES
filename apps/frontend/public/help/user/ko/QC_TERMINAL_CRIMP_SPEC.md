@@ -86,7 +86,7 @@ related: [MST_PART, QC_SELF_INSPECT_HISTORY, QC_INSPECT, QC_CONTROL_PLAN]
 - **Q.** 단자 종류 목록에 필요한 종류가 없어요.
   **A.** 공통코드 `TERMINAL_TYPE`에 추가하면 바로 선택할 수 있습니다. 초기에는 디스크·링·파스톤·핀·소켓 5종만 있습니다.
 - **Q.** 자주검사 화면에서 이 규격이 자동으로 적용되나요?
-  **A.** 현재는 규격을 등록해 두는 단계입니다. 검사 화면 연동은 이후 단계에서 연결됩니다.
+  **A.** [절압물검사] 화면이 이 규격으로 판정합니다. 압착 작업지시 BOM의 **단자 품목 + 전선 품목**이 정확히 맞는 사용중 규격 1건을 씁니다. 전선 품목을 비워 둔 행은 절압물검사 판정에 쓰이지 않으니 전선 품목까지 지정하세요.
 - **Q.** 값 하나만 알고 나머지는 모릅니다.
   **A.** 아는 값만 넣고 나머지는 비워 두세요. 비운 항목은 판정에서 제외됩니다.
 
@@ -94,3 +94,4 @@ related: [MST_PART, QC_SELF_INSPECT_HISTORY, QC_INSPECT, QC_CONTROL_PLAN]
 - [품목마스터](/master/part) — 단자·전선 품목 등록
 - [관리계획서](/quality/control-plan) — 공정별 관리 항목
 - [자주검사 이력](/quality/self-inspect-history) — 압착 검사 결과 조회
+- [절압물검사](/inspection/terminal-result) — 이 규격으로 절압물 판정

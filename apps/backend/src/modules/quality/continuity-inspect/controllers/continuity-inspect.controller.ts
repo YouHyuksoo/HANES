@@ -46,7 +46,7 @@ export class ContinuityInspectController {
   @Get('prep-status')
   @ApiOperation({ summary: '검사 준비 상태(설비점검 + 양불마스터 대조) 조회' })
   @ApiQuery({ name: 'orderNo', required: true })
-  @ApiQuery({ name: 'inspectType', required: true, description: 'CONTINUITY | TERMINAL' })
+  @ApiQuery({ name: 'inspectType', required: true, description: 'CONTINUITY | HIPOT | LEAK | TORQUE | VISION | RELAY_FUNCTION' })
   @ApiQuery({ name: 'itemCode', required: true })
   @ApiQuery({ name: 'equipCode', required: false, description: '미선택이면 준비 미완료로 본다' })
   @ApiResponse({ status: 200, description: 'Success' })
@@ -390,7 +390,7 @@ export class ContinuityInspectController {
 
   @Get('pending/:orderNo')
   @ApiOperation({ summary: 'List pending FG labels by order (inspectType 지정 시 그 유형 결과가 없는 라벨)' })
-  @ApiQuery({ name: 'inspectType', required: false, description: 'CONTINUITY | TERMINAL | HIPOT | LEAK' })
+  @ApiQuery({ name: 'inspectType', required: false, description: 'CONTINUITY | HIPOT | LEAK | TORQUE | VISION | RELAY_FUNCTION' })
   async getPendingLabels(
     @Param('orderNo') orderNo: string,
     @Company() company: string,

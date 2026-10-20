@@ -59,7 +59,7 @@ test("측정형 검사는 회로라벨 대신 측정값을 입력받고 필수�
 });
 
 test("서버는 HIPOT/LEAK 를 받아 스펙으로 판정하고 회로라벨을 요구하지 않는다", () => {
-  assert.match(dto, /@IsIn\(\['CONTINUITY', 'TERMINAL', 'HIPOT', 'LEAK', 'TORQUE', 'VISION', 'RELAY_FUNCTION'\]\)/);
+  assert.match(dto, /@IsIn\(\['CONTINUITY', 'HIPOT', 'LEAK', 'TORQUE', 'VISION', 'RELAY_FUNCTION'\]\)/);
   for (const f of ["voltageKv", "currentMa", "testSeconds", "insulationMohm", "chargeBar", "holdBar", "holdSeconds"]) {
     assert.match(dto, new RegExp(`\\b${f}\\?: number;`), `ContinuityInspectDto.${f}`);
   }

@@ -503,7 +503,7 @@
     "inspection.integrated": "통합검사",
     "inspection.structure": "구조검사",
     "inspection.result": "통전검사",
-    "inspection.terminalResult": "단자검사",
+    "inspection.terminalResult": "절압물검사",
     "inspection.hipotResult": "내전압검사",
     "inspection.leakResult": "리크검사",
     "inspection.torqueResult": "퓨즈삽입/토크검사",
@@ -5652,10 +5652,43 @@
       }
     },
     "terminalResult": {
-      "title": "단자검사 실적",
-      "description": "단자검사 결과와 합격률을 확인합니다.",
+      "title": "절압물검사",
+      "description": "압착 작업지시의 절압물(절단·압착 반제품)을 단자별 압착 규격으로 초·중·종물 판정합니다.",
       "searchPlaceholder": "작업지시번호/품목 검색...",
-      "selectOrder": "단자검사할 작업지시를 선택하세요"
+      "selectOrder": "절압물검사할 압착 작업지시를 선택하세요",
+      "orders": "압착 작업지시",
+      "inspectCount": "검사",
+      "inspector": "검사자",
+      "inspectorPlaceholder": "검사자 선택",
+      "timing": "시점",
+      "sides": "단자별 압착 측정",
+      "terminal": "단자",
+      "wire": "전선",
+      "pullForce": "인장력(N)",
+      "specRange": "규격",
+      "noTerminal": "작업지시 품목 BOM에 단자가 없습니다.",
+      "sideStatus": {
+        "NO_WIRE": "BOM에서 전선을 찾을 수 없습니다.",
+        "MULTI_WIRE": "BOM 전선이 2종 이상이라 특정할 수 없습니다.",
+        "NO_SPEC": "이 단자+전선 조합의 압착 규격이 없습니다.",
+        "DUP_SPEC": "이 단자+전선 조합의 압착 규격이 2건 이상입니다."
+      },
+      "specMissingHint": "단자별 압착 규격 또는 BOM을 확인하세요.",
+      "visualChecks": "외관 판정",
+      "remark": "비고",
+      "remarkPlaceholder": "불량 상세나 특이사항",
+      "missingInput": "검사자·측정값·외관 판정을 모두 입력해야 등록할 수 있습니다.",
+      "expectPass": "합격 예상",
+      "expectFail": "불합격 예상",
+      "save": "판정 등록",
+      "history": "검사 이력",
+      "historyEmpty": "이 작업지시의 절압물검사 이력이 없습니다.",
+      "inspectedAt": "검사시간",
+      "result": "판정",
+      "resultPass": "합격",
+      "resultFail": "불합격",
+      "errorDetail": "판정 내용",
+      "loadFailed": "검사 기준을 불러오지 못했습니다."
     },
     "hipotResult": {
       "title": "내전압검사 실적",
@@ -5748,11 +5781,11 @@
       "scopeFull": "전수",
       "scopeSample": "샘플",
       "typeVisual": "외관검사",
-      "typeTerminal": "단자검사",
+      "typeTerminal": "절압물검사",
       "typeContinuity": "통전검사",
       "inspectType": "검사유형",
       "title": "검사이력",
-      "subtitle": "외관검사, 단자검사, 통전검사 이력 조회",
+      "subtitle": "외관검사, 절압물검사, 통전검사 이력 조회",
       "viewChart": "차트로 보기",
       "viewGrid": "목록으로 보기",
       "chart": {
@@ -8322,7 +8355,7 @@
     "INSPECT_TYPE": {
       "HIPOT": "내전압",
       "LEAK": "리크",
-      "TERMINAL": "단자",
+      "TERMINAL": "절압물",
       "STRUCTURE": "구조",
       "TORQUE": "토크",
       "VISION": "비전",
@@ -8348,6 +8381,12 @@
       "ETC": "기타"
     },
     "BOM_SIDE": {
+    "CRIMP_VISUAL_CHECK": {
+      "SHAPE": "압착형상",
+      "MIXUP": "이종",
+      "MISSING": "누락",
+      "APPEARANCE": "외관불량"
+    },
       "N": "N/A",
       "L": "좌(Left)",
       "R": "우(Right)"
@@ -9088,6 +9127,7 @@
     "BOM_TYPE": "BOM 유형",
     "WAREHOUSE_TYPE": "창고 유형",
     "INVENTORY_MOVE_TYPE": "재고 이동 유형",
+    "CRIMP_VISUAL_CHECK": "절압물 외관 판정",
     "MOLD_STATUS": "금형 상태",
     "GENERAL_STATUS": "일반 상태",
     "USE_YN": "사용여부",

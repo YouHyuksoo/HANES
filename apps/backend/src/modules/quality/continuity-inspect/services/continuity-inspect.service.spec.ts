@@ -155,7 +155,7 @@ describe('ContinuityInspectService', () => {
     expect(mockQueryRunner.release).not.toHaveBeenCalled();
   });
 
-  it('inspect stores the requested inspect type for terminal inspection', async () => {
+  it('inspect stores the requested inspect type for station inspection', async () => {
     const manager = {
       findOne: jest
         .fn()
@@ -176,15 +176,14 @@ describe('ContinuityInspectService', () => {
       orderNo: 'JO-001',
       itemCode: 'ITEM-001',
       passYn: 'Y',
-      inspectType: 'TERMINAL',
+      inspectType: 'VISION',
       fgBarcode: 'FG-1',
-      circuitLabel: 'CL-1',
     } as any, 'C1', 'P1');
 
-    expect(result.inspectResult.inspectType).toBe('TERMINAL');
+    expect(result.inspectResult.inspectType).toBe('VISION');
     expect(manager.create).toHaveBeenCalledWith(
       InspectResult,
-      expect.objectContaining({ inspectType: 'TERMINAL' }),
+      expect.objectContaining({ inspectType: 'VISION' }),
     );
   });
 

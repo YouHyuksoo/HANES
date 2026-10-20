@@ -623,7 +623,7 @@ export class ContinuityInspectService {
   /** 측정값을 스펙과 대조하는 검사유형 — 회로라벨 대신 측정값이 판정 근거다 */
   private static readonly MEASURED_TYPES = new Set(['HIPOT', 'LEAK', 'TORQUE']);
   /** 검사기 출력 회로라벨이 합격 증적인 검사유형 */
-  private static readonly CIRCUIT_LABEL_TYPES = new Set(['CONTINUITY', 'TERMINAL']);
+  private static readonly CIRCUIT_LABEL_TYPES = new Set(['CONTINUITY']);
 
   /**
    * HIPOT/LEAK 스테이션 — 품목 스펙(INSPECT_ITEM_SPECS)이 있으면 실측값으로 합/불을 다시 판정한다.
@@ -721,7 +721,7 @@ export class ContinuityInspectService {
       dto = { ...dto, passYn: verdict.passYn, errorCode: verdict.errorCode, errorDetail: verdict.errorDetail };
       const isMeasuredType = ContinuityInspectService.MEASURED_TYPES.has(dto.inspectType ?? 'CONTINUITY');
 
-      /** 1-2. 합격 시 회로라벨 필수 + 중복 차단 — 회로 검사기 출력 라벨이라 통전/단자에만 있다. 측정형은 측정값이 근거다 */
+      /** 1-2. 합격 시 회로라벨 필수 + 중복 차단 — 회로 검사기 출력 라벨이라 통전에만 있다. 측정형은 측정값이 근거다 */
       const requiresCircuitLabel = ContinuityInspectService.CIRCUIT_LABEL_TYPES.has(dto.inspectType ?? 'CONTINUITY');
       const circuitLabel = requiresCircuitLabel ? (dto.circuitLabel?.trim() || null) : null;
       if (dto.passYn === 'Y' && requiresCircuitLabel) {

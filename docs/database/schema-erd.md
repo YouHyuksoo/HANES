@@ -7767,7 +7767,7 @@ erDiagram
 | 컬럼 | 타입 | NULL | 키 | 도메인/기본값/코드 | 코멘트 |
 |---|---|---|---|---|---|
 | `EQUIP_CODE` | `VARCHAR2(50)` | `N` | PK |  | 설비ID (FK -> EQUIP_MASTERS) |
-| `INSPECT_TYPE` | `VARCHAR2(50)` | `N` | PK | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자, STRUCTURE=구조, TORQUE=퓨즈삽입/토크, VISION=비전, RELAY_FUNCTION=릴레이 기능 | 점검유형 (DAILY/WEEKLY/MONTHLY) |
+| `INSPECT_TYPE` | `VARCHAR2(50)` | `N` | PK | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=절압물, STRUCTURE=구조, TORQUE=퓨즈삽입/토크, VISION=비전, RELAY_FUNCTION=릴레이 기능 | 점검유형 (DAILY/WEEKLY/MONTHLY) |
 | `INSPECT_DATE` | `DATE` | `N` | PK |  | 점검일시 |
 | `INSPECTOR_NAME` | `VARCHAR2(100)` | `Y` |  |  | 점검자명 |
 | `OVERALL_RESULT` | `VARCHAR2(50)` | `N` |  | 기본값 `'PASS'` | 종합판정 [공통코드:INSPECT_JUDGE] (PASS/FAIL/CONDITIONAL) |
@@ -7816,7 +7816,7 @@ erDiagram
 | `IMAGE_URL` | `VARCHAR2(500)` | `Y` |  |  | 설비 사진 파일 URL (/uploads/equips/...) |
 | `CURRENT_WORKER_CODES` | `VARCHAR2(1000)` | `Y` |  |  | 현재 설비에 배치된 작업자 코드 목록(콤마 구분). 표시 정보는 WORKER_MASTERS에서 재조회한다. |
 | `CUR_CARRIER_NO` | `VARCHAR2(30)` | `Y` |  |  | 설비의 현재 출력 대차번호(재진입 복원용) |
-| `INSPECT_TYPE` | `VARCHAR2(50)` | `Y` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자, STRUCTURE=구조, TORQUE=퓨즈삽입/토크, VISION=비전, RELAY_FUNCTION=릴레이 기능 | 검사기 검사유형 (COM_CODES.INSPECT_TYPE). 검사 화면 설비 필터 기준 |
+| `INSPECT_TYPE` | `VARCHAR2(50)` | `Y` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=절압물, STRUCTURE=구조, TORQUE=퓨즈삽입/토크, VISION=비전, RELAY_FUNCTION=릴레이 기능 | 검사기 검사유형 (COM_CODES.INSPECT_TYPE). 검사 화면 설비 필터 기준 |
 
 ### `EQUIP_PROTOCOLS`
 
@@ -8158,7 +8158,7 @@ erDiagram
 |---|---|---|---|---|---|
 | `PROD_RESULT_ID` | `VARCHAR2(36)` | `Y` |  |  | 생산실적ID (FK -> PROD_RESULTS) |
 | `SERIAL_NO` | `VARCHAR2(50)` | `Y` |  |  | 시리얼번호 |
-| `INSPECT_TYPE` | `VARCHAR2(50)` | `Y` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자, STRUCTURE=구조, TORQUE=퓨즈삽입/토크, VISION=비전, RELAY_FUNCTION=릴레이 기능 | 검사유형 (INLINE/FINAL/VISUAL) |
+| `INSPECT_TYPE` | `VARCHAR2(50)` | `Y` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=절압물, STRUCTURE=구조, TORQUE=퓨즈삽입/토크, VISION=비전, RELAY_FUNCTION=릴레이 기능 | 검사유형 (INLINE/FINAL/VISUAL) |
 | `PASS_YN` | `VARCHAR2(1)` | `N` |  | 기본값 `'Y'` | 합격여부 [공통코드:JUDGE_YN] (Y/N) |
 | `ERROR_CODE` | `VARCHAR2(50)` | `Y` |  |  | 에러코드 |
 | `ERROR_DETAIL` | `VARCHAR2(500)` | `Y` |  |  | 에러상세 |
@@ -8355,7 +8355,7 @@ erDiagram
 |---|---|---|---|---|---|
 | `ARRIVAL_NO` | `VARCHAR2(100)` | `Y` |  |  | LOT번호 |
 | `ITEM_CODE` | `VARCHAR2(255)` | `N` |  |  | 품목ID (FK -> PART_MASTERS) |
-| `INSPECT_TYPE` | `VARCHAR2(50)` | `N` |  | 기본값 `'INITIAL'`<br>COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자, STRUCTURE=구조, TORQUE=퓨즈삽입/토크, VISION=비전, RELAY_FUNCTION=릴레이 기능 | 검사유형 (INITIAL=초기검사, RETEST=재검사, CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관) |
+| `INSPECT_TYPE` | `VARCHAR2(50)` | `N` |  | 기본값 `'INITIAL'`<br>COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=절압물, STRUCTURE=구조, TORQUE=퓨즈삽입/토크, VISION=비전, RELAY_FUNCTION=릴레이 기능 | 검사유형 (INITIAL=초기검사, RETEST=재검사, CONTINUITY=도통, INSULATION=절연, HI_POT=내압, VISUAL=외관) |
 | `RESULT` | `VARCHAR2(50)` | `N` |  | 기본값 `'PASS'` | 검사결과 (PASS=합격, FAIL=불합격) |
 | `DETAILS` | `CLOB` | `Y` |  |  | 검사상세 (JSON) |
 | `INSPECTOR_NAME` | `VARCHAR2(100)` | `Y` |  |  | 검사자명 |
@@ -8381,6 +8381,7 @@ erDiagram
 | `AQL_INSPECTION_MODE` | `VARCHAR2(20)` | `Y` |  |  |  |
 | `AQL_SAMPLE_QTY` | `NUMBER` | `Y` |  |  |  |
 | `AQL_MAJOR_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
+| `ORDER_NO` | `VARCHAR2(50)` | `Y` |  |  | 작업지시번호 - 작업지시 단위 검사(절압물검사 TERMINAL)에서 직접 기록 |
 | `AQL_MAJOR_AC` | `NUMBER` | `Y` |  |  |  |
 | `AQL_MAJOR_RE` | `NUMBER` | `Y` |  |  |  |
 | `AQL_MINOR_CODE` | `VARCHAR2(50)` | `Y` |  |  |  |
@@ -8746,7 +8747,7 @@ erDiagram
 | `ITEM_CODE` | `VARCHAR2(50)` | `Y` |  |  | 대상 품목코드 (ITEM_MASTERS.ITEM_CODE, NULL이면 공용 견본) |
 | `PROCESS_CODE` | `VARCHAR2(50)` | `Y` |  |  | 적용 공정코드 (PROCESS_MASTERS.PROCESS_CODE, 선택) |
 | `DEFECT_CODE` | `VARCHAR2(50)` | `Y` |  |  | 불량견본(NG)의 대표 불량코드 (DEFECT_CODE_MASTERS.DEFECT_CODE, 선택) |
-| `INSPECT_TYPE` | `VARCHAR2(30)` | `Y` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=단자, STRUCTURE=구조, TORQUE=퓨즈삽입/토크, VISION=비전, RELAY_FUNCTION=릴레이 기능 | 적용 검사유형 (COM_CODES INSPECT_TYPE, NULL이면 전 검사유형 공통) |
+| `INSPECT_TYPE` | `VARCHAR2(30)` | `Y` |  | COM_CODES.INSPECT_TYPE: CONTINUITY=도통, INSULATION=절연, HIPOT=내전압, HI_POT=내압, LEAK=리크, VISUAL=외관, INITIAL=초기검사, RETEST=재검사, TERMINAL=절압물, STRUCTURE=구조, TORQUE=퓨즈삽입/토크, VISION=비전, RELAY_FUNCTION=릴레이 기능 | 적용 검사유형 (COM_CODES INSPECT_TYPE, NULL이면 전 검사유형 공통) |
 | `LOCATION` | `VARCHAR2(200)` | `Y` |  |  | 보관 위치 |
 | `VALID_FROM` | `DATE` | `Y` |  |  | 유효기간 시작일 |
 | `VALID_TO` | `DATE` | `Y` |  |  | 유효기간 종료일 (만료/임박 판정 기준) |

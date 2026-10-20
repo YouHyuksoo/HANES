@@ -48,10 +48,11 @@ export class ContinuityInspectDto {
   @IsString()
   passYn: string;
 
-  @ApiPropertyOptional({ description: '검사 유형', enum: ['CONTINUITY', 'TERMINAL', 'HIPOT', 'LEAK', 'TORQUE', 'VISION', 'RELAY_FUNCTION'], default: 'CONTINUITY' })
+  @ApiPropertyOptional({ description: '검사 유형', enum: ['CONTINUITY', 'HIPOT', 'LEAK', 'TORQUE', 'VISION', 'RELAY_FUNCTION'], default: 'CONTINUITY' })
   @IsOptional()
   @IsString()
-  @IsIn(['CONTINUITY', 'TERMINAL', 'HIPOT', 'LEAK', 'TORQUE', 'VISION', 'RELAY_FUNCTION'])
+  // TERMINAL(절압물검사)은 FG 라벨이 아니라 작업지시 단위라 /quality/crimp-inspect 로 등록한다
+  @IsIn(['CONTINUITY', 'HIPOT', 'LEAK', 'TORQUE', 'VISION', 'RELAY_FUNCTION'])
   inspectType?: string;
 
   // ── 측정값 (HIPOT/LEAK 스테이션) — 품목 스펙(INSPECT_ITEM_SPECS)과 대조해 자동 판정한다 ──

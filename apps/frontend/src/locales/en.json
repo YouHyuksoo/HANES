@@ -502,7 +502,7 @@
     "inspection.integrated": "Integrated Inspection",
     "inspection.structure": "Structure Inspect",
     "inspection.result": "Continuity Inspect",
-    "inspection.terminalResult": "Terminal Inspect",
+    "inspection.terminalResult": "Crimped Lead Inspect",
     "inspection.hipotResult": "Hi-Pot Inspection",
     "inspection.leakResult": "Leak Inspection",
     "inspection.torqueResult": "Fuse/Torque Inspection",
@@ -5118,10 +5118,43 @@
       }
     },
     "terminalResult": {
-      "title": "Terminal Inspect Result",
-      "description": "View terminal inspection results and pass rates.",
+      "title": "Crimped Lead Inspection",
+      "description": "Judge crimped leads (cut & crimped semi-products) of crimping orders against per-terminal crimp specs at first/middle/last piece.",
       "searchPlaceholder": "Search order no / item...",
-      "selectOrder": "Select a job order for terminal inspection"
+      "selectOrder": "Select a crimping job order to inspect",
+      "orders": "Crimping Job Orders",
+      "inspectCount": "Inspected",
+      "inspector": "Inspector",
+      "inspectorPlaceholder": "Select inspector",
+      "timing": "Timing",
+      "sides": "Crimp Measurements by Terminal",
+      "terminal": "Terminal",
+      "wire": "Wire",
+      "pullForce": "Pull Force (N)",
+      "specRange": "Spec",
+      "noTerminal": "The order item's BOM has no terminal.",
+      "sideStatus": {
+        "NO_WIRE": "No wire found in the BOM.",
+        "MULTI_WIRE": "The BOM has two or more wires, so the wire cannot be determined.",
+        "NO_SPEC": "No crimp spec for this terminal + wire combination.",
+        "DUP_SPEC": "Two or more crimp specs exist for this terminal + wire combination."
+      },
+      "specMissingHint": "Check the terminal crimp spec or the BOM.",
+      "visualChecks": "Visual Checks",
+      "remark": "Remark",
+      "remarkPlaceholder": "Defect details or notes",
+      "missingInput": "Enter the inspector, all measurements, and all visual checks to register.",
+      "expectPass": "Expected PASS",
+      "expectFail": "Expected FAIL",
+      "save": "Register Result",
+      "history": "Inspection History",
+      "historyEmpty": "No crimped lead inspection history for this order.",
+      "inspectedAt": "Inspected At",
+      "result": "Result",
+      "resultPass": "Pass",
+      "resultFail": "Fail",
+      "errorDetail": "Details",
+      "loadFailed": "Failed to load the inspection criteria."
     },
     "hipotResult": {
       "title": "Hi-Pot Inspect Result",
@@ -5210,11 +5243,11 @@
       "scopeFull": "Full",
       "scopeSample": "Sample",
       "typeVisual": "Visual Inspection",
-      "typeTerminal": "Terminal Inspection",
+      "typeTerminal": "Crimped Lead Inspection",
       "typeContinuity": "Continuity Inspection",
       "inspectType": "Inspection Type",
       "title": "Inspection History",
-      "subtitle": "View visual, terminal, and continuity inspection history",
+      "subtitle": "View visual, crimped lead, and continuity inspection history",
       "viewChart": "View as Chart",
       "viewGrid": "View as List",
       "chart": {
@@ -8301,7 +8334,7 @@
     "INSPECT_TYPE": {
       "HIPOT": "Hi-Pot",
       "LEAK": "Leak",
-      "TERMINAL": "Terminal",
+      "TERMINAL": "Crimped Lead",
       "STRUCTURE": "Structure",
       "TORQUE": "Torque",
       "VISION": "Vision",
@@ -8327,6 +8360,12 @@
       "ETC": "Other"
     },
     "BOM_SIDE": {
+    "CRIMP_VISUAL_CHECK": {
+      "SHAPE": "Crimp Shape",
+      "MIXUP": "Mix-up",
+      "MISSING": "Missing Part",
+      "APPEARANCE": "Appearance Defect"
+    },
       "N": "N/A",
       "L": "Left",
       "R": "Right"
@@ -9066,6 +9105,7 @@
     "BOM_TYPE": "BOM Type",
     "WAREHOUSE_TYPE": "Warehouse Type",
     "INVENTORY_MOVE_TYPE": "Inventory Move Type",
+    "CRIMP_VISUAL_CHECK": "Crimped Lead Visual Check",
     "MOLD_STATUS": "Mold Status",
     "GENERAL_STATUS": "General Status",
     "USE_YN": "Use Y/N",

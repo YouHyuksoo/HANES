@@ -30,7 +30,7 @@ import FailModal from "./FailModal";
 
 interface Props {
   order: JobOrderRow;
-  inspectType?: "CONTINUITY" | "TERMINAL" | "HIPOT" | "LEAK" | "TORQUE" | "VISION" | "RELAY_FUNCTION";
+  inspectType?: "CONTINUITY" | "HIPOT" | "LEAK" | "TORQUE" | "VISION" | "RELAY_FUNCTION";
   /** 선택된 검사기(설비) 코드 — 검사 실적 기록 + 미선택 시 검사 차단 */
   equipCode?: string;
   /** 준비 상태 단일 객체 — 작업자/설비점검/양불대조/소모품을 모두 포함한다 */
