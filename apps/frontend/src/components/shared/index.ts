@@ -26,6 +26,8 @@ export { default as HelpTooltip } from "./HelpTooltip";
 export type { HelpTooltipProps } from "./HelpTooltip";
 export { default as QtyInput } from "./QtyInput";
 export type { QtyInputProps } from "./QtyInput";
+export { default as NumericKeypad } from "./NumericKeypad";
+export type { NumericKeypadProps } from "./NumericKeypad";
 export { default as DateRangeFilter } from "./DateRangeFilter";
 export type { DateRangeFilterProps } from "./DateRangeFilter";
 export { default as DateFilter } from "./DateFilter";

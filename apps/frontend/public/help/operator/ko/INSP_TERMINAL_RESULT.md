@@ -51,6 +51,8 @@ JOB_ORDERS (PROCESS_CODE → PROCESS_MASTERS.PROCESS_TYPE='CRIMPING', STATUS IN 
 | 이력 | `GET /quality/crimp-inspect/history?orderNo=` | — | `ORDER_NO`+`TERMINAL` 최근 100건 |
 | 판정 등록 | `POST /quality/crimp-inspect` → `CrimpInspectService.create` | 작업지시 공정유형 CRIMPING·취소 아님, 사용중 작업자, 모든 사이드 OK, 규격 대상 측정값 전부, 사용중 외관 항목 전부 | 트랜잭션 1건 INSERT `INSPECT_RESULTS`. 작업지시·실적·재고 상태는 바꾸지 않는다 |
 
+[키패드] 토글은 화면 전용이다(API·DB 영향 없음). 켜짐 여부는 브라우저 `localStorage` `crimpInspect.keypadOpen`(Y/N)에만 기억하고, 읽기 실패 시 꺼짐으로 시작한다. 키패드 컴포넌트는 공용 `components/shared/NumericKeypad.tsx`.
+
 예전 FG 라벨 경로(`POST /quality/continuity-inspect/inspect`)는 `inspectType=TERMINAL`을 더 이상 받지 않는다(DTO `@IsIn`에서 제외, 회로라벨 필수 유형에서도 제외).
 
 ## 판정 로직

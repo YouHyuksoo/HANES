@@ -20,6 +20,15 @@
     "name": "仓库名称"
   },
   "common": {
+    "keypad": {
+      "title": "数字键盘",
+      "close": "关闭键盘",
+      "selectField": "请选择要输入的栏位",
+      "backspace": "删除一个字符",
+      "clear": "全部清除",
+      "prev": "上一个",
+      "next": "下一个"
+    },
     "save": "保存",
     "cancel": "取消",
     "delete": "删除",
@@ -5151,7 +5160,8 @@
       "resultPass": "合格",
       "resultFail": "不合格",
       "errorDetail": "判定内容",
-      "loadFailed": "无法加载检查标准。"
+      "loadFailed": "无法加载检查标准。",
+      "keypad": "键盘"
     },
     "hipotResult": {
       "title": "耐压检查实绩",

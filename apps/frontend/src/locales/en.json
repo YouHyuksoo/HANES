@@ -20,6 +20,15 @@
     "name": "Warehouse Name"
   },
   "common": {
+    "keypad": {
+      "title": "Keypad",
+      "close": "Close keypad",
+      "selectField": "Select a field to enter",
+      "backspace": "Delete one character",
+      "clear": "Clear all",
+      "prev": "Prev",
+      "next": "Next"
+    },
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
@@ -5154,7 +5163,8 @@
       "resultPass": "Pass",
       "resultFail": "Fail",
       "errorDetail": "Details",
-      "loadFailed": "Failed to load the inspection criteria."
+      "loadFailed": "Failed to load the inspection criteria.",
+      "keypad": "Keypad"
     },
     "hipotResult": {
       "title": "Hi-Pot Inspect Result",

@@ -20,6 +20,15 @@
     "name": "Tên kho"
   },
   "common": {
+    "keypad": {
+      "title": "Bàn phím số",
+      "close": "Đóng bàn phím",
+      "selectField": "Chọn ô cần nhập",
+      "backspace": "Xóa một ký tự",
+      "clear": "Xóa hết",
+      "prev": "Trước",
+      "next": "Tiếp"
+    },
     "save": "Lưu",
     "cancel": "Hủy",
     "delete": "Xóa",
@@ -5151,7 +5160,8 @@
       "resultPass": "Đạt",
       "resultFail": "Không đạt",
       "errorDetail": "Nội dung đánh giá",
-      "loadFailed": "Không tải được tiêu chuẩn kiểm tra."
+      "loadFailed": "Không tải được tiêu chuẩn kiểm tra.",
+      "keypad": "Bàn phím"
     },
     "hipotResult": {
       "title": "Kết quả kiểm tra cao áp",

@@ -8,16 +8,28 @@
  * 1. 좌측: 진행/대기 중인 압착(CRIMPING) 작업지시. 라우팅의 CRINS(절압물검사)는 작업지시가 없어 앞 압착 작업지시에 기록한다.
  * 2. 우측: 단자별 압착 규격 대비 실측값 + 외관 판정을 초·중·종물로 등록한다(CrimpInspectPanel).
  * 3. FG 라벨이 생기기 전 반제품 검사라 FG 라벨·회로라벨을 쓰지 않는다.
+ * 4. [키패드] 를 켜면 우측에 터치 숫자 키패드가 나온다. 입력 폭을 확보하려고 작업지시 목록은 접는다(끄면 다시 보인다).
+ *    켜짐 여부는 이 브라우저에만 기억한다(localStorage, 실패해도 기본 꺼짐).
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ColumnDef } from "@tanstack/react-table";
-import { RefreshCw, Ruler, Search } from "lucide-react";
+import { Keyboard, RefreshCw, Ruler, Search } from "lucide-react";
 import { Button, Card, CardContent, ComCodeBadge, Input } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import api from "@/services/api";
 import CrimpInspectPanel from "./components/CrimpInspectPanel";
 import type { CrimpOrderRow } from "./types";
+
+const KEYPAD_STORAGE_KEY = "crimpInspect.keypadOpen";
+
+function readKeypadPref(): boolean {
+  try {
+    return localStorage.getItem(KEYPAD_STORAGE_KEY) === "Y";
+  } catch {
+    return false;
+  }
+}
 
 export default function CrimpInspectPage() {
   const { t } = useTranslation();
@@ -26,6 +38,20 @@ export default function CrimpInspectPage() {
   const [selected, setSelected] = useState<CrimpOrderRow | null>(null);
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [keypadOpen, setKeypadOpen] = useState(false);
+
+  useEffect(() => { setKeypadOpen(readKeypadPref()); }, []);
+
+  const toggleKeypad = useCallback((open: boolean) => {
+    setKeypadOpen(open);
+    try {
+      localStorage.setItem(KEYPAD_STORAGE_KEY, open ? "Y" : "N");
+    } catch {
+      // 저장 못 해도 이번 화면에서는 동작한다
+    }
+  }, []);
+  // 작업지시를 고른 뒤 키패드를 켜면 목록을 접어 입력칸 폭을 확보한다
+  const listCollapsed = keypadOpen && !!selected;
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchText), 300);
@@ -100,14 +126,26 @@ export default function CrimpInspectPage() {
           </h1>
           <p className="text-text-muted mt-1">{t("inspection.terminalResult.description")}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={() => void fetchOrders()}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
-          {t("common.refresh")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={keypadOpen ? "primary" : "secondary"}
+            size="sm"
+            onClick={() => toggleKeypad(!keypadOpen)}
+            aria-pressed={keypadOpen}
+            data-testid="crimp-keypad-toggle"
+          >
+            <Keyboard className="w-4 h-4 mr-1" />
+            {t("inspection.terminalResult.keypad", "키패드")}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => void fetchOrders()}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />
+            {t("common.refresh")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-12 gap-4 flex-1 min-h-0 overflow-hidden">
-        <Card className="col-span-4 min-h-0 overflow-hidden flex flex-col" padding="none">
+        <Card className={`col-span-4 min-h-0 overflow-hidden flex flex-col ${listCollapsed ? "hidden" : ""}`} padding="none">
           <CardContent className="flex flex-col h-full min-h-0 p-3 gap-2">
             <div className="text-sm font-semibold text-text">{t("inspection.terminalResult.orders", "압착 작업지시")}</div>
             <Input
@@ -140,9 +178,15 @@ WHERE jo.COMPANY = :company
           </CardContent>
         </Card>
 
-        <div className="col-span-8 min-h-0 overflow-hidden flex flex-col">
+        <div className={`${listCollapsed ? "col-span-12" : "col-span-8"} min-h-0 overflow-hidden flex flex-col`}>
           {selected ? (
-            <CrimpInspectPanel key={selected.orderNo} order={selected} onSaved={() => void fetchOrders()} />
+            <CrimpInspectPanel
+              key={selected.orderNo}
+              order={selected}
+              onSaved={() => void fetchOrders()}
+              keypadOpen={keypadOpen}
+              onCloseKeypad={() => toggleKeypad(false)}
+            />
           ) : (
             <Card className="flex-1 flex items-center justify-center">
               <CardContent>

@@ -31,6 +31,22 @@ test('절압물검사 page uses crimp job orders, not the FG label station workf
   assert.doesNotMatch(panel, /fgBarcode|circuitLabel/);
 });
 
+test('키패드 보기를 켜면 우측 터치 키패드가 선택한 측정칸에 값을 넣는다', () => {
+  const page = read('apps/frontend/src/app/(authenticated)/inspection/terminal-result/page.tsx');
+  assert.match(page, /crimp-keypad-toggle/);
+  assert.match(page, /keypadOpen=\{keypadOpen\}/);
+
+  const panel = read('apps/frontend/src/app/(authenticated)/inspection/terminal-result/components/CrimpInspectPanel.tsx');
+  assert.match(panel, /<NumericKeypad/);
+  // 키패드를 쓰는 동안 OS 화상 키보드가 뜨지 않게 한다
+  assert.match(panel, /inputMode=\{keypadOpen \? "none" : "decimal"\}/);
+
+  const keypad = read('apps/frontend/src/components/shared/NumericKeypad.tsx');
+  // 키를 눌러도 입력칸 포커스를 빼앗지 않는다
+  assert.match(keypad, /onPointerDown=\{keepFocus\}/);
+  assert.match(keypad, /animate-slide-in-right/);
+});
+
 test('server judges every BOM terminal side against TERMINAL_CRIMP_SPECS and stores ORDER_NO', () => {
   const service = read('apps/backend/src/modules/quality/crimp-inspect/services/crimp-inspect.service.ts');
   assert.match(service, /judgeCrimpSide/);
