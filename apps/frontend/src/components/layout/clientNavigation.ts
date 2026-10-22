@@ -1,12 +1,5 @@
-"use client";
-
-export function navigateClientOnly(path: string) {
-  if (typeof window === "undefined") return;
-
-  const url = new URL(path, window.location.origin);
-  const target = `${url.pathname}${url.search}${url.hash}`;
-  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-  if (target === current) return;
-
-  window.history.pushState(null, "", target);
-}
+/**
+ * @file src/components/layout/clientNavigation.ts
+ * @description 공용 UI 패키지(@jisheng/ui)로 옮겨졌다. 기존 import 경로 호환용 재수출.
+ */
+export { navigateClientOnly } from "@jisheng/ui";
