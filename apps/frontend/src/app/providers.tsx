@@ -25,6 +25,8 @@ import { useComCodes } from "@/hooks/useComCode";
 import { useThemeStore, listenSystemThemeChange } from "@/stores/themeStore";
 import { useSysConfigStore } from "@/stores/sysConfigStore";
 import "@/lib/i18n";
+import { JishengUIProvider } from "@jisheng/ui";
+import { jishengUiAdapters } from "@/lib/jishengUiAdapters";
 
 // React Query 클라이언트 설정
 const queryClient = new QueryClient({
@@ -166,6 +168,7 @@ export function Providers({ children }: ProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <JishengUIProvider adapters={jishengUiAdapters}>
       <ThemeEffect />
       <AuthInitializer />
       <ComCodePrefetch />
@@ -187,6 +190,7 @@ export function Providers({ children }: ProvidersProps) {
       <ApiFeedbackModal />
       <JobOrderHud />
       {children}
+      </JishengUIProvider>
     </QueryClientProvider>
   );
 }

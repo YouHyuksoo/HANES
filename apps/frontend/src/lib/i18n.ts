@@ -17,6 +17,7 @@
 
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
+import { registerUiLocales } from "@jisheng/ui";
 
 import ko from "@/locales/ko.json";
 import en from "@/locales/en.json";
@@ -67,5 +68,8 @@ i18n
       escapeValue: false,
     },
   });
+
+// 공용 UI 패키지 문구를 합친다. HANES 가 이미 가진 키는 덮어쓰지 않는다.
+registerUiLocales(i18n);
 
 export default i18n;
