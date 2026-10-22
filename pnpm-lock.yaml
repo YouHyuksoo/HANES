@@ -202,8 +202,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/shared
       '@jisheng/ui':
-        specifier: github:YouHyuksoo/jisheng-ui#v1.0.1
-        version: git+https://github.com/YouHyuksoo/jisheng-ui.git#5f83c0fe4cfa6a6c90828788ec31f5ff25686057(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(i18next@24.2.3(typescript@5.9.3))(lucide-react@0.468.0(react@19.2.3))(next@15.5.9(@babel/core@7.28.6)(@playwright/test@1.61.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react-i18next@15.7.4(i18next@24.2.3(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(react@19.2.3)(tailwindcss@4.1.18)(zustand@5.0.10(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))
+        specifier: github:YouHyuksoo/jisheng-ui#v1.0.2
+        version: git+https://github.com/YouHyuksoo/jisheng-ui.git#2bbf002b9ef22b1d04b58f660d34a4ce90b01c4f(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(i18next@24.2.3(typescript@5.9.3))(jspdf-autotable@5.0.7(jspdf@4.2.0))(jspdf@4.2.0)(lucide-react@0.468.0(react@19.2.3))(next@15.5.9(@babel/core@7.28.6)(@playwright/test@1.61.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react-i18next@15.7.4(i18next@24.2.3(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(react@19.2.3)(tailwindcss@4.1.18)(xlsx@0.18.5)(zustand@5.0.10(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))
       '@tanstack/react-query':
         specifier: ^5.62.0
         version: 5.90.20(react@19.2.3)
@@ -1494,18 +1494,21 @@ packages:
     resolution: {integrity: sha512-H9xg1/sfVvyfU7o3zMfBEjQ1gcsdeTMgqHoYdN79tuLqfTtuu7WckRA1R5whDwOzxaZAeMKTYWqP+WCAi0CHsg==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
 
-  '@jisheng/ui@git+https://github.com/YouHyuksoo/jisheng-ui.git#5f83c0fe4cfa6a6c90828788ec31f5ff25686057':
-    resolution: {commit: 5f83c0fe4cfa6a6c90828788ec31f5ff25686057, repo: https://github.com/YouHyuksoo/jisheng-ui.git, type: git}
-    version: 1.0.1
+  '@jisheng/ui@git+https://github.com/YouHyuksoo/jisheng-ui.git#2bbf002b9ef22b1d04b58f660d34a4ce90b01c4f':
+    resolution: {commit: 2bbf002b9ef22b1d04b58f660d34a4ce90b01c4f, repo: https://github.com/YouHyuksoo/jisheng-ui.git, type: git}
+    version: 1.0.2
     peerDependencies:
       '@tanstack/react-table': ^8.20.0
       i18next: '>=24'
+      jspdf: ^4.2.0
+      jspdf-autotable: ^5.0.7
       lucide-react: '>=0.468.0'
       next: ^15.2.0
       react: ^19.0.0
       react-dom: ^19.0.0
       react-i18next: '>=15'
       tailwindcss: ^4.0.0
+      xlsx: ^0.18.5
       zustand: ^5.0.0
 
   '@jridgewell/gen-mapping@0.3.13':
@@ -4282,16 +4285,8 @@ packages:
     peerDependencies:
       jspdf: ^2 || ^3 || ^4
 
-  jspdf-autotable@5.0.9:
-    resolution: {integrity: sha512-wIOG2ggjG6Y7qvqjgFACZZeu+oHxoxrhwCn1lTMxjPhojLVVvu2U2yS2srVCYl0CXe6pqiG/jQMIIS0CFn1ssw==}
-    peerDependencies:
-      jspdf: ^2 || ^3 || ^4
-
   jspdf@4.2.0:
     resolution: {integrity: sha512-hR/hnRevAXXlrjeqU5oahOE+Ln9ORJUB5brLHHqH67A+RBQZuFr5GkbI9XQI8OUFSEezKegsi45QRpc4bGj75Q==}
-
-  jspdf@4.2.1:
-    resolution: {integrity: sha512-YyAXyvnmjTbR4bHQRLzex3CuINCDlQnBqoSYyjJwTP2x9jDLuKDzy7aKUl0hgx3uhcl7xzg32agn5vlie6HIlQ==}
 
   jszip@3.10.1:
     resolution: {integrity: sha512-xXDvecyTpGLrqFrvkrUSoxxfJI5AH7U8zxxtVclpsUtMCq4JQ290LY8AW5c7Ggnr/Y/oK+bQMbqK2qmtk3pN4g==}
@@ -7750,12 +7745,12 @@ snapshots:
       '@types/yargs': 17.0.35
       chalk: 4.1.2
 
-  '@jisheng/ui@git+https://github.com/YouHyuksoo/jisheng-ui.git#5f83c0fe4cfa6a6c90828788ec31f5ff25686057(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(i18next@24.2.3(typescript@5.9.3))(lucide-react@0.468.0(react@19.2.3))(next@15.5.9(@babel/core@7.28.6)(@playwright/test@1.61.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react-i18next@15.7.4(i18next@24.2.3(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(react@19.2.3)(tailwindcss@4.1.18)(zustand@5.0.10(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))':
+  '@jisheng/ui@git+https://github.com/YouHyuksoo/jisheng-ui.git#2bbf002b9ef22b1d04b58f660d34a4ce90b01c4f(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(i18next@24.2.3(typescript@5.9.3))(jspdf-autotable@5.0.7(jspdf@4.2.0))(jspdf@4.2.0)(lucide-react@0.468.0(react@19.2.3))(next@15.5.9(@babel/core@7.28.6)(@playwright/test@1.61.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react-i18next@15.7.4(i18next@24.2.3(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(react@19.2.3)(tailwindcss@4.1.18)(xlsx@0.18.5)(zustand@5.0.10(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))':
     dependencies:
       '@tanstack/react-table': 8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       i18next: 24.2.3(typescript@5.9.3)
-      jspdf: 4.2.1
-      jspdf-autotable: 5.0.9(jspdf@4.2.1)
+      jspdf: 4.2.0
+      jspdf-autotable: 5.0.7(jspdf@4.2.0)
       lucide-react: 0.468.0(react@19.2.3)
       next: 15.5.9(@babel/core@7.28.6)(@playwright/test@1.61.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       react: 19.2.3
@@ -10844,22 +10839,7 @@ snapshots:
     dependencies:
       jspdf: 4.2.0
 
-  jspdf-autotable@5.0.9(jspdf@4.2.1):
-    dependencies:
-      jspdf: 4.2.1
-
   jspdf@4.2.0:
-    dependencies:
-      '@babel/runtime': 7.28.6
-      fast-png: 6.4.0
-      fflate: 0.8.2
-    optionalDependencies:
-      canvg: 3.0.11
-      core-js: 3.48.0
-      dompurify: 3.3.1
-      html2canvas: 1.4.1
-
-  jspdf@4.2.1:
     dependencies:
       '@babel/runtime': 7.28.6
       fast-png: 6.4.0
