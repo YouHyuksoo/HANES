@@ -8,7 +8,8 @@ const read = (relativePath) => readFileSync(join(root, relativePath), 'utf8');
 
 test('SQL viewer prefers request-captured actual SQL over hardcoded preview SQL', () => {
   const api = read('apps/frontend/src/services/api.ts');
-  const modal = read('apps/frontend/src/components/data-grid/SqlViewerModal.tsx');
+  // SqlViewerModal 은 @jisheng/ui 로 옮겨졌다. HANES 는 실제 SQL 조회를 어댑터로 넘긴다.
+  const adapters = read('apps/frontend/src/lib/jishengUiAdapters.ts');
   const databaseModule = read('apps/backend/src/database/database.module.ts');
   const main = read('apps/backend/src/main.ts');
 
@@ -25,9 +26,9 @@ test('SQL viewer prefers request-captured actual SQL over hardcoded preview SQL'
   );
 
   assert.match(
-    modal,
-    /getLatestActualSqlForPreview\(sql\) \?\? sql/,
-    'SQL modal should prefer cached actual SQL for the preview SQL table',
+    adapters,
+    /getActualSql: getLatestActualSqlForPreview/,
+    'SQL modal should prefer cached actual SQL for the preview SQL table (via @jisheng/ui adapter)',
   );
 
   assert.match(
