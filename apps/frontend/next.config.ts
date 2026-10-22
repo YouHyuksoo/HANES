@@ -43,7 +43,7 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: false,
-  transpilePackages: ["@harness/shared"],
+  transpilePackages: ["@harness/shared", "@jisheng/ui"],
 
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
