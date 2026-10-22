@@ -202,8 +202,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/shared
       '@jisheng/ui':
-        specifier: file:C:/Project/jisheng-ui
-        version: file:../../../jisheng-ui(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(i18next@24.2.3(typescript@5.9.3))(lucide-react@0.468.0(react@19.2.3))(next@15.5.9(@babel/core@7.28.6)(@playwright/test@1.61.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react-i18next@15.7.4(i18next@24.2.3(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(react@19.2.3)(tailwindcss@4.1.18)(zustand@5.0.10(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))
+        specifier: github:YouHyuksoo/jisheng-ui#v1.0.0
+        version: git+https://github.com/YouHyuksoo/jisheng-ui.git#40e53bc58b4f1630ba604d222c71582f60fd2bf3(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(i18next@24.2.3(typescript@5.9.3))(lucide-react@0.468.0(react@19.2.3))(next@15.5.9(@babel/core@7.28.6)(@playwright/test@1.61.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react-i18next@15.7.4(i18next@24.2.3(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(react@19.2.3)(tailwindcss@4.1.18)(zustand@5.0.10(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))
       '@tanstack/react-query':
         specifier: ^5.62.0
         version: 5.90.20(react@19.2.3)
@@ -297,9 +297,6 @@ importers:
       zustand:
         specifier: ^5.0.2
         version: 5.0.10(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
-    dependenciesMeta:
-      '@jisheng/ui':
-        injected: true
     devDependencies:
       '@playwright/test':
         specifier: ^1.61.0
@@ -1497,8 +1494,9 @@ packages:
     resolution: {integrity: sha512-H9xg1/sfVvyfU7o3zMfBEjQ1gcsdeTMgqHoYdN79tuLqfTtuu7WckRA1R5whDwOzxaZAeMKTYWqP+WCAi0CHsg==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
 
-  '@jisheng/ui@file:../../../jisheng-ui':
-    resolution: {directory: ../../../jisheng-ui, type: directory}
+  '@jisheng/ui@git+https://github.com/YouHyuksoo/jisheng-ui.git#40e53bc58b4f1630ba604d222c71582f60fd2bf3':
+    resolution: {commit: 40e53bc58b4f1630ba604d222c71582f60fd2bf3, repo: https://github.com/YouHyuksoo/jisheng-ui.git, type: git}
+    version: 1.0.0
     peerDependencies:
       '@tanstack/react-table': ^8.20.0
       i18next: '>=24'
@@ -7752,7 +7750,7 @@ snapshots:
       '@types/yargs': 17.0.35
       chalk: 4.1.2
 
-  '@jisheng/ui@file:../../../jisheng-ui(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(i18next@24.2.3(typescript@5.9.3))(lucide-react@0.468.0(react@19.2.3))(next@15.5.9(@babel/core@7.28.6)(@playwright/test@1.61.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react-i18next@15.7.4(i18next@24.2.3(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(react@19.2.3)(tailwindcss@4.1.18)(zustand@5.0.10(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))':
+  '@jisheng/ui@git+https://github.com/YouHyuksoo/jisheng-ui.git#40e53bc58b4f1630ba604d222c71582f60fd2bf3(@tanstack/react-table@8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(i18next@24.2.3(typescript@5.9.3))(lucide-react@0.468.0(react@19.2.3))(next@15.5.9(@babel/core@7.28.6)(@playwright/test@1.61.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-dom@19.2.3(react@19.2.3))(react-i18next@15.7.4(i18next@24.2.3(typescript@5.9.3))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(react@19.2.3)(tailwindcss@4.1.18)(zustand@5.0.10(@types/react@19.2.9)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3)))':
     dependencies:
       '@tanstack/react-table': 8.21.3(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       i18next: 24.2.3(typescript@5.9.3)
