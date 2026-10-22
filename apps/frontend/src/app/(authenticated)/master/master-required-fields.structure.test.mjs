@@ -21,13 +21,7 @@ function assertRequired(source, field, fileLabel) {
   );
 }
 
-test("ui Select renders the same required label marker as Input", () => {
-  const source = read("../../../components/ui/Select.tsx");
-
-  assert.match(source, /required/, "Select should accept required from native select props");
-  assert.match(source, /\{required\s*&&\s*<span[^>]+>\*<\/span>\}/, "Select label should render required star");
-  assert.match(source, /required=\{required\}/, "Select element should receive required attribute");
-});
+// ui Select 의 필수 표시는 @jisheng/ui 로 옮겨져 패키지 테스트(select-required)가 검사한다.
 
 test("master side-panel forms mark required save-blocking fields", () => {
   const cases = [

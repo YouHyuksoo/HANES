@@ -2,37 +2,78 @@
 
 /**
  * @file src/components/layout/MainLayout.tsx
- * @description 메인 레이아웃 - 헤더 + 사이드바(접기/펴기) + 콘텐츠 영역
+ * @description 메인 레이아웃. 앱 틀(헤더 + 사이드바 + 탭 + keep-alive 본문)은 공용 UI 패키지(@jisheng/ui)의 AppShell 이고,
+ * 여기서는 HANES 메뉴·즐겨찾기·탭 설정과 HANES 전용 표시를 넘긴다.
  *
  * 초보자 가이드:
- * 1. **구조**: 고정 헤더 + 고정 사이드바 + 스크롤 가능한 메인 영역
- * 2. **반응형**: 모바일에서는 사이드바가 오버레이, 데스크톱에서는 고정
- * 3. **접기/펴기**: collapsed 상태에 따라 사이드바 너비 변경
+ * 1. **메뉴/권한**: useMenuTree (DB 정렬 + 역할 권한, 권한 없는 메뉴는 흐리게)
+ * 2. **탭 유지**: pageRegistry.generated 의 getPageComponent
+ * 3. **HANES 전용 표시**: 스캐너·프린트 에이전트, 회사/사업장·접속 DB 배지, 내 정보 모달
  * 4. **서버 상태**: API 오류(503 등) 감지 시 ConnectionCheckOverlay 표시
+ * 5. **chromeless**: 키오스크 작업화면·view=full 은 헤더/사이드바/탭 없이 본문만
  */
-import { useState, useEffect, useCallback, useRef } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import Header from "./Header";
-import Sidebar from "./Sidebar";
-import TabBar from "./TabBar";
-import TabKeepAlive from "./TabKeepAlive";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
+import { BookOpen, Settings, User } from "lucide-react";
+import { AppShell, HeaderMenuItem, type AppShellConfig } from "@jisheng/ui";
 import ConnectionCheckOverlay from "@/app/login/components/ConnectionCheckOverlay";
 import { api } from "@/services/api";
 import ImprovementFAB from "@/components/improvement/ImprovementFAB";
 import AiChatPanel from "@/components/ai/AiChatPanel";
 import HelpPanel from "@/components/help/HelpPanel";
+import HelpButton from "@/components/help/HelpButton";
+import { menuConfig } from "@/config/menuConfig";
+import { useMenuTree } from "@/hooks/useMenuTree";
+import { useMenuFavorites } from "@/hooks/useMenuFavorites";
+import { useMenuFavoriteFolders } from "@/hooks/useMenuFavoriteFolders";
+import { useMaxTabs } from "@/stores/tabStore";
+import { useAuthStore } from "@/stores/authStore";
+import { I18N_LANGUAGE_STORAGE_KEY, supportedLanguages } from "@/lib/i18n";
+import { getPageComponent } from "./pageRegistry.generated";
+import SerialIndicator from "./SerialIndicator";
+import PrintAgentIndicator from "./PrintAgentIndicator";
+import HanesScopeBadge from "./HanesScopeBadge";
+import HanesProfileModal from "./HanesProfileModal";
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
+/** 렌더마다 바뀌지 않는 HANES 앱 틀 설정 */
+const HANES_SHELL_BASE = {
+  brand: { mark: "H", name: "HARNESS MES" },
+  menuConfig,
+  useMenu: useMenuTree,
+  useFavorites: useMenuFavorites,
+  useFavoriteFolders: useMenuFavoriteFolders,
+  useMaxTabs,
+  getPageComponent,
+  sidebarSections: {
+    pinned: { codes: ["WORKFLOW", "MONITORING"], labelKeys: ["menu.workflow", "menu.monitoring"] },
+    /**
+     * 하단 고정 영역(전체 도움말 위)으로 분리하는 관리자 성격 메뉴 그룹.
+     * 시나리오 런너도 여기 둔다 — 업무 메뉴가 아니라 절차를 대신 실행하는 운영 도구이고,
+     * "인터페이스 바로 위"라는 자리 자체가 이 고정 영역 안이다(순서는 SORT_ORDER 155 < 160).
+     */
+    admin: { codes: ["SCENARIO", "INTERFACE", "SYSTEM"], labelKeys: ["menu.interface", "menu.system"] },
+  },
+  defaultExpandedCodes: ["DASHBOARD", "FAVORITES"],
+  helpMenu: { code: "HELP_INDEX", labelKey: "help.viewAll", path: "/help", icon: BookOpen },
+  languages: supportedLanguages,
+  languageStorageKey: I18N_LANGUAGE_STORAGE_KEY,
+} satisfies Partial<AppShellConfig>;
+
 export default function MainLayout({ children }: MainLayoutProps) {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const router = useRouter();
+  const { user, logout } = useAuthStore();
   const [showConnectionCheck, setShowConnectionCheck] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const errorCountRef = useRef(0);
+
   const isKioskWorkView =
     (pathname === "/production/input-kiosk" || pathname === "/production/input-kiosk-b") && searchParams.get("view") === "work";
   /** view=full: 헤더/사이드바/탭을 모두 숨기는 전체화면(chromeless) 모드 — 검사 키오스크 등 */
@@ -60,7 +101,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
         return Promise.reject(error);
       },
     );
-
     return () => {
       api.interceptors.response.eject(interceptor);
     };
@@ -71,46 +111,45 @@ export default function MainLayout({ children }: MainLayoutProps) {
     setShowConnectionCheck(false);
   }, []);
 
-  return (
-    <div className="h-screen overflow-hidden bg-background">
-      {showConnectionCheck && <ConnectionCheckOverlay onReady={handleReady} />}
+  const handleLogout = useCallback(() => {
+    logout();
+    router.replace("/login");
+  }, [logout, router]);
 
-      {isChromeless ? (
-        <main className="h-screen overflow-hidden bg-background">
-          {children}
-        </main>
-      ) : (
-        <>
-          <Header
-            onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
-            collapsed={collapsed}
-            onToggleCollapse={() => setCollapsed(!collapsed)}
-          />
+  const config = useMemo<AppShellConfig>(() => ({
+    ...HANES_SHELL_BASE,
+    user,
+    onLogout: handleLogout,
+    chromeless: isChromeless,
+    headerIndicators: (
+      <>
+        {/* 바코드 스캐너 연결 상태 */}
+        <SerialIndicator />
+        {/* 라벨 프린트 에이전트 연결/다운로드 */}
+        <PrintAgentIndicator />
+        {/* 알림 벨(NotificationBell)은 폴링 부하/오류 리포트 노이즈로 임시 비활성화. 재활성화 시 여기에 넣는다 */}
+      </>
+    ),
+    helpButton: <HelpButton />,
+    scopeBadge: <HanesScopeBadge />,
+    userMenuItems: (close) => (
+      <>
+        <HeaderMenuItem icon={User} onClick={() => { close(); setShowProfileModal(true); }}>
+          {t("header.profile")}
+        </HeaderMenuItem>
+        <HeaderMenuItem icon={Settings}>{t("header.settings")}</HeaderMenuItem>
+      </>
+    ),
+    overlays: (
+      <>
+        {showConnectionCheck && <ConnectionCheckOverlay onReady={handleReady} />}
+        <HanesProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
+        <ImprovementFAB />
+        <AiChatPanel />
+        <HelpPanel />
+      </>
+    ),
+  }), [user, handleLogout, isChromeless, t, showConnectionCheck, handleReady, showProfileModal]);
 
-          <Sidebar
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-            collapsed={collapsed}
-            onToggleCollapse={() => setCollapsed(!collapsed)}
-          />
-
-          <main
-            className={`
-              pt-[var(--header-height)] h-screen flex flex-col overflow-hidden transition-all duration-300
-              ${collapsed ? "lg:pl-[var(--sidebar-collapsed-width)]" : "lg:pl-[var(--sidebar-width)]"}
-            `}
-          >
-            <TabBar />
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <TabKeepAlive>{children}</TabKeepAlive>
-            </div>
-          </main>
-        </>
-      )}
-
-      <ImprovementFAB />
-      <AiChatPanel />
-      <HelpPanel />
-    </div>
-  );
+  return <AppShell config={config}>{children}</AppShell>;
 }
