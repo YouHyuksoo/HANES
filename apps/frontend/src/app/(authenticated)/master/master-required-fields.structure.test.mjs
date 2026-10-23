@@ -21,7 +21,7 @@ function assertRequired(source, field, fileLabel) {
   );
 }
 
-// ui Select 의 필수 표시는 @jisheng/ui 로 옮겨져 패키지 테스트(select-required)가 검사한다.
+// ui Select 의 필수 표시는 @jisung/ui 로 옮겨져 패키지 테스트(select-required)가 검사한다.
 
 test("master side-panel forms mark required save-blocking fields", () => {
   const cases = [

@@ -3,7 +3,7 @@
 /**
  * @file src/components/layout/HanesProfileModal.tsx
  * @description 사용자 메뉴 > 내 정보 모달 (HANES 전용: 사번·부서·회사/사업장).
- * 앱 틀은 @jisheng/ui AppShell 이고, 이 모달은 MainLayout 이 overlays 로 넘긴다.
+ * 앱 틀은 @jisung/ui AppShell 이고, 이 모달은 MainLayout 이 overlays 로 넘긴다.
  */
 import { useTranslation } from "react-i18next";
 import { User, Building, BadgeCheck, Building2, Mail } from "lucide-react";

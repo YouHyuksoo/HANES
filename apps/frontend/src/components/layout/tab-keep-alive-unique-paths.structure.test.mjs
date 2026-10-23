@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-// TabKeepAlive 자체는 @jisheng/ui 로 옮겨졌다(패키지 테스트가 검사한다).
+// TabKeepAlive 자체는 @jisung/ui 로 옮겨졌다(패키지 테스트가 검사한다).
 // HANES 는 생성된 페이지 레지스트리를 AppShell 설정(getPageComponent)으로 넘긴다.
 const layoutSource = readFileSync(new URL('./MainLayout.tsx', import.meta.url), 'utf8');
 const registrySource = readFileSync(new URL('./pageRegistry.generated.ts', import.meta.url), 'utf8');

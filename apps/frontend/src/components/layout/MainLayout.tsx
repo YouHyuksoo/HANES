@@ -2,7 +2,7 @@
 
 /**
  * @file src/components/layout/MainLayout.tsx
- * @description 메인 레이아웃. 앱 틀(헤더 + 사이드바 + 탭 + keep-alive 본문)은 공용 UI 패키지(@jisheng/ui)의 AppShell 이고,
+ * @description 메인 레이아웃. 앱 틀(헤더 + 사이드바 + 탭 + keep-alive 본문)은 공용 UI 패키지(@jisung/ui)의 AppShell 이고,
  * 여기서는 HANES 메뉴·즐겨찾기·탭 설정과 HANES 전용 표시를 넘긴다.
  *
  * 초보자 가이드:
@@ -16,7 +16,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { BookOpen, Settings, User } from "lucide-react";
-import { AppShell, HeaderMenuItem, type AppShellConfig } from "@jisheng/ui";
+import { AppShell, HeaderMenuItem, type AppShellConfig } from "@jisung/ui";
 import ConnectionCheckOverlay from "@/app/login/components/ConnectionCheckOverlay";
 import { api } from "@/services/api";
 import ImprovementFAB from "@/components/improvement/ImprovementFAB";

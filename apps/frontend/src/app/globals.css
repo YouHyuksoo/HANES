@@ -20,7 +20,7 @@
 
 @import "tailwindcss";
 @import "@xyflow/react/dist/style.css";
-@import "@jisheng/ui/styles/tokens.css";
+@import "@jisung/ui/styles/tokens.css";
 
 /* ============================================
    Tailwind CSS 4 플러그인 로드
@@ -45,8 +45,8 @@
 @source inline("{,dark:}{bg,text}-{amber,blue,cyan,gray,green,indigo,orange,pink,purple,red,rose,sky,slate,teal,violet,yellow}-{100,200,300,600,700,800,900}");
 @source inline("text-white");
 
-/* 공용 UI 패키지(@jisheng/ui) 소스의 클래스도 생성한다. node_modules 는 자동 스캔 대상이 아니다. */
-@source "../../node_modules/@jisheng/ui/src";
+/* 공용 UI 패키지(@jisung/ui) 소스의 클래스도 생성한다. node_modules 는 자동 스캔 대상이 아니다. */
+@source "../../node_modules/@jisung/ui/src";
 
 /* ============================================
    기본 스타일

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-// 사이드바·탭 동작은 @jisheng/ui AppShell 이 고정하고(패키지 테스트가 검사한다),
+// 사이드바·탭 동작은 @jisung/ui AppShell 이 고정하고(패키지 테스트가 검사한다),
 // HANES 는 MainLayout 에서 메뉴 영역 구성과 도움말 링크를 넘긴다.
 const layoutSource = readFileSync(new URL('./MainLayout.tsx', import.meta.url), 'utf8');
 // 도움말 메뉴 제외 로직은 useMenuTree 훅에서 한 번에 처리한다
@@ -17,8 +17,8 @@ function resolveTranslation(resource, key) {
   return resource[root]?.[rest.join('.')];
 }
 
-test('HANES 앱 틀은 @jisheng/ui AppShell 을 쓴다', () => {
-  assert.match(layoutSource, /import \{ AppShell, HeaderMenuItem, type AppShellConfig \} from "@jisheng\/ui";/);
+test('HANES 앱 틀은 @jisung/ui AppShell 을 쓴다', () => {
+  assert.match(layoutSource, /import \{ AppShell, HeaderMenuItem, type AppShellConfig \} from "@jisung\/ui";/);
   assert.match(layoutSource, /<AppShell config=\{config\}>\{children\}<\/AppShell>/);
 });
 

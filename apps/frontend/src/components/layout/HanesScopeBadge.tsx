@@ -3,7 +3,7 @@
 /**
  * @file src/components/layout/HanesScopeBadge.tsx
  * @description 상단바 범위 표시 (HANES 전용): 현재 회사/사업장 + 접속 DB.
- * @jisheng/ui AppShell 의 scopeBadge 칸에 들어간다.
+ * @jisung/ui AppShell 의 scopeBadge 칸에 들어간다.
  */
 import { useEffect, useState } from "react";
 import { Building, Database } from "lucide-react";

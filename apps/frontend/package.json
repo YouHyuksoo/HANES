@@ -22,7 +22,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@ducanh2912/next-pwa": "^10.2.9",
     "@harness/shared": "workspace:*",
-    "@jisheng/ui": "github:YouHyuksoo/jisheng-ui#v1.0.2",
+    "@jisung/ui": "github:YouHyuksoo/jisung-ui#v2.0.0",
     "@tanstack/react-query": "^5.62.0",
     "@tanstack/react-table": "^8.20.6",
     "@xyflow/react": "^12.11.1",
