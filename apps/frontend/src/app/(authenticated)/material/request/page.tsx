@@ -28,6 +28,7 @@ function IssueRequestPage() {
     setSearchText,
     searchStockItems,
     loadBomRequestItems,
+    loadBundleBomRequestItems,
     loadRequestsByOrder,
     jobOrders,
     isLoadingJobOrders,
@@ -63,6 +64,7 @@ function IssueRequestPage() {
           jobOrders={jobOrders}
           isLoadingJobOrders={isLoadingJobOrders}
           loadBomRequestItems={loadBomRequestItems}
+          loadBundleBomRequestItems={loadBundleBomRequestItems}
           loadRequestsByOrder={loadRequestsByOrder}
           searchStockItems={searchStockItems}
           woOrderNo={woOrderNo}

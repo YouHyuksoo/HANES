@@ -19,6 +19,7 @@ import { ComCodeBadge } from '@/components/ui';
 import { IssueRequestStatusBadge } from '@/components/material';
 import type { IssueRequest } from '@/hooks/material/useIssueRequestData';
 import type { IssueRequestStatus } from '@/components/material';
+import { BundleOrderBadge } from '@/components/material/issue-request/BundleOrderDisplay';
 
 interface RequestTableProps {
   data: IssueRequest[];
@@ -61,9 +62,12 @@ export default function RequestTable({ data, toolbarLeft, isLoading, onViewDetai
     },
     {
       id: 'workOrderNo', header: t('material.col.workOrder'), size: 160, meta: { filterType: 'text' as const },
-      accessorFn: (row) => row.workOrderNo ?? row.orderNo ?? '',
+      accessorFn: (row) => row.workOrderNo ?? row.orderNo ?? (row.bundleOrderNos ?? []).join(', '),
       cell: ({ row }) => {
         const workOrderNo = row.original.workOrderNo ?? row.original.orderNo;
+        if (!workOrderNo && (row.original.bundleOrderNos?.length ?? 0) > 0) {
+          return <BundleOrderBadge orderNos={row.original.bundleOrderNos} />;
+        }
         const isManual = !workOrderNo && row.original.issueType === 'MANUAL';
         return (
           <span className={isManual ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-primary font-medium'}>

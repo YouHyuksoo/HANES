@@ -26,6 +26,31 @@ import {
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
 
+/** 묶음 출고요청 품목의 작업지시별 산출 수량 DTO */
+export class IssueRequestItemOrderDto {
+  @ApiProperty({ description: '작업지시 번호(묶음 orderNos 중 하나)' })
+  @IsString()
+  @MaxLength(50)
+  orderNo: string;
+
+  @ApiProperty({ description: '작업지시별 산출 요청수량(서버가 품목 합계를 계획일 빠른 순으로 다시 배분할 때 상한으로 쓴다)' })
+  @IsInt()
+  @Min(0)
+  requestQty: number;
+
+  @ApiPropertyOptional({ description: '작업지시 BOM 소요량' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  bomReqQty?: number;
+
+  @ApiPropertyOptional({ description: '작업지시 기출고량' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  prevIssueQty?: number;
+}
+
 /** 출고요청 품목 DTO */
 export class IssueRequestItemDto {
   @ApiProperty({ description: '품목 코드 (ITEM_MASTERS FK)' })
@@ -65,6 +90,13 @@ export class IssueRequestItemDto {
   @IsString()
   @MaxLength(500)
   remark?: string;
+
+  @ApiPropertyOptional({ description: '묶음 요청: 작업지시별 산출 수량. 없으면 계획일이 가장 빠른 작업지시에 붙인다', type: [IssueRequestItemOrderDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => IssueRequestItemOrderDto)
+  orders?: IssueRequestItemOrderDto[];
 }
 
 /** 출고요청 생성 DTO */
@@ -73,6 +105,12 @@ export class CreateIssueRequestDto {
   @IsOptional()
   @IsString()
   orderNo?: string;
+
+  @ApiPropertyOptional({ description: '묶음 요청 작업지시 목록(같은 공정, 2건 이상). 지정하면 orderNo 는 무시하고 헤더 ORDER_NO 는 비운다', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  orderNos?: string[];
 
   @ApiPropertyOptional({ description: '출고 대상 공정코드 — 지정 시 출고가 공정재고로 적재된다(ADR 0002)' })
   @IsOptional()

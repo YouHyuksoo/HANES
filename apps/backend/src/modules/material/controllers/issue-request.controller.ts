@@ -23,7 +23,7 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { IssueRequestService } from '../services/issue-request.service';
 import {
   CreateIssueRequestDto,
@@ -61,6 +61,15 @@ export class IssueRequestController {
       result.page,
       result.limit,
     );
+  }
+
+  @Get('job-orders/bundle-bom-items')
+  @ApiOperation({ summary: '묶음 출고요청: 같은 공정 작업지시 여러 건의 BOM 기준 출고예정 품목(작업지시별 수량 포함) 산출' })
+  @ApiQuery({ name: 'orderNos', description: '작업지시 번호 목록(쉼표 구분, 2건 이상)' })
+  async buildBundleBomRequestItems(@Query('orderNos') orderNos: string, @Company() company: string, @Plant() plant: string) {
+    const list = String(orderNos ?? '').split(',').map((no) => no.trim()).filter(Boolean);
+    const data = await this.issueRequestService.buildBundleBomRequestItems(list, company, plant);
+    return ResponseUtil.success(data);
   }
 
   @Get('job-orders/:orderNo/bom-items')

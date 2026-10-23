@@ -29,6 +29,7 @@ import DateRangeFilter from '@/components/shared/DateRangeFilter';
 import { useIssueRequests } from '@/hooks/material/useIssueRequests';
 import type { IssueRequestRecord } from '@/hooks/material/useIssueRequests';
 import type { IssueRequestStatus } from '@/components/material';
+import { BundleOrderBadge } from '@/components/material/issue-request/BundleOrderDisplay';
 
 interface IssueRequestTabProps {
   issueType?: string;
@@ -143,9 +144,11 @@ export default function IssueRequestTab({ issueType, excludeIssueTypes = [] }: I
       header: t('material.col.workOrder'),
       size: 160,
       meta: { filterType: 'text' as const },
-      cell: ({ getValue }) => (
-        <span className="text-primary font-medium">{getValue() as string}</span>
-      ),
+      cell: ({ row, getValue }) => {
+        const bundleOrderNos = row.original.bundleOrderNos;
+        if (!getValue() && (bundleOrderNos?.length ?? 0) > 0) return <BundleOrderBadge orderNos={bundleOrderNos} />;
+        return <span className="text-primary font-medium">{getValue() as string}</span>;
+      },
     },
     {
       id: 'itemCount', accessorFn: (row) => row.itemCount ?? row.items?.length ?? 0,

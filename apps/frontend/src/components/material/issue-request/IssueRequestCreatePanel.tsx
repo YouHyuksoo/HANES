@@ -8,6 +8,8 @@
  * 1. **입력 줄이 먼저**: 출고 공정과 요청 사유는 본문 최상단 입력 줄에서 고른다(툴바가 아니라 폼이다).
  * 2. **BOM 외 품목**: 검색해서 직접 추가할 수 있다.
  * 3. **실출고수량** = ceil(요청수량 / 불출포장단위) * 불출포장단위. 포장단위가 없으면 요청수량 그대로.
+ * 4. **묶음 요청**(bundle): 공정은 작업지시 공정으로 고정되고, 품목 아래에 작업지시별 산출 수량이 보인다.
+ *    요청수량(합계)을 고치면 서버가 계획일 빠른 작업지시부터 채우고 남는 수량은 마지막 작업지시에 둔다.
  */
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Info, Loader2, PackageSearch, Plus, Search } from 'lucide-react';
@@ -16,6 +18,7 @@ import ProcessSelect from '@/components/shared/ProcessSelect';
 import HelpTooltip from '@/components/shared/HelpTooltip';
 import QtyInput from '@/components/shared/QtyInput';
 import type { BomRequestSummary, RequestItem, StockItem } from '@/hooks/material/useIssueRequestData';
+import { ItemOrderBreakdown } from './BundleOrderDisplay';
 
 interface SelectOption {
   value: string;
@@ -41,6 +44,8 @@ interface IssueRequestCreatePanelProps {
   onManualSearch: () => void;
   onAddManualItem: (item: StockItem) => void;
   onQtyChange: (itemCode: string, qty: number) => void;
+  /** 묶음 요청이면 묶인 작업지시번호(계획일 순). 있으면 공정 선택을 잠근다 */
+  bundleOrderNos?: string[];
 }
 
 const toNum = (v: number | null | undefined) => Number(v ?? 0);
@@ -71,7 +76,9 @@ export default function IssueRequestCreatePanel({
   onManualSearch,
   onAddManualItem,
   onQtyChange,
+  bundleOrderNos,
 }: IssueRequestCreatePanelProps) {
+  const isBundle = (bundleOrderNos?.length ?? 0) > 0;
   const { t } = useTranslation();
 
   const emptyReason = loadFailed
@@ -89,11 +96,19 @@ export default function IssueRequestCreatePanel({
   return (
     <div className="flex-1 min-h-0 overflow-auto p-3 space-y-3">
       {/* 요청 조건 입력 줄 - 툴바가 아니라 폼이라는 것을 레이블로 드러낸다 */}
+      {isBundle && (
+        <div className="flex items-start gap-2 rounded-lg border border-primary/40 px-3 py-2">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <span className="text-xs text-text-muted">
+            {t('material.request.bundleQtyHint', '요청수량(합계)을 고치면 계획일 빠른 작업지시부터 채우고, 남는 수량은 마지막 작업지시에 둡니다. 직접 추가한 품목은 가장 빠른 작업지시에 붙습니다.')}
+          </span>
+        </div>
+      )}
       <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border p-3">
         <label className="flex flex-col gap-1">
           <span className="text-xs font-medium text-text-muted">{t('material.issue.processLabel', '출고 공정')}</span>
           <div className="w-48">
-            <ProcessSelect value={processCode} onChange={onProcessCodeChange} fullWidth required />
+            <ProcessSelect value={processCode} onChange={onProcessCodeChange} fullWidth required disabled={isBundle} />
           </div>
         </label>
         <label className="flex flex-col gap-1">
@@ -198,7 +213,10 @@ export default function IssueRequestCreatePanel({
                 <tr key={item.itemCode} className="border-t border-border hover:bg-card-hover">
                   <td className="px-3 py-2 text-text-muted">{idx + 1}</td>
                   <td className="px-3 py-2 font-mono text-xs">{item.itemCode}</td>
-                  <td className="px-3 py-2">{item.itemName}</td>
+                  <td className="px-3 py-2">
+                    {item.itemName}
+                    <ItemOrderBreakdown orders={item.orders} showIssued={false} />
+                  </td>
                   <td className="px-3 py-2 text-center text-text-muted">{item.unit}</td>
                   <td className="px-3 py-2 text-right">{toNum(item.bomReqQty).toLocaleString()}</td>
                   <td className="px-3 py-2 text-right text-text-muted">{toNum(item.prevIssueQty).toLocaleString()}</td>

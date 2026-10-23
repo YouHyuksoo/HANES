@@ -3075,6 +3075,13 @@
       "createdMatUids": "已创建的物料序列号"
     },
     "request": {
+      "bundleStart": "合并出库申请",
+      "bundleCount": "合并 {{count}} 件",
+      "bundleCheck": "加入合并出库申请",
+      "bundleSelected": "已选 {{count}} 件",
+      "bundleNeedTwo": "请选择 2 件以上同一工序的作业指示。",
+      "bundleOtherProcess": "工序不同（{{process}}）。只能合并同一工序（{{base}}）的作业指示。",
+      "bundleQtyHint": "修改申请数量（合计）时，按计划日期从早到晚依次分配给作业指示，剩余数量放到最后一个作业指示。手动添加的品目归入最早的作业指示。",
       "title": "出库申请",
       "subtitle": "管理物料出库申请。",
       "description": "管理物料出库申请。",

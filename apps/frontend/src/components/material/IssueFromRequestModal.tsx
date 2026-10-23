@@ -25,6 +25,7 @@ import RequestItemList from './issue-from-request/RequestItemList';
 import LotAllocationPanel from './issue-from-request/LotAllocationPanel';
 import SplitLabelSequence, { type SplitGroup } from './issue-from-request/SplitLabelSequence';
 import type { AllocationMap, AvailableStock, IssueRow, RequestDetailItem } from './issue-from-request/types';
+import { BundleOrderBadge } from './issue-request/BundleOrderDisplay';
 import { stockAvailableQty, sumSlices } from './issue-from-request/types';
 
 interface IssueFromRequestModalProps {
@@ -45,6 +46,8 @@ interface RequestDetail {
   processCode?: string | null;
   /** 출고 시 적용될 공정(요청 공정 → 작업지시 공정 → 라우팅 첫 공정). 백엔드가 계산 */
   issueProcessCode?: string | null;
+  /** 묶음 요청이면 묶인 작업지시번호(출고 수량은 계획일 빠른 작업지시부터 배분) */
+  bundleOrderNos?: string[];
   items: RequestDetailItem[];
 }
 
@@ -369,7 +372,11 @@ export default function IssueFromRequestModal({
             </div>
             <div>
               <span className="text-text-muted">{t('material.col.workOrder')}:</span>{' '}
-              <span className="font-medium text-primary">{detail.orderNo ?? '-'}</span>
+              {!detail.orderNo && (detail.bundleOrderNos?.length ?? 0) > 0 ? (
+                <BundleOrderBadge orderNos={detail.bundleOrderNos} />
+              ) : (
+                <span className="font-medium text-primary">{detail.orderNo ?? '-'}</span>
+              )}
             </div>
             <div>
               <span className="text-text-muted">{t('material.col.requester')}:</span>{' '}

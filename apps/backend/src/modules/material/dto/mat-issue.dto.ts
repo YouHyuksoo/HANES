@@ -22,6 +22,11 @@ export class IssueItemDto {
   @IsInt()
   @Min(1)
   issueQty: number;
+
+  @ApiPropertyOptional({ description: '이 출고 행의 작업지시 번호 — 묶음 출고요청에서 작업지시별로 나눌 때 사용. 없으면 헤더 orderNo' })
+  @IsOptional()
+  @IsString()
+  orderNo?: string;
 }
 
 export class CreateMatIssueDto {

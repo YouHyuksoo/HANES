@@ -388,10 +388,12 @@ export class MatIssueService {
       }
 
       const currentSeq = seqCounter++;
+      // 행 단위 작업지시(묶음 출고요청 배분) 우선, 없으면 헤더 작업지시
+      const rowOrderNo = item.orderNo?.trim() || orderNo;
       const issue = queryRunner.manager.create(MatIssue, {
         issueNo,
         seq: currentSeq,
-        orderNo,
+        orderNo: rowOrderNo,
         prodResultNo: prodResultNo || null,
         matUid: item.matUid,
         issueQty: item.issueQty,
@@ -463,7 +465,7 @@ export class MatIssueService {
             qty: issueQty,
             transType: 'PROC_IN',
             fromWarehouseId: stock.warehouseCode,
-            orderNo: orderNo ?? null,
+            orderNo: rowOrderNo ?? null,
             refType: 'MAT_ISSUE',
             refId: `${savedIssue.issueNo}-${savedIssue.seq}`,
             workerId,

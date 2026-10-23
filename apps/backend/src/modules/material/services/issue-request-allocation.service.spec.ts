@@ -5,12 +5,16 @@ import { MockLoggerService } from '@test/mock-logger.service';
 import { IssueRequestAllocationService } from './issue-request-allocation.service';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
+import { MatIssueRequestItemOrder } from '../../../entities/mat-issue-request-item-order.entity';
+import { JobOrder } from '../../../entities/job-order.entity';
 
 describe('IssueRequestAllocationService', () => {
   let service: IssueRequestAllocationService;
   let qr: DeepMocked<QueryRunner>;
   let headers: MatIssueRequest[];
   let items: MatIssueRequestItem[];
+  let itemOrders: MatIssueRequestItemOrder[];
+  let jobOrders: Array<Pick<JobOrder, 'orderNo' | 'planDate'>>;
 
   const header = (partial: Partial<MatIssueRequest>): MatIssueRequest => ({
     status: 'APPROVED',
@@ -35,18 +39,36 @@ describe('IssueRequestAllocationService', () => {
     qr = createMock<QueryRunner>();
     headers = [];
     items = [];
+    itemOrders = [];
+    jobOrders = [];
 
     // DB 흉내: 헤더/품목 배열을 in-memory 로 두고 increment 가 실제 값을 바꾼다
     qr.manager.find.mockImplementation(async (entity: EntityTarget<ObjectLiteral>, options?: FindManyOptions<ObjectLiteral>) => {
       const where = (options?.where ?? {}) as Record<string, unknown>;
       if (entity === MatIssueRequest) return headers;
+      if (entity === JobOrder) return jobOrders;
+      if (entity === MatIssueRequestItemOrder) {
+        const ids = (where.requestId as { value?: string[] } | string | undefined);
+        const idList = typeof ids === 'string' ? [ids] : ids?.value ?? [];
+        const seqs = (where.itemSeq as { value?: number[] } | undefined)?.value;
+        return itemOrders.filter((row) =>
+          idList.includes(row.requestId)
+          && (seqs === undefined || seqs.includes(row.itemSeq))
+          && (where.orderNo === undefined || row.orderNo === where.orderNo),
+        );
+      }
       const requestIds = (where.requestId as { value?: string[] } | undefined)?.value ?? [];
       return items.filter((row) =>
         requestIds.includes(row.requestId)
         && (where.itemCode === undefined || row.itemCode === where.itemCode),
       );
     });
-    qr.manager.increment.mockImplementation(async (_entity: EntityTarget<ObjectLiteral>, where: Record<string, unknown>, _prop: string, value: string | number) => {
+    qr.manager.increment.mockImplementation(async (entity: EntityTarget<ObjectLiteral>, where: Record<string, unknown>, _prop: string, value: string | number) => {
+      if (entity === MatIssueRequestItemOrder) {
+        const row = itemOrders.find((o) => o.requestId === where.requestId && o.itemSeq === where.itemSeq && o.orderNo === where.orderNo);
+        if (row) row.issuedQty += Number(value);
+        return { affected: row ? 1 : 0, raw: [], generatedMaps: [] };
+      }
       const target = items.find((row) => row.requestId === where.requestId && row.seq === where.seq);
       if (target) target.issuedQty += Number(value);
       return { affected: target ? 1 : 0, raw: [], generatedMaps: [] };
@@ -235,5 +257,71 @@ describe('IssueRequestAllocationService', () => {
       { status: 'PARTIAL' },
     );
     expect(qr.manager.update).not.toHaveBeenCalledWith(MatIssueRequest, expect.anything(), { status: 'COMPLETED' });
+  });
+
+  describe('묶음 출고요청(작업지시별 행)', () => {
+    const orderRow = (partial: Partial<MatIssueRequestItemOrder>): MatIssueRequestItemOrder => ({
+      requestId: 'REQ-BUNDLE', itemSeq: 1, issuedQty: 0, company: 'C1', plant: 'P1', ...partial,
+    } as MatIssueRequestItemOrder);
+
+    beforeEach(() => {
+      headers = [
+        header({ requestNo: 'REQ-OLD', requestDate: new Date('2026-09-01'), orderNo: 'WO-OTHER' }),
+        header({ requestNo: 'REQ-BUNDLE', requestDate: new Date('2026-09-05'), orderNo: null, processCode: 'P10' }),
+      ];
+      items = [
+        item({ requestId: 'REQ-OLD', requestQty: 50 }),
+        item({ requestId: 'REQ-BUNDLE', requestQty: 30 }),
+      ];
+      itemOrders = [
+        orderRow({ orderNo: 'WO-B', requestQty: 20 }),
+        orderRow({ orderNo: 'WO-A', requestQty: 10 }),
+      ];
+      jobOrders = [
+        { orderNo: 'WO-A', planDate: new Date('2026-09-10') },
+        { orderNo: 'WO-B', planDate: new Date('2026-09-11') },
+      ];
+    });
+
+    it('스캔한 작업지시가 묶여 있는 묶음 요청을 같은 작업지시 우선순위로 먼저 채운다', async () => {
+      const result = await service.allocateIssuedQtyInTx(qr, {
+        itemCode: 'RM-001', qty: 30, issueType: 'PRODUCTION', orderNo: 'WO-B', company: 'C1', plant: 'P1',
+      }, 'ISS-001');
+
+      expect(result.allocations.map((a) => [a.requestNo, a.allocatedQty])).toEqual([['REQ-BUNDLE', 30]]);
+    });
+
+    it('품목 배분량을 작업지시 계획일 빠른 순으로 작업지시별 행에도 가산해 합계를 맞춘다', async () => {
+      await service.allocateIssuedQtyInTx(qr, {
+        itemCode: 'RM-001', qty: 15, issueType: 'PRODUCTION', orderNo: 'WO-A', company: 'C1', plant: 'P1',
+      }, 'ISS-001');
+
+      const bundleItem = items.find((row) => row.requestId === 'REQ-BUNDLE')!;
+      expect(bundleItem.issuedQty).toBe(15);
+      expect(itemOrders.map((row) => [row.orderNo, row.issuedQty])).toEqual([['WO-B', 5], ['WO-A', 10]]);
+    });
+
+    it('스캔한 작업지시(PDA)가 묶음에 있으면 그 작업지시 행부터 가산해 MAT_ISSUES.ORDER_NO 와 맞춘다', async () => {
+      await service.allocateIssuedQtyInTx(qr, {
+        itemCode: 'RM-001', qty: 15, issueType: 'PRODUCTION', orderNo: 'WO-B', company: 'C1', plant: 'P1',
+      }, 'ISS-001');
+
+      expect(itemOrders.map((row) => [row.orderNo, row.issuedQty])).toEqual([['WO-B', 15], ['WO-A', 0]]);
+    });
+
+    it('allocateToItemOrdersInTx 는 LOT 여러 개를 누적해 나누고 행이 없는 품목은 빈 배열을 돌려준다', async () => {
+      const takes = await service.allocateToItemOrdersInTx(qr, 'REQ-BUNDLE', [
+        { seq: 1, qty: 8 },
+        { seq: 1, qty: 8 },
+        { seq: 2, qty: 5 },
+      ], 'C1', 'P1');
+
+      expect(takes).toEqual([
+        [{ orderNo: 'WO-A', qty: 8 }],
+        [{ orderNo: 'WO-A', qty: 2 }, { orderNo: 'WO-B', qty: 6 }],
+        [],
+      ]);
+      expect(itemOrders.map((row) => [row.orderNo, row.issuedQty])).toEqual([['WO-B', 6], ['WO-A', 10]]);
+    });
   });
 });

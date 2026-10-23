@@ -3075,6 +3075,13 @@
       "createdMatUids": "Serial vật liệu đã tạo"
     },
     "request": {
+      "bundleStart": "Yêu cầu xuất gộp",
+      "bundleCount": "Gộp {{count}} lệnh",
+      "bundleCheck": "Đưa vào yêu cầu xuất gộp",
+      "bundleSelected": "Đã chọn {{count}}",
+      "bundleNeedTwo": "Hãy chọn từ 2 lệnh sản xuất cùng công đoạn trở lên.",
+      "bundleOtherProcess": "Khác công đoạn ({{process}}). Chỉ gộp được lệnh sản xuất cùng công đoạn ({{base}}).",
+      "bundleQtyHint": "Khi sửa tổng số lượng yêu cầu, hệ thống phân bổ cho lệnh có ngày kế hoạch sớm nhất trước, phần dư đưa vào lệnh cuối. Vật tư thêm thủ công được gán cho lệnh sớm nhất.",
       "title": "Yêu cầu xuất kho",
       "subtitle": "Quản lý yêu cầu xuất kho vật tư.",
       "description": "Quản lý yêu cầu xuất kho vật tư.",

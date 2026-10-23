@@ -3611,6 +3611,13 @@
       "createdMatUids": "생성된 자재시리얼"
     },
     "request": {
+      "bundleStart": "묶음 출고요청",
+      "bundleCount": "묶음 {{count}}건",
+      "bundleCheck": "묶음 출고요청에 포함",
+      "bundleSelected": "{{count}}건 선택",
+      "bundleNeedTwo": "같은 공정 작업지시를 2건 이상 선택하세요.",
+      "bundleOtherProcess": "다른 공정({{process}})입니다. 같은 공정({{base}}) 작업지시만 묶을 수 있습니다.",
+      "bundleQtyHint": "요청수량(합계)을 고치면 계획일 빠른 작업지시부터 채우고, 남는 수량은 마지막 작업지시에 둡니다. 직접 추가한 품목은 가장 빠른 작업지시에 붙습니다.",
       "title": "출고요청",
       "subtitle": "자재 출고 요청을 관리합니다.",
       "description": "자재 출고 요청을 관리합니다.",

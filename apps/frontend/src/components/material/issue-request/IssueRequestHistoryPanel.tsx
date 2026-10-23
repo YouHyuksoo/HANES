@@ -7,7 +7,8 @@
  * 초보자 가이드:
  * 1. **요청건 헤더 클릭 = 인라인 접기/펼치기**. 별도 상세 모달을 띄우지 않는다(같은 내용이 두 번 보이던 중복 제거).
  * 2. **기본 펼침은 최신 1건**. 요청이 많아도 목록이 길어지지 않는다.
- * 3. **하단 합계**는 화면에 표시 중인 전체 요청건 기준이다(접힌 건 포함).
+ * 3. **하단 합계**는 화면에 표시 중인 전체 요청건 기준이다(접힌 건 포함). 묶음 요청은 선택 작업지시 몫만 더한다.
+ * 4. **묶음 요청**은 헤더에 묶인 작업지시를, 품목 아래에 작업지시별 요청/출고수량을 보여준다.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,20 +16,33 @@ import { ChevronDown, ChevronRight, FilePlus2, ListChecks, Loader2 } from 'lucid
 import { Button } from '@/components/ui';
 import { IssueRequestStatusBadge, type IssueRequestStatus } from '@/components/material';
 import { formatDateTimeKst } from '@/utils/dateTimeKst';
-import type { IssueRequest } from '@/hooks/material/useIssueRequestData';
+import type { IssueRequest, RequestItem } from '@/hooks/material/useIssueRequestData';
+import { BundleOrderBadge, ItemOrderBreakdown } from './BundleOrderDisplay';
 
 interface IssueRequestHistoryPanelProps {
   requests: IssueRequest[];
   isLoading?: boolean;
   onCreateRequest: () => void;
+  /** 이 내역의 기준 작업지시 — 묶음 요청 품목에서 이 작업지시 몫을 강조·합산한다 */
+  focusOrderNo?: string;
 }
 
 const toNum = (v: number | null | undefined) => Number(v ?? 0);
+
+/** 묶음 요청 품목은 선택 작업지시 몫만 합계에 넣는다(묶음 전체 수량이 이 작업지시 합계를 부풀리지 않게) */
+const focusShare = (item: RequestItem, focusOrderNo?: string) => {
+  if (!focusOrderNo || !item.orders || item.orders.length === 0) {
+    return { requestQty: toNum(item.requestQty), issuedQty: toNum(item.issuedQty) };
+  }
+  const row = item.orders.find((o) => o.orderNo === focusOrderNo);
+  return { requestQty: toNum(row?.requestQty), issuedQty: toNum(row?.issuedQty) };
+};
 
 export default function IssueRequestHistoryPanel({
   requests,
   isLoading,
   onCreateRequest,
+  focusOrderNo,
 }: IssueRequestHistoryPanelProps) {
   const { t } = useTranslation();
   const [expandedRequestNos, setExpandedRequestNos] = useState<Set<string>>(() => new Set());
@@ -47,12 +61,13 @@ export default function IssueRequestHistoryPanel({
       const items = req.items ?? [];
       itemCount += items.length;
       items.forEach((item) => {
-        requestQty += toNum(item.requestQty);
-        issuedQty += toNum(item.issuedQty);
+        const share = focusShare(item, focusOrderNo);
+        requestQty += share.requestQty;
+        issuedQty += share.issuedQty;
       });
     });
     return { itemCount, requestQty, issuedQty };
-  }, [requests]);
+  }, [requests, focusOrderNo]);
 
   const toggleRequest = (requestNo: string) => {
     setExpandedRequestNos((prev) => {
@@ -103,6 +118,7 @@ export default function IssueRequestHistoryPanel({
                   : <ChevronRight className="w-4 h-4 shrink-0 text-text-muted" />}
                 <span className="font-mono text-xs font-semibold text-text">{req.requestNo}</span>
                 <IssueRequestStatusBadge status={req.status as IssueRequestStatus} />
+                <BundleOrderBadge orderNos={req.bundleOrderNos} />
                 {req.requestDate && (
                   <span className="text-xs text-text-muted">{formatDateTimeKst(req.requestDate)}</span>
                 )}
@@ -133,7 +149,10 @@ export default function IssueRequestHistoryPanel({
                     <tr key={`${req.requestNo}-${item.itemCode}-${idx}`} className="border-t border-border">
                       <td className="px-3 py-1.5 text-text-muted">{idx + 1}</td>
                       <td className="px-3 py-1.5 font-mono text-xs">{item.itemCode}</td>
-                      <td className="px-3 py-1.5">{item.itemName}</td>
+                      <td className="px-3 py-1.5">
+                        {item.itemName}
+                        <ItemOrderBreakdown orders={item.orders} focusOrderNo={focusOrderNo} />
+                      </td>
                       <td className="px-3 py-1.5 text-center text-text-muted">{item.unit}</td>
                       <td className="px-3 py-1.5 text-right font-medium">{toNum(item.requestQty).toLocaleString()}</td>
                       <td className="px-3 py-1.5 text-right text-text-muted">{toNum(item.issuedQty).toLocaleString()}</td>

@@ -9,6 +9,7 @@ import { BomMaster } from '../../../entities/bom-master.entity';
 import { MatIssue } from '../../../entities/mat-issue.entity';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
+import { MatIssueRequestItemOrder } from '../../../entities/mat-issue-request-item-order.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
@@ -35,6 +36,7 @@ import { MatOutRequestService } from '../services/mat-out-request.service';
       MatIssue,
       MatIssueRequest,
       MatIssueRequestItem,
+      MatIssueRequestItemOrder,
       MatLot,
       MatStock,
       ItemMaster,

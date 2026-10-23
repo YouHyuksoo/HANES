@@ -109,6 +109,26 @@ export const TXN_INVARIANT_RULES: ValidationRule[] = [
               OR SUM(CASE WHEN NVL(it.ISSUED_QTY, 0) > it.REQUEST_QTY THEN 1 ELSE 0 END) > 0`,
   },
   {
+    id: 'TXN-MAT-004',
+    category: 'TXN_INVARIANT',
+    severity: 'ERROR',
+    title: '묶음 출고요청 품목 수량 ≠ 작업지시별 수량 합계',
+    description:
+      '묶음 출고요청(MAT_ISSUE_REQUEST_ITEM_ORDERS 행이 있는 요청)의 품목 REQUEST_QTY/ISSUED_QTY가 작업지시별 수량 합계와 다릅니다. ' +
+      '출고 경로(요청 출고/스캔 배분) 중 작업지시별 배분을 건너뛴 곳이 있다는 신호입니다. 작업지시별 기출고량이 틀어집니다.',
+    targetPath: '/material/request',
+    sql: `SELECT it.REQUEST_ID || '-' || it.SEQ AS REF_KEY, it.REQUEST_ID, it.SEQ, it.ITEM_CODE,
+                 it.REQUEST_QTY AS ITEM_REQUEST_QTY, o.REQUEST_SUM AS ORDER_REQUEST_QTY,
+                 NVL(it.ISSUED_QTY, 0) AS ITEM_ISSUED_QTY, o.ISSUED_SUM AS ORDER_ISSUED_QTY
+            FROM MAT_ISSUE_REQUEST_ITEMS it
+            JOIN (SELECT COMPANY, PLANT_CD, REQUEST_ID, ITEM_SEQ, SUM(REQUEST_QTY) AS REQUEST_SUM, SUM(ISSUED_QTY) AS ISSUED_SUM
+                    FROM MAT_ISSUE_REQUEST_ITEM_ORDERS
+                   GROUP BY COMPANY, PLANT_CD, REQUEST_ID, ITEM_SEQ) o
+              ON o.REQUEST_ID = it.REQUEST_ID AND o.ITEM_SEQ = it.SEQ AND o.COMPANY = it.COMPANY AND o.PLANT_CD = it.PLANT_CD
+           WHERE it.COMPANY = :company AND it.PLANT_CD = :plantCd
+             AND (it.REQUEST_QTY <> o.REQUEST_SUM OR NVL(it.ISSUED_QTY, 0) <> o.ISSUED_SUM)`,
+  },
+  {
     id: 'TXN-MENU-001',
     category: 'TXN_INVARIANT',
     severity: 'ERROR',

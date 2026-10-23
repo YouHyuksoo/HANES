@@ -8,6 +8,8 @@
  * 3. 요청 헤더는 전 품목 충족 시 COMPLETED, 아니면 PARTIAL 로 갱신한다.
  * 4. 매칭되는 요청이 없거나 남는 수량은 배분하지 않고(무매칭 허용) warn 로그만 남긴다.
  * 5. MatIssueService ↔ IssueRequestService 순환 의존을 피하려고 별도 서비스로 둔다(Repository 주입 없이 QueryRunner 만 사용).
+ * 6. 묶음 출고요청(MAT_ISSUE_REQUEST_ITEM_ORDERS 행이 있는 요청)은 품목 배분량을 작업지시별 행에도 계획일 빠른 순으로 나눠 가산한다
+ *    (allocateToItemOrdersInTx — 요청 기반 출고 issueFromRequest 도 같은 메서드를 쓴다).
  */
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -15,6 +17,9 @@ import { In, QueryRunner } from 'typeorm';
 import { isProductionIssueType, deriveIssueRequestStatusFromItems } from '@harness/shared';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
+import { MatIssueRequestItemOrder } from '../../../entities/mat-issue-request-item-order.entity';
+import { JobOrder } from '../../../entities/job-order.entity';
+import { distributeQtyToOrders, OrderIssueTake } from './issue-request-order-split';
 
 export const ALLOCATABLE_REQUEST_STATUSES = ['APPROVED', 'PARTIAL'] as const;
 
@@ -63,9 +68,9 @@ export class IssueRequestAllocationService {
     return (requestIssueType ?? '').trim().toUpperCase() === issueType.trim().toUpperCase();
   }
 
-  /** 0=같은 작업지시, 1=같은 공정, 2=나머지 */
-  private priorityOf(header: MatIssueRequest, params: AllocateIssuedQtyParams): number {
-    if (params.orderNo && header.orderNo === params.orderNo) return 0;
+  /** 0=같은 작업지시(1:1 헤더 또는 묶음 포함), 1=같은 공정, 2=나머지 */
+  private priorityOf(header: MatIssueRequest, params: AllocateIssuedQtyParams, bundledRequestNos: Set<string>): number {
+    if (params.orderNo && (header.orderNo === params.orderNo || bundledRequestNos.has(header.requestNo))) return 0;
     if (params.processCode && header.processCode === params.processCode) return 1;
     return 2;
   }
@@ -96,12 +101,21 @@ export class IssueRequestAllocationService {
     const items = await qr.manager.find(MatIssueRequestItem, {
       where: { requestId: In([...headerMap.keys()]), itemCode: params.itemCode, ...tenantWhere },
     });
+    // 스캔한 작업지시가 묶여 있는 묶음 요청도 같은 작업지시 우선순위로 본다
+    const bundledRequestNos = new Set<string>();
+    if (params.orderNo && items.length > 0) {
+      const bundledRows = await qr.manager.find(MatIssueRequestItemOrder, {
+        where: { requestId: In([...new Set(items.map((item) => item.requestId))]), orderNo: params.orderNo, ...tenantWhere },
+        select: ['requestId'],
+      });
+      bundledRows.forEach((row) => bundledRequestNos.add(row.requestId));
+    }
     const openItems = items
       .filter((item) => item.requestQty - item.issuedQty > 0)
       .sort((a, b) => {
         const headerA = headerMap.get(a.requestId)!;
         const headerB = headerMap.get(b.requestId)!;
-        const priorityDiff = this.priorityOf(headerA, params) - this.priorityOf(headerB, params);
+        const priorityDiff = this.priorityOf(headerA, params, bundledRequestNos) - this.priorityOf(headerB, params, bundledRequestNos);
         if (priorityDiff !== 0) return priorityDiff;
         const dateDiff = new Date(headerA.requestDate).getTime() - new Date(headerB.requestDate).getTime();
         if (dateDiff !== 0) return dateDiff;
@@ -121,6 +135,7 @@ export class IssueRequestAllocationService {
         'issuedQty',
         take,
       );
+      await this.allocateToItemOrdersInTx(qr, item.requestId, [{ seq: item.seq, qty: take }], params.company, params.plant, params.orderNo);
       allocations.push({
         requestNo: item.requestId,
         seq: item.seq,
@@ -168,5 +183,72 @@ export class IssueRequestAllocationService {
     }
 
     return { allocations, allocatedQty: params.qty - remaining, unallocatedQty: remaining };
+  }
+
+  /**
+   * 묶음 출고요청 품목 배분량을 작업지시별 행(MAT_ISSUE_REQUEST_ITEM_ORDERS)에 나눠 가산한다.
+   * 계획일 빠른 작업지시의 잔여부터 채우고 포장단위 올림 초과분은 마지막 작업지시에 둔다(distributeQtyToOrders).
+   * entries 는 순서대로 누적 배분한다(같은 품목에 LOT 여러 개). 행이 없는 품목(1:1 요청)은 빈 배열을 돌려준다.
+   * 돌려준 takes 는 MAT_ISSUES.ORDER_NO 를 작업지시별로 남길 때 쓴다.
+   */
+  async allocateToItemOrdersInTx(
+    qr: QueryRunner,
+    requestId: string,
+    entries: ReadonlyArray<{ seq: number; qty: number }>,
+    company?: string | null,
+    plant?: string | null,
+    /** 스캔 출고에서 찍은 작업지시 — 묶음 안에 있으면 그 작업지시부터 채운다(MAT_ISSUES.ORDER_NO 와 일치) */
+    preferOrderNo?: string | null,
+  ): Promise<OrderIssueTake[][]> {
+    const tenantWhere = this.tenantWhere(company, plant);
+    const seqs = [...new Set(entries.map((entry) => entry.seq))];
+    const rows = seqs.length > 0
+      ? await qr.manager.find(MatIssueRequestItemOrder, { where: { requestId, itemSeq: In(seqs), ...tenantWhere } })
+      : [];
+    if (rows.length === 0) return entries.map(() => []);
+
+    const orderNos = [...new Set(rows.map((row) => row.orderNo))];
+    const jobOrders = await qr.manager.find(JobOrder, {
+      where: { orderNo: In(orderNos), ...tenantWhere },
+      select: ['orderNo', 'planDate'],
+    });
+    const planDateMap = new Map(jobOrders.map((order) => [order.orderNo, order.planDate]));
+    // 누적 배분용 작업 사본(같은 품목에 LOT 여러 개가 오면 앞 LOT 배분을 반영해 이어서 채운다)
+    const working = new Map<number, Array<{ orderNo: string; planDate: Date | null; requestQty: number; issuedQty: number }>>();
+    for (const row of rows) {
+      const list = working.get(row.itemSeq) ?? [];
+      list.push({
+        orderNo: row.orderNo,
+        planDate: planDateMap.get(row.orderNo) ?? null,
+        requestQty: Number(row.requestQty),
+        issuedQty: Number(row.issuedQty ?? 0),
+      });
+      working.set(row.itemSeq, list);
+    }
+
+    const added = new Map<string, number>();
+    const result = entries.map((entry) => {
+      const list = working.get(entry.seq);
+      if (!list || list.length === 0) return [];
+      const takes = distributeQtyToOrders(list, entry.qty, preferOrderNo);
+      for (const take of takes) {
+        const target = list.find((row) => row.orderNo === take.orderNo)!;
+        target.issuedQty += take.qty;
+        const key = `${entry.seq}|${take.orderNo}`;
+        added.set(key, (added.get(key) ?? 0) + take.qty);
+      }
+      return takes;
+    });
+
+    for (const [key, qty] of added) {
+      const [seq, orderNo] = key.split('|');
+      await qr.manager.increment(
+        MatIssueRequestItemOrder,
+        { requestId, itemSeq: Number(seq), orderNo, ...tenantWhere },
+        'issuedQty',
+        qty,
+      );
+    }
+    return result;
   }
 }

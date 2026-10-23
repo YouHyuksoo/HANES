@@ -11,6 +11,7 @@ import { Modal, Button } from '@/components/ui';
 import { IssueRequestStatusBadge } from '@/components/material';
 import type { IssueRequest, RequestItem } from '@/hooks/material/useIssueRequestData';
 import type { IssueRequestStatus } from '@/components/material';
+import { BundleOrderBadge, ItemOrderBreakdown } from '@/components/material/issue-request/BundleOrderDisplay';
 
 interface IssueRequestDetailModalProps {
   isOpen: boolean;
@@ -71,7 +72,12 @@ export default function IssueRequestDetailModal({ isOpen, onClose, request }: Is
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3 rounded border border-border bg-background/60 p-3 md:grid-cols-4">
             <DetailField label={t('material.col.requestNo')} value={request.requestNo} />
-            <DetailField label={t('material.col.workOrder')} value={request.workOrderNo ?? request.orderNo ?? '-'} />
+            <DetailField
+              label={t('material.col.workOrder')}
+              value={(request.bundleOrderNos?.length ?? 0) > 0 && !(request.workOrderNo ?? request.orderNo)
+                ? <BundleOrderBadge orderNos={request.bundleOrderNos} />
+                : request.workOrderNo ?? request.orderNo ?? '-'}
+            />
             <DetailField label={t('common.status')} value={<IssueRequestStatusBadge status={request.status as IssueRequestStatus} />} />
             <DetailField label={t('material.issueAccount')} value={request.issueType || t('material.request.notSelected')} />
             <DetailField label={t('material.col.requestDate')} value={formatDateTimeKst(request.requestDate)} />
@@ -145,7 +151,10 @@ export default function IssueRequestDetailModal({ isOpen, onClose, request }: Is
                   ) : items.map((item) => (
                     <tr key={`${item.requestId ?? request.requestNo}-${item.seq ?? item.itemCode}`} className="border-b border-border/70 last:border-0">
                       <td className="px-3 py-2 font-medium text-primary">{item.itemCode}</td>
-                      <td className="px-3 py-2 text-text">{item.itemName ?? '-'}</td>
+                      <td className="px-3 py-2 text-text">
+                        {item.itemName ?? '-'}
+                        <ItemOrderBreakdown orders={item.orders} />
+                      </td>
                       <td className="px-3 py-2 text-right tabular-nums">{formatNumber(item.requestQty)}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{formatNumber(item.issuedQty)}</td>
                       <td className="px-3 py-2 text-right font-semibold tabular-nums">{formatNumber(remainQty(item))}</td>

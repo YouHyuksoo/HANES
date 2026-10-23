@@ -8,6 +8,9 @@
  * 3. **상태 흐름**: REQUESTED -> APPROVED -> COMPLETED (또는 REJECTED)
  * 4. **issueFromRequest**: 승인된 요청을 실제 출고로 전환
  * 5. **요청번호**: REQ-YYYYMMDD-NNN 형식 자동 생성
+ * 6. **묶음 요청**: 같은 공정 작업지시 여러 건(orderNos)을 품목 합산 요청 1건으로 묶는다.
+ *    품목 아래 작업지시별 수량은 MAT_ISSUE_REQUEST_ITEM_ORDERS 에 두고, 이 행이 있는 요청이 묶음 요청이다(헤더 ORDER_NO=NULL).
+ *    출고 시 작업지시 계획일 빠른 순으로 배분하고 MAT_ISSUES.ORDER_NO 를 작업지시별로 남긴다.
  */
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
@@ -17,6 +20,7 @@ import { isProductionIssueType, ISSUE_REQUEST_PENDING_STATUSES, ISSUE_REQUEST_PE
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
+import { MatIssueRequestItemOrder } from '../../../entities/mat-issue-request-item-order.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
@@ -28,6 +32,8 @@ import { RoutingProcess } from '../../../entities/routing-process.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { MatIssueService } from './mat-issue.service';
 import { LotSplitService } from './lot-split.service';
+import { IssueRequestAllocationService } from './issue-request-allocation.service';
+import { distributeQtyToOrders, sortOrdersByPlan, splitRequestQtyByOrder } from './issue-request-order-split';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
@@ -61,6 +67,8 @@ export class IssueRequestService {
     private readonly requestRepository: Repository<MatIssueRequest>,
     @InjectRepository(MatIssueRequestItem)
     private readonly requestItemRepository: Repository<MatIssueRequestItem>,
+    @InjectRepository(MatIssueRequestItemOrder)
+    private readonly itemOrderRepository: Repository<MatIssueRequestItemOrder>,
     @InjectRepository(ItemMaster)
     private readonly itemMasterRepository: Repository<ItemMaster>,
     @InjectRepository(JobOrder)
@@ -79,6 +87,7 @@ export class IssueRequestService {
     private readonly routingProcessRepository: Repository<RoutingProcess>,
     private readonly matIssueService: MatIssueService,
     private readonly lotSplitService: LotSplitService,
+    private readonly allocation: IssueRequestAllocationService,
     private readonly numbering: NumberingService,
     private readonly tx: TransactionService,
     private readonly sysConfigService: SysConfigService,
@@ -285,6 +294,11 @@ export class IssueRequestService {
       where: { orderNo: request.orderNo, ...this.tenantWhere(company, plant) },
     });
     if (!jobOrder) return null;
+    return this.resolveJobOrderProcessCode(jobOrder, company, plant);
+  }
+
+  /** 작업지시 기준 출고 공정: 대표 공정 → 라우팅 첫 SEQ 공정. 없으면 null */
+  private async resolveJobOrderProcessCode(jobOrder: JobOrder, company?: string | null, plant?: string | null): Promise<string | null> {
     if (jobOrder.processCode) return jobOrder.processCode;
     if (!jobOrder.routingCode) return null;
 
@@ -323,19 +337,8 @@ export class IssueRequestService {
     if (!jobOrder) throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${orderNo}`);
     this.assertSameTenant('작업지시', { company, plant }, jobOrder);
 
-    const effectiveCompany = jobOrder.company ?? company;
-    const effectivePlant = jobOrder.plant ?? plant;
-    const bomEffectiveDate = this.resolveBomEffectiveDate(jobOrder);
-    const bomRows = await this.bomRepository.find({
-      where: {
-        parentItemCode: jobOrder.itemCode,
-        useYn: 'Y',
-        validFrom: LessThanOrEqual(bomEffectiveDate),
-        validTo: MoreThanOrEqual(bomEffectiveDate),
-        ...this.tenantWhere(effectiveCompany, effectivePlant),
-      },
-      order: { seq: 'ASC' },
-    });
+    const { bomEffectiveDate, bomCount, rawBomRows, partMap, prevIssueMap, rawCodes, effectiveCompany, effectivePlant } =
+      await this.loadOrderBomNeeds(jobOrder, company, plant);
     // 빈 결과의 원인을 호출부가 구분할 수 있도록 단계별 건수를 함께 돌려준다.
     // (BOM 미등록 / BOM에 원자재 없음 / 기출고·현장재고로 이미 충족)
     const emptySummary = (bomCount: number, rawCount: number, coveredCount: number) => ({
@@ -344,20 +347,9 @@ export class IssueRequestService {
       coveredCount,
       bomEffectiveDate: this.toDateOnlyStringLocal(bomEffectiveDate),
     });
-    if (bomRows.length === 0) return { items: [], summary: emptySummary(0, 0, 0) };
+    if (bomCount === 0) return { items: [], summary: emptySummary(0, 0, 0) };
 
-    const childCodes = [...new Set(bomRows.map((bom) => bom.childItemCode).filter(Boolean))];
-    const parts = childCodes.length > 0
-      ? await this.itemMasterRepository.find({
-        where: { itemCode: In(childCodes), ...this.tenantWhere(effectiveCompany, effectivePlant) },
-      })
-      : [];
-    const partMap = new Map(parts.map((part) => [part.itemCode, part]));
-    const rawBomRows = bomRows.filter((bom) => this.isRawMaterial(partMap.get(bom.childItemCode)));
-    const rawCodes = [...new Set(rawBomRows.map((bom) => bom.childItemCode))];
-
-    const [prevIssueMap, floorStockMap, availableStockMap] = await Promise.all([
-      this.getPreviousIssueQtyMap(orderNo, rawCodes, effectiveCompany, effectivePlant),
+    const [floorStockMap, availableStockMap] = await Promise.all([
       this.getFloorStockQtyMap(rawCodes, effectiveCompany, effectivePlant),
       this.getAvailableStockQtyMap(rawCodes, effectiveCompany, effectivePlant),
     ]);
@@ -387,7 +379,156 @@ export class IssueRequestService {
     const items = rows.filter((item) => item.requestQty > 0);
     return {
       items,
-      summary: emptySummary(bomRows.length, rawBomRows.length, rows.length - items.length),
+      summary: emptySummary(bomCount, rawBomRows.length, rows.length - items.length),
+    };
+  }
+
+  /** 작업지시 1건의 BOM 직하위 원자재와 작업지시 기출고량(현장재고·가용재고는 호출측이 품목 단위로 한 번 조회) */
+  private async loadOrderBomNeeds(jobOrder: JobOrder, company?: string, plant?: string) {
+    const orderNo = jobOrder.orderNo;
+    const effectiveCompany = jobOrder.company ?? company;
+    const effectivePlant = jobOrder.plant ?? plant;
+    const bomEffectiveDate = this.resolveBomEffectiveDate(jobOrder);
+    const bomRows = await this.bomRepository.find({
+      where: {
+        parentItemCode: jobOrder.itemCode,
+        useYn: 'Y',
+        validFrom: LessThanOrEqual(bomEffectiveDate),
+        validTo: MoreThanOrEqual(bomEffectiveDate),
+        ...this.tenantWhere(effectiveCompany, effectivePlant),
+      },
+      order: { seq: 'ASC' },
+    });
+    if (bomRows.length === 0) {
+      return {
+        bomEffectiveDate, bomCount: 0, rawBomRows: [] as BomMaster[], partMap: new Map<string, ItemMaster>(),
+        prevIssueMap: new Map<string, number>(), rawCodes: [] as string[], effectiveCompany, effectivePlant,
+      };
+    }
+
+    const childCodes = [...new Set(bomRows.map((bom) => bom.childItemCode).filter(Boolean))];
+    const parts = childCodes.length > 0
+      ? await this.itemMasterRepository.find({
+        where: { itemCode: In(childCodes), ...this.tenantWhere(effectiveCompany, effectivePlant) },
+      })
+      : [];
+    const partMap = new Map(parts.map((part) => [part.itemCode, part]));
+    const rawBomRows = bomRows.filter((bom) => this.isRawMaterial(partMap.get(bom.childItemCode)));
+    const rawCodes = [...new Set(rawBomRows.map((bom) => bom.childItemCode))];
+
+    const prevIssueMap = await this.getPreviousIssueQtyMap(orderNo, rawCodes, effectiveCompany, effectivePlant);
+    return { bomEffectiveDate, bomCount: bomRows.length, rawBomRows, partMap, prevIssueMap, rawCodes, effectiveCompany, effectivePlant };
+  }
+
+  /** 묶음 대상 작업지시 검증: 존재·품목지시·미완료, 공정이 모두 같아야 한다. 계획일 순 작업지시와 공통 공정을 돌려준다 */
+  private async assertBundleOrders(orderNos: string[], company?: string, plant?: string) {
+    const uniqueNos = [...new Set(orderNos.map((no) => no?.trim()).filter((no): no is string => !!no))];
+    if (uniqueNos.length < 2) {
+      throw new BadRequestException('묶음 출고요청은 작업지시 2건 이상을 선택해야 합니다.');
+    }
+    const jobOrders = await this.jobOrderRepository.find({
+      where: { orderNo: In(uniqueNos), ...this.tenantWhere(company, plant) },
+    });
+    const missing = uniqueNos.filter((no) => !jobOrders.some((order) => order.orderNo === no));
+    if (missing.length > 0) throw new NotFoundException(`작업지시를 찾을 수 없습니다: ${missing.join(', ')}`);
+    jobOrders.forEach((order) => {
+      this.assertSameTenant('작업지시', { company, plant }, order);
+      this.assertRequestableOrder(order);
+    });
+
+    const processByOrder = await Promise.all(jobOrders.map(async (order) => ({
+      orderNo: order.orderNo,
+      processCode: await this.resolveJobOrderProcessCode(order, order.company ?? company, order.plant ?? plant),
+    })));
+    const unresolved = processByOrder.filter((row) => !row.processCode).map((row) => row.orderNo);
+    if (unresolved.length > 0) {
+      throw new BadRequestException(`공정을 결정할 수 없는 작업지시는 묶을 수 없습니다(대표 공정·라우팅 없음): ${unresolved.join(', ')}`);
+    }
+    const processCodes = [...new Set(processByOrder.map((row) => row.processCode as string))];
+    if (processCodes.length > 1) {
+      throw new BadRequestException(
+        `같은 공정의 작업지시만 묶을 수 있습니다: ${processByOrder.map((row) => `${row.orderNo}=${row.processCode}`).join(', ')}`,
+      );
+    }
+    return { jobOrders: sortOrdersByPlan(jobOrders), processCode: processCodes[0] };
+  }
+
+  /**
+   * 묶음 출고요청 품목 산출: 작업지시별 (BOM 소요 - 기출고)를 품목 단위로 모으고, 현장재고는 품목당 한 번만
+   * 계획일 빠른 작업지시부터 덮는다(splitRequestQtyByOrder). 품목 행에 작업지시별 수량(orders)을 싣는다.
+   */
+  async buildBundleBomRequestItems(orderNos: string[], company?: string, plant?: string) {
+    const { jobOrders, processCode } = await this.assertBundleOrders(orderNos, company, plant);
+    const needsList = await Promise.all(jobOrders.map((order) => this.loadOrderBomNeeds(order, company, plant)));
+    const effectiveCompany = needsList[0].effectiveCompany;
+    const effectivePlant = needsList[0].effectivePlant;
+
+    interface OrderNeedRow { orderNo: string; planDate: Date | null; needQty: number; bomReqQty: number; prevIssueQty: number }
+    const byItem = new Map<string, { part?: ItemMaster; orders: OrderNeedRow[] }>();
+    jobOrders.forEach((order, idx) => {
+      const needs = needsList[idx];
+      // 같은 작업지시 BOM 에 같은 자품목이 여러 줄이면 소요량을 합친다(기출고량은 품목 단위라 한 번만 뺀다)
+      const bomQtyByCode = new Map<string, number>();
+      for (const bom of needs.rawBomRows) {
+        const qty = mulQty(this.toNumber(bom.qtyPer), this.toNumber(order.planQty));
+        bomQtyByCode.set(bom.childItemCode, (bomQtyByCode.get(bom.childItemCode) ?? 0) + qty);
+      }
+      for (const [itemCode, bomReqQty] of bomQtyByCode) {
+        const prevIssueQty = needs.prevIssueMap.get(itemCode) ?? 0;
+        const entry = byItem.get(itemCode) ?? { part: needs.partMap.get(itemCode), orders: [] };
+        entry.orders.push({ orderNo: order.orderNo, planDate: order.planDate ?? null, needQty: bomReqQty - prevIssueQty, bomReqQty, prevIssueQty });
+        byItem.set(itemCode, entry);
+      }
+    });
+
+    const itemCodes = [...byItem.keys()];
+    const [floorStockMap, availableStockMap] = await Promise.all([
+      this.getFloorStockQtyMap(itemCodes, effectiveCompany, effectivePlant),
+      this.getAvailableStockQtyMap(itemCodes, effectiveCompany, effectivePlant),
+    ]);
+
+    const rows = itemCodes.map((itemCode) => {
+      const { part, orders } = byItem.get(itemCode)!;
+      const floorStockQty = floorStockMap.get(itemCode) ?? 0;
+      const split = splitRequestQtyByOrder(orders, floorStockQty);
+      const requestQtyByOrder = new Map(split.map((row) => [row.orderNo, row.requestQty]));
+      const stock = availableStockMap.get(itemCode) ?? EMPTY_AVAILABILITY;
+      return {
+        itemCode,
+        itemName: part?.itemName ?? itemCode,
+        unit: part?.unit ?? 'EA',
+        currentStock: stock.availableQty,
+        issuableQty: stock.issuableQty,
+        pendingIqcQty: stock.pendingIqcQty,
+        requestQty: split.reduce((sum, row) => sum + row.requestQty, 0),
+        bomReqQty: orders.reduce((sum, row) => sum + row.bomReqQty, 0),
+        prevIssueQty: orders.reduce((sum, row) => sum + row.prevIssueQty, 0),
+        floorStockQty,
+        minPackQty: this.toNumber(part?.minPackQty),
+        orders: sortOrdersByPlan(orders).map((row) => ({
+          orderNo: row.orderNo,
+          requestQty: requestQtyByOrder.get(row.orderNo) ?? 0,
+          bomReqQty: row.bomReqQty,
+          prevIssueQty: row.prevIssueQty,
+        })),
+      };
+    });
+    const items = rows.filter((item) => item.requestQty > 0);
+    return {
+      items,
+      processCode,
+      orders: jobOrders.map((order) => ({
+        orderNo: order.orderNo,
+        itemCode: order.itemCode,
+        planQty: this.toNumber(order.planQty),
+        planDate: order.planDate ?? null,
+      })),
+      summary: {
+        bomCount: needsList.reduce((sum, needs) => sum + needs.bomCount, 0),
+        rawCount: rows.length,
+        coveredCount: rows.length - items.length,
+        bomEffectiveDate: this.toDateOnlyStringLocal(needsList[0].bomEffectiveDate),
+      },
     };
   }
 
@@ -408,10 +549,6 @@ export class IssueRequestService {
   }
 
   /**
-   * 중복 출고요청 가드: 동일 작업지시의 미완료(REQUESTED/APPROVED/PARTIAL) 요청에
-   * 같은 품목이 이미 있으면 중복 생성을 차단한다. 작업지시 없는 수동요청은 제외.
-   */
-  /**
    * 출고요청은 품목지시(ORDER_KIND=ITEM)에만 등록한다.
    * 공정지시(OPERATION)는 품목지시 아래 공정별로 자동 생성되는 하위 지시라 여기에 또 요청하면 소요량이 2배로 잡힌다
    * (2026-09-09 실측: 작업지시 8세트에 출고요청 12건, 6건 중복).
@@ -422,49 +559,132 @@ export class IssueRequestService {
       where: { orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
       select: ['orderNo', 'orderKind', 'parentOrderNo', 'status'],
     });
-    if (jobOrder && isJobOrderFinished(String(jobOrder.status ?? ''))) {
-      throw new BadRequestException(`완료·취소된 작업지시(${orderNo})에는 출고요청을 등록할 수 없습니다.`);
+    if (jobOrder) this.assertRequestableOrder(jobOrder);
+  }
+
+  private assertRequestableOrder(jobOrder: Pick<JobOrder, 'orderNo' | 'orderKind' | 'parentOrderNo' | 'status'>) {
+    if (isJobOrderFinished(String(jobOrder.status ?? ''))) {
+      throw new BadRequestException(`완료·취소된 작업지시(${jobOrder.orderNo})에는 출고요청을 등록할 수 없습니다.`);
     }
-    if (jobOrder && String(jobOrder.orderKind ?? 'ITEM').toUpperCase() === 'OPERATION') {
+    if (String(jobOrder.orderKind ?? 'ITEM').toUpperCase() === 'OPERATION') {
       throw new BadRequestException(
-        `공정지시(${orderNo})에는 출고요청을 등록할 수 없습니다. 상위 품목지시${jobOrder.parentOrderNo ? `(${jobOrder.parentOrderNo})` : ''}를 선택하세요.`,
+        `공정지시(${jobOrder.orderNo})에는 출고요청을 등록할 수 없습니다. 상위 품목지시${jobOrder.parentOrderNo ? `(${jobOrder.parentOrderNo})` : ''}를 선택하세요.`,
       );
     }
   }
 
-  private async assertNoDuplicateActiveRequest(dto: CreateIssueRequestDto, company?: string, plant?: string) {
-    if (!dto.orderNo) return;
+  /**
+   * 중복 출고요청 가드: 같은 작업지시·품목이 미완료(REQUESTED/APPROVED/PARTIAL) 요청에 이미 있으면 차단한다.
+   * 1:1 요청(헤더 ORDER_NO)과 묶음 요청(MAT_ISSUE_REQUEST_ITEM_ORDERS) 양쪽을 모두 본다. 작업지시 없는 수동요청은 제외.
+   */
+  private async assertNoDuplicateActiveRequest(pairs: Array<{ orderNo: string; itemCode: string }>, company?: string, plant?: string) {
+    if (pairs.length === 0) return;
     const tenantWhere = this.tenantWhere(company, plant);
-    const existing = (await this.requestRepository.find({
-      where: { orderNo: dto.orderNo, ...tenantWhere },
-    })) ?? [];
-    const activeNos = existing
-      .filter((r) => r.status === 'REQUESTED' || r.status === 'APPROVED' || r.status === 'PARTIAL')
-      .map((r) => r.requestNo);
-    if (activeNos.length === 0) return;
+    const orderNos = [...new Set(pairs.map((pair) => pair.orderNo))];
+    const activeStatuses = ['REQUESTED', 'APPROVED', 'PARTIAL'];
+    const taken = new Set<string>();
 
-    const existingItems = (await this.requestItemRepository.find({
-      where: { requestId: In(activeNos), ...tenantWhere },
-    })) ?? [];
-    const activeItemCodes = new Set(existingItems.map((i) => i.itemCode));
-    const conflicts = [...new Set(dto.items.map((i) => i.itemCode).filter((code) => activeItemCodes.has(code)))];
-    if (conflicts.length > 0) {
-      throw new BadRequestException(
-        `이미 진행 중인 출고요청이 있는 품목입니다(작업지시 ${dto.orderNo}): ${conflicts.join(', ')}`,
-      );
+    // 1) 1:1 요청 — 헤더 작업지시 × 품목
+    const directRequests = ((await this.requestRepository.find({
+      where: { orderNo: In(orderNos), ...tenantWhere },
+    })) ?? []).filter((r) => activeStatuses.includes(r.status));
+    if (directRequests.length > 0) {
+      const orderByRequest = new Map(directRequests.map((r) => [r.requestNo, r.orderNo as string]));
+      const directItems = (await this.requestItemRepository.find({
+        where: { requestId: In([...orderByRequest.keys()]), ...tenantWhere },
+      })) ?? [];
+      directItems.forEach((item) => taken.add(`${orderByRequest.get(item.requestId)}|${item.itemCode}`));
     }
+
+    // 2) 묶음 요청 — 작업지시별 행 × 품목
+    const bundleRows = ((await this.itemOrderRepository.find({ where: { orderNo: In(orderNos), ...tenantWhere } })) ?? [])
+      .filter((row) => row.requestQty > 0);
+    const bundleRequestNos = [...new Set(bundleRows.map((row) => row.requestId))];
+    if (bundleRequestNos.length > 0) {
+      const activeBundles = ((await this.requestRepository.find({
+        where: { requestNo: In(bundleRequestNos), ...tenantWhere },
+      })) ?? []).filter((r) => activeStatuses.includes(r.status));
+      const activeNos = new Set(activeBundles.map((r) => r.requestNo));
+      const bundleItems = activeNos.size > 0
+        ? (await this.requestItemRepository.find({ where: { requestId: In([...activeNos]), ...tenantWhere } })) ?? []
+        : [];
+      const itemCodeBySeq = new Map(bundleItems.map((item) => [`${item.requestId}|${item.seq}`, item.itemCode]));
+      bundleRows
+        .filter((row) => activeNos.has(row.requestId))
+        .forEach((row) => {
+          const itemCode = itemCodeBySeq.get(`${row.requestId}|${row.itemSeq}`);
+          if (itemCode) taken.add(`${row.orderNo}|${itemCode}`);
+        });
+    }
+
+    const conflicts = [...new Set(pairs
+      .filter((pair) => taken.has(`${pair.orderNo}|${pair.itemCode}`))
+      .map((pair) => `${pair.orderNo}/${pair.itemCode}`))];
+    if (conflicts.length > 0) {
+      throw new BadRequestException(`이미 진행 중인 출고요청이 있는 품목입니다(작업지시/품목): ${conflicts.join(', ')}`);
+    }
+  }
+
+  /**
+   * 묶음 요청 생성 계획: 작업지시 검증(같은 공정) → 품목별 작업지시 수량 확정 → 중복 가드.
+   * 품목 수량(사용자가 고친 합계)을 화면이 보낸 작업지시별 산출 수량을 상한으로 계획일 빠른 순에 채우고,
+   * 남는 수량은 마지막 작업지시에 둔다. 작업지시 정보가 없는 품목(BOM 외 직접추가)은 계획일이 가장 빠른 작업지시에 붙인다.
+   */
+  private async planBundleRequest(dto: CreateIssueRequestDto, company?: string, plant?: string) {
+    const { jobOrders, processCode } = await this.assertBundleOrders(dto.orderNos ?? [], company, plant);
+    if (dto.processCode && dto.processCode !== processCode) {
+      throw new BadRequestException(`묶음 출고요청의 공정은 작업지시 공정(${processCode})과 같아야 합니다: ${dto.processCode}`);
+    }
+    const planDateMap = new Map(jobOrders.map((order) => [order.orderNo, order.planDate ?? null]));
+    const firstOrderNo = jobOrders[0].orderNo;
+
+    const itemOrders = dto.items.map((item) => {
+      const base = (item.orders ?? []).filter((row) => row.requestQty > 0);
+      const unknown = base.filter((row) => !planDateMap.has(row.orderNo)).map((row) => row.orderNo);
+      if (unknown.length > 0) {
+        throw new BadRequestException(`묶음에 없는 작업지시가 품목 ${item.itemCode}에 있습니다: ${[...new Set(unknown)].join(', ')}`);
+      }
+      const baseRows = base.length > 0
+        ? base
+        : [{ orderNo: firstOrderNo, requestQty: item.requestQty, bomReqQty: undefined, prevIssueQty: undefined }];
+      const baseByOrder = new Map(baseRows.map((row) => [row.orderNo, row]));
+      return distributeQtyToOrders(
+        baseRows.map((row) => ({ orderNo: row.orderNo, planDate: planDateMap.get(row.orderNo), requestQty: row.requestQty, issuedQty: 0 })),
+        item.requestQty,
+      ).map((take) => ({
+        orderNo: take.orderNo,
+        requestQty: take.qty,
+        bomReqQty: baseByOrder.get(take.orderNo)?.bomReqQty,
+        prevIssueQty: baseByOrder.get(take.orderNo)?.prevIssueQty,
+      }));
+    });
+
+    await this.assertNoDuplicateActiveRequest(
+      dto.items.flatMap((item, idx) => itemOrders[idx].map((row) => ({ orderNo: row.orderNo, itemCode: item.itemCode }))),
+      company,
+      plant,
+    );
+    return { processCode, itemOrders };
   }
 
   /** 출고요청 생성 (헤더 + 품목 일괄 저장) */
   async create(dto: CreateIssueRequestDto, company?: string, plant?: string) {
-    await this.assertItemOrderForRequest(dto.orderNo, company, plant);
-    await this.assertNoDuplicateActiveRequest(dto, company, plant);
+    const bundle = dto.orderNos && dto.orderNos.length > 0
+      ? await this.planBundleRequest(dto, company, plant)
+      : null;
+    if (!bundle) {
+      await this.assertItemOrderForRequest(dto.orderNo, company, plant);
+      if (dto.orderNo) {
+        const orderNo = dto.orderNo;
+        await this.assertNoDuplicateActiveRequest(dto.items.map((item) => ({ orderNo, itemCode: item.itemCode })), company, plant);
+      }
+    }
     const requestNo = await this.tx.run(async (queryRunner) => {
       const requestNo = await this.generateRequestNo(queryRunner);
       const request = queryRunner.manager.create(MatIssueRequest, {
         requestNo,
-        orderNo: dto.orderNo ?? null,
-        processCode: dto.processCode ?? null,
+        orderNo: bundle ? null : dto.orderNo ?? null,
+        processCode: bundle ? bundle.processCode : dto.processCode ?? null,
         issueType: dto.issueType ?? null,
         status: 'REQUESTED',
         requester: 'SYSTEM',
@@ -491,6 +711,22 @@ export class IssueRequestService {
         }),
       );
       await queryRunner.manager.save(items);
+
+      if (bundle) {
+        const orderRows = bundle.itemOrders.flatMap((orders, idx) => orders.map((row) =>
+          queryRunner.manager.create(MatIssueRequestItemOrder, {
+            requestId: saved.requestNo,
+            itemSeq: idx + 1,
+            orderNo: row.orderNo,
+            requestQty: row.requestQty,
+            issuedQty: 0,
+            bomReqQty: row.bomReqQty ?? null,
+            prevIssueQty: row.prevIssueQty ?? null,
+            company,
+            plant,
+          })));
+        await queryRunner.manager.save(orderRows);
+      }
       return saved.requestNo;
     });
 
@@ -528,22 +764,38 @@ export class IssueRequestService {
     let total = 0;
     const trimmedSearch = search?.trim();
 
-    if (trimmedSearch) {
-      const searchValue = `%${trimmedSearch.toUpperCase()}%`;
+    if (trimmedSearch || orderNo) {
       const qb = this.requestRepository.createQueryBuilder('req');
       if (status === ISSUE_REQUEST_PENDING_FILTER) qb.andWhere('req.status IN (:...pendingStatuses)', { pendingStatuses });
       else if (status) qb.andWhere('req.status = :status', { status });
       if (dateFrom) qb.andWhere('req.requestDate >= :dateFrom', { dateFrom });
       if (dateTo) qb.andWhere('req.requestDate <= :dateTo', { dateTo });
-      if (orderNo) qb.andWhere('req.orderNo = :orderNo', { orderNo });
+      // 작업지시 필터: 1:1 요청(헤더) 또는 그 작업지시가 묶인 묶음 요청
+      if (orderNo) {
+        qb.andWhere(`(
+          req.orderNo = :orderNo
+          OR EXISTS (
+            SELECT 1 FROM MAT_ISSUE_REQUEST_ITEM_ORDERS ro
+             WHERE ro.REQUEST_ID = "req"."REQUEST_NO"
+               AND ro.COMPANY = "req"."COMPANY" AND ro.PLANT_CD = "req"."PLANT_CD"
+               AND ro.ORDER_NO = :orderNo
+          )
+        )`, { orderNo });
+      }
       if (issueType) qb.andWhere('req.issueType = :issueType', { issueType });
       if (company) qb.andWhere('req.company = :company', { company });
       if (plant) qb.andWhere('req.plant = :plant', { plant });
-      qb.andWhere(`
+      if (trimmedSearch) qb.andWhere(`
         (
           UPPER(req.requestNo) LIKE :search
           OR UPPER(COALESCE(req.requester, '')) LIKE :search
           OR UPPER(COALESCE(req.orderNo, '')) LIKE :search
+          OR EXISTS (
+            SELECT 1 FROM MAT_ISSUE_REQUEST_ITEM_ORDERS so
+             WHERE so.REQUEST_ID = "req"."REQUEST_NO"
+               AND so.COMPANY = "req"."COMPANY" AND so.PLANT_CD = "req"."PLANT_CD"
+               AND UPPER(so.ORDER_NO) LIKE :search
+          )
           OR UPPER(COALESCE(req.issueType, '')) LIKE :search
           OR UPPER(COALESCE(req.remark, '')) LIKE :search
           OR EXISTS (
@@ -562,7 +814,7 @@ export class IssueRequestService {
               )
           )
         )
-      `, { search: searchValue });
+      `, { search: `%${trimmedSearch.toUpperCase()}%` });
 
       total = await qb.clone().getCount();
       const rows = await qb
@@ -600,6 +852,8 @@ export class IssueRequestService {
       : [];
     const partMap = new Map(allParts.map((p) => [p.itemCode, p]));
 
+    const itemOrderMap = await this.loadItemOrderMap(requestNos, tenantWhere);
+
     // 요청별 아이템 그룹화
     const itemsByRequest = new Map<string, MatIssueRequestItem[]>();
     for (const item of allItems) {
@@ -617,10 +871,12 @@ export class IssueRequestService {
           itemCode: item.itemCode,
           itemName: part?.itemName ?? null,
           unit: item.unit ?? part?.unit ?? null,
+          orders: itemOrderMap.get(`${item.requestId}|${item.seq}`) ?? [],
         };
       });
       return {
         ...req,
+        bundleOrderNos: this.collectBundleOrderNos(flatItems),
         itemCount: items.length,
         totalRequestQty: items.reduce((sum, i) => sum + i.requestQty, 0),
         totalIssuedQty: items.reduce((sum, i) => sum + i.issuedQty, 0),
@@ -636,10 +892,52 @@ export class IssueRequestService {
     const request = await this.getRequestOrFail(requestNo, company, plant);
     const requestTenantWhere = this.tenantWhere(request.company, request.plant);
     const items = await this.requestItemRepository.find({ where: { requestId: requestNo, ...requestTenantWhere } });
-    const flatItems = await this.flattenItems(items, request.company, request.plant);
+    const itemOrderMap = await this.loadItemOrderMap([requestNo], requestTenantWhere);
+    const flatItems = (await this.flattenItems(items, request.company, request.plant)).map((item) => ({
+      ...item,
+      orders: itemOrderMap.get(`${item.requestId}|${item.seq}`) ?? [],
+    }));
     // 출고 시 실제 적용될 공정(요청 공정 → 작업지시 공정 → 라우팅 첫 공정) — 출고 모달 기본값
     const issueProcessCode = await this.resolveIssueProcessCode(request, request.company, request.plant);
-    return { ...request, items: flatItems, issueProcessCode };
+    const bundleOrderNos = this.collectBundleOrderNos(flatItems);
+    const bundleJobOrders = bundleOrderNos.length > 0
+      ? await this.jobOrderRepository.find({ where: { orderNo: In(bundleOrderNos), ...requestTenantWhere } })
+      : [];
+    const bundleOrders = sortOrdersByPlan(bundleJobOrders).map((order) => ({
+      orderNo: order.orderNo,
+      itemCode: order.itemCode,
+      planQty: this.toNumber(order.planQty),
+      planDate: order.planDate ?? null,
+      status: order.status,
+    }));
+    return { ...request, items: flatItems, issueProcessCode, bundleOrderNos, bundleOrders };
+  }
+
+  /** 요청 품목별 작업지시 수량(묶음 요청) — key: `${requestId}|${seq}` */
+  private async loadItemOrderMap(requestNos: string[], tenantWhere: { company?: string; plant?: string }) {
+    const map = new Map<string, Array<{ orderNo: string; requestQty: number; issuedQty: number; bomReqQty: number | null; prevIssueQty: number | null }>>();
+    if (requestNos.length === 0) return map;
+    const rows = (await this.itemOrderRepository.find({
+      where: { requestId: In(requestNos), ...tenantWhere },
+      order: { requestId: 'ASC', itemSeq: 'ASC', orderNo: 'ASC' },
+    })) ?? [];
+    for (const row of rows) {
+      const key = `${row.requestId}|${row.itemSeq}`;
+      const list = map.get(key) ?? [];
+      list.push({
+        orderNo: row.orderNo,
+        requestQty: this.toNumber(row.requestQty),
+        issuedQty: this.toNumber(row.issuedQty),
+        bomReqQty: row.bomReqQty === null || row.bomReqQty === undefined ? null : this.toNumber(row.bomReqQty),
+        prevIssueQty: row.prevIssueQty === null || row.prevIssueQty === undefined ? null : this.toNumber(row.prevIssueQty),
+      });
+      map.set(key, list);
+    }
+    return map;
+  }
+
+  private collectBundleOrderNos(items: Array<{ orders: Array<{ orderNo: string }> }>): string[] {
+    return [...new Set(items.flatMap((item) => item.orders.map((row) => row.orderNo)))].sort();
   }
 
   /** 출고요청 승인 (REQUESTED -> APPROVED) */
@@ -891,12 +1189,28 @@ export class IssueRequestService {
         );
       }
 
+      // 묶음 요청: LOT별 출고수량을 작업지시 계획일 빠른 순으로 나눠 작업지시별 행에 가산하고,
+      // MAT_ISSUES.ORDER_NO 도 작업지시마다 남긴다(LOT 하나가 두 작업지시에 걸치면 출고 행 2개). 1:1 요청은 빈 배열.
+      const orderTakes = await this.allocation.allocateToItemOrdersInTx(
+        queryRunner,
+        requestNo,
+        dto.items.map((i) => ({ seq: Number(i.requestItemId), qty: i.issueQty })),
+        effectiveCompany,
+        effectivePlant,
+      );
+      const issueItems = dto.items.flatMap((i, idx) => {
+        const takes = orderTakes[idx] ?? [];
+        return takes.length > 0
+          ? takes.map((take) => ({ matUid: i.matUid, issueQty: take.qty, orderNo: take.orderNo }))
+          : [{ matUid: i.matUid, issueQty: i.issueQty }];
+      });
+
       const issueResult = await this.matIssueService.createInTx(queryRunner, {
         orderNo: request.orderNo ?? undefined,
         processCode: processCode ?? undefined,
         warehouseCode: dto.warehouseCode,
         issueType,
-        items: dto.items.map((i) => ({ matUid: i.matUid, issueQty: i.issueQty })),
+        items: issueItems,
         workerId: dto.workerId,
         remark: dto.remark ?? `출고요청 ${request.requestNo} 기반 출고`,
       }, effectiveCompany ?? undefined, effectivePlant ?? undefined);

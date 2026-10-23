@@ -41,6 +41,8 @@ export interface IssueRequestRecord {
   requester: string;
   rejectReason?: string;
   createdAt: string;
+  /** 묶음 요청이면 묶인 작업지시번호 목록(헤더 작업지시 없음) */
+  bundleOrderNos?: string[];
 }
 
 /** 목록 응답 */

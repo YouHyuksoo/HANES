@@ -35,6 +35,17 @@ export interface RequestItem {
   /** IQC 미검사(PENDING/HOLD) 재고. 승인 단계 검증 안내용 */
   pendingIqcQty?: number;
   remark?: string | null;
+  /** 묶음 요청: 품목 아래 작업지시별 요청/출고수량(계획일 빠른 순) */
+  orders?: RequestItemOrder[];
+}
+
+/** 묶음 출고요청 품목의 작업지시별 수량 */
+export interface RequestItemOrder {
+  orderNo: string;
+  requestQty: number;
+  issuedQty?: number;
+  bomReqQty?: number | null;
+  prevIssueQty?: number | null;
 }
 
 /** 출고요청 레코드 */
@@ -56,6 +67,8 @@ export interface IssueRequest {
   approvedAt?: string | null;
   rejectReason?: string | null;
   remark?: string | null;
+  /** 묶음 요청이면 묶인 작업지시번호 목록(1:1 요청은 빈 배열) */
+  bundleOrderNos?: string[];
 }
 
 /** 검색 가능한 품목 (재고 정보 포함) */
@@ -107,10 +120,41 @@ export interface BomRequestResult {
   summary: BomRequestSummary | null;
 }
 
+/** 묶음 대상 작업지시(계획일 빠른 순) */
+export interface BundleOrderInfo {
+  orderNo: string;
+  itemCode?: string;
+  planQty?: number;
+  planDate?: string | null;
+}
+
+export interface BundleBomRequestResult extends BomRequestResult {
+  /** 묶음 공통 공정(서버가 작업지시 공정으로 결정) */
+  processCode: string;
+  orders: BundleOrderInfo[];
+}
+
 interface BomRequestApiPayload {
   items?: RequestItem[];
   summary?: BomRequestSummary;
+  processCode?: string;
+  orders?: BundleOrderInfo[];
 }
+
+const toRequestItem = (item: RequestItem): RequestItem => ({
+  itemCode: item.itemCode,
+  itemName: item.itemName,
+  unit: item.unit ?? 'EA',
+  currentStock: Number(item.currentStock ?? 0),
+  issuableQty: Number(item.issuableQty ?? 0),
+  pendingIqcQty: Number(item.pendingIqcQty ?? 0),
+  requestQty: Number(item.requestQty ?? 0),
+  bomReqQty: Number(item.bomReqQty ?? 0),
+  prevIssueQty: Number(item.prevIssueQty ?? 0),
+  floorStockQty: Number(item.floorStockQty ?? 0),
+  minPackQty: Number(item.minPackQty ?? 0),
+  ...(item.orders ? { orders: item.orders } : {}),
+});
 
 export type JobOrderTreeListRow = ProductionJobOrderRow & {
   _depth?: number;
@@ -257,20 +301,24 @@ export function useIssueRequestData() {
     const payload = response.data?.data;
     const list = Array.isArray(payload?.items) ? payload.items : [];
     return {
-      items: list.map((item) => ({
-        itemCode: item.itemCode,
-        itemName: item.itemName,
-        unit: item.unit ?? 'EA',
-        currentStock: Number(item.currentStock ?? 0),
-        issuableQty: Number(item.issuableQty ?? 0),
-        pendingIqcQty: Number(item.pendingIqcQty ?? 0),
-        requestQty: Number(item.requestQty ?? 0),
-        bomReqQty: Number(item.bomReqQty ?? 0),
-        prevIssueQty: Number(item.prevIssueQty ?? 0),
-        floorStockQty: Number(item.floorStockQty ?? 0),
-        minPackQty: Number(item.minPackQty ?? 0),
-      })),
+      items: list.map(toRequestItem),
       summary: payload?.summary ?? null,
+    };
+  }, []);
+
+  // 묶음 출고요청: 같은 공정 작업지시 여러 건의 품목 합산(작업지시별 수량 포함). 공정이 다르면 서버가 거절한다
+  const loadBundleBomRequestItems = useCallback(async (orderNos: string[]): Promise<BundleBomRequestResult> => {
+    const response = await api.get<{ success: boolean; data: BomRequestApiPayload }>(
+      '/material/issue-requests/job-orders/bundle-bom-items',
+      { params: { orderNos: orderNos.join(',') } },
+    );
+    const payload = response.data?.data;
+    const list = Array.isArray(payload?.items) ? payload.items : [];
+    return {
+      items: list.map(toRequestItem),
+      summary: payload?.summary ?? null,
+      processCode: payload?.processCode ?? '',
+      orders: Array.isArray(payload?.orders) ? payload.orders : [],
     };
   }, []);
 
@@ -329,6 +377,7 @@ export function useIssueRequestData() {
     setSearchText,
     searchStockItems,
     loadBomRequestItems,
+    loadBundleBomRequestItems,
     loadRequestsByOrder,
     jobOrders,
     isLoadingJobOrders,

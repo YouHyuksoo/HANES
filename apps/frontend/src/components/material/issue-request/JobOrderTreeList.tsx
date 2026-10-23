@@ -8,6 +8,8 @@
  * 1. **선택 대상 행**: 필터를 통과한 작업지시. 클릭하면 우측이 해당 지시 내역으로 바뀐다.
  * 2. **그룹 헤더 행**: 필터를 통과하지 못했지만 하위 지시의 계층을 보여주기 위해 남은 행(`_contextOnly`). 선택 불가, 접기/펼치기만 가능하다.
  * 3. **한 행 = 2줄**: 1줄 지시번호·품목코드·유형·상태 / 2줄 품목명·지시일자·계획수량
+ * 4. **묶음 체크박스**(onToggleCheck 지정 시): 같은 공정 작업지시를 여러 건 골라 묶음 출고요청을 만든다.
+ *    행 클릭(단건 선택)과 별개다. 다른 공정 지시는 checkDisabledReason 이 사유를 돌려 비활성으로 보인다.
  */
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +25,11 @@ interface JobOrderTreeListProps {
   isLoading?: boolean;
   selectedOrderNo: string;
   onSelect: (order: JobOrderListRow) => void;
+  /** 묶음 출고요청용 체크 상태 */
+  checkedOrderNos?: ReadonlySet<string>;
+  onToggleCheck?: (order: JobOrderListRow) => void;
+  /** 체크할 수 없는 사유(다른 공정 등). null 이면 체크 가능 */
+  checkDisabledReason?: (order: JobOrderListRow) => string | null;
 }
 
 const toNum = (v: number | null | undefined) => Number(v ?? 0);
@@ -37,6 +44,9 @@ export default function JobOrderTreeList({
   isLoading,
   selectedOrderNo,
   onSelect,
+  checkedOrderNos,
+  onToggleCheck,
+  checkDisabledReason,
 }: JobOrderTreeListProps) {
   const { t } = useTranslation();
   const [collapsedOrderNos, setCollapsedOrderNos] = useState<Set<string>>(() => new Set());
@@ -182,6 +192,24 @@ export default function JobOrderTreeList({
                         ) : (
                           <span className="h-6 w-6 shrink-0" />
                         )}
+                        {!isGroupRow && onToggleCheck && (() => {
+                          const checked = checkedOrderNos?.has(order.orderNo) ?? false;
+                          const disabledReason = checked ? null : checkDisabledReason?.(order) ?? null;
+                          return (
+                            <input
+                              type="checkbox"
+                              data-testid="mat-request-bundle-check"
+                              aria-label={t('material.request.bundleCheck', '묶음 출고요청에 포함')}
+                              title={disabledReason ?? t('material.request.bundleCheck', '묶음 출고요청에 포함')}
+                              checked={checked}
+                              disabled={!!disabledReason}
+                              onClick={(event) => event.stopPropagation()}
+                              onKeyDown={(event) => event.stopPropagation()}
+                              onChange={() => onToggleCheck(order)}
+                              className="h-4 w-4 shrink-0 accent-primary disabled:cursor-not-allowed disabled:opacity-40"
+                            />
+                          );
+                        })()}
                         <span
                           className={`truncate font-mono ${
                             isGroupRow
@@ -228,7 +256,7 @@ export default function JobOrderTreeList({
                       )}
                     </div>
                     {!isGroupRow && (
-                      <div className="mt-0.5 flex items-center gap-2 pl-[30px] text-xs">
+                      <div className={`mt-0.5 flex items-center gap-2 text-xs ${onToggleCheck ? 'pl-[52px]' : 'pl-[30px]'}`}>
                         <span className="min-w-0 flex-1 truncate text-text">
                           {order.part?.itemName ?? order.itemCode}
                           {order.part?.itemName && order.itemCode && order.part.itemName !== order.itemCode && (

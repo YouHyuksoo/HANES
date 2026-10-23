@@ -11,10 +11,12 @@
  *    - 신규 요청 탭: BOM 기준 출고 예정 원자재 그리드에서 수량을 입력하고 등록한다.
  * 3. **미선택 시**: 탭은 비활성이고, 우측에는 최근 출고요청 전체 목록이 보인다.
  *    이 목록은 인라인 상세가 없어서 행 클릭 시 상세 모달을 띄운다(유일한 상세 확인 수단).
+ * 4. **묶음 출고요청**: 좌측 체크박스로 같은 공정 작업지시를 2건 이상 고르고 [묶음 출고요청]을 누르면
+ *    품목 합산 요청 1건을 만든다(작업지시별 수량은 서버가 보관). 다른 공정 지시는 체크할 수 없다.
  */
 import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, ClipboardList, AlertTriangle, Loader2, Plus, PackageCheck, X, Info } from 'lucide-react';
+import { Search, ClipboardList, AlertTriangle, Loader2, Plus, PackageCheck, X, Info, Layers } from 'lucide-react';
 import { Card, CardContent, Button, Input, Select, ComCodeBadge } from '@/components/ui';
 import ComCodeSelect from '@/components/shared/ComCodeSelect';
 import { api } from '@/services/api';
@@ -24,7 +26,8 @@ import RequestTable from '@/components/material/RequestTable';
 import JobOrderTreeList, { type JobOrderListRow } from '@/components/material/issue-request/JobOrderTreeList';
 import IssueRequestHistoryPanel from '@/components/material/issue-request/IssueRequestHistoryPanel';
 import IssueRequestCreatePanel from '@/components/material/issue-request/IssueRequestCreatePanel';
-import type { BomRequestResult, BomRequestSummary, IssueRequest, RequestItem, StockItem } from '@/hooks/material/useIssueRequestData';
+import { BundleOrderBadge } from '@/components/material/issue-request/BundleOrderDisplay';
+import type { BomRequestResult, BomRequestSummary, BundleBomRequestResult, IssueRequest, RequestItem, StockItem } from '@/hooks/material/useIssueRequestData';
 
 type RightTab = 'history' | 'create';
 
@@ -32,6 +35,8 @@ interface WorkOrderRequestPanelProps {
   jobOrders: JobOrderListRow[];
   isLoadingJobOrders?: boolean;
   loadBomRequestItems: (orderNo: string) => Promise<BomRequestResult>;
+  /** 묶음 출고요청 품목 산출(같은 공정 작업지시 2건 이상) */
+  loadBundleBomRequestItems: (orderNos: string[]) => Promise<BundleBomRequestResult>;
   loadRequestsByOrder: (orderNo: string) => Promise<IssueRequest[]>;
   /** BOM 외 품목 직접추가용 검색 */
   searchStockItems: (query: string) => Promise<StockItem[]>;
@@ -59,6 +64,7 @@ export default function WorkOrderRequestPanel({
   jobOrders,
   isLoadingJobOrders,
   loadBomRequestItems,
+  loadBundleBomRequestItems,
   loadRequestsByOrder,
   searchStockItems,
   woOrderNo,
@@ -99,6 +105,10 @@ export default function WorkOrderRequestPanel({
   const [isLoadingBom, setIsLoadingBom] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  // 묶음 출고요청: 체크한 작업지시 / 묶음 작성 중 여부 / 서버가 확정한 묶음 작업지시(계획일 순)
+  const [checkedOrderNos, setCheckedOrderNos] = useState<Set<string>>(() => new Set());
+  const [bundleMode, setBundleMode] = useState(false);
+  const [bundleOrderNos, setBundleOrderNos] = useState<string[]>([]);
 
   const resetCreateState = useCallback(() => {
     setErrorMessage('');
@@ -157,7 +167,67 @@ export default function WorkOrderRequestPanel({
     }
   }, [loadRequestsByOrder]);
 
+  // 묶음 기준 공정 = 처음 체크한 작업지시 공정. 공정이 비어 있는 지시는 서버가 라우팅으로 판정한다
+  const bundleBaseProcess = useMemo(() => {
+    for (const orderNo of checkedOrderNos) {
+      const processCode = jobOrders.find((j) => j.orderNo === orderNo)?.processCode;
+      if (processCode) return processCode;
+    }
+    return null;
+  }, [checkedOrderNos, jobOrders]);
+
+  const bundleCheckDisabledReason = useCallback((order: JobOrderListRow) => {
+    if (!bundleBaseProcess || !order.processCode || order.processCode === bundleBaseProcess) return null;
+    return t('material.request.bundleOtherProcess', {
+      process: order.processCode,
+      base: bundleBaseProcess,
+      defaultValue: '다른 공정({{process}})입니다. 같은 공정({{base}}) 작업지시만 묶을 수 있습니다.',
+    });
+  }, [bundleBaseProcess, t]);
+
+  const toggleBundleCheck = useCallback((order: JobOrderListRow) => {
+    setCheckedOrderNos((prev) => {
+      const next = new Set(prev);
+      if (next.has(order.orderNo)) next.delete(order.orderNo);
+      else next.add(order.orderNo);
+      return next;
+    });
+  }, []);
+
+  const startBundleRequest = useCallback(async () => {
+    if (checkedOrderNos.size < 2) return;
+    resetCreateState();
+    setBundleMode(true);
+    setBundleOrderNos([...checkedOrderNos]);
+    setActiveTab('create');
+    setIsLoadingBom(true);
+    try {
+      const result = await loadBundleBomRequestItems([...checkedOrderNos]);
+      setDetailItems(result.items);
+      setBomSummary(result.summary);
+      setSelectedProcessCode(result.processCode);
+      setBundleOrderNos(result.orders.map((o) => o.orderNo));
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || t('material.request.bomLoadError');
+      setErrorMessage(message);
+      setBomLoadFailed(true);
+    } finally {
+      setIsLoadingBom(false);
+    }
+  }, [checkedOrderNos, loadBundleBomRequestItems, resetCreateState, t]);
+
+  const cancelBundleRequest = useCallback(() => {
+    setBundleMode(false);
+    setBundleOrderNos([]);
+    resetCreateState();
+    setActiveTab('history');
+  }, [resetCreateState]);
+
   const handleSelectOrder = useCallback((order: JobOrderListRow) => {
+    setBundleMode(false);
+    setBundleOrderNos([]);
     setSelectedOrderNo(order.orderNo);
     setActiveTab('history');
     resetCreateState();
@@ -234,25 +304,34 @@ export default function WorkOrderRequestPanel({
   }, []);
 
   const handleSubmit = async () => {
-    if (!selectedOrderNo) return;
+    if (!selectedOrderNo && !bundleMode) return;
     setErrorMessage('');
     setIsSubmitting(true);
     try {
-      const body = {
-        orderNo: selectedOrderNo,
-        processCode: selectedProcessCode || undefined,
-        items: detailItems
-          .filter((item) => item.requestQty > 0)
-          .map((item) => ({
-            itemCode: item.itemCode,
-            requestQty: item.requestQty,
-            unit: item.unit,
-            bomReqQty: item.bomReqQty,
-            prevIssueQty: item.prevIssueQty,
-            floorStockQty: item.floorStockQty,
-          })),
-        remark: reason || undefined,
-      };
+      const items = detailItems
+        .filter((item) => item.requestQty > 0)
+        .map((item) => ({
+          itemCode: item.itemCode,
+          requestQty: item.requestQty,
+          unit: item.unit,
+          bomReqQty: item.bomReqQty,
+          prevIssueQty: item.prevIssueQty,
+          floorStockQty: item.floorStockQty,
+          // 묶음: 작업지시별 산출 수량(서버가 합계를 계획일 빠른 순으로 다시 배분할 때 상한으로 쓴다)
+          ...(bundleMode && item.orders
+            ? {
+              orders: item.orders.map((o) => ({
+                orderNo: o.orderNo,
+                requestQty: o.requestQty,
+                bomReqQty: o.bomReqQty ?? undefined,
+                prevIssueQty: o.prevIssueQty ?? undefined,
+              })),
+            }
+            : {}),
+        }));
+      const body = bundleMode
+        ? { orderNos: bundleOrderNos, processCode: selectedProcessCode || undefined, items, remark: reason || undefined }
+        : { orderNo: selectedOrderNo, processCode: selectedProcessCode || undefined, items, remark: reason || undefined };
       const res = await api.post('/material/issue-requests', body);
       // IQC 미검사 재고만 있는 품목 안내(생성은 차단하지 않음)
       notifyIssueWarnings(res.data);
@@ -260,7 +339,15 @@ export default function WorkOrderRequestPanel({
       invalidate(['issue-requests']);
       resetCreateState();
       setActiveTab('history');
-      await loadHistory(selectedOrderNo);
+      // 묶음 등록 후에는 가장 빠른 작업지시 내역으로 이동한다(그 내역에 묶음 요청이 함께 보인다)
+      const historyOrderNo = bundleMode ? bundleOrderNos[0] : selectedOrderNo;
+      if (bundleMode) {
+        setBundleMode(false);
+        setBundleOrderNos([]);
+        setCheckedOrderNos(new Set());
+        setSelectedOrderNo(historyOrderNo);
+      }
+      await loadHistory(historyOrderNo);
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
@@ -272,7 +359,7 @@ export default function WorkOrderRequestPanel({
   };
 
   const canSubmit =
-    !!selectedOrderNo
+    (!!selectedOrderNo || bundleMode)
     && !!selectedProcessCode
     && detailItems.some((r) => r.requestQty > 0)
     && !isSubmitting
@@ -341,16 +428,45 @@ export default function WorkOrderRequestPanel({
           <JobOrderTreeList
             jobOrders={jobOrders}
             isLoading={isLoadingJobOrders}
-            selectedOrderNo={selectedOrderNo}
+            selectedOrderNo={bundleMode ? '' : selectedOrderNo}
             onSelect={handleSelectOrder}
+            checkedOrderNos={checkedOrderNos}
+            onToggleCheck={toggleBundleCheck}
+            checkDisabledReason={bundleCheckDisabledReason}
           />
+          {checkedOrderNos.size > 0 && (
+            <div className="flex items-center gap-2 border-t border-border p-2" data-testid="mat-request-bundle-bar">
+              <Layers className="h-4 w-4 shrink-0 text-primary" />
+              <span className="min-w-0 flex-1 truncate text-xs text-text">
+                {t('material.request.bundleSelected', { count: checkedOrderNos.size, defaultValue: '{{count}}건 선택' })}
+                {bundleBaseProcess && <span className="ml-1 font-mono text-text-muted">({bundleBaseProcess})</span>}
+              </span>
+              <Button size="sm" variant="secondary" onClick={() => setCheckedOrderNos(new Set())}>
+                {t('common.clear', '해제')}
+              </Button>
+              <Button
+                size="sm"
+                onClick={startBundleRequest}
+                disabled={checkedOrderNos.size < 2 || isLoadingBom}
+                disabledReason={t('material.request.bundleNeedTwo', '같은 공정 작업지시를 2건 이상 선택하세요.')}
+                data-testid="mat-request-bundle-start"
+              >
+                {t('material.request.bundleStart', '묶음 출고요청')}
+              </Button>
+            </div>
+          )}
         </Card>
 
         {/* 우측: 탭 고정 (내역 / 신규 요청) */}
         <Card className="flex-1 min-h-0 flex flex-col overflow-hidden" padding="none">
           {/* 작업지시 요약 + 탭 + 등록 버튼을 한 줄에 둔다 */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-3 pt-2">
-            {selectedOrder ? (
+            {bundleMode ? (
+              <div className="flex min-w-0 items-center gap-2 pb-2">
+                <span className="shrink-0 text-sm font-semibold text-text">{t('material.request.bundleStart', '묶음 출고요청')}</span>
+                <BundleOrderBadge orderNos={bundleOrderNos} />
+              </div>
+            ) : selectedOrder ? (
               <div className="flex min-w-0 items-center gap-2 pb-2">
                 <span className="font-mono text-sm font-semibold text-primary">{selectedOrder.orderNo}</span>
                 <ComCodeBadge
@@ -372,8 +488,8 @@ export default function WorkOrderRequestPanel({
               </div>
             )}
 
-            {/* 탭 - 작업지시 미선택이면 비활성으로 보이되 자리는 유지한다 */}
-            <div className="flex items-end gap-1">
+            {/* 탭 - 작업지시 미선택이면 비활성으로 보이되 자리는 유지한다(묶음 작성 중에는 숨긴다) */}
+            <div className={`flex items-end gap-1 ${bundleMode ? 'hidden' : ''}`}>
               {tabs.map((tab) => {
                 const isActive = !!selectedOrder && activeTab === tab.key;
                 return (
@@ -397,8 +513,13 @@ export default function WorkOrderRequestPanel({
               })}
             </div>
 
-            {selectedOrder && activeTab === 'create' && (
-              <div className="ml-auto pb-2">
+            {((selectedOrder && activeTab === 'create') || bundleMode) && (
+              <div className="ml-auto flex items-center gap-2 pb-2">
+                {bundleMode && (
+                  <Button size="sm" variant="secondary" onClick={cancelBundleRequest} disabled={isSubmitting}>
+                    {t('common.cancel', '취소')}
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   onClick={handleSubmit}
@@ -420,7 +541,7 @@ export default function WorkOrderRequestPanel({
             </div>
           )}
 
-          {!selectedOrder ? (
+          {!selectedOrder && !bundleMode ? (
             /* 미선택: 최근 출고요청 전체 목록 (행 클릭 시 상세 모달 - 여기는 인라인 상세가 없어 모달이 유일한 수단) */
             <CardContent className="flex-1 min-h-0 p-4 flex flex-col">
               <div className="mb-3 flex items-center justify-between gap-3">
@@ -455,11 +576,12 @@ export default function WorkOrderRequestPanel({
                 />
               </div>
             </CardContent>
-          ) : activeTab === 'history' ? (
+          ) : activeTab === 'history' && !bundleMode ? (
             <IssueRequestHistoryPanel
               requests={woRequests}
               isLoading={isLoadingWoRequests}
               onCreateRequest={enterCreateTab}
+              focusOrderNo={selectedOrderNo}
             />
           ) : (
             <IssueRequestCreatePanel
@@ -479,6 +601,7 @@ export default function WorkOrderRequestPanel({
               onManualSearch={handleManualSearch}
               onAddManualItem={addManualItem}
               onQtyChange={updateQty}
+              bundleOrderNos={bundleMode ? bundleOrderNos : undefined}
             />
           )}
         </Card>

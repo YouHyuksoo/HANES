@@ -3078,6 +3078,13 @@
       "createdMatUids": "Created Material Serials"
     },
     "request": {
+      "bundleStart": "Bundled Issue Request",
+      "bundleCount": "Bundle of {{count}}",
+      "bundleCheck": "Include in bundled issue request",
+      "bundleSelected": "{{count}} selected",
+      "bundleNeedTwo": "Select two or more work orders of the same process.",
+      "bundleOtherProcess": "Different process ({{process}}). Only work orders of the same process ({{base}}) can be bundled.",
+      "bundleQtyHint": "When you change the total request qty, the earliest planned work orders are filled first and any surplus goes to the last one. Manually added items are assigned to the earliest work order.",
       "title": "Issue Request",
       "subtitle": "Manage material issue requests.",
       "description": "Manage material issue requests.",

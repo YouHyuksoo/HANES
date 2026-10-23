@@ -6,6 +6,8 @@ import { DataSource, LessThanOrEqual, MoreThanOrEqual, QueryRunner, Repository, 
 import { IssueRequestService } from './issue-request.service';
 import { MatIssueRequest } from '../../../entities/mat-issue-request.entity';
 import { MatIssueRequestItem } from '../../../entities/mat-issue-request-item.entity';
+import { MatIssueRequestItemOrder } from '../../../entities/mat-issue-request-item-order.entity';
+import { IssueRequestAllocationService } from './issue-request-allocation.service';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
 import { BomMaster } from '../../../entities/bom-master.entity';
@@ -39,6 +41,8 @@ describe('IssueRequestService', () => {
   let service: IssueRequestService;
   let requestRepo: DeepMocked<Repository<MatIssueRequest>>;
   let requestItemRepo: DeepMocked<Repository<MatIssueRequestItem>>;
+  let itemOrderRepo: DeepMocked<Repository<MatIssueRequestItemOrder>>;
+  let allocation: DeepMocked<IssueRequestAllocationService>;
   let itemMasterRepo: DeepMocked<Repository<ItemMaster>>;
   let jobOrderRepo: DeepMocked<Repository<JobOrder>>;
   let bomRepo: DeepMocked<Repository<BomMaster>>;
@@ -59,6 +63,11 @@ describe('IssueRequestService', () => {
   beforeEach(async () => {
     requestRepo = createMock<Repository<MatIssueRequest>>();
     requestItemRepo = createMock<Repository<MatIssueRequestItem>>();
+    itemOrderRepo = createMock<Repository<MatIssueRequestItemOrder>>();
+    // 기본: 묶음 행 없음(1:1 요청) — 묶음 테스트에서 덮어쓴다
+    itemOrderRepo.find.mockResolvedValue([]);
+    allocation = createMock<IssueRequestAllocationService>();
+    allocation.allocateToItemOrdersInTx.mockImplementation(async (_qr, _requestId, entries) => entries.map(() => []));
     itemMasterRepo = createMock<Repository<ItemMaster>>();
     jobOrderRepo = createMock<Repository<JobOrder>>();
     bomRepo = createMock<Repository<BomMaster>>();
@@ -96,6 +105,8 @@ describe('IssueRequestService', () => {
         IssueRequestService,
         { provide: getRepositoryToken(MatIssueRequest), useValue: requestRepo },
         { provide: getRepositoryToken(MatIssueRequestItem), useValue: requestItemRepo },
+        { provide: getRepositoryToken(MatIssueRequestItemOrder), useValue: itemOrderRepo },
+        { provide: IssueRequestAllocationService, useValue: allocation },
         { provide: getRepositoryToken(ItemMaster), useValue: itemMasterRepo },
         { provide: getRepositoryToken(JobOrder), useValue: jobOrderRepo },
         { provide: getRepositoryToken(BomMaster), useValue: bomRepo },
@@ -1470,6 +1481,158 @@ describe('IssueRequestService', () => {
       const result = await service.findSplitLabelGroups('MR-1', 'C1', 'P1');
 
       expect(result.splits).toEqual([]);
+    });
+  });
+  describe('묶음 출고요청', () => {
+    const jo = (partial: Partial<JobOrder>): JobOrder => ({
+      itemCode: 'FG-001', planQty: 10, status: 'WAITING', orderKind: 'ITEM', company: 'C1', plant: 'P1', ...partial,
+    } as JobOrder);
+    const qbRows = (rows: Array<Record<string, unknown>>) => createStockQueryBuilder(rows) as any;
+
+    it('공정이 다른 작업지시는 묶지 않는다', async () => {
+      jobOrderRepo.find.mockResolvedValue([
+        jo({ orderNo: 'WO-A', processCode: 'P10', planDate: new Date(2026, 9, 1) }),
+        jo({ orderNo: 'WO-B', processCode: 'P20', planDate: new Date(2026, 9, 2) }),
+      ]);
+
+      await expect(service.buildBundleBomRequestItems(['WO-A', 'WO-B'], 'C1', 'P1'))
+        .rejects.toThrow('같은 공정의 작업지시만 묶을 수 있습니다');
+    });
+
+    it('작업지시 1건만으로는 묶음 요청을 만들지 않는다', async () => {
+      await expect(service.buildBundleBomRequestItems(['WO-A', 'WO-A'], 'C1', 'P1'))
+        .rejects.toThrow('2건 이상');
+    });
+
+    it('품목을 합산하고 현장재고는 품목당 한 번만 빠른 작업지시부터 덮는다', async () => {
+      jobOrderRepo.find.mockResolvedValue([
+        jo({ orderNo: 'WO-B', processCode: 'P10', planDate: new Date(2026, 9, 2), planQty: 10 }),
+        jo({ orderNo: 'WO-A', processCode: 'P10', planDate: new Date(2026, 9, 1), planQty: 5 }),
+      ]);
+      bomRepo.find.mockResolvedValue([
+        { parentItemCode: 'FG-001', childItemCode: 'RM-001', qtyPer: 2, seq: 1, useYn: 'Y' },
+      ] as BomMaster[]);
+      itemMasterRepo.find.mockResolvedValue([{ itemCode: 'RM-001', itemName: 'Raw A', itemType: 'RAW', unit: 'EA' }] as ItemMaster[]);
+      matIssueRepo.createQueryBuilder.mockReturnValue(qbRows([]));
+      // 현장재고 15 (가용재고 조회는 빈 결과)
+      matStockRepo.createQueryBuilder
+        .mockReturnValueOnce(qbRows([{ itemCode: 'RM-001', qty: '15' }]))
+        .mockReturnValue(qbRows([]));
+
+      const result = await service.buildBundleBomRequestItems(['WO-B', 'WO-A'], 'C1', 'P1');
+
+      // WO-A 소요 10 은 현장재고로 전부, WO-B 소요 20 중 5 덮임 → 15 요청(현장재고를 2번 빼지 않는다)
+      expect(result.processCode).toBe('P10');
+      expect(result.orders.map((o) => o.orderNo)).toEqual(['WO-A', 'WO-B']);
+      expect(result.items).toEqual([expect.objectContaining({
+        itemCode: 'RM-001',
+        requestQty: 15,
+        bomReqQty: 30,
+        floorStockQty: 15,
+        orders: [
+          expect.objectContaining({ orderNo: 'WO-A', requestQty: 0, bomReqQty: 10 }),
+          expect.objectContaining({ orderNo: 'WO-B', requestQty: 15, bomReqQty: 20 }),
+        ],
+      })]);
+    });
+
+    it('생성 시 헤더 작업지시는 비우고 공정은 작업지시 공정으로, 작업지시별 행을 저장한다(직접추가 품목은 가장 빠른 작업지시)', async () => {
+      jobOrderRepo.find.mockResolvedValue([
+        jo({ orderNo: 'WO-A', processCode: 'P10', planDate: new Date(2026, 9, 1) }),
+        jo({ orderNo: 'WO-B', processCode: 'P10', planDate: new Date(2026, 9, 2) }),
+      ]);
+      requestRepo.find.mockResolvedValue([]);
+      numbering.next.mockResolvedValue('REQ-B1');
+      queryRunner.manager.create.mockImplementation((_entity, value: any) => value);
+      queryRunner.manager.save.mockImplementation(async (value: any) => (Array.isArray(value) ? value : { ...value, requestNo: 'REQ-B1' }));
+      requestRepo.findOne.mockResolvedValue({ requestNo: 'REQ-B1', company: 'C1', plant: 'P1' } as MatIssueRequest);
+      requestItemRepo.find.mockResolvedValue([]);
+
+      await service.create({
+        orderNos: ['WO-A', 'WO-B'],
+        issueType: 'PRODUCTION',
+        items: [
+          // 사용자가 합계를 12 → 14 로 올림: 산출 상한(WO-A 4, WO-B 8)을 채우고 남는 2 는 마지막 작업지시로
+          { itemCode: 'RM-001', requestQty: 14, unit: 'EA', orders: [{ orderNo: 'WO-B', requestQty: 8 }, { orderNo: 'WO-A', requestQty: 4 }] },
+          { itemCode: 'RM-EXTRA', requestQty: 3, unit: 'EA' },
+        ],
+      } as any, 'C1', 'P1');
+
+      expect(queryRunner.manager.create).toHaveBeenCalledWith(MatIssueRequest, expect.objectContaining({
+        orderNo: null,
+        processCode: 'P10',
+      }));
+      const orderRows = (queryRunner.manager.create as jest.Mock).mock.calls
+        .filter(([entity]) => entity === MatIssueRequestItemOrder)
+        .map(([, value]) => [value.itemSeq, value.orderNo, value.requestQty]);
+      expect(orderRows).toEqual([
+        [1, 'WO-A', 4],
+        [1, 'WO-B', 10],
+        [2, 'WO-A', 3],
+      ]);
+    });
+
+    it('묶을 작업지시·품목에 진행 중인 1:1 요청이 있으면 묶음 생성을 차단한다', async () => {
+      jobOrderRepo.find.mockResolvedValue([
+        jo({ orderNo: 'WO-A', processCode: 'P10', planDate: new Date(2026, 9, 1) }),
+        jo({ orderNo: 'WO-B', processCode: 'P10', planDate: new Date(2026, 9, 2) }),
+      ]);
+      requestRepo.find.mockResolvedValue([
+        { requestNo: 'REQ-1TO1', orderNo: 'WO-B', status: 'APPROVED', company: 'C1', plant: 'P1' } as MatIssueRequest,
+      ]);
+      requestItemRepo.find.mockResolvedValue([{ requestId: 'REQ-1TO1', seq: 1, itemCode: 'RM-001' } as MatIssueRequestItem]);
+
+      await expect(service.create({
+        orderNos: ['WO-A', 'WO-B'],
+        items: [{ itemCode: 'RM-001', requestQty: 5, unit: 'EA', orders: [{ orderNo: 'WO-B', requestQty: 5 }] }],
+      } as any, 'C1', 'P1')).rejects.toThrow('WO-B/RM-001');
+      expect(numbering.next).not.toHaveBeenCalled();
+    });
+
+    it('1:1 요청도 진행 중인 묶음 요청에 같은 작업지시·품목이 있으면 차단한다', async () => {
+      requestRepo.find
+        .mockResolvedValueOnce([]) // 1:1 헤더 조회
+        .mockResolvedValueOnce([{ requestNo: 'REQ-B1', orderNo: null, status: 'REQUESTED', company: 'C1', plant: 'P1' } as MatIssueRequest]);
+      itemOrderRepo.find.mockResolvedValue([
+        { requestId: 'REQ-B1', itemSeq: 1, orderNo: 'WO-A', requestQty: 4, issuedQty: 0 } as MatIssueRequestItemOrder,
+      ]);
+      requestItemRepo.find.mockResolvedValue([{ requestId: 'REQ-B1', seq: 1, itemCode: 'RM-001' } as MatIssueRequestItem]);
+
+      await expect(service.create({
+        orderNo: 'WO-A',
+        items: [{ itemCode: 'RM-001', requestQty: 5, unit: 'EA' }],
+      } as any, 'C1', 'P1')).rejects.toThrow('WO-A/RM-001');
+    });
+
+    it('출고 시 작업지시별 배분 결과로 MAT_ISSUES 행을 작업지시마다 나눈다(LOT 하나가 두 작업지시에 걸침)', async () => {
+      requestRepo.findOne.mockResolvedValue({
+        requestNo: 'REQ-B1', status: 'APPROVED', orderNo: null, processCode: 'P10', issueType: 'PRODUCTION', company: 'C1', plant: 'P1',
+      } as MatIssueRequest);
+      (matIssueService as any).createInTx = jest.fn().mockResolvedValue([]);
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-B1', seq: 1, itemCode: 'RM-001', requestQty: 14, issuedQty: 0 } as MatIssueRequestItem,
+      ]);
+      queryRunner.manager.find.mockImplementation(async (entity: unknown) => (
+        entity === MatLot
+          ? [{ matUid: 'MAT-001', itemCode: 'RM-001' } as MatLot]
+          : [{ requestId: 'REQ-B1', seq: 1, itemCode: 'RM-001', requestQty: 14, issuedQty: 10 } as MatIssueRequestItem]
+      ) as any);
+      allocation.allocateToItemOrdersInTx.mockResolvedValue([[{ orderNo: 'WO-A', qty: 4 }, { orderNo: 'WO-B', qty: 6 }]]);
+
+      await service.issueFromRequest('REQ-B1', {
+        issueType: 'PRODUCTION',
+        items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 10 }],
+      } as any, 'C1', 'P1');
+
+      expect(allocation.allocateToItemOrdersInTx).toHaveBeenCalledWith(queryRunner, 'REQ-B1', [{ seq: 1, qty: 10 }], 'C1', 'P1');
+      expect((matIssueService as any).createInTx).toHaveBeenCalledWith(queryRunner, expect.objectContaining({
+        orderNo: undefined,
+        processCode: 'P10',
+        items: [
+          { matUid: 'MAT-001', issueQty: 4, orderNo: 'WO-A' },
+          { matUid: 'MAT-001', issueQty: 6, orderNo: 'WO-B' },
+        ],
+      }), 'C1', 'P1');
     });
   });
 });
