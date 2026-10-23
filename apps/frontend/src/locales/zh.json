@@ -1980,6 +1980,18 @@
       }
     },
     "worker": {
+      "printLabel": "发行识别标签",
+      "selectWorkerForLabel": "请选择要发行标签的作业员。",
+      "labelPrintModalTitle": "发行作业员识别标签",
+      "labelTemplate": "标签模板",
+      "labelDefaultDesign": "默认设计",
+      "labelSize": "标签尺寸 {{width}} × {{height}} mm",
+      "labelPrintCount": "打印 {{count}} 张",
+      "labelPrinting": "打印中",
+      "labelPrintTitle": "作业员标签",
+      "labelPrepareFailed": "无法准备作业员标签打印画面。",
+      "labelPrintSent": "已将 {{count}} 张作业员标签发送到打印机。",
+      "labelPrintError": "打印作业员标签时发生错误。",
       "title": "作业员管理",
       "email": "邮箱",
       "emptyMessage": "无已登记的作业者。",

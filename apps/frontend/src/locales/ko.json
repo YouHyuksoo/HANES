@@ -2498,6 +2498,18 @@
       }
     },
     "worker": {
+      "printLabel": "인식 라벨 발행",
+      "selectWorkerForLabel": "라벨을 발행할 작업자를 선택하세요.",
+      "labelPrintModalTitle": "작업자 인식 라벨 발행",
+      "labelTemplate": "라벨 템플릿",
+      "labelDefaultDesign": "기본 디자인",
+      "labelSize": "라벨 크기 {{width}} × {{height}} mm",
+      "labelPrintCount": "{{count}}건 출력",
+      "labelPrinting": "출력중",
+      "labelPrintTitle": "작업자 라벨",
+      "labelPrepareFailed": "작업자 라벨 출력 화면을 준비하지 못했습니다.",
+      "labelPrintSent": "작업자 라벨 {{count}}건을 프린터로 전송했습니다.",
+      "labelPrintError": "작업자 라벨 출력 중 오류가 발생했습니다.",
       "title": "작업자관리",
       "email": "이메일",
       "emptyMessage": "등록된 작업자가 없습니다.",

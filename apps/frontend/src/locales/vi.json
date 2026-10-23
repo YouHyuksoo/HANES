@@ -1980,6 +1980,18 @@
       }
     },
     "worker": {
+      "printLabel": "Phát hành nhãn nhận diện",
+      "selectWorkerForLabel": "Hãy chọn công nhân cần phát hành nhãn.",
+      "labelPrintModalTitle": "Phát hành nhãn nhận diện công nhân",
+      "labelTemplate": "Mẫu nhãn",
+      "labelDefaultDesign": "Thiết kế mặc định",
+      "labelSize": "Kích thước nhãn {{width}} × {{height}} mm",
+      "labelPrintCount": "In {{count}} nhãn",
+      "labelPrinting": "Đang in",
+      "labelPrintTitle": "Nhãn công nhân",
+      "labelPrepareFailed": "Không thể chuẩn bị màn hình in nhãn công nhân.",
+      "labelPrintSent": "Đã gửi {{count}} nhãn công nhân đến máy in.",
+      "labelPrintError": "Đã xảy ra lỗi khi in nhãn công nhân.",
       "title": "Quản lý công nhân",
       "email": "Email",
       "emptyMessage": "Chưa có công nhân nào.",

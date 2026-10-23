@@ -1980,6 +1980,18 @@
       }
     },
     "worker": {
+      "printLabel": "Issue ID Label",
+      "selectWorkerForLabel": "Select workers to issue labels for.",
+      "labelPrintModalTitle": "Issue Worker ID Labels",
+      "labelTemplate": "Label Template",
+      "labelDefaultDesign": "Default Design",
+      "labelSize": "Label size {{width}} × {{height}} mm",
+      "labelPrintCount": "Print {{count}}",
+      "labelPrinting": "Printing",
+      "labelPrintTitle": "Worker Label",
+      "labelPrepareFailed": "Failed to prepare the worker label print view.",
+      "labelPrintSent": "Sent {{count}} worker label(s) to the printer.",
+      "labelPrintError": "An error occurred while printing worker labels.",
       "title": "Worker Management",
       "email": "Email",
       "emptyMessage": "No workers registered.",

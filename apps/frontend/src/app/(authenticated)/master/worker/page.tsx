@@ -12,7 +12,7 @@
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, RefreshCw, Users, Search } from "lucide-react";
+import { Plus, Printer, RefreshCw, Users, Search } from "lucide-react";
 import { Card, CardContent, Button, Input, ConfirmModal } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import DataGrid from "@/components/data-grid/DataGrid";
@@ -21,6 +21,7 @@ import { api } from "@/services/api";
 import { usePageAiTools } from "@/ai-page-tools/usePageAiTools";
 import { useUnsavedGuard } from "@/hooks/useUnsavedGuard";
 import WorkerFormPanel from "./components/WorkerFormPanel";
+import WorkerLabelPrintModal from "./components/WorkerLabelPrintModal";
 import { createWorkerGridColumns } from "./workerColumns";
 
 export default function WorkerPage() {
@@ -34,6 +35,8 @@ export default function WorkerPage() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Worker | null>(null);
+  const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
+  const [labelTargets, setLabelTargets] = useState<Worker[] | null>(null);
   const panelAnimateRef = useRef(true);
   const { markDirty, guard, guardModalProps } = useUnsavedGuard();
 
@@ -83,11 +86,45 @@ export default function WorkerPage() {
     guard(() => { panelAnimateRef.current = !isPanelOpen; setEditingWorker(null); setIsPanelOpen(true); });
   }, [guard, isPanelOpen]);
 
+  // 조회 결과가 바뀌면 화면에 없는 작업자는 선택에서 뺀다
+  useEffect(() => {
+    setSelectedCodes((prev) => {
+      const visible = new Set(workers.map((w) => w.workerCode));
+      const next = new Set(Array.from(prev).filter((code) => visible.has(code)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [workers]);
+
+  const toggleAll = useCallback((checked: boolean) => {
+    setSelectedCodes(checked ? new Set(workers.map((w) => w.workerCode)) : new Set());
+  }, [workers]);
+
+  const toggleItem = useCallback((workerCode: string) => {
+    setSelectedCodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(workerCode)) next.delete(workerCode);
+      else next.add(workerCode);
+      return next;
+    });
+  }, []);
+
+  const allSelected = workers.length > 0 && workers.every((w) => selectedCodes.has(w.workerCode));
+
+  const openLabelPrint = useCallback(() => {
+    const targets = workers.filter((w) => selectedCodes.has(w.workerCode));
+    if (targets.length > 0) setLabelTargets(targets);
+  }, [workers, selectedCodes]);
+
   const columns = useMemo(() => createWorkerGridColumns({
     t,
     onEditWorker: openEdit,
     onDeleteWorker: setDeleteTarget,
-  }), [t, openEdit]);
+    onPrintLabel: (worker) => setLabelTargets([worker]),
+    allSelected,
+    selectedCodes,
+    toggleAll,
+    toggleItem,
+  }), [t, openEdit, allSelected, selectedCodes, toggleAll, toggleItem]);
 
   return (
     <div className="flex h-full animate-fade-in">
@@ -102,6 +139,12 @@ export default function WorkerPage() {
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={fetchData}>
               <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} />{t("common.refresh")}
+            </Button>
+            <Button variant="secondary" size="sm" onClick={openLabelPrint}
+              disabled={selectedCodes.size === 0}
+              disabledReason={t("master.worker.selectWorkerForLabel", "라벨을 발행할 작업자를 선택하세요.")}>
+              <Printer className="w-4 h-4 mr-1" />
+              {t("master.worker.printLabel", "인식 라벨 발행")}{selectedCodes.size > 0 ? ` (${selectedCodes.size})` : ""}
             </Button>
             <Button size="sm" onClick={openCreate}>
               <Plus className="w-4 h-4 mr-1" />{t("master.worker.addWorker", "작업자 추가")}
@@ -149,6 +192,12 @@ export default function WorkerPage() {
           onDirtyChange={markDirty}
         />
       )}
+
+      <WorkerLabelPrintModal
+        isOpen={!!labelTargets}
+        workers={labelTargets ?? []}
+        onClose={() => setLabelTargets(null)}
+      />
 
       <ConfirmModal {...guardModalProps} />
 

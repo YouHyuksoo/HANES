@@ -1,7 +1,7 @@
 "use client";
 
 import type { TFunction } from "i18next";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2, Printer, Trash2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { WorkerAvatar } from "@/components/worker/WorkerSelector";
 import { Worker } from "./types";
@@ -10,21 +10,52 @@ interface CreateWorkerGridColumnsOptions {
   t: TFunction;
   onEditWorker: (worker: Worker) => void;
   onDeleteWorker: (worker: Worker) => void;
+  onPrintLabel: (worker: Worker) => void;
+  allSelected: boolean;
+  selectedCodes: Set<string>;
+  toggleAll: (checked: boolean) => void;
+  toggleItem: (workerCode: string) => void;
 }
 
 export function createWorkerGridColumns({
   t,
   onEditWorker,
   onDeleteWorker,
+  onPrintLabel,
+  allSelected,
+  selectedCodes,
+  toggleAll,
+  toggleItem,
 }: CreateWorkerGridColumnsOptions): ColumnDef<Worker>[] {
   return [
     {
-      id: "actions", header: t("common.actions"), size: 80,
+      id: "select", size: 40,
+      meta: { align: "center" as const, filterType: "none" as const },
+      header: () => (
+        <input type="checkbox" checked={allSelected}
+          aria-label={t("common.selectAll", "전체 선택")}
+          onChange={(e) => toggleAll(e.target.checked)}
+          className="w-4 h-4 accent-primary" />
+      ),
+      cell: ({ row }) => (
+        <input type="checkbox"
+          checked={selectedCodes.has(row.original.workerCode)}
+          onClick={(e) => e.stopPropagation()}
+          onChange={() => toggleItem(row.original.workerCode)}
+          className="w-4 h-4 accent-primary" />
+      ),
+    },
+    {
+      id: "actions", header: t("common.actions"), size: 100,
       meta: { align: "center" as const, filterType: "none" as const },
       cell: ({ row }) => (
         <div className="flex gap-1">
           <button onClick={(e) => { e.stopPropagation(); onEditWorker(row.original); }} className="p-1 hover:bg-surface rounded">
             <Edit2 className="w-4 h-4 text-primary" />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); onPrintLabel(row.original); }} className="p-1 hover:bg-surface rounded"
+            title={t("master.worker.printLabel", "인식 라벨 발행")}>
+            <Printer className="w-4 h-4 text-text-muted" />
           </button>
           <button onClick={(e) => { e.stopPropagation(); onDeleteWorker(row.original); }} className="p-1 hover:bg-surface rounded">
             <Trash2 className="w-4 h-4 text-red-500" />

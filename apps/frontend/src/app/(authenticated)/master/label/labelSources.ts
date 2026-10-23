@@ -47,8 +47,11 @@ export const labelSources: Record<LabelSourceTable, LabelSourceDefinition> = {
     fields: [
       { key: "workerCode", label: "작업자코드", sample: "WK-001" },
       { key: "workerName", label: "작업자명", sample: "오지훈" },
+      { key: "engName", label: "영문명", sample: "OH JIHOON" },
       { key: "dept", label: "부서", sample: "생산팀" },
+      { key: "position", label: "직급", sample: "사원" },
       { key: "phone", label: "연락처", sample: "010-0000-0000" },
+      { key: "qrCode", label: "QR코드", sample: "QR-WK-001" },
     ],
   },
   mat_lot: {
