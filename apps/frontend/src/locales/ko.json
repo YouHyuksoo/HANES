@@ -3483,6 +3483,7 @@
         "todayReceivedQty": "금일 입고수량"
       },
       "col": {
+        "blNo": "BL 번호",
         "receiveNo": "입고번호",
         "recvDate": "입하일자",
         "initQty": "초기수량",
@@ -3512,6 +3513,14 @@
       "scanLocation": "로케이션 바코드 스캔",
       "noLocation": "선택한 창고에 등록된 로케이션이 없습니다. 바코드로 직접 스캔하거나 창고관리에서 로케이션을 등록하세요.",
       "scan": {
+        "mode": "스캔 방식",
+        "modeVendor": "업체LOT",
+        "modeBl": "BL",
+        "blChange": "BL 변경",
+        "blPlaceholder": "BL 번호",
+        "blHint": "BL 번호를 스캔하세요. 이어서 찍는 자재는 모두 이 BL 로 입고됩니다.",
+        "blOwnHint": "BL {{blNo}} 로 입고할 자체부착 바코드를 연속으로 스캔하세요.",
+        "vendorOrBl": "업체바코드 / BL",
         "selectLocation": "적재위치를 선택하거나 스캔해 주세요.",
         "notReceivable": "입고대기 대상이 아닙니다: {{matUid}}",
         "alreadyScanned": "이미 스캔한 자체바코드입니다: {{matUid}}",

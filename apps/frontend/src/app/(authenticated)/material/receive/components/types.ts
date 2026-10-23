@@ -54,6 +54,7 @@ export interface ReceivableLot {
 /** 입고 이력 레코드 */
 export interface ReceivingRecord {
   vendorBarcode?: string | null;
+  blNo?: string | null;
   id: string;
   receiveNo?: string;
   transNo: string;
@@ -92,4 +93,6 @@ export interface ReceivingStats {
 export interface ReceiveScanPair {
   vendorBarcode: string;
   matUid: string;
+  /** BL 방식 입고일 때 한 번 찍은 BL 번호(여러 자재가 공유) */
+  blNo?: string;
 }

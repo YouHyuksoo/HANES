@@ -500,12 +500,15 @@ describe('ReceivingService', () => {
 
     await target.createBulkReceive({
       workerId: 'user',
-      items: [{ matUid: 'MAT-001', qty: 5, warehouseCode: 'MAIN-WH' }],
+      // BL 방식 입고: 업체바코드 없이 BL 번호만 싣는다
+      items: [{ matUid: 'MAT-001', qty: 5, warehouseCode: 'MAIN-WH', blNo: ' BL-001 ' }],
     } as any, 'CO', 'P01');
 
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({
       receiveNo: 'RCV-001',
       warehouseCode: 'MAIN-WH',
+      vendorBarcode: null,
+      blNo: 'BL-001',
     }));
     expect(manager.save).toHaveBeenCalledWith(expect.objectContaining({
       transNo: 'TX-001',

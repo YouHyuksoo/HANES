@@ -32,6 +32,7 @@ export default function ReceivingHistoryTable({ data, isLoading, toolbarLeft }: 
     },
     { id: 'matUid', header: t('material.col.matUid'), size: 150, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.lot?.matUid || '-' },
     { accessorKey: 'vendorBarcode', header: t('material.receive.col.vendorBarcode', '거래처 바코드'), size: 180, meta: { filterType: 'text' as const }, cell: ({ getValue }) => (getValue() as string) || '-' },
+    { accessorKey: 'blNo', header: t('material.receive.col.blNo', 'BL 번호'), size: 150, meta: { filterType: 'text' as const }, cell: ({ getValue }) => (getValue() as string) || '-' },
     { id: 'poNo', header: t('material.arrival.col.poNo'), size: 120, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.lot?.poNo || '-' },
     { id: 'partCode', header: t('common.partCode'), size: 100, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.itemCode },
     { id: 'partName', header: t('common.partName'), size: 130, meta: { filterType: "text" as const }, cell: ({ row }) => row.original.part?.itemName },

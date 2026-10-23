@@ -5,8 +5,13 @@
  * @description 우측 스캔 입고 패널 — ReceiveScanModal을 우측 고정 패널로 변환
  *
  * 레이아웃:
- *   상단(고정): 창고·위치 선택 + 스캔 입력 + 단계 안내 + 에러 + 입고처리 버튼
+ *   상단(고정): 창고·위치 선택 + 스캔 방식 + 스캔 입력 + 단계 안내 + 에러 + 입고처리 버튼
  *   하단(스크롤): 스캔 매핑 목록 테이블
+ *
+ * 스캔 방식(화면에서 고른다, 기본 업체LOT):
+ *   업체LOT: 자체바코드 → 업체바코드를 1:1 로 짝짓는다(업체바코드는 한 LOT 에만 쓸 수 있다).
+ *   BL     : BL 번호를 한 번 찍고, 이어서 자체바코드만 연속으로 찍는다. 찍은 자재는 모두 그 BL 로 입고된다.
+ *            [BL 변경]을 누르면 다음 BL 을 찍는다. BL 은 업체바코드가 아니라 BL_NO 로 저장된다.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -26,7 +31,8 @@ interface ReceiveScanPanelProps {
   onSuccess: () => void;
 }
 
-type ScanPhase = "vendor" | "own";
+type ScanPhase = "vendor" | "own" | "bl";
+type ScanMode = "vendor" | "bl";
 
 export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanPanelProps) {
   const { t } = useTranslation();
@@ -36,6 +42,8 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
   const [input, setInput] = useState("");
   const [pendingMatUid, setPendingMatUid] = useState("");
   const [pairs, setPairs] = useState<ReceiveScanPair[]>([]);
+  const [scanMode, setScanMode] = useState<ScanMode>("vendor");
+  const [currentBlNo, setCurrentBlNo] = useState("");
   const [warehouseCode, setWarehouseCode] = useState("");
   const [autoLocation, setAutoLocation] = useState(true);
   const [locationCode, setLocationCode] = useState("");
@@ -104,14 +112,52 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
         focusInput();
         return;
       }
+      // BL 방식: 업체바코드 단계 없이 현재 BL 로 바로 목록에 넣는다
+      if (scanMode === "bl") {
+        setPairs((prev) => [{ vendorBarcode: "", matUid, blNo: currentBlNo }, ...prev]);
+        setInput("");
+        setError("");
+        focusInput();
+        return;
+      }
       setPendingMatUid(matUid);
       setPhase("vendor");
       setInput("");
       setError("");
       focusInput();
     },
-    [focusInput, receivableByUid, scannedOwnBarcodes, t],
+    [currentBlNo, focusInput, receivableByUid, scanMode, scannedOwnBarcodes, t],
   );
+
+  const handleBlScan = useCallback(
+    (blNo: string) => {
+      setCurrentBlNo(blNo);
+      setPhase("own");
+      setInput("");
+      setError("");
+      focusInput();
+    },
+    [focusInput],
+  );
+
+  const changeScanMode = useCallback(
+    (mode: ScanMode) => {
+      setScanMode(mode);
+      setPendingMatUid("");
+      setInput("");
+      setError("");
+      setPhase(mode === "bl" && !currentBlNo ? "bl" : "own");
+      focusInput();
+    },
+    [currentBlNo, focusInput],
+  );
+
+  const requestBlChange = useCallback(() => {
+    setPhase("bl");
+    setInput("");
+    setError("");
+    focusInput();
+  }, [focusInput]);
 
   const handleVendorScan = useCallback(
     (barcode: string) => {
@@ -141,9 +187,10 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
   const handleScan = useCallback((rawBarcode?: string) => {
     const barcode = (rawBarcode ?? input).replace(/\r?\n|\r/g, "").trim();
     if (!barcode) return;
-    if (phase === "own") handleOwnScan(barcode);
+    if (phase === "bl") handleBlScan(barcode);
+    else if (phase === "own") handleOwnScan(barcode);
     else handleVendorScan(barcode);
-  }, [handleOwnScan, handleVendorScan, input, phase]);
+  }, [handleBlScan, handleOwnScan, handleVendorScan, input, phase]);
 
   const removePair = useCallback(
     (matUid: string) => {
@@ -155,11 +202,11 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
 
   const resetPending = useCallback(() => {
     setPendingMatUid("");
-    setPhase("own");
+    setPhase(scanMode === "bl" && !currentBlNo ? "bl" : "own");
     setInput("");
     setError("");
     focusInput();
-  }, [focusInput]);
+  }, [currentBlNo, focusInput, scanMode]);
 
   const handleReceive = useCallback(async () => {
     if (pairs.length === 0) return;
@@ -185,14 +232,17 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
               matUid: pair.matUid,
               qty: lot?.remainingQty || 0,
               warehouseId: warehouseCode,
-              vendorBarcode: pair.vendorBarcode,
+              vendorBarcode: pair.vendorBarcode || undefined,
+              blNo: pair.blNo || undefined,
               ...(manualLocation ? { locationCode: manualLocation } : {}),
             };
           }),
       });
       // 입고 완료 후 초기화
       setPairs([]);
-      setPhase("own");
+      // BL 방식이면 다음 입고는 새 BL 부터 찍는다
+      setCurrentBlNo("");
+      setPhase(scanMode === "bl" ? "bl" : "own");
       setPendingMatUid("");
       setInput("");
       onSuccess();
@@ -202,18 +252,22 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
     } finally {
       setSaving(false);
     }
-  }, [autoLocation, focusInput, locationCode, onSuccess, pairs, receivableByUid, t, warehouseCode]);
+  }, [autoLocation, focusInput, locationCode, onSuccess, pairs, receivableByUid, scanMode, t, warehouseCode]);
 
-  const phaseTitle =
-    phase === "own"
-      ? t("material.receive.scan.ownTitle", "자재 바코드 스캔")
-      : t("material.receive.scan.vendorTitle", "거래처 바코드 스캔");
   const phaseHint =
-    phase === "own"
-      ? t("material.receive.scan.ownHint", "자체부착 바코드(자재 시리얼)를 먼저 스캔하세요.")
-      : t("material.receive.scan.vendorHint", "{{matUid}}에 매핑할 거래처 바코드를 스캔하세요.", {
-          matUid: pendingMatUid,
-        });
+    phase === "bl"
+      ? t("material.receive.scan.blHint", "BL 번호를 스캔하세요. 이어서 찍는 자재는 모두 이 BL 로 입고됩니다.")
+      : phase === "vendor"
+        ? t("material.receive.scan.vendorHint", "{{matUid}}에 매핑할 거래처 바코드를 스캔하세요.", {
+            matUid: pendingMatUid,
+          })
+        : scanMode === "bl"
+          ? t("material.receive.scan.blOwnHint", "BL {{blNo}} 로 입고할 자체부착 바코드를 연속으로 스캔하세요.", { blNo: currentBlNo })
+          : t("material.receive.scan.ownHint", "자체부착 바코드(자재 시리얼)를 먼저 스캔하세요.");
+  const scanModes: Array<{ value: ScanMode; label: string }> = [
+    { value: "vendor", label: t("material.receive.scan.modeVendor", "업체LOT") },
+    { value: "bl", label: t("material.receive.scan.modeBl", "BL") },
+  ];
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -286,6 +340,39 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
           )}
         </div>
 
+        {/* 스캔 방식: 업체LOT(1:1) / BL(한 번 찍고 여러 자재) */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-text-muted whitespace-nowrap w-14 flex-shrink-0">
+            {t("material.receive.scan.mode", "스캔 방식")}
+          </span>
+          <div className="flex rounded border border-border p-0.5" role="radiogroup" aria-label={t("material.receive.scan.mode", "스캔 방식")}>
+            {scanModes.map((mode) => (
+              <button
+                key={mode.value}
+                type="button"
+                role="radio"
+                aria-checked={scanMode === mode.value}
+                data-testid={`receive-scan-mode-${mode.value}`}
+                onClick={() => changeScanMode(mode.value)}
+                className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+                  scanMode === mode.value ? "bg-primary text-white" : "text-text-muted hover:text-text"
+                }`}
+              >
+                {mode.label}
+              </button>
+            ))}
+          </div>
+          {scanMode === "bl" && currentBlNo && (
+            <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 text-xs">
+              <span className="text-text-muted">BL</span>
+              <span className="truncate font-mono font-semibold text-primary" title={currentBlNo}>{currentBlNo}</span>
+              <button type="button" onClick={requestBlChange} className="shrink-0 text-primary hover:underline" data-testid="receive-scan-bl-change">
+                {t("material.receive.scan.blChange", "BL 변경")}
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* 스캔 입력 */}
         <div className="space-y-1">
           <p className="text-xs text-text-muted">{phaseHint}</p>
@@ -297,11 +384,13 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
                 onChange={setInput}
                 onScan={handleScan}
                 placeholder={
-                  phase === "own"
-                    ? t("material.receive.scan.ownPlaceholder", "자체부착 바코드")
-                    : t("material.receive.scan.vendorPlaceholder", "거래처 바코드")
+                  phase === "bl"
+                    ? t("material.receive.scan.blPlaceholder", "BL 번호")
+                    : phase === "own"
+                      ? t("material.receive.scan.ownPlaceholder", "자체부착 바코드")
+                      : t("material.receive.scan.vendorPlaceholder", "거래처 바코드")
                 }
-                className={`h-9 text-sm ${phase === "vendor" ? "border-primary" : ""}`}
+                className={`h-9 text-sm ${phase !== "own" ? "border-primary" : ""}`}
                 fullWidth
               />
             </div>
@@ -362,7 +451,7 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
             <thead className="bg-muted dark:bg-slate-800 sticky top-8 z-10 text-left text-text-muted">
               <tr>
                 <th className="px-2.5 py-1.5">{t("material.receive.scan.ownBarcode", "자체바코드")}</th>
-                <th className="px-2.5 py-1.5">{t("material.receive.scan.vendorBarcode", "업체바코드")}</th>
+                <th className="px-2.5 py-1.5">{t("material.receive.scan.vendorOrBl", "업체바코드 / BL")}</th>
                 <th className="px-2.5 py-1.5">{t("common.partCode", "품번")}</th>
                 <th className="px-2.5 py-1.5 text-right">{t("material.receive.col.inputQty", "수량")}</th>
                 <th className="w-8 px-2.5 py-1.5" />
@@ -379,9 +468,9 @@ export default function ReceiveScanPanel({ receivable, onSuccess }: ReceiveScanP
                     <td
                       className="px-2.5 py-1.5 font-mono truncate max-w-0"
                       style={{ maxWidth: 150 }}
-                      title={pair.vendorBarcode || undefined}
+                      title={pair.vendorBarcode || pair.blNo || undefined}
                     >
-                      {pair.vendorBarcode || "-"}
+                      {pair.blNo ? <><span className="text-text-muted">BL </span>{pair.blNo}</> : pair.vendorBarcode || "-"}
                     </td>
                     <td className="px-2.5 py-1.5 truncate max-w-0" style={{ maxWidth: 110 }}>
                       {lot?.part?.itemCode || lot?.itemCode || "-"}

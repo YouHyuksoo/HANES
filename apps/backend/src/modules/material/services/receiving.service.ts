@@ -576,6 +576,7 @@ export class ReceivingService {
           qty: item.qty,
           warehouseCode: receiveWarehouseCode,
           vendorBarcode: item.vendorBarcode?.trim() || null,
+          blNo: item.blNo?.trim() || null,
           workerId: dto.workerId,
           remark: item.remark,
           status: 'DONE',
@@ -656,7 +657,7 @@ export class ReceivingService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(r.receiveNo LIKE :search OR r.itemCode IN (SELECT item_code FROM item_masters WHERE item_code LIKE :search OR item_name LIKE :search))',
+        '(r.receiveNo LIKE :search OR r.blNo LIKE :search OR r.vendorBarcode LIKE :search OR r.itemCode IN (SELECT item_code FROM item_masters WHERE item_code LIKE :search OR item_name LIKE :search))',
         { search: `%${search}%` },
       );
     }
@@ -726,6 +727,7 @@ export class ReceivingService {
       return {
         receiveNo: item.receiveNo,
         vendorBarcode: item.vendorBarcode ?? null,
+        blNo: item.blNo ?? null,
         seq: item.seq,
         transNo: item.receiveNo,
         transDate: item.receiveDate,

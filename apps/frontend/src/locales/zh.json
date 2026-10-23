@@ -2948,6 +2948,7 @@
         "todayReceivedQty": "今日入库数量"
       },
       "col": {
+        "blNo": "BL 号",
         "receiveNo": "入库编号",
         "recvDate": "到货日期",
         "initQty": "初始数量",
@@ -2970,6 +2971,14 @@
       "scanLocation": "扫描库位条码",
       "noLocation": "所选仓库未登记库位。请直接扫描条码，或在仓库管理中登记库位。",
       "scan": {
+        "mode": "扫描方式",
+        "modeVendor": "供应商LOT",
+        "modeBl": "BL",
+        "blChange": "更换BL",
+        "blPlaceholder": "BL 号",
+        "blHint": "请扫描 BL 号。之后扫描的物料都按此 BL 入库。",
+        "blOwnHint": "请连续扫描要按 BL {{blNo}} 入库的自贴条码。",
+        "vendorOrBl": "供应商条码 / BL",
         "selectLocation": "请选择或扫描存储位置。",
         "notReceivable": "非待入库对象：{{matUid}}",
         "alreadyScanned": "已扫描的自有条码：{{matUid}}",

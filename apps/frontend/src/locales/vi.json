@@ -2948,6 +2948,7 @@
         "todayReceivedQty": "SL nhập hôm nay"
       },
       "col": {
+        "blNo": "Số BL",
         "receiveNo": "Số nhập kho",
         "recvDate": "Ngày nhập hàng",
         "initQty": "SL ban đầu",
@@ -2970,6 +2971,14 @@
       "scanLocation": "Quét mã vạch vị trí",
       "noLocation": "Kho đã chọn chưa có vị trí nào. Hãy quét mã vạch trực tiếp hoặc đăng ký vị trí trong Quản lý kho.",
       "scan": {
+        "mode": "Cách quét",
+        "modeVendor": "LOT nhà cung cấp",
+        "modeBl": "BL",
+        "blChange": "Đổi BL",
+        "blPlaceholder": "Số BL",
+        "blHint": "Hãy quét số BL. Các vật tư quét tiếp theo đều được nhập kho theo BL này.",
+        "blOwnHint": "Hãy quét liên tục mã vạch nội bộ cần nhập kho theo BL {{blNo}}.",
+        "vendorOrBl": "Mã vạch NCC / BL",
         "selectLocation": "Vui lòng chọn hoặc quét vị trí lưu trữ.",
         "notReceivable": "Không phải đối tượng chờ nhập kho: {{matUid}}",
         "alreadyScanned": "Mã vạch nội bộ đã quét: {{matUid}}",

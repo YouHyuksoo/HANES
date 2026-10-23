@@ -44,6 +44,10 @@ export class MatReceiving {
   @Column({ type: 'varchar2', name: 'VENDOR_BARCODE', length: 200, nullable: true })
   vendorBarcode: string | null;
 
+  /** BL(선하증권) 번호 — 입고 스캔 BL 방식. 여러 입고 행이 같은 값을 공유한다(업체 LOT 와 별개) */
+  @Column({ type: 'varchar2', name: 'BL_NO', length: 50, nullable: true })
+  blNo: string | null;
+
   @Column({ type: 'varchar2', name: 'ARRIVAL_NO', length: 50, nullable: true })
   arrivalNo: string | null;
 

@@ -48,6 +48,12 @@ export class ReceiveItemDto {
   @MaxLength(200)
   vendorBarcode?: string;
 
+  @ApiPropertyOptional({ description: 'BL 번호 — 입고 스캔 BL 방식(업체 LOT 대신 한 번 찍어 여러 자재에 공유)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  blNo?: string;
+
   @ApiPropertyOptional({ description: '비고' })
   @IsOptional()
   @IsString()

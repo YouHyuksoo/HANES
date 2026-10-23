@@ -2951,6 +2951,7 @@
         "todayReceivedQty": "Today Received Qty"
       },
       "col": {
+        "blNo": "BL No.",
         "receiveNo": "Receive No",
         "recvDate": "Arrival Date",
         "initQty": "Initial Qty",
@@ -2973,6 +2974,14 @@
       "scanLocation": "Scan location barcode",
       "noLocation": "No locations are registered for the selected warehouse. Scan a barcode directly or register locations in Warehouse Management.",
       "scan": {
+        "mode": "Scan mode",
+        "modeVendor": "Vendor LOT",
+        "modeBl": "BL",
+        "blChange": "Change BL",
+        "blPlaceholder": "BL No.",
+        "blHint": "Scan the BL number. All materials scanned next are received under this BL.",
+        "blOwnHint": "Scan the own barcodes to receive under BL {{blNo}}, one after another.",
+        "vendorOrBl": "Vendor barcode / BL",
         "selectLocation": "Please select or scan a storage location.",
         "notReceivable": "Not a pending-receipt item: {{matUid}}",
         "alreadyScanned": "Own barcode already scanned: {{matUid}}",
