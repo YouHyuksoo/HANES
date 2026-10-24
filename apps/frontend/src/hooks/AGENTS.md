@@ -2,7 +2,7 @@
 
 이 디렉터리 아래 파일을 다룰 때만 로드된다. 공통 규칙은 리포지토리 루트 `AGENTS.md`가 단일 출처다.
 
-같은 디렉터리의 `CLAUDE.md`와 내용이 동일하다. Claude Code는 `CLAUDE.md`를, 그 외 에이전트는 이 파일을 읽는다. **한쪽만 고치지 말고 두 파일을 같이 고친다.**
+이 폴더의 지침 파일은 이 `AGENTS.md` 하나다. Claude Code·Codex·Grok이 모두 이 파일을 읽는다.
 
 ## jsPDF + autotable 한글 폰트 (2026-06-17 기록)
 

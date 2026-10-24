@@ -1,12 +1,11 @@
 # AGENTS.md - HANES MES 프로젝트 지침
 
-이 문서는 HANES repo에서 작업하는 모든 AI agent가 먼저 따라야 하는 프로젝트 기준이다.
+이 문서는 HANES repo에서 작업하는 모든 AI 에이전트(Claude Code, Codex, Grok 등)가 먼저 따라야 하는 프로젝트 기준이다. 특정 도구에만 해당하는 내용은 `(Claude Code 전용)`처럼 표시한다.
 
 ## 1. 적용 범위와 우선순위
 
 - 이 파일은 `C:\Project\HANES` 프로젝트 전용 지침이다.
 - 현재 확인된 `AGENTS.md`는 프로젝트 파일 하나뿐이다. 전역/유저 `AGENTS.md`가 없으면 임의로 새로 만들지 않는다.
-- `CLAUDE.md`는 Claude Code용 보조 지침이다. 공통 규칙은 이 파일을 우선하고, Claude 전용 실행 방식만 `CLAUDE.md`에서 보충한다.
 - 사용자 직접 지시가 최우선이다. 그다음 이 `AGENTS.md`, 더 하위 디렉터리의 지침, 도구/스킬 지침 순서로 따른다.
 - 불확실하면 구현하지 말고 `.ai-coordination/TASKS.md`에 `BLOCKED`로 남기거나 사용자에게 확인한다.
 
@@ -43,6 +42,8 @@
 - 완료 작업은 `TASKS.md` 또는 `REVIEW_QUEUE.md`에서 제거하고 `ARCHIVE.md`에 한 줄만 남긴다.
 - `LOCKS.md`에는 현재 `active` 또는 `stale` 잠금만 둔다. 완료 이력을 `status: released`로 누적하지 않는다.
 - `.ai-coordination/` 문서는 한글로 기록한다. 기술 식별자, 경로, 테이블명, API 경로는 원문을 유지한다.
+- 협업 문서 변경과 기능 변경은 가능하면 별도 커밋으로 분리한다.
+- (Claude Code 전용) coordination이 켜져 있을 때 `LOCKS.md`에는 `owner: claude` 또는 실제 세션 이름으로 기록하고, 세션 종료 전 `.ai-coordination/HANDOFF/claude.md`를 갱신한다.
 
 ## 4. 프로젝트 기본 정보
 
@@ -64,6 +65,13 @@
 - 테이블/컬럼/PK/FK/CHECK/코드 도메인 등 DB 스키마 변경 시 `python tools/generate_db_schema_doc.py`를 실행해 `docs/database/schema-erd.md`를 함께 갱신한다.
 - 스키마 변경 PR/커밋 범위에는 migration SQL과 ERD 갱신을 같이 포함한다.
 
+### DB 접속 설정의 단일 출처
+
+- DB 접속 설정의 단일 출처는 `apps/backend/.env`(`.env.local` 우선)다.
+- 앱·마이그레이션 CLI·시드는 `src/database/oracle-env.ts`를 쓴다.
+- 파이썬 스크립트·ERD 생성기는 `tools/hanes_db.py`를 쓴다.
+- 새 스크립트에 접속값이나 사이트명을 직접 박지 않는다.
+
 ## 6. 코드와 UI 규칙
 
 - 화면 개발 시 검사수준, AQL, 검사구분, 단위, 상태, 라인, 설비, 공정, 품목, 거래처처럼 코드성/기준정보성 값은 자유입력보다 공통코드 또는 기준정보 선택 방식을 우선한다.
@@ -77,11 +85,35 @@
 - flex 스크롤 영역에는 `min-h-0`를 명시한다.
 - 정보카드가 운영 흐름에 필요 없다고 사용자가 말하면 restyle하지 말고 제거한다.
 
+### TypeScript 스타일
+
+- `catch (error: unknown)` 형태를 유지한다.
+- `as any` 사용을 피한다. (백엔드 eslint의 `no-explicit-any`는 off라서 기계적으로 강제되지 않는다.)
+
+### 프론트 신규 라우트 추가 시
+
+이 프로젝트는 탭 유지(`TabKeepAlive`)를 위해 Next 라우터 대신 `history.pushState` + 생성된 레지스트리로 페이지를 찾는다.
+
+- `app/(authenticated)/**/page.tsx`를 새로 만들면 `apps/frontend/src/components/layout/pageRegistry.generated.ts`에 등록돼야 한다.
+- 등록이 빠지면 **URL과 탭은 바뀌는데 본문이 직전 화면 그대로 남는다.** 에러도 안 난다.
+- `predev`/`prebuild`에 걸려 있어 dev 서버를 재시작하면 자동 생성된다. dev 서버를 띄운 채 라우트를 추가했다면 직접 실행한다.
+
+```powershell
+node apps/frontend/scripts/gen-page-registry.mjs
+```
+
 ## 7. 검증 규칙
 
 - 수정 범위에 맞는 focused test와 typecheck를 우선한다.
 - 기본 frontend typecheck: `pnpm.cmd --filter @harness/frontend exec tsc --noEmit --pretty false`
 - 기본 backend typecheck: `pnpm.cmd --filter @harness/backend exec tsc --noEmit --pretty false`
+- 위 typecheck 명령 대신 아래 축약형을 써도 된다. 결과는 동일하다.
+
+```powershell
+pnpm.cmd run typecheck:frontend
+pnpm.cmd run typecheck:backend
+```
+
 - 개발 서버가 이미 떠 있으면 `pnpm build`를 실행하지 않는다. dev 서버 중 production build는 `.next` 캐시를 손상시킬 수 있다.
 - `pnpm build`는 사용자가 요청했거나, dev 서버가 없고 전체 빌드 검증이 필요한 경우에만 실행한다.
 - HANES 프론트 검증은 기본 포트 `3002`를 사용한다. 예상 포트/서버/라우트가 unavailable이면 임의 대체 포트를 띄우지 말고 실패를 보고한다.
@@ -89,7 +121,18 @@
 - 현장 개선요청/이슈를 `처리됨(DONE)`으로 표시하려면 수정 커밋 해시, 테스트 근거(spec 경로 또는 실행 결과), 배포 SHA 3개가 모두 있어야 한다. 개선요청 화면(IMPR_REQUESTS.FIX_COMMIT/FIX_TEST/DEPLOY_SHA)과 shared `missingImprDoneEvidence`가 이를 강제한다. 코드만 커밋하고 배포 전인 건은 `IN_PROGRESS`로 둔다.
 - 트랜잭션 불변식(작업지시 집계=실적 합계, 생산출고=공정재고 적재, 공정재고 잔량=원장, 출고요청 상태=배분, DB 메뉴코드=검증기)은 기준정보검증 화면 `TXN_INVARIANT` 카테고리와 스케줄러 잡 `MST_VALIDATION_DAILY`가 검사한다. 같은 사실을 두 곳에 쓰는 구조를 새로 만들면 규칙을 `txn-invariant.rules.ts`에 1건 추가한다.
 
-## 8. 리뷰와 판단 규칙
+## 8. 브라우저 자동화
+
+- 브라우저 자동화는 **`aside`를 기본으로 사용한다.** 사용자의 기존 브라우저 세션에 붙어 HANES 로그인 상태를 유지한 채 화면을 조작·캡처할 수 있다.
+- 아래 MCP 도구명은 Claude Code 기준이다. 다른 도구는 해당 환경의 `aside` 연결 방식을 쓴다.
+- `mcp__aside__repl`이 기본이다. Playwright API + `page`, `snapshot(page)`, `listBrowserTabs()`, `attachBrowserTab(targetId)`를 쓴다.
+  - 열려 있는 HANES 탭을 찾을 때는 `listBrowserTabs()` → `attachBrowserTab(targetId)` 순서로 붙는다. 새 탭을 함부로 열지 않는다.
+  - `page.waitForTimeout()`은 이 환경에 없다. `await new Promise(r => setTimeout(r, ms))`를 쓴다.
+  - REPL은 단일 영속 스코프다. 호출마다 **변수명을 새로 짓는다**(같은 이름 재선언 시 에러).
+- 탐색·다단계 조작을 맡길 때는 `mcp__aside__exec`를 쓴다.
+- `claude-in-chrome`은 쓰지 않는다. `chrome-devtools`는 lighthouse 감사, heap snapshot, 정밀 퍼포먼스 트레이스 등 `aside`에 없는 devtools 전용 기능이 필요할 때만 예외적으로 사용한다.
+
+## 9. 리뷰와 판단 규칙
 
 - 코드 리뷰나 현재 코드 판단 전 `git log --oneline -3`으로 HEAD를 확인한다.
 - 이전 세션에서 읽은 파일 내용을 현재 상태로 가정하지 않는다. 필요한 파일은 현재 HEAD에서 다시 읽는다.
@@ -99,7 +142,7 @@
 - 리뷰에는 코드로 증명되거나 재현 가능한 사실만 쓴다. "일 것이다", "가능성이 있다"는 표현으로 경고를 올리지 않는다.
 - 우선순위는 실제 운영 데이터에서 지금 터지는 문제를 먼저 보고, 그다음 방어 필요성을 논한다.
 
-## 9. 작업 중단과 미완료 기록
+## 10. 작업 중단과 미완료 기록
 
 - 작업이 중간에 멈추거나 검증, 배포, 데이터 정리가 완료되지 않았으면 `docs/standards/unfinished-work-record.md` 기준으로 기록한다.
 - 기록 위치는 `docs/reports/unfinished-work/YYYY-MM-DD-HHMM-<short-slug>.md`다.
@@ -107,14 +150,14 @@
 - `.ai-coordination`이 비활성화되어 있어도 미완료 기록은 생략하지 않는다.
 - docs/ 아래 문서 생성·이동 시 docs/README.md 규정을 준수한다.
 
-## 10. Windows와 도구 경로 주의
+## 11. Windows와 도구 경로 주의
 
 - PowerShell 명령은 cmdlet별 실제 파라미터를 확인하고 사용한다.
 - Windows PowerShell 5.1의 `New-Item`은 `-LiteralPath`를 지원하지 않으므로 디렉터리 생성에는 `New-Item -ItemType Directory -Force -Path ...` 또는 `[System.IO.Directory]::CreateDirectory(...)`를 사용한다.
 - `-LiteralPath` 권장 규칙을 모든 cmdlet에 기계적으로 적용하지 않는다.
 - 도구가 여러 설치 경로를 가질 수 있으면 `Get-Command <tool> -All`, `where.exe <tool>`, 실제 `--version`을 확인한다.
 
-## 11. AI 도구와 스킬 경로 구분
+## 12. AI 도구와 스킬 경로 구분
 
 | 도구 | 사용자 환경 예시 | 비고 |
 | --- | --- | --- |
@@ -126,7 +169,7 @@
 - 사용자가 특정 도구를 명시하면 그 도구 기준으로 설명한다.
 - 내 환경과 사용자의 CLI 환경을 섞어 말하지 않는다.
 
-## 12. 과거 실수 방지 기록
+## 13. 과거 실수 방지 기록
 
 ### 2026-09-03 - 스킬 프로세스 남용으로 토큰만 소모 (중요)
 
