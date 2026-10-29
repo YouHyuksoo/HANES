@@ -95,9 +95,11 @@ describe('ShipReturnService', () => {
     it('should delete DRAFT return', async () => {
       mockReturnRepo.findOne.mockResolvedValue({ returnNo: 'SR-001', status: 'DRAFT', shipmentId: null } as any);
       mockReturnItemRepo.find.mockResolvedValue([]);
-      mockReturnRepo.delete.mockResolvedValue({ affected: 1 } as any);
       const r = await target.delete('SR-001');
       expect(r.deleted).toBe(true);
+      // 헤더와 품목을 한 트랜잭션에서 함께 지운다(품목이 남아 다음 같은 번호 등록에 섞이던 문제)
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockQr.manager.delete).toHaveBeenCalledTimes(2);
     });
     it('should throw when not DRAFT', async () => {
       mockReturnRepo.findOne.mockResolvedValue({ returnNo: 'SR-001', status: 'CONFIRMED', shipmentId: null } as any);

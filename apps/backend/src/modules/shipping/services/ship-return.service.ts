@@ -267,7 +267,11 @@ export class ShipReturnService {
       throw new BadRequestException('DRAFT 상태에서만 삭제할 수 있습니다.');
     }
 
-    await this.shipReturnRepository.delete({ returnNo, ...this.tenantWhere(company, plant) });
+    // 품목에는 외래키가 없어 헤더만 지우면 품목이 남고, 같은 반품번호로 다시 등록하면 남은 품목이 새 반품에 섞인다
+    await this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.delete(ShipmentReturnItem, { returnNo, ...this.tenantWhere(company, plant) });
+      await queryRunner.manager.delete(ShipmentReturn, { returnNo, ...this.tenantWhere(company, plant) });
+    });
 
     return { returnNo, deleted: true };
   }
