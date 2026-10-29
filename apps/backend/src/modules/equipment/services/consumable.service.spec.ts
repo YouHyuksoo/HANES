@@ -287,4 +287,53 @@ describe('Equipment ConsumableService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(stockRepo.update).not.toHaveBeenCalled();
   });
+  it('로그 목록은 로그 필드에 소모품 요약을 붙이고 페이지를 적용한다', async () => {
+    const qb = {
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([
+        [{ consumableCode: 'CON-1', company: 'COMP', plant: 'PLANT', logType: 'IN', seq: 2 }, { consumableCode: 'CON-X', company: 'COMP', plant: 'PLANT', logType: 'OUT', seq: 1 }],
+        7,
+      ]),
+    };
+    logRepo.createQueryBuilder.mockReturnValue(qb as any);
+    masterRepo.find.mockResolvedValue([{ consumableCode: 'CON-1', consumableName: '금형', category: 'MOLD', company: 'COMP', plant: 'PLANT' } as ConsumableMaster]);
+
+    const result = await service.findLogs({ page: 2, limit: 2 } as any, 'COMP', 'PLANT');
+
+    expect(qb.skip).toHaveBeenCalledWith(2);
+    expect(qb.take).toHaveBeenCalledWith(2);
+    expect(result.total).toBe(7);
+    expect(result.data[0]).toMatchObject({ logType: 'IN', seq: 2, consumable: { consumableCode: 'CON-1', consumableName: '금형', category: 'MOLD' } });
+    expect(result.data[1].consumable).toEqual({ consumableCode: null, consumableName: null, category: null });
+  });
+
+  it('사용 횟수 증가는 읽고 더해 쓰지 않고 현재 값에 더하는 한 문장으로 올린다', async () => {
+    masterRepo.findOne.mockResolvedValue({ consumableCode: 'CON-1', currentCount: 10, company: 'COMP', plant: 'PLANT' } as ConsumableMaster);
+    const qb = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), take: jest.fn().mockReturnThis(), getMany: jest.fn().mockResolvedValue([]) };
+    logRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+    await service.increaseCount('CON-1', { count: 5 } as any, 'COMP', 'PLANT');
+
+    const setValue = (masterRepo.update.mock.calls[0][1] as { currentCount: () => string }).currentCount;
+    expect(setValue()).toBe('CURRENT_COUNT + 5');
+  });
+
+  it('교체 예정의 days 는 문자열로 와도 숫자로 더한다', async () => {
+    const qb = {
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    };
+    masterRepo.createQueryBuilder.mockReturnValue(qb as any);
+    await service.findReplacementSchedule('3' as unknown as number, 'COMP', 'PLANT');
+    const target = qb.andWhere.mock.calls[0][1].targetDate as Date;
+    const diffDays = Math.round((target.getTime() - Date.now()) / 86400000);
+    expect(diffDays).toBe(3);
+  });
 });

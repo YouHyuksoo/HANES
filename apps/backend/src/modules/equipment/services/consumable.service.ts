@@ -324,11 +324,12 @@ export class ConsumableService {
    */
   async increaseCount(consumableCode: string, dto: IncreaseCountDto, company?: string, plant?: string) {
     const consumable = await this.findById(consumableCode, company, plant);
-    const newCount = consumable.currentCount + dto.count;
+    const step = Math.trunc(Number(dto.count));
+    const newCount = consumable.currentCount + step;
 
     await this.consumableMasterRepository.update(
       { consumableCode, ...this.tenantWhere(company, plant) },
-      { currentCount: newCount },
+      { currentCount: () => `CURRENT_COUNT + ${step}` },
     );
 
     // 상태 자동 업데이트
@@ -514,18 +515,7 @@ export class ConsumableService {
     } = query;
     const skip = (page - 1) * limit;
 
-    const queryBuilder = this.consumableLogRepository.createQueryBuilder('log')
-      .leftJoinAndSelect(
-        ConsumableMaster,
-        'consumable',
-        'log.consumableCode = consumable.consumableCode AND log.company = consumable.company AND log.plant = consumable.plant',
-      )
-      .select([
-        'log',
-        'consumable.consumableCode AS consumable_code',
-        'consumable.consumableName AS consumable_name',
-        'consumable.category AS consumable_category',
-      ]);
+    const queryBuilder = this.consumableLogRepository.createQueryBuilder('log');
 
     if (consumableId) {
       queryBuilder.andWhere('log.consumableCode = :consumableId', { consumableId });
@@ -546,23 +536,34 @@ export class ConsumableService {
       queryBuilder.andWhere("log.createdAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate });
     }
 
-    const [logs, total] = await Promise.all([
-      queryBuilder
-        .orderBy('log.createdAt', 'DESC')
-        .skip(skip)
-        .take(limit)
-        .getRawMany(),
-      queryBuilder.getCount(),
-    ]);
+    const [logs, total] = await queryBuilder
+      .orderBy('log.createdAt', 'DESC')
+      .addOrderBy('log.seq', 'DESC')
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
 
-    const data = logs.map((log) => ({
-      ...log.log,
-      consumable: {
-        consumableCode: log.consumable_code,
-        consumableName: log.consumable_name,
-        category: log.consumable_category,
-      },
-    }));
+    // 소모품 요약(코드·이름·분류)은 로그의 회사·사업장·코드로 따로 찾아 붙인다
+    const codes = [...new Set(logs.map((log) => log.consumableCode))];
+    const masters = codes.length > 0
+      ? await this.consumableMasterRepository.find({
+        where: { consumableCode: In(codes), ...this.tenantWhere(company, plant) },
+        select: ['consumableCode', 'consumableName', 'category', 'company', 'plant'],
+      })
+      : [];
+    const masterByKey = new Map(masters.map((m) => [`${m.company}::${m.plant}::${m.consumableCode}`, m]));
+
+    const data = logs.map((log) => {
+      const master = masterByKey.get(`${log.company}::${log.plant}::${log.consumableCode}`);
+      return {
+        ...log,
+        consumable: {
+          consumableCode: master?.consumableCode ?? null,
+          consumableName: master?.consumableName ?? null,
+          category: master?.category ?? null,
+        },
+      };
+    });
 
     return { data, total, page, limit };
   }
@@ -598,7 +599,8 @@ export class ConsumableService {
    */
   async findReplacementSchedule(days: number = 30, company?: string, plant?: string) {
     const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + days);
+    const dayCount = Number(days);
+    targetDate.setDate(targetDate.getDate() + (Number.isFinite(dayCount) ? dayCount : 30));
 
     const qb = this.consumableMasterRepository
       .createQueryBuilder('consumable')
@@ -607,7 +609,7 @@ export class ConsumableService {
         '(consumable.status IN (:...statuses) OR consumable.nextReplaceAt <= :targetDate)',
         { statuses: ['WARNING', 'REPLACE'], targetDate }
       )
-      .orderBy('consumable.status', 'DESC') // REPLACE > WARNING > NORMAL
+      .orderBy("CASE consumable.status WHEN 'REPLACE' THEN 0 WHEN 'WARNING' THEN 1 ELSE 2 END", 'ASC') // REPLACE > WARNING > NORMAL
       .addOrderBy('consumable.nextReplaceAt', 'ASC');
 
     if (company) qb.andWhere('consumable.company = :company', { company });
@@ -620,14 +622,16 @@ export class ConsumableService {
    * 경고/교체필요 상태 소모품 목록 조회
    */
   async findWarningConsumables(company?: string, plant?: string) {
-    return this.consumableMasterRepository.find({
+    const rows = await this.consumableMasterRepository.find({
       where: {
         status: In(['WARNING', 'REPLACE']),
         useYn: 'Y',
         ...this.tenantWhere(company, plant),
       },
-      order: { status: 'DESC' },
+      order: { consumableCode: 'ASC' },
     });
+    // 교체 필요(REPLACE)가 경고(WARNING)보다 먼저 (문자열 내림차순이면 WARNING 이 앞선다)
+    return rows.sort((a, b) => Number(a.status !== 'REPLACE') - Number(b.status !== 'REPLACE'));
   }
 
   // =============================================
@@ -901,6 +905,9 @@ export class ConsumableService {
    * - 특정 날짜에 교체 예정인 소모품 목록 반환
    */
   async getPmDaySchedule(date: string, category?: string, company?: string, plant?: string) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date ?? '')) {
+      throw new BadRequestException(`날짜 형식이 올바르지 않습니다(YYYY-MM-DD): ${date}`);
+    }
     const qb = this.consumableMasterRepository
       .createQueryBuilder('c')
       .where('c.useYn = :yn', { yn: 'Y' })
@@ -913,7 +920,7 @@ export class ConsumableService {
     if (company) qb.andWhere('c.company = :company', { company });
     if (plant) qb.andWhere('c.plant = :plant', { plant });
 
-    qb.orderBy('c.status', 'DESC').addOrderBy('c.consumableCode', 'ASC');
+    qb.orderBy("CASE c.status WHEN 'REPLACE' THEN 0 WHEN 'WARNING' THEN 1 ELSE 2 END", 'ASC').addOrderBy('c.consumableCode', 'ASC');
 
     return qb.getMany();
   }
