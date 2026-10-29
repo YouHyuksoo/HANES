@@ -64,7 +64,7 @@ export class BoxService {
   }
 
   /** 조립실적이 FG_WIP 공정창고에 정상 적재된 외관합격 FG만 포장 대상으로 인정한다. */
-  private createPackableFgQuery(company?: string, plant?: string) {
+  private createPackableFgQuery(company?: string, plant?: string, ownBoxNo?: string) {
     const qb = this.fgLabelRepository
       .createQueryBuilder('fg')
       .innerJoin(
@@ -98,8 +98,10 @@ export class BoxService {
         },
       )
       .where('fg.status = :visualPass', { visualPass: 'VISUAL_PASS' })
-      .andWhere('fg.inspectPassYn = :inspectPass', { inspectPass: 'Y' })
-      .andWhere('fg.boxNo IS NULL');
+      .andWhere('fg.inspectPassYn = :inspectPass', { inspectPass: 'Y' });
+    // 다시 열린 박스의 시리얼은 FG 라벨에 박스번호가 남아 있다 — 그 박스를 다시 마감할 때는 같은 박스에 담긴 것도 인정한다
+    if (ownBoxNo) qb.andWhere('(fg.boxNo IS NULL OR fg.boxNo = :ownBoxNo)', { ownBoxNo });
+    else qb.andWhere('fg.boxNo IS NULL');
     if (company) qb.andWhere('fg.company = :company', { company });
     if (plant) qb.andWhere('fg.plant = :plant', { plant });
     return qb;
@@ -109,9 +111,10 @@ export class BoxService {
     serials: string[],
     company?: string,
     plant?: string,
+    ownBoxNo?: string,
   ): Promise<void> {
     if (serials.length === 0) return;
-    const labels = await this.createPackableFgQuery(company, plant)
+    const labels = await this.createPackableFgQuery(company, plant, ownBoxNo)
       .andWhere('fg.fgBarcode IN (:...serials)', { serials })
       .getMany();
     const valid = new Set(labels.map((label) => label.fgBarcode));
@@ -700,7 +703,7 @@ export class BoxService {
       throw new BadRequestException(`외관검사 합격(VISUAL_PASS) FG만 포장할 수 있습니다: ${invalidLabels.join(', ')}`);
     }
 
-    await this.assertSerialsArePackableFgWip(dto.serials, company, plant);
+    await this.assertSerialsArePackableFgWip(dto.serials, company, plant, id);
 
     const boxQty = part?.boxQty != null ? Number(part.boxQty) : 0;
     if (boxQty > 0 && existingSerials.length + dto.serials.length > boxQty) {
@@ -760,7 +763,7 @@ export class BoxService {
     }
 
     const closingSerials: string[] = box.serialList ? JSON.parse(box.serialList) : [];
-    await this.assertSerialsArePackableFgWip(closingSerials, company, plant);
+    await this.assertSerialsArePackableFgWip(closingSerials, company, plant, id);
 
     await this.tx.run(async (queryRunner) => {
       const oqcEnabled = await this.sysConfig.isEnabled('OQC_ENABLED', company, plant);

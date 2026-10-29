@@ -389,6 +389,30 @@ describe('BoxService', () => {
     expect(mockCarrierFlow.clearInTx).toHaveBeenCalledWith(mockQueryRunner, 'FG', ['FG-001'], 'C1', 'P1');
   });
 
+  it('closeBox accepts serials already stamped with this box (box reopened) but still requires unassigned for others', async () => {
+    const qb = mockPackableFgWip([{ fgBarcode: 'FG-001' } as FgLabel]);
+    mockBoxRepo.findOne.mockResolvedValue({
+      boxNo: 'BOX-001',
+      itemCode: 'ITEM-001',
+      qty: 1,
+      status: 'OPEN',
+      serialList: JSON.stringify(['FG-001']),
+      company: 'C1',
+      plant: 'P1',
+    } as BoxMaster);
+    mockOqcRequestRepo.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getOne: jest.fn().mockResolvedValue(null),
+    } as any);
+    mockQueryRunner.manager.create.mockImplementation((_entity, payload) => payload as any);
+
+    await target.closeBox('BOX-001', 'C1', 'P1');
+
+    // 다시 열린 박스의 시리얼은 FG 라벨에 이 박스번호가 남아 있다 — 같은 박스면 포장 가능으로 본다
+    expect(qb.andWhere).toHaveBeenCalledWith('(fg.boxNo IS NULL OR fg.boxNo = :ownBoxNo)', { ownBoxNo: 'BOX-001' });
+  });
+
   it('closeBox rejects a serial that is no longer eligible in FG_WIP', async () => {
     mockPackableFgWip([]);
     mockBoxRepo.findOne.mockResolvedValue({
