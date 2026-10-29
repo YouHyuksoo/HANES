@@ -68,6 +68,7 @@ describe('ProductLabelService', () => {
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([]),
     };
 
@@ -75,8 +76,19 @@ describe('ProductLabelService', () => {
 
     await service.findLabelableOqcPassed('C1', 'P1');
 
+    // 합격 판정은 InspectResult.passYn 이다 (없는 속성 ir.result 를 쓰면 쿼리가 항상 500 이 된다)
+    expect(qb.innerJoin).toHaveBeenCalledWith('r.inspectResults', 'ir', 'ir.passYn = :passYn', { passYn: 'Y' });
+
     expect(qb.andWhere).toHaveBeenCalledWith('r.company = :company', { company: 'C1' });
     expect(qb.andWhere).toHaveBeenCalledWith('r.plant = :plant', { plant: 'P1' });
+  });
+
+  it('rejects label issuing when the job order has no item (instead of a DB error)', async () => {
+    prodResultRepo.findOne.mockResolvedValue({ resultNo: '1', company: 'C1', plant: 'P1', jobOrder: null } as any);
+
+    await expect(
+      service.createPrdLabels({ sourceId: '1', source: 'PROD_RESULT' as any, qty: 1 }, 'C1', 'P1'),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('throws when createPrdLabels source result is not found in tenant scope', async () => {

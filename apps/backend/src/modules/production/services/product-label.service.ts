@@ -48,9 +48,10 @@ export class ProductLabelService {
       .createQueryBuilder('r')
       .leftJoinAndSelect('r.jobOrder', 'jo')
       .leftJoinAndSelect('jo.part', 'part')
-      .innerJoin('r.inspectResults', 'ir', 'ir.result = :result', { result: 'PASS' })
+      .innerJoin('r.inspectResults', 'ir', 'ir.passYn = :passYn', { passYn: 'Y' })
       .where('r.prdUid IS NULL')
-      .orderBy('r.createdAt', 'DESC');
+      .orderBy('r.createdAt', 'DESC')
+      .addOrderBy('r.resultNo', 'DESC');
 
     if (company) {
       qb.andWhere('r.company = :company', { company });
@@ -83,6 +84,10 @@ export class ProductLabelService {
     this.assertSameTenant('제품라벨 생산실적', prodResult, company, plant);
 
     const itemCode = prodResult.jobOrder?.itemCode ?? '';
+    // 작업지시 품목이 없으면 FG 라벨 INSERT 가 DB 오류(500)로 끝난다 — 입력 오류로 돌려준다
+    if (!itemCode) {
+      throw new BadRequestException(`생산실적의 작업지시 품목을 찾을 수 없어 제품 라벨을 발행할 수 없습니다: ${dto.sourceId}`);
+    }
     const part = itemCode
       ? await this.partRepo.findOne({
           where: {
