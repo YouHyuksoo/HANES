@@ -553,7 +553,8 @@ export class JobOrderService {
       await this.createRoutingOperationOrders(queryRunner, saved, routingProcesses, saved.orderNo, operationAssignmentMap);
       await this.createChildOrdersRecursive(queryRunner, saved, dto, saved.orderNo, 0, new Set());
 
-      const created = await this.jobOrderRepository.findOne({
+      // 트랜잭션 안에서 만든 지시는 같은 연결로 읽어야 한다(다른 연결은 커밋 전이라 못 봐서 생성 응답이 null 이었다)
+      const created = await queryRunner.manager.findOne(JobOrder, {
         where: { orderNo: saved.orderNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
         relations: ['part', 'routing', 'children', 'children.part', 'children.routing'],
       });
@@ -786,6 +787,10 @@ export class JobOrderService {
     const updateData: Partial<JobOrder> = {};
     // itemCode 변경 시 라우팅 재조회
     if (dto.itemCode !== undefined && dto.itemCode !== jobOrder.itemCode) {
+      const newPart = await this.itemMasterRepository.findOne({
+        where: { itemCode: dto.itemCode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+      });
+      if (!newPart) throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
       updateData.itemCode = dto.itemCode;
       updateData.routingCode = await this.resolveRoutingCodeByItem(dto.itemCode, company, plant);
     }
@@ -1003,6 +1008,7 @@ export class JobOrderService {
 
   /** ERP 동기화 완료 처리 (일괄) */
   async markAsSynced(orderNos: string[], company?: string, plant?: string) {
+    if (!Array.isArray(orderNos) || orderNos.length === 0) return { count: 0 };
     const qb = this.jobOrderRepository
       .createQueryBuilder()
       .update()

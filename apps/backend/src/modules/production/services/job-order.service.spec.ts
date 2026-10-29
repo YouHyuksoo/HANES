@@ -598,6 +598,16 @@ describe('JobOrderService', () => {
       );
     });
 
+    it('should throw NotFoundException when the new item does not exist', async () => {
+      // Arrange
+      mockJobOrderRepo.findOne.mockResolvedValueOnce({ orderNo: 'JO-001', status: 'WAITING', itemCode: 'PART-001' } as JobOrder); // findById
+      mockItemMasterRepo.findOne.mockResolvedValueOnce(null);
+
+      // Act & Assert
+      await expect(target.update('JO-001', { itemCode: 'NO-SUCH-ITEM' } as any)).rejects.toThrow(NotFoundException);
+      expect(mockJobOrderRepo.update).not.toHaveBeenCalled();
+    });
+
     it('should throw BadRequestException when status is DONE', async () => {
       // Arrange
       mockJobOrderRepo.findOne.mockResolvedValue({ orderNo: 'JO-001', status: 'DONE' } as JobOrder);
@@ -958,6 +968,15 @@ describe('JobOrderService', () => {
   // markAsSynced
   // ─────────────────────────────────────────────
   describe('markAsSynced', () => {
+    it('should do nothing and report 0 when the id list is empty', async () => {
+      // Act
+      const result = await target.markAsSynced([]);
+
+      // Assert
+      expect(result).toEqual({ count: 0 });
+      expect(mockJobOrderRepo.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
     it('should update multiple records', async () => {
       // Arrange
       const mockQb = {
