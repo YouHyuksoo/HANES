@@ -131,10 +131,10 @@ export class ProductionViewsService {
     }
 
     if (fromDate) {
-      queryBuilder.andWhere("ir.inspectDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
+      queryBuilder.andWhere("ir.inspectAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
     }
     if (toDate) {
-      queryBuilder.andWhere("ir.inspectDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate });
+      queryBuilder.andWhere("ir.inspectAt < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate });
     }
 
     if (search) {

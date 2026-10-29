@@ -89,6 +89,24 @@ describe('ProductionViewsService', () => {
     expect(qb.andWhere).toHaveBeenCalledWith('pr.plant = :plant', { plant: 'P1' });
   });
 
+  it('filters getSampleInspect by inspection time (inspectAt), not a non-existent property', async () => {
+    const qb = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+      getCount: jest.fn().mockResolvedValue(0),
+    };
+    inspectRepo.createQueryBuilder.mockReturnValue(qb as any);
+
+    await service.getSampleInspect({ page: 1, limit: 10, fromDate: '2026-09-01', toDate: '2026-09-05' } as any, 'C1', 'P1');
+
+    expect(qb.andWhere).toHaveBeenCalledWith("ir.inspectAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate: '2026-09-01' });
+    expect(qb.andWhere).toHaveBeenCalledWith("ir.inspectAt < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate: '2026-09-05' });
+  });
+
   it('uses query builder in getPackResult', async () => {
     const qb = {
       leftJoin: jest.fn().mockReturnThis(),
