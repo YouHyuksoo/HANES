@@ -54,8 +54,8 @@ describe('EquipInspectService', () => {
         select: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
-        skip: jest.fn().mockReturnThis(),
-        take: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue([
           {
             log_EQUIP_CODE: 'EQ-ATCUT-01',
@@ -250,6 +250,28 @@ describe('EquipInspectService', () => {
     );
   });
 
+  describe('입력 검증', () => {
+    it('점검일 키가 YYYY-MM-DD 가 아니면 DB 를 부르기 전에 400', async () => {
+      await expect(target.findByKey('EQ-1', 'DAILY', 'bad', '40', '1000')).rejects.toThrow(BadRequestException);
+      expect(mockLogRepo.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it('수정에서도 FAIL 점검 항목에는 불량 사유코드가 필요하다', async () => {
+      const found = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        addOrderBy: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({ equipCode: 'EQ-1', inspectType: 'DAILY', overallResult: 'PASS' }),
+      };
+      mockLogRepo.createQueryBuilder.mockReturnValueOnce(found as any);
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-1' } as any);
+      await expect(
+        target.update('EQ-1', 'DAILY', '2026-09-11', { details: { items: [{ result: 'FAIL' }] } } as any, '40', '1000'),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
   describe('update / deleteByKey', () => {
     const findByKeyStub = () => {
       const qb = {
@@ -287,7 +309,7 @@ describe('EquipInspectService', () => {
       await target.update('EQ-ATCNS-HV-01', 'DAILY', '2026-09-11', { remark: '재점검' } as any, '40', '1000');
 
       expect(mutationBuilder.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('MAX(l2.INSPECT_DATE)'),
+        expect.stringContaining('MAX(l2.INSPECT_AT)'),
         expect.objectContaining({ equipCode: 'EQ-ATCNS-HV-01', inspectType: 'DAILY', inspectDate: '2026-09-11' }),
       );
     });
@@ -308,7 +330,7 @@ describe('EquipInspectService', () => {
       await target.deleteByKey('EQ-ATCNS-HV-01', 'DAILY', '2026-09-11', '40', '1000');
 
       expect(mutationBuilder.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('MAX(l2.INSPECT_DATE)'),
+        expect.stringContaining('MAX(l2.INSPECT_AT)'),
         expect.objectContaining({ equipCode: 'EQ-ATCNS-HV-01' }),
       );
     });

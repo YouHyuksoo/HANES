@@ -197,8 +197,8 @@ export class EquipInspectService {
     const [logs, total] = await Promise.all([
       queryBuilder
         .orderBy('log.inspectDate', 'DESC')
-        .skip(skip)
-        .take(limit)
+        .offset(skip)
+        .limit(limit)
         .getRawMany(),
       queryBuilder.getCount(),
     ]);
@@ -253,6 +253,25 @@ export class EquipInspectService {
     return { data, total, page, limit };
   }
 
+  /** YYYY-MM-DD 가 아니면 400 (DB 변환 오류 500 방지) */
+  private assertYmd(value: string, label: string): void {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value ?? '');
+    const ok = m && new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getMonth() === Number(m[2]) - 1;
+    if (!ok) throw new BadRequestException(`${label} 형식이 올바르지 않습니다(YYYY-MM-DD): ${value}`);
+  }
+
+  /** 상세(details) 항목 중 FAIL 이 있는지, 있으면 사유코드가 모두 있는지 확인한다. FAIL 항목이 있으면 true */
+  private checkFailItems(details: unknown): boolean {
+    const items = details && Array.isArray((details as { items?: unknown }).items)
+      ? (details as { items: Array<{ result?: string; reasonCode?: string }> }).items
+      : [];
+    const failItems = items.filter((item) => item.result === 'FAIL');
+    if (failItems.some((item) => !item.reasonCode?.trim())) {
+      throw new BadRequestException('FAIL 점검 항목에는 불량 사유코드가 필요합니다.');
+    }
+    return failItems.length > 0;
+  }
+
   /** 점검 단건 조회 (복합키) */
   async findByKey(
     equipCode: string,
@@ -261,6 +280,7 @@ export class EquipInspectService {
     company?: string,
     plant?: string,
   ) {
+    this.assertYmd(inspectDate, '점검일');
     const log = await this.equipInspectLogRepository
       .createQueryBuilder('log')
       .where('log.equipCode = :equipCode', { equipCode })
@@ -321,16 +341,10 @@ export class EquipInspectService {
     // 완료 여부는 WORK_DATE/ORDER_NO 기준 최신 로그로 별도 판정한다.
     const inspectDate = inspectAt;
 
-    // PDA 상세 결과에서 FAIL 항목은 원인 추적을 위해 사유코드를 필수로 받는다.
-    const detailItems = dto.details && Array.isArray((dto.details as { items?: unknown }).items)
-      ? (dto.details as { items: Array<{ result?: string; reasonCode?: string }> }).items
-      : [];
-    const missingFailReasons = detailItems.filter(
-      (item) => item.result === 'FAIL' && !item.reasonCode?.trim(),
-    );
-    if (missingFailReasons.length > 0) {
-      throw new BadRequestException('FAIL 점검 항목에는 불량 사유코드가 필요합니다.');
-    }
+    // PDA 상세 결과에서 FAIL 항목은 원인 추적을 위해 사유코드를 필수로 받는다. 항목 중 FAIL 이 있으면 종합이 PASS 로 와도 FAIL 로 본다.
+    const hasFailItem = this.checkFailItems(dto.details);
+    let overallResult = dto.overallResult ?? 'PASS';
+    if (hasFailItem && !overallResult.toUpperCase().includes('FAIL')) overallResult = 'FAIL';
 
     const logData = {
       equipCode: dto.equipCode,
@@ -342,7 +356,7 @@ export class EquipInspectService {
       opWindowStartAt: operationalWindow.windowStart,
       opWindowEndAt: operationalWindow.windowEnd,
       inspectorName: dto.inspectorName,
-      overallResult: dto.overallResult ?? 'PASS',
+      overallResult,
       details: dto.details ? JSON.stringify(dto.details) : null,
       remark: dto.remark,
       company: context?.company ?? equip.company,
@@ -595,15 +609,25 @@ export class EquipInspectService {
    * 수정·삭제는 조회(findByKey)와 같은 대상, 즉 그날의 최신 1건만 건드려야 하므로
    * INSPECT_DATE(시각 포함)가 그날 최대인 행으로 좁힌다.
    */
-  private latestOfDayPredicate(company?: string, plant?: string): string {
+  private latestOfDayPredicate(inspectType: string, company?: string, plant?: string): string {
     const tenant = `${company ? ' AND l2.COMPANY = :company' : ''}${plant ? ' AND l2.PLANT_CD = :plant' : ''}`;
-    return `inspectDate = (
-      SELECT MAX(l2.INSPECT_DATE) FROM EQUIP_INSPECT_LOGS l2
+    // 조회(findByKey)와 같은 규칙: DAILY 는 조업일(WORK_DATE, 없으면 점검일 하루 구간), 그 밖은 점검일 하루 구간. 그 안에서 점검시각이 가장 늦은 한 건.
+    const keyRule = inspectType === 'DAILY'
+      ? `(l2.WORK_DATE = TO_DATE(:inspectDate, 'YYYY-MM-DD') OR (l2.WORK_DATE IS NULL AND l2.INSPECT_DATE >= TO_DATE(:inspectDate, 'YYYY-MM-DD') AND l2.INSPECT_DATE < TO_DATE(:inspectDate, 'YYYY-MM-DD') + 1))`
+      : `(l2.INSPECT_DATE >= TO_DATE(:inspectDate, 'YYYY-MM-DD') AND l2.INSPECT_DATE < TO_DATE(:inspectDate, 'YYYY-MM-DD') + 1)`;
+    return `inspectAt = (
+      SELECT MAX(l2.INSPECT_AT) FROM EQUIP_INSPECT_LOGS l2
       WHERE l2.EQUIP_CODE = :equipCode
         AND l2.INSPECT_TYPE = :inspectType
-        AND l2.INSPECT_DATE >= TO_DATE(:inspectDate, 'YYYY-MM-DD')
-        AND l2.INSPECT_DATE < TO_DATE(:inspectDate, 'YYYY-MM-DD') + 1${tenant}
+        AND ${keyRule}${tenant}
     )`;
+  }
+
+  /** 수정·삭제의 키 조건(property 이름): 조회와 같은 규칙 */
+  private keyRule(inspectType: string): string {
+    return inspectType === 'DAILY'
+      ? "(workDate = TO_DATE(:inspectDate, 'YYYY-MM-DD') OR (workDate IS NULL AND inspectDate >= TO_DATE(:inspectDate, 'YYYY-MM-DD') AND inspectDate < TO_DATE(:inspectDate, 'YYYY-MM-DD') + 1))"
+      : "(inspectDate >= TO_DATE(:inspectDate, 'YYYY-MM-DD') AND inspectDate < TO_DATE(:inspectDate, 'YYYY-MM-DD') + 1)";
   }
 
   /** 점검 결과 수정 (복합키) */
@@ -621,7 +645,14 @@ export class EquipInspectService {
 
     if (dto.inspectorName !== undefined) updateData.inspectorName = dto.inspectorName;
     if (dto.overallResult !== undefined) updateData.overallResult = dto.overallResult;
-    if (dto.details !== undefined) updateData.details = dto.details ? JSON.stringify(dto.details) : null;
+    if (dto.details !== undefined) {
+      updateData.details = dto.details ? JSON.stringify(dto.details) : null;
+      // 등록과 같은 규칙: FAIL 항목에는 사유코드가 필요하고, FAIL 항목이 있으면 종합이 PASS 여도 FAIL 로 본다
+      if (this.checkFailItems(dto.details)) {
+        const effective = String(dto.overallResult ?? log.overallResult ?? '');
+        if (!effective.toUpperCase().includes('FAIL')) updateData.overallResult = 'FAIL';
+      }
+    }
     if (dto.remark !== undefined) updateData.remark = dto.remark;
 
     const updateBuilder = this.equipInspectLogRepository
@@ -630,8 +661,8 @@ export class EquipInspectService {
       .set(updateData)
       .where('equipCode = :equipCode', { equipCode })
       .andWhere('inspectType = :inspectType', { inspectType })
-      .andWhere('inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate })
-      .andWhere(this.latestOfDayPredicate(company, plant), { equipCode, inspectType, inspectDate });
+      .andWhere(this.keyRule(inspectType), { inspectDate })
+      .andWhere(this.latestOfDayPredicate(inspectType, company, plant), { equipCode, inspectType, inspectDate });
     if (company) updateBuilder.andWhere('company = :company', { company });
     if (plant) updateBuilder.andWhere('plant = :plant', { plant });
     await updateBuilder.execute();
@@ -680,8 +711,8 @@ export class EquipInspectService {
       .from(EquipInspectLog)
       .where('equipCode = :equipCode', { equipCode })
       .andWhere('inspectType = :inspectType', { inspectType })
-      .andWhere('inspectDate >= TO_DATE(:inspectDate, \'YYYY-MM-DD\') AND inspectDate < TO_DATE(:inspectDate, \'YYYY-MM-DD\') + 1', { inspectDate })
-      .andWhere(this.latestOfDayPredicate(company, plant), { equipCode, inspectType, inspectDate });
+      .andWhere(this.keyRule(inspectType), { inspectDate })
+      .andWhere(this.latestOfDayPredicate(inspectType, company, plant), { equipCode, inspectType, inspectDate });
     if (company) deleteBuilder.andWhere('company = :company', { company });
     if (plant) deleteBuilder.andWhere('plant = :plant', { plant });
     await deleteBuilder.execute();
@@ -735,21 +766,22 @@ export class EquipInspectService {
       itemsByEquip.set(item.equipCode, list);
     }
 
-    const logs = await this.equipInspectLogRepository
+    // 점검 여부는 조업일(WORK_DATE, 없으면 점검일) 기준이고, 설비·날짜당 점검시각이 가장 늦은 한 건만 센다
+    // (재점검이 쌓이면 불합격 이력까지 합쳐 센 탓에 합격으로 끝낸 날도 불합격으로 표시됐고, 새벽 점검이 다음 날로 잡혔다)
+    const logs = this.equipInspectLogRepository
       .createQueryBuilder('log')
       .where('log.inspectType = :type', { type: inspectType })
-      .andWhere('log.inspectDate BETWEEN :start AND :end', {
+      .andWhere('COALESCE(log.workDate, TRUNC(log.inspectDate)) BETWEEN :start AND :end', {
         start: startDate, end: endDate,
       })
       .andWhere('log.equipCode IN (:...equipCodes)', { equipCodes: equipIds });
     if (company) logs.andWhere('log.company = :company', { company });
     if (plant) logs.andWhere('log.plant = :plant', { plant });
-    const foundLogs = await logs.getMany();
+    const foundLogs = this.latestPerEquipDay(await logs.orderBy('log.inspectAt', 'DESC').addOrderBy('log.createdAt', 'DESC').getMany());
 
     const logsByDate = new Map<string, EquipInspectLog[]>();
     for (const log of foundLogs) {
-      const d = new Date(log.inspectDate);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const key = this.logDayKey(log);
       const list = logsByDate.get(key) || [];
       list.push(log);
       logsByDate.set(key, list);
@@ -802,6 +834,7 @@ export class EquipInspectService {
     company?: string,
     plant?: string,
   ) {
+    this.assertYmd(date.substring(0, 10), '날짜');
     const dateObj = new Date(date);
 
     const equipWhere: Record<string, unknown> = { useYn: 'Y' };
@@ -830,14 +863,14 @@ export class EquipInspectService {
     const dayEnd = new Date(dateObj);
     dayEnd.setHours(23, 59, 59, 999);
 
-    const logs = await this.equipInspectLogRepository
+    const logs = this.equipInspectLogRepository
       .createQueryBuilder('log')
       .where('log.inspectType = :type', { type: inspectType })
-      .andWhere('log.inspectDate BETWEEN :start AND :end', { start: dayStart, end: dayEnd })
+      .andWhere('COALESCE(log.workDate, TRUNC(log.inspectDate)) BETWEEN :start AND :end', { start: dayStart, end: dayEnd })
       .andWhere('log.equipCode IN (:...equipCodes)', { equipCodes: equipIds });
     if (company) logs.andWhere('log.company = :company', { company });
     if (plant) logs.andWhere('log.plant = :plant', { plant });
-    const foundLogs = await logs.getMany();
+    const foundLogs = this.latestPerEquipDay(await logs.orderBy('log.inspectAt', 'DESC').addOrderBy('log.createdAt', 'DESC').getMany());
 
     const logByEquip = new Map<string, EquipInspectLog>();
     for (const log of foundLogs) {
@@ -889,6 +922,23 @@ export class EquipInspectService {
     }
 
     return result;
+  }
+
+  /** 로그가 속한 날(조업일, 없으면 점검일)의 YYYY-MM-DD */
+  private logDayKey(log: EquipInspectLog): string {
+    const d = new Date(log.workDate ?? log.inspectDate);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  /** 점검시각 최신순으로 정렬돼 온 로그에서 설비·날짜마다 맨 앞(최신) 한 건만 남긴다 */
+  private latestPerEquipDay(logs: EquipInspectLog[]): EquipInspectLog[] {
+    const seen = new Set<string>();
+    return logs.filter((log) => {
+      const key = `${log.equipCode}::${this.logDayKey(log)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   private async fetchItemsWithDetails(
