@@ -9,7 +9,7 @@
  * 4. **캘린더**: WO 기반 월별 요약/일별 상세
  */
 
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, QueryRunner } from 'typeorm';
 import { PmPlan } from '../../../entities/pm-plan.entity';
@@ -184,6 +184,12 @@ export class PmPlanService {
     if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
     this.assertSameTenant('PM 계획 설비', equip, company, plant);
 
+    // 같은 계획코드가 있으면 save() 가 기존 계획을 조용히 덮어쓰므로 먼저 막는다
+    const existingPlan = await this.pmPlanRepo.findOne({
+      where: { planCode: dto.planCode, ...this.tenantWhere(company, plant) },
+    });
+    if (existingPlan) throw new ConflictException(`이미 존재하는 PM 계획 코드입니다: ${dto.planCode}`);
+
     const nextDueAt = this.calculateNextDueAt(
       new Date(),
       dto.cycleType || 'MONTHLY',
@@ -238,6 +244,12 @@ export class PmPlanService {
     });
     if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${planCode}`);
 
+    if (dto.equipCode !== undefined && dto.equipCode !== plan.equipCode) {
+      const equip = await this.equipMasterRepo.findOne({
+        where: { equipCode: dto.equipCode, ...this.tenantWhere(company, plant) },
+      });
+      if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
+    }
     if (dto.equipCode !== undefined) plan.equipCode = dto.equipCode;
     if (dto.planName !== undefined) plan.planName = dto.planName;
     if (dto.pmType !== undefined) plan.pmType = dto.pmType;
@@ -290,37 +302,51 @@ export class PmPlanService {
       where: { planCode, ...this.tenantWhere(company, plant) },
     });
     if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${planCode}`);
-    await this.pmPlanRepo.delete({ planCode, ...this.tenantWhere(company, plant) });
+    await this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.delete(PmPlanItem, { pmPlanCode: planCode });
+      await queryRunner.manager.delete(PmPlan, { planCode, ...this.tenantWhere(company, plant) });
+    });
     return { planCode, deleted: true };
   }
 
   // ─── Work Order 관리 ────────────────────────────────────
 
   /** WO 일괄 생성 (해당 월에 nextDueAt이 도래하는 계획들) */
-  async generateWorkOrders(year: number, month: number) {
+  async generateWorkOrders(year: number, month: number, company?: string, plant?: string) {
     const startDate = new Date(year, month - 1, 1);
     const monthStr = String(month).padStart(2, '0');
     const lastDay = new Date(year, month, 0).getDate();
     const fromStr = `${year}-${monthStr}-01`;
     const toStr = `${year}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
 
-    const plans = await this.pmPlanRepo
+    const plansQb = this.pmPlanRepo
       .createQueryBuilder('plan')
       .where('plan.useYn = :yn', { yn: 'Y' })
       .andWhere("plan.nextDueAt >= TO_DATE(:fromStr, 'YYYY-MM-DD')", { fromStr })
-      .andWhere("plan.nextDueAt < TO_DATE(:toStr, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toStr })
-      .getMany();
+      .andWhere("plan.nextDueAt < TO_DATE(:toStr, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toStr });
+    if (company) plansQb.andWhere('plan.company = :company', { company });
+    if (plant) plansQb.andWhere('plan.plant = :plant', { plant });
+    const plans = await plansQb.getMany();
 
     // USAGE_BASED 계획: currentUsage >= usageThreshold 도달한 건
-    const usagePlans = await this.pmPlanRepo
+    const usagePlansQb = this.pmPlanRepo
       .createQueryBuilder('p')
       .where('p.useYn = :yn', { yn: 'Y' })
       .andWhere('p.pmType = :type', { type: 'USAGE_BASED' })
       .andWhere('p.usageThreshold IS NOT NULL')
-      .andWhere('p.currentUsage >= p.usageThreshold')
-      .getMany();
+      .andWhere('p.currentUsage >= p.usageThreshold');
+    if (company) usagePlansQb.andWhere('p.company = :company', { company });
+    if (plant) usagePlansQb.andWhere('p.plant = :plant', { plant });
+    const usagePlans = await usagePlansQb.getMany();
 
-    const allPlans = [...plans, ...usagePlans];
+    // 예정일 구간과 사용량 도달 양쪽에 걸린 계획은 작업지시를 한 번만 만든다
+    const seenPlans = new Set<string>();
+    const allPlans = [...plans, ...usagePlans].filter((p) => {
+      const key = `${p.company ?? ''}::${p.plant ?? ''}::${p.planCode}`;
+      if (seenPlans.has(key)) return false;
+      seenPlans.add(key);
+      return true;
+    });
 
     let created = 0;
     let skipped = 0;
@@ -392,6 +418,13 @@ export class PmPlanService {
     if (!equip) throw new NotFoundException(`설비를 찾을 수 없습니다: ${dto.equipCode}`);
     this.assertSameTenant('PM 작업지시 설비', equip, company, plant);
 
+    if (dto.pmPlanId) {
+      const plan = await this.pmPlanRepo.findOne({
+        where: { planCode: dto.pmPlanId, ...this.tenantWhere(company, plant) },
+      });
+      if (!plan) throw new NotFoundException(`PM 계획을 찾을 수 없습니다: ${dto.pmPlanId}`);
+    }
+
     const dateStr = dto.scheduledDate.substring(0, 10).replace(/-/g, '');
 
     // 채번 직렬화 락 유지를 위해 채번+저장을 한 트랜잭션으로 묶는다
@@ -426,9 +459,11 @@ export class PmPlanService {
       throw new BadRequestException(`이미 ${wo.status} 상태입니다.`);
     }
 
+    // 서버가 판정을 다시 정한다: 항목 중 하나라도 FAIL 이면 종합이 PASS 로 와도 FAIL(설비 INTERLOCK)
+    const overallResult = dto.items?.some((item) => item.result === 'FAIL') ? 'FAIL' : dto.overallResult;
     wo.status = 'COMPLETED';
     wo.completedAt = new Date();
-    wo.overallResult = dto.overallResult;
+    wo.overallResult = overallResult;
     wo.remark = dto.remark || null;
     if (dto.assignedWorkerId) wo.assignedWorkerCode = dto.assignedWorkerId;
     if (!wo.startedAt) wo.startedAt = new Date();
@@ -452,7 +487,7 @@ export class PmPlanService {
     }
 
     // FAIL 결과 시 설비 자동 INTERLOCK (일상점검과 동일 정책)
-    if (dto.overallResult === 'FAIL' && wo.equipCode) {
+    if (overallResult === 'FAIL' && wo.equipCode) {
       await this.equipMasterRepo.update(
         { equipCode: wo.equipCode, ...this.tenantWhere(company, plant) },
         { status: 'INTERLOCK' },

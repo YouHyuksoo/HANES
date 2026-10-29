@@ -149,8 +149,12 @@ export class PmWorkOrderController {
   @Post('generate')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'WO 일괄생성' })
-  async generateWorkOrders(@Body() dto: GenerateWorkOrdersDto) {
-    const data = await this.pmPlanService.generateWorkOrders(dto.year, dto.month);
+  async generateWorkOrders(
+    @Body() dto: GenerateWorkOrdersDto,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.pmPlanService.generateWorkOrders(dto.year, dto.month, company, plant);
     return ResponseUtil.success(data, `WO ${data.created}건 생성 (중복 스킵 ${data.skipped}건)`);
   }
 

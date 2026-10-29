@@ -23,6 +23,7 @@ import {
   IsIn,
   IsNumber,
   IsObject,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
@@ -179,11 +180,13 @@ export class PmPlanQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: '다음예정일 시작 (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'dueDateFrom must be YYYY-MM-DD' })
   dueDateFrom?: string;
 
   @ApiPropertyOptional({ description: '다음예정일 종료 (YYYY-MM-DD)' })
   @IsOptional()
   @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'dueDateTo must be YYYY-MM-DD' })
   dueDateTo?: string;
 }
 
@@ -316,6 +319,7 @@ export class PmCalendarQueryDto extends PaginationQueryDto {
 export class PmDayScheduleQueryDto extends PaginationQueryDto {
   @ApiProperty({ description: '날짜 (YYYY-MM-DD)' })
   @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}/, { message: 'date must be YYYY-MM-DD' })
   date: string;
 
   @ApiPropertyOptional({ description: '라인코드 필터' })

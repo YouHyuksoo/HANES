@@ -5,7 +5,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { QueryRunner, Repository } from 'typeorm';
 import { PmPlanService } from './pm-plan.service';
 import { PmPlan } from '../../../entities/pm-plan.entity';
@@ -151,7 +151,7 @@ describe('PmPlanService', () => {
       mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' } as any);
       mockPlanRepo.create.mockReturnValue(saved);
       mockPlanRepo.save.mockResolvedValue(saved);
-      mockPlanRepo.findOne.mockResolvedValue({ ...saved, items: [] });
+      mockPlanRepo.findOne.mockResolvedValueOnce(null).mockResolvedValue({ ...saved, items: [] });
 
       await target.createPlan({ equipCode: 'EQ-001', planCode: 'PM-001', planName: 'PM' } as any, 'CO', 'P01');
 
@@ -175,7 +175,36 @@ describe('PmPlanService', () => {
     });
   });
 
+  describe('createPlan/updatePlan 검증', () => {
+    it('같은 계획코드가 이미 있으면 덮어쓰지 않고 409로 거부한다', async () => {
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' } as any);
+      mockPlanRepo.findOne.mockResolvedValue({ planCode: 'PM-001' } as any);
+
+      await expect(
+        target.createPlan({ equipCode: 'EQ-001', planCode: 'PM-001', planName: '덮어쓰기' } as any, 'CO', 'P01'),
+      ).rejects.toThrow(ConflictException);
+      expect(mockPlanRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('수정에서 설비를 바꿀 때 없는 설비면 404로 거부한다', async () => {
+      mockPlanRepo.findOne.mockResolvedValue({ planCode: 'PM-001', equipCode: 'EQ-001', company: 'CO', plant: 'P01' } as any);
+      mockEquipRepo.findOne.mockResolvedValue(null);
+
+      await expect(target.updatePlan('PM-001', { equipCode: 'NOPE' } as any, 'CO', 'P01')).rejects.toThrow(NotFoundException);
+      expect(mockPlanRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
   describe('createWorkOrder', () => {
+    it('계획코드를 주었는데 없으면 404로 거부한다', async () => {
+      mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' } as any);
+      mockPlanRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        target.createWorkOrder({ equipCode: 'EQ-001', pmPlanId: 'NOPLAN', scheduledDate: '2026-03-18' } as any, 'CO', 'P01'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
     it('should validate equipment and create work order within tenant', async () => {
       mockEquipRepo.findOne.mockResolvedValue({ equipCode: 'EQ-001', company: 'CO', plant: 'P01' } as any);
       const qb = mockQueryBuilder([]);
@@ -292,13 +321,62 @@ describe('PmPlanService', () => {
   describe('deletePlan', () => {
     it('should delete plan', async () => {
       mockPlanRepo.findOne.mockResolvedValue({ planCode: 'PM-001' } as any);
-      mockPlanRepo.delete.mockResolvedValue({ affected: 1 } as any);
       const r = await target.deletePlan('PM-001');
       expect(r.deleted).toBe(true);
+    });
+
+    it('계획 항목도 함께 지운다(PM_PLAN_ITEMS 외래키 때문에 항목이 남으면 삭제가 막힌다)', async () => {
+      mockPlanRepo.findOne.mockResolvedValue({ planCode: 'PM-001' } as any);
+      await target.deletePlan('PM-001', 'CO', 'P01');
+      expect(mockQueryRunner.manager.delete).toHaveBeenNthCalledWith(1, PmPlanItem, { pmPlanCode: 'PM-001' });
+      expect(mockQueryRunner.manager.delete).toHaveBeenNthCalledWith(2, PmPlan, { planCode: 'PM-001', company: 'CO', plant: 'P01' });
+    });
+  });
+
+  describe('generateWorkOrders 범위·중복', () => {
+    const woQb = () => ({
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    });
+
+    it('요청 사업장 계획만 대상으로 하고, 예정일·사용량 양쪽에 걸린 계획은 한 번만 만든다', async () => {
+      const plan = { planCode: 'PM-001', equipCode: 'EQ-001', nextDueAt: new Date('2026-03-18T00:00:00Z'), pmType: 'USAGE_BASED', company: 'CO', plant: 'P01' } as PmPlan;
+      const timeQb = mockQueryBuilder([plan]);
+      const usageQb = mockQueryBuilder([plan]);
+      mockPlanRepo.createQueryBuilder.mockReturnValueOnce(timeQb).mockReturnValueOnce(usageQb);
+      mockWoRepo.createQueryBuilder.mockReturnValue(woQb() as any);
+      mockNumbering.nextPmWoNo.mockResolvedValue('PM-20260318-001');
+      mockQueryRunner.manager.create.mockImplementation((_entity: any, value: any) => value);
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+
+      const result = await target.generateWorkOrders(2026, 3, 'CO', 'P01');
+
+      expect(result).toEqual({ created: 1, skipped: 0, total: 1 });
+      expect(timeQb.andWhere).toHaveBeenCalledWith('plan.company = :company', { company: 'CO' });
+      expect(timeQb.andWhere).toHaveBeenCalledWith('plan.plant = :plant', { plant: 'P01' });
+      expect(usageQb.andWhere).toHaveBeenCalledWith('p.company = :company', { company: 'CO' });
     });
   });
 
   describe('executeWorkOrder', () => {
+    it('항목 중 하나라도 FAIL 이면 종합이 PASS 로 와도 FAIL 로 보고 설비를 INTERLOCK 한다', async () => {
+      const wo = { workOrderNo: 'WO-1', status: 'PLANNED', equipCode: 'EQ-001', company: 'CO', plant: 'P01', pmPlanCode: null } as any;
+      mockWoRepo.findOne.mockResolvedValue(wo);
+      mockWoRepo.save.mockImplementation(async (v: any) => v);
+
+      const result = await target.executeWorkOrder(
+        'WO-1',
+        { overallResult: 'PASS', items: [{ seq: 1, itemName: 'x', result: 'FAIL', remark: '이상' }] } as any,
+        'CO',
+        'P01',
+      );
+
+      expect(result.overallResult).toBe('FAIL');
+      expect(mockEquipRepo.update).toHaveBeenCalledWith(expect.objectContaining({ equipCode: 'EQ-001' }), { status: 'INTERLOCK' });
+    });
+
     it('should throw when already COMPLETED', async () => {
       mockWoRepo.findOne.mockResolvedValue({ id: 1, status: 'COMPLETED' } as any);
       await expect(target.executeWorkOrder('1', { overallResult: 'PASS' } as any)).rejects.toThrow(BadRequestException);
