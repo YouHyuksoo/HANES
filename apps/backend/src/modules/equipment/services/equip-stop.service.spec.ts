@@ -22,7 +22,11 @@ describe('EquipStopService', () => {
 
   const TENANT = ['40', '1000'] as const;
 
+  // 공통코드 확인은 DB 조회 한 번이라 다른 규칙 테스트의 쿼리 순서를 흩지 않도록 기본은 통과시키고, 아래 전용 테스트에서만 실제로 돌린다.
+  let comCodeSpy: jest.SpyInstance;
+
   beforeEach(async () => {
+    comCodeSpy = jest.spyOn(EquipStopService.prototype as never, 'assertComCode' as never).mockResolvedValue(undefined as never);
     query = jest.fn();
     const manager = { query };
     const tx = { run: jest.fn(async (cb: (qr: unknown) => unknown) => cb({ manager })) };
@@ -36,6 +40,33 @@ describe('EquipStopService', () => {
     }).compile();
 
     service = module.get(EquipStopService);
+  });
+
+  describe('공통코드·날짜 검사', () => {
+    it('정지사유가 공통코드에 없으면 400으로 거부하고 정지를 만들지 않는다', async () => {
+      comCodeSpy.mockRestore();
+      query.mockResolvedValueOnce([{ cnt: 0 }]); // COM_CODES 조회: 없음
+
+      await expect(
+        service.startStop({ equipCode: 'EQ-1', stopReason: 'XX' }, ...TENANT, 'u1'),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(query).toHaveBeenCalledTimes(1);
+    });
+
+    it('호출유형이 공통코드에 없으면 400으로 거부한다', async () => {
+      comCodeSpy.mockRestore();
+      query.mockResolvedValueOnce([{ cnt: 0 }]);
+
+      await expect(
+        service.createCall({ equipCode: 'EQ-1', callType: 'XX' }, ...TENANT, 'u1'),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('이력 조회의 날짜가 YYYY-MM-DD 가 아니면 DB 를 부르기 전에 400으로 거부한다', async () => {
+      await expect(service.findStops({ from: 'bad-date' }, ...TENANT)).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.findCalls({ to: '2026-13-40' }, ...TENANT)).rejects.toBeInstanceOf(BadRequestException);
+      expect(query).not.toHaveBeenCalled();
+    });
   });
 
   describe('startStop', () => {

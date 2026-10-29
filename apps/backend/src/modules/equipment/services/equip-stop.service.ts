@@ -81,6 +81,35 @@ export class EquipStopService {
     }
   }
 
+  /** 공통코드(사용 중)에 있는 값인지 확인한다. 비어 있으면 통과(사유미정 허용) */
+  private async assertComCode(
+    group: string,
+    code: string | undefined | null,
+    company: string,
+    plant: string,
+    label: string,
+  ): Promise<void> {
+    if (!code) return;
+    const rows: Array<{ cnt: number | string }> = await this.dataSource.query(
+      `SELECT COUNT(*) AS "cnt" FROM COM_CODES
+        WHERE GROUP_CODE = :1 AND DETAIL_CODE = :2 AND USE_YN = 'Y' AND COMPANY = :3 AND PLANT_CD = :4`,
+      [group, code, company, plant],
+    );
+    if (Number(rows[0]?.cnt ?? 0) === 0) {
+      throw new BadRequestException(`${label} 값이 공통코드(${group})에 없습니다: ${code}`);
+    }
+  }
+
+  /** 이력 조회의 시작/종료일은 YYYY-MM-DD 여야 한다(아니면 DB 변환 오류로 500 이 되었다) */
+  private assertYmd(value: string | undefined, label: string): void {
+    if (!value) return;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    const valid = m && new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getMonth() === Number(m[2]) - 1;
+    if (!valid) {
+      throw new BadRequestException(`${label} 형식이 올바르지 않습니다(YYYY-MM-DD): ${value}`);
+    }
+  }
+
   // ─────────────────────────── 설비정지 ───────────────────────────
 
   /** 진행중(OPEN) 정지 1건. 없으면 null */
@@ -107,6 +136,7 @@ export class EquipStopService {
     userId = 'system',
   ): Promise<EquipStopEventView> {
     this.assertTenant(company, plant);
+    await this.assertComCode('EQUIP_STOP_REASON', dto.stopReason, company, plant as string, '정지사유');
 
     return this.tx.run(async (qr) => {
       const existing = await qr.manager.query(
@@ -186,6 +216,7 @@ export class EquipStopService {
     userId = 'system',
   ): Promise<EquipStopEventView> {
     this.assertTenant(company, plant);
+    await this.assertComCode('EQUIP_STOP_REASON', dto.stopReason, company, plant as string, '정지사유');
     const updated = await this.dataSource.query(
       `UPDATE EQUIP_STOP_EVENTS
           SET STOP_REASON = :1,
@@ -216,6 +247,7 @@ export class EquipStopService {
     userId = 'system',
   ): Promise<EquipStopEventView> {
     this.assertTenant(company, plant);
+    await this.assertComCode('EQUIP_STOP_REASON', dto.stopReason, company, plant as string, '정지사유');
 
     return this.tx.run(async (qr) => {
       const rows = await qr.manager.query(
@@ -285,6 +317,8 @@ export class EquipStopService {
     plant?: string,
   ): Promise<{ data: EquipStopEventView[]; summary: EquipStopSummary }> {
     this.assertTenant(company, plant);
+    this.assertYmd(params.from, '시작일');
+    this.assertYmd(params.to, '종료일');
 
     const binds: unknown[] = [company, plant];
     let where = 'COMPANY = :1 AND PLANT_CD = :2';
@@ -355,6 +389,7 @@ export class EquipStopService {
     userId = 'system',
   ): Promise<EquipCallEventView> {
     this.assertTenant(company, plant);
+    await this.assertComCode('EQUIP_CALL_TYPE', dto.callType, company, plant as string, '호출유형');
 
     return this.tx.run(async (qr) => {
       const existing = await qr.manager.query(
@@ -452,6 +487,8 @@ export class EquipStopService {
     plant?: string,
   ): Promise<EquipCallEventView[]> {
     this.assertTenant(company, plant);
+    this.assertYmd(params.from, '시작일');
+    this.assertYmd(params.to, '종료일');
 
     const binds: unknown[] = [company, plant];
     let where = 'COMPANY = :1 AND PLANT_CD = :2';
