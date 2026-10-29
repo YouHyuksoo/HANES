@@ -10,7 +10,7 @@
  * 상태 흐름: RECEIVED -> CONFIRMED -> IN_PRODUCTION -> PARTIAL_SHIP -> SHIPPED -> CLOSED
  */
 
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import {
   IsString,
   IsOptional,
@@ -150,4 +150,16 @@ export class CustomerOrderQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsDateString()
   dueDateTo?: string;
+}
+
+/** 출하 진행 현황(수주현황) 상태 — 발주 상태가 아니라 품목의 출하수량·납기로 계산한 값 */
+const CUSTOMER_ORDER_PROGRESS_STATUS = ['IN_PROGRESS', 'PARTIAL_SHIP', 'COMPLETED', 'OVERDUE'] as const;
+
+/** 고객발주 출하 진행 현황 조회 쿼리 DTO (상태 필터가 발주 상태와 다르다) */
+export class CustomerOrderStatusQueryDto extends OmitType(CustomerOrderQueryDto, ['status'] as const) {
+  @ApiPropertyOptional({ description: '진행 상태 필터', enum: CUSTOMER_ORDER_PROGRESS_STATUS })
+  @IsOptional()
+  @IsString()
+  @IsIn([...CUSTOMER_ORDER_PROGRESS_STATUS])
+  status?: string;
 }

@@ -285,7 +285,11 @@ export class CustomerOrderService {
       throw new BadRequestException('접수 상태에서만 삭제할 수 있습니다.');
     }
 
-    await this.customerOrderRepository.delete({ orderNo, ...this.tenantWhere(company, plant) });
+    // 품목에는 외래키가 없어 발주만 지우면 품목이 남고, 같은 수주번호로 다시 등록하면 남은 품목이 새 발주에 섞인다
+    await this.tx.run(async (queryRunner) => {
+      await queryRunner.manager.delete(CustomerOrderItem, { orderNo, ...this.tenantWhere(company, plant) });
+      await queryRunner.manager.delete(CustomerOrder, { orderNo, ...this.tenantWhere(company, plant) });
+    });
 
     return { orderNo, deleted: true };
   }

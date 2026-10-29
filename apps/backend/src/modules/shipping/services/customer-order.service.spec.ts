@@ -122,9 +122,11 @@ describe('CustomerOrderService', () => {
     it('should delete RECEIVED order', async () => {
       mockOrderRepo.findOne.mockResolvedValue({ orderNo: 'CO-001', status: 'RECEIVED' } as any);
       mockItemRepo.find.mockResolvedValue([]);
-      mockOrderRepo.delete.mockResolvedValue({ affected: 1 } as any);
       const r = await target.delete('CO-001');
       expect(r.deleted).toBe(true);
+      // 발주와 품목을 한 트랜잭션에서 함께 지운다(품목이 남아 다음 같은 번호 등록에 섞이던 문제)
+      expect(mockTx.run).toHaveBeenCalledTimes(1);
+      expect(mockQr.manager.delete).toHaveBeenCalledTimes(2);
     });
     it('should throw when not RECEIVED', async () => {
       mockOrderRepo.findOne.mockResolvedValue({ orderNo: 'CO-001', status: 'CONFIRMED' } as any);

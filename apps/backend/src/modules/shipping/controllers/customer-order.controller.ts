@@ -33,6 +33,7 @@ import {
   CreateCustomerOrderDto,
   UpdateCustomerOrderDto,
   CustomerOrderQueryDto,
+  CustomerOrderStatusQueryDto,
 } from '../dto/customer-order.dto';
 import { ResponseUtil } from '../../../common/dto/response.dto';
 
@@ -52,7 +53,7 @@ export class CustomerOrderController {
   @Get('status')
   @ApiOperation({ summary: '고객발주 출하 진행 현황 조회' })
   @ApiResponse({ status: 200, description: '조회 성공' })
-  async findStatus(@Query() query: CustomerOrderQueryDto, @Company() company: string, @Plant() plant: string) {
+  async findStatus(@Query() query: CustomerOrderStatusQueryDto, @Company() company: string, @Plant() plant: string) {
     const result = await this.customerOrderService.findStatus(query, company, plant);
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
