@@ -245,9 +245,10 @@ export class MoldService {
       .createQueryBuilder('m')
       .where('m.status = :status', { status: 'ACTIVE' })
       .andWhere(
-        '(m.maintenanceCycle IS NOT NULL AND m.currentShots >= (m.maintenanceCycle * FLOOR(m.currentShots / m.maintenanceCycle))' +
+        // 두 조건을 바깥 괄호로 묶어야 status·사업장 조건이 둘 다에 걸린다(없으면 AND/OR 우선순위로 다른 사업장·폐기 금형이 섞인다)
+        '((m.maintenanceCycle IS NOT NULL AND m.currentShots >= (m.maintenanceCycle * FLOOR(m.currentShots / m.maintenanceCycle))' +
           ' AND MOD(m.currentShots, m.maintenanceCycle) >= m.maintenanceCycle * 0.9)' +
-          ' OR (m.nextMaintenanceDate IS NOT NULL AND m.nextMaintenanceDate <= :futureDate)',
+          ' OR (m.nextMaintenanceDate IS NOT NULL AND m.nextMaintenanceDate <= :futureDate))',
         {
           futureDate: (() => {
             const d = new Date();
