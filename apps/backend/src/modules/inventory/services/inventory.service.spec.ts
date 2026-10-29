@@ -156,6 +156,20 @@ describe('InventoryService', () => {
       expect(mockLotRepo.save).toHaveBeenCalledTimes(1);
     });
 
+    it('공급사 없이 등록하면 DB 오류(500) 대신 400으로 막고, 현재수량을 초기수량으로 채운다', async () => {
+      await expect(target.createLot({ matUid: 'L1', itemCode: 'PART-001', initQty: 5 } as any)).rejects.toThrow(BadRequestException);
+      expect(mockLotRepo.save).not.toHaveBeenCalled();
+
+      mockLotRepo.create.mockReturnValue({} as any);
+      mockLotRepo.save.mockResolvedValue({} as any);
+      await target.createLot({ matUid: 'L1', itemCode: 'PART-001', initQty: 5, vendor: 'V' } as any);
+      expect(mockLotRepo.create).toHaveBeenCalledWith(expect.objectContaining({ initQty: 5, currentQty: 5 }));
+    });
+
+    it('자재 UID 없는 입고는 400으로 막는다', async () => {
+      await expect(target.receiveStock({ warehouseCode: 'WH', itemCode: 'PART-001', qty: 1, transType: 'MAT_IN' } as any)).rejects.toThrow(BadRequestException);
+    });
+
     it('persists company and plant from tenant context', async () => {
       // Arrange
       const dto = {

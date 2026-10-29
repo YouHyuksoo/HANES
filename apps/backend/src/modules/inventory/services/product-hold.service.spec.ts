@@ -53,7 +53,7 @@ describe('ProductHoldService', () => {
       const stock = { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', status: 'NORMAL', qty: 100 } as any;
       mockQueryRunner.manager.findOne.mockResolvedValue(stock);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
-      mockStockRepo.findOne.mockResolvedValue({ ...stock, status: 'HOLD', company: 'CO', plant: 'P01' });
+      mockStockRepo.find.mockResolvedValue([{ ...stock, status: 'HOLD', company: 'CO', plant: 'P01' }] as any);
       mockPartRepo.findOne.mockResolvedValue({ itemCode: 'IT', itemName: 'Item' } as any);
 
       // PRODUCT_STOCKS PRD_UID 비키화(커밋 78d46411): stockId는 2-part(wh::item), 키 조회에 prdUid 미포함
@@ -73,7 +73,7 @@ describe('ProductHoldService', () => {
       const stock = { warehouseCode: 'WH', itemCode: 'ITEM-MISSING', prdUid: 'FG-001', status: 'NORMAL', qty: 100 } as any;
       mockQueryRunner.manager.findOne.mockResolvedValue(stock);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
-      mockStockRepo.findOne.mockResolvedValue({ ...stock, status: 'HOLD' });
+      mockStockRepo.find.mockResolvedValue([{ ...stock, status: 'HOLD' }] as any);
       mockPartRepo.findOne.mockResolvedValue(null);
 
       const result = await target.hold({ stockId: 'WH::ITEM-MISSING::FG-001', reason: 'QC hold' } as any);
@@ -108,7 +108,7 @@ describe('ProductHoldService', () => {
       const stock = { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', status: 'HOLD', qty: 100 } as any;
       mockQueryRunner.manager.findOne.mockResolvedValue(stock);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
-      mockStockRepo.findOne.mockResolvedValue({ ...stock, status: 'NORMAL', company: 'CO', plant: 'P01' });
+      mockStockRepo.find.mockResolvedValue([{ ...stock, status: 'NORMAL', company: 'CO', plant: 'P01' }] as any);
       mockPartRepo.findOne.mockResolvedValue({ itemCode: 'IT', itemName: 'Item' } as any);
 
       const r = await target.release({ stockId: 'WH::IT', reason: 'Released' } as any, 'CO', 'P01', 'user');
@@ -127,7 +127,7 @@ describe('ProductHoldService', () => {
       const stock = { warehouseCode: 'WH', itemCode: 'ITEM-MISSING', prdUid: 'FG-001', status: 'HOLD', qty: 100 } as any;
       mockQueryRunner.manager.findOne.mockResolvedValue(stock);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
-      mockStockRepo.findOne.mockResolvedValue({ ...stock, status: 'NORMAL' });
+      mockStockRepo.find.mockResolvedValue([{ ...stock, status: 'NORMAL' }] as any);
       mockPartRepo.findOne.mockResolvedValue(null);
 
       const result = await target.release({ stockId: 'WH::ITEM-MISSING::FG-001', reason: 'Released' } as any);
@@ -151,7 +151,7 @@ describe('ProductHoldService', () => {
       mockPartRepo.findOne.mockResolvedValue({ itemCode: 'IT', itemName: 'Item' } as any);
 
       mockQueryRunner.manager.findOne.mockResolvedValue({ status: 'NORMAL', qty: 10, itemCode: 'IT' } as any);
-      mockStockRepo.findOne.mockResolvedValue({ status: 'HOLD', qty: 10, itemCode: 'IT' } as any);
+      mockStockRepo.find.mockResolvedValue([{ status: 'HOLD', qty: 10, itemCode: 'IT' } as any] as any);
       const held = await target.hold({ stockId: 'WH::IT', reason: 'qc' } as any, 'CO', 'P01', 'user');
       expect(mockQueryRunner.manager.update).toHaveBeenLastCalledWith(
         expect.anything(), expect.anything(), expect.objectContaining({ status: 'HOLD' }),
@@ -159,7 +159,7 @@ describe('ProductHoldService', () => {
       expect(held.status).toBe('HOLD');
 
       mockQueryRunner.manager.findOne.mockResolvedValue({ status: 'HOLD', qty: 10, itemCode: 'IT' } as any);
-      mockStockRepo.findOne.mockResolvedValue({ status: 'NORMAL', qty: 10, itemCode: 'IT' } as any);
+      mockStockRepo.find.mockResolvedValue([{ status: 'NORMAL', qty: 10, itemCode: 'IT' } as any] as any);
       const released = await target.release({ stockId: 'WH::IT', reason: 'ok' } as any, 'CO', 'P01', 'user');
       expect(mockQueryRunner.manager.update).toHaveBeenLastCalledWith(
         expect.anything(), expect.anything(), expect.objectContaining({ status: 'NORMAL' }),

@@ -187,12 +187,19 @@ export class ProductPhysicalInvService {
           ...(plant && { plant }),
         };
 
-        const stock = await queryRunner.manager.findOne(ProductStock, {
+        const stockRows = await queryRunner.manager.find(ProductStock, {
           where: scopedKey,
         });
+        const stock = stockRows[0];
 
         if (!stock) {
           throw new NotFoundException(`재고를 찾을 수 없습니다: ${item.stockId}`);
+        }
+        // 식별자(창고::품목)에는 품질상태가 없다 — 행이 여럿이면 아래 UPDATE 가 모든 행 수량을 실사수량으로 덮어쓴다
+        if (stockRows.length > 1) {
+          throw new BadRequestException(
+            `품질상태가 여러 개인 재고는 식별자만으로 실사 대상을 정할 수 없어 반영할 수 없습니다: ${item.stockId}`,
+          );
         }
         this.assertSameTenant('제품 실사 대상 재고', stock, company, plant);
 
@@ -396,7 +403,8 @@ export class ProductPhysicalInvService {
       ...this.tenantWhere(company, plant),
       ...(session.warehouseCode ? { warehouseCode: session.warehouseCode } : {}),
     };
-    const stock = await this.stockRepository.findOne({ where: stockWhere });
+    // 품질상태 행이 여럿이면 수량이 가장 많은 행을 기준으로 한다(임의의 한 행이 아니라)
+    const stock = await this.stockRepository.findOne({ where: stockWhere, order: { qty: 'DESC', warehouseCode: 'ASC' } });
     if (!stock) {
       throw new NotFoundException(
         `제품 재고를 찾을 수 없습니다: ${itemCode}` +
@@ -417,6 +425,8 @@ export class ProductPhysicalInvService {
 
     // 4) PHYSICAL_INV_COUNT_DETAILS upsert (+1) — MAT_UID 에 제품 시리얼(FG_BARCODE) 저장
     const detailKey = {
+      company: session.company,
+      plant: session.plant,
       sessionDate: session.sessionDate,
       seq: session.seq,
       warehouseCode: stock.warehouseCode,
@@ -435,7 +445,15 @@ export class ProductPhysicalInvService {
         countedBy: countedBy ?? null,
       });
     }
-    await this.countDetailRepository.save(detail);
+    try {
+      await this.countDetailRepository.save(detail);
+    } catch (error: unknown) {
+      // 같은 바코드를 동시에 스캔하면 위의 중복 확인을 둘 다 통과하고 PK 충돌이 난다
+      if (error instanceof Error && error.message.includes('ORA-00001')) {
+        throw new BadRequestException(`이미 실사한 제품 바코드입니다: ${barcode}`);
+      }
+      throw error;
+    }
 
     // 5) 세션 품목별 집계(items) 구성
     const items = await this.buildSessionItems(session, company, plant);

@@ -64,7 +64,7 @@ export class ProductHoldService {
   private parseStockId(stockId: string): { warehouseCode: string; itemCode: string } {
     const [warehouseCode, itemCode] = stockId.split('::');
     if (!warehouseCode || !itemCode) {
-      throw new NotFoundException(`�߸��� ��� ID �����Դϴ�: ${stockId} (��: WH001::ITEM001)`);
+      throw new NotFoundException(`잘못된 재고 ID 형식입니다: ${stockId} (예: WH001::ITEM001)`);
     }
     return { warehouseCode, itemCode };
   }
@@ -82,9 +82,9 @@ export class ProductHoldService {
       const stock = await queryRunner.manager.findOne(ProductStock, {
         where: scopedKey,
       });
-      if (!stock) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
-      if (isProductStockOnHold(stock.status)) throw new BadRequestException('�̹� HOLD �����Դϴ�.');
-      if (stock.qty <= 0) throw new BadRequestException('������ 0�� ���� HOLD�� �� �����ϴ�.');
+      if (!stock) throw new NotFoundException(`제품 재고를 찾을 수 없습니다: ${stockId}`);
+      if (isProductStockOnHold(stock.status)) throw new BadRequestException('이미 HOLD 상태입니다.');
+      if (stock.qty <= 0) throw new BadRequestException('수량이 0인 재고는 HOLD할 수 없습니다.');
 
       await queryRunner.manager.update(ProductStock, scopedKey, {
         status: PRODUCT_STOCK_HOLD_STATUS.HOLD,
@@ -95,8 +95,10 @@ export class ProductHoldService {
       });
     });
 
-    const updated = await this.productStockRepository.findOne({ where: scopedKey });
-    if (!updated) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
+    // 같은 창고·품목에 품질상태(GOOD/DEFECT)별 행이 여럿일 수 있다 — 응답 수량은 임의의 한 행이 아니라 합계다
+    const rows = await this.productStockRepository.find({ where: scopedKey });
+    const updated = rows[0];
+    if (!updated) throw new NotFoundException(`제품 재고를 찾을 수 없습니다: ${stockId}`);
     const part = await this.itemMasterRepository.findOne({
       where: { itemCode: updated.itemCode, ...(company && { company }), ...(plant && { plant }) },
     });
@@ -106,7 +108,7 @@ export class ProductHoldService {
       status: PRODUCT_STOCK_HOLD_STATUS.HOLD,
       itemCode: updated.itemCode,
       itemName: part?.itemName ?? null,
-      qty: updated.qty,
+      qty: rows.reduce((sum, r) => sum + Number(r.qty ?? 0), 0),
       reason,
     };
   }
@@ -124,8 +126,8 @@ export class ProductHoldService {
       const stock = await queryRunner.manager.findOne(ProductStock, {
         where: scopedKey,
       });
-      if (!stock) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
-      if (!isProductStockOnHold(stock.status)) throw new BadRequestException('HOLD ���°� �ƴմϴ�.');
+      if (!stock) throw new NotFoundException(`제품 재고를 찾을 수 없습니다: ${stockId}`);
+      if (!isProductStockOnHold(stock.status)) throw new BadRequestException('HOLD 상태가 아닙니다.');
 
       await queryRunner.manager.update(ProductStock, scopedKey, {
         status: PRODUCT_STOCK_HOLD_STATUS.NORMAL,
@@ -136,8 +138,10 @@ export class ProductHoldService {
       });
     });
 
-    const updated = await this.productStockRepository.findOne({ where: scopedKey });
-    if (!updated) throw new NotFoundException(`��ǰ ���� ã�� �� �����ϴ�: ${stockId}`);
+    // 같은 창고·품목에 품질상태(GOOD/DEFECT)별 행이 여럿일 수 있다 — 응답 수량은 임의의 한 행이 아니라 합계다
+    const rows = await this.productStockRepository.find({ where: scopedKey });
+    const updated = rows[0];
+    if (!updated) throw new NotFoundException(`제품 재고를 찾을 수 없습니다: ${stockId}`);
     const part = await this.itemMasterRepository.findOne({
       where: { itemCode: updated.itemCode, ...(company && { company }), ...(plant && { plant }) },
     });
@@ -147,7 +151,7 @@ export class ProductHoldService {
       status: PRODUCT_STOCK_HOLD_STATUS.NORMAL,
       itemCode: updated.itemCode,
       itemName: part?.itemName ?? null,
-      qty: updated.qty,
+      qty: rows.reduce((sum, r) => sum + Number(r.qty ?? 0), 0),
       reason,
     };
   }

@@ -211,10 +211,16 @@ export class InventoryService {
       throw new BadRequestException(`이미 등록된 LOT입니다: ${dto.matUid}`);
     }
 
+    // LOT.VENDOR 는 NOT NULL 이다 — 비어 있으면 DB 오류(500) 대신 입력 오류로 돌려준다
+    if (!dto.vendor) {
+      throw new BadRequestException('공급사(vendor)는 필수입니다.');
+    }
+
     const lot = this.lotRepository.create({
       matUid: dto.matUid,
       itemCode: dto.itemCode,
       initQty: dto.initQty,
+      currentQty: dto.initQty,
       recvDate: dto.recvDate,
       expireDate: dto.expireDate,
       origin: dto.origin,
@@ -232,6 +238,10 @@ export class InventoryService {
    * 입고 처리
    */
   async receiveStock(dto: ReceiveStockDto, company?: string, plant?: string) {
+    // 재고는 LOT(MAT_UID) 단위로 관리한다 — MAT_UID 없이 들어오면 재고 INSERT 가 DB 오류(500)로 끝난다
+    if (!dto.matUid) {
+      throw new BadRequestException('입고에는 자재 UID(matUid)가 필요합니다.');
+    }
     return this.tx.run(async (queryRunner) => {
       const transNo = await this.generateTransNo(queryRunner);
 
@@ -453,6 +463,30 @@ export class InventoryService {
           itemCode: originalTrans.itemCode,
           matUid: originalTrans.matUid,
         }, Math.abs(originalTrans.qty), originalTrans.company ?? company, originalTrans.plant ?? plant);
+
+        // 이동(출고+도착 창고)이면 도착 창고에서 같은 수량을 빼야 한다 — 빼지 않으면 재고가 두 창고에 중복으로 남는다
+        if (originalTrans.toWarehouseId) {
+          const destStock = await queryRunner.manager.findOne(MatStock, {
+            where: {
+              warehouseCode: originalTrans.toWarehouseId,
+              itemCode: originalTrans.itemCode,
+              matUid: originalTrans.matUid || IsNull(),
+              ...txTenantWhere,
+            },
+          });
+          if (!destStock || destStock.availableQty < Math.abs(originalTrans.qty)) {
+            throw new BadRequestException(
+              `이동한 재고가 도착 창고(${originalTrans.toWarehouseId})에서 이미 사용·이동되어 취소할 수 없습니다. LOT: ${originalTrans.matUid ?? ''}`,
+            );
+          }
+          await this.decrementStockAtomically(
+            queryRunner,
+            destStock,
+            Math.abs(originalTrans.qty),
+            originalTrans.company ?? company,
+            originalTrans.plant ?? plant,
+          );
+        }
       }
 
       // NOTE: MatLot.currentQty 제거됨 — 재고수량은 MatStock에서만 관리

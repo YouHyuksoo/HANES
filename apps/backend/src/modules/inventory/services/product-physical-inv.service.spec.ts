@@ -176,7 +176,7 @@ describe('ProductPhysicalInvService', () => {
   describe('applyCount', () => {
     it('should apply count and create adj log', async () => {
       const stock = { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', qty: 100, reservedQty: 0, company: 'CO', plant: 'P01' } as any;
-      mockQueryRunner.manager.findOne.mockResolvedValue(stock);
+      mockQueryRunner.manager.find.mockResolvedValue([stock]);
       mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
       mockQueryRunner.manager.create.mockReturnValue({ diffQty: -10 } as any);
       mockQueryRunner.manager.save.mockResolvedValue({ diffQty: -10 } as any);
@@ -190,18 +190,32 @@ describe('ProductPhysicalInvService', () => {
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
       // stockId는 warehouseCode::itemCode (2-part)로 분해되며 prdUid는 키에 포함되지 않는다.
-      expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
+      expect(mockQueryRunner.manager.find).toHaveBeenCalledWith(ProductStock, {
         where: { warehouseCode: 'WH', itemCode: 'IT', company: 'CO', plant: 'P01' },
       });
     });
 
     it('should throw when stock not found', async () => {
-      mockQueryRunner.manager.findOne.mockResolvedValue(null);
+      mockQueryRunner.manager.find.mockResolvedValue([]);
       await expect(target.applyCount({
         items: [{ stockId: 'WH::IT::LOT1', countedQty: 90 }],
         createdBy: 'user',
       } as any, 'CO', 'P01', 'user')).rejects.toThrow(NotFoundException);
       expect(mockTx.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('품질상태 행이 여러 개인 재고는 실사 반영을 400으로 막는다', async () => {
+      const rows = [
+        { warehouseCode: 'WH', itemCode: 'IT', qualityStatus: 'GOOD', qty: 100, reservedQty: 0, company: 'CO', plant: 'P01' },
+        { warehouseCode: 'WH', itemCode: 'IT', qualityStatus: 'DEFECT', qty: 5, reservedQty: 0, company: 'CO', plant: 'P01' },
+      ] as any;
+      mockQueryRunner.manager.find.mockResolvedValue(rows);
+
+      await expect(target.applyCount({
+        items: [{ stockId: 'WH::IT', countedQty: 90 }],
+        createdBy: 'user',
+      } as any, 'CO', 'P01', 'user')).rejects.toThrow(BadRequestException);
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
     });
 
     it('should throw on invalid stockId format', async () => {
@@ -213,7 +227,7 @@ describe('ProductPhysicalInvService', () => {
 
     it('should throw when countedQty is below reservedQty', async () => {
       const stock = { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', qty: 100, reservedQty: 20, company: 'CO', plant: 'P01' } as any;
-      mockQueryRunner.manager.findOne.mockResolvedValue(stock);
+      mockQueryRunner.manager.find.mockResolvedValue([stock]);
 
       await expect(target.applyCount({
         items: [{ stockId: 'WH::IT::LOT1', countedQty: 10 }],
@@ -223,7 +237,7 @@ describe('ProductPhysicalInvService', () => {
 
     it('should throw when product stock tenant differs from request tenant', async () => {
       const stock = { warehouseCode: 'WH', itemCode: 'IT', prdUid: 'LOT1', qty: 100, reservedQty: 0, company: 'OTHER', plant: 'P01' } as any;
-      mockQueryRunner.manager.findOne.mockResolvedValue(stock);
+      mockQueryRunner.manager.find.mockResolvedValue([stock]);
 
       await expect(target.applyCount({
         items: [{ stockId: 'WH::IT::LOT1', countedQty: 90 }],
