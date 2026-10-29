@@ -40,7 +40,7 @@ export class ProdPlan {
   ])
   part: ItemMaster | null;
 
-  @Column({ name: 'ITEM_TYPE', length: 10 })
+  @Column({ name: 'ITEM_TYPE', length: 20 })
   itemType: string;
 
   @Column({ name: 'PLAN_QTY', type: 'int' })
