@@ -82,7 +82,7 @@ export class SimulationService {
     const plans = await this.planRepo.find({
       where: { planMonth: month, company, plant },
       relations: ['part'],
-      order: { priority: 'ASC' },
+      order: { priority: 'ASC', planNo: 'ASC' },
     });
 
     if (plans.length === 0) {
@@ -153,12 +153,13 @@ export class SimulationService {
   ): Promise<SimulationResult | null> {
     const header = await this.headerRepo.findOne({
       where: { simMonth: month, company, plant },
-      order: { createdAt: 'DESC' },
+      order: { createdAt: 'DESC', simId: 'DESC' },
     });
     if (!header) return null;
 
     const planRows = await this.simPlanRepo.find({
       where: { simId: header.simId },
+      order: { startDate: 'ASC', endDate: 'ASC', planNo: 'ASC' },
     });
     const plans: SimPlanResult[] = planRows.map(r => ({
       planNo: r.planNo, itemCode: r.itemCode, itemName: r.itemName,
