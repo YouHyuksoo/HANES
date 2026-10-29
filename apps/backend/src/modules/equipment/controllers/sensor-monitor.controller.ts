@@ -19,6 +19,7 @@ import {
   Delete,
   Body,
   Param,
+  ParseIntPipe,
   Query,
   HttpCode,
   HttpStatus,
@@ -100,12 +101,12 @@ export class SensorMonitorController {
   @ApiOperation({ summary: '조건 감시 규칙 수정' })
   @ApiParam({ name: 'id', description: '규칙 ID' })
   async updateRule(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateConditionRuleDto,
     @Company() company: string,
     @Plant() plant: string,
   ) {
-    const data = await this.sensorMonitorService.updateRule(Number(id), dto, company, plant);
+    const data = await this.sensorMonitorService.updateRule(id, dto, company, plant);
     return ResponseUtil.success(data, '조건 규칙이 수정되었습니다.');
   }
 
@@ -113,11 +114,11 @@ export class SensorMonitorController {
   @ApiOperation({ summary: '조건 감시 규칙 삭제' })
   @ApiParam({ name: 'id', description: '규칙 ID' })
   async deleteRule(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Company() company: string,
     @Plant() plant: string,
   ) {
-    await this.sensorMonitorService.deleteRule(Number(id), company, plant);
+    await this.sensorMonitorService.deleteRule(id, company, plant);
     return ResponseUtil.success(null, '조건 규칙이 삭제되었습니다.');
   }
 }

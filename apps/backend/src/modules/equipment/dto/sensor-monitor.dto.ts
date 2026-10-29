@@ -92,14 +92,16 @@ export class UpdateConditionRuleDto {
   @IsNumber()
   criticalValue?: number;
 
-  @ApiPropertyOptional({ description: '비교 연산자' })
+  @ApiPropertyOptional({ description: '비교 연산자', enum: ['GT', 'GTE', 'LT', 'LTE'] })
   @IsOptional()
   @IsString()
+  @IsIn(['GT', 'GTE', 'LT', 'LTE'])
   compareOp?: string;
 
-  @ApiPropertyOptional({ description: '조치 유형' })
+  @ApiPropertyOptional({ description: '조치 유형', enum: ['ALERT', 'AUTO_WO', 'INTERLOCK'] })
   @IsOptional()
   @IsString()
+  @IsIn(['ALERT', 'AUTO_WO', 'INTERLOCK'])
   actionType?: string;
 
   @ApiPropertyOptional({ description: 'PM 계획 코드' })
@@ -107,9 +109,10 @@ export class UpdateConditionRuleDto {
   @IsString()
   pmPlanCode?: string;
 
-  @ApiPropertyOptional({ description: '사용 여부' })
+  @ApiPropertyOptional({ description: '사용 여부', enum: ['Y', 'N'] })
   @IsOptional()
   @IsString()
+  @IsIn(['Y', 'N'])
   useYn?: string;
 }
 

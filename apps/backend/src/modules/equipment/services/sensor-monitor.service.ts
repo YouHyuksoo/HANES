@@ -19,6 +19,7 @@ import { PmPlan } from '../../../entities/pm-plan.entity';
 import { PmWorkOrder } from '../../../entities/pm-work-order.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { parseDateStart } from '../../../shared/date.util';
 import {
   PostSensorDataDto,
   SensorDataQueryDto,
@@ -226,7 +227,8 @@ export class SensorMonitorService {
     if (plant) qb.andWhere('s.plant = :plant', { plant });
     if (equipCode) qb.andWhere('s.equipCode = :equipCode', { equipCode });
     if (sensorType) qb.andWhere('s.sensorType = :sensorType', { sensorType });
-    if (from) qb.andWhere('s.measuredAt >= :from', { from: new Date(from) });
+    // 날짜만 온 값(YYYY-MM-DD)은 서버 로컬 자정으로 본다(new Date 기본 해석은 UTC 자정이라 한국에선 오전 9시가 되어 새벽 데이터가 빠졌다)
+    if (from) qb.andWhere('s.measuredAt >= :from', { from: /^\d{4}-\d{2}-\d{2}$/.test(from) ? parseDateStart(from) : new Date(from) });
     if (to) {
       const toDate = new Date(to);
       toDate.setHours(23, 59, 59, 999);
