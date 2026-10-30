@@ -247,7 +247,7 @@ export class ProductTraceabilityService {
         unit: part?.unit ?? 'EA',
         vendorCode: lot?.vendor ?? null,
         vendorName: lot?.vendor ? (partnerNameMap.get(lot.vendor) ?? lot.vendor) : null,
-        po: po ? { poNo: po.poNo, orderDate: this.fmtDate(po.orderDate), partnerName: po.partnerName } : null,
+        po: po ? { poNo: po.poNo, orderDate: toDateOnly(po.orderDate), partnerName: po.partnerName } : null,
         arrival: arrival ? { arrivalNo: arrival.arrivalNo, arrivalDate: this.fmtDate(arrival.arrivalDate), qty: arrival.qty } : null,
         iqc: iqc ? { result: iqc.result, inspectType: iqc.inspectType, inspectorName: iqc.inspectorName, inspectDate: this.fmtDate(iqc.inspectDate), certFilePath: iqc.certFilePath } : null,
         receiving: recv ? { receiveNo: recv.receiveNo, receiveDate: this.fmtDate(recv.receiveDate) } : null,
@@ -466,7 +466,7 @@ export class ProductTraceabilityService {
       equipCode: log.equipCode,
       equipName: equipNameMap.get(log.equipCode) ?? log.equipCode,
       inspectType: log.inspectType,
-      inspectDate: this.fmtDate(log.inspectDate),
+      inspectDate: toDateOnly(log.inspectDate),
       inspectAt: this.fmtDate(log.inspectAt),
       inspectorName: log.inspectorName ?? null,
       overallResult: log.overallResult,
@@ -533,7 +533,7 @@ export class ProductTraceabilityService {
         consumableName: m?.consumableName ?? log.consumableCode,
         equipCode: log.equipCode,
         action: log.action,
-        mountAt: this.fmtDate(log.mountDate) ?? this.fmtDate(log.createdAt),
+        mountAt: toDateOnly(log.mountDate) ?? this.fmtDate(log.createdAt),
         workerId: log.workerId ?? null,
         remark: log.remark ?? null,
         expectedLife: m?.expectedLife ?? null,
@@ -890,17 +890,16 @@ export class ProductTraceabilityService {
   // ─── Step 3: getBySerial 메인 (제품 섹션 ①②③④⑤) ─────────────────────────
 
   async getBySerial(serial: string, company: string, plant: string): Promise<ProductTraceabilityDto | null> {
+    // 시리얼이 없으면(쿼리 누락) TypeORM 이 undefined 조건을 무시해 임의 제품 한 건을 돌려준다
+    if (!serial) return null;
     const fg = await this.fgLabelRepo.findOne({ where: { fgBarcode: serial, company, plant } });
     if (!fg) { this.logger.debug(`FgLabel not found: ${serial}`); return null; }
 
     // 아래 조회들은 서로 의존하지 않는다. 원격 DB 왕복이 수백 ms 라
     // 순차로 await 하면 그 합이 그대로 응답시간이 되므로 한 번에 던진다.
-    const [part, jobOrder, processHistory, inspections, matCtx, semiProducts, box, orderResults] =
+    const [part, processHistory, inspections, matCtx, semiProducts, box, orderResults] =
       await Promise.all([
         this.itemMasterRepo.findOne({ where: { itemCode: fg.itemCode, company, plant } }),
-        fg.orderNo
-          ? this.jobOrderRepo.findOne({ where: { orderNo: fg.orderNo, company, plant } })
-          : Promise.resolve(null),
         this.resolveProcessHistory(fg.orderNo, serial, company, plant),
         this.resolveInspections(serial, company, plant),
         // 직접투입 자재
@@ -928,8 +927,8 @@ export class ProductTraceabilityService {
 
     const materials = await this.resolveMaterialTraces(matCtx, company, plant);
 
-    // jobOrder.planDate 존재 확인: job-order.entity.ts 실측 결과 planDate: Date | null 존재함
-    const productionDate = this.fmtDate(jobOrder?.planDate ?? null) ?? this.fmtDate(fg.issuedAt);
+    // 생산일은 라벨 발행 시각이다. (옛 코드는 작업지시 계획일을 먼저 쓰려 했지만 planDate 는 date 컬럼이라 문자열로 읽혀 fmtDate 가 항상 null 이었고, 실제로는 발행 시각이 쓰였다.)
+    const productionDate = this.fmtDate(fg.issuedAt);
 
     // 제품 생산에 사용된 작업지시 + 설비 코드 수집 (orderResults 는 위에서 함께 조회했다)
     const matchedResults = orderResults.filter((result) => result.prdUid === serial);
@@ -944,7 +943,8 @@ export class ProductTraceabilityService {
     const prodResultNos = prodResults.map((p) => p.resultNo);
 
     const [equipInspections, equipConsumables, defectRepair] = await Promise.all([
-      this.resolveEquipInspections(prodOrderNos, prodEquipCodes, productionDate, company, plant),
+      // 일일 점검은 작업일(date)과 같은 날 것만 — 발행 시각의 로컬 날짜로 비교한다(ISO 문자열의 UTC 날짜로 자르면 오전 9시 전 발행분이 전날로 어긋난다)
+      this.resolveEquipInspections(prodOrderNos, prodEquipCodes, toDateOnly(fg.issuedAt), company, plant),
       this.resolveEquipConsumables(prodEquipCodes, company, plant),
       this.resolveDefectsAndRepairs(prodResultNos, serial, prdUid, company, plant),
     ]);

@@ -151,6 +151,14 @@ describe('ProductTraceabilityService', () => {
     });
   });
 
+  describe('getBySerial', () => {
+    it('시리얼이 없으면 조건 없는 조회로 임의 제품을 돌려주지 않고 null 을 돌려준다', async () => {
+      await expect(target.getBySerial(undefined as unknown as string, '40', '1000')).resolves.toBeNull();
+      await expect(target.getBySerial('', '40', '1000')).resolves.toBeNull();
+      expect(mockFgLabelRepo.findOne).not.toHaveBeenCalled();
+    });
+  });
+
   describe('findCandidates(operator)', () => {
     it('작업자 + 기간 조회도 기간 조건을 DB WHERE 절로 적용한다', async () => {
       const qb = createQbMock([
