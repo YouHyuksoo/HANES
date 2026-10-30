@@ -129,6 +129,20 @@ describe('ControlPlanService', () => {
     expect(mockPlanRepo.createQueryBuilder).not.toHaveBeenCalled();
   });
 
+  it('품목별 조회는 개정 초안이 있어도 발행본을 찾는다(옛 코드는 초안을 우선해 돌려줬다)', async () => {
+    const tx = createMock<TransactionService>();
+    const query = jest.fn()
+      .mockResolvedValueOnce([{ planNo: 'CP-20260915-027' }])
+      .mockResolvedValueOnce([{ planNo: 'CP-20260915-027', revisionId: 5, status: 'APPROVED' }])
+      .mockResolvedValueOnce([]);
+    tx.run.mockImplementation(async (callback) => callback({ query } as any));
+    const adapter = new ControlPlanService(mockPlanRepo, mockItemRepo, mockNumbering, tx);
+    const result = await adapter.getByItem('FG01', '40', '1000');
+    expect(result).toMatchObject({ planNo: 'CP-20260915-027', status: 'APPROVED', items: [] });
+    expect(String(query.mock.calls[1][0])).toContain("R.STATUS IN ('PUBLISHED')");
+    expect(String(query.mock.calls[1][0])).not.toContain("'DRAFT','PUBLISHED'");
+  });
+
   it('구 쓰기 API는 레거시 테이블에 이중 저장하지 않고 신규 API 안내와 함께 종료한다', async () => {
     const tx = createMock<TransactionService>();
     const adapter = new ControlPlanService(mockPlanRepo, mockItemRepo, mockNumbering, tx);

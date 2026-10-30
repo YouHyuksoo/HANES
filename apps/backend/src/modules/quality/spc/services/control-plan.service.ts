@@ -376,10 +376,11 @@ export class ControlPlanService {
            ON D.COMPANY=P.COMPANY AND D.PLANT_CD=P.PLANT_CD AND D.PACKAGE_ID=P.PACKAGE_ID
           JOIN QUALITY_PLAN_REVISIONS R ON R.COMPANY=D.COMPANY AND R.PLANT_CD=D.PLANT_CD AND R.DOCUMENT_ID=D.DOCUMENT_ID
           WHERE P.ITEM_CODE=:1 AND P.COMPANY=:2 AND P.PLANT_CD=:3 AND D.DOCUMENT_TYPE='CONTROL_PLAN' AND R.STATUS='PUBLISHED'
-          ORDER BY R.REVISION_CODE DESC FETCH FIRST 1 ROW ONLY`, [itemCode, company, plant],
+          ORDER BY R.REVISION_CODE DESC, R.PUBLISHED_AT DESC, D.DOCUMENT_ID DESC FETCH FIRST 1 ROW ONLY`, [itemCode, company, plant],
       ));
       if (!rows.length) return null;
-      return this.findOneFromVersionedDocuments(rows[0].planNo ?? rows[0].PLANNO, company, plant);
+      // 품목별 조회는 "유효(발행) 관리계획서"이므로, 같은 번호에 개정 초안이 있어도 발행본을 돌려준다.
+      return this.findOneFromVersionedDocuments(rows[0].planNo ?? rows[0].PLANNO, company, plant, true);
     }
     const qb = this.planRepo
       .createQueryBuilder('cp')
@@ -422,7 +423,7 @@ export class ControlPlanService {
     return { data: filtered.slice((page - 1) * limit, page * limit), total: filtered.length, page, limit };
   }
 
-  private async findOneFromVersionedDocuments(planNo: string, company?: string, plant?: string) {
+  private async findOneFromVersionedDocuments(planNo: string, company?: string, plant?: string, publishedOnly = false) {
     const rows = await this.compatibilityTx!.run((qr) => qr.query(
       `SELECT D.DOCUMENT_NO AS "planNo",P.ITEM_CODE AS "itemCode",P.ITEM_NAME AS "itemName",P.PHASE AS "phase",
               TO_NUMBER(R.REVISION_CODE) AS "revisionNo",R.REVISION_DATE AS "revisionDate",
@@ -431,7 +432,7 @@ export class ControlPlanService {
          FROM QUALITY_PLAN_PACKAGES P JOIN QUALITY_PLAN_DOCUMENTS D ON D.COMPANY=P.COMPANY AND D.PLANT_CD=P.PLANT_CD AND D.PACKAGE_ID=P.PACKAGE_ID
          JOIN QUALITY_PLAN_REVISIONS R ON R.COMPANY=D.COMPANY AND R.PLANT_CD=D.PLANT_CD AND R.DOCUMENT_ID=D.DOCUMENT_ID
         WHERE D.DOCUMENT_NO=:1 AND P.COMPANY=:2 AND P.PLANT_CD=:3 AND D.DOCUMENT_TYPE='CONTROL_PLAN'
-          AND R.STATUS IN ('DRAFT','PUBLISHED') ORDER BY CASE R.STATUS WHEN 'DRAFT' THEN 0 ELSE 1 END,R.REVISION_CODE DESC FETCH FIRST 1 ROW ONLY`,
+          AND R.STATUS IN (${publishedOnly ? "'PUBLISHED'" : "'DRAFT','PUBLISHED'"}) ORDER BY CASE R.STATUS WHEN 'DRAFT' THEN 0 ELSE 1 END,R.REVISION_CODE DESC FETCH FIRST 1 ROW ONLY`,
       [planNo, company, plant],
     ));
     if (!rows.length) throw new NotFoundException('관리계획서를 찾을 수 없습니다.');
