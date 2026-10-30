@@ -26,10 +26,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { FaiRequest } from '../../../../entities/fai-request.entity';
 import { FaiItem } from '../../../../entities/fai-item.entity';
 import { NumberingService } from '../../../../shared/numbering.service';
+import { parseDateEnd, parseDateStart } from '../../../../shared/date.util';
 import {
   CreateFaiDto,
   UpdateFaiDto,
@@ -114,12 +115,11 @@ export class FaiService {
         { s: `%${upper}%` },
       );
     }
-    if (fromDate && toDate) {
-      qb.andWhere('f.createdAt BETWEEN :fromDate AND :toDate', {
-        fromDate: new Date(`${fromDate}T00:00:00`),
-        toDate: new Date(`${toDate}T23:59:59`),
-      });
-    }
+    // 시작일·종료일은 하나만 와도 걸린다(둘 다 있어야 걸리면 하나만 보냈을 때 구간이 통째로 사라졌고, ISO 시각은 날짜 변환이 깨졌다)
+    const from = parseDateStart(fromDate);
+    const to = parseDateEnd(toDate);
+    if (from) qb.andWhere('f.createdAt >= :fromDate', { fromDate: from });
+    if (to) qb.andWhere('f.createdAt <= :toDate', { toDate: to });
 
     qb.orderBy('f.createdAt', 'DESC');
     const total = await qb.getCount();
@@ -158,6 +158,7 @@ export class FaiService {
   ) {
     const faiNo = await this.generateFaiNo();
     const { items, ...requestFields } = dto;
+    if (items && items.length > 0) this.assertItemsValid(items);
 
     const entity = this.faiRepo.create({
       ...requestFields,
@@ -168,11 +169,14 @@ export class FaiService {
       createdBy: userId,
       updatedBy: userId,
     });
-    const saved = await this.faiRepo.save(entity);
-
-    if (items && items.length > 0) {
-      await this.saveItems(saved.faiNo, items);
-    }
+    // 요청과 검사항목은 한 트랜잭션(항목 저장이 실패하면 요청만 남던 것)
+    const saved = await this.faiRepo.manager.transaction(async (manager) => {
+      const created = await manager.getRepository(FaiRequest).save(entity);
+      if (items && items.length > 0) {
+        await this.saveItems(created.faiNo, items, manager);
+      }
+      return created;
+    });
 
     this.logger.log(`초물검사 등록: ${faiNo} (itemCode: ${dto.itemCode})`);
     return saved;
@@ -189,6 +193,10 @@ export class FaiService {
       throw new BadRequestException('요청 상태에서만 수정할 수 있습니다.');
     }
     const { items, ...updateFields } = dto;
+    // 비울 수 없는 칸(유형·품목·샘플 수량)에 null 이 오면 그대로 둔다(저장 시 NOT NULL 오류 500)
+    for (const key of ['triggerType', 'itemCode', 'sampleQty'] as const) {
+      if (updateFields[key] == null) delete updateFields[key];
+    }
     Object.assign(fai, updateFields, { updatedBy: userId });
     return this.faiRepo.save(fai);
   }
@@ -244,6 +252,11 @@ export class FaiService {
     const items = await this.itemRepo.find({ where: { faiId: faiNo } });
     let autoResult = dto.result;
     if (items.length > 0 && dto.result !== 'CONDITIONAL') {
+      // 판정(OK/NG)이 없는 항목이 있는데 NG 만 보고 합격시키던 것
+      const unjudged = items.filter((item) => item.result !== 'OK' && item.result !== 'NG').length;
+      if (unjudged > 0) {
+        throw new BadRequestException(`판정(OK/NG)이 입력되지 않은 검사항목이 ${unjudged}건 있어 완료할 수 없습니다.`);
+      }
       const hasNg = items.some((item) => item.result === 'NG');
       autoResult = hasNg ? 'FAIL' : 'PASS';
     }
@@ -268,6 +281,9 @@ export class FaiService {
     if (!['PASS', 'FAIL', 'CONDITIONAL'].includes(fai.status)) {
       throw new BadRequestException('판정 완료 상태에서만 승인할 수 있습니다.');
     }
+    if (fai.approvedAt) {
+      throw new BadRequestException('이미 승인된 초물검사입니다.');
+    }
     fai.approvalCode = userId;
     fai.approvedAt = new Date();
     fai.updatedBy = userId;
@@ -282,29 +298,60 @@ export class FaiService {
    * 검사항목 일괄 등록 (기존 항목 삭제 후 재등록)
    */
   async addItems(faiNo: string, items: FaiItemDto[], userId?: string, company?: string, plant?: string) {
+    this.assertItemsValid(items);
     const fai = await this.faiRepo.findOne({ where: { faiNo, ...this.tenantWhere(company, plant) } });
     if (!fai) throw new NotFoundException('초물검사 요청을 찾을 수 없습니다.');
     this.assertSameTenant('초물검사 요청', fai, company, plant);
-
-    await this.itemRepo.delete({ faiId: faiNo });
-    const saved = await this.saveItems(faiNo, items);
-
-    // REQUESTED → INSPECTING 자동 전이
-    if (fai.status === 'REQUESTED' || fai.status === 'SAMPLING') {
-      fai.status = 'INSPECTING';
-      fai.updatedBy = userId ?? fai.updatedBy;
-      await this.faiRepo.save(fai);
+    // 판정이 끝난 요청은 검사항목을 바꿀 수 없다(판정 뒤에 항목을 갈아 끼워 기록이 달라지던 것)
+    if (['PASS', 'FAIL', 'CONDITIONAL'].includes(fai.status)) {
+      throw new BadRequestException('판정이 끝난 초물검사는 검사항목을 바꿀 수 없습니다.');
     }
 
-    return saved;
+    // 항목 삭제·재등록·상태 전이는 한 트랜잭션(재등록이 실패하면 기존 항목만 사라지던 것)
+    return this.faiRepo.manager.transaction(async (manager) => {
+      await manager.getRepository(FaiItem).delete({ faiId: faiNo });
+      const saved = await this.saveItems(faiNo, items, manager);
+
+      // REQUESTED → INSPECTING 자동 전이
+      if (fai.status === 'REQUESTED' || fai.status === 'SAMPLING') {
+        fai.status = 'INSPECTING';
+        fai.updatedBy = userId ?? fai.updatedBy;
+        await manager.getRepository(FaiRequest).save(fai);
+      }
+
+      return saved;
+    });
+  }
+
+  /** 검사항목 본문 검증: 배열, 순번(정수)·항목명 필수, 순번 중복 없음, 판정은 OK/NG 만 (배열 본문은 DTO 검증을 거치지 않는다) */
+  private assertItemsValid(items: unknown): void {
+    if (!Array.isArray(items)) {
+      throw new BadRequestException('검사항목은 배열이어야 합니다.');
+    }
+    const seen = new Set<number>();
+    for (const raw of items as Array<Record<string, unknown>>) {
+      const seq = Number(raw?.seq);
+      const name = typeof raw?.inspectItem === 'string' ? raw.inspectItem.trim() : '';
+      if (raw?.seq == null || !Number.isInteger(seq) || !name) {
+        throw new BadRequestException('검사항목의 순번(정수)과 항목명은 필수입니다.');
+      }
+      if (raw.result != null && raw.result !== 'OK' && raw.result !== 'NG') {
+        throw new BadRequestException('검사항목의 판정은 OK 또는 NG 여야 합니다.');
+      }
+      if (seen.has(seq)) {
+        throw new BadRequestException(`검사항목 순번이 중복되었습니다: ${seq}`);
+      }
+      seen.add(seq);
+    }
   }
 
   /**
    * 검사항목 저장 헬퍼
    */
-  private async saveItems(faiId: string, items: FaiItemDto[]) {
+  private async saveItems(faiId: string, items: FaiItemDto[], manager?: EntityManager) {
+    const repo = manager ? manager.getRepository(FaiItem) : this.itemRepo;
     const entities = items.map((item) =>
-      this.itemRepo.create({
+      repo.create({
         faiId,
         seq: item.seq,
         inspectItem: item.inspectItem,
@@ -316,7 +363,7 @@ export class FaiService {
         remark: item.remark ?? null,
       }),
     );
-    return this.itemRepo.save(entities);
+    return repo.save(entities);
   }
 
   // =============================================
