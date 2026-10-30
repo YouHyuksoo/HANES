@@ -103,11 +103,12 @@ export class CustomsService {
       );
     }
 
-    if (fromDate && toDate) {
-      queryBuilder.andWhere(
-        "ce.declarationDate >= TO_DATE(:fromDate, 'YYYY-MM-DD') AND ce.declarationDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1",
-        { fromDate, toDate },
-      );
+    // 시작·종료일을 각각 적용한다(옛 코드는 둘 다 보내야만 걸렸다)
+    if (fromDate) {
+      queryBuilder.andWhere("ce.declarationDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
+    }
+    if (toDate) {
+      queryBuilder.andWhere("ce.declarationDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate });
     }
 
     queryBuilder.orderBy('ce.createdAt', 'DESC').skip(skip).take(limit);
@@ -134,11 +135,11 @@ export class CustomsService {
       );
     }
 
-    if (fromDate && toDate) {
-      countQuery.andWhere(
-        "ce.declarationDate >= TO_DATE(:fromDate, 'YYYY-MM-DD') AND ce.declarationDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1",
-        { fromDate, toDate },
-      );
+    if (fromDate) {
+      countQuery.andWhere("ce.declarationDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
+    }
+    if (toDate) {
+      countQuery.andWhere("ce.declarationDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate });
     }
 
     const [entries, total] = await Promise.all([
@@ -351,6 +352,14 @@ export class CustomsService {
   }
 
   async createLot(dto: CreateCustomsLotDto, company?: string, plant?: string) {
+    // 수입신고가 없으면 외래키 오류(500) 대신 404
+    const entry = await this.customsEntryRepository.findOne({
+      where: { entryNo: dto.entryNo, ...this.tenantWhere(company, plant) },
+    });
+    if (!entry) {
+      throw new NotFoundException(`수입신고를 찾을 수 없습니다: ${dto.entryNo}`);
+    }
+
     const existing = await this.customsLotRepository.findOne({
       where: { entryNo: dto.entryNo, matUid: dto.matUid, ...this.tenantWhere(company, plant) },
     });
@@ -397,7 +406,7 @@ export class CustomsService {
       .leftJoinAndSelect(
         CustomsLot,
         'cl',
-        'cl.ENTRY_NO = cur.LOT_ENTRY_NO AND cl.MAT_UID = cur.LOT_MAT_UID',
+        'cl.ENTRY_NO = cur.LOT_ENTRY_NO AND cl.MAT_UID = cur.LOT_MAT_UID AND cl.COMPANY = cur.COMPANY AND cl.PLANT_CD = cur.PLANT_CD',
       )
       .leftJoinAndSelect(
         CustomsEntry,
@@ -416,11 +425,11 @@ export class CustomsService {
       queryBuilder.andWhere('cur.status = :status', { status });
     }
 
-    if (fromDate && toDate) {
-      queryBuilder.andWhere(
-        "cur.usageDate >= TO_DATE(:fromDate, 'YYYY-MM-DD') AND cur.usageDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1",
-        { fromDate, toDate },
-      );
+    if (fromDate) {
+      queryBuilder.andWhere("cur.usageDate >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
+    }
+    if (toDate) {
+      queryBuilder.andWhere("cur.usageDate < TO_DATE(:toDate, 'YYYY-MM-DD') + 1", { toDate });
     }
 
     const [reports, total] = await Promise.all([
@@ -560,6 +569,8 @@ export class CustomsService {
         .createQueryBuilder('cl')
         .select('SUM(cl.remainQty)', 'total')
         .where('cl.status IN (:...statuses)', { statuses: ['BONDED', 'PARTIAL'] })
+        .andWhere(company ? 'cl.company = :company' : '1=1', company ? { company } : {})
+        .andWhere(plant ? 'cl.plant = :plant' : '1=1', plant ? { plant } : {})
         .getRawOne(),
     ]);
 

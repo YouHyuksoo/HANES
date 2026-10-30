@@ -13,6 +13,7 @@ import {
   Max,
   MaxLength,
   IsDateString,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
@@ -81,6 +82,7 @@ export class UpdateCustomsEntryDto extends PartialType(CreateCustomsEntryDto) {
   @ApiPropertyOptional({ description: '상태', enum: ['PENDING', 'CLEARED', 'RELEASED'] })
   @IsOptional()
   @IsString()
+  @IsIn(['PENDING', 'CLEARED', 'RELEASED'])
   status?: string;
 }
 
@@ -142,6 +144,7 @@ export class UpdateCustomsLotDto extends PartialType(CreateCustomsLotDto) {
   @ApiPropertyOptional({ description: '상태', enum: ['BONDED', 'PARTIAL', 'RELEASED'] })
   @IsOptional()
   @IsString()
+  @IsIn(['BONDED', 'PARTIAL', 'RELEASED'])
   status?: string;
 }
 
@@ -185,6 +188,7 @@ export class UpdateUsageReportDto {
   @ApiPropertyOptional({ description: '상태', enum: ['DRAFT', 'REPORTED', 'CONFIRMED'] })
   @IsOptional()
   @IsString()
+  @IsIn(['DRAFT', 'REPORTED', 'CONFIRMED'])
   status?: string;
 
   @ApiPropertyOptional({ description: '비고' })
