@@ -280,6 +280,20 @@ export class MsaService {
     if (!gauge) {
       throw new NotFoundException('계측기를 찾을 수 없습니다.');
     }
+    // 폐기된 계측기는 교정을 등록할 수 없다(PASS 를 등록하면 ACTIVE 로 되살아났다)
+    if (gauge.status === 'SCRAPPED') {
+      throw new BadRequestException(`폐기된 계측기에는 교정을 등록할 수 없습니다: ${gauge.gaugeCode}`);
+    }
+    const calibrationDate = parseDateStart(dto.calibrationDate)!;
+    const nextDueDate = parseDateStart(dto.nextDueDate);
+    if (nextDueDate && nextDueDate < calibrationDate) {
+      throw new BadRequestException('다음 교정일이 교정일보다 앞설 수 없습니다.');
+    }
+    for (const [label, value] of [['측정값', dto.measuredValue], ['기준값', dto.referenceValue], ['편차', dto.deviation], ['불확도', dto.uncertainty]] as const) {
+      if (value != null && Math.abs(value) >= 100000000) {
+        throw new BadRequestException(`${label} 값이 너무 큽니다(절대값 1억 미만): ${value}`);
+      }
+    }
 
     const calibrationNo = await this.generateCalibrationNo();
     const entity = this.calRepo.create({
@@ -304,18 +318,21 @@ export class MsaService {
     });
     const saved = await this.calRepo.save(entity);
 
-    // 계측기 교정 정보 갱신
-    gauge.lastCalibrationDate = parseDateStart(dto.calibrationDate)!;
-    if (dto.nextDueDate) {
-      gauge.nextCalibrationDate = parseDateStart(dto.nextDueDate)!;
+    // 계측기 교정 정보 갱신 — 마지막 교정일보다 이른 소급 입력은 이력만 남기고 계측기는 그대로 둔다
+    const isLatest = !gauge.lastCalibrationDate || calibrationDate >= gauge.lastCalibrationDate;
+    if (isLatest) {
+      gauge.lastCalibrationDate = calibrationDate;
+      if (dto.nextDueDate) {
+        gauge.nextCalibrationDate = parseDateStart(dto.nextDueDate)!;
+      }
+      if (dto.result === 'PASS' || dto.result === 'CONDITIONAL') {
+        gauge.status = 'ACTIVE';
+      } else if (dto.result === 'FAIL') {
+        gauge.status = 'EXPIRED';
+      }
+      gauge.updatedBy = userId;
+      await this.gaugeRepo.save(gauge);
     }
-    if (dto.result === 'PASS' || dto.result === 'CONDITIONAL') {
-      gauge.status = 'ACTIVE';
-    } else if (dto.result === 'FAIL') {
-      gauge.status = 'EXPIRED';
-    }
-    gauge.updatedBy = userId;
-    await this.gaugeRepo.save(gauge);
 
     this.logger.log(`교정 이력 등록: ${calibrationNo} (계측기: ${gauge.gaugeCode})`);
     return saved;
@@ -380,6 +397,9 @@ export class MsaService {
     company?: string,
     plant?: string,
   ) {
+    if (!Number.isInteger(days)) {
+      throw new BadRequestException('조회 일수는 정수여야 합니다.');
+    }
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + days);
 

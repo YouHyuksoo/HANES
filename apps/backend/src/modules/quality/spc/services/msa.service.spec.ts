@@ -161,4 +161,29 @@ describe('MsaService', () => {
       expect(result).toEqual({ data: rows, total: 7, page: 2, limit: 3 });
     });
   });
+
+  describe('교정 이력 입력 확인', () => {
+    const dto = { gaugeId: 'G-001', calibrationDate: '2026-11-05', calibrationType: 'INTERNAL', result: 'PASS' } as any;
+
+    it('폐기된 계측기에는 교정을 등록할 수 없다', async () => {
+      mockGaugeRepo.findOne.mockResolvedValue({ gaugeCode: 'G-001', status: 'SCRAPPED' } as any);
+      await expect(target.createCalibration(dto, 'CO', 'P01', 'user')).rejects.toThrow('폐기된 계측기에는 교정을 등록할 수 없습니다');
+      expect(mockCalRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('다음 교정일이 교정일보다 앞서면 400, 과거 소급 입력은 계측기 교정일을 덮어쓰지 않는다', async () => {
+      mockGaugeRepo.findOne.mockResolvedValue({ gaugeCode: 'G-001', status: 'ACTIVE', lastCalibrationDate: new Date(2026, 9, 1) } as any);
+      await expect(target.createCalibration({ ...dto, nextDueDate: '2026-01-01' }, 'CO', 'P01', 'user')).rejects.toThrow('다음 교정일이 교정일보다 앞설 수 없습니다');
+      mockNumbering.next.mockResolvedValue('CAL-1');
+      mockCalRepo.create.mockImplementation((v) => v as any);
+      mockCalRepo.save.mockImplementation(async (v) => v as any);
+      await target.createCalibration({ ...dto, calibrationDate: '2026-01-01' }, 'CO', 'P01', 'user');
+      expect(mockCalRepo.save).toHaveBeenCalledTimes(1);
+      expect(mockGaugeRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('만료 예정 조회의 일수는 정수여야 한다', async () => {
+      await expect(target.getExpiringSoon(NaN, 'CO', 'P01')).rejects.toThrow('조회 일수는 정수여야 합니다');
+    });
+  });
 });
