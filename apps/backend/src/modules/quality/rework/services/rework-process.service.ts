@@ -262,9 +262,10 @@ export class ReworkProcessService {
     });
     if (!order || order.status !== 'IN_PROGRESS') return;
 
-    const totalResultQty = processes
-      .filter((p) => p.status === 'COMPLETED')
-      .reduce((sum, p) => sum + p.resultQty, 0);
+    // 공정은 순서대로 같은 제품을 가공하므로 합산하지 않는다: 마지막 순번의 완료 공정 수량이 지시의 실적이다
+    const lastCompleted = processes.filter((p) => p.status === 'COMPLETED').sort((a, b) => b.seq - a.seq)[0];
+    const totalResultQty = lastCompleted?.resultQty ?? 0;
+    if (totalResultQty < 1) return; // 실적이 없으면 재검사대기로 넘기지 않는다(재검사 수량을 맞출 수 없어 막힘)
 
     order.status = 'INSPECT_PENDING';
     order.endAt = new Date();

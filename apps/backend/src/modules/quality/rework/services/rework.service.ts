@@ -482,7 +482,7 @@ export class ReworkService {
 
   /**
    * 작업 완료 (IN_PROGRESS → INSPECT_PENDING)
-   * 공정이 있는 경우 공정별 resultQty 합산
+   * 공정이 있는 경우 마지막 순번 완료 공정의 resultQty (순차 공정은 합산하지 않음)
    */
   async complete(reworkNo: string, dto: CompleteReworkDto, userId: string, company?: string, plant?: string) {
     const order = await this.reworkRepo.findOne({
@@ -506,9 +506,9 @@ export class ReworkService {
           `완료·건너뛰지 않은 공정이 ${open.length}개 남아 있습니다. 공정을 먼저 처리해 주세요.`,
         );
       }
-      totalResultQty = processes
-        .filter((p) => p.status === 'COMPLETED')
-        .reduce((sum, p) => sum + p.resultQty, 0);
+      // 공정은 순서대로 같은 제품을 가공하므로 합산하지 않는다: 마지막 순번의 완료 공정 수량이 지시의 실적이다
+      const completed = processes.filter((p) => p.status === 'COMPLETED').sort((a, b) => b.seq - a.seq);
+      totalResultQty = completed[0]?.resultQty ?? 0;
     }
     if (!Number.isInteger(totalResultQty) || totalResultQty < 1) {
       throw new BadRequestException(

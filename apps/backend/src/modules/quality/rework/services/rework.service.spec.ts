@@ -231,6 +231,22 @@ describe('ReworkService', () => {
     });
   });
 
+  describe('complete — 순차 공정 실적', () => {
+    it('공정이 여러 개여도 합산하지 않고 마지막 순번 완료 공정의 수량을 지시 실적으로 쓴다', async () => {
+      mockReworkRepo.findOne.mockResolvedValue({ reworkNo: 'RW-021', status: 'IN_PROGRESS', reworkQty: 10, company: 'CO', plant: 'P01' } as any);
+      mockReworkRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockProcessRepo.find.mockResolvedValue([
+        { seq: 1, status: 'COMPLETED', resultQty: 10 } as any,
+        { seq: 2, status: 'COMPLETED', resultQty: 8 } as any,
+      ]);
+      await target.complete('RW-021', { resultQty: 99 } as any, 'user', 'CO', 'P01');
+      expect(mockReworkRepo.update).toHaveBeenCalledWith(
+        expect.objectContaining({ reworkNo: 'RW-021' }),
+        expect.objectContaining({ status: 'INSPECT_PENDING', resultQty: 8 }),
+      );
+    });
+  });
+
   describe('delete', () => {
     it('should throw when not REGISTERED', async () => {
       mockReworkRepo.findOne.mockResolvedValue({ reworkNo: 'RW-001', status: 'APPROVED', id: 1 } as any);
