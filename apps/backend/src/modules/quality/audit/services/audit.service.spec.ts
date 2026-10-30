@@ -35,6 +35,17 @@ describe('AuditService', () => {
   });
   afterEach(() => jest.clearAllMocks());
 
+  /** 트랜잭션·공통코드·CAPA 조회용 매니저 모의: 쿼리는 건수 1, 트랜잭션은 같은 저장소를 돌려준다 */
+  const stubManager = () => {
+    const manager: any = {
+      query: jest.fn().mockResolvedValue([{ cnt: 1 }]),
+      getRepository: jest.fn((entity: unknown) => (entity === AuditFinding ? mockFindingRepo : mockAuditRepo)),
+      transaction: jest.fn(async (cb: (m: unknown) => unknown) => cb(manager)),
+    };
+    (mockAuditRepo as any).manager = manager;
+    return manager;
+  };
+
   describe('findById', () => {
     it('should return audit plan', async () => {
       mockAuditRepo.findOne.mockResolvedValue({ id: 1, auditNo: 'AUD-001' } as any);
@@ -119,6 +130,7 @@ describe('AuditService', () => {
 
   describe('complete', () => {
     it('should complete audit', async () => {
+      stubManager();
       const item = { id: 1, auditNo: 'AUD-001', status: 'IN_PROGRESS' } as any;
       mockAuditRepo.findOne.mockResolvedValue(item);
       mockAuditRepo.save.mockResolvedValue({ ...item, status: 'COMPLETED' });
@@ -153,6 +165,89 @@ describe('AuditService', () => {
     });
   });
 
+  describe('결함 수정', () => {
+    it('발견사항 등록은 심사 행을 잠근 뒤 번호를 정한다', async () => {
+      const manager = stubManager();
+      mockAuditRepo.findOne.mockResolvedValue({ auditNo: 'AUD-001', status: 'IN_PROGRESS', company: 'CO', plant: 'P01' } as any);
+      const qb: any = { where: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), getOne: jest.fn().mockResolvedValue({ findingNo: 3 }) };
+      mockFindingRepo.createQueryBuilder.mockReturnValue(qb);
+      mockFindingRepo.create.mockImplementation((v: any) => v);
+      mockFindingRepo.save.mockImplementation(async (v: any) => v);
+
+      const saved = await target.addFinding({ auditId: 'AUD-001', category: 'OFI', description: 'd' } as any, 'CO', 'P01', 'user');
+
+      expect(saved.findingNo).toBe(4);
+      expect(manager.query).toHaveBeenCalledWith(expect.stringContaining('FOR UPDATE'), ['AUD-001', 'CO', 'P01']);
+    });
+
+    it('완료·종결된 심사에는 발견사항을 등록할 수 없다', async () => {
+      stubManager();
+      mockAuditRepo.findOne.mockResolvedValue({ auditNo: 'AUD-001', status: 'COMPLETED', company: 'CO', plant: 'P01' } as any);
+      await expect(target.addFinding({ auditId: 'AUD-001' } as any, 'CO', 'P01', 'user')).rejects.toThrow('계획 또는 진행중 상태의 심사에서만');
+      expect(mockFindingRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('CAPA 연결은 번호가 있고 실제로 있어야 하며 종결된 발견사항은 거부한다', async () => {
+      const manager = stubManager();
+      mockFindingRepo.findOne.mockResolvedValue({ auditId: 'AUD-001', findingNo: 1, status: 'OPEN', company: 'CO', plant: 'P01' } as any);
+      await expect(target.linkCapa('AUD-001', 1, undefined as never, 'CO', 'P01')).rejects.toThrow('CAPA 번호가 없습니다');
+
+      manager.query.mockResolvedValue([{ cnt: 0 }]);
+      await expect(target.linkCapa('AUD-001', 1, 'CAPA-X', 'CO', 'P01')).rejects.toThrow(NotFoundException);
+      expect(manager.query).toHaveBeenCalledWith(expect.stringContaining('CAPA_REQUESTS'), ['CAPA-X', 'CO', 'P01']);
+
+      mockFindingRepo.findOne.mockResolvedValue({ auditId: 'AUD-001', findingNo: 1, status: 'CLOSED', company: 'CO', plant: 'P01' } as any);
+      await expect(target.linkCapa('AUD-001', 1, 'CAPA-1', 'CO', 'P01')).rejects.toThrow('종결된 발견사항');
+      expect(mockFindingRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('심사 계획을 지우면 발견사항도 한 트랜잭션으로 함께 지운다', async () => {
+      const manager = stubManager();
+      const item = { auditNo: 'AUD-001', status: 'PLANNED', company: 'CO', plant: 'P01' } as any;
+      mockAuditRepo.findOne.mockResolvedValue(item);
+
+      await target.delete('AUD-001', 'CO', 'P01');
+
+      expect(manager.transaction).toHaveBeenCalledTimes(1);
+      expect(mockFindingRepo.delete).toHaveBeenCalledWith({ auditId: 'AUD-001', company: 'CO', plant: 'P01' });
+      expect(mockAuditRepo.remove).toHaveBeenCalledWith(item);
+    });
+
+    it('완료의 종합 결과는 공통코드(AUDIT_RESULT)에 있어야 한다', async () => {
+      const manager = stubManager();
+      const item = { auditNo: 'AUD-001', status: 'IN_PROGRESS', company: 'CO', plant: 'P01' } as any;
+      mockAuditRepo.findOne.mockResolvedValue(item);
+      mockAuditRepo.save.mockImplementation(async (v: any) => v);
+
+      manager.query.mockResolvedValue([{ cnt: 0 }]);
+      await expect(target.complete('AUD-001', 'ZZ', 'user', 'CO', 'P01')).rejects.toThrow('공통코드(AUDIT_RESULT)');
+      expect(mockAuditRepo.save).not.toHaveBeenCalled();
+
+      // 결과를 비워 완료하는 화면 호출은 그대로 통과한다
+      const done = await target.complete('AUD-001', undefined as never, 'user', 'CO', 'P01');
+      expect(done.status).toBe('COMPLETED');
+    });
+
+    it('목록의 기간은 시작일·종료일 중 하나만 와도 걸린다', async () => {
+      const qb: any = {
+        andWhere: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), skip: jest.fn().mockReturnThis(), take: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0), getMany: jest.fn().mockResolvedValue([]),
+      };
+      mockAuditRepo.createQueryBuilder.mockReturnValue(qb);
+      await target.findAll({ fromDate: '2026-11-05T00:00:00.000Z' } as any, 'CO', 'P01');
+      expect(qb.andWhere).toHaveBeenCalledWith('a.createdAt >= :fromDate', { fromDate: expect.any(Date) });
+      expect(qb.andWhere).not.toHaveBeenCalledWith('a.createdAt <= :toDate', expect.anything());
+    });
+
+    it('수정에서 비울 수 없는 칸에 null 이 오면 그대로 둔다', async () => {
+      const item = { auditNo: 'AUD-001', status: 'PLANNED', auditType: 'SYSTEM', auditScope: '범위', auditor: '홍', company: 'CO', plant: 'P01' } as any;
+      mockAuditRepo.findOne.mockResolvedValue(item);
+      mockAuditRepo.save.mockImplementation(async (v: any) => v);
+      const r = await target.update('AUD-001', { auditType: null, auditScope: null, auditor: null, scheduledDate: null, summary: '메모' } as any, 'user');
+      expect(r).toMatchObject({ auditType: 'SYSTEM', auditScope: '범위', auditor: '홍', summary: '메모' });
+    });
+  });
+
   describe('findings', () => {
     it('rejects addFinding when audit belongs to a different tenant', async () => {
       mockAuditRepo.findOne.mockResolvedValue({ auditNo: 'AUD-001', company: 'OTHER', plant: 'P01' } as any);
@@ -172,6 +267,7 @@ describe('AuditService', () => {
 
   describe('linkCapa', () => {
     it('should link CAPA to finding', async () => {
+      stubManager();
       const finding = { auditId: 1, findingNo: 1, status: 'OPEN' } as any;
       mockAuditRepo.findOne.mockResolvedValue({ id: 1 } as any);
       mockFindingRepo.findOne.mockResolvedValue(finding);
