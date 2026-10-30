@@ -18,6 +18,7 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import {
   IsString,
+  IsIn,
   IsOptional,
   IsInt,
   IsObject,
@@ -40,7 +41,7 @@ export class CreateInspectResultDto {
   @ApiPropertyOptional({ description: '시리얼 번호', maxLength: 100 })
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(50)
   serialNo?: string;
 
   @ApiPropertyOptional({
@@ -65,7 +66,7 @@ export class CreateInspectResultDto {
 
   @ApiPropertyOptional({ description: '합격 여부', default: 'Y', enum: ['Y', 'N'] })
   @IsOptional()
-  @IsString()
+  @IsIn(['Y', 'N'])
   passYn?: string;
 
   @ApiPropertyOptional({ description: '에러 코드', maxLength: 50 })
@@ -93,9 +94,10 @@ export class CreateInspectResultDto {
   @IsDateString()
   inspectAt?: string;
 
-  @ApiPropertyOptional({ description: '검사자 ID' })
+  @ApiPropertyOptional({ description: '검사자 ID', maxLength: 36 })
   @IsOptional()
   @IsString()
+  @MaxLength(36)
   inspectorId?: string;
 }
 
@@ -211,7 +213,7 @@ export class BarcodeInspectDto {
   inspectType?: string;
 
   @ApiProperty({ description: '합격 여부', enum: ['Y', 'N'] })
-  @IsString()
+  @IsIn(['Y', 'N'])
   passYn: string;
 
   @ApiPropertyOptional({ description: '에러 코드', maxLength: 50 })
@@ -226,9 +228,10 @@ export class BarcodeInspectDto {
   @MaxLength(500)
   errorDetail?: string;
 
-  @ApiPropertyOptional({ description: '검사자 ID' })
+  @ApiPropertyOptional({ description: '검사자 ID', maxLength: 36 })
   @IsOptional()
   @IsString()
+  @MaxLength(36)
   inspectorId?: string;
 }
 

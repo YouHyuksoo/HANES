@@ -66,11 +66,11 @@ export class InspectResultService {
       ...(dto.serialNo !== undefined ? { serialNo: dto.serialNo } : {}),
       ...(dto.inspectType !== undefined ? { inspectType: dto.inspectType } : {}),
       ...(dto.inspectScope !== undefined ? { inspectScope: dto.inspectScope } : {}),
-      ...(dto.passYn !== undefined ? { passYn: dto.passYn } : {}),
+      ...(dto.passYn != null ? { passYn: dto.passYn } : {}),
       ...(dto.errorCode !== undefined ? { errorCode: dto.errorCode } : {}),
       ...(dto.errorDetail !== undefined ? { errorDetail: dto.errorDetail } : {}),
-      ...(dto.inspectData !== undefined ? { inspectData: JSON.stringify(dto.inspectData) } : {}),
-      ...(dto.inspectAt !== undefined ? { inspectAt: new Date(dto.inspectAt) } : {}),
+      ...(dto.inspectData !== undefined ? { inspectData: dto.inspectData === null ? null : JSON.stringify(dto.inspectData) } : {}),
+      ...(dto.inspectAt != null ? { inspectAt: new Date(dto.inspectAt) } : {}),
       ...(dto.inspectorId !== undefined ? { inspectorId: dto.inspectorId } : {}),
     };
   }
@@ -80,11 +80,46 @@ export class InspectResultService {
     fromDate?: string,
     toDate?: string,
   ) {
+    // ISO 문자열(2026-11-06T00:00:00.000Z)이 와도 'YYYY-MM-DD' 형식 오류(500)가 나지 않도록 앞 10자리만 쓴다
     if (fromDate) {
-      qb.andWhere("inspect.inspectAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate });
+      qb.andWhere("inspect.inspectAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate: fromDate.slice(0, 10) });
     }
     if (toDate) {
-      qb.andWhere("inspect.inspectAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate });
+      qb.andWhere("inspect.inspectAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate: toDate.slice(0, 10) });
+    }
+  }
+
+  /**
+   * 합격여부(Y/N)·검사 범위(FULL/SAMPLE)·검사 유형(공통코드 INSPECT_TYPE)을 확인하고 유형은 대문자로 맞춘다. 비어 있으면 통과.
+   */
+  private async normalizeFields(
+    fields: { inspectType?: string | null; inspectScope?: string | null; passYn?: string | null },
+    company?: string,
+    plant?: string,
+  ) {
+    const inspectType = fields.inspectType ? fields.inspectType.trim().toUpperCase() : fields.inspectType;
+    const inspectScope = fields.inspectScope ? fields.inspectScope.trim().toUpperCase() : fields.inspectScope;
+    if (fields.passYn && !['Y', 'N'].includes(fields.passYn)) {
+      throw new BadRequestException('합격여부는 Y 또는 N 이어야 합니다.');
+    }
+    if (inspectScope && !['FULL', 'SAMPLE'].includes(inspectScope)) {
+      throw new BadRequestException(`검사 범위는 FULL 또는 SAMPLE 이어야 합니다: ${inspectScope}`);
+    }
+    if (inspectType) {
+      const rows: Array<{ cnt: number | string }> = await this.inspectResultRepository.manager.query(
+        `SELECT COUNT(*) AS "cnt" FROM COM_CODES WHERE GROUP_CODE = 'INSPECT_TYPE' AND DETAIL_CODE = :1 AND USE_YN = 'Y' AND COMPANY = :2 AND PLANT_CD = :3`,
+        [inspectType, company, plant],
+      );
+      if (Number(rows[0]?.cnt ?? 0) === 0) {
+        throw new BadRequestException(`검사 유형 값이 공통코드(INSPECT_TYPE)에 없습니다: ${inspectType}`);
+      }
+    }
+    return { inspectType, inspectScope };
+  }
+
+  private assertNotCanceled(prodResult: { status?: string | null }, prodResultNo: string) {
+    if (prodResult.status === 'CANCELED') {
+      throw new BadRequestException(`취소된 생산실적에는 검사실적을 등록할 수 없습니다: ${prodResultNo}`);
     }
   }
 
@@ -200,6 +235,8 @@ export class InspectResultService {
     if (!prodResult) {
       throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${dto.prodResultNo}`);
     }
+    this.assertNotCanceled(prodResult, dto.prodResultNo);
+    const { inspectType, inspectScope } = await this.normalizeFields(dto, company, plant);
 
     const resultNo = await this.seqGenerator.getNo('INSPECT_RESULT');
 
@@ -207,8 +244,8 @@ export class InspectResultService {
       resultNo,
       prodResultNo: dto.prodResultNo,
       serialNo: dto.serialNo,
-      inspectType: dto.inspectType,
-      inspectScope: dto.inspectScope,
+      inspectType,
+      inspectScope,
       passYn: dto.passYn ?? 'Y',
       errorCode: dto.errorCode,
       errorDetail: dto.errorDetail,
@@ -276,6 +313,8 @@ export class InspectResultService {
     if (!prodResult) {
       throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${prodResultNo}`);
     }
+    this.assertNotCanceled(prodResult, prodResultNo);
+    const normalized = await this.normalizeFields({ inspectType: dto.inspectType ?? 'VISUAL', inspectScope: dto.inspectScope ?? 'FULL', passYn: dto.passYn }, company, plant);
 
     // 5. 검사 결과 등록
     const resultNo = await this.seqGenerator.getNo('INSPECT_RESULT');
@@ -284,8 +323,8 @@ export class InspectResultService {
       resultNo,
       prodResultNo,
       serialNo: dto.barcode,
-      inspectType: dto.inspectType ?? 'VISUAL',
-      inspectScope: dto.inspectScope ?? 'FULL',
+      inspectType: normalized.inspectType!,
+      inspectScope: normalized.inspectScope!,
       passYn: dto.passYn,
       errorCode: dto.errorCode,
       errorDetail: dto.errorDetail,
@@ -383,9 +422,51 @@ export class InspectResultService {
    * 검사실적 일괄 생성
    */
   async createMany(dtos: CreateInspectResultDto[], company?: string, plant?: string) {
-    const results = await Promise.all(
-      dtos.map((dto) => this.create(dto, company, plant))
-    );
+    if (!Array.isArray(dtos) || dtos.some((d) => d === null || typeof d !== 'object' || Array.isArray(d))) {
+      throw new BadRequestException('일괄 등록 본문은 검사실적 배열이어야 합니다.');
+    }
+    // 건별 저장은 중간에 실패하면 앞 건만 남으므로, 모두 확인한 뒤 한 번에 저장한다(한 트랜잭션)
+    const entities: InspectResult[] = [];
+    for (const [i, dto] of dtos.entries()) {
+      try {
+        if (!dto.prodResultNo) throw new BadRequestException('생산실적 번호는 필수입니다.');
+        if (dto.passYn !== undefined && dto.passYn !== null && !['Y', 'N'].includes(dto.passYn)) {
+          throw new BadRequestException('합격여부는 Y 또는 N 이어야 합니다.');
+        }
+        if (dto.serialNo && dto.serialNo.length > 50) throw new BadRequestException('시리얼 번호는 50자 이하여야 합니다.');
+        if (dto.inspectorId && dto.inspectorId.length > 36) throw new BadRequestException('검사자는 36자 이하여야 합니다.');
+        const prodResult = await this.prodResultRepository.findOne({
+          where: { resultNo: dto.prodResultNo, ...this.tenantWhere(company, plant) },
+        });
+        if (!prodResult) throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${dto.prodResultNo}`);
+        this.assertNotCanceled(prodResult, dto.prodResultNo);
+        const { inspectType, inspectScope } = await this.normalizeFields(dto, company, plant);
+        entities.push(
+          this.inspectResultRepository.create({
+            resultNo: await this.seqGenerator.getNo('INSPECT_RESULT'),
+            prodResultNo: dto.prodResultNo,
+            serialNo: dto.serialNo,
+            inspectType,
+            inspectScope,
+            passYn: dto.passYn ?? 'Y',
+            errorCode: dto.errorCode,
+            errorDetail: dto.errorDetail,
+            inspectData: dto.inspectData ? JSON.stringify(dto.inspectData) : null,
+            inspectAt: dto.inspectAt ? new Date(dto.inspectAt) : new Date(),
+            inspectorId: dto.inspectorId,
+            company,
+            plant,
+          }),
+        );
+      } catch (error: unknown) {
+        if (error instanceof BadRequestException || error instanceof NotFoundException) {
+          const Ctor = error instanceof NotFoundException ? NotFoundException : BadRequestException;
+          throw new Ctor(`${i + 1}번째 건: ${error.message}`);
+        }
+        throw error;
+      }
+    }
+    const results = await this.inspectResultRepository.save(entities);
 
     return { count: results.length, results };
   }
@@ -396,7 +477,12 @@ export class InspectResultService {
   async update(resultNo: string, dto: UpdateInspectResultDto, company?: string, plant?: string) {
     await this.findById(resultNo, company, plant); // 존재 확인
     const { prodResultNo: _ignoredProdResultNo, ...inspectData } = dto;
-    const updateData = this.buildInspectResultUpdate(inspectData);
+    const normalized = await this.normalizeFields(inspectData, company, plant);
+    const updateData = this.buildInspectResultUpdate({
+      ...inspectData,
+      ...(normalized.inspectType !== undefined ? { inspectType: normalized.inspectType! } : {}),
+      ...(normalized.inspectScope !== undefined ? { inspectScope: normalized.inspectScope! } : {}),
+    });
 
     if (Object.keys(updateData).length > 0) {
       await this.inspectResultRepository.update({ resultNo, ...this.tenantWhere(company, plant) }, updateData);
@@ -525,6 +611,9 @@ export class InspectResultService {
    * @param days 조회 일수 (기본 7일)
    */
   async getDailyPassRateTrend(days: number = 7, company?: string, plant?: string) {
+    if (!Number.isInteger(days) || days < 1) {
+      throw new BadRequestException('조회 일수는 1 이상의 정수여야 합니다.');
+    }
     const startDateStr = new Date(
       Date.now() - (days - 1) * 24 * 60 * 60 * 1000,
     ).toISOString().split('T')[0];

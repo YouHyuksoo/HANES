@@ -310,4 +310,15 @@ describe('InspectResultService', () => {
       expect(qb.andWhere).toHaveBeenCalledWith('inspect.plant = :plant', { plant: 'P1' });
     });
   });
+
+  describe('입력 확인', () => {
+    it('조회 일수는 1 이상의 정수여야 한다', async () => {
+      await expect(target.getDailyPassRateTrend(0)).rejects.toThrow('조회 일수는 1 이상의 정수여야 합니다.');
+      await expect(target.getDailyPassRateTrend(NaN)).rejects.toThrow('조회 일수는 1 이상의 정수여야 합니다.');
+    });
+
+    it('일괄 등록 본문이 배열이 아니면 400 으로 막는다', async () => {
+      await expect(target.createMany({ prodResultNo: 'PR1' } as any)).rejects.toThrow('일괄 등록 본문은 검사실적 배열이어야 합니다.');
+    });
+  });
 });
