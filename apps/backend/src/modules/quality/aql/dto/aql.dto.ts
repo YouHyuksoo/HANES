@@ -71,6 +71,7 @@ export class CreateAqlDto {
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
+  @Min(0)
   aqlValue?: number;
 
   @ApiPropertyOptional({ description: '사용여부', enum: ['Y', 'N'] })

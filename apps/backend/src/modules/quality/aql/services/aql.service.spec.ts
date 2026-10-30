@@ -214,6 +214,30 @@ describe('AqlService', () => {
     expect(result).toEqual(expect.objectContaining({ policyCode: 'AQLP-II-1.0-2.5' }));
   });
 
+  it('rejects an inspection level that is not in the ISO code letter table (policy and standard, create and update)', async () => {
+    ruleRepo.count.mockResolvedValue(0);
+    policyRepo.findOne.mockResolvedValue(null);
+    standardRepo.findOne.mockResolvedValue(null);
+    await expect(service.createPolicy({ policyCode: 'P-ZZ', policyName: 'x', inspectionLevel: 'ZZ' }, '40', '1000', 'tester')).rejects.toThrow(BadRequestException);
+    await expect(service.create({ aqlCode: 'A-ZZ', aqlName: 'x', inspectionLevel: 'ZZ' }, '40', '1000', 'tester')).rejects.toThrow(BadRequestException);
+    expect(policyRepo.save).not.toHaveBeenCalled();
+    expect(standardRepo.save).not.toHaveBeenCalled();
+
+    policyRepo.findOne.mockResolvedValue({ company: '40', plant: '1000', policyCode: 'P1', useYn: 'Y', inspectionLevel: 'II' });
+    await expect(service.updatePolicy('P1', { inspectionLevel: 'QQ' }, '40', '1000', 'tester')).rejects.toThrow(BadRequestException);
+    standardRepo.findOne.mockResolvedValue({ company: '40', plant: '1000', aqlCode: 'A1', useYn: 'Y', inspectionLevel: 'II' });
+    await expect(service.update('A1', { inspectionLevel: 'QQ' }, '40', '1000', 'tester')).rejects.toThrow(BadRequestException);
+    expect(ruleRepo.count).toHaveBeenCalledWith({ where: { company: '40', plant: '1000', inspectionLevel: 'QQ' } });
+  });
+
+  it('accepts S-1 style levels by normalizing them to the table spelling', async () => {
+    ruleRepo.count.mockResolvedValue(3);
+    policyRepo.findOne.mockResolvedValue(null);
+    await service.createPolicy({ policyCode: 'P-S1', policyName: 'x', inspectionLevel: 'S-1' }, '40', '1000', 'tester');
+    expect(ruleRepo.count).toHaveBeenCalledWith({ where: { company: '40', plant: '1000', inspectionLevel: 'S1' } });
+    expect(policyRepo.save).toHaveBeenCalled();
+  });
+
   it('blocks disabling an IQC AQL policy that is assigned to item masters', async () => {
     policyRepo.findOne.mockResolvedValue({ company: '40', plant: '1000', policyCode: 'AQLP-II-1.0-2.5', useYn: 'Y' });
     partRepo.count.mockResolvedValue(1);

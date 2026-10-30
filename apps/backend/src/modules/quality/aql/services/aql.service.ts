@@ -180,6 +180,7 @@ export class AqlService {
     const exists = await this.policyRepo.findOne({ where: { company, plant, policyCode } });
     if (exists) throw new BadRequestException(`이미 등록된 IQC AQL 정책입니다: ${policyCode}`);
     await this.assertPolicyAqlCodesActive(dto.majorAqlCode, dto.minorAqlCode, company, plant);
+    await this.assertInspectionLevelKnown(dto.inspectionLevel, company, plant);
 
     const policy = this.policyRepo.create({
       company,
@@ -218,6 +219,10 @@ export class AqlService {
       );
     }
 
+    if (dto.inspectionLevel && dto.inspectionLevel !== policy.inspectionLevel) {
+      await this.assertInspectionLevelKnown(dto.inspectionLevel, company, plant);
+    }
+
     Object.assign(policy, {
       policyName: dto.policyName ?? policy.policyName,
       inspectionLevel: dto.inspectionLevel ?? policy.inspectionLevel,
@@ -247,6 +252,7 @@ export class AqlService {
     if (exists) throw new BadRequestException(`이미 등록된 AQL 코드입니다: ${aqlCode}`);
 
     this.assertValidRules(dto.rules ?? []);
+    await this.assertInspectionLevelKnown(dto.inspectionLevel, company, plant);
     const standard = this.standardRepo.create({
       company,
       plant,
@@ -280,6 +286,9 @@ export class AqlService {
     }
     const rules = dto.rules ?? undefined;
     if (rules) this.assertValidRules(rules);
+    if (dto.inspectionLevel && dto.inspectionLevel !== standard.inspectionLevel) {
+      await this.assertInspectionLevelKnown(dto.inspectionLevel, company, plant);
+    }
 
     Object.assign(standard, {
       aqlName: dto.aqlName ?? standard.aqlName,
@@ -1151,6 +1160,13 @@ export class AqlService {
         throw new BadRequestException('같은 AQL 코드 안에서 LOT 수량 범위가 겹칠 수 없습니다.');
       }
     }
+  }
+
+  /** 검사수준이 ISO 코드문자표에 있는 값인지 확인한다(없는 수준을 저장하면 해석할 때 404 가 난다) */
+  private async assertInspectionLevelKnown(level: string | null | undefined, company: string, plant: string) {
+    if (!level || !level.trim()) return;
+    const count = await this.codeLetterRuleRepo.count({ where: { company, plant, inspectionLevel: this.normalizeInspectionLevel(level) } });
+    if (count === 0) throw new BadRequestException(`검사수준이 ISO 코드문자표에 없습니다: ${level}`);
   }
 
   private normalizeCode(value: string) {
