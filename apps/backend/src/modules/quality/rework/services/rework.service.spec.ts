@@ -118,6 +118,119 @@ describe('ReworkService', () => {
     });
   });
 
+  describe('update — 연결 불량·null 처리', () => {
+    const editable = (overrides: Record<string, unknown> = {}) =>
+      ({
+        reworkNo: 'RW-010',
+        status: 'REGISTERED',
+        reworkQty: 3,
+        reworkMethod: 'RESOLDER',
+        itemCode: 'IT-1',
+        company: 'CO',
+        plant: 'P01',
+        ...overrides,
+      }) as any;
+
+    beforeEach(() => {
+      mockProcessRepo.find.mockResolvedValue([]);
+      mockReworkRepo.update.mockResolvedValue({ affected: 1 } as any);
+    });
+
+    it('연결된 불량을 다른 값으로 바꾸면 400', async () => {
+      mockReworkRepo.findOne.mockResolvedValue(editable({ defectLogId: '2026-04-08T00:00:00.000Z|1' }));
+      await expect(target.update('RW-010', { defectLogId: '2026-04-08T00:00:00.000Z|9' } as any, 'user', 'CO', 'P01'))
+        .rejects.toThrow(/연결된 불량은 바꿀 수 없습니다/);
+      expect(mockReworkRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('같은 연결 불량을 다시 보내면 통과한다', async () => {
+      mockReworkRepo.findOne.mockResolvedValue(editable({ defectLogId: '2026-04-08T00:00:00.000Z|1' }));
+      await expect(target.update('RW-010', { defectLogId: '2026-04-08T00:00:00.000Z|1', remark: 'ok' } as any, 'user', 'CO', 'P01'))
+        .resolves.toBeDefined();
+      const updateMock = mockReworkRepo.update.mock.calls[0][1] as Record<string, unknown>;
+      expect(updateMock.remark).toBe('ok');
+      expect(updateMock.defectLogId).toBeUndefined();
+    });
+
+    it('필수 컬럼의 null 은 무시하고 나머지는 그 값으로 바꾼다', async () => {
+      mockReworkRepo.findOne.mockResolvedValue(editable());
+      await target.update('RW-010', { itemCode: null, reworkQty: null, reworkMethod: null, remark: null } as any, 'user', 'CO', 'P01');
+      const updateMock = mockReworkRepo.update.mock.calls[0][1] as Record<string, unknown>;
+      expect(updateMock.itemCode).toBeUndefined();
+      expect(updateMock.reworkQty).toBeUndefined();
+      expect(updateMock.reworkMethod).toBeUndefined();
+      expect(updateMock.remark).toBeNull();
+      expect(updateMock.updatedBy).toBe('user');
+    });
+
+    it('수량 수정 시 대기 공정의 계획 수량을 함께 맞춘다', async () => {
+      mockReworkRepo.findOne.mockResolvedValue(editable());
+      mockProcessRepo.update.mockResolvedValue({ affected: 1 } as any);
+      await target.update('RW-010', { reworkQty: 4 } as any, 'user', 'CO', 'P01');
+      expect(mockProcessRepo.update).toHaveBeenCalledWith(
+        { reworkOrderId: 'RW-010', status: 'WAITING', company: 'CO', plant: 'P01' },
+        { planQty: 4, updatedBy: 'user' },
+      );
+    });
+
+    it('연결 불량 수량보다 크게 수량을 바꾸면 400', async () => {
+      mockReworkRepo.findOne.mockResolvedValue(editable({ defectLogId: '2026-04-08T00:00:00.000Z|1' }));
+      mockDefectLogRepo.findOne.mockResolvedValue({ occurAt: new Date(), seq: 1, status: 'REWORK', qty: 2 } as any);
+      await expect(target.update('RW-010', { reworkQty: 4 } as any, 'user', 'CO', 'P01'))
+        .rejects.toThrow(BadRequestException);
+      expect(mockProcessRepo.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('complete — 완료 검증', () => {
+    beforeEach(() => {
+      mockReworkRepo.findOne.mockResolvedValue({
+        reworkNo: 'RW-020',
+        status: 'IN_PROGRESS',
+        reworkQty: 10,
+        company: 'CO',
+        plant: 'P01',
+      } as any);
+      mockReworkRepo.update.mockResolvedValue({ affected: 1 } as any);
+      mockInspectRepo.find.mockResolvedValue([]);
+    });
+
+    it('미완료 공정이 남으면 400', async () => {
+      mockProcessRepo.find.mockResolvedValue([
+        { status: 'COMPLETED', resultQty: 10 } as any,
+        { status: 'WAITING', resultQty: 0 } as any,
+      ]);
+      await expect(target.complete('RW-020', { resultQty: 10 } as any, 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
+      expect(mockReworkRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('실적 수량이 0 이면 400', async () => {
+      mockProcessRepo.find.mockResolvedValue([]);
+      await expect(target.complete('RW-020', { resultQty: 0 } as any, 'user', 'CO', 'P01')).rejects.toThrow(
+        /재작업 실적 수량은 1 이상/,
+      );
+    });
+
+    it('실적 수량이 재작업 수량을 초과하면 400', async () => {
+      mockProcessRepo.find.mockResolvedValue([]);
+      await expect(target.complete('RW-020', { resultQty: 11 } as any, 'user', 'CO', 'P01')).rejects.toThrow(
+        /많을 수 없습니다/,
+      );
+    });
+
+    it('모든 공정이 끝나면 지시를 재검사대기로 바꾼다', async () => {
+      mockProcessRepo.find.mockResolvedValue([
+        { status: 'COMPLETED', resultQty: 6 } as any,
+        { status: 'SKIPPED', resultQty: 0 } as any,
+      ]);
+      await target.complete('RW-020', { resultQty: 99 } as any, 'user', 'CO', 'P01');
+      expect(mockReworkRepo.update).toHaveBeenCalledWith(
+        expect.objectContaining({ reworkNo: 'RW-020', company: 'CO', plant: 'P01' }),
+        expect.objectContaining({ status: 'INSPECT_PENDING', resultQty: 6 }),
+      );
+    });
+  });
+
   describe('delete', () => {
     it('should throw when not REGISTERED', async () => {
       mockReworkRepo.findOne.mockResolvedValue({ reworkNo: 'RW-001', status: 'APPROVED', id: 1 } as any);
@@ -138,10 +251,13 @@ describe('ReworkService', () => {
 
       await target.delete('RW-001');
 
-      expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
-        { occurAt: new Date('2026-04-08T00:00:00.000Z'), seq: 1 },
-        { status: 'WAIT' },
-      );
+      expect(mockDefectLogRepo.update).toHaveBeenCalledTimes(1);
+      const [where, patch] = mockDefectLogRepo.update.mock.calls[0];
+      expect(where.seq).toBe(1);
+      expect(where.company).toBeUndefined();
+      expect(where.plant).toBeUndefined();
+      expect(where.status).toBe('REWORK');
+      expect(patch).toEqual({ status: 'WAIT' });
     });
 
     it('should restore linked defect status within the rework tenant', async () => {
@@ -160,10 +276,13 @@ describe('ReworkService', () => {
 
       await target.delete('RW-001', 'CO', 'P01');
 
-      expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
-        { occurAt: new Date('2026-04-08T00:00:00.000Z'), seq: 1, company: 'CO', plant: 'P01' },
-        { status: 'WAIT' },
-      );
+      expect(mockDefectLogRepo.update).toHaveBeenCalledTimes(1);
+      const [where, patch] = mockDefectLogRepo.update.mock.calls[0];
+      expect(where.seq).toBe(1);
+      expect(where.company).toBe('CO');
+      expect(where.plant).toBe('P01');
+      expect(where.status).toBe('REWORK');
+      expect(patch).toEqual({ status: 'WAIT' });
     });
 
     it('should block delete when rework process has already progressed', async () => {
@@ -199,10 +318,21 @@ describe('ReworkService', () => {
       mockNumbering.next.mockResolvedValue('RW-100');
       mockReworkRepo.create.mockImplementation((v: any) => v);
       mockReworkRepo.save.mockResolvedValue({} as any);
-      mockReworkRepo.findOne.mockResolvedValue({ reworkNo: 'RW-100', status: 'REGISTERED' } as any);
+      // 중복 연결 확인(찾을 수 없음) → 저장 후 지시 조회
+      mockReworkRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValue({ reworkNo: 'RW-100', status: 'REGISTERED' } as any);
       mockProcessRepo.create.mockImplementation((v: any) => v);
       mockProcessRepo.save.mockResolvedValue([] as any);
+      mockDefectLogRepo.findOne.mockResolvedValue({
+        occurAt: new Date('2026-04-08T00:00:00.000Z'),
+        seq: 1,
+        status: 'WAIT',
+        qty: 5,
+      } as any);
       mockDefectLogRepo.update.mockResolvedValue({ affected: 1 } as any);
+      const mockItemMasterRepo = (target as any).itemMasterRepo as DeepMocked<Repository<ItemMaster>>;
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'IT-1' } as any);
 
       await target.create(
         {
@@ -217,14 +347,67 @@ describe('ReworkService', () => {
         'user',
       );
 
-      expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
-        { occurAt: new Date('2026-04-08T00:00:00.000Z'), seq: 1, company: 'CO', plant: 'P01' },
-        { status: 'REWORK' },
-      );
+      expect(mockItemMasterRepo.findOne).toHaveBeenCalledTimes(1);
+      const [where, patch] = mockDefectLogRepo.update.mock.calls[0];
+      expect(where.seq).toBe(1);
+      expect(where.company).toBe('CO');
+      expect(where.plant).toBe('P01');
+      expect(patch).toEqual({ status: 'REWORK' });
       const processes = mockProcessRepo.save.mock.calls[0][0] as any[];
       expect(processes).toHaveLength(1);
       expect(processes[0].status).toBe('WAITING');
       expect(mockReworkRepo.create).toHaveBeenCalledWith(expect.objectContaining({ status: 'REGISTERED' }));
+    });
+
+    it('WAIT 이외 상태의 불량은 재작업을 지시할 수 없다', async () => {
+      mockDefectLogRepo.findOne.mockResolvedValue({ occurAt: new Date(), seq: 1, status: 'REPAIR', qty: 5 } as any);
+      const mockItemMasterRepo = (target as any).itemMasterRepo as DeepMocked<Repository<ItemMaster>>;
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'IT-1' } as any);
+
+      await expect(target.create(
+        { defectLogId: '2026-04-08T00:00:00.000Z|1', itemCode: 'IT-1', reworkQty: 2, reworkMethod: 'RESOLDER' } as any,
+        'CO',
+        'P01',
+        'user',
+      )).rejects.toThrow(BadRequestException);
+      expect(mockReworkRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('품목이 없으면 NotFoundException', async () => {
+      const mockItemMasterRepo = (target as any).itemMasterRepo as DeepMocked<Repository<ItemMaster>>;
+      mockItemMasterRepo.findOne.mockResolvedValue(null);
+
+      await expect(target.create({ itemCode: 'NOPE', reworkQty: 1, reworkMethod: 'X' } as any, 'CO', 'P01', 'user'))
+        .rejects.toThrow(NotFoundException);
+    });
+
+    it('불량 수량보다 많은 재작업 수량은 400', async () => {
+      mockDefectLogRepo.findOne.mockResolvedValue({ occurAt: new Date(), seq: 1, status: 'WAIT', qty: 2 } as any);
+      mockReworkRepo.findOne.mockResolvedValue(null as any);
+      const mockItemMasterRepo = (target as any).itemMasterRepo as DeepMocked<Repository<ItemMaster>>;
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'IT-1' } as any);
+
+      await expect(target.create(
+        { defectLogId: '2026-04-08T00:00:00.000Z|1', itemCode: 'IT-1', reworkQty: 3, reworkMethod: 'X' } as any,
+        'CO',
+        'P01',
+        'user',
+      )).rejects.toThrow(BadRequestException);
+    });
+
+    it('이미 재작업이 연결된 불량은 400', async () => {
+      mockDefectLogRepo.findOne.mockResolvedValue({ occurAt: new Date(), seq: 1, status: 'WAIT', qty: 5 } as any);
+      // 중복 연결 확인에서 기존 연결 발견
+      mockReworkRepo.findOne.mockResolvedValue({ reworkNo: 'RW-099' } as any);
+      const mockItemMasterRepo = (target as any).itemMasterRepo as DeepMocked<Repository<ItemMaster>>;
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'IT-1' } as any);
+
+      await expect(target.create(
+        { defectLogId: '2026-04-08T00:00:00.000Z|1', itemCode: 'IT-1', reworkQty: 2, reworkMethod: 'X' } as any,
+        'CO',
+        'P01',
+        'user',
+      )).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -262,6 +445,16 @@ describe('ReworkService', () => {
       );
 
       expect(mockTx.run).toHaveBeenCalledTimes(1);
+    });
+
+    it('SCRAP 판정은 전체 수량이 불합격(폐기)이어야 한다', async () => {
+      await expect(target.createInspect(
+        { reworkNo: 'RW-200', inspectResult: 'SCRAP', passQty: 1, failQty: 0, inspectorCode: 'QC1' } as any,
+        'CO',
+        'P01',
+        'user',
+      )).rejects.toThrow(/SCRAP 판정은 전체 수량이 불합격/);
+      expect(mockTx.run).not.toHaveBeenCalled();
     });
   });
 

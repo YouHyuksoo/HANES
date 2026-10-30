@@ -84,15 +84,22 @@ export class ReworkProcessService {
       throw new BadRequestException('대기 상태에서만 시작할 수 있습니다.');
     }
 
+    // 재작업 지시가 승인 완료(APPROVED) 또는 진행중(IN_PROGRESS)일 때만 공정을 시작할 수 있다
+    const order = await this.reworkRepo.findOne({
+      where: { reworkNo: proc.reworkOrderId, ...this.tenantWhere(company, plant) },
+    });
+    if (!order || !['APPROVED', 'IN_PROGRESS'].includes(order.status)) {
+      throw new BadRequestException(
+        `승인 완료 또는 진행중인 재작업 지시에서만 공정을 시작할 수 있습니다. 현재 상태: ${order?.status ?? '없음'}`,
+      );
+    }
+
     proc.status = 'IN_PROGRESS';
     proc.startAt = new Date();
     proc.updatedBy = userId;
     await this.processRepo.save(proc);
 
-    const order = await this.reworkRepo.findOne({
-      where: { reworkNo: proc.reworkOrderId, ...this.tenantWhere(company, plant) },
-    });
-    if (order && order.status === 'APPROVED') {
+    if (order.status === 'APPROVED') {
       order.status = 'IN_PROGRESS';
       order.startAt = new Date();
       order.updatedBy = userId;
@@ -117,6 +124,17 @@ export class ReworkProcessService {
     const proc = await this.findProcess(reworkOrderId, processCode, company, plant);
     if (proc.status !== 'IN_PROGRESS') {
       throw new BadRequestException('진행중 상태에서만 완료할 수 있습니다.');
+    }
+    const order = await this.reworkRepo.findOne({
+      where: { reworkNo: proc.reworkOrderId, ...this.tenantWhere(company, plant) },
+    });
+    if (!Number.isInteger(resultQty) || resultQty < 0) {
+      throw new BadRequestException('공정 실적 수량은 0 이상의 정수여야 합니다.');
+    }
+    if (order && resultQty > order.reworkQty) {
+      throw new BadRequestException(
+        `공정 실적 수량(${resultQty})이 재작업 수량(${order.reworkQty})보다 많을 수 없습니다.`,
+      );
     }
 
     proc.status = 'COMPLETED';
@@ -172,6 +190,19 @@ export class ReworkProcessService {
     userId: string,
   ) {
     const proc = await this.findProcess(dto.reworkOrderId, dto.processCode, company, plant);
+
+    // 진행중인 공정에만 실적을 등록할 수 있다
+    if (proc.status !== 'IN_PROGRESS') {
+      throw new BadRequestException(
+        `진행중인 공정에만 실적을 등록할 수 있습니다. 현재 상태: ${proc.status}`,
+      );
+    }
+    // 양품과 불량의 합이 작업 수량을 넘을 수 없다
+    if (dto.goodQty + dto.defectQty > dto.resultQty) {
+      throw new BadRequestException(
+        `양품(${dto.goodQty})과 불량(${dto.defectQty})의 합이 작업 수량(${dto.resultQty})보다 많습니다.`,
+      );
+    }
 
     const seqRows = await this.resultRepo.query(
       'SELECT SEQ_REWORK_RESULT.NEXTVAL AS "NEXT_SEQ" FROM DUAL',

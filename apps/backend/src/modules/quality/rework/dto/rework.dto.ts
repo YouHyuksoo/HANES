@@ -91,19 +91,19 @@ export class CreateReworkResultDto {
 
   @ApiProperty({ description: '작업 수량', minimum: 0 })
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
   @Min(0)
   resultQty: number;
 
   @ApiProperty({ description: '양품 수량', minimum: 0 })
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
   @Min(0)
   goodQty: number;
 
   @ApiProperty({ description: '불량 수량', minimum: 0 })
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
   @Min(0)
   defectQty: number;
 
@@ -146,15 +146,15 @@ export class CreateReworkOrderDto {
   @MaxLength(200)
   itemName?: string;
 
-  @ApiPropertyOptional({ description: '제품 UID (LOT)', maxLength: 80 })
+  @ApiPropertyOptional({ description: '제품 UID (LOT)', maxLength: 50 })
   @IsOptional()
   @IsString()
-  @MaxLength(80)
+  @MaxLength(50)
   prdUid?: string;
 
   @ApiProperty({ description: '재작업 수량', example: 10, minimum: 1 })
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
   @Min(1)
   reworkQty: number;
 
@@ -271,7 +271,7 @@ export class ApproveReworkDto {
 export class CompleteReworkDto {
   @ApiProperty({ description: '결과 수량', example: 8, minimum: 0 })
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
   @Min(0)
   resultQty: number;
 

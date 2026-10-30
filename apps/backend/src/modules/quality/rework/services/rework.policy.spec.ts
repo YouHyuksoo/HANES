@@ -39,7 +39,13 @@ describe('ReworkService policy', () => {
         create: jest.fn((_: any, value: any) => value),
         save: jest.fn(async (_: any, value: any) => value),
         update: jest.fn(),
-        findOne: jest.fn().mockResolvedValue({ itemCode: 'IT-1', itemType: 'SEMI_PRODUCT' }),
+        findOne: jest.fn(async (_: any, opts: any) => {
+          // 재작업 지시 잠금 재확인(재검사 등록)은 재검사대기 지시로, 품목 조회는 품목행으로 답한다
+          if (opts?.where?.itemCode) {
+            return { itemCode: 'IT-1', itemType: 'SEMI_PRODUCT' };
+          }
+          return { reworkNo: opts?.where?.reworkNo, status: 'INSPECT_PENDING', itemCode: 'IT-1', resultQty: 5, company: 'CO', plant: 'P01' };
+        }),
       },
     } as any));
 
@@ -77,10 +83,11 @@ describe('ReworkService policy', () => {
 
     await target.delete('RW-001');
 
-    expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
-      { occurAt: new Date('2026-04-08T00:00:00.000Z'), seq: 1 },
-      { status: 'WAIT' },
-    );
+    expect(mockDefectLogRepo.update).toHaveBeenCalledTimes(1);
+    const [where, patch] = mockDefectLogRepo.update.mock.calls[0];
+    expect(where.seq).toBe(1);
+    expect(where.status).toBe('REWORK');
+    expect(patch).toEqual({ status: 'WAIT' });
   });
 
   it('blocks delete when rework inspection already exists', async () => {

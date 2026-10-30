@@ -26,7 +26,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Raw } from 'typeorm';
 import { ReworkOrder } from '../../../../entities/rework-order.entity';
 import { ReworkInspect } from '../../../../entities/rework-inspect.entity';
 import { ReworkProcess } from '../../../../entities/rework-process.entity';
@@ -37,6 +37,7 @@ import { WarehouseService } from '../../../inventory/services/warehouse.service'
 import { NumberingService } from '../../../../shared/numbering.service';
 import { TransactionService } from '../../../../shared/transaction.service';
 import { DEFECT_LOG_STATUS, deriveDefectLogStatusFromReworkInspect } from '@harness/shared';
+import { parseDefectLogId } from '../../defects/defect-log-key';
 import {
   CreateReworkOrderDto,
   UpdateReworkOrderDto,
@@ -74,14 +75,32 @@ export class ReworkService {
     };
   }
 
-  private defectLogWhere(defectLogId: string, company?: string, plant?: string) {
-    const [occurAtStr, seqStr] = defectLogId.split('|');
-    if (!occurAtStr || !seqStr) return null;
-    return {
-      occurAt: new Date(occurAtStr),
-      seq: Number(seqStr),
-      ...this.tenantWhere(company, plant),
-    };
+  /** 발생 시각 한 점을 [시각, 시각+1ms) 범위 조건으로 바꾼다.
+   *  생산실적에서 만든 불량은 발생 시각이 마이크로초까지 저장돼 밀리초 값과 같지 않으므로 같음 비교로는 찾지 못한다. */
+  private occurAtRange(at: Date) {
+    const to = new Date(at.getTime() + 1);
+    return Raw((col) => `${col} >= :occFrom AND ${col} < :occTo`, { occFrom: at, occTo: to });
+  }
+
+  /** 연결 불량 식별자(`발생시각ISO|순번`)를 키로 푼다. 형식이 틀리면 400 */
+  private defectKey(defectLogId: string) {
+    const key = parseDefectLogId(defectLogId);
+    if (!key || key.occurAt === null) {
+      throw new BadRequestException(`불량로그 식별자 형식이 올바르지 않습니다(발생시각|순번): ${defectLogId}`);
+    }
+    return { occurAt: new Date(key.canonicalId.slice(0, key.canonicalId.indexOf('|'))), seq: key.seq, canonicalId: key.canonicalId };
+  }
+
+  /** 연결 불량 한 건을 밀리초 범위로 찾는다. 없으면 404 */
+  private async findDefect(defectLogId: string, company?: string, plant?: string) {
+    const { occurAt, seq, canonicalId } = this.defectKey(defectLogId);
+    const defect = await this.defectLogRepo.findOne({
+      where: { occurAt: this.occurAtRange(occurAt), seq, ...this.tenantWhere(company, plant) },
+    });
+    if (!defect) {
+      throw new NotFoundException(`불량로그를 찾을 수 없습니다: ${canonicalId}`);
+    }
+    return defect;
   }
 
   // =============================================
@@ -172,10 +191,44 @@ export class ReworkService {
     plant: string,
     userId: string,
   ) {
+    // 품목 존재 확인
+    const item = await this.itemMasterRepo.findOne({
+      where: { itemCode: dto.itemCode, ...this.tenantWhere(company, plant) },
+      select: ['itemCode'],
+    });
+    if (!item) {
+      throw new NotFoundException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
+    }
+
+    // 연결 불량: 형식 검증, 존재(WAIT) 확인, 중복 연결 차단, 수량 비교
+    let defect: DefectLog | null = null;
+    let canonicalId: string | null = null;
+    if (dto.defectLogId) {
+      const { occurAt, seq, canonicalId: cid } = this.defectKey(dto.defectLogId);
+      canonicalId = cid;
+      defect = await this.findDefect(dto.defectLogId, company, plant);
+      if (defect.status !== DEFECT_LOG_STATUS.WAIT) {
+        throw new BadRequestException(
+          `대기(WAIT) 상태의 불량만 재작업을 지시할 수 있습니다. 현재 상태: ${defect.status}`,
+        );
+      }
+      const linked = await this.reworkRepo.findOne({
+        where: { defectLogId: canonicalId, ...this.tenantWhere(company, plant) },
+      });
+      if (linked) {
+        throw new BadRequestException(`이미 재작업(${linked.reworkNo})이 연결된 불량입니다.`);
+      }
+      if (dto.reworkQty > defect.qty) {
+        throw new BadRequestException(
+          `재작업 수량(${dto.reworkQty})이 불량 수량(${defect.qty})보다 많을 수 없습니다.`,
+        );
+      }
+    }
+
     const reworkNo = await this.generateReworkNo();
     const entity = this.reworkRepo.create({
       reworkNo,
-      defectLogId: dto.defectLogId ?? null,
+      defectLogId: canonicalId,
       itemCode: dto.itemCode,
       itemName: dto.itemName ?? null,
       prdUid: dto.prdUid ?? null,
@@ -218,10 +271,12 @@ export class ReworkService {
       await this.processRepo.save(processEntities);
     }
 
-    // 불량 이력 상태 연동 — defectLogId 형식: "occurAt|seq"
-    if (dto.defectLogId) {
-      const defectWhere = this.defectLogWhere(dto.defectLogId, company, plant);
-      if (defectWhere) await this.defectLogRepo.update(defectWhere, { status: DEFECT_LOG_STATUS.REWORK });
+    // 불량 이력 상태 연동 (밀리초 범위)
+    if (defect) {
+      await this.defectLogRepo.update(
+        { occurAt: this.occurAtRange(defect.occurAt), seq: defect.seq, ...this.tenantWhere(company, plant) },
+        { status: DEFECT_LOG_STATUS.REWORK },
+      );
     }
 
     this.logger.log(
@@ -246,11 +301,58 @@ export class ReworkService {
         '등록/반려 상태에서만 수정할 수 있습니다.',
       );
     }
-    const { processItems, ...updateFields } = dto;
-    await this.reworkRepo.update(
-      { reworkNo, ...this.tenantWhere(company, plant) },
-      { ...updateFields, updatedBy: userId },
-    );
+
+    // 연결된 불량은 바꿀 수 없다(같은 값을 다시 보내는 것은 허용)
+    if (dto.defectLogId !== undefined && (dto.defectLogId ?? '') !== (item.defectLogId ?? '')) {
+      throw new BadRequestException('연결된 불량은 바꿀 수 없습니다. 지시를 지우고 다시 등록해 주세요.');
+    }
+
+    // 필수 컬럼(itemCode, reworkQty, reworkMethod)의 null 은 조용히 무시하고 나머지는 키가 있으면 그 값(null 포함)을 적용한다
+    const requiredKeys = ['itemCode', 'reworkQty', 'reworkMethod'];
+    const patch: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(dto)) {
+      if (key === 'processItems' || key === 'defectLogId') continue;
+      if (value === undefined) continue;
+      if (value === null && requiredKeys.includes(key)) continue;
+      patch[key] = value;
+    }
+
+    if (patch.itemCode !== undefined && patch.itemCode !== item.itemCode) {
+      const found = await this.itemMasterRepo.findOne({
+        where: { itemCode: patch.itemCode as string, ...this.tenantWhere(company, plant) },
+        select: ['itemCode'],
+      });
+      if (!found) {
+        throw new NotFoundException(`품목을 찾을 수 없습니다: ${patch.itemCode}`);
+      }
+    }
+
+    let qtyChanged = false;
+    if (patch.reworkQty !== undefined) {
+      qtyChanged = patch.reworkQty !== item.reworkQty;
+      if (qtyChanged && item.defectLogId) {
+        const defect = await this.findDefect(item.defectLogId, company, plant);
+        if (Number(patch.reworkQty) > defect.qty) {
+          throw new BadRequestException(
+            `재작업 수량(${patch.reworkQty})이 불량 수량(${defect.qty})보다 많을 수 없습니다.`,
+          );
+        }
+      }
+    }
+
+    if (Object.keys(patch).length > 0) {
+      await this.reworkRepo.update(
+        { reworkNo, ...this.tenantWhere(company, plant) },
+        { ...patch, updatedBy: userId },
+      );
+    }
+    // 공정의 계획 수량은 지시 수량을 따른다(아직 시작하지 않은 공정만)
+    if (qtyChanged) {
+      await this.processRepo.update(
+        { reworkOrderId: item.reworkNo, status: 'WAITING', ...this.tenantWhere(company, plant) },
+        { planQty: patch.reworkQty as number, updatedBy: userId },
+      );
+    }
     return this.findById(reworkNo, company, plant);
   }
 
@@ -279,8 +381,14 @@ export class ReworkService {
       );
     }
     if (item.defectLogId) {
-      const defectWhere = this.defectLogWhere(item.defectLogId, company, plant);
-      if (defectWhere) await this.defectLogRepo.update(defectWhere, { status: DEFECT_LOG_STATUS.WAIT });
+      const parsed = parseDefectLogId(item.defectLogId);
+      if (parsed && parsed.occurAt !== null) {
+        const { occurAt, seq } = this.defectKey(item.defectLogId);
+        await this.defectLogRepo.update(
+          { occurAt: this.occurAtRange(occurAt), seq, ...this.tenantWhere(company, plant), status: DEFECT_LOG_STATUS.REWORK },
+          { status: DEFECT_LOG_STATUS.WAIT },
+        );
+      }
     }
     await this.processRepo.delete({ reworkOrderId: reworkNo, ...this.tenantWhere(company, plant) });
     await this.reworkRepo.delete({ reworkNo, ...this.tenantWhere(company, plant) });
@@ -391,9 +499,26 @@ export class ReworkService {
     });
     let totalResultQty = dto.resultQty;
     if (processes.length > 0) {
+      // 공정이 있으면 모두 완료/건너뛰여야 한다. 안 끝난 공정이 남으면 완료로 넘어가면 안 된다.
+      const open = processes.filter((p) => p.status !== 'COMPLETED' && p.status !== 'SKIPPED');
+      if (open.length > 0) {
+        throw new BadRequestException(
+          `완료·건너뛰지 않은 공정이 ${open.length}개 남아 있습니다. 공정을 먼저 처리해 주세요.`,
+        );
+      }
       totalResultQty = processes
         .filter((p) => p.status === 'COMPLETED')
         .reduce((sum, p) => sum + p.resultQty, 0);
+    }
+    if (!Number.isInteger(totalResultQty) || totalResultQty < 1) {
+      throw new BadRequestException(
+        `재작업 실적 수량은 1 이상의 정수여야 합니다. 입력=${totalResultQty ?? '없음'}`,
+      );
+    }
+    if (totalResultQty > order.reworkQty) {
+      throw new BadRequestException(
+        `재작업 실적 수량(${totalResultQty})이 재작업 수량(${order.reworkQty})보다 많을 수 없습니다.`,
+      );
     }
 
     await this.reworkRepo.update({ reworkNo, ...this.tenantWhere(company, plant) }, {
@@ -486,8 +611,20 @@ export class ReworkService {
     if (dto.inspectResult === 'FAIL' && (passQty !== 0 || failQty !== resultQty)) {
       throw new BadRequestException('FAIL 판정은 전체 수량이 불합격이어야 합니다.');
     }
+    if (dto.inspectResult === 'SCRAP' && (passQty !== 0 || failQty !== resultQty)) {
+      throw new BadRequestException('SCRAP 판정은 전체 수량이 불합격(폐기)이어야 합니다.');
+    }
 
     return this.tx.run(async (qr) => {
+    // 같은 지시에 대한 동시 재검사 등록을 막기 위해 지시 행을 잠그고 상태를 다시 확인한다
+    const lockedOrder = await qr.manager.findOne(ReworkOrder, {
+      where: { reworkNo: dto.reworkNo, company, plant },
+      lock: { mode: 'pessimistic_write' },
+    });
+    if (!lockedOrder || lockedOrder.status !== 'INSPECT_PENDING') {
+      throw new BadRequestException('재검사대기 상태가 아닙니다.');
+    }
+
     const seqRows = await qr.query(
       'SELECT SEQ_REWORK_INSPECT.NEXTVAL AS "NEXT_SEQ" FROM DUAL',
     );
@@ -520,15 +657,17 @@ export class ReworkService {
       updatedBy: userId,
     });
 
-    // 불량 이력 상태 연동 (복합 PK 기준 업데이트)
+    // 불량 이력 상태 연동 (밀리초 범위 업데이트)
     if (order.defectLogId) {
-      const defectStatus = deriveDefectLogStatusFromReworkInspect(dto.inspectResult);
-      const reworkOrder = await qr.manager.findOne(ReworkOrder, {
-        where: { reworkNo: dto.reworkNo, company, plant },
-      });
-      if (reworkOrder?.defectLogId) {
-        const defectWhere = this.defectLogWhere(reworkOrder.defectLogId, company, plant);
-        if (defectWhere) await qr.manager.update(DefectLog, defectWhere, { status: defectStatus });
+      const parsed = parseDefectLogId(order.defectLogId);
+      if (parsed && parsed.occurAt !== null) {
+        const { occurAt, seq } = this.defectKey(order.defectLogId);
+        const defectStatus = deriveDefectLogStatusFromReworkInspect(dto.inspectResult);
+        await qr.manager.update(
+          DefectLog,
+          { occurAt: this.occurAtRange(occurAt), seq, ...this.tenantWhere(company, plant) },
+          { status: defectStatus },
+        );
       }
     }
 

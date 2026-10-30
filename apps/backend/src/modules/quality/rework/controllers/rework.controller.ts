@@ -95,6 +95,40 @@ export class ReworkController {
     return ResponseUtil.paged(result.data, result.total, result.page, result.limit);
   }
 
+  // ===== 재작업 후 검사 (GET /:id 보다 먼저 정의해야 inspects 가 :id 로 잡히지 않는다) =====
+
+  @Get('inspects')
+  @ApiOperation({ summary: '재검사 목록 조회' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  async findInspects(
+    @Query('reworkOrderId') reworkOrderId: string,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.reworkService.findInspects(
+      reworkOrderId,
+      company,
+      plant,
+    );
+    return ResponseUtil.success(data);
+  }
+
+  @Get('inspects/:orderId/:seq')
+  @ApiOperation({ summary: '재검사 단건 조회' })
+  @ApiParam({ name: 'orderId', description: '재작업 지시 ID (REWORK_ORDER_ID)' })
+  @ApiParam({ name: 'seq', description: '검사 순번 (SEQ)' })
+  @ApiResponse({ status: 200, description: '조회 성공' })
+  @ApiResponse({ status: 404, description: '재검사 없음' })
+  async findInspectById(
+    @Param('orderId') orderId: string,
+    @Param('seq', ParseIntPipe) seq: number,
+    @Company() company: string,
+    @Plant() plant: string,
+  ) {
+    const data = await this.reworkService.findInspectById(orderId, seq, company, plant);
+    return ResponseUtil.success(data);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '재작업 단건 조회' })
   @ApiParam({ name: 'id', description: '재작업번호 (REWORK_NO)' })
@@ -362,38 +396,6 @@ export class ReworkController {
   }
 
   // ===== 재작업 후 검사 =====
-
-  @Get('inspects')
-  @ApiOperation({ summary: '재검사 목록 조회' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
-  async findInspects(
-    @Query('reworkOrderId') reworkOrderId: string,
-    @Company() company: string,
-    @Plant() plant: string,
-  ) {
-    const data = await this.reworkService.findInspects(
-      reworkOrderId,
-      company,
-      plant,
-    );
-    return ResponseUtil.success(data);
-  }
-
-  @Get('inspects/:orderId/:seq')
-  @ApiOperation({ summary: '재검사 단건 조회' })
-  @ApiParam({ name: 'orderId', description: '재작업 지시 ID (REWORK_ORDER_ID)' })
-  @ApiParam({ name: 'seq', description: '검사 순번 (SEQ)' })
-  @ApiResponse({ status: 200, description: '조회 성공' })
-  @ApiResponse({ status: 404, description: '재검사 없음' })
-  async findInspectById(
-    @Param('orderId') orderId: string,
-    @Param('seq', ParseIntPipe) seq: number,
-    @Company() company: string,
-    @Plant() plant: string,
-  ) {
-    const data = await this.reworkService.findInspectById(orderId, seq, company, plant);
-    return ResponseUtil.success(data);
-  }
 
   @Post('inspects')
   @HttpCode(HttpStatus.CREATED)
