@@ -226,10 +226,11 @@ describe('ConsumablesService', () => {
       const result = await target.getLifeStatus();
 
       // Assert
-      expect(result).toEqual(items);
+      // 급한 순(REPLACE → WARNING → NORMAL), 같은 상태 안은 조회 순서 그대로
+      expect(result.map((r) => r.consumableCode)).toEqual(['C004', 'C003', 'C001', 'C002']);
       expect(mockMasterRepo.find).toHaveBeenCalledWith({
         where: { useYn: 'Y' },
-        order: { status: 'DESC', currentCount: 'DESC', consumableCode: 'ASC' },
+        order: { currentCount: 'DESC', consumableCode: 'ASC' },
       });
     });
   });

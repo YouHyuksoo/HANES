@@ -22,7 +22,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Between, In, QueryRunner, FindOptionsWhere } from 'typeorm';
+import { Repository, DataSource, Between, In, QueryRunner, FindOptionsWhere, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
 import { ConsumableUsageMap } from '../../../entities/consumable-usage-map.entity';
@@ -183,7 +183,7 @@ export class ConsumablesService {
    * 소모품 수정
    */
   async update(id: string, dto: UpdateConsumableDto, company?: string, plant?: string) {
-    await this.findById(id, company, plant);
+    const existing = await this.findById(id, company, plant);
 
     const updateData: Partial<ConsumableMaster> = {};
 
@@ -198,6 +198,16 @@ export class ConsumablesService {
     if (dto.currentCount !== undefined) updateData.currentCount = dto.currentCount;
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
+
+    // 상태를 직접 주지 않았는데 사용 횟수·경고·수명이 바뀌면 shared 수명 규칙으로 상태를 다시 판정한다
+    if (dto.status === undefined && (dto.currentCount !== undefined || dto.warningCount !== undefined || dto.expectedLife !== undefined)) {
+      updateData.status = resolveConsumableLifeStatus(
+        updateData.currentCount ?? existing.currentCount,
+        'warningCount' in updateData ? updateData.warningCount ?? null : existing.warningCount,
+        'expectedLife' in updateData ? updateData.expectedLife ?? null : existing.expectedLife,
+        existing.status,
+      );
+    }
 
     await this.consumableMasterRepository.update(
       { consumableCode: id, ...this.tenantWhere(company, plant) },
@@ -383,24 +393,32 @@ ${tenantSql}
    * 경고/교체 필요 소모품 목록
    */
   async getWarningList(company?: string, plant?: string) {
-    return this.consumableMasterRepository.find({
+    const rows = await this.consumableMasterRepository.find({
       where: {
         status: In(['WARNING', 'REPLACE']),
         useYn: 'Y',
         ...this.tenantWhere(company, plant),
       },
-      order: { status: 'DESC', currentCount: 'DESC' },
+      order: { currentCount: 'DESC', consumableCode: 'ASC' },
     });
+    return this.sortByUrgency(rows);
+  }
+
+  /** 급한 순: REPLACE → WARNING → 그 밖(문자열 내림차순이면 WARNING 이 REPLACE 보다 먼저 나왔다). 같은 상태 안의 순서는 그대로 둔다 */
+  private sortByUrgency<T extends { status: string }>(rows: T[]): T[] {
+    const rank = (status: string) => (status === 'REPLACE' ? 0 : status === 'WARNING' ? 1 : 2);
+    return [...rows].sort((a, b) => rank(a.status) - rank(b.status));
   }
 
   /**
    * 소모품 수명 현황
    */
   async getLifeStatus(company?: string, plant?: string) {
-    return this.consumableMasterRepository.find({
+    const rows = await this.consumableMasterRepository.find({
       where: { useYn: 'Y', ...this.tenantWhere(company, plant) },
-      order: { status: 'DESC', currentCount: 'DESC', consumableCode: 'ASC' },
+      order: { currentCount: 'DESC', consumableCode: 'ASC' },
     });
+    return this.sortByUrgency(rows);
   }
 
   /**
@@ -486,10 +504,13 @@ ${tenantSql}
       }
     }
 
+    // 종료일만 보내도 걸리고, 시작일만 보내면 상한이 없다(옛 코드는 종료일만이면 무시, 시작일만이면 '지금까지'로 막았다)
     if (fromDate && toDate) {
       where.createdAt = Between(parseDateStart(fromDate)!, parseDateEnd(toDate)!);
     } else if (fromDate) {
-      where.createdAt = Between(parseDateStart(fromDate)!, new Date());
+      where.createdAt = MoreThanOrEqual(parseDateStart(fromDate)!);
+    } else if (toDate) {
+      where.createdAt = LessThanOrEqual(parseDateEnd(toDate)!);
     }
 
     const raw = await this.consumableLogRepository.find({
@@ -522,6 +543,7 @@ ${tenantSql}
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         },
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (!consumable) {
@@ -626,6 +648,7 @@ ${tenantSql}
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         },
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (!consumable) {
@@ -691,6 +714,7 @@ ${tenantSql}
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         },
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (!consumable) {
@@ -729,9 +753,8 @@ ${tenantSql}
           currentCount: 0,
           status: 'NORMAL',
           lastReplaceAt: now,
-          nextReplaceAt: consumable.expectedLife
-            ? new Date(now.getTime() + consumable.expectedLife * 24 * 60 * 60 * 1000)
-            : null,
+          // 수명은 타수라 날짜로 바꿀 수 없다 — 다음 교체일은 비운다(옛 코드는 타수를 '일수'로 더해 수백 년 뒤 날짜를 넣었다)
+          nextReplaceAt: null,
         },
       );
 

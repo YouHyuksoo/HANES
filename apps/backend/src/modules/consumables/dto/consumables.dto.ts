@@ -84,6 +84,7 @@ export class UpdateConsumableDto extends PartialType(CreateConsumableDto) {
   @ApiPropertyOptional({ description: '상태', enum: ['NORMAL', 'WARNING', 'REPLACE'] })
   @IsOptional()
   @IsString()
+  @IsIn(['NORMAL', 'WARNING', 'REPLACE'])
   status?: string;
 
   @ApiPropertyOptional({ description: '사용 여부', enum: USE_YN_VALUES })
@@ -127,6 +128,7 @@ export class CreateConsumableLogDto {
 
   @ApiProperty({ description: '이력 유형', enum: ['IN', 'IN_RETURN', 'OUT', 'OUT_RETURN'] })
   @IsString()
+  @IsIn(['IN', 'IN_RETURN', 'OUT', 'OUT_RETURN'])
   logType: string;
 
   @ApiPropertyOptional({ description: '수량', default: 1 })

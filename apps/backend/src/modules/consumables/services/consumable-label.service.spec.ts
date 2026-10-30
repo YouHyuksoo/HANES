@@ -108,6 +108,7 @@ describe('ConsumableLabelService', () => {
         rollbackTransaction: jest.fn(),
         release: jest.fn(),
         manager: {
+          update: jest.fn().mockResolvedValue({ affected: 1 }),
           create: jest.fn().mockReturnValue({} as any),
           save: jest.fn().mockResolvedValue({} as any),
         },
@@ -207,6 +208,7 @@ describe('ConsumableLabelService', () => {
 
       const mockQr = {
         manager: {
+          update: jest.fn().mockResolvedValue({ affected: 1 }),
           save: jest.fn().mockResolvedValue(stock),
           increment: jest.fn().mockResolvedValue({} as any),
           create: jest.fn().mockReturnValue({} as any),
@@ -243,6 +245,7 @@ describe('ConsumableLabelService', () => {
         rollbackTransaction: jest.fn(),
         release: jest.fn(),
         manager: {
+          update: jest.fn().mockResolvedValue({ affected: 1 }),
           save: jest.fn().mockResolvedValue(stock),
           increment: jest.fn().mockResolvedValue({} as any),
           create: jest.fn().mockReturnValue({} as any),
@@ -278,6 +281,7 @@ describe('ConsumableLabelService', () => {
 
       const mockQr = {
         manager: {
+          update: jest.fn().mockResolvedValue({ affected: 1 }),
           save: jest.fn().mockResolvedValue(stock),
           decrement: jest.fn().mockResolvedValue({} as any),
           create: jest.fn().mockReturnValue({} as any),
@@ -317,6 +321,7 @@ describe('ConsumableLabelService', () => {
 
       const mockQr = {
         manager: {
+          update: jest.fn().mockResolvedValue({ affected: 1 }),
           save: jest.fn().mockResolvedValue(stock),
           increment: jest.fn().mockResolvedValue({} as any),
           create: jest.fn().mockReturnValue({} as any),

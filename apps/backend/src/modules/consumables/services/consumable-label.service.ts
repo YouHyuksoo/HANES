@@ -11,7 +11,7 @@
  */
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, QueryRunner } from 'typeorm';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableStock } from '../../../entities/consumable-stock.entity';
 import { ConsumableLog } from '../../../entities/consumable-log.entity';
@@ -55,6 +55,16 @@ export class ConsumableLabelService {
       ...(company && { company }),
       ...(plant && { plantCd: plant }),
     };
+  }
+
+  /** 공급업체 코드는 마스터에 있어야 한다(없으면 입고 확정의 이력 저장이 외래키로 걸려 UID 가 미입고에 갇힌다) */
+  private async assertVendor(vendorCode: string | undefined, company: string, plant: string) {
+    if (!vendorCode) return;
+    const rows = await this.masterRepo.manager.query(
+      `SELECT COUNT(*) AS "cnt" FROM VENDOR_MASTERS WHERE VENDOR_CODE = :1 AND COMPANY = :2 AND PLANT_CD = :3`,
+      [vendorCode, company, plant],
+    );
+    if (!Number(rows?.[0]?.cnt)) throw new BadRequestException(`공급업체를 찾을 수 없습니다: ${vendorCode}`);
   }
 
   /** 라벨 발행 가능 마스터 목록 + 기존 인스턴스 수 */
@@ -103,6 +113,7 @@ export class ConsumableLabelService {
       where: { consumableCode: dto.consumableCode, ...this.masterTenantWhere(company, plant) },
     });
     if (!master) throw new NotFoundException('소모품 마스터를 찾을 수 없습니다.');
+    await this.assertVendor(dto.vendorCode, master.company, master.plant);
 
     return this.tx.run(async (queryRunner) => {
       const results: ConLabelResultDto[] = [];
@@ -173,22 +184,43 @@ export class ConsumableLabelService {
     });
   }
 
+  /** 입고 확정 대상 조회 + 상태 확인 */
+  private async loadPendingStock(conUid: string, company?: string, plant?: string) {
+    const stock = await this.stockRepo.findOne({
+      where: { conUid, ...this.stockTenantWhere(company, plant) },
+    });
+    if (!stock) throw new NotFoundException(`UID ${conUid}를 찾을 수 없습니다.`);
+    if (stock.status !== 'PENDING') {
+      throw new BadRequestException(`UID ${conUid}는 이미 입고된 상태입니다. (${stock.status})`);
+    }
+    return stock;
+  }
+
   /** 단건 입고 확정: PENDING → ACTIVE */
   async confirmReceiving(dto: ConfirmConReceivingDto, company?: string, plant?: string) {
-    const stock = await this.stockRepo.findOne({
-      where: { conUid: dto.conUid, ...this.stockTenantWhere(company, plant) },
-    });
-    if (!stock) throw new NotFoundException(`UID ${dto.conUid}를 찾을 수 없습니다.`);
-    if (stock.status !== 'PENDING') {
-      throw new BadRequestException(`UID ${dto.conUid}는 이미 입고된 상태입니다. (${stock.status})`);
-    }
+    const stock = await this.loadPendingStock(dto.conUid, company, plant);
+    return this.tx.run((queryRunner) => this.applyConfirm(queryRunner, stock, dto, company, plant));
+  }
 
-    return this.tx.run(async (queryRunner) => {
+  /** 입고 확정 본체 — PENDING 인 행만 바꾸는 조건부 갱신이라 같은 UID 를 동시에 확정해도 재고가 두 번 오르지 않는다 */
+  private async applyConfirm(
+    queryRunner: QueryRunner,
+    stock: ConsumableStock,
+    dto: ConfirmConReceivingDto,
+    company?: string,
+    plant?: string,
+  ) {
+    {
+      const moved = await queryRunner.manager.update(
+        ConsumableStock,
+        { conUid: stock.conUid, status: 'PENDING', ...this.stockTenantWhere(company, plant) },
+        { status: 'ACTIVE', recvDate: new Date(), location: dto.location ?? stock.location, remark: dto.remark ?? stock.remark },
+      );
+      if (!moved.affected) throw new BadRequestException(`UID ${stock.conUid}는 이미 입고된 상태입니다.`);
       stock.status = 'ACTIVE';
       stock.recvDate = new Date();
       stock.location = dto.location ?? stock.location;
       stock.remark = dto.remark ?? stock.remark;
-      await queryRunner.manager.save(stock);
 
       await queryRunner.manager.increment(
         ConsumableMaster,
@@ -231,7 +263,7 @@ export class ConsumableLabelService {
         status: stock.status,
         recvDate: stock.recvDate,
       };
-    });
+    }
   }
 
   /** 단건 반납입고 (바코드 스캔): ACTIVE → IN_RETURN 로그 */
@@ -245,9 +277,14 @@ export class ConsumableLabelService {
     }
 
     return this.tx.run(async (queryRunner) => {
+      const moved = await queryRunner.manager.update(
+        ConsumableStock,
+        { conUid: stock.conUid, status: 'ACTIVE', ...this.stockTenantWhere(company, plant) },
+        { status: 'RETURNED', remark: dto.returnReason ?? stock.remark },
+      );
+      if (!moved.affected) throw new BadRequestException('입고반납은 ACTIVE 상태만 가능합니다.');
       stock.status = 'RETURNED';
       stock.remark = dto.returnReason ?? stock.remark;
-      await queryRunner.manager.save(stock);
 
       await queryRunner.manager.decrement(
         ConsumableMaster,
@@ -308,11 +345,16 @@ export class ConsumableLabelService {
     }
 
     return this.tx.run(async (queryRunner) => {
+      const moved = await queryRunner.manager.update(
+        ConsumableStock,
+        { conUid: stock.conUid, status: 'ACTIVE', ...this.stockTenantWhere(company, plant) },
+        { status: 'PROC_WAIT', processCode, mountedEquipCode: null, remark: dto.remark ?? stock.remark },
+      );
+      if (!moved.affected) throw new BadRequestException('출고는 ACTIVE 상태만 가능합니다.');
       stock.status = 'PROC_WAIT';
       stock.processCode = processCode;
       stock.mountedEquipCode = null;
       stock.remark = dto.remark ?? stock.remark;
-      await queryRunner.manager.save(stock);
 
       await queryRunner.manager.decrement(
         ConsumableMaster,
@@ -369,11 +411,16 @@ export class ConsumableLabelService {
 
     return this.tx.run(async (queryRunner) => {
       const processCode = stock.processCode;
+      const moved = await queryRunner.manager.update(
+        ConsumableStock,
+        { conUid: stock.conUid, status: 'PROC_WAIT', ...this.stockTenantWhere(company, plant) },
+        { status: 'ACTIVE', processCode: null, mountedEquipCode: null, remark: dto.returnReason ?? stock.remark },
+      );
+      if (!moved.affected) throw new BadRequestException('출고취소는 공정대기 상태만 가능합니다.');
       stock.status = 'ACTIVE';
       stock.processCode = null;
       stock.mountedEquipCode = null;
       stock.remark = dto.returnReason ?? stock.remark;
-      await queryRunner.manager.save(stock);
 
       await queryRunner.manager.increment(
         ConsumableMaster,
@@ -418,15 +465,15 @@ export class ConsumableLabelService {
   }
 
   /** 다건 입고 확정 */
+  /** 다건 입고 확정 — 한 트랜잭션이다(한 건이라도 실패하면 전부 취소; 옛 코드는 건마다 커밋해 앞 건만 입고되었다) */
   async bulkConfirmReceiving(dto: BulkConfirmConReceivingDto, company?: string, plant?: string) {
-    const results = [];
-    for (const conUid of dto.conUids) {
-      const result = await this.confirmReceiving({
-        conUid,
-        location: dto.location,
-      }, company, plant);
-      results.push(result);
-    }
-    return results;
+    return this.tx.run(async (queryRunner) => {
+      const results = [];
+      for (const conUid of dto.conUids) {
+        const stock = await this.loadPendingStock(conUid, company, plant);
+        results.push(await this.applyConfirm(queryRunner, stock, { conUid, location: dto.location }, company, plant));
+      }
+      return results;
+    });
   }
 }
