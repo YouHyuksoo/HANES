@@ -228,7 +228,7 @@ describe('DefectLogService', () => {
       await target.findById('2026-06-10T05:00:00.000Z|2', 'HANES', 'P01');
 
       expect(mockDefectLogRepo.findOne).toHaveBeenCalledWith({
-        where: { occurAt: new Date('2026-06-10T05:00:00.000Z'), seq: 2, company: 'HANES', plant: 'P01' },
+        where: { occurAt: expect.anything(), seq: 2, company: 'HANES', plant: 'P01' }, // 밀리초 범위 조건(Raw)
       });
     });
   });
@@ -470,11 +470,24 @@ describe('DefectLogService', () => {
         expect.objectContaining({ defectQty: expect.any(Function) }),
       );
       expect(mockDefectLogRepo.delete).toHaveBeenCalledWith({
-        occurAt: defect.occurAt,
+        occurAt: expect.anything(),
         seq: defect.seq,
         company: 'HANES',
         plant: 'P01',
       });
+    });
+
+    it('발생 시각이 형식에 맞지 않는 복합 id 는 404', async () => {
+      await expect(target.findById('bad|1', 'HANES', 'P01')).rejects.toThrow(NotFoundException);
+      await expect(target.findByCompositeKey('bad', 1, 'HANES', 'P01')).rejects.toThrow(NotFoundException);
+      expect(mockDefectLogRepo.findOne).not.toHaveBeenCalled();
+    });
+
+    it('완료·폐기된 불량에는 수리 이력을 추가할 수 없고, 완료·폐기 불량의 수량은 바꿀 수 없다', async () => {
+      mockDefectLogRepo.findOne.mockResolvedValue(createDefectLog({ status: 'DONE', qty: 2 }));
+      mockReworkOrderRepo.findOne.mockResolvedValue(null);
+      await expect(target.createRepairLog({ defectLogId: '1', result: 'PASS' } as any, 'HANES', 'P01')).rejects.toThrow('수리 이력을 추가할 수 없습니다');
+      await expect(target.update('1', { qty: 5 } as any, 'HANES', 'P01')).rejects.toThrow('수량은 바꿀 수 없습니다');
     });
 
     it('rejects delete when defect belongs to a different tenant', async () => {
@@ -586,7 +599,7 @@ describe('DefectLogService', () => {
 
       // Assert
       expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
-        { occurAt: defect.occurAt, seq: defect.seq, company: 'HANES', plant: 'P01' },
+        { occurAt: expect.anything(), seq: defect.seq, company: 'HANES', plant: 'P01' },
         { status: 'REPAIR' },
       );
       expect(mockReworkOrderRepo.findOne).toHaveBeenCalledWith({
@@ -739,7 +752,7 @@ describe('DefectLogService', () => {
 
       // Assert
       expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
-        { occurAt: defect.occurAt, seq: defect.seq, company: 'HANES', plant: 'P01' },
+        { occurAt: expect.anything(), seq: defect.seq, company: 'HANES', plant: 'P01' },
         { status: 'DONE' },
       );
     });
@@ -765,7 +778,7 @@ describe('DefectLogService', () => {
 
       // Assert
       expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
-        { occurAt: defect.occurAt, seq: defect.seq, company: 'HANES', plant: 'P01' },
+        { occurAt: expect.anything(), seq: defect.seq, company: 'HANES', plant: 'P01' },
         { status: 'SCRAP' },
       );
     });

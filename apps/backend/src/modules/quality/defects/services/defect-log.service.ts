@@ -20,7 +20,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, SelectQueryBuilder } from 'typeorm';
+import { Repository, In, Raw, SelectQueryBuilder } from 'typeorm';
 import { DefectLog } from '../../../../entities/defect-log.entity';
 import { RepairLog } from '../../../../entities/repair-log.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
@@ -94,9 +94,19 @@ export class DefectLogService {
     return `${defect.occurAt.toISOString()}|${defect.seq}`;
   }
 
+  /**
+   * 발생 시각 한 점을 [시각, 시각+1ms) 범위 조건으로 바꾼다.
+   * 생산실적에서 만든 불량은 발생 시각이 마이크로초까지 저장돼 밀리초 값과 같지 않으므로 같음 비교로는 찾지 못한다.
+   */
+  private occurAtRange(at: Date) {
+    const from = at;
+    const to = new Date(at.getTime() + 1);
+    return Raw((col) => `${col} >= :occFrom AND ${col} < :occTo`, { occFrom: from, occTo: to });
+  }
+
   private defectPkWhere(defect: DefectLog, company?: string | null, plant?: string | null) {
     return {
-      occurAt: defect.occurAt,
+      occurAt: this.occurAtRange(defect.occurAt),
       seq: defect.seq,
       ...this.tenantWhere(company, plant),
     };
@@ -108,11 +118,12 @@ export class DefectLogService {
     fromDate?: string,
     toDate?: string,
   ) {
+    // ISO 문자열(2026-11-06T00:00:00.000Z)이 와도 'YYYY-MM-DD' 형식 오류(500)가 나지 않도록 앞 10자리만 쓴다
     if (fromDate) {
-      qb.andWhere(`${alias}.occurAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')`, { fromDate });
+      qb.andWhere(`${alias}.occurAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')`, { fromDate: fromDate.slice(0, 10) });
     }
     if (toDate) {
-      qb.andWhere(`${alias}.occurAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY`, { toDate });
+      qb.andWhere(`${alias}.occurAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY`, { toDate: toDate.slice(0, 10) });
     }
   }
 
@@ -216,9 +227,12 @@ export class DefectLogService {
     company?: string,
     plant?: string,
   ) {
-    const defect = await this.defectLogRepository.findOne({
-      where: { occurAt: new Date(occurAt), seq, ...this.tenantWhere(company, plant) },
-    });
+    const at = new Date(occurAt);
+    const defect = Number.isNaN(at.getTime())
+      ? null
+      : await this.defectLogRepository.findOne({
+          where: { occurAt: this.occurAtRange(at), seq, ...this.tenantWhere(company, plant) },
+        });
 
     if (!defect) {
       throw new NotFoundException(`불량로그를 찾을 수 없습니다: ${occurAt}/${seq}`);
@@ -237,10 +251,11 @@ export class DefectLogService {
     const defect = id.includes('|')
       ? await (async () => {
           const sep = id.lastIndexOf('|');
-          const occurIso = id.slice(0, sep);
-          const seqStr = id.slice(sep + 1);
+          const at = new Date(id.slice(0, sep));
+          const seq = +id.slice(sep + 1);
+          if (Number.isNaN(at.getTime()) || !Number.isInteger(seq)) return null;
           return this.defectLogRepository.findOne({
-            where: { occurAt: new Date(occurIso), seq: +seqStr, ...this.tenantWhere(company, plant) },
+            where: { occurAt: this.occurAtRange(at), seq, ...this.tenantWhere(company, plant) },
           });
         })()
       : await this.defectLogRepository.findOne({
@@ -331,6 +346,9 @@ export class DefectLogService {
       throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${prodResultNo}`);
     }
     this.assertSameTenant('생산실적', prodResult, company, plant);
+    if (prodResult.status === 'CANCELED') {
+      throw new BadRequestException(`취소된 생산실적에는 불량을 등록할 수 없습니다: ${prodResultNo}`);
+    }
 
     // 불량 등록 + 생산실적 불량수량 증가 + 작업지시 집계 동기화를 한 트랜잭션으로 처리
     return this.tx.run(async (qr) => {
@@ -374,13 +392,16 @@ export class DefectLogService {
   ) {
     const existing = await this.findById(id, company, plant);
     await this.ensureNoLinkedRework(existing);
-    const pk = { occurAt: existing.occurAt, seq: existing.seq };
+    const pk = this.defectPkWhere(existing, company, plant);
     const defectCodeMaster = dto.defectCode !== undefined
       ? await this.resolveActiveDefectCode(dto.defectCode, company, plant)
       : null;
 
     // 수량 변경 시 생산실적 반영
     const qtyDiff = (dto.qty ?? existing.qty) - existing.qty;
+    if (qtyDiff !== 0 && (existing.status === DEFECT_LOG_STATUS.DONE || existing.status === DEFECT_LOG_STATUS.SCRAP)) {
+      throw new BadRequestException('완료·폐기된 불량의 수량은 바꿀 수 없습니다.');
+    }
 
     if (qtyDiff !== 0) {
       // 불량로그 수량 변경 + 생산실적 불량수량 반영 + 작업지시 집계 동기화를 한 트랜잭션으로 처리
@@ -432,6 +453,11 @@ export class DefectLogService {
 
     // 불량 삭제 + 생산실적 불량수량 감소 + 작업지시 집계 동기화를 한 트랜잭션으로 처리
     await this.tx.run(async (qr) => {
+      // 수리 이력은 불량 식별자(복합 id 또는 레거시 seq)로 연결돼 있어 불량만 지우면 고아로 남는다
+      await qr.manager.delete(RepairLog, {
+        defectLogId: In([this.buildDefectLogId(existing), id, String(existing.seq)]),
+        ...this.tenantWhere(company, plant),
+      });
       await qr.manager.delete(DefectLog, this.defectPkWhere(existing, company, plant));
 
       await qr.manager.update(
@@ -499,6 +525,10 @@ export class DefectLogService {
    */
   async createRepairLog(dto: CreateRepairLogDto, company?: string, plant?: string) {
     const defectLog = await this.findById(dto.defectLogId, company, plant);
+    await this.ensureNoLinkedRework(defectLog);
+    if (defectLog.status === DEFECT_LOG_STATUS.DONE || defectLog.status === DEFECT_LOG_STATUS.SCRAP) {
+      throw new BadRequestException('완료·폐기된 불량에는 수리 이력을 추가할 수 없습니다.');
+    }
 
     // WAIT 상태가 아니면 자동으로 REPAIR 상태로 변경하지 않음
     // 이미 REPAIR/REWORK 상태일 수 있음
