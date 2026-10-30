@@ -123,11 +123,18 @@ export interface ProcessQualityConditionRawRow {
   UNIT?: string | null;
 }
 
-/** INSPECT_ITEM_SPECS — HIPOT은 전용 규격 문구를 만들고, 나머지는 원본을 그대로 남긴다. */
+/** INSPECT_ITEM_SPECS — 검사유형별 규격 문구(HIPOT·TORQUE·LEAK)를 만든다. */
 export interface InspectItemSpecRawRow {
   INSPECT_TYPE?: string | null;
   TEST_VOLTAGE_KV?: number | string | null;
   MAX_CURRENT_MA?: number | string | null;
+  TORQUE_LSL?: number | string | null;
+  TORQUE_USL?: number | string | null;
+  TORQUE_UNIT?: string | null;
+  CHARGE_BAR?: number | string | null;
+  CHARGE_TOL_BAR?: number | string | null;
+  HOLD_SECONDS?: number | string | null;
+  MIN_HOLD_BAR?: number | string | null;
 }
 
 /** TERMINAL_CRIMP_SPECS */

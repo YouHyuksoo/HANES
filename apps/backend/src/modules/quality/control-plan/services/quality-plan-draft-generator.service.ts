@@ -127,7 +127,18 @@ export class QualityPlanDraftGeneratorService {
     return `${min ?? ''}~${max ?? ''}${unit ?? ''}`;
   }
 
+  /**
+   * 검사유형별 읽을 수 있는 규격 문구. 옛 코드는 HIPOT 외에는 행 전체를 JSON.stringify 해서 넣어
+   * PFMEA 요구사항(500자) 컬럼을 넘기고 자동 초안이 500 으로 끝났다. 알 수 없는 유형은 유형명만 쓴다.
+   */
   private inspectSpec(spec: InspectItemSpecRawRow) {
-    return spec.INSPECT_TYPE === 'HIPOT' ? `${spec.TEST_VOLTAGE_KV ?? ''}kV / ${spec.MAX_CURRENT_MA ?? ''}mA` : JSON.stringify(spec);
+    const text = (value: number | string | null | undefined) => (value == null ? '' : String(value));
+    let result: string;
+    if (spec.INSPECT_TYPE === 'HIPOT') result = `${text(spec.TEST_VOLTAGE_KV)}kV / ${text(spec.MAX_CURRENT_MA)}mA`;
+    else if (spec.INSPECT_TYPE === 'TORQUE') result = this.rangeSpec(spec.TORQUE_LSL, spec.TORQUE_USL, spec.TORQUE_UNIT);
+    else if (spec.INSPECT_TYPE === 'LEAK') {
+      result = `충전 ${text(spec.CHARGE_BAR)}±${text(spec.CHARGE_TOL_BAR ?? 0)}bar / 유지 ${text(spec.HOLD_SECONDS)}s / 하한 ${text(spec.MIN_HOLD_BAR)}bar`;
+    } else result = text(spec.INSPECT_TYPE);
+    return result.slice(0, 500);
   }
 }

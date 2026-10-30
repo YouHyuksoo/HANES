@@ -145,7 +145,7 @@ export class QualityDocumentRevisionService {
     });
   }
 
-  async deleteDraft(revisionId: number, company: string, plant: string) {
+  async deleteDraft(revisionId: number, company: string, plant: string, userId = 'system') {
     return this.tx.run(async (qr) => {
       const revision = await this.getRevision(qr, revisionId, company, plant);
       this.assertDraft(revision);
@@ -154,6 +154,16 @@ export class QualityDocumentRevisionService {
       await qr.query(`DELETE FROM ${table} WHERE REVISION_ID=:1 AND COMPANY=:2 AND PLANT_CD=:3`, [revisionId, company, plant]);
       await qr.query(`DELETE FROM QUALITY_PLAN_PARTICIPANTS WHERE REVISION_ID=:1 AND COMPANY=:2 AND PLANT_CD=:3`, [revisionId, company, plant]);
       await qr.query(`DELETE FROM QUALITY_PLAN_VALIDATIONS WHERE REVISION_ID=:1 AND COMPANY=:2 AND PLANT_CD=:3`, [revisionId, company, plant]);
+      // 개정 생성 이력(REVISION_CREATED)이 Revision 을 참조하므로 그대로 두면 개정 초안은 항상 FK 때문에 지워지지 않았다.
+      // 감사 이력은 지우지 않고 연결만 끊은 뒤, 삭제 사실을 이력으로 남긴다.
+      await qr.query(`UPDATE QUALITY_PLAN_EVENTS SET REVISION_ID=NULL WHERE REVISION_ID=:1 AND COMPANY=:2 AND PLANT_CD=:3`, [revisionId, company, plant]);
+      const eventId = await this.nextId(qr, 'SEQ_QUALITY_PLAN_EVENT');
+      await qr.query(
+        `INSERT INTO QUALITY_PLAN_EVENTS (EVENT_ID, PACKAGE_ID, DOCUMENT_ID, COMPANY, PLANT_CD, EVENT_TYPE, ACTOR_ID, DETAIL)
+         VALUES (:1,:2,:3,:4,:5,'REVISION_DELETED',:6,:7)`,
+        [eventId, revision.PACKAGE_ID, revision.DOCUMENT_ID, company, plant, userId,
+          JSON.stringify({ revisionCode: revision.REVISION_CODE, documentType: revision.DOCUMENT_TYPE })],
+      );
       await qr.query(`DELETE FROM QUALITY_PLAN_REVISIONS WHERE REVISION_ID=:1 AND COMPANY=:2 AND PLANT_CD=:3`, [revisionId, company, plant]);
       return { revisionId };
     });

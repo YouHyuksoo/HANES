@@ -33,6 +33,23 @@ describe('QualityPlanDraftGeneratorService', () => {
     expect(pfdParams[0]).toContain('CUT'); expect(pfdParams[1]).toContain('CRIMP');
   });
 
+  it('토크·누설 검사 스펙도 500자 안의 읽을 수 있는 규격 문구로 만든다(옛 코드는 행 전체를 JSON 으로 넣어 500)', async () => {
+    query.mockImplementation(async (sql: string) => {
+      if (sql.includes('FROM QUALITY_PLAN_PACKAGES P')) return [{ PACKAGE_ID: 1, ITEM_CODE: 'ITEM-1', PFD_REVISION_ID: 11, PFMEA_REVISION_ID: 12, CP_REVISION_ID: 13 }];
+      if (sql.includes('FROM ROUTING_GROUPS') && !sql.includes('PROCESS_QUALITY_CONDITIONS')) return [{ SEQ: 1, PROCESS_CODE: 'CUT', PROCESS_NAME: '절단', EXECUTION_TYPE: 'IN_HOUSE', EQUIP_TYPE: 'CUTTER' }];
+      if (sql.includes('INSPECT_ITEM_SPECS')) return [
+        { INSPECT_TYPE: 'TORQUE', TORQUE_LSL: 1.5, TORQUE_USL: 2.5, TORQUE_UNIT: 'N.m', REMARK: 'x'.repeat(900) },
+        { INSPECT_TYPE: 'LEAK', CHARGE_BAR: 2, CHARGE_TOL_BAR: 0.1, HOLD_SECONDS: 10, MIN_HOLD_BAR: 1.9 },
+      ];
+      if (sql.includes('NEXTVAL')) return [{ NEXT_SEQ: 100 }];
+      return [];
+    });
+    await service.generate(1, '40', '1000', 'tester');
+    const requirements = query.mock.calls
+      .filter(([sql]) => String(sql).includes('INSERT INTO QUALITY_PFMEA_ROWS')).map((call) => String(call[1][7]));
+    expect(requirements).toEqual(['1.5~2.5N.m', '충전 2±0.1bar / 유지 10s / 하한 1.9bar']);
+  });
+
   it('기준정보가 없어도 오류 없이 빈 문서 묶음을 유지한다', async () => {
     query.mockImplementation(async (sql: string) => sql.includes('FROM QUALITY_PLAN_PACKAGES P')
       ? [{ PACKAGE_ID: 1, ITEM_CODE: 'ITEM-1', PFD_REVISION_ID: 11, PFMEA_REVISION_ID: 12, CP_REVISION_ID: 13 }] : []);

@@ -46,8 +46,9 @@ export class QualityDocumentController {
   }
 
   @Delete('revisions/:revisionId')
-  async delete(@Param('revisionId', ParseIntPipe) revisionId: number, @Company() company: string, @Plant() plant: string) {
-    return ResponseUtil.success(await this.service.deleteDraft(revisionId, company, plant));
+  async delete(@Param('revisionId', ParseIntPipe) revisionId: number, @Company() company: string, @Plant() plant: string,
+    @Req() req: AuthenticatedRequest) {
+    return ResponseUtil.success(await this.service.deleteDraft(revisionId, company, plant, req.user?.id ?? 'system'));
   }
 
   @Post('revisions/:revisionId/create-revision') @ApiOperation({ summary: '발행본에서 새 Revision 생성' })

@@ -56,6 +56,22 @@ describe('QualityDocumentRevisionService', () => {
     await expect(service.deleteDraft(10, '40', '1000')).rejects.toBeInstanceOf(BadRequestException);
   });
 
+  it('개정 초안을 지울 때 이력의 Revision 연결을 끊고 삭제 이력을 남긴다(옛 코드는 이력 FK 때문에 항상 409)', async () => {
+    query.mockImplementation(async (sql: string) => {
+      if (sql.includes('FOR UPDATE')) return [{ REVISION_ID: 10, DOCUMENT_ID: 20, DOCUMENT_TYPE: 'PFD', REVISION_CODE: '01', STATUS: 'DRAFT', PACKAGE_ID: 30 }];
+      if (sql.includes('SEQ_QUALITY_PLAN_EVENT.NEXTVAL')) return [{ NEXT_SEQ: 201 }];
+      return [];
+    });
+    await expect(service.deleteDraft(10, '40', '1000', 'tester')).resolves.toEqual({ revisionId: 10 });
+    const sqls = query.mock.calls.map(([sql]) => String(sql));
+    const detach = sqls.findIndex((sql) => sql.includes('UPDATE QUALITY_PLAN_EVENTS SET REVISION_ID=NULL'));
+    const remove = sqls.findIndex((sql) => sql.includes('DELETE FROM QUALITY_PLAN_REVISIONS'));
+    expect(detach).toBeGreaterThan(-1);
+    expect(detach).toBeLessThan(remove);
+    const event = query.mock.calls.find(([sql]) => String(sql).includes("'REVISION_DELETED'"));
+    expect(event?.[1]).toEqual([201, 30, 20, '40', '1000', 'tester', JSON.stringify({ revisionCode: '01', documentType: 'PFD' })]);
+  });
+
   it('이미 DRAFT가 있으면 새 Revision을 만들지 않는다', async () => {
     query
       .mockResolvedValueOnce([{ REVISION_ID: 10, DOCUMENT_ID: 20, DOCUMENT_TYPE: 'PFD', REVISION_CODE: '00', STATUS: 'PUBLISHED', PACKAGE_ID: 30 }])
