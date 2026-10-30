@@ -65,6 +65,14 @@ describe('ChangeOrderService', () => {
       await expect(target.submit('ECN-001', 'user')).rejects.toThrow(BadRequestException);
     });
 
+    it('반려된 변경점도 다시 제출하고, 이전 검토·승인 기록은 비운다', async () => {
+      const item = { changeNo: 'ECN-001', status: 'REJECTED', reviewerCode: 'R1', reviewedAt: new Date(), reviewComment: '보완', approverCode: 'A1', approvedAt: new Date() } as any;
+      mockRepo.findOne.mockResolvedValue(item);
+      mockRepo.save.mockImplementation(async (v) => v as any);
+      const r = await target.submit('ECN-001', 'user');
+      expect(r).toMatchObject({ status: 'SUBMITTED', reviewerCode: null, reviewedAt: null, reviewComment: null, approverCode: null, approvedAt: null });
+    });
+
     it('rejects submit when change order belongs to a different tenant', async () => {
       mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', status: 'DRAFT', company: 'OTHER', plant: 'P01' } as any);
       await expect(target.submit('ECN-001', 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
@@ -154,6 +162,32 @@ describe('ChangeOrderService', () => {
       mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', status: 'DRAFT', company: 'OTHER', plant: 'P01' } as any);
       await expect(target.delete('ECN-001', 'CO', 'P01')).rejects.toThrow(BadRequestException);
       expect(mockRepo.remove).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('결함 수정', () => {
+    it('최종 승인은 한 번만 된다', async () => {
+      mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', status: 'APPROVED', approvedAt: new Date() } as any);
+      await expect(target.approve('ECN-001', { action: 'APPROVE' } as any, 'user')).rejects.toThrow('이미 최종 승인된 변경점입니다.');
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('수정에서 비울 수 없는 칸에 null 이 오면 그대로 둔다', async () => {
+      mockRepo.findOne.mockResolvedValue({ changeNo: 'ECN-001', status: 'DRAFT', changeType: 'MAN', title: '제목', priority: 'HIGH' } as any);
+      mockRepo.save.mockImplementation(async (v) => v as any);
+      const r = await target.update('ECN-001', { changeType: null, title: null, priority: null, description: '메모' } as any, 'user');
+      expect(r).toMatchObject({ changeType: 'MAN', title: '제목', priority: 'HIGH', description: '메모' });
+    });
+
+    it('목록의 기간은 시작일·종료일 중 하나만 와도 걸린다', async () => {
+      const qb: any = {
+        andWhere: jest.fn().mockReturnThis(), orderBy: jest.fn().mockReturnThis(), skip: jest.fn().mockReturnThis(), take: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0), getMany: jest.fn().mockResolvedValue([]),
+      };
+      mockRepo.createQueryBuilder.mockReturnValue(qb);
+      await target.findAll({ fromDate: '2026-11-05T00:00:00.000Z' } as any, 'CO', 'P01');
+      expect(qb.andWhere).toHaveBeenCalledWith('c.createdAt >= :fromDate', { fromDate: expect.any(Date) });
+      expect(qb.andWhere).not.toHaveBeenCalledWith('c.createdAt <= :toDate', expect.anything());
     });
   });
 

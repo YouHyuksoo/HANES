@@ -29,7 +29,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChangeOrder } from '../../../../entities/change-order.entity';
-import { parseDateStart } from '../../../../shared/date.util';
+import { parseDateEnd, parseDateStart } from '../../../../shared/date.util';
 import { NumberingService } from '../../../../shared/numbering.service';
 import {
   CreateChangeOrderDto,
@@ -118,12 +118,11 @@ export class ChangeOrderService {
         { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
-    if (fromDate && toDate) {
-      qb.andWhere('c.createdAt BETWEEN :fromDate AND :toDate', {
-        fromDate: new Date(`${fromDate}T00:00:00`),
-        toDate: new Date(`${toDate}T23:59:59`),
-      });
-    }
+    // 시작일·종료일은 하나만 와도 걸린다(둘 다 있어야 걸리면 하나만 보냈을 때 구간이 통째로 사라졌고, ISO 시각은 날짜 변환이 깨졌다)
+    const from = parseDateStart(fromDate);
+    const to = parseDateEnd(toDate);
+    if (from) qb.andWhere('c.createdAt >= :fromDate', { fromDate: from });
+    if (to) qb.andWhere('c.createdAt <= :toDate', { toDate: to });
 
     qb.orderBy('c.createdAt', 'DESC');
     const total = await qb.getCount();
@@ -192,14 +191,15 @@ export class ChangeOrderService {
       );
     }
     const updateData: Partial<ChangeOrder> = {
-      ...(dto.changeType !== undefined ? { changeType: dto.changeType } : {}),
-      ...(dto.title !== undefined ? { title: dto.title } : {}),
+      // 비울 수 없는 칸(유형·제목·우선순위)에 null 이 오면 그대로 둔다(저장 시 NOT NULL 오류 500)
+      ...(dto.changeType != null ? { changeType: dto.changeType } : {}),
+      ...(dto.title != null ? { title: dto.title } : {}),
       ...(dto.description !== undefined ? { description: dto.description } : {}),
       ...(dto.reason !== undefined ? { reason: dto.reason } : {}),
       ...(dto.riskAssessment !== undefined ? { riskAssessment: dto.riskAssessment } : {}),
       ...(dto.affectedItems !== undefined ? { affectedItems: dto.affectedItems } : {}),
       ...(dto.affectedProcesses !== undefined ? { affectedProcesses: dto.affectedProcesses } : {}),
-      ...(dto.priority !== undefined ? { priority: dto.priority } : {}),
+      ...(dto.priority != null ? { priority: dto.priority } : {}),
       ...(dto.requestedBy !== undefined ? { requestedBy: dto.requestedBy } : {}),
       ...(dto.effectiveDate !== undefined ? { effectiveDate: parseDateStart(dto.effectiveDate)! } : {}),
     };
@@ -227,9 +227,14 @@ export class ChangeOrderService {
    */
   async submit(changeNo: string, userId: string, company?: string, plant?: string) {
     const item = await this.findById(changeNo, company, plant);
-    if (item.status !== 'DRAFT') {
-      throw new BadRequestException('초안 상태에서만 제출할 수 있습니다.');
+    if (!['DRAFT', 'REJECTED'].includes(item.status)) {
+      throw new BadRequestException('초안 또는 반려 상태에서만 제출할 수 있습니다.');
     }
+    // 반려된 건을 다시 제출하면 이전 검토·승인 기록은 비우고 새 검토를 처음부터 받는다
+    Object.assign(item, {
+      reviewerCode: null, reviewedAt: null, reviewComment: null,
+      approverCode: null, approvedAt: null, approveComment: null,
+    });
     item.status = 'SUBMITTED';
     item.requestedAt = new Date();
     item.requestedBy = item.requestedBy ?? userId;
@@ -270,6 +275,9 @@ export class ChangeOrderService {
     const item = await this.findById(changeNo, company, plant);
     if (item.status !== 'APPROVED') {
       throw new BadRequestException('승인된 상태에서만 최종 승인할 수 있습니다.');
+    }
+    if (item.approvedAt) {
+      throw new BadRequestException('이미 최종 승인된 변경점입니다.');
     }
     item.approverCode = userId;
     item.approvedAt = new Date();
