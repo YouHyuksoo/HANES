@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { DefectCategoryMaster } from '../../../../entities/defect-category-master.entity';
 import { DefectCodeMaster } from '../../../../entities/defect-code-master.entity';
 import { DefectCodeProductType } from '../../../../entities/defect-code-product-type.entity';
@@ -16,6 +16,7 @@ import {
   UpdateDefectCategoryDto,
   UpdateDefectCodeDto,
 } from '../dto/defect-code.dto';
+import { TransactionService } from '../../../../shared/transaction.service';
 
 type CategoryNode = DefectCategoryMaster & { children: CategoryNode[] };
 type CodeWithProducts = DefectCodeMaster & { productTypes: string[] };
@@ -29,6 +30,8 @@ export class DefectCodeService {
     private readonly codeRepository: Repository<DefectCodeMaster>,
     @InjectRepository(DefectCodeProductType)
     private readonly productTypeRepository: Repository<DefectCodeProductType>,
+    private readonly dataSource: DataSource,
+    private readonly tx: TransactionService,
   ) {}
 
   private tenantWhere(company: string, plant: string) {
@@ -39,7 +42,8 @@ export class DefectCodeService {
     return value.trim().toUpperCase();
   }
 
-  private async findCategoryOrThrow(categoryCode: string, company: string, plant: string) {
+  private async findCategoryOrThrow(rawCategoryCode: string, company: string, plant: string) {
+    const categoryCode = this.normalizeCode(rawCategoryCode);
     const category = await this.categoryRepository.findOne({
       where: { categoryCode, ...this.tenantWhere(company, plant) },
     });
@@ -73,6 +77,24 @@ export class DefectCodeService {
       throw new BadRequestException('불량코드는 3레벨 분류에만 연결할 수 있습니다.');
     }
     return category;
+  }
+
+  /** 모델구분이 공통코드(DEFECT_MODEL_GROUP, 사용 중)에 있는지 확인한다(화면은 공통코드 선택) */
+  private async assertProductTypes(productTypes: string[], company: string, plant: string): Promise<void> {
+    for (const productType of productTypes) {
+      const rows: Array<{ cnt: number | string }> = await this.dataSource.query(
+        `SELECT COUNT(*) AS "cnt" FROM COM_CODES
+          WHERE GROUP_CODE = :1 AND DETAIL_CODE = :2 AND USE_YN = 'Y' AND COMPANY = :3 AND PLANT_CD = :4`,
+        ['DEFECT_MODEL_GROUP', productType, company, plant],
+      );
+      if (Number(rows[0]?.cnt ?? 0) === 0) {
+        throw new BadRequestException(`모델구분 값이 공통코드(DEFECT_MODEL_GROUP)에 없습니다: ${productType}`);
+      }
+    }
+  }
+
+  private normalizeProductTypes(productTypes: string[]): string[] {
+    return [...new Set(productTypes.map((value) => this.normalizeCode(value)).filter(Boolean))];
   }
 
   private async loadProductTypes(defectCodes: string[], company: string, plant: string) {
@@ -135,9 +157,14 @@ export class DefectCodeService {
 
   async updateCategory(categoryCode: string, dto: UpdateDefectCategoryDto, company: string, plant: string, userId: string) {
     const current = await this.findCategoryOrThrow(categoryCode, company, plant);
+    // null 로 온 값은 비울 수 없는 칸(이름·레벨·정렬·사용여부)이라 그대로 두고, 상위 분류·설명만 비울 수 있다
     const next = {
       ...current,
-      ...dto,
+      categoryName: dto.categoryName ?? current.categoryName,
+      levelNo: dto.levelNo ?? current.levelNo,
+      sortOrder: dto.sortOrder ?? current.sortOrder,
+      useYn: dto.useYn ?? current.useYn,
+      description: dto.description === undefined ? current.description : dto.description,
       categoryCode: current.categoryCode,
       parentCategoryCode: dto.parentCategoryCode === undefined
         ? current.parentCategoryCode
@@ -145,6 +172,25 @@ export class DefectCodeService {
       updatedBy: userId,
     };
     await this.assertValidParent(next, company, plant);
+    if (next.parentCategoryCode === current.categoryCode) {
+      throw new BadRequestException('자기 자신을 상위 분류로 지정할 수 없습니다.');
+    }
+    if (next.levelNo !== current.levelNo) {
+      const children = await this.categoryRepository.count({
+        where: { parentCategoryCode: current.categoryCode, ...this.tenantWhere(company, plant) },
+      });
+      if (children > 0) {
+        throw new BadRequestException('하위 분류가 있어 레벨을 바꿀 수 없습니다.');
+      }
+      if (next.levelNo !== 3) {
+        const linkedCodes = await this.codeRepository.count({
+          where: { categoryCode: current.categoryCode, ...this.tenantWhere(company, plant) },
+        });
+        if (linkedCodes > 0) {
+          throw new BadRequestException('불량코드가 연결되어 있어 3레벨이 아닌 값으로 바꿀 수 없습니다.');
+        }
+      }
+    }
     return this.categoryRepository.save(next);
   }
 
@@ -157,23 +203,29 @@ export class DefectCodeService {
       throw new ConflictException(`이미 존재하는 불량코드입니다: ${defectCode}`);
     }
     await this.assertLeafCategory(dto.categoryCode, company, plant);
+    const productTypes = this.normalizeProductTypes(dto.productTypes ?? []);
+    await this.assertProductTypes(productTypes, company, plant);
 
-    const saved = await this.codeRepository.save(this.codeRepository.create({
-      defectCode,
-      defectName: dto.defectName.trim(),
-      categoryCode: this.normalizeCode(dto.categoryCode),
-      defectGrade: dto.defectGrade,
-      defectScope: dto.defectScope,
-      description: dto.description ?? null,
-      sortOrder: dto.sortOrder ?? 0,
-      useYn: dto.useYn ?? 'Y',
-      company,
-      plant,
-      createdBy: userId,
-      updatedBy: userId,
-    }));
-    const productTypes = await this.replaceProductTypes(defectCode, dto.productTypes ?? [], company, plant, userId);
-    return { ...saved, productTypes };
+    // 코드와 모델구분 매핑은 한 트랜잭션(중간에 실패하면 매핑만 사라지거나 코드만 남던 것)
+    return this.tx.run(async (qr) => {
+      const codeRepository = qr.manager.getRepository(DefectCodeMaster);
+      const saved = await codeRepository.save(codeRepository.create({
+        defectCode,
+        defectName: dto.defectName.trim(),
+        categoryCode: this.normalizeCode(dto.categoryCode),
+        defectGrade: dto.defectGrade,
+        defectScope: dto.defectScope,
+        description: dto.description ?? null,
+        sortOrder: dto.sortOrder ?? 0,
+        useYn: dto.useYn ?? 'Y',
+        company,
+        plant,
+        createdBy: userId,
+        updatedBy: userId,
+      }));
+      await this.replaceProductTypes(qr.manager, defectCode, productTypes, company, plant, userId);
+      return { ...saved, productTypes };
+    });
   }
 
   async updateCode(defectCodeParam: string, dto: UpdateDefectCodeDto, company: string, plant: string, userId: string): Promise<CodeWithProducts> {
@@ -187,21 +239,29 @@ export class DefectCodeService {
     if (dto.categoryCode) {
       await this.assertLeafCategory(dto.categoryCode, company, plant);
     }
-    const saved = await this.codeRepository.save({
-      ...current,
-      defectName: dto.defectName ?? current.defectName,
-      categoryCode: dto.categoryCode ? this.normalizeCode(dto.categoryCode) : current.categoryCode,
-      defectGrade: dto.defectGrade ?? current.defectGrade,
-      defectScope: dto.defectScope ?? current.defectScope,
-      description: dto.description === undefined ? current.description : dto.description,
-      sortOrder: dto.sortOrder ?? current.sortOrder,
-      useYn: dto.useYn ?? current.useYn,
-      updatedBy: userId,
+    // productTypes 가 배열로 오면 매핑을 교체하고, 빠졌거나 null 이면 그대로 둔다
+    const nextTypes = Array.isArray(dto.productTypes) ? this.normalizeProductTypes(dto.productTypes) : undefined;
+    if (nextTypes) {
+      await this.assertProductTypes(nextTypes, company, plant);
+    }
+
+    return this.tx.run(async (qr) => {
+      const saved = await qr.manager.getRepository(DefectCodeMaster).save({
+        ...current,
+        defectName: dto.defectName ?? current.defectName,
+        categoryCode: dto.categoryCode ? this.normalizeCode(dto.categoryCode) : current.categoryCode,
+        defectGrade: dto.defectGrade ?? current.defectGrade,
+        defectScope: dto.defectScope ?? current.defectScope,
+        description: dto.description === undefined ? current.description : dto.description,
+        sortOrder: dto.sortOrder ?? current.sortOrder,
+        useYn: dto.useYn ?? current.useYn,
+        updatedBy: userId,
+      });
+      const productTypes = nextTypes === undefined
+        ? (await this.loadProductTypes([defectCode], company, plant)).get(defectCode) ?? []
+        : await this.replaceProductTypes(qr.manager, defectCode, nextTypes, company, plant, userId);
+      return { ...saved, productTypes };
     });
-    const productTypes = dto.productTypes === undefined
-      ? (await this.loadProductTypes([defectCode], company, plant)).get(defectCode) ?? []
-      : await this.replaceProductTypes(defectCode, dto.productTypes, company, plant, userId);
-    return { ...saved, productTypes };
   }
 
   async disableCode(defectCodeParam: string, company: string, plant: string, userId: string) {
@@ -264,17 +324,17 @@ export class DefectCodeService {
       }));
   }
 
-  private async replaceProductTypes(defectCode: string, productTypes: string[], company: string, plant: string, userId: string) {
-    await this.productTypeRepository.delete?.({ defectCode, ...this.tenantWhere(company, plant) });
-    const normalized = [...new Set(productTypes.map((value) => this.normalizeCode(value)).filter(Boolean))];
-    if (!normalized.length) return [];
-    await this.productTypeRepository.save(normalized.map((productType) => this.productTypeRepository.create({
+  private async replaceProductTypes(manager: EntityManager, defectCode: string, productTypes: string[], company: string, plant: string, userId: string) {
+    const repository = manager.getRepository(DefectCodeProductType);
+    await repository.delete({ defectCode, ...this.tenantWhere(company, plant) });
+    if (!productTypes.length) return [];
+    await repository.save(productTypes.map((productType) => repository.create({
       defectCode,
       productType,
       company,
       plant,
       createdBy: userId,
     })));
-    return normalized;
+    return productTypes;
   }
 }
