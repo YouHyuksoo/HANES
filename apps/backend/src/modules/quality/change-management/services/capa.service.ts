@@ -24,13 +24,14 @@ import {
   Injectable,
   Logger,
   BadRequestException,
+  ConflictException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { CAPARequest } from '../../../../entities/capa-request.entity';
 import { CAPAAction } from '../../../../entities/capa-action.entity';
-import { parseDateStart } from '../../../../shared/date.util';
+import { parseDateEnd, parseDateStart } from '../../../../shared/date.util';
 import { NumberingService } from '../../../../shared/numbering.service';
 import {
   CreateCapaDto,
@@ -82,6 +83,31 @@ export class CapaService {
     return item;
   }
 
+  /** 조치 항목 조회·삭제 조건 */
+  private actionKey(capa: CAPARequest, capaNo: string) {
+    return { capaId: capaNo };
+  }
+
+  /** 공통코드(사용 중)에 있는 값인지 확인한다 */
+  private async assertComCode(group: string, code: string, company: string, plant: string, label: string): Promise<void> {
+    const rows: Array<{ cnt: number | string }> = await this.capaRepo.manager.query(
+      `SELECT COUNT(*) AS "cnt" FROM COM_CODES
+        WHERE GROUP_CODE = :1 AND DETAIL_CODE = :2 AND USE_YN = 'Y' AND COMPANY = :3 AND PLANT_CD = :4`,
+      [group, code, company, plant],
+    );
+    if (Number(rows[0]?.cnt ?? 0) === 0) {
+      throw new BadRequestException(`${label} 값이 공통코드(${group})에 없습니다: ${code}`);
+    }
+  }
+
+  /** 조치 항목이 하나라도 DONE 이 아니면 검증·종료할 수 없다(미완료 조치가 남은 채 CAPA 가 닫히던 것) */
+  private async assertActionsDone(capa: CAPARequest, what: string): Promise<void> {
+    const pending = await this.actionRepo.count({ where: { ...this.actionKey(capa, capa.capaNo), status: Not('DONE') } });
+    if (pending > 0) {
+      throw new BadRequestException(`완료(DONE)되지 않은 조치 항목이 ${pending}건 있어 ${what}할 수 없습니다.`);
+    }
+  }
+
   // =============================================
   // CAPA 번호 자동채번
   // =============================================
@@ -130,12 +156,11 @@ export class CapaService {
         { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
-    if (fromDate && toDate) {
-      qb.andWhere('c.createdAt BETWEEN :fromDate AND :toDate', {
-        fromDate: new Date(`${fromDate}T00:00:00`),
-        toDate: new Date(`${toDate}T23:59:59`),
-      });
-    }
+    // 시작일·종료일은 하나만 와도 걸린다(둘 다 있어야 걸리면 하나만 보냈을 때 구간이 통째로 사라졌고, ISO 시각은 날짜 변환이 깨졌다)
+    const from = parseDateStart(fromDate);
+    const to = parseDateEnd(toDate);
+    if (from) qb.andWhere('c.createdAt >= :fromDate', { fromDate: from });
+    if (to) qb.andWhere('c.createdAt <= :toDate', { toDate: to });
 
     qb.orderBy('c.createdAt', 'DESC');
     const total = await qb.getCount();
@@ -160,7 +185,7 @@ export class CapaService {
   }
 
   /**
-   * CAPA 등록
+   * CAPA 등록 (조치 항목이 있으면 같은 트랜잭션으로 함께 저장)
    */
   async create(
     dto: CreateCapaDto,
@@ -169,10 +194,17 @@ export class CapaService {
     userId: string,
   ) {
     const capaNo = await this.generateCapaNo(dto.capaType);
-    const { actions, ...fields } = dto;
+    const { actions, targetDate, ...fields } = dto;
+    // 조치 항목 순번이 겹치면 save 가 뒤의 것으로 앞의 것을 조용히 덮어쓴다
+    const duplicateSeq = (actions ?? []).map((a) => a.seq).find((seq, i, all) => all.indexOf(seq) !== i);
+    if (duplicateSeq !== undefined) {
+      throw new ConflictException(`조치 항목 순번이 중복되었습니다: ${duplicateSeq}`);
+    }
 
     const entity = this.capaRepo.create({
       ...fields,
+      // 날짜 문자열을 그대로 넣으면 ISO 시각이 DB 날짜 변환에서 500 이 된다
+      targetDate: parseDateStart(targetDate) ?? undefined,
       capaNo,
       status: 'OPEN',
       company,
@@ -180,22 +212,26 @@ export class CapaService {
       createdBy: userId,
       updatedBy: userId,
     });
-    const saved = await this.capaRepo.save(entity);
 
-    // 조치 항목 생성
-    if (actions && actions.length > 0) {
-      const actionEntities = actions.map((a) =>
-        this.actionRepo.create({
-          capaId: saved.capaNo,
-          seq: a.seq,
-          actionDesc: a.actionDesc,
-          responsibleCode: a.responsibleCode ?? null,
-          dueDate: parseDateStart(a.dueDate),
-          status: 'PENDING',
-        }),
-      );
-      await this.actionRepo.save(actionEntities);
-    }
+    // 요청과 조치 항목은 한 트랜잭션(항목 저장이 실패하면 요청만 남던 것)
+    const saved = await this.capaRepo.manager.transaction(async (manager) => {
+      const created = await manager.getRepository(CAPARequest).save(entity);
+      if (actions && actions.length > 0) {
+        const actionRepo = manager.getRepository(CAPAAction);
+        const actionEntities = actions.map((a) =>
+          actionRepo.create({
+            capaId: created.capaNo,
+            seq: a.seq,
+            actionDesc: a.actionDesc,
+            responsibleCode: a.responsibleCode ?? null,
+            dueDate: parseDateStart(a.dueDate),
+            status: 'PENDING',
+          }),
+        );
+        await actionRepo.save(actionEntities);
+      }
+      return created;
+    });
 
     this.logger.log(`CAPA 등록: ${capaNo} (type: ${dto.capaType})`);
     return saved;
@@ -209,22 +245,47 @@ export class CapaService {
     if (!['OPEN', 'ANALYZING'].includes(item.status)) {
       throw new BadRequestException('OPEN 또는 ANALYZING 상태에서만 수정할 수 있습니다.');
     }
-    const { actions, ...updateFields } = dto;
-    Object.assign(item, updateFields, { updatedBy: userId });
+    const { actions, targetDate, ...updateFields } = dto;
+    // 번호의 접두(CA/PA)가 유형을 나타내므로 번호가 정해진 뒤에는 유형을 바꿀 수 없다
+    if (updateFields.capaType != null && updateFields.capaType !== item.capaType) {
+      throw new BadRequestException(`CAPA 유형은 번호(${item.capaNo})가 정해진 뒤에는 바꿀 수 없습니다.`);
+    }
+    // 비울 수 없는 칸(유형·제목)에 null 이 오면 그대로 둔다(저장 시 NOT NULL 오류 500)
+    for (const key of ['capaType', 'title'] as const) {
+      if (updateFields[key] == null) delete updateFields[key];
+    }
+    Object.assign(item, updateFields, {
+      updatedBy: userId,
+      ...(targetDate !== undefined ? { targetDate: parseDateStart(targetDate)! } : {}),
+    });
     return this.capaRepo.save(item);
   }
 
   /**
-   * CAPA 삭제 (OPEN 상태에서만)
+   * CAPA 삭제 (OPEN 상태에서만, 다른 문서가 참조하면 거부)
    */
   async delete(capaNo: string, company?: string, plant?: string) {
     const item = await this.findRequest(capaNo, company, plant);
     if (item.status !== 'OPEN') {
       throw new BadRequestException('OPEN 상태에서만 삭제할 수 있습니다.');
     }
+    // NCR·심사 발견사항·고객 클레임이 참조하는 CAPA 를 지우면 그 문서들이 없는 번호를 가리킨다
+    const refs: Array<{ label: string }> = await this.capaRepo.manager.query(
+      `SELECT 'NCR ' || NCR_NO AS "label" FROM NCR_REPORTS WHERE CAPA_NO = :1 AND COMPANY = :2 AND PLANT_CD = :3
+       UNION ALL
+       SELECT '심사 ' || AUDIT_ID || ' #' || FINDING_NO FROM AUDIT_FINDINGS WHERE CAPA_ID = :4 AND COMPANY = :5 AND PLANT_CD = :6
+       UNION ALL
+       SELECT '클레임 ' || COMPLAINT_NO FROM CUSTOMER_COMPLAINTS WHERE CAPA_ID = :7 AND COMPANY = :8 AND PLANT_CD = :9`,
+      [capaNo, item.company, item.plant, capaNo, item.company, item.plant, capaNo, item.company, item.plant],
+    );
+    if (refs.length > 0) {
+      throw new BadRequestException(`다른 문서가 참조하는 CAPA 는 삭제할 수 없습니다: ${refs.map((r) => r.label).join(', ')}`);
+    }
     // 조치 항목 먼저 삭제
-    await this.actionRepo.delete({ capaId: capaNo });
-    await this.capaRepo.remove(item);
+    await this.capaRepo.manager.transaction(async (manager) => {
+      await manager.getRepository(CAPAAction).delete(this.actionKey(item, capaNo));
+      await manager.getRepository(CAPARequest).remove(item);
+    });
   }
 
   // =============================================
@@ -281,6 +342,7 @@ export class CapaService {
     if (item.status !== 'IN_PROGRESS') {
       throw new BadRequestException('IN_PROGRESS 상태에서만 검증할 수 있습니다.');
     }
+    await this.assertActionsDone(item, '검증');
     item.verificationResult = dto.verificationResult;
     item.verifiedBy = userId;
     item.verifiedAt = new Date();
@@ -297,6 +359,7 @@ export class CapaService {
     if (item.status !== 'VERIFYING') {
       throw new BadRequestException('VERIFYING 상태에서만 종료할 수 있습니다.');
     }
+    await this.assertActionsDone(item, '종료');
     item.status = 'CLOSED';
     item.closedAt = new Date();
     item.updatedBy = userId;
@@ -312,6 +375,16 @@ export class CapaService {
    */
   async addAction(capaNo: string, dto: CAPAActionItemDto, userId: string, company?: string, plant?: string) {
     const capa = await this.findRequest(capaNo, company, plant);
+    if (['VERIFYING', 'CLOSED'].includes(capa.status)) {
+      throw new BadRequestException('검증 중이거나 종료된 CAPA 에는 조치 항목을 추가할 수 없습니다.');
+    }
+    // 같은 순번이 있으면 save 가 기존 항목을 조용히 덮어쓴다
+    const duplicate = await this.actionRepo.findOne({ where: { ...this.actionKey(capa, capaNo), seq: dto.seq } });
+    if (duplicate) {
+      throw new ConflictException(`이미 있는 조치 항목 순번입니다: ${dto.seq}`);
+    }
+    const status = dto.status ?? 'PENDING';
+    await this.assertComCode('CAPA_ACTION_STATUS', status, capa.company, capa.plant, '조치 상태');
 
     const entity = this.actionRepo.create({
       capaId: capaNo,
@@ -319,11 +392,13 @@ export class CapaService {
       actionDesc: dto.actionDesc,
       responsibleCode: dto.responsibleCode ?? null,
       dueDate: parseDateStart(dto.dueDate),
-      status: dto.status ?? 'PENDING',
+      status,
     });
     capa.updatedBy = userId;
-    await this.capaRepo.save(capa);
-    return this.actionRepo.save(entity);
+    return this.capaRepo.manager.transaction(async (manager) => {
+      await manager.getRepository(CAPARequest).save(capa);
+      return manager.getRepository(CAPAAction).save(entity);
+    });
   }
 
   /**
@@ -337,29 +412,37 @@ export class CapaService {
     company?: string,
     plant?: string,
   ) {
-    await this.findRequest(capaNo, company, plant);
+    const capa = await this.findRequest(capaNo, company, plant);
+    if (capa.status === 'CLOSED') {
+      throw new BadRequestException('종료된 CAPA 의 조치 항목은 바꿀 수 없습니다.');
+    }
     const action = await this.actionRepo.findOne({
-      where: { capaId: capaNo, seq: actionSeq },
+      where: { ...this.actionKey(capa, capaNo), seq: actionSeq },
     });
     if (!action) {
       throw new NotFoundException('조치 항목을 찾을 수 없습니다.');
     }
 
-    if (dto.actionDesc !== undefined) action.actionDesc = dto.actionDesc;
+    // 비울 수 없는 칸(내용·상태)에 null 이 오면 그대로 둔다
+    if (dto.actionDesc != null) action.actionDesc = dto.actionDesc;
     if (dto.responsibleCode !== undefined) action.responsibleCode = dto.responsibleCode;
     if (dto.dueDate !== undefined) action.dueDate = parseDateStart(dto.dueDate);
-    if (dto.status !== undefined) {
+    if (dto.status != null) {
+      await this.assertComCode('CAPA_ACTION_STATUS', dto.status, capa.company, capa.plant, '조치 상태');
+      // DONE 이 아니게 되면 완료 일시를 비운다(남겨 두면 미완료인데 완료 시각이 보였다)
+      action.completedAt = dto.status === 'DONE' ? (action.status === 'DONE' && action.completedAt ? action.completedAt : new Date()) : null;
       action.status = dto.status;
-      if (dto.status === 'DONE') action.completedAt = new Date();
     }
     if (dto.result !== undefined) action.result = dto.result;
 
     // CAPA updatedBy 갱신
-    await this.capaRepo.update(
-      { capaNo, ...this.tenantWhere(company, plant) },
-      { updatedBy: userId },
-    );
-    return this.actionRepo.save(action);
+    return this.capaRepo.manager.transaction(async (manager) => {
+      await manager.getRepository(CAPARequest).update(
+        { capaNo, ...this.tenantWhere(company, plant) },
+        { updatedBy: userId },
+      );
+      return manager.getRepository(CAPAAction).save(action);
+    });
   }
 
   // =============================================

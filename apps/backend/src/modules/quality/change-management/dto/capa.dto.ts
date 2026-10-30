@@ -17,6 +17,7 @@ import {
   IsOptional,
   IsNumber,
   IsInt,
+  IsIn,
   IsDateString,
   Min,
   Max,
@@ -76,8 +77,7 @@ export class CAPAActionItemDto {
  */
 export class CreateCapaDto {
   @ApiProperty({ description: 'CAPA 유형', example: 'CORRECTIVE', enum: ['CORRECTIVE', 'PREVENTIVE'] })
-  @IsString()
-  @MaxLength(20)
+  @IsIn(['CORRECTIVE', 'PREVENTIVE'])
   capaType: string;
 
   @ApiPropertyOptional({ description: '출처 유형', example: 'DEFECT' })
