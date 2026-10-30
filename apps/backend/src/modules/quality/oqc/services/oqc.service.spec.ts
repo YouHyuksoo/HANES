@@ -43,6 +43,10 @@ describe('OqcService', () => {
     mockQr.commitTransaction.mockResolvedValue(undefined);
     mockQr.rollbackTransaction.mockResolvedValue(undefined);
     mockQr.release.mockResolvedValue(undefined);
+    // 트랜잭션 안에서 요청·박스를 잠그고 다시 읽는 값(기본: 대기 중인 요청, 진행된 박스 없음)
+    mockQr.manager.findOne.mockResolvedValue({ status: 'PENDING' } as any);
+    mockQr.manager.find.mockResolvedValue([] as any);
+    mockQr.query.mockResolvedValue([] as any);
 
     mockNumbering = createMock<NumberingService>();
 
@@ -111,8 +115,9 @@ describe('OqcService', () => {
 
   describe('createRequest', () => {
     it('should create request through TransactionService', async () => {
-      const boxes = [{ boxNo: 'BOX-001', qty: 10, status: 'CLOSED', oqcStatus: null, company: 'C1', plant: 'P1' }];
+      const boxes = [{ boxNo: 'BOX-001', itemCode: 'ITEM-001', qty: 10, status: 'CLOSED', oqcStatus: null, company: 'C1', plant: 'P1' }];
       mockBoxRepo.find.mockResolvedValue(boxes as any);
+      mockQr.manager.find.mockResolvedValue(boxes as any);
       const qb: any = {
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
@@ -135,8 +140,9 @@ describe('OqcService', () => {
     });
 
     it('creates request only from boxes in the request tenant', async () => {
-      const boxes = [{ boxNo: 'BOX-001', qty: 10, status: 'CLOSED', oqcStatus: null, company: 'C1', plant: 'P1' }];
+      const boxes = [{ boxNo: 'BOX-001', itemCode: 'ITEM-001', qty: 10, status: 'CLOSED', oqcStatus: null, company: 'C1', plant: 'P1' }];
       mockBoxRepo.find.mockResolvedValue(boxes as any);
+      mockQr.manager.find.mockResolvedValue(boxes as any);
       const qb: any = {
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
@@ -164,6 +170,29 @@ describe('OqcService', () => {
         { boxNo: expect.anything(), company: 'C1', plant: 'P1' },
         { oqcStatus: 'PENDING' },
       );
+    });
+
+    it('rejects boxes of another item than the requested one', async () => {
+      mockBoxRepo.find.mockResolvedValue([
+        { boxNo: 'BOX-001', itemCode: 'OTHER-ITEM', qty: 10, status: 'CLOSED', oqcStatus: null, company: 'C1', plant: 'P1' },
+      ] as any);
+
+      await expect(
+        target.createRequest({ itemCode: 'ITEM-001', boxIds: ['BOX-001'] } as any, 'C1', 'P1', 'user1'),
+      ).rejects.toThrow('요청 품목(ITEM-001)이 아닌 박스');
+      expect(mockTx.run).not.toHaveBeenCalled();
+    });
+
+    it('locks the boxes and re-checks them (another request took the box in between)', async () => {
+      const free = { boxNo: 'BOX-001', itemCode: 'ITEM-001', qty: 10, status: 'CLOSED', oqcStatus: null, company: 'C1', plant: 'P1' };
+      mockBoxRepo.find.mockResolvedValue([free] as any);
+      mockQr.manager.find.mockResolvedValue([{ ...free, oqcStatus: 'PENDING' }] as any);
+
+      await expect(
+        target.createRequest({ itemCode: 'ITEM-001', boxIds: ['BOX-001'] } as any, 'C1', 'P1', 'user1'),
+      ).rejects.toThrow('검사 불가 박스');
+      expect(mockQr.query).toHaveBeenCalledWith(expect.stringContaining('FOR UPDATE'), expect.arrayContaining(['BOX-001']));
+      expect(mockQr.manager.save).not.toHaveBeenCalled();
     });
 
     it('rejects create when a selected box belongs to a different tenant', async () => {
@@ -241,19 +270,39 @@ describe('OqcService', () => {
       await expect(target.executeInspection('OQC-001', { result: 'PASS' } as any)).rejects.toThrow(BadRequestException);
     });
 
-    it('should block inspection when downstream has already progressed', async () => {
+    it('should block inspection when downstream has already progressed (checked on locked boxes)', async () => {
       mockOqcRepo.findOne.mockResolvedValue({
         requestNo: 'OQC-001',
         status: 'PENDING',
         boxes: [{ boxNo: 'BOX-001' }],
       } as any);
-      mockBoxRepo.find.mockResolvedValue([
+      mockQr.manager.find.mockResolvedValue([
         { boxNo: 'BOX-001', palletNo: 'PALLET-001', status: 'CLOSED' } as any,
       ]);
 
       await expect(target.executeInspection('OQC-001', { result: 'PASS' } as any)).rejects.toThrow(
         BadRequestException,
       );
+      expect(mockQr.query).toHaveBeenCalledWith(expect.stringContaining('FOR UPDATE'), expect.arrayContaining(['BOX-001']));
+      expect(mockQr.manager.update).not.toHaveBeenCalled();
+    });
+
+    it('should re-check the request status after locking it (executed concurrently)', async () => {
+      mockOqcRepo.findOne.mockResolvedValue({ requestNo: 'OQC-001', status: 'PENDING', boxes: [{ boxNo: 'BOX-001' }] } as any);
+      mockQr.manager.findOne.mockResolvedValue({ status: 'PASS' } as any);
+
+      await expect(target.executeInspection('OQC-001', { result: 'FAIL' } as any)).rejects.toThrow('대기 또는 진행 상태');
+      expect(mockQr.query).toHaveBeenCalledWith(expect.stringContaining('OQC_REQUESTS'), expect.arrayContaining(['OQC-001']));
+      expect(mockQr.manager.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects sample boxes that do not belong to the request', async () => {
+      mockOqcRepo.findOne.mockResolvedValue({ requestNo: 'OQC-001', status: 'PENDING', boxes: [{ boxNo: 'BOX-001' }] } as any);
+
+      await expect(
+        target.executeInspection('OQC-001', { result: 'PASS', sampleBoxIds: ['BOX-001', 'BOX-999'] } as any),
+      ).rejects.toThrow('요청에 속하지 않은 샘플 박스가 있습니다: BOX-999');
+      expect(mockTx.run).not.toHaveBeenCalled();
     });
   });
 
@@ -323,6 +372,15 @@ describe('OqcService', () => {
       await expect(
         target.updateResult('OQC-001', { result: 'FAIL' } as any),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should re-check progressed boxes after locking them', async () => {
+      mockOqcRepo.findOne.mockResolvedValue({ requestNo: 'OQC-001', status: 'PASS', boxes: [{ boxNo: 'BOX-001' }] } as any);
+      mockBoxRepo.find.mockResolvedValue([{ boxNo: 'BOX-001', status: 'CLOSED' }] as any);
+      mockQr.manager.find.mockResolvedValue([{ boxNo: 'BOX-001', status: 'SHIPPED' }] as any);
+
+      await expect(target.updateResult('OQC-001', { result: 'FAIL' } as any)).rejects.toThrow('출하공정이 진행된 박스(BOX-001)');
+      expect(mockQr.manager.update).not.toHaveBeenCalled();
     });
   });
 });

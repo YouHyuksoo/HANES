@@ -46,8 +46,6 @@ export class BoxService {
     private readonly lotRepository: Repository<MatLot>,
     @InjectRepository(FgLabel)
     private readonly fgLabelRepository: Repository<FgLabel>,
-    @InjectRepository(OqcRequest)
-    private readonly oqcRequestRepository: Repository<OqcRequest>,
     @InjectRepository(OqcRequestBox)
     private readonly oqcRequestBoxRepository: Repository<OqcRequestBox>,
     private readonly tx: TransactionService,
@@ -199,22 +197,9 @@ export class BoxService {
     await qr.query(`${sql} ORDER BY FG_BARCODE FOR UPDATE`, params);
   }
 
-  private async nextOqcRequestNo() {
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-    const prefix = `OQC-${dateStr}`;
-
-    const lastReq = await this.oqcRequestRepository
-      .createQueryBuilder('oqc')
-      .where('oqc.requestNo LIKE :prefix', { prefix: `${prefix}%` })
-      .orderBy('oqc.requestNo', 'DESC')
-      .getOne();
-
-    const seq = lastReq
-      ? parseInt(lastReq.requestNo.split('-').pop() || '0', 10) + 1
-      : 1;
-
-    return `${prefix}-${String(seq).padStart(3, '0')}`;
+  /** OQC 요청번호는 요청 화면의 등록과 같은 채번(SEQ_RULES 'OQC_REQUEST' + 전용 시퀀스)을 쓴다. 옛 MAX+1 방식은 동시에 마감하면 같은 번호가 나왔다 */
+  private nextOqcRequestNo(queryRunner: QueryRunner) {
+    return this.numbering.next('OQC_REQUEST', queryRunner);
   }
 
   async findAll(query: BoxQueryDto, company?: string, plant?: string) {
@@ -796,7 +781,7 @@ export class BoxService {
       }
 
       if (oqcEnabled) {
-        const requestNo = await this.nextOqcRequestNo();
+        const requestNo = await this.nextOqcRequestNo(queryRunner);
         await queryRunner.manager.save(
           OqcRequest,
           queryRunner.manager.create(OqcRequest, {

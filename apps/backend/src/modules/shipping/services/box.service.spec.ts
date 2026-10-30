@@ -99,7 +99,7 @@ describe('BoxService', () => {
         { provide: getRepositoryToken(OqcRequestBox), useValue: mockOqcRequestBoxRepo },
         { provide: DataSource, useValue: mockDataSource },
         { provide: TransactionService, useValue: mockTx },
-        { provide: NumberingService, useValue: { nextBoxNo: jest.fn().mockResolvedValue('BX-TEST') } },
+        { provide: NumberingService, useValue: { nextBoxNo: jest.fn().mockResolvedValue('BX-TEST'), next: jest.fn().mockResolvedValue('OQC-20260408-001') } },
         { provide: SysConfigService, useValue: mockSysConfig },
         { provide: CarrierFlowService, useValue: mockCarrierFlow },
       ],
