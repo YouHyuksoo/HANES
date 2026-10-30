@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { NcrService } from './ncr.service';
 import { NcrReport } from '../../../../entities/ncr-report.entity';
+import { CAPARequest } from '../../../../entities/capa-request.entity';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 
@@ -12,12 +13,14 @@ describe('NcrService', () => {
   let target: NcrService;
   let mockRepo: DeepMocked<Repository<NcrReport>>;
   let mockSeq: DeepMocked<SeqGeneratorService>;
+  let mockCapaRepo: DeepMocked<Repository<CAPARequest>>;
 
   const baseDto = { targetType: 'RAW_MATERIAL', foundStage: 'IQC', itemCode: 'IT-1' };
 
   beforeEach(async () => {
     mockRepo = createMock<Repository<NcrReport>>();
     mockSeq = createMock<SeqGeneratorService>();
+    mockCapaRepo = createMock<Repository<CAPARequest>>();
     mockSeq.getNo.mockResolvedValue('NCR-260915-001');
     mockRepo.create.mockImplementation((v) => v as NcrReport);
     mockRepo.save.mockImplementation(async (v) => v as NcrReport);
@@ -27,6 +30,7 @@ describe('NcrService', () => {
       providers: [
         NcrService,
         { provide: getRepositoryToken(NcrReport), useValue: mockRepo },
+        { provide: getRepositoryToken(CAPARequest), useValue: mockCapaRepo },
         { provide: SeqGeneratorService, useValue: mockSeq },
       ],
     })
@@ -83,6 +87,46 @@ describe('NcrService', () => {
     it('없는 번호는 NotFound', async () => {
       mockRepo.findOne.mockResolvedValue(null);
       await expect(target.findOne('N-없음', 'CO', 'P01')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('결함 수정', () => {
+    it('발행일 구간은 시작일·종료일 중 하나만 와도 걸린다', async () => {
+      const qb: any = {
+        orderBy: jest.fn().mockReturnThis(), skip: jest.fn().mockReturnThis(), take: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(), getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      mockRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await target.findAll({ fromDate: '2026-11-03' } as never, 'CO', 'P01');
+      expect(qb.andWhere).toHaveBeenCalledWith('n.issuedAt >= :from', expect.objectContaining({ from: expect.any(Date) }));
+      expect(qb.andWhere).not.toHaveBeenCalledWith('n.issuedAt <= :to', expect.anything());
+
+      qb.andWhere.mockClear();
+      await target.findAll({ toDate: '2026-11-03' } as never, 'CO', 'P01');
+      expect(qb.andWhere).toHaveBeenCalledWith('n.issuedAt <= :to', expect.objectContaining({ to: expect.any(Date) }));
+      expect(qb.andWhere).not.toHaveBeenCalledWith('n.issuedAt >= :from', expect.anything());
+    });
+
+    it('수정에서 비울 수 없는 칸에 null 이 와도 그대로 둔다', async () => {
+      mockRepo.findOne.mockResolvedValue({ ncrNo: 'N1', status: 'OPEN', itemCode: 'IT-1', targetType: 'FINISHED', foundStage: 'OQC' } as NcrReport);
+      const saved = await target.update('N1', { itemCode: null, targetType: null, remark: '메모' } as never, 'W1', 'CO', 'P01');
+      expect(saved.itemCode).toBe('IT-1');
+      expect(saved.targetType).toBe('FINISHED');
+      expect(saved.remark).toBe('메모');
+    });
+
+    it('CAPA 연결은 번호가 있고 같은 회사·사업장에 실제로 있어야 한다', async () => {
+      mockRepo.findOne.mockResolvedValue({ ncrNo: 'N1', status: 'CLOSED', company: 'CO', plant: 'P01' } as NcrReport);
+      await expect(target.linkCapa('N1', undefined as never, 'W1', 'CO', 'P01')).rejects.toThrow(/CAPA 번호가 없습니다/);
+
+      mockCapaRepo.findOne.mockResolvedValue(null);
+      await expect(target.linkCapa('N1', 'CAPA-X', 'W1', 'CO', 'P01')).rejects.toThrow(NotFoundException);
+      expect(mockCapaRepo.findOne).toHaveBeenCalledWith({ where: { capaNo: 'CAPA-X', company: 'CO', plant: 'P01' } });
+
+      mockCapaRepo.findOne.mockResolvedValue({ capaNo: 'CAPA-1' } as CAPARequest);
+      const saved = await target.linkCapa('N1', 'CAPA-1', 'W1', 'CO', 'P01');
+      expect(saved.capaNo).toBe('CAPA-1');
     });
   });
 

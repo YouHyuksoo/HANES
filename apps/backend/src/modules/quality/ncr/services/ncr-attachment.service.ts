@@ -3,7 +3,7 @@
  * @description 부적합 보고서 첨부파일 — 등록·목록·삭제
  *
  * 초보자 가이드:
- * 1. SEQ 는 DB DEFAULT 가 아니라 여기서 count+1 로 계산한다. 복합 PK 컬럼의 DEFAULT 를
+ * 1. SEQ 는 DB DEFAULT 가 아니라 여기서 (가장 큰 번호 + 1) 로 계산한다. 복합 PK 컬럼의 DEFAULT 를
  *    TypeORM 이 INSERT 에 안 채워 ORA-01400 이 나는 전례가 있었다(LABEL_PRINT_LOGS).
  * 2. 동시 업로드로 SEQ 가 겹치지 않게 트랜잭션 안에서 대상 보고서 행을 잠그고 계산한다.
  * 3. 종결된 보고서에는 첨부를 추가·삭제할 수 없다. 본문 수정을 막아놓고 증빙만 바뀌면
@@ -97,8 +97,11 @@ export class NcrAttachmentService {
         NCR_NO: ncrNo,
       });
 
-      const used = await qr.manager.count(NcrAttachment, {
+      // 개수+1 이면 중간 첨부를 지운 뒤 올릴 때 남은 첨부와 번호가 겹쳐 save 가 기존 첨부를 조용히 덮어썼다.
+      // 보고서 행을 잠근 상태에서 가장 큰 번호 다음을 쓴다.
+      const last = await qr.manager.findOne(NcrAttachment, {
         where: { ncrNo, company, plant },
+        order: { seq: 'DESC' },
       });
 
       return qr.manager.save(
@@ -107,7 +110,7 @@ export class NcrAttachmentService {
           plant,
           ncrNo,
           // 복합 PK 라 DB DEFAULT 에 맡기지 않고 여기서 명시 계산한다(ORA-01400 전례)
-          seq: used + 1,
+          seq: (last?.seq ?? 0) + 1,
           fileName: file.originalname,
           filePath: file.path,
           fileSize: file.size ?? null,

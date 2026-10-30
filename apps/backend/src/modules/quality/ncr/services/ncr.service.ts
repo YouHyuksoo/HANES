@@ -13,6 +13,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CAPARequest } from '../../../../entities/capa-request.entity';
 import { NcrReport } from '../../../../entities/ncr-report.entity';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
 import { parseDateStart, parseDateEnd } from '../../../../shared/date.util';
@@ -27,6 +28,8 @@ export class NcrService {
   constructor(
     @InjectRepository(NcrReport)
     private readonly ncrRepo: Repository<NcrReport>,
+    @InjectRepository(CAPARequest)
+    private readonly capaRepo: Repository<CAPARequest>,
     private readonly seqGenerator: SeqGeneratorService,
   ) {}
 
@@ -52,7 +55,9 @@ export class NcrService {
 
     const from = parseDateStart(query.fromDate);
     const to = parseDateEnd(query.toDate);
-    if (from && to) qb.andWhere('n.issuedAt BETWEEN :from AND :to', { from, to });
+    // 시작일·종료일은 하나만 와도 걸린다(둘 다 있어야 걸리면 하나만 보냈을 때 구간이 통째로 사라졌다)
+    if (from) qb.andWhere('n.issuedAt >= :from', { from });
+    if (to) qb.andWhere('n.issuedAt <= :to', { to });
 
     if (query.targetType) qb.andWhere('n.targetType = :targetType', { targetType: query.targetType });
     if (query.foundStage) qb.andWhere('n.foundStage = :foundStage', { foundStage: query.foundStage });
@@ -135,9 +140,10 @@ export class NcrService {
     }
 
     Object.assign(row, {
-      ...(dto.targetType !== undefined ? { targetType: dto.targetType } : {}),
-      ...(dto.foundStage !== undefined ? { foundStage: dto.foundStage } : {}),
-      ...(dto.itemCode !== undefined ? { itemCode: dto.itemCode } : {}),
+      // 비울 수 없는 칸(대상구분·발견공정·품목)에 null 이 오면 그대로 둔다(저장 시 NOT NULL 오류 500)
+      ...(dto.targetType != null ? { targetType: dto.targetType } : {}),
+      ...(dto.foundStage != null ? { foundStage: dto.foundStage } : {}),
+      ...(dto.itemCode != null ? { itemCode: dto.itemCode } : {}),
       ...(dto.sourceType !== undefined ? { sourceType: dto.sourceType || null } : {}),
       ...(dto.sourceId !== undefined ? { sourceId: dto.sourceId || null } : {}),
       ...(dto.dueDate !== undefined ? { dueDate: parseDateStart(dto.dueDate) } : {}),
@@ -224,6 +230,14 @@ export class NcrService {
   /** CAPA 연결 — 정식 시정조치가 필요한 건에만 건다 */
   async linkCapa(ncrNo: string, capaNo: string, userId?: string, company?: string, plant?: string): Promise<NcrReport> {
     const row = await this.findOne(ncrNo, company, plant);
+    // 아무 문자열이나 저장하고 번호가 빠져도 성공 응답이던 것 — CAPA 번호가 있고 같은 회사·사업장에 실제로 있어야 한다
+    if (!capaNo?.trim()) {
+      throw new BadRequestException('연결할 CAPA 번호가 없습니다.');
+    }
+    const capa = await this.capaRepo.findOne({ where: { capaNo, company: row.company, plant: row.plant } });
+    if (!capa) {
+      throw new NotFoundException(`시정조치(CAPA)를 찾을 수 없습니다: ${capaNo}`);
+    }
     row.capaNo = capaNo;
     row.updatedBy = userId ?? null;
     return this.ncrRepo.save(row);

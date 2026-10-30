@@ -43,7 +43,7 @@ describe('NcrAttachmentService', () => {
     });
 
     mockNcrRepo.findOne.mockResolvedValue({ ncrNo: 'N1', status: 'OPEN' } as NcrReport);
-    mockQr.manager.count.mockResolvedValue(0);
+    mockQr.manager.findOne.mockResolvedValue(null);
     mockQr.manager.create.mockImplementation((_e, v) => v as never);
     mockQr.manager.save.mockImplementation(async (v) => v as never);
     mockQr.query.mockResolvedValue([]);
@@ -70,12 +70,19 @@ describe('NcrAttachmentService', () => {
      * LABEL_PRINT_LOGS 에서 실제로 500 이 났던 유형이라 값이 채워지는지 못 박아 둔다.
      */
     it('SEQ 를 명시 계산해 채운다 — 복합 PK 라 DB DEFAULT 에 맡기면 INSERT 가 깨진다', async () => {
-      mockQr.manager.count.mockResolvedValue(2);
+      mockQr.manager.findOne.mockResolvedValue({ seq: 2 } as NcrAttachment);
       const saved = await target.create('N1', file('a.png', 'image/png'), undefined, 'W1', 'CO', 'P01');
       expect(saved.seq).toBe(3);
       expect(saved.company).toBe('CO');
       expect(saved.plant).toBe('P01');
       expect(saved.ncrNo).toBe('N1');
+    });
+
+    it('중간 첨부를 지워 번호에 구멍이 있어도 가장 큰 번호 다음을 쓴다 — 개수+1 이면 남은 첨부를 덮어썼다', async () => {
+      // 1, 3 만 남은 상태(개수 2 → 옛 방식은 3 을 또 만들어 save 가 기존 3번을 덮어썼다)
+      mockQr.manager.findOne.mockResolvedValue({ seq: 3 } as NcrAttachment);
+      const saved = await target.create('N1', file('a.png', 'image/png'), undefined, 'W1', 'CO', 'P01');
+      expect(saved.seq).toBe(4);
     });
 
     it('동시 업로드로 SEQ 가 겹치지 않게 보고서 행을 잠근 뒤 센다', async () => {
