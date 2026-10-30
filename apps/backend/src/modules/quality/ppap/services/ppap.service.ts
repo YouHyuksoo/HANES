@@ -202,6 +202,40 @@ export class PpapService {
     }
   }
 
+  /** 건수 조회 결과(첫 칸)를 숫자로 */
+  private async count(sql: string, params: unknown[]): Promise<number> {
+    const rows: Array<{ cnt: number | string }> = await this.ppapRepo.manager.query(sql, params);
+    return Number(rows[0]?.cnt ?? 0);
+  }
+
+  /** 품목·고객이 마스터에 있는지, 요소 값이 0/1 인지 확인한다(값이 있을 때만) */
+  private async assertValues(
+    values: { itemCode?: string | null; customerCode?: string | null } & Partial<Record<PpapElementKey, number | null>>,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    for (const key of PPAP_ELEMENT_KEYS) {
+      const v = values[key];
+      if (v !== undefined && v !== null && v !== 0 && v !== 1) {
+        throw new BadRequestException(`PPAP 요소 값은 0 또는 1 이어야 합니다: ${key}=${v}`);
+      }
+    }
+    if (values.itemCode) {
+      const cnt = await this.count(
+        'SELECT COUNT(*) AS "cnt" FROM ITEM_MASTERS WHERE ITEM_CODE = :1 AND COMPANY = :2 AND PLANT_CD = :3',
+        [values.itemCode, company, plant],
+      );
+      if (cnt === 0) throw new NotFoundException(`품목을 찾을 수 없습니다: ${values.itemCode}`);
+    }
+    if (values.customerCode) {
+      const cnt = await this.count(
+        'SELECT COUNT(*) AS "cnt" FROM PARTNER_MASTERS WHERE PARTNER_CODE = :1 AND COMPANY = :2 AND PLANT_CD = :3',
+        [values.customerCode, company, plant],
+      );
+      if (cnt === 0) throw new NotFoundException(`고객(거래처)을 찾을 수 없습니다: ${values.customerCode}`);
+    }
+  }
+
   // =============================================
   // PPAP 번호 자동채번
   // =============================================
@@ -250,11 +284,12 @@ export class PpapService {
         { sCode: `%${upper}%`, sRaw: `%${search}%` },
       );
     }
-    if (fromDate && toDate) {
-      qb.andWhere('p.createdAt BETWEEN :fromDate AND :toDate', {
-        fromDate: new Date(`${fromDate}T00:00:00`),
-        toDate: new Date(`${toDate}T23:59:59`),
-      });
+    // 시작·종료를 따로 걸고, ISO 문자열(2026-11-06T00:00:00.000Z)이 와도 앞 10자리 날짜만 쓴다
+    if (fromDate) {
+      qb.andWhere("p.createdAt >= TO_DATE(:fromDate, 'YYYY-MM-DD')", { fromDate: fromDate.slice(0, 10) });
+    }
+    if (toDate) {
+      qb.andWhere("p.createdAt < TO_DATE(:toDate, 'YYYY-MM-DD') + INTERVAL '1' DAY", { toDate: toDate.slice(0, 10) });
     }
 
     qb.orderBy('p.createdAt', 'DESC');
@@ -290,6 +325,7 @@ export class PpapService {
     plant: string,
     userId: string,
   ) {
+    await this.assertValues(dto, company, plant);
     const ppapNo = await this.generatePpapNo();
     const entity = this.ppapRepo.create({
       ppapNo,
@@ -345,31 +381,37 @@ export class PpapService {
         '초안 또는 반려 상태에서만 수정할 수 있습니다.',
       );
     }
+    await this.assertValues(
+      { ...dto, itemCode: dto.itemCode && dto.itemCode !== item.itemCode ? dto.itemCode : null },
+      item.company,
+      item.plant,
+    );
+    // 비울 수 없는 칸(품목·Level·사유·요소)에 null 이 오면 그대로 둔다(저장 시 NOT NULL 오류 500)
     const updateData: Partial<PpapSubmission> = {
-      ...(dto.itemCode !== undefined ? { itemCode: dto.itemCode } : {}),
+      ...(dto.itemCode != null ? { itemCode: dto.itemCode } : {}),
       ...(dto.itemName !== undefined ? { itemName: dto.itemName } : {}),
       ...(dto.customerCode !== undefined ? { customerCode: dto.customerCode } : {}),
       ...(dto.customerName !== undefined ? { customerName: dto.customerName } : {}),
-      ...(dto.ppapLevel !== undefined ? { ppapLevel: dto.ppapLevel } : {}),
-      ...(dto.reason !== undefined ? { reason: dto.reason } : {}),
-      ...(dto.designRecords !== undefined ? { designRecords: dto.designRecords } : {}),
-      ...(dto.ecnDocuments !== undefined ? { ecnDocuments: dto.ecnDocuments } : {}),
-      ...(dto.customerApproval !== undefined ? { customerApproval: dto.customerApproval } : {}),
-      ...(dto.dfmea !== undefined ? { dfmea: dto.dfmea } : {}),
-      ...(dto.processFlowDiagram !== undefined ? { processFlowDiagram: dto.processFlowDiagram } : {}),
-      ...(dto.pfmea !== undefined ? { pfmea: dto.pfmea } : {}),
-      ...(dto.controlPlan !== undefined ? { controlPlan: dto.controlPlan } : {}),
-      ...(dto.msaStudies !== undefined ? { msaStudies: dto.msaStudies } : {}),
-      ...(dto.dimensionalResults !== undefined ? { dimensionalResults: dto.dimensionalResults } : {}),
-      ...(dto.materialTestResults !== undefined ? { materialTestResults: dto.materialTestResults } : {}),
-      ...(dto.initialProcessStudies !== undefined ? { initialProcessStudies: dto.initialProcessStudies } : {}),
-      ...(dto.qualifiedLabDoc !== undefined ? { qualifiedLabDoc: dto.qualifiedLabDoc } : {}),
-      ...(dto.appearanceApproval !== undefined ? { appearanceApproval: dto.appearanceApproval } : {}),
-      ...(dto.sampleProduct !== undefined ? { sampleProduct: dto.sampleProduct } : {}),
-      ...(dto.masterSample !== undefined ? { masterSample: dto.masterSample } : {}),
-      ...(dto.checkingAids !== undefined ? { checkingAids: dto.checkingAids } : {}),
-      ...(dto.customerSpecificReq !== undefined ? { customerSpecificReq: dto.customerSpecificReq } : {}),
-      ...(dto.partSubmissionWarrant !== undefined ? { partSubmissionWarrant: dto.partSubmissionWarrant } : {}),
+      ...(dto.ppapLevel != null ? { ppapLevel: dto.ppapLevel } : {}),
+      ...(dto.reason != null ? { reason: dto.reason } : {}),
+      ...(dto.designRecords != null ? { designRecords: dto.designRecords } : {}),
+      ...(dto.ecnDocuments != null ? { ecnDocuments: dto.ecnDocuments } : {}),
+      ...(dto.customerApproval != null ? { customerApproval: dto.customerApproval } : {}),
+      ...(dto.dfmea != null ? { dfmea: dto.dfmea } : {}),
+      ...(dto.processFlowDiagram != null ? { processFlowDiagram: dto.processFlowDiagram } : {}),
+      ...(dto.pfmea != null ? { pfmea: dto.pfmea } : {}),
+      ...(dto.controlPlan != null ? { controlPlan: dto.controlPlan } : {}),
+      ...(dto.msaStudies != null ? { msaStudies: dto.msaStudies } : {}),
+      ...(dto.dimensionalResults != null ? { dimensionalResults: dto.dimensionalResults } : {}),
+      ...(dto.materialTestResults != null ? { materialTestResults: dto.materialTestResults } : {}),
+      ...(dto.initialProcessStudies != null ? { initialProcessStudies: dto.initialProcessStudies } : {}),
+      ...(dto.qualifiedLabDoc != null ? { qualifiedLabDoc: dto.qualifiedLabDoc } : {}),
+      ...(dto.appearanceApproval != null ? { appearanceApproval: dto.appearanceApproval } : {}),
+      ...(dto.sampleProduct != null ? { sampleProduct: dto.sampleProduct } : {}),
+      ...(dto.masterSample != null ? { masterSample: dto.masterSample } : {}),
+      ...(dto.checkingAids != null ? { checkingAids: dto.checkingAids } : {}),
+      ...(dto.customerSpecificReq != null ? { customerSpecificReq: dto.customerSpecificReq } : {}),
+      ...(dto.partSubmissionWarrant != null ? { partSubmissionWarrant: dto.partSubmissionWarrant } : {}),
       ...(dto.remark !== undefined ? { remark: dto.remark } : {}),
     };
     Object.assign(item, updateData, { updatedBy: userId });
@@ -401,11 +443,12 @@ export class PpapService {
     plant?: string,
   ) {
     const item = await this.findById(ppapNo, company, plant);
-    if (item.status !== 'DRAFT') {
-      throw new BadRequestException('초안 상태에서만 제출할 수 있습니다.');
+    if (!['DRAFT', 'REJECTED'].includes(item.status)) {
+      throw new BadRequestException('초안 또는 반려 상태에서만 제출할 수 있습니다.');
     }
     item.status = 'SUBMITTED';
     item.submittedAt = new Date();
+    item.rejectedReason = null;
     item.updatedBy = userId;
     const saved = await this.ppapRepo.save(item);
     this.logger.log(`PPAP 제출: ${item.ppapNo}`);

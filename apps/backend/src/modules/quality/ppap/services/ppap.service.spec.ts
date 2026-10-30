@@ -72,6 +72,25 @@ describe('PpapService', () => {
     });
   });
 
+  describe('반려 재제출 / 입력 확인', () => {
+    it('반려된 PPAP 는 다시 제출할 수 있고 이전 반려 사유는 지운다', async () => {
+      const item: any = { ppapNo: 'PPAP-009', status: 'REJECTED', rejectedReason: '사유', company: 'CO', plant: 'P01' };
+      mockRepo.findOne.mockResolvedValue(item);
+      mockRepo.save.mockImplementation(async (v) => v as PpapSubmission);
+      const r = await target.submit('PPAP-009', 'user', 'CO', 'P01');
+      expect(r).toMatchObject({ status: 'SUBMITTED', rejectedReason: null });
+    });
+
+    it('수정에서 비울 수 없는 칸의 null 은 그대로 두고, 0/1 아닌 요소 값은 400', async () => {
+      const item: any = { ppapNo: 'PPAP-010', status: 'DRAFT', itemCode: 'I1', ppapLevel: 3, reason: 'ECN', dfmea: 1, company: 'CO', plant: 'P01' };
+      mockRepo.findOne.mockResolvedValue(item);
+      mockRepo.save.mockImplementation(async (v) => v as PpapSubmission);
+      const r = await target.update('PPAP-010', { itemCode: null, ppapLevel: null, reason: null, dfmea: null, remark: '메모' } as any, 'user', 'CO', 'P01');
+      expect(r).toMatchObject({ itemCode: 'I1', ppapLevel: 3, reason: 'ECN', dfmea: 1, remark: '메모' });
+      await expect(target.update('PPAP-010', { pfmea: 5 } as any, 'user', 'CO', 'P01')).rejects.toThrow('0 또는 1');
+    });
+  });
+
   describe('update', () => {
     it('should keep tenant and ppap key columns from the matched submission when update payload contains them', async () => {
       const item = { ppapNo: 'PPAP-001', itemCode: 'ITEM-OLD', status: 'DRAFT', company: 'CO', plant: 'P01' } as PpapSubmission;
