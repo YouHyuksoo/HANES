@@ -171,3 +171,11 @@ describe('CrimpInspectService', () => {
     expect(ctx.sides).toEqual([expect.objectContaining({ sideKey: 'TER-A', wireItemCode: null, status: 'MULTI_WIRE' })]);
   });
 });
+
+describe('CrimpInspectService 입력 확인', () => {
+  it('작업지시 번호가 없으면 컨텍스트·이력 조회를 400 으로 막는다(이력이 전체 작업지시로 새지 않게)', async () => {
+    const service = new CrimpInspectService({} as never, {} as never, {} as never);
+    await expect(service.getContext('', 'C', 'P')).rejects.toThrow('작업지시 번호(orderNo)가 필요합니다.');
+    await expect(service.findHistory(undefined as never, 'C', 'P')).rejects.toThrow('작업지시 번호(orderNo)가 필요합니다.');
+  });
+});

@@ -161,7 +161,15 @@ export class CrimpInspectService {
   }
 
   /** 작업지시의 단자 사이드별 압착 규격 + 외관 판정 항목 */
+  /** 작업지시 번호가 없으면 400 (옛 코드는 조건이 빠져 이력 조회가 모든 작업지시의 검사 100건을 돌려줬다) */
+  private assertOrderNo(orderNo: string | undefined) {
+    if (!orderNo || !String(orderNo).trim()) {
+      throw new BadRequestException('작업지시 번호(orderNo)가 필요합니다.');
+    }
+  }
+
   async getContext(orderNo: string, company: string, plant: string) {
+    this.assertOrderNo(orderNo);
     const qr = this.inspectResultRepo.manager;
     const order = await this.loadOrder(qr, orderNo, company, plant);
     const sides = await this.resolveSides(qr, order.itemCode, company, plant);
@@ -170,6 +178,7 @@ export class CrimpInspectService {
   }
 
   async findHistory(orderNo: string, company: string, plant: string) {
+    this.assertOrderNo(orderNo);
     return this.inspectResultRepo.find({
       where: { orderNo, inspectType: CRIMP_INSPECT_TYPE, company, plant },
       order: { inspectAt: 'DESC' },
@@ -196,6 +205,11 @@ export class CrimpInspectService {
         );
       }
 
+      // 같은 단자를 두 번 보내면 마지막 값만 쓰고 나머지는 조용히 버려지므로 거부한다
+      const dupKeys = dto.sides.map((s) => s.sideKey).filter((k, i, arr) => arr.indexOf(k) !== i);
+      if (dupKeys.length > 0) {
+        throw new BadRequestException(`같은 단자가 두 번 입력되었습니다: ${[...new Set(dupKeys)].join(', ')}`);
+      }
       const inputByKey = new Map(dto.sides.map((s) => [s.sideKey, s]));
       const unknownKeys = [...inputByKey.keys()].filter((k) => !sides.some((s) => s.sideKey === k));
       if (unknownKeys.length > 0) {
