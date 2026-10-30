@@ -14,6 +14,7 @@ import {
   MaxLength,
   IsDateString,
   IsEmail,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
@@ -179,6 +180,7 @@ export class UpdateSubconOrderDto extends PartialType(CreateSubconOrderDto) {
   @ApiPropertyOptional({ description: '상태', enum: ['ORDERED', 'DELIVERED', 'PARTIAL_RECV', 'RECEIVED', 'CLOSED', 'CANCELED'] })
   @IsOptional()
   @IsString()
+  @IsIn(['ORDERED', 'DELIVERED', 'PARTIAL_RECV', 'RECEIVED', 'CLOSED', 'CANCELED'])
   status?: string;
 }
 

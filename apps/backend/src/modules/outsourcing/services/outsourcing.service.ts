@@ -326,6 +326,9 @@ export class OutsourcingService {
   }
 
   async createOrder(dto: CreateSubconOrderDto, company?: string, plant?: string) {
+    // 존재하지 않는 외주처로는 발주를 만들 수 없다(외래키가 없어 그대로 저장되었다)
+    await this.findVendorById(dto.vendorCode, company, plant);
+
     // 통합 채번 서비스로 발주번호 생성
     const orderNo = await this.numbering.nextSubconNo();
 
@@ -350,7 +353,15 @@ export class OutsourcingService {
   }
 
   async updateOrder(orderNo: string, dto: UpdateSubconOrderDto, company?: string, plant?: string) {
-    await this.findOrderById(orderNo, company, plant);
+    const existing = await this.findOrderById(orderNo, company, plant);
+    if (existing.status === 'CANCELED') {
+      throw new BadRequestException('취소된 발주는 수정할 수 없습니다.');
+    }
+    if (dto.orderQty !== undefined && dto.orderQty < Math.max(existing.deliveredQty, existing.receivedQty)) {
+      throw new BadRequestException(
+        `발주 수량은 이미 출고(${existing.deliveredQty})·입고(${existing.receivedQty})한 수량보다 작을 수 없습니다.`,
+      );
+    }
 
     const updateData: Partial<SubconOrder> = {};
     if (dto.itemCode !== undefined) updateData.itemCode = dto.itemCode;
@@ -376,6 +387,10 @@ export class OutsourcingService {
     if (order.status !== 'ORDERED') {
       throw new BadRequestException('발주 상태에서만 취소할 수 있습니다.');
     }
+    // 일부 출고된 발주도 상태는 ORDERED 라서 수량으로 한 번 더 막는다
+    if (order.deliveredQty > 0 || order.receivedQty > 0) {
+      throw new BadRequestException('출고 또는 입고된 발주는 취소할 수 없습니다.');
+    }
 
     await this.subconOrderRepository.update(
       { orderNo, ...this.tenantWhere(company, plant) },
@@ -390,6 +405,10 @@ export class OutsourcingService {
 
   async createDelivery(dto: CreateSubconDeliveryDto, company?: string, plant?: string) {
     const order = await this.findOrderById(dto.orderId, company, plant);
+
+    if (order.status === 'CANCELED' || order.status === 'CLOSED') {
+      throw new BadRequestException('취소 또는 마감된 발주에는 출고할 수 없습니다.');
+    }
 
     // 출고 가능 수량 확인
     const remainQty = order.orderQty - order.deliveredQty;
@@ -416,7 +435,8 @@ export class OutsourcingService {
         .update(SubconOrder)
         .set({
           deliveredQty: () => 'DELIVERED_QTY + :qty',
-          status: () => "CASE WHEN DELIVERED_QTY + :qty >= ORDER_QTY THEN 'DELIVERED' ELSE 'ORDERED' END",
+          // 출고가 끝나면 DELIVERED. 그 밖에는 현재 상태를 유지한다(옛 코드는 ORDERED 로 되돌려 부분입고 상태가 사라졌다)
+          status: () => "CASE WHEN STATUS = 'ORDERED' AND DELIVERED_QTY + :qty >= ORDER_QTY THEN 'DELIVERED' ELSE STATUS END",
         })
         .where({ orderNo: dto.orderId, ...this.tenantWhere(company, plant) })
         .andWhere('DELIVERED_QTY + :qty <= ORDER_QTY')
@@ -444,8 +464,18 @@ export class OutsourcingService {
   async createReceive(dto: CreateSubconReceiveDto, company?: string, plant?: string) {
     const order = await this.findOrderById(dto.orderId, company, plant);
 
-    const goodQty = dto.goodQty ?? dto.qty;
+    if (order.status === 'CANCELED' || order.status === 'CLOSED') {
+      throw new BadRequestException('취소 또는 마감된 발주에는 입고할 수 없습니다.');
+    }
     const defectQty = dto.defectQty ?? 0;
+    const goodQty = dto.goodQty ?? dto.qty - defectQty;
+    if (goodQty + defectQty !== dto.qty) {
+      throw new BadRequestException(`양품(${goodQty})과 불량(${defectQty}) 수량의 합이 입고 수량(${dto.qty})과 같아야 합니다.`);
+    }
+    const receivable = order.orderQty - order.receivedQty;
+    if (dto.qty > receivable) {
+      throw new BadRequestException(`입고 가능 수량(${receivable})을 초과했습니다.`);
+    }
 
     return this.tx.run(async (queryRunner) => {
       const receiveNo = await this.numbering.next('SUBCON_RECEIVE', queryRunner);
@@ -565,12 +595,14 @@ export class OutsourcingService {
   }
 
   async getVendorStock(company?: string, plant?: string) {
-    const orders = await this.subconOrderRepository.find({
+    // 일부만 출고된 발주(상태 ORDERED)도 외주처에 재고가 있다
+    const allOrders = await this.subconOrderRepository.find({
       where: {
-        status: In(['DELIVERED', 'PARTIAL_RECV']),
+        status: In(['ORDERED', 'DELIVERED', 'PARTIAL_RECV']),
         ...this.tenantWhere(company, plant),
       },
     });
+    const orders = allOrders.filter((order) => order.deliveredQty > 0);
 
     // 외주처별 재고 집계
     const stockByVendor = orders.reduce<Record<string, VendorStockSummary>>((acc, order) => {
