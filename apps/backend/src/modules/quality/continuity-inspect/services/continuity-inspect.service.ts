@@ -1061,6 +1061,11 @@ export class ContinuityInspectService {
         }
         fgBarcode = scannedLabel.fgBarcode;
       } else if (overallPass) {
+        // 같은 작업지시의 동시 신규 발행이 둘 다 한도 안으로 보이지 않게 작업지시 행을 잠근다
+        await queryRunner.query(
+          'SELECT ORDER_NO FROM JOB_ORDERS WHERE ORDER_NO = :1 AND COMPANY = :2 AND PLANT_CD = :3 FOR UPDATE',
+          [jobOrder.orderNo, jobOrder.company, jobOrder.plant],
+        );
         const producedRow = await queryRunner.manager
           .createQueryBuilder(ProdResult, 'pr')
           .select('COALESCE(SUM(pr.goodQty), 0)', 'sum')
@@ -1260,10 +1265,9 @@ export class ContinuityInspectService {
       throw new BadRequestException('취소된 라벨은 재인쇄할 수 없습니다.');
     }
 
-    label.reprintCount += 1;
-    await this.fgLabelRepo.save(label);
-
-    return label;
+    // 읽고 더해 저장하면 동시 재인쇄가 서로의 증가를 덮어쓴다 — DB 에서 한 번에 더한다
+    await this.fgLabelRepo.increment({ fgBarcode: label.fgBarcode, company: label.company, plant: label.plant }, 'reprintCount', 1);
+    return this.fgLabelRepo.findOneOrFail({ where: { fgBarcode: label.fgBarcode, company: label.company, plant: label.plant } });
   }
 
   /**
@@ -1292,6 +1296,9 @@ export class ContinuityInspectService {
       company: data.company,
       plant: data.plant,
     });
+
+    const existing = await this.equipProtocolRepo.findOne({ where: { protocolId: data.protocolId } });
+    if (existing) throw new BadRequestException(`이미 등록된 프로토콜입니다: ${data.protocolId}`);
 
     const protocol = this.equipProtocolRepo.create({
       protocolId: data.protocolId,
@@ -1377,11 +1384,10 @@ export class ContinuityInspectService {
     }
     this.assertFailReason(dto.passYn, dto.errorCode);
     return this.tx.run(async (qr) => {
-      const label = await qr.manager.findOne(FgLabel, {
-        where: { fgBarcode, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-      });
-      if (!label) {
-        throw new NotFoundException(`FG 라벨을 찾을 수 없습니다: ${fgBarcode}`);
+      // 라벨을 잠그고 수리 중이면 막는다(판정 표시를 수리실 인수 중에 덮어쓰지 않는다). 포장 이후·취소된 라벨도 구조검사 대상이 아니다.
+      const label = await this.mutableLabelInTx(qr, fgBarcode, company, plant);
+      if (['PACKED', 'SHIPPED', 'VOIDED'].includes(label.status)) {
+        throw new BadRequestException(`현재 상태(${label.status})에서는 구조검사할 수 없습니다: ${fgBarcode}`);
       }
 
       const inspectResultNo = await this.seqGenerator.getNo('INSPECT_RESULT', qr);

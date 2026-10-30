@@ -127,6 +127,15 @@ describe('InspectSampleCheckService', () => {
     )).rejects.toThrow(/필수 한도견본/);
   });
 
+  it('같은 견본을 한 번의 대조에 두 번 넣으면 거부한다', async () => {
+    sampleRepo.find.mockResolvedValue([sample({}), sample({ sampleCode: 'NG-1', sampleType: 'NG' })]);
+    await expect(service.create(
+      { ...baseDto, items: [{ sampleCode: 'OK-1', actualResult: 'PASS' }, { sampleCode: 'ok-1 ', actualResult: 'FAIL' }, { sampleCode: 'NG-1', actualResult: 'FAIL' }] },
+      ACTOR, TENANT,
+    )).rejects.toThrow(/두 번 넣을 수 없습니다/);
+    expect(savedChecks).toHaveLength(0);
+  });
+
   it('후보에 없는 코드를 스캔하면 거부한다', async () => {
     sampleRepo.find.mockResolvedValue([sample({})]);
     await expect(service.create(

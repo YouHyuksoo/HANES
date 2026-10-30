@@ -460,6 +460,26 @@ describe('ContinuityInspectService', () => {
     expect(mockProtocolRepo.save).not.toHaveBeenCalled();
   });
 
+  it('createProtocol rejects a duplicate protocolId instead of overwriting the existing protocol', async () => {
+    mockProtocolRepo.findOne.mockResolvedValue({ protocolId: 'P-1' } as EquipProtocol);
+
+    await expect(
+      target.createProtocol({ protocolId: 'P-1', protocolName: 'dup' } as any, 'C1', 'P1'),
+    ).rejects.toThrow('이미 등록된 프로토콜입니다');
+    expect(mockProtocolRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('structureInspect blocks labels that already progressed downstream', async () => {
+    mockSysConfigService.isEnabled.mockResolvedValue(false);
+    mockQueryRunner.query.mockResolvedValue([]);
+    mockQueryRunner.manager.findOne.mockImplementation(async (entity: any) => entity === FgLabel ? {
+      fgBarcode: 'FG-777', status: 'PACKED', company: 'C1', plant: 'P1',
+    } as any : null);
+
+    await expect(target.structureInspect('FG-777', { passYn: 'Y' }, 'C1', 'P1')).rejects.toThrow('구조검사할 수 없습니다');
+    expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+  });
+
   it('voidLabel blocks labels that already progressed downstream', async () => {
     mockQueryRunner.manager.findOne.mockImplementation(async (entity: any) => entity === FgLabel ? {
       fgBarcode: 'FG-999',

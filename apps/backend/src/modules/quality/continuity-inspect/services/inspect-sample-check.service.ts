@@ -356,6 +356,15 @@ export class InspectSampleCheckService {
       }
     }
 
+    // 같은 견본을 한 번의 대조에 두 번 넣으면 거부 (둘 다 저장돼 어느 결과가 맞는지 알 수 없었다)
+    const seen = new Set<string>();
+    for (const item of requested) {
+      if (seen.has(item.sampleCode)) {
+        throw new BadRequestException(`같은 한도견본을 한 번의 대조에 두 번 넣을 수 없습니다: ${item.sampleCode}`);
+      }
+      seen.add(item.sampleCode);
+    }
+
     // 2) 필수 견본 누락 거부
     const requestedCodes = new Set(requested.map((item) => item.sampleCode));
     const missing = candidates
