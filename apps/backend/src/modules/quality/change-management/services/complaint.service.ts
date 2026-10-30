@@ -71,6 +71,45 @@ export class ComplaintService {
     }
   }
 
+  /** 건수 조회 결과(첫 칸)를 숫자로 */
+  private async count(sql: string, params: unknown[]): Promise<number> {
+    const rows: Array<{ cnt: number | string }> = await this.complaintRepo.manager.query(sql, params);
+    return Number(rows[0]?.cnt ?? 0);
+  }
+
+  /** 고객(거래처)·품목이 마스터에 있는지, 유형·긴급도가 공통코드에 있는지 확인한다(값이 있을 때만) */
+  private async assertCodes(
+    company: string,
+    plant: string,
+    values: { customerCode?: string | null; itemCode?: string | null; complaintType?: string | null; urgency?: string | null },
+  ): Promise<void> {
+    if (values.customerCode) {
+      const cnt = await this.count(
+        'SELECT COUNT(*) AS "cnt" FROM PARTNER_MASTERS WHERE PARTNER_CODE = :1 AND COMPANY = :2 AND PLANT_CD = :3',
+        [values.customerCode, company, plant],
+      );
+      if (cnt === 0) throw new NotFoundException(`고객(거래처)을 찾을 수 없습니다: ${values.customerCode}`);
+    }
+    if (values.itemCode) {
+      const cnt = await this.count(
+        'SELECT COUNT(*) AS "cnt" FROM ITEM_MASTERS WHERE ITEM_CODE = :1 AND COMPANY = :2 AND PLANT_CD = :3',
+        [values.itemCode, company, plant],
+      );
+      if (cnt === 0) throw new NotFoundException(`품목을 찾을 수 없습니다: ${values.itemCode}`);
+    }
+    for (const [group, code, label] of [
+      ['COMPLAINT_TYPE', values.complaintType, '클레임 유형'],
+      ['COMPLAINT_URGENCY', values.urgency, '긴급도'],
+    ] as const) {
+      if (!code) continue;
+      const cnt = await this.count(
+        `SELECT COUNT(*) AS "cnt" FROM COM_CODES WHERE GROUP_CODE = :1 AND DETAIL_CODE = :2 AND USE_YN = 'Y' AND COMPANY = :3 AND PLANT_CD = :4`,
+        [group, code, company, plant],
+      );
+      if (cnt === 0) throw new BadRequestException(`${label} 값이 공통코드(${group})에 없습니다: ${code}`);
+    }
+  }
+
   // =============================================
   // 클레임번호 자동채번
   // =============================================
@@ -152,6 +191,12 @@ export class ComplaintService {
     plant: string,
     userId: string,
   ) {
+    await this.assertCodes(company, plant, {
+      customerCode: dto.customerCode,
+      itemCode: dto.itemCode,
+      complaintType: dto.complaintType,
+      urgency: dto.urgency,
+    });
     const complaintNo = await this.generateComplaintNo();
     const entity = this.complaintRepo.create({
       complaintNo,
@@ -185,16 +230,23 @@ export class ComplaintService {
     if (item.status !== 'RECEIVED') {
       throw new BadRequestException('접수 상태에서만 수정할 수 있습니다.');
     }
+    await this.assertCodes(item.company, item.plant, {
+      customerCode: dto.customerCode,
+      itemCode: dto.itemCode,
+      complaintType: dto.complaintType,
+      urgency: dto.urgency,
+    });
+    // 비울 수 없는 칸(고객·접수일·불량 수량·유형·긴급도)에 null 이 오면 그대로 둔다(저장 시 NOT NULL 오류 500)
     const updateData: Partial<CustomerComplaint> = {
-      ...(dto.customerCode !== undefined ? { customerCode: dto.customerCode } : {}),
+      ...(dto.customerCode != null ? { customerCode: dto.customerCode } : {}),
       ...(dto.customerName !== undefined ? { customerName: dto.customerName } : {}),
-      ...(dto.complaintDate !== undefined ? { complaintDate: parseDateStart(dto.complaintDate)! } : {}),
+      ...(dto.complaintDate != null ? { complaintDate: parseDateStart(dto.complaintDate)! } : {}),
       ...(dto.itemCode !== undefined ? { itemCode: dto.itemCode } : {}),
       ...(dto.lotNo !== undefined ? { lotNo: dto.lotNo } : {}),
-      ...(dto.defectQty !== undefined ? { defectQty: dto.defectQty } : {}),
-      ...(dto.complaintType !== undefined ? { complaintType: dto.complaintType } : {}),
+      ...(dto.defectQty != null ? { defectQty: dto.defectQty } : {}),
+      ...(dto.complaintType != null ? { complaintType: dto.complaintType } : {}),
       ...(dto.description !== undefined ? { description: dto.description } : {}),
-      ...(dto.urgency !== undefined ? { urgency: dto.urgency } : {}),
+      ...(dto.urgency != null ? { urgency: dto.urgency } : {}),
       ...(dto.responsibleCode !== undefined ? { responsibleCode: dto.responsibleCode } : {}),
       ...(dto.costAmount !== undefined ? { costAmount: dto.costAmount } : {}),
     };
@@ -285,6 +337,17 @@ export class ComplaintService {
    */
   async linkCapa(complaintNo: string, dto: LinkCapaDto, userId: string, company?: string, plant?: string) {
     const item = await this.findById(complaintNo, company, plant);
+    // 아무 문자열이나 저장하고 번호가 빠져도 성공하던 것 — CAPA 번호가 있고 같은 회사·사업장에 실제로 있어야 한다
+    if (!dto.capaId?.trim()) {
+      throw new BadRequestException('연계할 CAPA 번호가 없습니다.');
+    }
+    const capaCount = await this.count(
+      'SELECT COUNT(*) AS "cnt" FROM CAPA_REQUESTS WHERE CAPA_NO = :1 AND COMPANY = :2 AND PLANT_CD = :3',
+      [dto.capaId, item.company, item.plant],
+    );
+    if (capaCount === 0) {
+      throw new NotFoundException(`시정조치(CAPA)를 찾을 수 없습니다: ${dto.capaId}`);
+    }
     item.capaId = dto.capaId;
     item.updatedBy = userId;
     this.logger.log(`고객클레임 CAPA 연계: ${item.complaintNo} → CAPA#${dto.capaId}`);

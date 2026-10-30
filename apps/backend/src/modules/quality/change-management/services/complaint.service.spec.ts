@@ -31,6 +31,13 @@ describe('ComplaintService', () => {
   });
   afterEach(() => jest.clearAllMocks());
 
+  /** 마스터·공통코드·CAPA 조회 모의: 쿼리마다 같은 건수를 돌려준다 */
+  const stubQuery = (cnt: number) => {
+    const query = jest.fn().mockResolvedValue([{ cnt }]);
+    (mockRepo as any).manager = { query };
+    return query;
+  };
+
   describe('findById', () => {
     it('should return complaint', async () => {
       mockRepo.findOne.mockResolvedValue({ complaintNo: 'CC-001' } as any);
@@ -138,6 +145,49 @@ describe('ComplaintService', () => {
       mockRepo.findOne.mockResolvedValue({ complaintNo: 'CC-001', status: 'RESOLVED', company: 'OTHER', plant: 'P01' } as any);
       await expect(target.close('CC-001', 'user', 'CO', 'P01')).rejects.toThrow(BadRequestException);
       expect(mockRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('결함 수정', () => {
+    const received = (over: Record<string, unknown> = {}) => ({ complaintNo: 'CC-001', status: 'RECEIVED', company: 'CO', plant: 'P01', customerCode: 'C1', complaintType: 'QUALITY', urgency: 'MEDIUM', defectQty: 3, ...over }) as any;
+
+    it('등록은 거래처·품목 마스터와 유형·긴급도 공통코드를 확인한다', async () => {
+      const query = stubQuery(0);
+      mockNumbering.next.mockResolvedValue('CC-1');
+      await expect(target.create({ customerCode: 'NOCUST', complaintDate: '2026-12-01', complaintType: 'QUALITY' } as any, 'CO', 'P01', 'user')).rejects.toThrow('고객(거래처)을 찾을 수 없습니다: NOCUST');
+      expect(query.mock.calls[0][0]).toContain('PARTNER_MASTERS');
+
+      query.mockResolvedValueOnce([{ cnt: 1 }]).mockResolvedValueOnce([{ cnt: 0 }]);
+      await expect(target.create({ customerCode: 'C1', itemCode: 'NOITEM', complaintDate: '2026-12-01', complaintType: 'QUALITY' } as any, 'CO', 'P01', 'user')).rejects.toThrow('품목을 찾을 수 없습니다: NOITEM');
+
+      query.mockResolvedValueOnce([{ cnt: 1 }]).mockResolvedValueOnce([{ cnt: 0 }]);
+      await expect(target.create({ customerCode: 'C1', complaintDate: '2026-12-01', complaintType: 'XYZ' } as any, 'CO', 'P01', 'user')).rejects.toThrow('공통코드(COMPLAINT_TYPE)');
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('수정은 값이 오면 마스터를 확인하고, 비울 수 없는 칸의 null 은 그대로 둔다', async () => {
+      const query = stubQuery(1);
+      mockRepo.findOne.mockResolvedValue(received());
+      mockRepo.save.mockImplementation(async (v: any) => v);
+      const r = await target.update('CC-001', { customerCode: null, complaintDate: null, defectQty: null, complaintType: null, urgency: null, description: '메모' } as any, 'user');
+      expect(r).toMatchObject({ customerCode: 'C1', complaintType: 'QUALITY', urgency: 'MEDIUM', defectQty: 3, description: '메모' });
+      expect(query).not.toHaveBeenCalled();
+
+      query.mockResolvedValue([{ cnt: 0 }]);
+      await expect(target.update('CC-001', { customerCode: 'NOCUST' } as any, 'user')).rejects.toThrow(NotFoundException);
+    });
+
+    it('CAPA 연계는 번호가 있고 같은 회사·사업장에 실제로 있어야 한다', async () => {
+      const query = stubQuery(0);
+      mockRepo.findOne.mockResolvedValue(received({ status: 'CLOSED' }));
+      mockRepo.save.mockImplementation(async (v: any) => v);
+      await expect(target.linkCapa('CC-001', {} as any, 'user')).rejects.toThrow('CAPA 번호가 없습니다');
+      await expect(target.linkCapa('CC-001', { capaId: 'CAPA-X' } as any, 'user')).rejects.toThrow(NotFoundException);
+      expect(query).toHaveBeenCalledWith(expect.stringContaining('CAPA_REQUESTS'), ['CAPA-X', 'CO', 'P01']);
+
+      query.mockResolvedValue([{ cnt: 1 }]);
+      const r = await target.linkCapa('CC-001', { capaId: 'CAPA-1' } as any, 'user');
+      expect(r.capaId).toBe('CAPA-1');
     });
   });
 
