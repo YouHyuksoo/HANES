@@ -23,6 +23,7 @@ import {
   Injectable,
   Logger,
   BadRequestException,
+  ConflictException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -160,6 +161,37 @@ export class SpcService {
     return result[0].nextSeq;
   }
 
+  /** 품목·공정이 마스터에 있는지 확인한다 */
+  private async assertMasters(itemCode: string, processCode: string, company?: string, plant?: string) {
+    const item = await this.itemRepo.count({ where: { itemCode, ...this.tenantWhere(company, plant) } });
+    if (item === 0) throw new NotFoundException(`품목을 찾을 수 없습니다: ${itemCode}`);
+    const process = await this.processRepo.count({ where: { processCode, ...this.tenantWhere(company, plant) } });
+    if (process === 0) throw new NotFoundException(`공정을 찾을 수 없습니다: ${processCode}`);
+  }
+
+  /** 같은 품목·공정·특성명의 다른 활성 관리도가 있으면 409 (계측기 수신이 이 세 값으로 관리도를 찾는다) */
+  private async assertNoActiveDuplicate(
+    itemCode: string,
+    processCode: string,
+    characteristicName: string,
+    company?: string,
+    plant?: string,
+    selfChartNo?: string,
+  ) {
+    const found = await this.chartRepo.find({
+      where: { itemCode, processCode, characteristicName, status: 'ACTIVE', ...this.tenantWhere(company, plant) },
+      select: ['chartNo'],
+    });
+    const other = found.find((c) => c.chartNo !== selfChartNo);
+    if (other) throw new ConflictException(`같은 품목·공정·특성의 활성 관리도가 이미 있습니다: ${other.chartNo}`);
+  }
+
+  private assertSpecLimits(usl?: number | null, lsl?: number | null) {
+    if (usl != null && lsl != null && Number(lsl) > Number(usl)) {
+      throw new BadRequestException(`LSL 이 USL 보다 클 수 없습니다. (LSL=${lsl}, USL=${usl})`);
+    }
+  }
+
   // =============================================
   // 관리도 번호 자동채번
   // =============================================
@@ -227,6 +259,9 @@ export class SpcService {
     plant: string,
     userId: string,
   ) {
+    this.assertSpecLimits(dto.usl, dto.lsl);
+    await this.assertMasters(dto.itemCode, dto.processCode, company, plant);
+    await this.assertNoActiveDuplicate(dto.itemCode, dto.processCode, dto.characteristicName, company, plant);
     const chartNo = await this.generateChartNo();
     const entity = this.chartRepo.create({
       chartNo,
@@ -261,18 +296,41 @@ export class SpcService {
     plant?: string,
   ) {
     const item = await this.findChartById(chartNo, company, plant);
+    // 비울 수 없는 칸(품목·공정·특성명·유형·크기·출처·상태)에 null 이 오면 그대로 둔다(저장 시 NOT NULL 오류 500)
+    const nextItem = dto.itemCode ?? item.itemCode;
+    const nextProcess = dto.processCode ?? item.processCode;
+    const nextName = dto.characteristicName ?? item.characteristicName;
+    const nextStatus = dto.status ?? item.status;
+    const nextUsl = dto.usl !== undefined ? dto.usl : item.usl;
+    const nextLsl = dto.lsl !== undefined ? dto.lsl : item.lsl;
+    this.assertSpecLimits(nextUsl, nextLsl);
+    if (nextItem !== item.itemCode || nextProcess !== item.processCode) {
+      await this.assertMasters(nextItem, nextProcess, item.company, item.plant);
+    }
+    if (dto.subgroupSize != null && dto.subgroupSize !== item.subgroupSize) {
+      const dataCount = await this.dataRepo.count({ where: { chartId: item.chartNo, ...this.tenantWhere(item.company, item.plant) } });
+      if (dataCount > 0) {
+        throw new BadRequestException(`측정 데이터가 ${dataCount}건 있는 관리도의 서브그룹 크기는 바꿀 수 없습니다.`);
+      }
+    }
+    if (
+      nextStatus === 'ACTIVE' &&
+      (nextItem !== item.itemCode || nextProcess !== item.processCode || nextName !== item.characteristicName || item.status !== 'ACTIVE')
+    ) {
+      await this.assertNoActiveDuplicate(nextItem, nextProcess, nextName, item.company, item.plant, item.chartNo);
+    }
     const updateData: Partial<SpcChart> = {
-      ...(dto.itemCode !== undefined ? { itemCode: dto.itemCode } : {}),
-      ...(dto.processCode !== undefined ? { processCode: dto.processCode } : {}),
-      ...(dto.characteristicName !== undefined ? { characteristicName: dto.characteristicName } : {}),
-      ...(dto.chartType !== undefined ? { chartType: dto.chartType } : {}),
-      ...(dto.subgroupSize !== undefined ? { subgroupSize: dto.subgroupSize } : {}),
+      ...(dto.itemCode != null ? { itemCode: dto.itemCode } : {}),
+      ...(dto.processCode != null ? { processCode: dto.processCode } : {}),
+      ...(dto.characteristicName != null ? { characteristicName: dto.characteristicName } : {}),
+      ...(dto.chartType != null ? { chartType: dto.chartType } : {}),
+      ...(dto.subgroupSize != null ? { subgroupSize: dto.subgroupSize } : {}),
       ...(dto.usl !== undefined ? { usl: dto.usl } : {}),
       ...(dto.lsl !== undefined ? { lsl: dto.lsl } : {}),
       ...(dto.target !== undefined ? { target: dto.target } : {}),
-      ...(dto.dataSource !== undefined ? { dataSource: dto.dataSource } : {}),
+      ...(dto.dataSource != null ? { dataSource: dto.dataSource } : {}),
       ...(dto.sourceInspectItem !== undefined ? { sourceInspectItem: dto.sourceInspectItem } : {}),
-      ...(dto.status !== undefined ? { status: dto.status } : {}),
+      ...(dto.status != null ? { status: dto.status } : {}),
     };
     Object.assign(item, updateData, { updatedBy: userId });
     return this.chartRepo.save(item);
@@ -283,7 +341,11 @@ export class SpcService {
    */
   async deleteChart(chartNo: string, company?: string, plant?: string) {
     const item = await this.findChartById(chartNo, company, plant);
-    await this.chartRepo.remove(item);
+    // 측정 데이터가 고아로 남지 않도록 함께 지운다
+    await this.dataSource.transaction(async (manager) => {
+      await manager.delete(SpcData, { chartId: item.chartNo, ...this.tenantWhere(item.company, item.plant) });
+      await manager.remove(item);
+    });
   }
 
   // =============================================
@@ -308,6 +370,15 @@ export class SpcService {
       );
     }
 
+    const duplicated = await this.dataRepo.count({
+      where: { chartId: dto.chartId, subgroupNo: dto.subgroupNo, ...this.tenantWhere(company, plant) },
+    });
+    if (duplicated > 0) {
+      throw new ConflictException(`이미 입력된 서브그룹 번호입니다: ${dto.subgroupNo}`);
+    }
+    if (vals.some((v) => !Number.isFinite(v) || Math.abs(v) >= 100000000)) {
+      throw new BadRequestException('측정값이 숫자가 아니거나 너무 큽니다(절대값 1억 미만).');
+    }
     const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
     const range = Math.max(...vals) - Math.min(...vals);
     const variance = vals.reduce((sum, v) => sum + (v - mean) ** 2, 0) / (vals.length - 1);
@@ -750,8 +821,9 @@ export class SpcService {
 
     if (company) qb.andWhere('d.company = :company', { company });
     if (plant) qb.andWhere('d.plant = :plant', { plant });
-    if (from) qb.andWhere("d.sampleDate >= TO_DATE(:from, 'YYYY-MM-DD')", { from });
-    if (to) qb.andWhere("d.sampleDate < TO_DATE(:to, 'YYYY-MM-DD') + INTERVAL '1' DAY", { to });
+    // ISO 문자열(2026-11-06T00:00:00.000Z)이 와도 앞 10자리 날짜만 쓴다
+    if (from) qb.andWhere("d.sampleDate >= TO_DATE(:from, 'YYYY-MM-DD')", { from: from.slice(0, 10) });
+    if (to) qb.andWhere("d.sampleDate < TO_DATE(:to, 'YYYY-MM-DD') + INTERVAL '1' DAY", { to: to.slice(0, 10) });
 
     qb.orderBy('d.subgroupNo', 'ASC');
     const data = await qb.getMany();

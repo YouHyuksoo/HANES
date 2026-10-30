@@ -67,6 +67,26 @@ describe('SpcService', () => {
     });
   });
 
+  describe('입력 확인', () => {
+    it('같은 서브그룹 번호를 두 번 입력하면 409', async () => {
+      mockChartRepo.findOne.mockResolvedValue({ chartNo: 'SPC-001', subgroupSize: 2 } as any);
+      mockDataRepo.count.mockResolvedValue(1);
+      await expect(target.createData({ chartId: 'SPC-001', subgroupNo: 3, values: [1, 2], sampleDate: '2026-01-01' } as any, 'CO', 'P01', 'user'))
+        .rejects.toThrow('이미 입력된 서브그룹 번호입니다: 3');
+      expect(mockDataRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('LSL 이 USL 보다 크면 등록을 400 으로 막고, 수정에서 비울 수 없는 칸의 null 은 그대로 둔다', async () => {
+      await expect(target.createChart({ itemCode: 'I', processCode: 'P', characteristicName: 'C', chartType: 'XBAR_R', usl: 1, lsl: 5 } as any, 'CO', 'P01', 'user'))
+        .rejects.toThrow('LSL 이 USL 보다 클 수 없습니다');
+      const chart = { chartNo: 'SPC-001', itemCode: 'I', processCode: 'P', characteristicName: 'Old', chartType: 'XBAR_R', subgroupSize: 5, status: 'ACTIVE', company: 'CO', plant: 'P01' } as unknown as SpcChart;
+      mockChartRepo.findOne.mockResolvedValue(chart);
+      mockChartRepo.save.mockImplementation(async (value) => value as SpcChart);
+      const result = await target.updateChart('SPC-001', { itemCode: null, chartType: null, subgroupSize: null, status: null, usl: 9 } as any, 'user', 'CO', 'P01');
+      expect(result).toEqual(expect.objectContaining({ itemCode: 'I', chartType: 'XBAR_R', subgroupSize: 5, status: 'ACTIVE', usl: 9 }));
+    });
+  });
+
   describe('updateChart', () => {
     it('should update only DTO fields and keep tenant/chart key columns from the matched chart', async () => {
       const chart = { chartNo: 'SPC-001', characteristicName: 'Old', company: 'CO', plant: 'P01' } as unknown as SpcChart;
