@@ -110,7 +110,7 @@ export class ProductionBoardService {
       // 지시별 마지막 실적 시각. 엔티티 별칭 jo 는 인용 표기("jo"."ORDER_NO")로 써야
       // TypeORM 치환기와 무관하게 Oracle 이 대소문자 별칭을 올바로 해석한다.
       .addSelect(
-        '(SELECT MAX(pr.CREATED_AT) FROM PROD_RESULTS pr WHERE pr.ORDER_NO = "jo"."ORDER_NO")',
+        '(SELECT MAX(pr.CREATED_AT) FROM PROD_RESULTS pr WHERE pr.ORDER_NO = "jo"."ORDER_NO" AND pr.COMPANY = "jo"."COMPANY" AND pr.PLANT_CD = "jo"."PLANT_CD")',
         'lastResultAt',
       )
       .where('jo.planDate >= TRUNC(SYSDATE)')
