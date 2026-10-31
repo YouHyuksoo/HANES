@@ -94,6 +94,28 @@ export class ProductionSpecificationService {
     return `${code}-1`;
   }
 
+  private circuitFields(circuit: HarnessCircuitSpecDto) {
+    return {
+      circuitNo: circuit.circuitNo,
+      wireSpec: this.normalizeText(circuit.wireSpec),
+      wireItemCode: this.normalizeText(circuit.wireItemCode),
+      wireSize: this.normalizeText(circuit.wireSize),
+      colorCode: this.normalizeText(circuit.colorCode),
+      colorName: this.normalizeText(circuit.colorName),
+      lengthMm: circuit.lengthMm ?? null,
+      stripA: circuit.stripA ?? null,
+      stripB: circuit.stripB ?? null,
+      endAHousing: this.normalizeText(circuit.endAHousing),
+      endATerminal: this.normalizeText(circuit.endATerminal),
+      connectionSymbol: this.normalizeText(circuit.connectionSymbol),
+      endBTerminal: this.normalizeText(circuit.endBTerminal),
+      endBHousing: this.normalizeText(circuit.endBHousing),
+      tubeSpec: this.normalizeText(circuit.tubeSpec),
+      subNo: this.normalizeText(circuit.subNo),
+      remark: this.normalizeText(circuit.remark),
+    };
+  }
+
   private async saveCircuitRows(
     manager: EntityManager,
     revisionId: number,
@@ -108,29 +130,59 @@ export class ProductionSpecificationService {
         circuitId,
         revisionId,
         sortOrder: index + 1,
-        circuitNo: circuit.circuitNo,
-        wireSpec: this.normalizeText(circuit.wireSpec),
-        wireItemCode: this.normalizeText(circuit.wireItemCode),
-        wireSize: this.normalizeText(circuit.wireSize),
-        colorCode: this.normalizeText(circuit.colorCode),
-        colorName: this.normalizeText(circuit.colorName),
-        lengthMm: circuit.lengthMm ?? null,
-        stripA: circuit.stripA ?? null,
-        stripB: circuit.stripB ?? null,
-        endAHousing: this.normalizeText(circuit.endAHousing),
-        endATerminal: this.normalizeText(circuit.endATerminal),
-        connectionSymbol: this.normalizeText(circuit.connectionSymbol),
-        endBTerminal: this.normalizeText(circuit.endBTerminal),
-        endBHousing: this.normalizeText(circuit.endBHousing),
-        tubeSpec: this.normalizeText(circuit.tubeSpec),
-        subNo: this.normalizeText(circuit.subNo),
-        remark: this.normalizeText(circuit.remark),
+        ...this.circuitFields(circuit),
         company,
         plant,
         createdBy: userId ?? null,
         updatedBy: userId ?? null,
       });
       await manager.save(HarnessCircuitSpec, entity);
+    }
+  }
+
+  /**
+   * 회로 번호 기준으로 맞춘다: 같은 번호는 그 행을 고쳐 회로 ID 를 유지하고(공정 자재 ROUTING_MATERIALS.CIRCUIT_ID 연결이 끊기지 않게),
+   * 새 번호는 추가, 빠진 번호는 지운다. 전부 지우고 새로 넣으면 공정 자재가 가리키는 회로가 있을 때 FK 때문에 저장이 항상 막힌다.
+   */
+  private async syncCircuitRows(
+    manager: EntityManager,
+    revisionId: number,
+    circuits: HarnessCircuitSpecDto[],
+    company: string,
+    plant: string,
+    userId?: string,
+  ) {
+    const incomingNos = circuits.map((circuit) => circuit.circuitNo);
+    if (new Set(incomingNos).size !== incomingNos.length) {
+      throw new ConflictException('같은 회로 번호가 두 번 있습니다.');
+    }
+    const existing = await manager.find(HarnessCircuitSpec, { where: { revisionId, company, plant } });
+    const byNo = new Map(existing.map((row) => [row.circuitNo, row]));
+    const removed = existing.filter((row) => !incomingNos.includes(row.circuitNo));
+    if (removed.length > 0) {
+      await manager.delete(HarnessCircuitSpec, { circuitId: In(removed.map((row) => row.circuitId)), company, plant });
+    }
+    for (const [index, circuit] of circuits.entries()) {
+      const found = byNo.get(circuit.circuitNo);
+      if (found) {
+        await manager.update(HarnessCircuitSpec, { circuitId: found.circuitId, company, plant }, {
+          sortOrder: index + 1,
+          ...this.circuitFields(circuit),
+          updatedBy: userId ?? null,
+        });
+      } else {
+        const circuitId = await this.nextVal(manager, 'SEQ_HARNESS_CIRCUIT_ID');
+        await manager.save(HarnessCircuitSpec, manager.create(HarnessCircuitSpec, {
+          circuitId,
+          revisionId,
+          sortOrder: index + 1,
+          ...this.circuitFields(circuit),
+          company,
+          plant,
+          createdBy: userId ?? null,
+          updatedBy: userId ?? null,
+        }));
+      }
     }
   }
 
@@ -151,7 +203,7 @@ export class ProductionSpecificationService {
       qb.andWhere(
         `EXISTS (
           SELECT 1 FROM HARNESS_DRAWING_REVISIONS r
-          WHERE r.DRAWING_ID = m.DRAWING_ID
+          WHERE r.DRAWING_ID = m.drawingId
             AND r.STATUS = :status
             ${company ? 'AND r.COMPANY = :company' : ''}
             ${plant ? 'AND r.PLANT_CD = :plant' : ''}
@@ -320,8 +372,7 @@ export class ProductionSpecificationService {
         updatedBy: userId ?? null,
       });
       if (dto.circuits !== undefined) {
-        await manager.delete(HarnessCircuitSpec, { revisionId, company, plant });
-        await this.saveCircuitRows(manager, revisionId, dto.circuits, company, plant, userId);
+        await this.syncCircuitRows(manager, revisionId, dto.circuits, company, plant, userId);
       }
     });
 
@@ -356,6 +407,16 @@ export class ProductionSpecificationService {
       order: { sortOrder: 'ASC' },
     });
 
+    // 이미 쓰는 코드(예: 오래된 A 를 개정하는데 B 가 이미 있음)면 비어 있는 다음 코드까지 올린다 — 안 올리면 UNIQUE 위반으로 개정이 막힌다
+    const usedCodes = new Set((await this.revisionRepo.find({
+      where: { drawingId: source.drawingId, ...this.tenantWhere(company, plant) },
+      select: ['revisionCode'],
+    })).map((row) => row.revisionCode));
+    let nextCode = this.nextRevisionCode(source.revisionCode);
+    for (let guard = 0; usedCodes.has(nextCode) && guard < 100; guard += 1) {
+      nextCode = this.nextRevisionCode(nextCode);
+    }
+
     let newRevisionId = 0;
     await this.tx.run(async (queryRunner) => {
       const manager = queryRunner.manager;
@@ -363,7 +424,7 @@ export class ProductionSpecificationService {
       await manager.save(HarnessDrawingRevision, manager.create(HarnessDrawingRevision, {
         revisionId: newRevisionId,
         drawingId: source.drawingId,
-        revisionCode: this.nextRevisionCode(source.revisionCode),
+        revisionCode: nextCode,
         status: 'DRAFT',
         effectiveFrom: null,
         changeReason: this.normalizeText(dto.changeReason),
