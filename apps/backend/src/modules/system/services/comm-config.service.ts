@@ -158,6 +158,7 @@ export class CommConfigService {
       stopBits: dto.stopBits,
       parity: dto.parity,
       flowControl: dto.flowControl,
+      lineEnding: dto.lineEnding,
       extraConfig: dto.extraConfig ? JSON.stringify(dto.extraConfig) : undefined,
       useYn: dto.useYn ?? 'Y',
       company,
@@ -198,6 +199,7 @@ export class CommConfigService {
     if (dto.stopBits !== undefined) updateData.stopBits = dto.stopBits;
     if (dto.parity !== undefined) updateData.parity = dto.parity;
     if (dto.flowControl !== undefined) updateData.flowControl = dto.flowControl;
+    if (dto.lineEnding !== undefined) updateData.lineEnding = dto.lineEnding;
     if (dto.extraConfig !== undefined) updateData.extraConfig = JSON.stringify(dto.extraConfig);
     if (dto.useYn !== undefined) updateData.useYn = dto.useYn;
 
@@ -205,7 +207,8 @@ export class CommConfigService {
       { configName: id, ...this.tenantWhere(company, plant) },
       updateData,
     );
-    return this.findById(id, company, plant);
+    // 이름을 바꿨다면 새 이름으로 다시 읽는다(옛 이름으로 읽으면 항상 404)
+    return this.findById(dto.configName ?? id, company, plant);
   }
 
   /** 삭제 (소프트 삭제) */

@@ -103,7 +103,7 @@ export class PdaRoleService {
       await queryRunner.manager.save(role);
 
       if (dto.menuCodes?.length) {
-        const menus = dto.menuCodes.map((menuCode) =>
+        const menus = [...new Set(dto.menuCodes)].map((menuCode) =>
           queryRunner.manager.create(PdaRoleMenu, {
             pdaRoleCode: dto.code,
             menuCode,
@@ -115,7 +115,8 @@ export class PdaRoleService {
         await queryRunner.manager.save(menus);
       }
 
-      return this.roleRepo.findOne({
+      // 트랜잭션이 아직 끝나기 전이라 다른 연결(roleRepo)로 읽으면 방금 만든 역할이 안 보여 null 이 돌아온다 — 같은 연결로 읽는다
+      return queryRunner.manager.findOne(PdaRole, {
         where: { code: dto.code, ...tenant },
         relations: ['menus'],
       });
@@ -142,7 +143,7 @@ export class PdaRoleService {
         await queryRunner.manager.delete(PdaRoleMenu, { pdaRoleCode: code, ...tenant });
 
         if (dto.menuCodes.length > 0) {
-          const menus = dto.menuCodes.map((menuCode) =>
+          const menus = [...new Set(dto.menuCodes)].map((menuCode) =>
             queryRunner.manager.create(PdaRoleMenu, {
               pdaRoleCode: code,
               menuCode,
@@ -155,7 +156,7 @@ export class PdaRoleService {
         }
       }
 
-      return this.roleRepo.findOne({
+      return queryRunner.manager.findOne(PdaRole, {
         where: { code, ...tenant },
         relations: ['menus'],
       });
