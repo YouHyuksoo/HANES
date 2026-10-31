@@ -6257,6 +6257,7 @@
       "submit": "제출",
       "review": "검토",
       "approve": "승인",
+      "finalApprove": "최종 승인",
       "start": "시행시작",
       "complete": "완료",
       "create": "변경요청등록",
@@ -6612,6 +6613,8 @@
       "description": "설명",
       "evidence": "증거",
       "linkCapa": "CAPA연결",
+      "selectCapa": "연결할 CAPA 선택",
+      "overallResultPick": "종합 결과 선택",
       "dueDate": "마감일",
       "remarks": "비고"
     },

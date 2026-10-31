@@ -5719,6 +5719,7 @@
       "submit": "Submit",
       "review": "Review",
       "approve": "Approve",
+      "finalApprove": "Final approval",
       "start": "Start",
       "complete": "Complete",
       "create": "New Change Request",
@@ -6074,6 +6075,8 @@
       "description": "Description",
       "evidence": "Evidence",
       "linkCapa": "Link CAPA",
+      "selectCapa": "Select CAPA to link",
+      "overallResultPick": "Select overall result",
       "dueDate": "Due Date",
       "remarks": "Remarks"
     },

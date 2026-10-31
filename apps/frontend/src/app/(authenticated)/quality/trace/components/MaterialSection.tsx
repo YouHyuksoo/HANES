@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import type { MaterialTrace } from "../types";
-import { formatDateOnly } from "@/utils/date";
+import { formatDateOnly, formatDateTimeLocal } from "@/utils/date";
 
 export default function MaterialSection({ materials, title }: { materials: MaterialTrace[]; title?: string }) {
   const { t } = useTranslation();
@@ -126,5 +126,5 @@ function NestedRow({ label, value }: { label: string; value: string }) {
 
 function fmtDate(s: string | null): string {
   if (!s) return "-";
-  return s.length >= 10 ? s.slice(0, 19).replace("T", " ") : s;
+  return s.length >= 10 ? formatDateTimeLocal(s, s) : s;
 }

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import type { SemiProductTrace } from "../types";
 import MaterialSection from "./MaterialSection";
+import { formatDateTimeLocal } from "@/utils/date";
 
 const SG_STATUS_CLS: Record<string, string> = {
   IN_STOCK:  "text-blue-600 border-blue-400",
@@ -68,7 +69,7 @@ export default function SemiProductSection({ semiProducts }: { semiProducts: Sem
                     {sp.processHistory.map((s, i) => (
                       <li key={`${i}-${s.timestamp}-${s.process}`} className="flex gap-2 text-text-muted">
                         <span className="font-mono">
-                          {s.timestamp.slice(0, 19).replace("T", " ")}
+                          {formatDateTimeLocal(s.timestamp)}
                         </span>
                         <span className="text-text">{s.processName}</span>
                         <span>

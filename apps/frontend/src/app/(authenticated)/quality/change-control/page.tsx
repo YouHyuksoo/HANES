@@ -132,6 +132,14 @@ export default function ChangeControlPage() {
             </Button>
           </>
         )}
+        {s === "APPROVED" && !selectedRow.approvedAt && (
+          <Button size="sm" variant="secondary" onClick={() => setConfirmAction({
+            label: t("quality.change.finalApprove"),
+            action: () => patchAction(selectedRow.changeNo, "approve", { action: "APPROVE" }),
+          })}>
+            <ShieldCheck className="w-4 h-4 mr-1" />{t("quality.change.finalApprove")}
+          </Button>
+        )}
         {s === "APPROVED" && (
           <Button size="sm" onClick={() => setConfirmAction({
             label: t("quality.change.start"),

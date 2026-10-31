@@ -5716,6 +5716,7 @@
       "submit": "提交",
       "review": "审核",
       "approve": "批准",
+      "finalApprove": "最终批准",
       "start": "开始实施",
       "complete": "完成",
       "create": "新建变更请求",
@@ -6071,6 +6072,8 @@
       "description": "描述",
       "evidence": "证据",
       "linkCapa": "关联CAPA",
+      "selectCapa": "选择要关联的CAPA",
+      "overallResultPick": "选择综合结果",
       "dueDate": "截止日期",
       "remarks": "备注"
     },

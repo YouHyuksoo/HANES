@@ -44,6 +44,19 @@ export function formatDateOnly(value?: string | Date | null, fallback = ''): str
   return getTodayLocal(value);
 }
 
+/**
+ * 서버가 내려준 시각(ISO)을 'YYYY-MM-DD HH:mm' 로 표시한다. 특정 국가 시간대를 박지 않고 사용 중인 PC(=서버와 같은 공장 시계)의 시각으로 보여 준다.
+ * ISO 문자열을 잘라 쓰면 UTC 시각이 그대로 보여 9시간 일찍 나오므로 시각 표시에는 이 함수를 쓴다. 날짜만 있는 값('YYYY-MM-DD')은 그대로 둔다.
+ */
+export function formatDateTimeLocal(value?: string | Date | null, fallback = '-'): string {
+  if (!value) return fallback;
+  if (typeof value === 'string' && DATE_ONLY_RE.test(value.trim())) return value.trim();
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${getTodayLocal(date)} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 /** 'YYYY-MM-DD' 시작/종료 범위 */
 export interface DateRange {
   from: string;

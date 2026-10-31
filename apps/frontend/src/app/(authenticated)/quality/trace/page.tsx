@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { History, Search } from "lucide-react";
 import { Card, CardHeader, CardContent, Button } from "@/components/ui";
 import api from "@/services/api";
+import { formatDateTimeLocal } from "@/utils/date";
 import type {
   ProductTraceabilityDto,
   TraceCandidate,
@@ -403,7 +404,7 @@ function TraceDetail({ data }: { data: ProductTraceabilityDto }) {
               {data.processHistory.map((s, i) => (
                 <li key={`${i}-${s.timestamp}-${s.process}`} className="flex items-center gap-3 text-sm py-1.5">
                   <span className="font-mono text-xs text-text-muted shrink-0">
-                    {s.timestamp.slice(5, 16).replace("T", " ")}
+                    {formatDateTimeLocal(s.timestamp).slice(5)}
                   </span>
                   <span className="font-medium text-text">{s.processName}</span>
                   <span className="text-xs text-text-muted truncate">

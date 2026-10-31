@@ -17,7 +17,7 @@ import {
   Plus, RefreshCw, ClipboardCheck,
   CheckCircle, Lock, Eye, Pencil, Trash2, Undo2, X,
 } from "lucide-react";
-import { Card, CardContent, Button, ConfirmModal } from "@/components/ui";
+import { Card, CardContent, Button, ConfirmModal, Modal } from "@/components/ui";
 import DataGrid from "@/components/data-grid/DataGrid";
 import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
@@ -58,6 +58,23 @@ export default function AuditPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  /* 심사 완료: 종합 결과(공통코드 AUDIT_RESULT)를 골라야 한다(보내지 않으면 서버가 400 으로 거절한다) */
+  const [completeOpen, setCompleteOpen] = useState(false);
+  const [overallResult, setOverallResult] = useState("");
+
+  const handleComplete = async () => {
+    if (!selectedRow || !overallResult) return;
+    try {
+      await api.patch(`/quality/audits/${selectedRow.auditNo}/complete`, { overallResult });
+      setCompleteOpen(false);
+      setOverallResult("");
+      fetchData();
+      setSelectedRow(null);
+    } catch {
+      // api 인터셉터에서 처리
+    }
+  };
 
   const handleStateChange = (endpoint: string, label: string) => {
     if (!selectedRow) return;
@@ -113,7 +130,7 @@ export default function AuditPage() {
           </Button>
         )}
         {s === "IN_PROGRESS" && (
-          <Button size="sm" onClick={() => handleStateChange("complete", t("quality.audit.complete"))}>
+          <Button size="sm" onClick={() => { setOverallResult(""); setCompleteOpen(true); }}>
             <CheckCircle className="w-4 h-4 mr-1" />{t("quality.audit.complete")}
           </Button>
         )}
@@ -220,6 +237,17 @@ export default function AuditPage() {
             </div>
           )}
         </div>
+
+        {/* 심사 완료: 종합 결과 선택 */}
+        <Modal isOpen={completeOpen} onClose={() => setCompleteOpen(false)} size="md" title={t("quality.audit.complete")}
+          footer={
+            <div className="flex justify-end gap-2">
+              <Button size="sm" variant="secondary" onClick={() => setCompleteOpen(false)}>{t("common.cancel")}</Button>
+              <Button size="sm" onClick={handleComplete} disabled={!overallResult}>{t("quality.audit.complete")}</Button>
+            </div>
+          }>
+          <ComCodeSelect groupCode="AUDIT_RESULT" labelPrefix={t("quality.audit.overallResultPick")} value={overallResult} onChange={setOverallResult} fullWidth />
+        </Modal>
 
         {/* 확인 모달 */}
         <ConfirmModal

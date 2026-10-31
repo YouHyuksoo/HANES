@@ -13,7 +13,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Link } from "lucide-react";
-import { Card, CardContent, Button, ConfirmModal, Input, ComCodeBadge } from "@/components/ui";
+import { Card, CardContent, Button, ConfirmModal, Input, ComCodeBadge, Modal, Select } from "@/components/ui";
 import { ComCodeSelect } from "@/components/shared";
 import api from "@/services/api";
 import { formatDateOnly } from "@/utils/date";
@@ -117,18 +117,33 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
     [deleteTarget, fetchFindings],
   );
 
-  /** CAPA 연결 */
-  const handleLinkCapa = useCallback(
-    async (findingAuditId: string, findingNo: number) => {
-      try {
-        await api.patch(`/quality/audit-findings/${findingAuditId}/${findingNo}/link-capa`);
-        fetchFindings();
-      } catch {
-        // api 인터셉터에서 처리
-      }
-    },
-    [fetchFindings],
-  );
+  /** CAPA 연결: 연결할 CAPA 를 고르는 모달을 연다(CAPA 번호를 보내지 않으면 서버가 400 으로 거절한다) */
+  const [linkTarget, setLinkTarget] = useState<Finding | null>(null);
+  const [capaOptions, setCapaOptions] = useState<{ value: string; label: string }[]>([]);
+  const [selectedCapa, setSelectedCapa] = useState("");
+
+  const openLinkCapa = useCallback(async (finding: Finding) => {
+    setLinkTarget(finding);
+    setSelectedCapa("");
+    try {
+      const res = await api.get("/quality/capas", { params: { limit: "500" } });
+      const rows = (res.data?.data ?? []) as { capaNo: string; title?: string }[];
+      setCapaOptions(rows.map((c) => ({ value: c.capaNo, label: `${c.capaNo} ${c.title ?? ""}`.trim() })));
+    } catch {
+      setCapaOptions([]);
+    }
+  }, []);
+
+  const handleLinkCapa = useCallback(async () => {
+    if (!linkTarget || !selectedCapa) return;
+    try {
+      await api.patch(`/quality/audit-findings/${linkTarget.auditId}/${linkTarget.findingNo}/link-capa`, { capaId: selectedCapa });
+      setLinkTarget(null);
+      fetchFindings();
+    } catch {
+      // api 인터셉터에서 처리
+    }
+  }, [linkTarget, selectedCapa, fetchFindings]);
 
   const setNewField = (key: keyof NewFinding, value: string) => {
     setNewFinding((prev) => ({ ...prev, [key]: value }));
@@ -250,7 +265,7 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
                         <Button
                           size="sm"
                           variant="secondary"
-                          onClick={() => handleLinkCapa(f.auditId, f.findingNo)}
+                          onClick={() => openLinkCapa(f)}
                           className="text-[10px] px-1.5 py-0.5 h-6"
                         >
                           <Link className="w-3 h-3 mr-0.5" />
@@ -282,6 +297,15 @@ export default function AuditFindingList({ auditId, auditNo }: Props) {
       message={`${deleteTarget?.description || ""} ${t("common.deleteMessage", { defaultValue: "을(를) 삭제하시겠습니까?" })}`}
       variant="danger"
     />
+    <Modal isOpen={!!linkTarget} onClose={() => setLinkTarget(null)} size="md" title={t("quality.audit.selectCapa")}
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button size="sm" variant="secondary" onClick={() => setLinkTarget(null)}>{t("common.cancel")}</Button>
+          <Button size="sm" onClick={handleLinkCapa} disabled={!selectedCapa}>{t("quality.audit.linkCapa")}</Button>
+        </div>
+      }>
+      <Select options={capaOptions} value={selectedCapa} onChange={setSelectedCapa} fullWidth />
+    </Modal>
     </>
   );
 }

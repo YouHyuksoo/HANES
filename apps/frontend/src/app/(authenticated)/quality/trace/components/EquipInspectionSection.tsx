@@ -1,6 +1,7 @@
 "use client";
 import { useTranslation } from "react-i18next";
 import type { EquipInspection } from "../types";
+import { formatDateTimeLocal } from "@/utils/date";
 
 export default function EquipInspectionSection({ inspections }: { inspections: EquipInspection[] }) {
   const { t } = useTranslation();
@@ -47,7 +48,7 @@ export default function EquipInspectionSection({ inspections }: { inspections: E
         <li key={`${i}-${insp.equipCode}-${insp.inspectAt ?? insp.inspectDate}`} className="py-1.5">
           <div className="flex items-center gap-3 text-sm">
             <span className="font-mono text-xs text-text-muted shrink-0">
-              {(insp.inspectAt ?? insp.inspectDate ?? "").slice(0, 16).replace("T", " ")}
+              {formatDateTimeLocal(insp.inspectAt ?? insp.inspectDate, "")}
             </span>
             <span className="font-medium text-text">{typeLabel(insp.inspectType)}</span>
             <span className="text-xs text-text-muted truncate">
