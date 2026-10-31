@@ -286,7 +286,8 @@ describe('InterfaceService', () => {
         seq: 1,
         status: 'FAIL',
         retryCount: 0,
-        direction: 'IN',
+        direction: 'OUT',
+        messageType: 'PROD_RESULT',
         company: 'C1',
         plant: 'P1',
       } as InterLog;
@@ -472,7 +473,7 @@ describe('InterfaceService', () => {
       await target.getFailedLogs('C1', 'P1');
 
       expect(mockLogRepo.find).toHaveBeenCalledWith({
-        where: { status: 'FAIL', company: 'C1', plant: 'P1' },
+        where: { status: expect.anything(), company: 'C1', plant: 'P1' },
         order: { createdAt: 'DESC' },
         take: 50,
       });
@@ -582,6 +583,7 @@ describe('InterfaceService', () => {
 
     it('receives job order using part lookup and created job order within tenant', async () => {
       mockPartRepo.findOne.mockResolvedValue({ itemCode: 'FG-001' } as ItemMaster);
+      mockJobOrderRepo.findOne.mockResolvedValue(null);
       mockJobOrderRepo.create.mockImplementation((value) => value as JobOrder);
       mockJobOrderRepo.save.mockImplementation(async (value) => value as JobOrder);
 

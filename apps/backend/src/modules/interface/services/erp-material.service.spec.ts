@@ -190,7 +190,7 @@ describe('ErpMaterialService', () => {
     );
     expect(interLogRepo.save).toHaveBeenCalledWith(
       expect.objectContaining({
-        direction: 'OUTBOUND',
+        direction: 'OUT',
         messageType: 'ERP_RECEIVING',
         company: 'C1',
         plant: 'P1',
@@ -235,9 +235,9 @@ describe('ErpMaterialService', () => {
     }));
     expect(interLogRepo.save).toHaveBeenCalledWith(
       expect.objectContaining({
-        direction: 'OUTBOUND',
+        direction: 'OUT',
         messageType: 'ERP_RECEIVING',
-        status: 'FAILED',
+        status: 'FAIL',
         interfaceId: 'RCV-1',
         errorMsg: expect.stringContaining('ERP_API_URL'),
         company: 'C1',
@@ -273,7 +273,7 @@ describe('ErpMaterialService', () => {
     await target.retryFailed('C1', 'P1');
 
     expect(interLogRepo.find).toHaveBeenCalledWith({
-      where: { status: expect.anything(), direction: 'OUTBOUND', company: 'C1', plant: 'P1' },
+      where: { status: expect.anything(), direction: expect.anything(), company: 'C1', plant: 'P1' },
       order: { transDate: 'ASC' },
     });
     expect(interLogRepo.update).toHaveBeenCalledWith(

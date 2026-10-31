@@ -12,6 +12,9 @@ import {
   Max,
   IsDateString,
   IsObject,
+  IsArray,
+  ArrayMinSize,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/base-query.dto';
@@ -89,9 +92,26 @@ export class RetryInterLogDto {
   logId: string;
 }
 
+/** 일괄 재시도 대상 로그 키 */
+export class BulkRetryKeyDto {
+  @ApiProperty({ description: '전송일 (YYYY-MM-DD)' })
+  @IsDateString()
+  transDate: string;
+
+  @ApiProperty({ description: '일련번호' })
+  @Type(() => Number)
+  @IsInt()
+  seq: number;
+}
+
 export class BulkRetryDto {
-  @ApiProperty({ description: '로그 키 목록 [{transDate, seq}]' })
-  logIds: { transDate: string; seq: number }[];
+  // 검증 데코레이터가 없어 화이트리스트 검증에서 항상 'property logIds should not exist' 400 이었다
+  @ApiProperty({ description: '로그 키 목록 [{transDate, seq}]', type: [BulkRetryKeyDto] })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => BulkRetryKeyDto)
+  logIds: BulkRetryKeyDto[];
 }
 
 // ============================================================================
@@ -184,6 +204,11 @@ export class PartSyncDto {
   @ApiProperty({ description: '품목 유형', enum: ['RAW', 'WIP', 'FG'] })
   @IsString()
   itemType: string;
+
+  @ApiPropertyOptional({ description: '제품 유형(새 품목일 때 필요)' })
+  @IsOptional()
+  @IsString()
+  productType?: string;
 
   @ApiPropertyOptional({ description: '규격' })
   @IsOptional()

@@ -48,16 +48,19 @@ export class ErpMaterialController {
   @Post('po-import')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'ERP → MES: PO 단건 수신' })
-  async importPo(@Body() body: ErpPoRequest) {
-    const data = await this.erpMaterialService.importPurchaseOrder(body);
+  async importPo(@Body() body: ErpPoRequest, @Company() company?: string, @Plant() plant?: string) {
+    // 본문에 회사·사업장이 없으면 요청 헤더의 값을 쓴다
+    const data = await this.erpMaterialService.importPurchaseOrder({ ...body, company: body.company ?? company, plant: body.plant ?? plant });
     return ResponseUtil.success(data, 'PO 수신 완료');
   }
 
   @Post('po-sync')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'ERP → MES: PO 일괄 동기화' })
-  async syncPos(@Body() body: { poList: ErpPoRequest[] }) {
-    const data = await this.erpMaterialService.syncPurchaseOrders(body.poList);
+  async syncPos(@Body() body: { poList: ErpPoRequest[] }, @Company() company?: string, @Plant() plant?: string) {
+    const data = await this.erpMaterialService.syncPurchaseOrders(
+      body.poList.map((po) => ({ ...po, company: po.company ?? company, plant: po.plant ?? plant })),
+    );
     return ResponseUtil.success(data, 'PO 동기화 완료');
   }
 

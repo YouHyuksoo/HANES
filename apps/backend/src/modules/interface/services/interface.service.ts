@@ -7,6 +7,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
@@ -194,7 +195,7 @@ export class InterfaceService {
     // (caller 가 ms/timezone 가 다른 Date 를 넘겨도 affected=0 이 되지 않도록.)
     const pk = { transDate: log.transDate, seq: log.seq, ...this.tenantWhere(company, plant) };
 
-    if (log.status !== 'FAIL') {
+    if (log.status !== 'FAIL' && log.status !== 'FAILED') {
       throw new BadRequestException('실패한 로그만 재시도할 수 있습니다.');
     }
 
@@ -216,9 +217,29 @@ export class InterfaceService {
       );
     }
 
+    // 수신(IN) 로그는 저장된 payload 로 다시 반영한다(옛 코드는 아무것도 다시 하지 않고 SUCCESS 로 바꿨다)
+    if (log.direction === 'IN' || log.direction === 'INBOUND') {
+      try {
+        const results = (await this.reapplyInbound(log, company, plant)) as { success: boolean; error?: string }[];
+        const failed = results.filter((r) => !r.success);
+        await this.interLogRepository.update(
+          pk,
+          failed.length > 0
+            ? { status: 'FAIL', errorMsg: `일부 항목 실패(${failed.length}건): ${failed[0].error ?? ''}` }
+            : { status: 'SUCCESS', recvAt: new Date() },
+        );
+      } catch (error) {
+        await this.interLogRepository.update(pk, {
+          status: 'FAIL',
+          errorMsg: error instanceof Error ? error.message : '알 수 없는 오류',
+        });
+      }
+      return this.findLogById(transDate, seq, company, plant);
+    }
+
     // 실제 전송 로직 (타입별로 분기)
     try {
-      if (log.direction === 'OUT') {
+      if (log.direction === 'OUT' || log.direction === 'OUTBOUND') {
         await this.processOutbound(log.messageType, log.payload ? JSON.parse(log.payload) : {});
       }
 
@@ -265,29 +286,7 @@ export class InterfaceService {
     }, company, plant);
 
     try {
-      // 품목 확인
-      const part = await this.itemMasterRepository.findOne({
-        where: { itemCode: dto.itemCode, ...this.tenantWhere(company, plant) },
-      });
-
-      if (!part) {
-        throw new BadRequestException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
-      }
-
-      // 작업지시 생성
-      const jobOrder = this.jobOrderRepository.create({
-        orderNo: dto.erpOrderNo,
-        itemCode: part.itemCode,
-        planQty: dto.planQty,
-        lineCode: dto.lineCode,
-        planDate: parseDateStart(dto.planDate),
-        priority: dto.priority ?? 5,
-        erpSyncYn: 'Y',
-        company,
-        plant,
-      });
-
-      await this.jobOrderRepository.save(jobOrder);
+      const jobOrder = await this.applyJobOrder(dto, company, plant);
 
       await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS', undefined, company, plant);
 
@@ -305,6 +304,42 @@ export class InterfaceService {
     }
   }
 
+  /** 작업지시 반영 본체 (수신과 재처리가 같이 쓴다) — 같은 번호가 이미 있으면 덮어쓰지 않고 409 */
+  private async applyJobOrder(dto: JobOrderInboundDto, company?: string, plant?: string) {
+    // 품목 확인
+    const part = await this.itemMasterRepository.findOne({
+      where: { itemCode: dto.itemCode, ...this.tenantWhere(company, plant) },
+    });
+
+    if (!part) {
+      throw new BadRequestException(`품목을 찾을 수 없습니다: ${dto.itemCode}`);
+    }
+
+    const existingOrder = await this.jobOrderRepository.findOne({
+      where: { orderNo: dto.erpOrderNo, ...this.tenantWhere(company, plant) },
+    });
+    if (existingOrder) {
+      throw new ConflictException(`이미 존재하는 작업지시입니다: ${dto.erpOrderNo}`);
+    }
+
+    // 작업지시 생성
+    const jobOrder = this.jobOrderRepository.create({
+      orderNo: dto.erpOrderNo,
+      itemCode: part.itemCode,
+      planQty: dto.planQty,
+      lineCode: dto.lineCode,
+      planDate: parseDateStart(dto.planDate),
+      priority: dto.priority ?? 5,
+      erpSyncYn: 'Y',
+      company,
+      plant,
+    });
+
+    await this.jobOrderRepository.save(jobOrder);
+
+    return jobOrder;
+  }
+
   async syncBom(dtos: BomSyncDto[], company?: string, plant?: string) {
     const log = await this.createLog({
       direction: 'IN',
@@ -313,86 +348,8 @@ export class InterfaceService {
     }, company, plant);
 
     try {
-      // 관련 품목코드 일괄 선조회 (N+1 제거)
-      const allItemCodes = [...new Set(dtos.flatMap((d) => [d.parentItemCode, d.childItemCode]))];
-      const allParts = allItemCodes.length > 0
-        ? await this.itemMasterRepository.find({ where: { itemCode: In(allItemCodes), ...this.tenantWhere(company, plant) } })
-        : [];
-      const partMap = new Map(allParts.map((p) => [p.itemCode, p]));
-
-      // 기존 BOM 일괄 선조회 (N+1 제거) — PK는 모+자+적용일자(VALID_FROM)
-      const toYmd = (v: Date | string | null | undefined): string => {
-        if (!v) return '';
-        const d = v instanceof Date ? v : new Date(v);
-        if (isNaN(d.getTime())) return '';
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      };
-      const toLocalDate = (ymd: string): Date => {
-        const [y, m, d] = ymd.split('-').map(Number);
-        return new Date(y, m - 1, d);
-      };
-      const bomPairs = dtos.map((d) => ({
-        parentItemCode: d.parentItemCode,
-        childItemCode: d.childItemCode,
-        ...this.tenantWhere(company, plant),
-      }));
-      const existingBoms = bomPairs.length > 0
-        ? await this.bomMasterRepository.find({ where: bomPairs })
-        : [];
-      // 정확 매칭(모+자+적용일자)과 페어 매칭(모+자 — validFrom 미지정 DTO용) 두 인덱스
-      const bomByExactKey = new Map(existingBoms.map((b) => [`${b.parentItemCode}::${b.childItemCode}::${toYmd(b.validFrom)}`, b]));
-      const bomByPair = new Map<string, (typeof existingBoms)[number]>();
-      for (const b of existingBoms) {
-        const pairKey = `${b.parentItemCode}::${b.childItemCode}`;
-        const prev = bomByPair.get(pairKey);
-        // 페어 매칭은 적용일자가 가장 최신인 행을 대상으로 갱신
-        if (!prev || toYmd(b.validFrom) > toYmd(prev.validFrom)) bomByPair.set(pairKey, b);
-      }
-
-      const results = [];
-      for (const dto of dtos) {
-        const parentPart = partMap.get(dto.parentItemCode);
-        const childPart = partMap.get(dto.childItemCode);
-
-        if (!parentPart || !childPart) {
-          results.push({ success: false, dto, error: '품목을 찾을 수 없습니다' });
-          continue;
-        }
-
-        const rev = dto.revision ?? 'A';
-        const dtoYmd = dto.validFrom ? toYmd(dto.validFrom) : '';
-        const target = dtoYmd
-          ? bomByExactKey.get(`${parentPart.itemCode}::${childPart.itemCode}::${dtoYmd}`)
-          : bomByPair.get(`${parentPart.itemCode}::${childPart.itemCode}`);
-
-        if (target) {
-          await this.bomMasterRepository.update(
-            { parentItemCode: parentPart.itemCode, childItemCode: childPart.itemCode, validFrom: toLocalDate(toYmd(target.validFrom)), ...this.tenantWhere(company, plant) },
-            { qtyPer: dto.qtyPer, ecoNo: dto.ecoNo, revision: rev },
-          );
-        } else {
-          const validFromYmd = dtoYmd || toYmd(new Date());
-          const newBom = this.bomMasterRepository.create({
-            parentItemCode: parentPart.itemCode,
-            childItemCode: childPart.itemCode,
-            qtyPer: dto.qtyPer,
-            revision: rev,
-            validFrom: toLocalDate(validFromYmd),
-            ecoNo: dto.ecoNo,
-            company,
-            plant,
-          });
-          await this.bomMasterRepository.save(newBom);
-          bomByExactKey.set(`${parentPart.itemCode}::${childPart.itemCode}::${validFromYmd}`, newBom);
-          const pairKey = `${parentPart.itemCode}::${childPart.itemCode}`;
-          const prev = bomByPair.get(pairKey);
-          if (!prev || validFromYmd > toYmd(prev.validFrom)) bomByPair.set(pairKey, newBom);
-        }
-
-        results.push({ success: true, dto });
-      }
-
-      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS', undefined, company, plant);
+      const results = await this.applyBom(dtos, company, plant);
+      await this.finishItemSync(log, results, company, plant);
 
       return results;
     } catch (error) {
@@ -408,6 +365,90 @@ export class InterfaceService {
     }
   }
 
+  /** BOM 반영 본체 (수신과 재처리가 같이 쓴다). 항목별 결과 */
+  private async applyBom(dtos: BomSyncDto[], company?: string, plant?: string) {
+    // 관련 품목코드 일괄 선조회 (N+1 제거)
+    const allItemCodes = [...new Set(dtos.flatMap((d) => [d.parentItemCode, d.childItemCode]))];
+    const allParts = allItemCodes.length > 0
+      ? await this.itemMasterRepository.find({ where: { itemCode: In(allItemCodes), ...this.tenantWhere(company, plant) } })
+      : [];
+    const partMap = new Map(allParts.map((p) => [p.itemCode, p]));
+
+    // 기존 BOM 일괄 선조회 (N+1 제거) — PK는 모+자+적용일자(VALID_FROM)
+    const toYmd = (v: Date | string | null | undefined): string => {
+      if (!v) return '';
+      const d = v instanceof Date ? v : new Date(v);
+      if (isNaN(d.getTime())) return '';
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    const toLocalDate = (ymd: string): Date => {
+      const [y, m, d] = ymd.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    };
+    const bomPairs = dtos.map((d) => ({
+      parentItemCode: d.parentItemCode,
+      childItemCode: d.childItemCode,
+      ...this.tenantWhere(company, plant),
+    }));
+    const existingBoms = bomPairs.length > 0
+      ? await this.bomMasterRepository.find({ where: bomPairs })
+      : [];
+    // 정확 매칭(모+자+적용일자)과 페어 매칭(모+자 — validFrom 미지정 DTO용) 두 인덱스
+    const bomByExactKey = new Map(existingBoms.map((b) => [`${b.parentItemCode}::${b.childItemCode}::${toYmd(b.validFrom)}`, b]));
+    const bomByPair = new Map<string, (typeof existingBoms)[number]>();
+    for (const b of existingBoms) {
+      const pairKey = `${b.parentItemCode}::${b.childItemCode}`;
+      const prev = bomByPair.get(pairKey);
+      // 페어 매칭은 적용일자가 가장 최신인 행을 대상으로 갱신
+      if (!prev || toYmd(b.validFrom) > toYmd(prev.validFrom)) bomByPair.set(pairKey, b);
+    }
+
+    const results = [];
+    for (const dto of dtos) {
+      const parentPart = partMap.get(dto.parentItemCode);
+      const childPart = partMap.get(dto.childItemCode);
+
+      if (!parentPart || !childPart) {
+        results.push({ success: false, dto, error: '품목을 찾을 수 없습니다' });
+        continue;
+      }
+
+      const rev = dto.revision ?? 'A';
+      const dtoYmd = dto.validFrom ? toYmd(dto.validFrom) : '';
+      const target = dtoYmd
+        ? bomByExactKey.get(`${parentPart.itemCode}::${childPart.itemCode}::${dtoYmd}`)
+        : bomByPair.get(`${parentPart.itemCode}::${childPart.itemCode}`);
+
+      if (target) {
+        await this.bomMasterRepository.update(
+          { parentItemCode: parentPart.itemCode, childItemCode: childPart.itemCode, validFrom: toLocalDate(toYmd(target.validFrom)), ...this.tenantWhere(company, plant) },
+          { qtyPer: dto.qtyPer, ecoNo: dto.ecoNo, revision: rev },
+        );
+      } else {
+        const validFromYmd = dtoYmd || toYmd(new Date());
+        const newBom = this.bomMasterRepository.create({
+          parentItemCode: parentPart.itemCode,
+          childItemCode: childPart.itemCode,
+          qtyPer: dto.qtyPer,
+          revision: rev,
+          validFrom: toLocalDate(validFromYmd),
+          ecoNo: dto.ecoNo,
+          company,
+          plant,
+        });
+        await this.bomMasterRepository.save(newBom);
+        bomByExactKey.set(`${parentPart.itemCode}::${childPart.itemCode}::${validFromYmd}`, newBom);
+        const pairKey = `${parentPart.itemCode}::${childPart.itemCode}`;
+        const prev = bomByPair.get(pairKey);
+        if (!prev || validFromYmd > toYmd(prev.validFrom)) bomByPair.set(pairKey, newBom);
+      }
+
+      results.push({ success: true, dto });
+    }
+
+    return results;
+  }
+
   async syncPart(dtos: PartSyncDto[], company?: string, plant?: string) {
     const log = await this.createLog({
       direction: 'IN',
@@ -416,47 +457,8 @@ export class InterfaceService {
     }, company, plant);
 
     try {
-      // 기존 품목 일괄 선조회 (N+1 제거)
-      const itemCodes = dtos.map((d) => d.itemCode);
-      const existingParts = itemCodes.length > 0
-        ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
-        : [];
-      const existingSet = new Set(existingParts.map((p) => p.itemCode));
-
-      const results = [];
-      for (const dto of dtos) {
-        if (existingSet.has(dto.itemCode)) {
-          await this.itemMasterRepository.update(
-            { itemCode: dto.itemCode, ...this.tenantWhere(company, plant) },
-            {
-              itemName: dto.itemName,
-              itemType: dto.itemType,
-              spec: dto.spec,
-              unit: dto.unit ?? 'EA',
-              drawNo: dto.drawNo,
-            },
-          );
-        } else {
-          const newPart = this.itemMasterRepository.create({
-            itemCode: dto.itemCode,
-            itemName: dto.itemName,
-            // ERP는 품번을 전송하지 않으므로 품목코드로 대체 (PART_NO NOT NULL 보장)
-            itemNo: dto.itemCode,
-            itemType: dto.itemType,
-            spec: dto.spec,
-            unit: dto.unit ?? 'EA',
-            drawNo: dto.drawNo,
-            company,
-            plant,
-          });
-          await this.itemMasterRepository.save(newPart);
-          existingSet.add(dto.itemCode);
-        }
-
-        results.push({ success: true, itemCode: dto.itemCode });
-      }
-
-      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS', undefined, company, plant);
+      const results = await this.applyPart(dtos, company, plant);
+      await this.finishItemSync(log, results, company, plant);
 
       return results;
     } catch (error) {
@@ -470,6 +472,87 @@ export class InterfaceService {
       );
       throw error;
     }
+  }
+
+  /** 품목 반영 본체 (수신과 재처리가 같이 쓴다). 항목별 결과 */
+  private async applyPart(dtos: PartSyncDto[], company?: string, plant?: string) {
+    // 기존 품목 일괄 선조회 (N+1 제거)
+    const itemCodes = dtos.map((d) => d.itemCode);
+    const existingParts = itemCodes.length > 0
+      ? await this.itemMasterRepository.find({ where: { itemCode: In(itemCodes), ...this.tenantWhere(company, plant) } })
+      : [];
+    const existingSet = new Set(existingParts.map((p) => p.itemCode));
+
+    const results: { success: boolean; itemCode: string; error?: string }[] = [];
+    for (const dto of dtos) {
+      if (existingSet.has(dto.itemCode)) {
+        await this.itemMasterRepository.update(
+          { itemCode: dto.itemCode, ...this.tenantWhere(company, plant) },
+          {
+            itemName: dto.itemName,
+            itemType: dto.itemType,
+            spec: dto.spec,
+            unit: dto.unit ?? 'EA',
+            drawNo: dto.drawNo,
+          },
+        );
+      } else {
+        // 새 품목은 제품 유형(PRODUCT_TYPE)이 필수라 없으면 실패 항목으로 알린다(옛 코드는 NOT NULL 오류 500)
+      if (!dto.productType) {
+        results.push({ success: false, itemCode: dto.itemCode, error: '새 품목은 제품 유형(productType)이 필요합니다' });
+        continue;
+      }
+      const newPart = this.itemMasterRepository.create({
+          itemCode: dto.itemCode,
+          itemName: dto.itemName,
+          // ERP는 품번을 전송하지 않으므로 품목코드로 대체 (PART_NO NOT NULL 보장)
+          itemNo: dto.itemCode,
+          itemType: dto.itemType,
+          spec: dto.spec,
+          unit: dto.unit ?? 'EA',
+          drawNo: dto.drawNo,
+          company,
+          plant,
+        });
+        await this.itemMasterRepository.save(newPart);
+        existingSet.add(dto.itemCode);
+      }
+
+      results.push({ success: true, itemCode: dto.itemCode });
+    }
+
+    return results;
+  }
+
+  /** 항목 결과로 로그를 마감한다 — 실패 항목이 하나라도 있으면 FAIL(옛 코드는 무조건 SUCCESS) */
+  private async finishItemSync(
+    log: InterLog,
+    results: { success: boolean; error?: string }[],
+    company?: string,
+    plant?: string,
+  ) {
+    const failed = results.filter((r) => !r.success);
+    if (failed.length > 0) {
+      await this.updateLogStatus(log.transDate, log.seq, 'FAIL', `일부 항목 실패(${failed.length}건): ${failed[0].error ?? ''}`, company, plant);
+    } else {
+      await this.updateLogStatus(log.transDate, log.seq, 'SUCCESS', undefined, company, plant);
+    }
+  }
+
+  /** 수신(IN) 로그를 저장된 payload 로 다시 반영한다 */
+  private async reapplyInbound(log: InterLog, company?: string, plant?: string) {
+    const payload = log.payload ? JSON.parse(log.payload) : {};
+    if (log.messageType === 'JOB_ORDER') {
+      await this.applyJobOrder(payload as JobOrderInboundDto, log.company ?? company, log.plant ?? plant);
+      return [];
+    }
+    if (log.messageType === 'BOM_SYNC') {
+      return this.applyBom(payload.items ?? [], log.company ?? company, log.plant ?? plant);
+    }
+    if (log.messageType === 'PART_SYNC') {
+      return this.applyPart(payload.items ?? [], log.company ?? company, log.plant ?? plant);
+    }
+    throw new BadRequestException(`다시 반영할 수 없는 메시지 유형입니다: ${log.messageType}`);
   }
 
   // ============================================================================
@@ -541,7 +624,7 @@ export class InterfaceService {
         .select('COUNT(*)', 'total')
         .addSelect("SUM(CASE WHEN log.createdAt >= :today THEN 1 ELSE 0 END)", 'todayCount')
         .addSelect("SUM(CASE WHEN log.status = 'PENDING' THEN 1 ELSE 0 END)", 'pending')
-        .addSelect("SUM(CASE WHEN log.status = 'FAIL' THEN 1 ELSE 0 END)", 'failed')
+        .addSelect("SUM(CASE WHEN log.status IN ('FAIL', 'FAILED') THEN 1 ELSE 0 END)", 'failed')
         .setParameter('today', today),
       'log',
       company,
@@ -597,7 +680,7 @@ export class InterfaceService {
 
   async getFailedLogs(company?: string, plant?: string) {
     return this.interLogRepository.find({
-      where: { status: 'FAIL', ...this.tenantWhere(company, plant) },
+      where: { status: In(['FAIL', 'FAILED']), ...this.tenantWhere(company, plant) },
       order: { createdAt: 'DESC' },
       take: 50,
     });

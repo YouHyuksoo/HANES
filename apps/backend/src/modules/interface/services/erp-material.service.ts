@@ -9,7 +9,7 @@
  * 4. 실패 시 최대 3회 재시도, 3회 실패 시 FAILED 상태
  * 5. ERP 전송 실패가 MES 트랜잭션을 롤백하지 않음 (eventual consistency)
  */
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { InterLog } from '../../../entities/inter-log.entity';
@@ -17,7 +17,7 @@ import { PurchaseOrder } from '../../../entities/purchase-order.entity';
 import { PurchaseOrderItem } from '../../../entities/purchase-order-item.entity';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { TransactionService } from '../../../shared/transaction.service';
-import { parseDateStart } from '../../../shared/date.util';
+import { parseDateStart, formatYmdLocal } from '../../../shared/date.util';
 
 /** ERP PO 수신 데이터 구조 */
 interface ErpPoData {
@@ -79,6 +79,9 @@ export class ErpMaterialService {
 
   /** ERP에서 PO 데이터를 수신하여 PurchaseOrder/PurchaseOrderItem에 upsert */
   async importPurchaseOrder(data: ErpPoData) {
+    if (!data.company || !data.plant) {
+      throw new BadRequestException('PO 수신에는 회사와 사업장이 필요합니다.');
+    }
     const transDate = new Date();
     const seq = await this.getNextSeq();
     const tenantWhere = {
@@ -125,6 +128,7 @@ export class ErpMaterialService {
             await queryRunner.manager.save(PurchaseOrderItem, {
               poNo: data.poNo,
               seq: item.seq,
+              lineNo: item.seq,
               itemCode: item.itemCode,
               itemName: item.itemName,
               orderQty: item.orderQty,
@@ -137,11 +141,11 @@ export class ErpMaterialService {
       });
 
       // 성공 로그
-      await this.logInterface(transDate, seq, 'INBOUND', 'ERP_PO_IMPORT', 'SUCCESS', data.poNo, JSON.stringify(data), undefined, data.company, data.plant);
+      await this.logInterface(transDate, seq, 'IN', 'ERP_PO_IMPORT', 'SUCCESS', data.poNo, JSON.stringify(data), undefined, data.company, data.plant);
       return { success: true, poNo: data.poNo };
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      await this.logInterface(transDate, seq, 'INBOUND', 'ERP_PO_IMPORT', 'FAILED', data.poNo, JSON.stringify(data), errMsg, data.company, data.plant);
+      await this.logInterface(transDate, seq, 'IN', 'ERP_PO_IMPORT', 'FAIL', data.poNo, JSON.stringify(data), errMsg, data.company, data.plant);
       throw error;
     }
   }
@@ -170,7 +174,7 @@ export class ErpMaterialService {
     return this.exportToErp({
       messageType: 'RECEIVING',
       refNo, itemCode, qty,
-      date: new Date().toISOString().slice(0, 10),
+      date: formatYmdLocal(),
       poNo, company, plant,
     });
   }
@@ -180,7 +184,7 @@ export class ErpMaterialService {
     return this.exportToErp({
       messageType: 'RETURN',
       refNo, itemCode, qty,
-      date: new Date().toISOString().slice(0, 10),
+      date: formatYmdLocal(),
       reason, company, plant,
     });
   }
@@ -190,7 +194,7 @@ export class ErpMaterialService {
     return this.exportToErp({
       messageType: 'ISSUE',
       refNo, itemCode, qty,
-      date: new Date().toISOString().slice(0, 10),
+      date: formatYmdLocal(),
       company, plant,
     });
   }
@@ -200,14 +204,14 @@ export class ErpMaterialService {
     return this.exportToErp({
       messageType: 'ADJUSTMENT',
       refNo, itemCode, qty,
-      date: new Date().toISOString().slice(0, 10),
+      date: formatYmdLocal(),
       reason, company, plant,
     });
   }
 
   /** 공통 ERP 전송 로직 */
   private async exportToErp(data: ErpExportData) {
-    const enabled = await this.sysConfigService.getValue('ERP_EXPORT_ENABLED');
+    const enabled = await this.sysConfigService.getValue('ERP_EXPORT_ENABLED', data.company, data.plant);
     if (enabled !== 'Y') {
       this.logger.debug(`ERP 전송 비활성화 상태 — ${data.messageType} ${data.refNo} 스킵`);
       return { success: true, skipped: true };
@@ -220,11 +224,11 @@ export class ErpMaterialService {
     try {
       await this.sendToErp(data);
 
-      await this.logInterface(transDate, seq, 'OUTBOUND', `ERP_${data.messageType}`, 'SUCCESS', data.refNo, payload, undefined, data.company, data.plant);
+      await this.logInterface(transDate, seq, 'OUT', `ERP_${data.messageType}`, 'SUCCESS', data.refNo, payload, undefined, data.company, data.plant);
       return { success: true, refNo: data.refNo };
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      await this.logInterface(transDate, seq, 'OUTBOUND', `ERP_${data.messageType}`, 'FAILED', data.refNo, payload, errMsg, data.company, data.plant);
+      await this.logInterface(transDate, seq, 'OUT', `ERP_${data.messageType}`, 'FAIL', data.refNo, payload, errMsg, data.company, data.plant);
 
       // 재시도 대기 상태로 기록 (스케줄러가 재시도)
       return { success: false, refNo: data.refNo, error: errMsg };
@@ -239,7 +243,7 @@ export class ErpMaterialService {
   async retryFailed(company?: string, plant?: string) {
     const tenantWhere = this.tenantWhere(company, plant);
     const failedLogs = await this.interLogRepo.find({
-      where: { status: In(['FAILED', 'RETRY']), direction: 'OUTBOUND', ...tenantWhere },
+      where: { status: In(['FAIL', 'FAILED', 'RETRY']), direction: In(['OUT', 'OUTBOUND']), ...tenantWhere },
       order: { transDate: 'ASC' },
     });
 
@@ -268,16 +272,16 @@ export class ErpMaterialService {
         const errMsg = error instanceof Error ? error.message : String(error);
         await this.interLogRepo.update(
           { transDate: log.transDate, seq: log.seq, ...tenantWhere },
-          { errorMsg: errMsg, status: newRetry >= 3 ? 'FAILED' : 'RETRY' },
+          { errorMsg: errMsg, status: newRetry >= 3 ? 'FAIL' : 'RETRY' },
         );
-        results.push({ transDate: log.transDate, seq: log.seq, status: newRetry >= 3 ? 'FAILED' : 'RETRY' });
+        results.push({ transDate: log.transDate, seq: log.seq, status: newRetry >= 3 ? 'FAIL' : 'RETRY' });
       }
     }
     return results;
   }
 
   private async sendToErp(data: ErpExportData): Promise<void> {
-    const erpApiUrl = await this.sysConfigService.getValue('ERP_API_URL');
+    const erpApiUrl = await this.sysConfigService.getValue('ERP_API_URL', data.company, data.plant);
     if (!erpApiUrl) {
       throw new Error('ERP_API_URL 설정이 없어 ERP 전송을 수행할 수 없습니다.');
     }
@@ -304,7 +308,7 @@ export class ErpMaterialService {
 
   /** 오늘 인터페이스 통계 */
   async getTodayStats(company?: string, plant?: string) {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = formatYmdLocal();
     const conditions = ['"TRANS_DATE" = TO_DATE(:1, \'YYYY-MM-DD\')'];
     const binds: unknown[] = [today];
     if (company) {
@@ -324,7 +328,7 @@ export class ErpMaterialService {
       const cnt = Number(row.cnt);
       stats.total += cnt;
       if (row.STATUS === 'SUCCESS') stats.success = cnt;
-      else if (row.STATUS === 'FAILED') stats.failed = cnt;
+      else if (row.STATUS === 'FAIL' || row.STATUS === 'FAILED') stats.failed += cnt;
       else if (row.STATUS === 'RETRY') stats.retry = cnt;
       else if (row.STATUS === 'PENDING') stats.pending = cnt;
     }
@@ -351,8 +355,8 @@ export class ErpMaterialService {
       interfaceId: interfaceId || null,
       payload: payload || null,
       errorMsg: errorMsg || null,
-      sendAt: direction === 'OUTBOUND' ? new Date() : null,
-      recvAt: direction === 'INBOUND' ? new Date() : null,
+      sendAt: direction === 'OUT' ? new Date() : null,
+      recvAt: direction === 'IN' ? new Date() : null,
       company: company || null,
       plant: plant || null,
     });
