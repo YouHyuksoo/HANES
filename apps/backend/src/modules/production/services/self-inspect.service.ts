@@ -7,11 +7,37 @@
  * - 검사결과(SelfInspectResult): 초물/중물/종물 결과 저장
  * - 의뢰검사(DELEGATE): status=PENDING 인 결과가 있으면 키오스크 차단
  */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SelfInspectItem } from '../../../entities/self-inspect-item.entity';
 import { SelfInspectResult } from '../../../entities/self-inspect-result.entity';
+
+const INSPECT_METHODS = ['DIRECT', 'DELEGATE'];
+const INSPECT_STATUSES = ['PENDING', 'PASS', 'FAIL'];
+const INSPECT_TIMINGS = ['FIRST', 'MID', 'LAST'];
+const ITEM_TYPES = ['VISUAL', 'MEASURE'];
+
+/** 검사 시점(콤마 구분)이 FIRST/MID/LAST 만 담았는지 */
+function assertTiming(value: unknown) {
+  const parts = String(value ?? '').split(',').map((part) => part.trim());
+  if (!value || parts.some((part) => !INSPECT_TIMINGS.includes(part))) {
+    throw new BadRequestException(`검사 시점이 올바르지 않습니다(FIRST, MID, LAST): ${value}`);
+  }
+}
+
+function assertOneOf(label: string, allowed: string[], value: unknown) {
+  if (typeof value !== 'string' || !allowed.includes(value)) {
+    throw new BadRequestException(`${label}이(가) 올바르지 않습니다(${allowed.join(', ')}): ${value}`);
+  }
+}
+
+/** 하한이 상한보다 크면 안 된다 */
+function assertLimits(lsl?: number | null, usl?: number | null) {
+  if (lsl != null && usl != null && lsl > usl) {
+    throw new BadRequestException('하한(LSL)이 상한(USL)보다 클 수 없습니다.');
+  }
+}
 
 @Injectable()
 export class SelfInspectService {
@@ -60,6 +86,10 @@ export class SelfInspectService {
     company: string,
     plant: string,
   ) {
+    if (!dto.orderNo || !dto.itemName) throw new BadRequestException('작업지시번호와 검사 항목명은 필수입니다.');
+    assertOneOf('검사 상태', INSPECT_STATUSES, dto.status);
+    assertOneOf('검사 방법', INSPECT_METHODS, dto.inspectMethod);
+    assertTiming(dto.timing);
     const result = this.resultRepo.create({
       orderNo: dto.orderNo,
       equipCode: dto.equipCode ?? null,
@@ -90,6 +120,7 @@ export class SelfInspectService {
     company?: string,
     plant?: string,
   ) {
+    assertOneOf('검사 상태', INSPECT_STATUSES, status);
     const result = await this.resultRepo.findOne({
       where: {
         id,
@@ -194,6 +225,12 @@ export class SelfInspectService {
     uslValue?: number | null;
     sampleCount?: number;
   }, company: string, plant: string) {
+    if (!dto.processCode || !dto.itemName) throw new BadRequestException('공정 코드와 검사 항목명은 필수입니다.');
+    assertOneOf('검사 방법', INSPECT_METHODS, dto.inspectMethod ?? 'DIRECT');
+    assertTiming(dto.timing ?? 'MID');
+    assertOneOf('검사 유형', ITEM_TYPES, dto.itemType ?? 'VISUAL');
+    assertOneOf('사용 여부', ['Y', 'N'], dto.useYn ?? 'Y');
+    assertLimits(dto.lslValue, dto.uslValue);
     const item = this.itemRepo.create({
       processCode: dto.processCode,
       itemName: dto.itemName,
@@ -231,6 +268,12 @@ export class SelfInspectService {
   }, company: string, plant: string) {
     const item = await this.itemRepo.findOne({ where: { id, company, plant } });
     if (!item) throw new NotFoundException(`SelfInspectItem ${id} not found`);
+    if (dto.itemName !== undefined && !dto.itemName) throw new BadRequestException('검사 항목명은 비울 수 없습니다.');
+    if (dto.inspectMethod !== undefined) assertOneOf('검사 방법', INSPECT_METHODS, dto.inspectMethod);
+    if (dto.timing !== undefined) assertTiming(dto.timing);
+    if (dto.itemType !== undefined) assertOneOf('검사 유형', ITEM_TYPES, dto.itemType);
+    if (dto.useYn !== undefined) assertOneOf('사용 여부', ['Y', 'N'], dto.useYn);
+    assertLimits(dto.lslValue !== undefined ? dto.lslValue : item.lslValue, dto.uslValue !== undefined ? dto.uslValue : item.uslValue);
     const updateData: Partial<SelfInspectItem> = {
       ...(dto.itemName !== undefined ? { itemName: dto.itemName } : {}),
       ...(dto.standard !== undefined ? { standard: dto.standard } : {}),
