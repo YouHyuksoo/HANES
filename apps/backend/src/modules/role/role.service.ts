@@ -22,6 +22,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Role } from '../../entities/role.entity';
 import { RoleMenuPermission } from '../../entities/role-menu-permission.entity';
+import { User } from '../../entities/user.entity';
 import { CreateRoleDto, UpdateRoleDto, UpdatePermissionsDto } from './role.dto';
 
 @Injectable()
@@ -132,6 +133,13 @@ export class RoleService {
       throw new BadRequestException('시스템 기본 역할은 삭제할 수 없습니다.');
     }
 
+    // 이 역할을 쓰는 사용자가 있으면 지우지 않는다 — 지우면 그 사용자들은 허용 메뉴 목록이 비어(= 화면에서 전체 허용) 권한이 오히려 넓어진다
+    const userCount = await this.roleRepository.manager.getRepository(User).count({ where: { role: code, ...this.tenantWhere(company, plant) } });
+    if (userCount > 0) {
+      throw new ConflictException(`이 역할을 쓰는 사용자가 ${userCount}명 있어 삭제할 수 없습니다. 먼저 사용자의 역할을 바꾸세요.`);
+    }
+    // 역할 → 메뉴 권한은 외래키라 권한 행을 먼저 지워야 역할을 지울 수 있다
+    await this.permissionRepository.delete({ roleCode: code, ...this.tenantWhere(company, plant) });
     await this.roleRepository.delete({ code, ...this.tenantWhere(company, plant) });
     this.logger.log(`Role deleted: ${code}`);
     return { message: '역할이 삭제되었습니다.' };
@@ -161,7 +169,7 @@ export class RoleService {
     await this.permissionRepository.delete({ roleCode, ...tenant });
 
     // 새 권한 INSERT
-    const entities = dto.menuCodes.map((menuCode) =>
+    const entities = [...new Set(dto.menuCodes)].map((menuCode) =>
       this.permissionRepository.create({
         roleCode,
         menuCode,
