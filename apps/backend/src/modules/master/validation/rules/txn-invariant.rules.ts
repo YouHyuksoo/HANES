@@ -83,7 +83,7 @@ export const TXN_INVARIANT_RULES: ValidationRule[] = [
                         GROUP BY COMPANY, PLANT_CD, PROCESS_CODE, ITEM_CODE, MAT_UID) t
                   ON t.COMPANY = s.COMPANY AND t.PLANT_CD = s.PLANT_CD AND t.PROCESS_CODE = s.PROCESS_CODE
                  AND t.ITEM_CODE = s.ITEM_CODE AND t.MAT_UID = s.MAT_UID
-               WHERE NVL(s.QTY, 0) <> NVL(t.LEDGER_QTY, 0)) x
+               WHERE ABS(NVL(s.QTY, 0) - NVL(t.LEDGER_QTY, 0)) > 0.000001) x
            WHERE x.COMPANY = :company AND x.PLANT_CD = :plantCd`,
   },
   {
