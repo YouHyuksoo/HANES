@@ -875,10 +875,10 @@ export class SpcService {
     try {
       switch (dataSource) {
         case 'IQC':
-          measurements = await this.fetchFromIqc(chart, from, to);
-          break;
         case 'PROCESS':
-          measurements = await this.fetchFromProcess(chart, from, to);
+          // IQC(SAMPLE_INSPECT_RESULTS)·PROCESS(INSPECT_RESULTS) 결과 표에는 품목·공정 칸이 없어 이 관리도의 값만 가려낼 수 없다.
+          // 옛 코드는 사업장의 모든 검사 결과를 이 관리도의 측정값으로 섞어 보냈다 → 연결할 수 없는 출처는 빈 결과로 돌려준다.
+          measurements = [];
           break;
         case 'OQC':
           measurements = await this.fetchFromOqc(chart, from, to);
@@ -889,40 +889,6 @@ export class SpcService {
     }
 
     return { dataSource, measurements };
-  }
-
-  /** IQC: SAMPLE_INSPECT_RESULTS에서 측정값 조회 */
-  private async fetchFromIqc(
-    chart: SpcChart, from?: string, to?: string,
-  ): Promise<{ source: string; date: string; values: number[] }[]> {
-    const bind: unknown[] = [chart.company, chart.plant];
-    let sql = `SELECT TO_CHAR(INSPECT_DATE, 'YYYY-MM-DD') AS "date", MEASURED_VALUE AS "value"
-               FROM SAMPLE_INSPECT_RESULTS
-               WHERE COMPANY = :1 AND PLANT_CD = :2
-                 AND MEASURED_VALUE IS NOT NULL`;
-    if (from) { bind.push(from); sql += ` AND INSPECT_DATE >= TO_DATE(:${bind.length}, 'YYYY-MM-DD')`; }
-    if (to) { bind.push(to); sql += ` AND INSPECT_DATE < TO_DATE(:${bind.length}, 'YYYY-MM-DD') + 1`; }
-    sql += ` ORDER BY INSPECT_DATE ASC`;
-
-    const rows: { date: string; value: number }[] = await this.dataSource.query(sql, bind);
-    return this.groupMeasurements(rows, 'IQC', chart.subgroupSize);
-  }
-
-  /** PROCESS: INSPECT_RESULTS에서 측정값 조회 */
-  private async fetchFromProcess(
-    chart: SpcChart, from?: string, to?: string,
-  ): Promise<{ source: string; date: string; values: number[] }[]> {
-    const bind: unknown[] = [chart.company, chart.plant];
-    let sql = `SELECT TO_CHAR(INSPECT_TIME, 'YYYY-MM-DD') AS "date", INSPECT_DATA AS "value"
-               FROM INSPECT_RESULTS
-               WHERE COMPANY = :1 AND PLANT_CD = :2
-                 AND INSPECT_DATA IS NOT NULL`;
-    if (from) { bind.push(from); sql += ` AND INSPECT_TIME >= TO_DATE(:${bind.length}, 'YYYY-MM-DD')`; }
-    if (to) { bind.push(to); sql += ` AND INSPECT_TIME < TO_DATE(:${bind.length}, 'YYYY-MM-DD') + INTERVAL '1' DAY`; }
-    sql += ` ORDER BY INSPECT_TIME ASC`;
-
-    const rows: { date: string; value: number }[] = await this.dataSource.query(sql, bind);
-    return this.groupMeasurements(rows, 'PROCESS', chart.subgroupSize);
   }
 
   /** OQC: OQC_REQUESTS에서 측정값 조회 */

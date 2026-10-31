@@ -446,6 +446,12 @@ export class PpapService {
     if (!['DRAFT', 'REJECTED'].includes(item.status)) {
       throw new BadRequestException('초안 또는 반려 상태에서만 제출할 수 있습니다.');
     }
+    // Level 별 필수 요소가 모두 준비되어야 제출할 수 있다(비어 있는 요소를 알려 준다)
+    const matrix = PPAP_LEVEL_MATRIX[item.ppapLevel] ?? PPAP_LEVEL_MATRIX[3];
+    const missing = PPAP_ELEMENT_KEYS.filter((key) => matrix[key] && item[key] !== 1);
+    if (missing.length > 0) {
+      throw new BadRequestException(`Level ${item.ppapLevel} 필수 요소가 모두 준비되어야 제출할 수 있습니다. 미완료(${missing.length}): ${missing.join(', ')}`);
+    }
     item.status = 'SUBMITTED';
     item.submittedAt = new Date();
     item.rejectedReason = null;

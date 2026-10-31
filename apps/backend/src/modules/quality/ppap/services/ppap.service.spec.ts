@@ -53,8 +53,13 @@ describe('PpapService', () => {
   });
 
   describe('submit', () => {
+    it('필수 요소가 모두 준비되지 않으면 제출하지 못한다', async () => {
+      mockRepo.findOne.mockResolvedValue({ ppapNo: 'PPAP-002', status: 'DRAFT', ppapLevel: 1, partSubmissionWarrant: 0 } as any);
+      await expect(target.submit('PPAP-002', 'user')).rejects.toThrow(/partSubmissionWarrant/);
+      expect(mockRepo.save).not.toHaveBeenCalled();
+    });
     it('should submit DRAFT', async () => {
-      const item = { ppapNo: 'PPAP-001', status: 'DRAFT' } as any;
+      const item = { ppapNo: 'PPAP-001', status: 'DRAFT', ppapLevel: 1, partSubmissionWarrant: 1 } as any;
       mockRepo.findOne.mockResolvedValue(item);
       mockRepo.save.mockResolvedValue({ ...item, status: 'SUBMITTED' });
       const r = await target.submit('PPAP-001', 'user');
@@ -74,7 +79,7 @@ describe('PpapService', () => {
 
   describe('반려 재제출 / 입력 확인', () => {
     it('반려된 PPAP 는 다시 제출할 수 있고 이전 반려 사유는 지운다', async () => {
-      const item: any = { ppapNo: 'PPAP-009', status: 'REJECTED', rejectedReason: '사유', company: 'CO', plant: 'P01' };
+      const item: any = { ppapNo: 'PPAP-009', status: 'REJECTED', ppapLevel: 1, partSubmissionWarrant: 1, rejectedReason: '사유', company: 'CO', plant: 'P01' };
       mockRepo.findOne.mockResolvedValue(item);
       mockRepo.save.mockImplementation(async (v) => v as PpapSubmission);
       const r = await target.submit('PPAP-009', 'user', 'CO', 'P01');
