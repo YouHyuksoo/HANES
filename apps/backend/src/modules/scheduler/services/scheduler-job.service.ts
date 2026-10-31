@@ -13,6 +13,7 @@
  */
 
 import {
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -153,6 +154,12 @@ export class SchedulerJobService implements OnModuleInit {
     userId: string,
   ): Promise<SchedulerJob> {
     const nextRunAt = this.computeNextRun(dto.cronExpr);
+
+    // save() 는 같은 키가 있으면 덮어쓰므로 먼저 중복을 막는다
+    const exists = await this.jobRepo.findOne({ where: { company, plantCd: plant, jobCode: dto.jobCode } });
+    if (exists) {
+      throw new ConflictException(`이미 존재하는 작업 코드입니다: ${dto.jobCode}`);
+    }
 
     const entity = this.jobRepo.create({
       company,

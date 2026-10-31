@@ -88,7 +88,7 @@ export class SchedulerLogService {
     const log = this.logRepo.create({
       ...data,
       logId,
-      status: 'RUNNING',
+      status: data.status ?? 'RUNNING',
       startTime: new Date(),
       retryCount: data.retryCount ?? 0,
     });

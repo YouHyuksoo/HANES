@@ -440,7 +440,7 @@ describe('DbBackupService', () => {
 
       expect(mockDataSource.query).toHaveBeenCalledWith(
         expect.stringContaining('DBMS_METADATA.GET_DDL(:1, OBJECT_NAME, :2)'),
-        ['TABLE', 'TEST', 'TEST', 'TABLE'],
+        ['TABLE', 'TEST', 'TEST', 'TABLE', 'TABLE'],
       );
     });
 

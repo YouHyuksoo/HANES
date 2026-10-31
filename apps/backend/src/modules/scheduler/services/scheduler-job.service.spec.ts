@@ -113,6 +113,7 @@ describe('SchedulerJobService', () => {
       // Arrange
       const dto = { jobCode: 'JOB1', cronExpr: '0 * * * *', execType: 'SERVICE' } as any;
       const entity = { ...dto, isActive: 'N' } as SchedulerJob;
+      mockJobRepo.findOne.mockResolvedValue(null);
       mockJobRepo.create.mockReturnValue(entity);
       mockJobRepo.save.mockResolvedValue(entity);
 
@@ -121,6 +122,14 @@ describe('SchedulerJobService', () => {
 
       // Assert
       expect(result.isActive).toBe('N');
+    });
+
+    it('같은 작업 코드가 이미 있으면 덮어쓰지 않고 409', async () => {
+      mockJobRepo.findOne.mockResolvedValue({ jobCode: 'JOB1' } as SchedulerJob);
+      await expect(
+        target.create({ jobCode: 'JOB1', cronExpr: '0 * * * *', execType: 'SERVICE' } as any, 'COMP', 'PLANT', 'user'),
+      ).rejects.toThrow('이미 존재하는 작업 코드');
+      expect(mockJobRepo.save).not.toHaveBeenCalled();
     });
   });
 

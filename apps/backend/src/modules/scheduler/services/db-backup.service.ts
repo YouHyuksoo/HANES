@@ -147,8 +147,9 @@ export class DbBackupService {
              FROM ALL_OBJECTS
             WHERE OWNER = :3
               AND OBJECT_TYPE = :4
+              AND NOT (:5 = 'SEQUENCE' AND GENERATED = 'Y')
             ORDER BY OBJECT_NAME`,
-          [objType, schema, schema, objType],
+          [objType, schema, schema, objType, objType],
         );
 
         if (rows.length === 0) continue;
