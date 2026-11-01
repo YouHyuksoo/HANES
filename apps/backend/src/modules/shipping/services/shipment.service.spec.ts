@@ -156,7 +156,14 @@ describe('ShipmentService', () => {
 
     await target.markAsShipped('SHIP-002');
 
-    expect(manager.update).toHaveBeenCalledWith(ShipmentOrderItem, expect.objectContaining({ shipOrderNo: 'SO-002', seq: 1 }), { shippedQty: 2 });
+    // 읽은 값 + 수량 절대 대입이 아니라 라인 행을 잠근 뒤 상대 갱신 SQL 로 가산한다
+    expect(mockQueryRunner.query).toHaveBeenCalledWith(
+      expect.stringMatching(/FROM SHIPMENT_ORDER_ITEMS WHERE .*FOR UPDATE$/),
+      expect.arrayContaining(['SO-002']),
+    );
+    const addCall = manager.update.mock.calls.find((c) => c[0] === ShipmentOrderItem);
+    expect(addCall?.[1]).toEqual(expect.objectContaining({ shipOrderNo: 'SO-002', seq: 1 }));
+    expect((addCall?.[2] as { shippedQty: () => string }).shippedQty()).toBe('NVL(SHIPPED_QTY, 0) + 2');
     expect(manager.update).toHaveBeenCalledWith(ShipmentOrder, expect.objectContaining({ shipOrderNo: 'SO-002' }), { status: 'CLOSED' });
   });
 
@@ -254,7 +261,18 @@ describe('ShipmentService', () => {
 
     await target.reverseShipment('SHIP-003', 'rollback');
 
-    expect(manager.update).toHaveBeenCalledWith(ShipmentOrderItem, expect.objectContaining({ shipOrderNo: 'SO-003', seq: 1 }), { shippedQty: 0 });
+    expect(mockQueryRunner.query).toHaveBeenCalledWith(
+      expect.stringMatching(/FROM SHIPMENT_ORDER_ITEMS WHERE .*FOR UPDATE$/),
+      expect.arrayContaining(['SO-003']),
+    );
+    const subCall = manager.update.mock.calls.find((c) => c[0] === ShipmentOrderItem);
+    expect(subCall?.[1]).toEqual(expect.objectContaining({ shipOrderNo: 'SO-003', seq: 1 }));
+    expect((subCall?.[2] as { shippedQty: () => string }).shippedQty()).toBe('GREATEST(0, NVL(SHIPPED_QTY, 0) - 2)');
+    // 역분개 대상 재고 거래는 출하 출고(FG_OUT)만 고른다 — 앞선 FG_OUT_CANCEL 을 다시 취소하지 않도록
+    expect(manager.find).toHaveBeenCalledWith(
+      ProductTransaction,
+      { where: expect.objectContaining({ refType: 'SHIPMENT', refId: 'SHIP-003', transType: 'FG_OUT', status: 'DONE' }) },
+    );
     expect(manager.update).toHaveBeenCalledWith(ShipmentOrder, expect.objectContaining({ shipOrderNo: 'SO-003' }), { status: 'CONFIRMED' });
   });
 

@@ -49,6 +49,7 @@ import {
 } from '../dto/shipment.dto';
 import { parseDateStart } from '../../../shared/date.util';
 import { toDateOnly } from '../../../common/utils/date-only.util';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 
 @Injectable()
 export class ShipmentService {
@@ -589,6 +590,12 @@ export class ShipmentService {
 
       // 6. 출하지시 shippedQty 업데이트 (shipOrderNo 연계 시)
       if (shipment.shipOrderNo) {
+        // 같은 출하지시의 다른 출하와 동시에 처리돼도 가산이 사라지지 않도록 라인 행을 먼저 잠그고 상대값으로 갱신한다
+        await lockRowsForUpdate(queryRunner, 'SHIPMENT_ORDER_ITEMS', {
+          SHIP_ORDER_ID: shipment.shipOrderNo,
+          COMPANY: company,
+          PLANT_CD: plant,
+        });
         const lines = await queryRunner.manager.find(ShipmentOrderItem, {
           where: { shipOrderNo: shipment.shipOrderNo, ...this.tenantWhere(company, plant) },
         });
@@ -599,11 +606,10 @@ export class ShipmentService {
         for (const [itemCode, qty] of itemQtyMap) {
           const line = lineByItem.get(itemCode);
           if (line) {
-            const newShipped = line.shippedQty + qty;
             await queryRunner.manager.update(
               ShipmentOrderItem,
               { shipOrderNo: shipment.shipOrderNo, seq: line.seq, ...this.tenantWhere(company, plant) },
-              { shippedQty: newShipped },
+              { shippedQty: () => `NVL(SHIPPED_QTY, 0) + ${Number(qty)}` },
             );
           }
         }
@@ -739,7 +745,7 @@ export class ShipmentService {
 
     // 제품 재고 역분개 대상 조회
     const shipmentTransactions = await qr.manager.find(ProductTransaction, {
-      where: { refType: 'SHIPMENT', refId: id, status: 'DONE', ...this.tenantWhere(company, plant) },
+      where: { refType: 'SHIPMENT', refId: id, transType: 'FG_OUT', status: 'DONE', ...this.tenantWhere(company, plant) },
     });
 
     // 1. 팔레트 상태 → LOADED
@@ -802,6 +808,12 @@ export class ShipmentService {
         itemQtyMap.set(box.itemCode, existingQty + box.qty);
       }
 
+      // 라인 행을 먼저 잠그고 상대값으로 되돌린다(동시 출하와 겹쳐도 가산분이 유실되지 않게)
+      await lockRowsForUpdate(qr, 'SHIPMENT_ORDER_ITEMS', {
+        SHIP_ORDER_ID: shipment.shipOrderNo,
+        COMPANY: company,
+        PLANT_CD: plant,
+      });
       const lines = await qr.manager.find(ShipmentOrderItem, {
         where: { shipOrderNo: shipment.shipOrderNo, ...this.tenantWhere(company, plant) },
       });
@@ -813,12 +825,11 @@ export class ShipmentService {
       for (const [itemCode, qty] of itemQtyMap) {
         const line = lineByItem.get(itemCode);
         if (line) {
-          const newShipped = Math.max(0, line.shippedQty - qty);
-          restoredShippedBySeq.set(line.seq, newShipped);
+          restoredShippedBySeq.set(line.seq, Math.max(0, line.shippedQty - qty));
           await qr.manager.update(
             ShipmentOrderItem,
             { shipOrderNo: shipment.shipOrderNo, seq: line.seq, ...this.tenantWhere(company, plant) },
-            { shippedQty: newShipped },
+            { shippedQty: () => `GREATEST(0, NVL(SHIPPED_QTY, 0) - ${Number(qty)})` },
           );
         }
       }

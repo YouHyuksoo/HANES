@@ -66,6 +66,7 @@ import { ComCode } from '../../../entities/com-code.entity';
 import { ProductGenealogy } from '../../../entities/product-genealogy.entity';
 import { ShiftResolver } from '../../../utils/shift-resolver';
 import { parseCsvList } from '../../../common/utils/csv-list.util';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 import { resolveConsumableLifeStatus } from '@harness/shared';
 import { EquipInspectItemPool } from '../../../entities/equip-inspect-item-pool.entity';
 import { EquipInspectService } from '../../equipment/services/equip-inspect.service';
@@ -1299,6 +1300,14 @@ export class ProdResultService {
     if (!equipCode || !totalQty) return;
     const tenant = { ...(company ? { company } : {}), ...(plant ? { plant } : {}) };
 
+    // 같은 설비의 다른 실적과 동시에 처리돼도 타수가 유실되지 않도록 장착 롯트 행을 먼저 잠그고 최신값을 읽는다
+    await lockRowsForUpdate(queryRunner, 'CONSUMABLE_STOCKS', {
+      MOUNTED_EQUIP_CODE: equipCode,
+      STATUS: 'MOUNTED',
+      COMPANY: company,
+      PLANT_CD: plant,
+    });
+
     // 설비에 장착된 모든 소모품 롯트 (금형·지그·공구 공통)
     const lots = await queryRunner.manager.find(ConsumableStock, {
       where: {
@@ -1344,7 +1353,7 @@ export class ProdResultService {
       await queryRunner.manager.update(
         ConsumableStock,
         { conUid: lot.conUid },
-        { currentCount: newCount, lifeStatus: newLifeStatus },
+        { currentCount: () => `GREATEST(0, NVL(CURRENT_COUNT, 0) + ${Number(delta)})`, lifeStatus: newLifeStatus },
       );
 
       // 누적 이력 — 실적 단위로 남겨 "언제 얼마나 올랐는지" 추적 가능하게 (현장 요청 2026-09-03)

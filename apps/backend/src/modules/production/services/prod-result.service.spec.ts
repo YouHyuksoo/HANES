@@ -795,8 +795,10 @@ describe('ProdResultService', () => {
     expect(queryRunner.manager.update).toHaveBeenCalledWith(
       ConsumableStockEntity,
       expect.objectContaining({ conUid: 'LOT-1' }),
-      expect.objectContaining({ currentCount: 12, lifeStatus: 'NORMAL' }),
+      expect.objectContaining({ currentCount: expect.any(Function), lifeStatus: 'NORMAL' }),
     );
+    const accrueCall = queryRunner.manager.update.mock.calls.find((c) => c[0] === ConsumableStockEntity);
+    expect((accrueCall?.[2] as { currentCount: () => string }).currentCount()).toBe('GREATEST(0, NVL(CURRENT_COUNT, 0) + 10)');
   });
 
   it('create accrues mounted consumable lot count by usage-per-unit and writes a USAGE log', async () => {
@@ -838,7 +840,14 @@ describe('ProdResultService', () => {
     expect(queryRunner.manager.update).toHaveBeenCalledWith(
       ConsumableStock,
       { conUid: 'LOT-1' },
-      { currentCount: 25, lifeStatus: 'NORMAL' },
+      { currentCount: expect.any(Function), lifeStatus: 'NORMAL' },
+    );
+    // 읽은 스냅샷 + 증분 절대 대입이 아니라 DB 값 기준 상대 갱신(0 미만 방지)
+    const accrueCall = queryRunner.manager.update.mock.calls.find((c) => c[0] === ConsumableStock);
+    expect((accrueCall?.[2] as { currentCount: () => string }).currentCount()).toBe('GREATEST(0, NVL(CURRENT_COUNT, 0) + 20)');
+    expect(queryRunner.query).toHaveBeenCalledWith(
+      expect.stringMatching(/FROM CONSUMABLE_STOCKS WHERE .*FOR UPDATE$/),
+      expect.arrayContaining(['EQ-001', 'MOUNTED']),
     );
     expect(queryRunner.manager.save).toHaveBeenCalledWith(
       ConsumableLog,

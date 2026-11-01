@@ -203,8 +203,10 @@ describe('ProdResultService complete workflow', () => {
     expect(queryRunner.manager.update).toHaveBeenCalledWith(
       ConsumableStock,
       expect.objectContaining({ conUid: 'LOT-1' }),
-      expect.objectContaining({ currentCount: 13, lifeStatus: 'NORMAL' }),
+      expect.objectContaining({ currentCount: expect.any(Function), lifeStatus: 'NORMAL' }),
     );
+    const accrueCall = queryRunner.manager.update.mock.calls.find((c) => c[0] === ConsumableStock);
+    expect((accrueCall?.[2] as { currentCount: () => string }).currentCount()).toBe('GREATEST(0, NVL(CURRENT_COUNT, 0) + 11)');
     expect(queryRunner.manager.update).toHaveBeenCalledWith(
       EquipMaster,
       expect.objectContaining({ equipCode: 'EQ-1', company: 'C1', plant: 'P1' }),
