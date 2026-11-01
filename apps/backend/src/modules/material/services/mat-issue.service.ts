@@ -619,7 +619,11 @@ export class MatIssueService {
     await this.ensureNoDownstreamProgress(rawIssue, company, plant);
 
     return this.tx.run(async (queryRunner) => {
-      await queryRunner.manager.update(MatIssue, { issueNo, seq, ...tenantWhere }, { status: 'CANCELED', remark: reason });
+      // 같은 출고를 동시에 취소하면 둘째는 첫째 커밋 뒤 이 UPDATE 가 0행이라 거절된다(LOT 잔량 이중 복원 방지)
+      const cancelled = await queryRunner.manager.update(MatIssue, { issueNo, seq, status: 'DONE', ...tenantWhere }, { status: 'CANCELED', remark: reason });
+      if (!cancelled.affected) {
+        throw new BadRequestException('이미 취소된 출고입니다.');
+      }
 
       const refId = `${issueNo}-${seq}`;
       const originalTxs = await queryRunner.manager.find(StockTransaction, {
@@ -719,12 +723,11 @@ export class MatIssueService {
 
       if (rawIssue.matUid) {
         // 출고 취소 — LOT 잔량(currentQty)도 출고량만큼 복원(createInTx 차감의 대칭).
-        const lotRow = await queryRunner.manager.findOne(MatLot, { where: { matUid: rawIssue.matUid, ...tenantWhere } });
-        await queryRunner.manager.update(
-          MatLot,
-          { matUid: rawIssue.matUid, ...tenantWhere },
-          { status: MAT_LOT_STATUS.NORMAL, currentQty: (lotRow?.currentQty ?? 0) + rawIssue.issueQty },
-        );
+        await queryRunner.manager.createQueryBuilder().update(MatLot)
+          .set({ status: MAT_LOT_STATUS.NORMAL, currentQty: () => 'NVL("CURRENT_QTY", 0) + :lotRestoreQty' })
+          .where({ matUid: rawIssue.matUid, ...tenantWhere })
+          .setParameters({ lotRestoreQty: rawIssue.issueQty })
+          .execute();
         // 출고 취소 — 대차에 담겨 있던 LOT이면 꺼낸다(대차에 없던 LOT은 영향 없음).
         await this.carrierFlow.clearInTx(queryRunner, 'MAT', [rawIssue.matUid], rawIssue.company, rawIssue.plant);
       }

@@ -572,7 +572,7 @@ describe('MatIssueService', () => {
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
       createQueryBuilder: createManagerQueryBuilder(),
-      update: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
     };
     (mockQueryRunner as any).manager = manager;
 
@@ -621,7 +621,7 @@ describe('MatIssueService', () => {
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
       createQueryBuilder: createManagerQueryBuilder(),
-      update: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
     };
     (mockQueryRunner as any).manager = manager;
 
@@ -690,7 +690,7 @@ describe('MatIssueService', () => {
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
       createQueryBuilder: createManagerQueryBuilder(),
-      update: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
     };
     (mockQueryRunner as any).manager = manager;
 
@@ -739,7 +739,7 @@ describe('MatIssueService', () => {
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
       createQueryBuilder: createManagerQueryBuilder(),
-      update: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
     };
     (mockQueryRunner as any).manager = manager;
 
@@ -786,7 +786,7 @@ describe('MatIssueService', () => {
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
       createQueryBuilder: createManagerQueryBuilder(),
-      update: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
     };
     (mockQueryRunner as any).manager = manager;
     mockNumbering.nextInTx.mockResolvedValue('ISS-001');
@@ -814,7 +814,7 @@ describe('MatIssueService', () => {
         create: jest.fn((entity, payload) => ({ ...payload })),
         save: jest.fn().mockImplementation(async (entity) => entity),
         createQueryBuilder: createManagerQueryBuilder(),
-        update: jest.fn().mockResolvedValue(undefined),
+        update: jest.fn().mockResolvedValue({ affected: 1 }),
       };
       (mockQueryRunner as any).manager = manager;
       mockNumbering.nextInTx.mockResolvedValueOnce('ISS-001').mockResolvedValueOnce('TX-001');
@@ -955,7 +955,7 @@ describe('MatIssueService', () => {
         create: jest.fn((entity, payload) => ({ ...payload })),
         save: jest.fn().mockImplementation(async (entity) => entity),
         createQueryBuilder: createManagerQueryBuilder(),
-        update: jest.fn().mockResolvedValue(undefined),
+        update: jest.fn().mockResolvedValue({ affected: 1 }),
       };
       (mockQueryRunner as any).manager = manager;
       mockNumbering.nextInTx.mockReset().mockResolvedValue('TX-N');
@@ -1019,7 +1019,7 @@ describe('MatIssueService', () => {
         create: jest.fn((entity, payload) => ({ ...payload })),
         save: jest.fn().mockImplementation(async (entity) => entity),
         createQueryBuilder: createManagerQueryBuilder(),
-        update: jest.fn().mockResolvedValue(undefined),
+        update: jest.fn().mockResolvedValue({ affected: 1 }),
       };
       (mockQueryRunner as any).manager = manager;
       mockNumbering.nextInTx.mockReset().mockResolvedValueOnce('ISS-K01').mockResolvedValueOnce('TX-K01');
@@ -1059,7 +1059,7 @@ describe('MatIssueService', () => {
     } as MatIssue);
 
     const manager = {
-      update: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
       find: jest.fn().mockResolvedValue([
         {
           transNo: 'TX-001',
@@ -1098,7 +1098,7 @@ describe('MatIssueService', () => {
 
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
-    expect((manager as any).createQueryBuilder).toHaveBeenCalledTimes(2);
+    expect((manager as any).createQueryBuilder).toHaveBeenCalledTimes(3);
     expect(manager.update).toHaveBeenCalledWith(
       StockTransaction,
       { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
@@ -1130,7 +1130,7 @@ describe('MatIssueService', () => {
     } as MatIssue);
 
     const manager = {
-      update: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
       find: jest.fn().mockResolvedValue([
         {
           transNo: 'TX-001',
@@ -1171,7 +1171,7 @@ describe('MatIssueService', () => {
       }),
     );
     // 원자재창고 복원
-    expect((manager as any).createQueryBuilder).toHaveBeenCalledTimes(1);
+    expect((manager as any).createQueryBuilder).toHaveBeenCalledTimes(2);
     // 원본 거래 취소 처리
     expect(manager.update).toHaveBeenCalledWith(
       StockTransaction,
@@ -1221,7 +1221,7 @@ describe('MatIssueService', () => {
     } as MatIssue);
 
     const manager = {
-      update: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
       find: jest.fn().mockResolvedValue([
         {
           transNo: 'TX-001',
@@ -1255,7 +1255,7 @@ describe('MatIssueService', () => {
     } as MatIssue);
 
     const manager = {
-      update: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
       find: jest.fn().mockResolvedValue([
         {
           transNo: 'TX-001',
@@ -1312,8 +1312,17 @@ describe('MatIssueService', () => {
     await target.cancel('ISS-ORDINARY', 1, 'cancel', 'HANES', 'P01');
     expect(mockTx.run).toHaveBeenCalledTimes(1);
     expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(MatIssue,
-      { issueNo: 'ISS-ORDINARY', seq: 1, company: 'HANES', plant: 'P01' },
+      { issueNo: 'ISS-ORDINARY', seq: 1, status: 'DONE', company: 'HANES', plant: 'P01' },
       { status: 'CANCELED', remark: 'cancel' });
+  });
+
+  it('동시에 같은 출고를 취소해 상태 UPDATE 가 0행이면 거절한다(이중 복원 방지)', async () => {
+    mockMatIssueRepo.findOne.mockResolvedValue({
+      issueNo: 'ISS-RACE', seq: 1, status: 'DONE', issueType: 'OTHER', remark: null, company: 'HANES', plant: 'P01',
+    } as MatIssue);
+    mockQueryRunner.manager.find.mockResolvedValue([]);
+    mockQueryRunner.manager.update.mockResolvedValueOnce({ affected: 0 } as never);
+    await expect(target.cancel('ISS-RACE', 1, 'cancel', 'HANES', 'P01')).rejects.toThrow('이미 취소된 출고입니다.');
   });
 
   it('blocks cancel when linked production has already progressed', async () => {
