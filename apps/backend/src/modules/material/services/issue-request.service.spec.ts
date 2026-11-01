@@ -790,6 +790,63 @@ describe('IssueRequestService', () => {
   });
 
   describe('issueFromRequest', () => {
+    /** manager.createQueryBuilder().update().set().where().setParameters().execute() 호출을 기록한다 */
+    let itemQbCalls: Array<{ set: Record<string, unknown>; where: unknown; params: unknown }>;
+    const relativeAddSql = (call: { set: Record<string, unknown> }) => (call.set.issuedQty as () => string)();
+    beforeEach(() => {
+      itemQbCalls = [];
+      (queryRunner.manager as any).createQueryBuilder = jest.fn(() => {
+        const call: { set: Record<string, unknown>; where: unknown; params: unknown } = { set: {}, where: undefined, params: undefined };
+        itemQbCalls.push(call);
+        const qb: Record<string, jest.Mock> = {
+          update: jest.fn().mockReturnThis(),
+          set: jest.fn((v: Record<string, unknown>) => { call.set = v; return qb; }),
+          where: jest.fn((v: unknown) => { call.where = v; return qb; }),
+          setParameters: jest.fn((v: unknown) => { call.params = v; return qb; }),
+          execute: jest.fn().mockResolvedValue({ affected: 1 }),
+        };
+        return qb;
+      });
+    });
+
+    it('요청 행을 먼저 잠근 뒤 상태를 다시 읽어, 앞 호출이 끝낸(COMPLETED) 요청의 동시 출고를 거절한다', async () => {
+      const staleApproved = { requestNo: 'REQ-001', status: 'APPROVED', orderNo: 'WO-001', processCode: 'PRC1', issueType: 'PRODUCTION', company: 'C1', plant: 'P1' } as MatIssueRequest;
+      // 첫 읽기(잠금 전)는 APPROVED, 잠금을 기다린 뒤 읽는 값은 앞 호출이 끝낸 COMPLETED
+      requestRepo.findOne
+        .mockResolvedValueOnce(staleApproved)
+        .mockResolvedValueOnce({ ...staleApproved, status: 'COMPLETED' } as MatIssueRequest);
+      (matIssueService as any).createInTx = jest.fn();
+
+      await expect(service.issueFromRequest('REQ-001', {
+        warehouseCode: 'WH-01',
+        items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 1 }],
+      }, 'C1', 'P1')).rejects.toThrow('출고할 수 없는 상태입니다');
+
+      expect(queryRunner.query).toHaveBeenCalledWith(
+        'SELECT 1 FROM MAT_ISSUE_REQUESTS WHERE REQUEST_NO = :1 AND COMPANY = :2 AND PLANT_CD = :3 FOR UPDATE',
+        ['REQ-001', 'C1', 'P1'],
+      );
+      expect((matIssueService as any).createInTx).not.toHaveBeenCalled();
+    });
+
+    it('잠금 뒤 다시 읽은 품목 잔여를 넘기는 동시 출고는 초과로 거절한다', async () => {
+      requestRepo.findOne.mockResolvedValue({ requestNo: 'REQ-001', status: 'PARTIAL', orderNo: 'WO-001', processCode: 'PRC1', issueType: 'PRODUCTION', company: 'C1', plant: 'P1' } as MatIssueRequest);
+      (matIssueService as any).createInTx = jest.fn();
+      // 잠금 뒤 읽은 값: 다른 출고가 먼저 9 를 채워 잔여 1
+      requestItemRepo.find.mockResolvedValue([
+        { requestId: 'REQ-001', seq: 1, itemCode: 'ITEM-001', requestQty: 10, issuedQty: 9 } as MatIssueRequestItem,
+      ]);
+      queryRunner.manager.find.mockImplementation(async (entity: unknown) => (
+        entity === MatLot ? [{ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot] : []
+      ) as any);
+
+      await expect(service.issueFromRequest('REQ-001', {
+        warehouseCode: 'WH-01',
+        items: [{ requestItemId: '1', matUid: 'MAT-001', issueQty: 5 }],
+      }, 'C1', 'P1')).rejects.toThrow('요청 수량을 초과해 출고할 수 없습니다');
+      expect((matIssueService as any).createInTx).not.toHaveBeenCalled();
+    });
+
     it('요청 품목 갱신과 실제 출고를 같은 트랜잭션에서 처리한다', async () => {
       requestRepo.findOne.mockResolvedValue({
         requestNo: 'REQ-001',
@@ -824,11 +881,12 @@ describe('IssueRequestService', () => {
         warehouseCode: 'WH-01',
         items: [{ matUid: 'MAT-001', issueQty: 8 }],
       }), 'C1', 'P1');
-      expect(queryRunner.manager.update).toHaveBeenCalledWith(
-        MatIssueRequestItem,
-        { requestId: 'REQ-001', seq: 1, company: 'C1', plant: 'P1' },
-        { issuedQty: 10 },
-      );
+      // 누계는 읽은 값(2)+8 로 덮어쓰지 않고 DB 값에 상대 가산한다
+      expect(itemQbCalls).toHaveLength(1);
+      expect(relativeAddSql(itemQbCalls[0])).toContain('NVL("ISSUED_QTY", 0) + :addedIssueQty');
+      expect(itemQbCalls[0].where).toEqual({ requestId: 'REQ-001', seq: 1, company: 'C1', plant: 'P1' });
+      expect(itemQbCalls[0].params).toEqual({ addedIssueQty: 8 });
+      expect(queryRunner.manager.update).not.toHaveBeenCalledWith(MatIssueRequestItem, expect.anything(), expect.anything());
       // 완료 판정은 트랜잭션 밖 repository 가 아니라 같은 QueryRunner 재조회(갱신 후 값)로 한다
       expect(queryRunner.manager.find).toHaveBeenCalledWith(
         MatIssueRequestItem,
@@ -914,9 +972,8 @@ describe('IssueRequestService', () => {
         ],
       }, 'C1', 'P1');
 
-      const itemUpdates = queryRunner.manager.update.mock.calls.filter((call) => call[0] === MatIssueRequestItem);
-      expect(itemUpdates).toHaveLength(1);
-      expect(itemUpdates[0][2]).toEqual({ issuedQty: 8 });
+      expect(itemQbCalls).toHaveLength(1);
+      expect(itemQbCalls[0].params).toEqual({ addedIssueQty: 8 });
 
       // 합산이 잔여를 넘으면 차단
       await expect(service.issueFromRequest('REQ-001', {

@@ -54,6 +54,7 @@ import {
 } from '@harness/shared';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 
 @Injectable()
@@ -251,6 +252,31 @@ export class ArrivalService {
     const whMap = new Map(allWarehouses.map((w) => [w.warehouseCode, w] as const));
 
     return this.tx.run(async (queryRunner) => {
+      // 동시 입하 직렬화: PO 라인 행을 먼저 잠근 뒤 최신 입하누계로 잔량을 다시 검사한다(트랜잭션 밖 검증은 낡은 값일 수 있다).
+      await lockRowsForUpdate(queryRunner, 'PURCHASE_ORDER_ITEMS', { PO_ID: dto.poId, COMPANY: po.company, PLANT_CD: po.plant });
+      const lockedPoItems = await queryRunner.manager.find(PurchaseOrderItem, {
+        where: { poNo: dto.poId, ...(po.company ? { company: po.company } : {}), ...(po.plant ? { plant: po.plant } : {}) },
+      });
+      for (const locked of lockedPoItems) {
+        const stale = poItems.find((pi) => pi.seq === locked.seq);
+        if (stale) stale.receivedQty = locked.receivedQty;
+      }
+      const requestedBySeq = new Map<number, { poItem: PurchaseOrderItem; qty: number }>();
+      for (const item of dto.items) {
+        const poItem = poItemBySeq.get(Number(item.poItemId)) ?? poItemByKey.get(item.poItemId)!;
+        const acc = requestedBySeq.get(poItem.seq) ?? { poItem, qty: 0 };
+        acc.qty += item.receivedQty;
+        requestedBySeq.set(poItem.seq, acc);
+      }
+      for (const { poItem, qty } of requestedBySeq.values()) {
+        const remaining = poItem.orderQty - poItem.receivedQty;
+        if (qty > remaining) {
+          throw new BadRequestException(
+            `입하수량(${qty})이 잔량(${remaining})을 초과합니다. (발주: ${poItem.orderQty}, 입하합계: ${poItem.receivedQty})`,
+          );
+        }
+      }
+
       const results = [];
       const arrivalNo = await this.numbering.nextInTx(queryRunner, 'ARRIVAL');
       let arrivalSeq = 1;
@@ -321,14 +347,20 @@ export class ArrivalService {
         const poItem = poItems.find((pi) => pi.seq === Number(item.poItemId) || `${pi.poNo}-${pi.seq}` === item.poItemId);
         if (poItem) {
           // 같은 품목이 한 요청에 여러 줄 오면 누계가 이어지도록 메모리 객체도 갱신한다
+          // 잠금 후이므로 메모리 누계가 최신이다. DB 는 상대 가산하고, 상태만 누계로 다시 계산한다.
           poItem.receivedQty = poItem.receivedQty + item.receivedQty;
-          await queryRunner.manager.update(PurchaseOrderItem, {
+          const poItemWhere = {
             poNo: poItem.poNo,
             seq: poItem.seq,
             ...(po.company ? { company: po.company } : {}),
             ...(po.plant ? { plant: po.plant } : {}),
-          }, {
-            receivedQty: poItem.receivedQty,
+          };
+          await queryRunner.manager.createQueryBuilder().update(PurchaseOrderItem)
+            .set({ receivedQty: () => 'NVL("RECEIVED_QTY", 0) + :addedReceivedQty' })
+            .where(poItemWhere)
+            .setParameters({ addedReceivedQty: item.receivedQty })
+            .execute();
+          await queryRunner.manager.update(PurchaseOrderItem, poItemWhere, {
             lineStatus: derivePurchaseOrderLineStatus(poItem),
           });
         }
@@ -924,13 +956,22 @@ export class ArrivalService {
         const poNoFromComposite = String(poItemId).match(/^(.+)-(\d+)$/);
         const poNo = canceledArrival?.poNo ?? canceledArrival?.poId ?? poNoFromComposite?.[1];
         const poSeq = !isNaN(refSeq) ? refSeq : poNoFromComposite ? Number(poNoFromComposite[2]) : NaN;
+        // 동시 입하·취소 직렬화: PO 라인 행을 먼저 잠근 뒤 읽는다
+        if (poNo && !isNaN(poSeq)) {
+          await lockRowsForUpdate(queryRunner, 'PURCHASE_ORDER_ITEMS', { PO_ID: poNo, SEQ: poSeq, COMPANY: original.company, PLANT_CD: original.plant });
+        }
         const poItem = poNo && !isNaN(poSeq)
           ? await queryRunner.manager.findOne(PurchaseOrderItem, { where: { poNo, seq: poSeq, ...tenantWhere } })
           : null;
         if (poItem) {
           const restoredQty = Math.max(0, poItem.receivedQty - original.qty);
-          await queryRunner.manager.update(PurchaseOrderItem, { poNo: poItem.poNo, seq: poItem.seq, ...tenantWhere }, {
-            receivedQty: restoredQty,
+          const poItemWhere = { poNo: poItem.poNo, seq: poItem.seq, ...tenantWhere };
+          await queryRunner.manager.createQueryBuilder().update(PurchaseOrderItem)
+            .set({ receivedQty: () => 'GREATEST(0, NVL("RECEIVED_QTY", 0) - :canceledReceivedQty)' })
+            .where(poItemWhere)
+            .setParameters({ canceledReceivedQty: original.qty })
+            .execute();
+          await queryRunner.manager.update(PurchaseOrderItem, poItemWhere, {
             lineStatus: derivePurchaseOrderLineStatus({ orderQty: poItem.orderQty, receivedQty: restoredQty }),
           });
           await this.updatePOStatus(queryRunner.manager, poItem.poNo, original.company, original.plant);
@@ -1516,6 +1557,8 @@ export class ArrivalService {
     const username = user?.username ?? 'SYSTEM';
     return this.tx.run(async (qr) => {
       // 1. PO 라인 — ERP 비즈니스 3키 (poNo + lineNo + revNo)로 식별
+      // 동시 입하 직렬화: 행을 먼저 잠근 뒤 읽는다
+      await lockRowsForUpdate(qr, 'PURCHASE_ORDER_ITEMS', { PO_ID: dto.poNo, LINE_NO: dto.lineNo, REV_NO: dto.revNo });
       const poItem = await qr.manager.findOne(PurchaseOrderItem, {
         where: { poNo: dto.poNo, lineNo: dto.lineNo, revNo: dto.revNo },
       });
@@ -1614,9 +1657,16 @@ export class ArrivalService {
       const savedLots = await qr.manager.save(MatLot, lots);
 
       // 7. PO 라인 잔량 + 상태 갱신
+      // 잠금 후이므로 읽은 누계가 최신이다. DB 는 상대 가산하고 상태만 새 누계로 계산한다.
       poItem.receivedQty += dto.receivedQty;
       poItem.lineStatus = derivePurchaseOrderLineStatus(poItem);
-      await qr.manager.save(PurchaseOrderItem, poItem);
+      const poItemWhere = { poNo: poItem.poNo, seq: poItem.seq, company: poItem.company, plant: poItem.plant };
+      await qr.manager.createQueryBuilder().update(PurchaseOrderItem)
+        .set({ receivedQty: () => 'NVL("RECEIVED_QTY", 0) + :addedReceivedQty' })
+        .where(poItemWhere)
+        .setParameters({ addedReceivedQty: dto.receivedQty })
+        .execute();
+      await qr.manager.update(PurchaseOrderItem, poItemWhere, { lineStatus: poItem.lineStatus });
 
       // 8. 입하재고 + 입하원장 기록 (시리얼당 1건)
       for (const lot of savedLots) {

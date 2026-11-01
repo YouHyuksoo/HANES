@@ -273,6 +273,36 @@ describe('ArrivalService.receivePoLine (IQC005 Phase A)', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
+  it('PO 라인을 잠근 뒤 읽고, 누계는 NVL(RECEIVED_QTY,0)+수량 상대 가산으로 갱신한다', async () => {
+    setupFindOne({ lotUnitQty: null, orderQty: 1000, receivedQty: 300, mfgFound: true });
+    mockNumbering.nextArrivalNoV2.mockResolvedValue('R26052600009');
+    mockNumbering.nextMatSerial.mockResolvedValueOnce('VH1-RM260526-00900');
+    mockNumbering.next.mockResolvedValue('STX0000009');
+    const setCalls: Array<Record<string, unknown>> = [];
+    const paramCalls: unknown[] = [];
+    const qb = {
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn((v: Record<string, unknown>) => { setCalls.push(v); return qb; }),
+      where: jest.fn().mockReturnThis(),
+      setParameters: jest.fn((v: unknown) => { paramCalls.push(v); return qb; }),
+      execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
+    mockManager.createQueryBuilder.mockReturnValue(qb as any);
+
+    await target.receivePoLine({ ...baseDto, receivedQty: 200 }, user);
+
+    expect(mockQueryRunner.query).toHaveBeenCalledWith(
+      expect.stringMatching(/FROM PURCHASE_ORDER_ITEMS WHERE .*FOR UPDATE/),
+      expect.arrayContaining(['PO-26-001', 1, 1]),
+    );
+    // 잠금은 PO 라인 읽기보다 먼저 일어난다
+    expect(mockQueryRunner.query.mock.invocationCallOrder[0])
+      .toBeLessThan(mockManager.findOne.mock.invocationCallOrder[0]);
+    const relative = setCalls.find((c) => typeof c.receivedQty === 'function');
+    expect((relative!.receivedQty as () => string)()).toContain('NVL("RECEIVED_QTY", 0) + :addedReceivedQty');
+    expect(paramCalls).toContainEqual({ addedReceivedQty: 200 });
+  });
+
   it('case 5: mfgPartnerCode가 MFG 타입 아님 → BadRequestException', async () => {
     setupFindOne({ lotUnitQty: 50, orderQty: 1000, receivedQty: 0, mfgFound: false });
 

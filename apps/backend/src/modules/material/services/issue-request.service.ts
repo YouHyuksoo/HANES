@@ -36,6 +36,7 @@ import { IssueRequestAllocationService } from './issue-request-allocation.servic
 import { distributeQtyToOrders, sortOrdersByPlan, splitRequestQtyByOrder } from './issue-request-order-split';
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 import { SysConfigService } from '../../system/services/sys-config.service';
 
 /** 품목별 창고 가용재고를 IQC 관점으로 나눈 값(MAT_STOCKS JOIN MAT_LOTS, 1쿼리) */
@@ -1123,6 +1124,17 @@ export class IssueRequestService {
     const issueType = dto.issueType ?? request.issueType ?? 'PRODUCTION';
 
     return this.tx.run(async (queryRunner) => {
+      // 같은 요청의 동시 출고를 직렬화: 요청 행을 먼저 잠근 뒤 상태·품목 잔여를 읽는다(뒤 호출은 앞 호출 커밋 뒤 최신 값을 본다).
+      await lockRowsForUpdate(queryRunner, 'MAT_ISSUE_REQUESTS', {
+        REQUEST_NO: requestNo,
+        COMPANY: request.company ?? company,
+        PLANT_CD: request.plant ?? plant,
+      });
+      const lockedRequest = await this.getRequestOrFail(requestNo, company, plant);
+      if (lockedRequest.status !== 'APPROVED' && lockedRequest.status !== 'PARTIAL') {
+        throw new BadRequestException(`출고할 수 없는 상태입니다 (APPROVED/PARTIAL만 가능): ${lockedRequest.status}`);
+      }
+
       // 같은 요청 품목에 여러 LOT가 오면 수량을 합산해 검증/갱신한다(마지막 LOT만 반영되는 덮어쓰기 방지)
       const addedQtyBySeq = new Map<number, number>();
 
@@ -1218,9 +1230,12 @@ export class IssueRequestService {
       // 각 요청 품목의 issuedQty 갱신(품목별 합산)
       for (const [seq, addedQty] of addedQtyBySeq) {
         const reqItem = reqItemMap.get(seq)!;
-        await queryRunner.manager.update(MatIssueRequestItem, { requestId: reqItem.requestId, seq: reqItem.seq, ...requestTenantWhere }, {
-          issuedQty: reqItem.issuedQty + addedQty,
-        });
+        // 읽은 값에 더해 덮어쓰지 않고 DB 값에 상대 가산한다(잠금 밖 경로와 겹쳐도 누계가 줄지 않게)
+        await queryRunner.manager.createQueryBuilder().update(MatIssueRequestItem)
+          .set({ issuedQty: () => 'NVL("ISSUED_QTY", 0) + :addedIssueQty' })
+          .where({ requestId: reqItem.requestId, seq: reqItem.seq, ...requestTenantWhere })
+          .setParameters({ addedIssueQty: addedQty })
+          .execute();
       }
 
       // 모든 품목 완전 출고 여부 — 같은 트랜잭션에서 갱신 후 값으로 판정

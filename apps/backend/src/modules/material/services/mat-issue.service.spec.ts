@@ -10,6 +10,8 @@ import { MatStock } from '../../../entities/mat-stock.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { JobOrder } from '../../../entities/job-order.entity';
+import { ProcMatStock } from '../../../entities/proc-mat-stock.entity';
+import { ProcMatTransaction } from '../../../entities/proc-mat-transaction.entity';
 import { NumberingService } from '../../../shared/numbering.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 import { TransactionService } from '../../../shared/transaction.service';
@@ -1129,25 +1131,29 @@ describe('MatIssueService', () => {
       plant: 'P01',
     } as MatIssue);
 
+    const procStockQty = 5;
     const manager = {
       update: jest.fn().mockResolvedValue({ affected: 1 }),
-      find: jest.fn().mockResolvedValue([
-        {
-          transNo: 'TX-001',
-          transType: 'PROC_MOVE',
-          fromWarehouseId: 'RM_MAIN',
-          toWarehouseId: null,
-          itemCode: 'ITEM-001',
-          matUid: 'MAT-001',
-          qty: -5,
-          company: 'HANES',
-          plant: 'P01',
-        } as StockTransaction,
-      ]),
-      findOne: jest
-        .fn()
+      find: jest.fn((entity: unknown) => Promise.resolve(entity === ProcMatTransaction
+        // 공정입고 원본 거래 — 공정재고 가용 확인 대상
+        ? [{ transNo: 'PTX-001', transType: 'PROC_IN', processCode: 'PRC1', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5 } as ProcMatTransaction]
+        : [
+          {
+            transNo: 'TX-001',
+            transType: 'PROC_MOVE',
+            fromWarehouseId: 'RM_MAIN',
+            toWarehouseId: null,
+            itemCode: 'ITEM-001',
+            matUid: 'MAT-001',
+            qty: -5,
+            company: 'HANES',
+            plant: 'P01',
+          } as StockTransaction,
+        ])),
+      findOne: jest.fn((entity: unknown) => Promise.resolve(entity === ProcMatStock
+        ? ({ processCode: 'PRC1', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: procStockQty, availableQty: procStockQty } as ProcMatStock)
         // 원자재창고 재고 조회 (복원 대상)
-        .mockResolvedValueOnce({ warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0, company: 'HANES', plant: 'P01' } as MatStock),
+        : ({ warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0, company: 'HANES', plant: 'P01' } as MatStock))),
       create: jest.fn((entity, payload) => ({ ...payload })),
       save: jest.fn().mockImplementation(async (entity) => entity),
     };
@@ -1192,6 +1198,37 @@ describe('MatIssueService', () => {
         plant: 'P01',
       }),
     );
+    // 복원 전에 공정재고 행을 잠그고 가용수량을 확인했다
+    expect(mockQueryRunner.query).toHaveBeenCalledWith(
+      expect.stringContaining('FROM PROC_MAT_STOCKS WHERE'),
+      expect.arrayContaining(['HANES', 'P01', 'PRC1', 'ITEM-001', 'MAT-001']),
+    );
+  });
+
+  it('rejects canceling a PROC_MOVE issue when the proc stock was already mounted/used (available < restore qty)', async () => {
+    mockMatIssueRepo.findOne.mockResolvedValue({
+      issueNo: 'ISS-010', seq: 1, status: 'DONE', matUid: 'MAT-001', orderNo: 'JO-001', issueQty: 5, company: 'HANES', plant: 'P01',
+    } as MatIssue);
+    const manager = {
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
+      find: jest.fn((entity: unknown) => Promise.resolve(entity === ProcMatTransaction
+        ? [{ transNo: 'PTX-002', transType: 'PROC_IN', processCode: 'PRC1', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5 } as ProcMatTransaction]
+        : [{ transNo: 'TX-002', transType: 'PROC_MOVE', fromWarehouseId: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: -5, company: 'HANES', plant: 'P01' } as StockTransaction])),
+      // 공정재고에는 2 만 남음(3 은 설비에 장착됨)
+      findOne: jest.fn((entity: unknown) => Promise.resolve(entity === ProcMatStock
+        ? ({ processCode: 'PRC1', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 2 } as ProcMatStock)
+        : ({ warehouseCode: 'RM_MAIN', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 0, availableQty: 0, company: 'HANES', plant: 'P01' } as MatStock))),
+      create: jest.fn((entity, payload) => ({ ...payload })),
+      save: jest.fn().mockImplementation(async (entity) => entity),
+    };
+    (manager as any).createQueryBuilder = jest.fn(() => ({ update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }) }));
+    (mockQueryRunner as any).manager = manager;
+    mockNumbering.nextInTx.mockResolvedValueOnce('CANCEL-002');
+
+    await expect(target.cancel('ISS-010', 1, 'cancel', 'HANES', 'P01')).rejects.toThrow(
+      '이미 설비에 장착되었거나 사용된 자재라 취소할 수 없습니다. 먼저 장착을 해제하세요.',
+    );
+    expect(mockProcMatStockService.restoreInTx).not.toHaveBeenCalled();
   });
 
   it('blocks cancel when the loaded issue belongs to a different tenant', async () => {

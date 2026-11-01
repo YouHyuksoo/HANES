@@ -21,6 +21,9 @@ import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { ProcMatStockService } from '../../inventory/services/proc-mat-stock.service';
+import { ProcMatStock } from '../../../entities/proc-mat-stock.entity';
+import { ProcMatTransaction } from '../../../entities/proc-mat-transaction.entity';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { IssueRequestAllocationService } from './issue-request-allocation.service';
 import { CarrierFlowService } from '../../production/services/carrier-flow.service';
@@ -708,6 +711,8 @@ export class MatIssueService {
       // 공정입고(PROC_MOVE) 출고였다면 공정재고(PROC_MAT_STOCKS)도 대칭 차감 복원한다.
       // 원본 PROC_IN 거래(PROC_MAT_TRANSACTIONS)를 찾아 DEDUCT_BACK + PROC_IN_CANCEL 기록.
       if (hasMove) {
+        // 공정입고 출고는 공정재고가 그대로 남아 있을 때만 취소한다. 설비 장착·사용으로 줄었으면 원자재만 복원돼 재고가 부풀려진다.
+        await this.assertProcStockIntactInTx(queryRunner, refId, rawIssue.company, rawIssue.plant);
         await this.procMatStockService.restoreInTx(queryRunner, {
           mode: 'DEDUCT_BACK',
           refType: 'MAT_ISSUE',
@@ -734,6 +739,35 @@ export class MatIssueService {
 
       return { issueNo, seq, status: 'CANCELED' };
     });
+  }
+
+  /** 공정입고(PROC_IN) 거래가 넣은 LOT 수량이 공정재고에 그대로 남아 있는지 확인한다(부족하면 취소 거절). */
+  private async assertProcStockIntactInTx(queryRunner: QueryRunner, refId: string, company: string, plant: string) {
+    const origins = await queryRunner.manager.find(ProcMatTransaction, {
+      where: { company, plant, refType: 'MAT_ISSUE', refId, transType: 'PROC_IN', status: 'DONE' },
+    });
+    const needByKey = new Map<string, { processCode: string; itemCode: string; matUid: string; qty: number }>();
+    for (const origin of origins) {
+      const qty = Math.abs(origin.qty ?? 0);
+      if (qty <= 0) continue;
+      const key = `${origin.processCode}|${origin.itemCode}|${origin.matUid}`;
+      const acc = needByKey.get(key) ?? { processCode: origin.processCode, itemCode: origin.itemCode, matUid: origin.matUid, qty: 0 };
+      acc.qty += qty;
+      needByKey.set(key, acc);
+    }
+    for (const need of needByKey.values()) {
+      await lockRowsForUpdate(queryRunner, 'PROC_MAT_STOCKS', {
+        COMPANY: company, PLANT_CD: plant, PROCESS_CODE: need.processCode, ITEM_CODE: need.itemCode, MAT_UID: need.matUid,
+      });
+      const stock = await queryRunner.manager.findOne(ProcMatStock, {
+        where: { company, plant, processCode: need.processCode, itemCode: need.itemCode, matUid: need.matUid },
+      });
+      if (!stock || (stock.availableQty ?? 0) < need.qty || (stock.qty ?? 0) < need.qty) {
+        throw new BadRequestException(
+          `이미 설비에 장착되었거나 사용된 자재라 취소할 수 없습니다. 먼저 장착을 해제하세요. (${refId}, LOT: ${need.matUid})`,
+        );
+      }
+    }
   }
 
   private async ensureNoDownstreamProgress(issue: MatIssue, company?: string, plant?: string) {

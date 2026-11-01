@@ -276,7 +276,9 @@ describe('ArrivalService', () => {
 
       const manager = {
         findOne: poHeaderFindOne(),
-        find: jest.fn().mockResolvedValue([
+        find: jest.fn()
+          .mockResolvedValueOnce([{ poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0 } as PurchaseOrderItem])
+          .mockResolvedValue([
           { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 10 } as PurchaseOrderItem,
         ]),
         create: jest.fn((entity, payload) => ({ ...payload })),
@@ -332,7 +334,9 @@ describe('ArrivalService', () => {
 
       const manager = {
         findOne: poHeaderFindOne(),
-        find: jest.fn().mockResolvedValue([
+        find: jest.fn()
+          .mockResolvedValueOnce([{ poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0 } as PurchaseOrderItem])
+          .mockResolvedValue([
           { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 10 } as PurchaseOrderItem,
         ]),
         create: jest.fn((entity, payload) => ({ ...payload })),
@@ -377,7 +381,9 @@ describe('ArrivalService', () => {
 
       const manager = {
         findOne: poHeaderFindOne(),
-        find: jest.fn().mockResolvedValue([
+        find: jest.fn()
+          .mockResolvedValueOnce([{ poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0 } as PurchaseOrderItem])
+          .mockResolvedValue([
           { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 10 } as PurchaseOrderItem,
         ]),
         create: jest.fn((entity, payload) => ({ ...payload })),
@@ -416,12 +422,15 @@ describe('ArrivalService', () => {
       mockNumbering.next.mockResolvedValueOnce('TX-PO-001');
       (mockQueryRunner as any).manager = {
         findOne: poHeaderFindOne(),
-        find: jest.fn().mockResolvedValue([
+        find: jest.fn()
+          .mockResolvedValueOnce([{ poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0 } as PurchaseOrderItem])
+          .mockResolvedValue([
           { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 10 } as PurchaseOrderItem,
         ]),
         create: jest.fn((entity, payload) => ({ ...payload })),
         save: jest.fn().mockImplementation(async (entity) => entity),
         update: jest.fn().mockResolvedValue(undefined),
+        createQueryBuilder: jest.fn(successfulAtomicUpdateQb),
       };
 
       await target.createPoArrival({
@@ -458,7 +467,9 @@ describe('ArrivalService', () => {
 
       const manager = {
         findOne: poHeaderFindOne(),
-        find: jest.fn().mockResolvedValue([
+        find: jest.fn()
+          .mockResolvedValueOnce([{ poNo: 'PO-001', seq: 1, itemCode: 'ITEM-MISSING', orderQty: 10, receivedQty: 0 } as PurchaseOrderItem])
+          .mockResolvedValue([
           { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-MISSING', orderQty: 10, receivedQty: 10 } as PurchaseOrderItem,
         ]),
         create: jest.fn((entity, payload) => ({ ...payload })),
@@ -485,7 +496,7 @@ describe('ArrivalService', () => {
       expect(manager.update).toHaveBeenCalledWith(
         PurchaseOrderItem,
         { poNo: 'PO-001', seq: 1, company: 'CO', plant: 'P01' },
-        { receivedQty: 10, lineStatus: 'CLOSE' },
+        { lineStatus: 'CLOSE' },
       );
       expect(manager.find).toHaveBeenCalledWith(PurchaseOrderItem, {
         where: { poNo: 'PO-001', company: 'CO', plant: 'P01' },
@@ -495,6 +506,68 @@ describe('ArrivalService', () => {
         { poNo: 'PO-001', company: 'CO', plant: 'P01' },
         { status: 'RECEIVED' },
       );
+    });
+  });
+
+  describe('createPoArrival — 동시 입하 직렬화', () => {
+    const setupConcurrent = (lockedReceivedQty: number) => {
+      mockPurchaseOrderRepo.findOne.mockResolvedValue({
+        poNo: 'PO-001', status: 'CONFIRMED', partnerCode: 'V-001', partnerName: 'Vendor', company: 'CO', plant: 'P01',
+      } as PurchaseOrder);
+      // 트랜잭션 밖 선조회는 낡은 값(입하 0)이다
+      mockPurchaseOrderItemRepo.find.mockResolvedValue([
+        { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0, company: 'CO', plant: 'P01' } as PurchaseOrderItem,
+      ]);
+      mockStockTxRepo.find.mockResolvedValue([]);
+      mockItemMasterRepo.find.mockResolvedValue([{ itemCode: 'ITEM-001', itemName: 'Item', unit: 'EA' } as ItemMaster]);
+      mockWarehouseRepo.find.mockResolvedValue([{ warehouseCode: 'WH-001', warehouseName: 'Warehouse' } as Warehouse]);
+      mockNumbering.nextInTx.mockResolvedValueOnce('ARR-PO-009');
+      mockNumbering.nextMatSerial.mockResolvedValueOnce('MAT-PO-009');
+      mockNumbering.next.mockResolvedValueOnce('TX-PO-009');
+      const manager = {
+        findOne: poHeaderFindOne(),
+        // 잠금 뒤 재조회: 먼저 끝난 다른 입하가 반영된 최신 누계
+        find: jest.fn().mockResolvedValue([
+          { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: lockedReceivedQty } as PurchaseOrderItem,
+        ]),
+        create: jest.fn((entity, payload) => ({ ...payload })),
+        save: jest.fn().mockImplementation(async (entity) => entity),
+        update: jest.fn().mockResolvedValue(undefined),
+        createQueryBuilder: jest.fn(successfulAtomicUpdateQb),
+      };
+      (mockQueryRunner as any).manager = manager;
+      return manager;
+    };
+    const dto = {
+      poId: 'PO-001',
+      items: [{ poItemId: '1', itemCode: 'ITEM-001', receivedQty: 5, warehouseId: 'WH-001' }],
+    } as any;
+
+    it('PO 라인 행을 잠근 뒤 최신 누계로 잔량을 다시 검사해 동시 입하의 초과를 거절한다', async () => {
+      setupConcurrent(8);
+
+      await expect(target.createPoArrival(dto, 'CO', 'P01')).rejects.toThrow('잔량(2)을 초과합니다');
+
+      expect(mockQueryRunner.query).toHaveBeenCalledWith(
+        expect.stringMatching(/FROM PURCHASE_ORDER_ITEMS WHERE .*FOR UPDATE/),
+        expect.arrayContaining(['PO-001', 'CO', 'P01']),
+      );
+    });
+
+    it('PO 라인 누계는 읽은 값 덮어쓰기가 아니라 NVL(RECEIVED_QTY,0)+수량 상대 가산으로 갱신한다', async () => {
+      const manager = setupConcurrent(3);
+
+      await target.createPoArrival(dto, 'CO', 'P01');
+
+      const qbs = manager.createQueryBuilder.mock.results.map((r) => r.value);
+      const setCalls = qbs.flatMap((qb) => qb.set.mock.calls.map((c: unknown[]) => c[0] as Record<string, unknown>));
+      const relative = setCalls.find((c) => typeof c.receivedQty === 'function');
+      expect(relative).toBeDefined();
+      expect((relative!.receivedQty as () => string)()).toContain('NVL("RECEIVED_QTY", 0) + :addedReceivedQty');
+      const params = qbs.flatMap((qb) => qb.setParameters.mock.calls.map((c: unknown[]) => c[0]));
+      expect(params).toContainEqual({ addedReceivedQty: 5 });
+      // 상태는 잠근 뒤 누계(3)+5=8 로 계산한다
+      expect(manager.update).toHaveBeenCalledWith(PurchaseOrderItem, expect.objectContaining({ poNo: 'PO-001', seq: 1 }), { lineStatus: 'PARTIAL' });
     });
   });
 
@@ -514,7 +587,9 @@ describe('ArrivalService', () => {
       mockNumbering.next.mockResolvedValueOnce('TX-PO-002');
       const manager = {
         findOne: poHeaderFindOne(headerStatus),
-        find: jest.fn().mockResolvedValue([
+        find: jest.fn()
+          .mockResolvedValueOnce([{ poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 0 } as PurchaseOrderItem])
+          .mockResolvedValue([
           { poNo: 'PO-001', seq: 1, itemCode: 'ITEM-001', orderQty: 10, receivedQty: 4 } as PurchaseOrderItem,
         ]),
         create: jest.fn((entity, payload) => ({ ...payload })),
@@ -537,7 +612,7 @@ describe('ArrivalService', () => {
       expect(manager.update).toHaveBeenCalledWith(
         PurchaseOrderItem,
         expect.objectContaining({ poNo: 'PO-001', seq: 1 }),
-        { receivedQty: 4, lineStatus: 'PARTIAL' },
+        { lineStatus: 'PARTIAL' },
       );
       expect(manager.update).toHaveBeenCalledWith(
         PurchaseOrder,
@@ -605,13 +680,31 @@ describe('ArrivalService', () => {
       expect(manager.update).toHaveBeenCalledWith(
         PurchaseOrderItem,
         expect.objectContaining({ poNo: 'PO-001', seq: 1 }),
-        { receivedQty: 0, lineStatus: 'OPEN' },
+        { lineStatus: 'OPEN' },
       );
       expect(manager.update).toHaveBeenCalledWith(
         PurchaseOrder,
         { poNo: 'PO-001', company: 'CO', plant: 'P01' },
         { status: 'CONFIRMED' },
       );
+    });
+
+    it('입하취소는 PO 라인을 잠그고 GREATEST(0, RECEIVED_QTY - 수량) 상대 감산으로 되돌린다', async () => {
+      const manager = setupPoCancel('RECEIVED');
+
+      await target.cancel({ transactionId: 'TX-PO-C', reason: 'cancel', workerId: 'user' } as any, 'CO', 'P01');
+
+      expect(mockQueryRunner.query).toHaveBeenCalledWith(
+        expect.stringMatching(/FROM PURCHASE_ORDER_ITEMS WHERE .*FOR UPDATE/),
+        expect.arrayContaining(['PO-001', 1, 'CO', 'P01']),
+      );
+      const qbs = ((manager as any).createQueryBuilder as jest.Mock).mock.results.map((r) => r.value);
+      const setCalls = qbs.flatMap((qb) => qb.set.mock.calls.map((c: unknown[]) => c[0] as Record<string, unknown>));
+      const relative = setCalls.find((c) => typeof c.receivedQty === 'function');
+      expect(relative).toBeDefined();
+      expect((relative!.receivedQty as () => string)()).toContain('GREATEST(0, NVL("RECEIVED_QTY", 0) - :canceledReceivedQty)');
+      const params = qbs.flatMap((qb) => qb.setParameters.mock.calls.map((c: unknown[]) => c[0]));
+      expect(params).toContainEqual({ canceledReceivedQty: 10 });
     });
 
     it('마감(CLOSED)된 PO 는 입하취소로 되살리지 않는다(라인만 되돌림)', async () => {
@@ -622,7 +715,7 @@ describe('ArrivalService', () => {
       expect(manager.update).toHaveBeenCalledWith(
         PurchaseOrderItem,
         expect.objectContaining({ poNo: 'PO-001', seq: 1 }),
-        { receivedQty: 0, lineStatus: 'OPEN' },
+        { lineStatus: 'OPEN' },
       );
       expect(manager.update).not.toHaveBeenCalledWith(PurchaseOrder, expect.anything(), expect.anything());
     });
