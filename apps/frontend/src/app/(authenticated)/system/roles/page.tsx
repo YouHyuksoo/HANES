@@ -75,7 +75,10 @@ export default function RolesPage() {
       const data = res.data?.data ?? res.data;
       const codes = new Set<string>(
         Array.isArray(data)
-          ? data.map((p: { menuCode: string }) => p.menuCode)
+          // 서버는 메뉴 코드 문자열 배열을 돌려준다(예전 응답 모양인 { menuCode } 객체도 받는다)
+          ? data
+              .map((p: string | { menuCode?: string }) => (typeof p === "string" ? p : p?.menuCode))
+              .filter((code): code is string => typeof code === "string" && code.length > 0)
           : []
       );
       setCheckedCodes(codes);

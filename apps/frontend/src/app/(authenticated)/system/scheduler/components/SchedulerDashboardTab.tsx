@@ -27,8 +27,8 @@ interface DashboardSummary {
   todaySuccess: number;
   todayFail: number;
   successRate: number;
-  trend: { date: string; success: number; fail: number }[];
-  jobStats: { jobCode: string; jobName: string; success: number; fail: number }[];
+  dailyTrend: { date: string; total: number; success: number; fail: number }[];
+  jobRatio: { jobCode: string; total: number; success: number; fail: number }[];
   recentFails: {
     jobCode: string; startTime: string; errorMsg: string | null;
   }[];
@@ -36,7 +36,7 @@ interface DashboardSummary {
 
 const EMPTY: DashboardSummary = {
   todayTotal: 0, todaySuccess: 0, todayFail: 0, successRate: 0,
-  trend: [], jobStats: [], recentFails: [],
+  dailyTrend: [], jobRatio: [], recentFails: [],
 };
 
 export default function SchedulerDashboardTab() {
@@ -90,7 +90,7 @@ export default function SchedulerDashboardTab() {
           <CardContent>
             <h3 className="text-sm font-semibold text-text mb-3">{t("system.scheduler.trendChart", "7일간 실행 추이")}</h3>
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={data.trend}>
+              <LineChart data={data.dailyTrend}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
@@ -110,7 +110,7 @@ export default function SchedulerDashboardTab() {
           <CardContent>
             <h3 className="text-sm font-semibold text-text mb-3">{t("system.scheduler.ratioChart", "작업별 성공/실패")}</h3>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={data.jobStats}>
+              <BarChart data={data.jobRatio}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis dataKey="jobCode" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
