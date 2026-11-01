@@ -19,6 +19,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { addMatStockQty } from '../../../common/utils/mat-stock-upsert.util';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { MAT_LOT_STATUS, isMatLotTerminal } from '@harness/shared';
@@ -266,20 +267,12 @@ export class ShelfLifeReInspectService {
         .setParameters({ expectedQty: stock.qty }).execute();
       if ((moved.affected ?? 0) !== 1) throw new BadRequestException('동시 처리로 재검 대상 재고가 변경되었습니다. 다시 조회해 주세요.');
 
-      const existing = await queryRunner.manager.findOne(MatStock, {
-        where: { warehouseCode: defectWh.warehouseCode, itemCode, matUid, ...tenantWhere },
-      });
-      if (existing) {
-        await queryRunner.manager.createQueryBuilder().update(MatStock)
-          .set({ qty: () => '"QTY" + :stockDelta', availableQty: () => '"AVAILABLE_QTY" + :stockDelta' })
-          .where({ warehouseCode: defectWh.warehouseCode, itemCode, matUid, ...tenantWhere })
-          .setParameters({ stockDelta: stock.qty }).execute();
-      } else {
-        await queryRunner.manager.save(MatStock, {
-          warehouseCode: defectWh.warehouseCode, itemCode, matUid,
-          qty: stock.qty, reservedQty: 0, availableQty: stock.qty, company, plant,
-        });
-      }
+      // 불량창고 행: 먼저 상대 UPDATE, 없으면 INSERT, 동시 INSERT 로 유니크 위반이면 다시 UPDATE
+      await addMatStockQty(
+        queryRunner.manager,
+        { warehouseCode: defectWh.warehouseCode, itemCode, matUid, company, plant },
+        stock.qty,
+      );
 
       // 양품창고 출고(-): from=양품창고, to=null, 음수 수량
       await queryRunner.manager.save(StockTransaction, {

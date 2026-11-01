@@ -173,6 +173,31 @@ describe('LotMergeService', () => {
       );
     });
 
+    it('병합은 LOT 번호 순으로 LOT·재고 행을 잠근 뒤 읽는다', async () => {
+      mockQueryRunner.manager.find
+        .mockResolvedValueOnce([lot('MAT-001'), lot('MAT-002')])
+        .mockResolvedValueOnce([stock('MAT-001', 30), stock('MAT-002', 20)])
+        .mockResolvedValueOnce([]);
+      (mockQueryRunner.manager.query as jest.Mock).mockResolvedValue([{ RECVD: 100 }]);
+      mockQueryRunner.manager.findOne.mockResolvedValue({ itemCode: 'ITEM-001', itemName: 'PART-A', company: 'C1', plant: 'P1' } as ItemMaster);
+      (mockQueryRunner.manager.create as jest.Mock).mockImplementation((_e: unknown, obj: unknown) => obj);
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+      mockQueryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+
+      // 요청 순서를 거꾸로 줘도 잠금은 MAT-001 → MAT-002 순서
+      await target.merge({ sourceLotIds: ['MAT-002', 'MAT-001'] }, 'C1', 'P1');
+
+      const locks = (mockQueryRunner.query as jest.Mock).mock.calls.map((c) => [c[0], c[1]]);
+      expect(locks).toEqual([
+        [expect.stringContaining('FROM MAT_LOTS WHERE'), ['MAT-001', 'C1', 'P1']],
+        [expect.stringContaining('FROM MAT_STOCKS WHERE'), ['MAT-001', 'C1', 'P1']],
+        [expect.stringContaining('FROM MAT_LOTS WHERE'), ['MAT-002', 'C1', 'P1']],
+        [expect.stringContaining('FROM MAT_STOCKS WHERE'), ['MAT-002', 'C1', 'P1']],
+      ]);
+      expect((mockQueryRunner.query as jest.Mock).mock.invocationCallOrder[3])
+        .toBeLessThan((mockQueryRunner.manager.find as jest.Mock).mock.invocationCallOrder[0]);
+    });
+
     it('병합 전이: 원본은 MERGED(종결·출고 불가)+재고 0, 새 통합 LOT 은 NORMAL(출고 가능)', async () => {
       mockQueryRunner.manager.find
         .mockResolvedValueOnce([lot('MAT-001'), lot('MAT-002')])

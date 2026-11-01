@@ -22,6 +22,7 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { LotMergeDto, LotMergeQueryDto } from '../dto/lot-merge.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 import { MAT_LOT_ACTIVE_STATUSES, MAT_LOT_STATUS, isMatLotMergeableOrSplittable, isMatLotOnHold } from '@harness/shared';
 
 /**
@@ -152,6 +153,13 @@ export class LotMergeService {
     }
 
     return this.tx.run(async (queryRunner) => {
+      // 0) LOT 번호 순으로 LOT·재고 행을 잠근다 — 같은 LOT 을 동시에 병합·출고·조정하는 호출이 한 줄로 서고,
+      //    모든 호출이 같은 순서로 잠가 교착이 없다. 잠근 뒤에 읽으므로 아래 검증·수량이 최신 커밋 값이다.
+      for (const matUid of [...uniqueIds].sort()) {
+        await lockRowsForUpdate(queryRunner, 'MAT_LOTS', { MAT_UID: matUid, COMPANY: company, PLANT_CD: plant });
+        await lockRowsForUpdate(queryRunner, 'MAT_STOCKS', { MAT_UID: matUid, COMPANY: company, PLANT_CD: plant });
+      }
+
       // 1) 모든 LOT 조회
       const lots = await queryRunner.manager.find(MatLot, {
         where: { matUid: In(uniqueIds), ...tenantWhere },

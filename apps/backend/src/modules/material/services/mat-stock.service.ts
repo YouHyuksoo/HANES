@@ -20,6 +20,8 @@ import { Warehouse } from '../../../entities/warehouse.entity';
 import { WarehouseLocation } from '../../../entities/warehouse-location.entity';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { NumberingService } from '../../../shared/numbering.service';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
+import { addMatStockQty, isUniqueViolation } from '../../../common/utils/mat-stock-upsert.util';
 import { StockQueryDto, StockAdjustDto, StockTransferDto, StockAssignLocationDto } from '../dto/mat-stock.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
@@ -413,6 +415,14 @@ export class MatStockService {
     const { itemCode, warehouseCode, locationCode, adjustQty, reason, matUid } = dto;
 
     return this.tx.run(async (queryRunner) => {
+      // 대상 재고 행을 먼저 잠근 뒤 읽는다 — 같은 LOT·창고의 출고·이동·다른 조정과 동시여도 읽은 값이 어긋나지 않는다.
+      await lockRowsForUpdate(queryRunner, 'MAT_STOCKS', {
+        ITEM_CODE: itemCode,
+        WAREHOUSE_CODE: warehouseCode,
+        MAT_UID: matUid,
+        COMPANY: company,
+        PLANT_CD: plant,
+      });
       // 기존 재고 조회 또는 생성
       let stock = await queryRunner.manager.findOne(MatStock, {
         where: {
@@ -442,16 +452,25 @@ export class MatStockService {
       }
 
       if (stock) {
-        await queryRunner.manager.update(MatStock,
-          {
+        // 읽은 값 대입이 아니라 차이만큼 상대 갱신한다(가용 = 수량 - 예약)
+        const adjusted = await queryRunner.manager.createQueryBuilder().update(MatStock)
+          .set({
+            qty: () => '"QTY" + :adjustDelta',
+            availableQty: () => '"QTY" + :adjustDelta - NVL("RESERVED_QTY", 0)',
+          })
+          .where({
             warehouseCode: stock.warehouseCode,
             itemCode: stock.itemCode,
-            matUid: stock.matUid,
+            matUid: stock.matUid ?? IsNull(),
             ...(company ? { company } : {}),
             ...(plant ? { plant } : {}),
-          },
-          { qty: afterQty, availableQty: afterQty - stock.reservedQty },
-        );
+          })
+          .andWhere('"QTY" + :adjustDelta >= 0 AND "QTY" + :adjustDelta >= NVL("RESERVED_QTY", 0)')
+          .setParameters({ adjustDelta: adjustQty })
+          .execute();
+        if ((adjusted.affected ?? 0) !== 1) {
+          throw new BadRequestException('동시 처리로 재고가 변경되었습니다. 다시 조회해 주세요.');
+        }
         stock = await queryRunner.manager.findOne(MatStock, {
           where: {
             warehouseCode: stock.warehouseCode,
@@ -476,7 +495,14 @@ export class MatStockService {
           company,
           plant,
         });
-        stock = await queryRunner.manager.save(newStock);
+        try {
+          stock = await queryRunner.manager.save(newStock);
+        } catch (error: unknown) {
+          if (isUniqueViolation(error)) {
+            throw new BadRequestException('동시 처리로 같은 재고가 먼저 등록되었습니다. 다시 조회해 주세요.');
+          }
+          throw error;
+        }
       }
 
       // 조정 이력 기록
@@ -501,6 +527,16 @@ export class MatStockService {
     const tenantWhere = this.tenantWhere(company, plant);
 
     return this.tx.run(async (queryRunner) => {
+      // 출고·입고 창고 재고 행을 창고 코드 순으로 잠근다(같은 LOT 동시 이동·조정이 한 줄로 서고, 순서가 같아 교착 없음)
+      for (const lockWarehouse of [fromWarehouseCode, toWarehouseCode].sort()) {
+        await lockRowsForUpdate(queryRunner, 'MAT_STOCKS', {
+          ITEM_CODE: itemCode,
+          WAREHOUSE_CODE: lockWarehouse,
+          MAT_UID: matUid,
+          COMPANY: company,
+          PLANT_CD: plant,
+        });
+      }
       // 출고 창고 재고 확인
       const fromStock = await queryRunner.manager.findOne(MatStock, {
         where: { itemCode, warehouseCode: fromWarehouseCode, matUid: matUid ?? IsNull(), ...tenantWhere },
@@ -535,25 +571,15 @@ export class MatStockService {
         throw new BadRequestException('동시 처리로 출고 재고가 변경되었거나 가용재고가 부족합니다. 다시 조회해 주세요.');
       }
 
-      if (toStock) {
-        await this.changeStockAtomically(queryRunner,
-          { warehouseCode: toStock.warehouseCode, itemCode: toStock.itemCode, matUid: toStock.matUid, ...tenantWhere }, qty, false);
-        toStock = await queryRunner.manager.findOne(MatStock, {
-          where: { warehouseCode: toStock.warehouseCode, itemCode: toStock.itemCode, matUid: toStock.matUid, ...tenantWhere },
-        });
-      } else {
-        const newStock = queryRunner.manager.create(MatStock, {
-          itemCode,
-          warehouseCode: toWarehouseCode,
-          matUid,
-          qty,
-          availableQty: qty,
-          reservedQty: 0,
-          company: fromStock.company,
-          plant: fromStock.plant,
-        });
-        toStock = await queryRunner.manager.save(newStock);
-      }
+      // 도착 행: 먼저 상대 UPDATE, 없으면 INSERT, 동시 INSERT 로 유니크 위반이면 다시 UPDATE
+      await addMatStockQty(
+        queryRunner.manager,
+        { warehouseCode: toWarehouseCode, itemCode, matUid: matUid ?? null, company: fromStock.company, plant: fromStock.plant },
+        qty,
+      );
+      toStock = await queryRunner.manager.findOne(MatStock, {
+        where: { warehouseCode: toWarehouseCode, itemCode, matUid: matUid ?? IsNull(), ...this.tenantWhere(fromStock.company, fromStock.plant) },
+      });
 
       return { fromStock, toStock };
     });

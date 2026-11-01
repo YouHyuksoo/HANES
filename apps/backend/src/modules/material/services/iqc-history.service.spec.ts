@@ -1215,11 +1215,18 @@ describe('IqcHistoryService cancel policy', () => {
       judgeReason: 'FAIL',
     } as any);
 
+    // 불량창고 행은 먼저 상대 UPDATE(QueryBuilder) → 0행이면 INSERT
+    const stockQb = {
+      update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 0 }),
+    };
     const manager = {
       update: jest.fn().mockResolvedValue(undefined),
       findOne: jest.fn().mockResolvedValue(null),
       save: jest.fn().mockImplementation(async (_entity: unknown, value: unknown) => value),
+      insert: jest.fn().mockResolvedValue(undefined),
       create: jest.fn((_entity: unknown, value: unknown) => value),
+      createQueryBuilder: jest.fn().mockReturnValue(stockQb),
     };
     (mockQueryRunner as any).manager = manager;
 
@@ -1291,11 +1298,18 @@ describe('IqcHistoryService cancel policy', () => {
       judgeReason: 'FAIL',
     } as any);
 
+    // 불량창고 행은 먼저 상대 UPDATE(QueryBuilder) → 0행이면 INSERT
+    const stockQb = {
+      update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 0 }),
+    };
     const manager = {
       update: jest.fn().mockResolvedValue(undefined),
       findOne: jest.fn().mockResolvedValue(null),
       save: jest.fn().mockImplementation(async (_entity: unknown, value: unknown) => value),
+      insert: jest.fn().mockResolvedValue(undefined),
       create: jest.fn((_entity: unknown, value: unknown) => value),
+      createQueryBuilder: jest.fn().mockReturnValue(stockQb),
     };
     (mockQueryRunner as any).manager = manager;
 
@@ -1308,7 +1322,7 @@ describe('IqcHistoryService cancel policy', () => {
       expect.objectContaining({ matUid: 'MAT-001' }),
       expect.objectContaining({ qty: 0, status: 'DEPLETED' }),
     );
-    expect(manager.save).toHaveBeenCalledWith(MatStock, expect.objectContaining({
+    expect(manager.insert).toHaveBeenCalledWith(MatStock, expect.objectContaining({
       warehouseCode: 'WH-DEFECT',
       matUid: 'MAT-001',
       qty: 10,

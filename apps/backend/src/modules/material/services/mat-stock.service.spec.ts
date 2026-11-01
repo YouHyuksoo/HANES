@@ -621,6 +621,39 @@ describe('MatStockService', () => {
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
     });
 
+    it('조정은 대상 재고 행을 먼저 잠근 뒤 읽고, 읽은 값 대입이 아니라 차이만큼 상대 갱신한다', async () => {
+      const stock = createStock({ qty: 100, availableQty: 100 });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(stock).mockResolvedValueOnce({ ...stock, qty: 110 });
+      mockQueryRunner.manager.save.mockResolvedValue({} as any);
+
+      await target.adjustStock({ itemCode: 'ITEM-001', warehouseCode: 'WH-01', adjustQty: 10, reason: '조정' } as any, 'HANES', 'P01');
+
+      expect(mockQueryRunner.query).toHaveBeenCalledWith(
+        expect.stringMatching(/^SELECT 1 FROM MAT_STOCKS WHERE .* FOR UPDATE$/),
+        ['ITEM-001', 'WH-01', 'HANES', 'P01'],
+      );
+      expect((mockQueryRunner.query as jest.Mock).mock.invocationCallOrder[0])
+        .toBeLessThan((mockQueryRunner.manager.findOne as jest.Mock).mock.invocationCallOrder[0]);
+      expect(stockQb.update).toHaveBeenCalledWith(MatStock);
+      expect(stockQb.setParameters).toHaveBeenCalledWith({ adjustDelta: 10 });
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalledWith(MatStock, expect.anything(), expect.anything());
+      // 조정 이력의 before/after 는 잠근 뒤 읽은 값 기준
+      expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(
+        InvAdjLog,
+        expect.objectContaining({ beforeQty: 100, afterQty: 110, diffQty: 10 }),
+      );
+    });
+
+    it('상대 갱신 행수가 1이 아니면(동시 변경) 이력을 남기지 않고 거절한다', async () => {
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(createStock({ qty: 100, availableQty: 100 }));
+      stockQb.execute.mockResolvedValueOnce({ affected: 0 });
+
+      await expect(
+        target.adjustStock({ itemCode: 'ITEM-001', warehouseCode: 'WH-01', adjustQty: -10, reason: '조정' } as any),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+    });
+
     it('조정 후 재고가 음수가 되면 BadRequestException', async () => {
       const stock = createStock({ qty: 5 });
       mockQueryRunner.manager.findOne.mockResolvedValueOnce(stock);
@@ -710,6 +743,23 @@ describe('MatStockService', () => {
       expect(mockDataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(stockQb.andWhere).toHaveBeenCalledWith('"QTY" >= :stockDelta AND "AVAILABLE_QTY" >= :stockDelta');
       expect(stockQb.setParameters).toHaveBeenCalledWith({ stockDelta: 20 });
+    });
+
+    it('도착 창고에 행이 없으면 상대 UPDATE 0행 뒤 INSERT 하고, 출고·입고 행을 창고 코드 순으로 잠근다', async () => {
+      const fromStock = createStock({ warehouseCode: 'WH-ZZ', qty: 100, availableQty: 100, company: 'C1', plant: 'P1' });
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(fromStock).mockResolvedValueOnce({ ...fromStock, warehouseCode: 'WH-AA', qty: 20 });
+      // 출고 차감 1행 성공 → 도착 가산 0행 → INSERT
+      stockQb.execute.mockResolvedValueOnce({ affected: 1 }).mockResolvedValueOnce({ affected: 0 });
+
+      await target.transferStock({ itemCode: 'ITEM-001', fromWarehouseCode: 'WH-ZZ', toWarehouseCode: 'WH-AA', qty: 20 } as any, 'C1', 'P1');
+
+      const lockCalls = (mockQueryRunner.query as jest.Mock).mock.calls;
+      expect(lockCalls[0][1]).toEqual(['ITEM-001', 'WH-AA', 'C1', 'P1']);
+      expect(lockCalls[1][1]).toEqual(['ITEM-001', 'WH-ZZ', 'C1', 'P1']);
+      expect(mockQueryRunner.manager.insert).toHaveBeenCalledWith(
+        MatStock,
+        expect.objectContaining({ warehouseCode: 'WH-AA', itemCode: 'ITEM-001', qty: 20, availableQty: 20, company: 'C1', plant: 'P1' }),
+      );
     });
 
     it('재고 이동은 요청 테넌트 범위에서 출고/입고 재고를 조회하고 갱신한다', async () => {

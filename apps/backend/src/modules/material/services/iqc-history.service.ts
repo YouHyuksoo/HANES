@@ -18,6 +18,7 @@ import { IqcHistoryQueryDto, CreateIqcResultDto, CreateArrivalIqcResultDto, Pend
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { AqlService } from '../../quality/aql/services/aql.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { addMatStockQty } from '../../../common/utils/mat-stock-upsert.util';
 import { TransactionService } from '../../../shared/transaction.service';
 import { MatArrivalStock } from '../../../entities/mat-arrival-stock.entity';
 import { calcLotExpireDate } from '../rules/fifo.rules';
@@ -1393,35 +1394,12 @@ export class IqcHistoryService {
       const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
       await p.clearSource(queryRunner);
 
-      const existing = await queryRunner.manager.findOne(MatStock, {
-        where: {
-          warehouseCode: p.defectWarehouseCode,
-          itemCode: p.itemCode,
-          matUid: p.matUid,
-          ...this.tenantWhere(p.company, p.plant),
-        },
-      });
-      if (existing) {
-        await queryRunner.manager.createQueryBuilder().update(MatStock)
-          .set({ qty: () => '"QTY" + :stockDelta', availableQty: () => '"AVAILABLE_QTY" + :stockDelta' })
-          .where({
-            warehouseCode: p.defectWarehouseCode,
-            itemCode: p.itemCode,
-            matUid: p.matUid,
-            ...this.tenantWhere(p.company, p.plant),
-          }).setParameters({ stockDelta: p.qty }).execute();
-      } else {
-        await queryRunner.manager.save(MatStock, {
-          warehouseCode: p.defectWarehouseCode,
-          itemCode: p.itemCode,
-          matUid: p.matUid,
-          qty: p.qty,
-          reservedQty: 0,
-          availableQty: p.qty,
-          company: p.company,
-          plant: p.plant,
-        });
-      }
+      // 불량창고 행: 먼저 상대 UPDATE, 없으면 INSERT, 동시 INSERT 로 유니크 위반이면 다시 UPDATE
+      await addMatStockQty(
+        queryRunner.manager,
+        { warehouseCode: p.defectWarehouseCode, itemCode: p.itemCode, matUid: p.matUid, company: p.company, plant: p.plant },
+        p.qty,
+      );
 
       await queryRunner.manager.save(StockTransaction, {
         transNo,
@@ -1732,10 +1710,6 @@ export class IqcHistoryService {
       );
     }
 
-    const sourceStock = await queryRunner.manager.findOne(MatStock, {
-      where: { warehouseCode: failMove.fromWarehouseId, itemCode, matUid, ...this.tenantWhere(company, plant) },
-    });
-
     const decreased = await queryRunner.manager.createQueryBuilder().update(MatStock)
       .set({ qty: () => '"QTY" - :stockDelta', availableQty: () => '"AVAILABLE_QTY" - :stockDelta' })
       .where({ warehouseCode: failMove.toWarehouseId, itemCode, matUid, ...this.tenantWhere(company, plant) })
@@ -1743,23 +1717,12 @@ export class IqcHistoryService {
       .setParameters({ stockDelta: failMove.qty }).execute();
     if ((decreased.affected ?? 0) !== 1) throw new BadRequestException(`불량창고 재고가 동시에 변경되었습니다. LOT: ${matUid}`);
 
-    if (sourceStock) {
-      await queryRunner.manager.createQueryBuilder().update(MatStock)
-        .set({ qty: () => '"QTY" + :stockDelta', availableQty: () => '"AVAILABLE_QTY" + :stockDelta' })
-        .where({ warehouseCode: failMove.fromWarehouseId, itemCode, matUid, ...this.tenantWhere(company, plant) })
-        .setParameters({ stockDelta: failMove.qty }).execute();
-    } else {
-      await queryRunner.manager.save(MatStock, {
-        warehouseCode: failMove.fromWarehouseId,
-        itemCode,
-        matUid,
-        qty: failMove.qty,
-        reservedQty: 0,
-        availableQty: failMove.qty,
-        company,
-        plant,
-      });
-    }
+    // 복귀 창고 행: 먼저 상대 UPDATE, 없으면 INSERT, 동시 INSERT 로 유니크 위반이면 다시 UPDATE
+    await addMatStockQty(
+      queryRunner.manager,
+      { warehouseCode: failMove.fromWarehouseId, itemCode, matUid, company, plant },
+      failMove.qty,
+    );
 
     const transNo = await this.numbering.nextInTx(queryRunner, 'STOCK_TX');
     await queryRunner.manager.save(StockTransaction, {

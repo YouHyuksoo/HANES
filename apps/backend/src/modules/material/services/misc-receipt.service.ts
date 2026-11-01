@@ -11,6 +11,7 @@ import { CreateMiscReceiptDto, MiscReceiptQueryDto } from '../dto/misc-receipt.d
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
+import { addMatStockQty } from '../../../common/utils/mat-stock-upsert.util';
 
 @Injectable()
 export class MiscReceiptService {
@@ -236,44 +237,12 @@ export class MiscReceiptService {
 
       const transNo = await this.generateTransNo(queryRunner);
 
-      const existingStock = await queryRunner.manager.findOne(MatStock, {
-        where: {
-          warehouseCode: warehouse.warehouseCode,
-          itemCode,
-          matUid: effectiveMatUid,
-          ...(company ? { company } : {}),
-          ...(plant ? { plant } : {}),
-        },
-      });
-
-      if (existingStock) {
-        this.assertSameTenant(existingStock, company, plant, '기존 재고');
-        const stockResult = await queryRunner.manager.update(MatStock, {
-            warehouseCode: existingStock.warehouseCode,
-            itemCode: existingStock.itemCode,
-            matUid: existingStock.matUid,
-            ...(company ? { company } : {}),
-            ...(plant ? { plant } : {}),
-          }, {
-            qty: () => `QTY + ${Number(qty)}`,
-            availableQty: () => `AVAILABLE_QTY + ${Number(qty)}`,
-          });
-        if (stockResult?.affected !== undefined && stockResult.affected !== 1) {
-          throw new BadRequestException(`자재재고 입고 반영에 실패했습니다. LOT: ${effectiveMatUid}`);
-        }
-      } else {
-        const newStock = queryRunner.manager.create(MatStock, {
-          warehouseCode: warehouse.warehouseCode,
-          itemCode,
-          matUid: effectiveMatUid,
-          qty,
-          availableQty: qty,
-          reservedQty: 0,
-          company: resolvedCompany,
-          plant: resolvedPlant,
-        });
-        await queryRunner.manager.save(newStock);
-      }
+      // 먼저 상대 UPDATE, 없으면 INSERT, 동시 INSERT 로 유니크 위반이면 다시 UPDATE (find 후 insert 경합 방지)
+      await addMatStockQty(
+        queryRunner.manager,
+        { warehouseCode: warehouse.warehouseCode, itemCode, matUid: effectiveMatUid, company: resolvedCompany, plant: resolvedPlant },
+        qty,
+      );
 
       const transaction = queryRunner.manager.create(StockTransaction, {
         transNo,
@@ -288,8 +257,8 @@ export class MiscReceiptService {
         remark,
         account,
         status: 'DONE',
-        company: existingStock?.company ?? resolvedCompany,
-        plant: existingStock?.plant ?? resolvedPlant,
+        company: resolvedCompany,
+        plant: resolvedPlant,
       });
       await queryRunner.manager.save(transaction);
 

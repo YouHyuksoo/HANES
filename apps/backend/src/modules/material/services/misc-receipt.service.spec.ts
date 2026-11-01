@@ -26,6 +26,7 @@ describe('MiscReceiptService', () => {
   let tx: DeepMocked<TransactionService>;
   let numbering: DeepMocked<NumberingService>;
   let queryRunner: DeepMocked<QueryRunner>;
+  let stockQb: any;
 
   beforeEach(async () => {
     stockTxRepo = createMock<Repository<StockTransaction>>();
@@ -38,6 +39,11 @@ describe('MiscReceiptService', () => {
     tx = createMock<TransactionService>();
     numbering = createMock<NumberingService>();
     queryRunner = createMock<QueryRunner>();
+    stockQb = {
+      update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
+    queryRunner.manager.createQueryBuilder.mockReturnValue(stockQb);
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
     tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
@@ -139,19 +145,10 @@ describe('MiscReceiptService', () => {
     queryRunner.manager.findOne
       .mockResolvedValueOnce({ warehouseCode: 'WH-01', warehouseName: 'Main WH' } as Warehouse)
       .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'Raw' } as ItemMaster)
-      .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot)
-      .mockResolvedValueOnce({
-        warehouseCode: 'WH-01',
-        itemCode: 'ITEM-001',
-        matUid: 'MAT-001',
-        qty: 10,
-        reservedQty: 8,
-        availableQty: 2,
-      } as MatStock);
+      .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001' } as MatLot);
 
     queryRunner.manager.create.mockReturnValue({ transNo: 'MISC2026010100001' } as any);
     queryRunner.manager.save.mockResolvedValue({ transNo: 'MISC2026010100001' } as any);
-    queryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
 
     await service.create({
       warehouseId: 'WH-01',
@@ -161,47 +158,54 @@ describe('MiscReceiptService', () => {
       workerId: 'W1',
     });
 
-    expect(queryRunner.manager.update).toHaveBeenCalledWith(
-      MatStock,
-      { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001' },
-      expect.objectContaining({
-        qty: expect.any(Function),
-        availableQty: expect.any(Function),
-      }),
+    // 먼저 상대 UPDATE (find 로 행 존재를 판단하지 않는다)
+    expect(stockQb.update).toHaveBeenCalledWith(MatStock);
+    expect(stockQb.set).toHaveBeenCalledWith(
+      expect.objectContaining({ qty: expect.any(Function), availableQty: expect.any(Function) }),
     );
+    expect(stockQb.where).toHaveBeenCalledWith({ warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001' });
+    expect(stockQb.setParameters).toHaveBeenCalledWith({ stockDelta: 5 });
+    expect(queryRunner.manager.insert).not.toHaveBeenCalled();
     expect(tx.run).toHaveBeenCalledTimes(1);
     expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
   });
 
-  it('blocks create when existing stock belongs to a different tenant', async () => {
+  it('inserts a new stock row when the relative update matched nothing', async () => {
     stockTxRepo.findOne.mockResolvedValue(null);
-
     queryRunner.manager.findOne
       .mockResolvedValueOnce({ warehouseCode: 'WH-01', warehouseName: 'Main WH', company: 'HANES', plant: 'P01' } as Warehouse)
       .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'Raw', company: 'HANES', plant: 'P01' } as ItemMaster)
-      .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' } as MatLot)
-      .mockResolvedValueOnce({
-        warehouseCode: 'WH-01',
-        itemCode: 'ITEM-001',
-        matUid: 'MAT-001',
-        qty: 10,
-        reservedQty: 0,
-        availableQty: 10,
-        company: 'OTHER',
-        plant: 'P01',
-      } as MatStock);
+      .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' } as MatLot);
+    queryRunner.manager.create.mockReturnValue({ transNo: 'MISC2026010100001' } as any);
+    queryRunner.manager.save.mockResolvedValue({ transNo: 'MISC2026010100001' } as any);
+    stockQb.execute.mockResolvedValueOnce({ affected: 0 });
 
-    await expect(
-      service.create({
-        warehouseId: 'WH-01',
-        itemCode: 'ITEM-001',
-        matUid: 'MAT-001',
-        qty: 5,
-      }, 'HANES', 'P01'),
-    ).rejects.toThrow(BadRequestException);
+    await service.create({ warehouseId: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5 }, 'HANES', 'P01');
 
-    expect(queryRunner.manager.update).not.toHaveBeenCalled();
-    expect(queryRunner.manager.save).not.toHaveBeenCalled();
+    expect(stockQb.where).toHaveBeenCalledWith({
+      warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', company: 'HANES', plant: 'P01',
+    });
+    expect(queryRunner.manager.insert).toHaveBeenCalledWith(
+      MatStock,
+      expect.objectContaining({ warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5, availableQty: 5, company: 'HANES', plant: 'P01' }),
+    );
+  });
+
+  it('adds to the row again when a concurrent insert wins (unique violation)', async () => {
+    stockTxRepo.findOne.mockResolvedValue(null);
+    queryRunner.manager.findOne
+      .mockResolvedValueOnce({ warehouseCode: 'WH-01', warehouseName: 'Main WH', company: 'HANES', plant: 'P01' } as Warehouse)
+      .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'Raw', company: 'HANES', plant: 'P01' } as ItemMaster)
+      .mockResolvedValueOnce({ matUid: 'MAT-001', itemCode: 'ITEM-001', company: 'HANES', plant: 'P01' } as MatLot);
+    queryRunner.manager.create.mockReturnValue({ transNo: 'MISC2026010100001' } as any);
+    queryRunner.manager.save.mockResolvedValue({ transNo: 'MISC2026010100001' } as any);
+    stockQb.execute.mockResolvedValueOnce({ affected: 0 }).mockResolvedValueOnce({ affected: 1 });
+    queryRunner.manager.insert.mockRejectedValueOnce(new Error('ORA-00001: unique constraint violated'));
+
+    await service.create({ warehouseId: 'WH-01', itemCode: 'ITEM-001', matUid: 'MAT-001', qty: 5 }, 'HANES', 'P01');
+
+    expect(queryRunner.manager.insert).toHaveBeenCalledTimes(1);
+    expect(stockQb.execute).toHaveBeenCalledTimes(2);
   });
 
   it('blocks create when matUid lot itemCode mismatches request itemCode', async () => {
@@ -227,6 +231,7 @@ describe('MiscReceiptService', () => {
     numbering.nextMatSerial.mockResolvedValue('VH1-RM260701-00001');
     queryRunner.manager.create.mockImplementation((_entity: any, payload: any) => payload);
     queryRunner.manager.save.mockImplementation(async (payload: any) => payload);
+    stockQb.execute.mockResolvedValueOnce({ affected: 0 });
 
     queryRunner.manager.findOne
       .mockResolvedValueOnce({ warehouseCode: 'WH-01', warehouseName: 'Main WH', company: 'HANES', plant: 'P01' } as Warehouse)
@@ -257,7 +262,7 @@ describe('MiscReceiptService', () => {
         plant: 'P01',
       }),
     );
-    expect(queryRunner.manager.create).toHaveBeenCalledWith(
+    expect(queryRunner.manager.insert).toHaveBeenCalledWith(
       MatStock,
       expect.objectContaining({
         warehouseCode: 'WH-01',

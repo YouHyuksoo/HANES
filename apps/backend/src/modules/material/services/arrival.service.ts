@@ -56,6 +56,7 @@ import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
+import { addMatStockQty } from '../../../common/utils/mat-stock-upsert.util';
 
 @Injectable()
 export class ArrivalService {
@@ -1332,6 +1333,11 @@ export class ArrivalService {
   /** MatStock upsert (현재고 증감) */
   private async upsertStock(manager: EntityManager, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number, company?: string, plant?: string) {
     const resolvedMatUid = matUid || '*';
+    // 더하는 경우: 먼저 상대 UPDATE, 0행이면 INSERT, 동시 INSERT 로 유니크 위반이면 다시 UPDATE (find 후 insert 경합 방지)
+    if (qtyDelta > 0) {
+      await addMatStockQty(manager, { warehouseCode, itemCode, matUid: resolvedMatUid, company, plant }, qtyDelta);
+      return;
+    }
     const existing = await manager.findOne(MatStock, {
       where: { warehouseCode, itemCode, matUid: resolvedMatUid, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
@@ -1352,17 +1358,6 @@ export class ArrivalService {
       if (result.affected !== 1) {
         throw new BadRequestException(`동시 처리로 자재재고 수량이 변경되었습니다. LOT: ${resolvedMatUid}`);
       }
-    } else if (qtyDelta > 0) {
-      const newStock = manager.create(MatStock, {
-        warehouseCode,
-        itemCode,
-        matUid: resolvedMatUid,
-        qty: qtyDelta,
-        availableQty: qtyDelta,
-        company,
-        plant,
-      });
-      await manager.save(newStock);
     }
   }
 

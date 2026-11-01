@@ -37,6 +37,7 @@ import { parseDateStart } from '../../../shared/date.util';
 import { MAT_LOT_LIVE_STATUSES } from '@harness/shared';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { calcLotExpireDate } from '../rules/fifo.rules';
+import { addMatStockQty } from '../../../common/utils/mat-stock-upsert.util';
 
 @Injectable()
 export class ReceivingService {
@@ -929,6 +930,11 @@ export class ReceivingService {
 
   /** MatStock upsert (locationCode 제공 시 적재 로케이션 갱신) */
   private async upsertStock(manager: EntityManager, warehouseCode: string, itemCode: string, matUid: string | null, qtyDelta: number, company?: string, plant?: string, locationCode?: string | null) {
+    // 더하는 경우: 먼저 상대 UPDATE, 0행이면 INSERT, 동시 INSERT 로 유니크 위반이면 다시 UPDATE (find 후 insert 경합 방지)
+    if (qtyDelta > 0) {
+      await addMatStockQty(manager, { warehouseCode, itemCode, matUid: matUid || null, company, plant }, qtyDelta, { locationCode });
+      return;
+    }
     const existing = await manager.findOne(MatStock, {
       where: { warehouseCode, itemCode, matUid: matUid || null, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
     });
@@ -950,18 +956,6 @@ export class ReceivingService {
       if (result.affected !== 1) {
         throw new BadRequestException(`동시 처리로 자재재고 수량이 변경되었습니다. LOT: ${matUid}`);
       }
-    } else if (qtyDelta > 0) {
-      const newStock = manager.create(MatStock, {
-        warehouseCode,
-        itemCode,
-        matUid,
-        qty: qtyDelta,
-        availableQty: qtyDelta,
-        ...(locationCode ? { locationCode } : {}),
-        company,
-        plant,
-      });
-      await manager.save(newStock);
     }
   }
 

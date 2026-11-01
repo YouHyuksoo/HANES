@@ -300,16 +300,43 @@ describe('ReceiptCancelService', () => {
         StockTransaction,
         expect.objectContaining({ company: 'HANES', plant: 'P01' }),
       );
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        StockTransaction,
-        { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
-        { cancelRefId: 'CANCEL-001', status: 'CANCELED' },
+      // 원본 행을 먼저 잠그고, 취소 참조가 비어 있는 행만 갱신한다
+      expect(mockQueryRunner.query).toHaveBeenNthCalledWith(
+        1,
+        expect.stringMatching(/^SELECT 1 FROM STOCK_TRANSACTIONS WHERE .* FOR UPDATE$/),
+        ['TX-001', 'HANES', 'P01'],
       );
+      expect(stockQb.update).toHaveBeenCalledWith(StockTransaction);
+      expect(stockQb.set).toHaveBeenCalledWith({ cancelRefId: 'CANCEL-001', status: 'CANCELED' });
+      expect(stockQb.where).toHaveBeenCalledWith({ transNo: 'TX-001', company: 'HANES', plant: 'P01' });
+      expect(stockQb.andWhere).toHaveBeenCalledWith('"CANCEL_REF_ID" IS NULL');
       expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
         MatReceiving,
         { receiveNo: 'RCV-001', seq: 2, company: 'HANES', plant: 'P01' },
         { status: 'CANCELED' },
       );
+    });
+
+    it('원거래 갱신 행수가 1이 아니면(동시에 이미 취소됨) 이중 취소를 거절한다', async () => {
+      const originalTx = {
+        transNo: 'TX-001', cancelRefId: null, transType: 'RECEIVE',
+        toWarehouseId: 'WH-01', itemCode: 'ITEM-001', matUid: null, qty: 10,
+        refType: null, refId: null, company: 'HANES', plant: 'P01',
+      } as StockTransaction;
+      const stock = { warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: null, qty: 50, availableQty: 50, company: 'HANES', plant: 'P01' } as MatStock;
+      const cancelTx = { transNo: 'CANCEL-001' } as StockTransaction;
+
+      mockQueryRunner.manager.findOne.mockResolvedValueOnce(originalTx).mockResolvedValueOnce(stock);
+      // 재고 차감 1행 성공 → 원거래 갱신 0행(다른 호출이 먼저 취소 참조를 채움)
+      stockQb.execute.mockResolvedValueOnce({ affected: 1 }).mockResolvedValueOnce({ affected: 0 });
+      mockNumbering.nextInTx.mockResolvedValue('CANCEL-001');
+      (mockQueryRunner.manager.create as jest.Mock).mockReturnValue(cancelTx);
+      (mockQueryRunner.manager.save as jest.Mock).mockResolvedValue(cancelTx);
+
+      await expect(
+        target.cancel({ transactionId: 'TX-001', reason: '취소' } as any, 'HANES', 'P01'),
+      ).rejects.toThrow('이미 취소된 트랜잭션입니다.');
+      expect(mockQueryRunner.manager.update).not.toHaveBeenCalled();
     });
 
     it('일반 입고취소는 입하대기 재고를 복원한다', async () => {

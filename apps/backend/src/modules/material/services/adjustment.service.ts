@@ -20,6 +20,8 @@ import { StockTransaction } from '../../../entities/stock-transaction.entity';
 import { CreateAdjustmentDto, AdjustmentQueryDto } from '../dto/adjustment.dto';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
+import { isUniqueViolation } from '../../../common/utils/mat-stock-upsert.util';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { MAT_LOT_STATUS } from '@harness/shared';
 
@@ -208,14 +210,34 @@ export class AdjustmentService {
       throw new BadRequestException(`이미 처리된 보정 요청입니다. 현재 상태: ${adjLog.adjustStatus}`);
     }
 
-    const { warehouseCode, itemCode, matUid, afterQty, diffQty, reason } = adjLog;
+    const { warehouseCode, itemCode, matUid, afterQty, reason } = adjLog;
     const adjTenantWhere = this.tenantWhere(adjLog.company, adjLog.plant);
 
     return this.tx.run(async (queryRunner) => {
-      // 재고 업데이트
+      // 같은 요청을 동시에 두 번 승인해도 재고가 두 번 반영되지 않게, PENDING 인 요청만 먼저 선점한다.
+      const claimed = await queryRunner.manager.createQueryBuilder().update(InvAdjLog)
+        .set({ adjustStatus: 'APPROVED', approvedBy: approvedBy || null, approvedAt: new Date() })
+        .where({ adjDate: new Date(adjDate), seq, ...adjTenantWhere })
+        .andWhere('"ADJUST_STATUS" = :pendingStatus', { pendingStatus: 'PENDING' })
+        .execute();
+      if ((claimed.affected ?? 0) !== 1) {
+        throw new BadRequestException('이미 처리된 보정 요청입니다. 다시 조회해 주세요.');
+      }
+
+      // 대상 재고 행을 잠근 뒤 읽는다 (요청 이후 출고·조정이 있었어도 읽은 값이 어긋나지 않게)
+      await lockRowsForUpdate(queryRunner, 'MAT_STOCKS', {
+        WAREHOUSE_CODE: warehouseCode,
+        ITEM_CODE: itemCode,
+        MAT_UID: matUid,
+        COMPANY: adjLog.company,
+        PLANT_CD: adjLog.plant,
+      });
       let stock = await queryRunner.manager.findOne(MatStock, {
         where: { warehouseCode, itemCode, matUid: matUid ?? IsNull(), ...adjTenantWhere },
       });
+      // 요청 시점의 차이(diffQty)가 아니라, 승인 시점 재고 기준으로 afterQty 가 되도록 하는 차이로 반영·기록한다.
+      const beforeQty = stock?.qty ?? 0;
+      const diffQty = afterQty - beforeQty;
 
       if (stock) {
         if (afterQty < stock.reservedQty) {
@@ -223,16 +245,24 @@ export class AdjustmentService {
             `예약수량(${stock.reservedQty})보다 적은 수량으로는 조정할 수 없습니다.`,
           );
         }
-        await queryRunner.manager.update(
-          MatStock,
-          {
+        // 읽은 값 대입이 아니라 차이만큼 상대 갱신한다(가용 = 수량 - 예약)
+        const adjusted = await queryRunner.manager.createQueryBuilder().update(MatStock)
+          .set({
+            qty: () => '"QTY" + :adjustDelta',
+            availableQty: () => '"QTY" + :adjustDelta - NVL("RESERVED_QTY", 0)',
+          })
+          .where({
             warehouseCode: stock.warehouseCode,
             itemCode: stock.itemCode,
-            matUid: stock.matUid,
+            matUid: stock.matUid ?? IsNull(),
             ...adjTenantWhere,
-          },
-          { qty: afterQty, availableQty: afterQty - stock.reservedQty },
-        );
+          })
+          .andWhere('"QTY" + :adjustDelta >= NVL("RESERVED_QTY", 0)')
+          .setParameters({ adjustDelta: diffQty })
+          .execute();
+        if ((adjusted.affected ?? 0) !== 1) {
+          throw new BadRequestException('동시 처리로 재고가 변경되었습니다. 다시 조회해 주세요.');
+        }
       } else {
         if (afterQty < 0) {
           throw new BadRequestException('재고가 없는 상태에서는 음수로 조정할 수 없습니다.');
@@ -247,7 +277,7 @@ export class AdjustmentService {
           company: adjLog.company,
           plant: adjLog.plant,
         });
-        stock = await queryRunner.manager.save(newStock);
+        stock = await this.insertNewStock(queryRunner, newStock);
       }
 
       // LOT 상태 업데이트 (재고 0이면 DEPLETED — currentQty는 MatStock에서만 관리)
@@ -279,12 +309,8 @@ export class AdjustmentService {
       });
       await queryRunner.manager.save(stockTransaction);
 
-      // 보정 이력 상태 업데이트
-      await queryRunner.manager.update(InvAdjLog, { adjDate: new Date(adjDate), seq, ...adjTenantWhere }, {
-        adjustStatus: 'APPROVED',
-        approvedBy: approvedBy || null,
-        approvedAt: new Date(),
-      });
+      // 보정 이력의 조정 전 수량·차이를 승인 시점 기준으로 맞춘다(요청 이후 재고가 달라졌을 수 있음)
+      await queryRunner.manager.update(InvAdjLog, { adjDate: new Date(adjDate), seq, ...adjTenantWhere }, { beforeQty, diffQty });
 
       return { adjDate, seq, adjustStatus: 'APPROVED', approvedBy, approvedAt: new Date() };
     });
@@ -307,10 +333,15 @@ export class AdjustmentService {
       throw new BadRequestException(`이미 처리된 보정 요청입니다. 현재 상태: ${adjLog.adjustStatus}`);
     }
 
-    await this.invAdjLogRepository.update({ adjDate: new Date(adjDate), seq, ...this.tenantWhere(adjLog.company, adjLog.plant) }, {
-      adjustStatus: 'REJECTED',
-      updatedBy: rejectedBy || null,
-    });
+    // PENDING 인 요청만 반려한다(동시에 승인된 요청을 덮어쓰지 않게 조건과 행수를 확인)
+    const rejected = await this.invAdjLogRepository.createQueryBuilder().update(InvAdjLog)
+      .set({ adjustStatus: 'REJECTED', updatedBy: rejectedBy || null })
+      .where({ adjDate: new Date(adjDate), seq, ...this.tenantWhere(adjLog.company, adjLog.plant) })
+      .andWhere('"ADJUST_STATUS" = :pendingStatus', { pendingStatus: 'PENDING' })
+      .execute();
+    if ((rejected.affected ?? 0) !== 1) {
+      throw new BadRequestException('이미 처리된 보정 요청입니다. 다시 조회해 주세요.');
+    }
 
     return { adjDate, seq, adjustStatus: 'REJECTED', rejectedBy };
   }
@@ -342,6 +373,14 @@ export class AdjustmentService {
         }
       }
 
+      // 대상 재고 행을 먼저 잠근 뒤 읽는다 — 조정 전 수량(before)과 로그가 동시 출고·조정과 어긋나지 않게
+      await lockRowsForUpdate(queryRunner, 'MAT_STOCKS', {
+        WAREHOUSE_CODE: warehouseCode,
+        ITEM_CODE: itemCode,
+        MAT_UID: matUid,
+        COMPANY: company,
+        PLANT_CD: plant,
+      });
       // 기존 재고 조회
       let stock = await queryRunner.manager.findOne(MatStock, {
         where: {
@@ -360,15 +399,23 @@ export class AdjustmentService {
 
       // 재고 업데이트 또는 생성
       if (stock) {
-        await queryRunner.manager.update(MatStock,
-          {
+        // 읽은 값 대입이 아니라 차이만큼 상대 갱신한다(가용 = 수량 - 예약)
+        const adjusted = await queryRunner.manager.createQueryBuilder().update(MatStock)
+          .set({
+            qty: () => '"QTY" + :adjustDelta',
+            availableQty: () => '"QTY" + :adjustDelta - NVL("RESERVED_QTY", 0)',
+          })
+          .where({
             warehouseCode: stock.warehouseCode,
             itemCode: stock.itemCode,
-            matUid: stock.matUid,
+            matUid: stock.matUid ?? IsNull(),
             ...tenantWhere,
-          },
-          { qty: afterQty, availableQty: afterQty - stock.reservedQty },
-        );
+          })
+          .setParameters({ adjustDelta: diffQty })
+          .execute();
+        if ((adjusted.affected ?? 0) !== 1) {
+          throw new BadRequestException('동시 처리로 재고가 변경되었습니다. 다시 조회해 주세요.');
+        }
       } else {
         if (afterQty < 0) {
           throw new BadRequestException('재고가 없는 상태에서는 음수로 조정할 수 없습니다.');
@@ -383,7 +430,7 @@ export class AdjustmentService {
           company,
           plant,
         });
-        stock = await queryRunner.manager.save(newStock);
+        stock = await this.insertNewStock(queryRunner, newStock);
       }
 
       // LOT 상태 업데이트 (재고 0이면 DEPLETED — currentQty는 MatStock에서만 관리)
@@ -447,6 +494,18 @@ export class AdjustmentService {
         unit: part.unit,
       };
     });
+  }
+
+  /** 재고 행이 없어 새로 넣을 때, 동시에 같은 행이 먼저 들어갔으면(유니크 위반) 다시 조회하도록 안내한다. */
+  private async insertNewStock(queryRunner: QueryRunner, newStock: MatStock): Promise<MatStock> {
+    try {
+      return await queryRunner.manager.save(newStock);
+    } catch (error: unknown) {
+      if (isUniqueViolation(error)) {
+        throw new BadRequestException('동시 처리로 같은 재고가 먼저 등록되었습니다. 다시 조회해 주세요.');
+      }
+      throw error;
+    }
   }
 
   /**

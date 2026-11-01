@@ -22,6 +22,7 @@ import { CreateReceiptCancelDto, ReceiptCancelQueryDto } from '../dto/receipt-ca
 import { NumberingService } from '../../../shared/numbering.service';
 import { TransactionService } from '../../../shared/transaction.service';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 
 @Injectable()
 export class ReceiptCancelService {
@@ -160,6 +161,13 @@ export class ReceiptCancelService {
   async cancel(dto: CreateReceiptCancelDto, company?: string, plant?: string) {
     const { transactionId, reason, workerId } = dto;
     return this.tx.run(async (queryRunner) => {
+      // 원본 트랜잭션 행을 먼저 잠가 같은 거래를 동시에 취소하는 호출을 한 줄로 세운다(Oracle 은 findOne({lock}) 거부).
+      // 기다린 뒤에는 앞 호출이 커밋한 cancelRefId 를 읽으므로 아래 '이미 취소' 검사가 정상 동작한다.
+      await lockRowsForUpdate(queryRunner, 'STOCK_TRANSACTIONS', {
+        TRANS_NO: transactionId,
+        COMPANY: company,
+        PLANT_CD: plant,
+      });
       // 원본 트랜잭션 조회
       const originalTransaction = await queryRunner.manager.findOne(StockTransaction, {
         where: { transNo: transactionId, ...this.tenantWhere(company, plant) },
@@ -239,10 +247,16 @@ export class ReceiptCancelService {
       // 원본 트랜잭션에 취소 참조 설정 + 상태 CANCELED.
       // status='CANCELED'로 바꿔야 receiving.service의 기입고수량 SUM(transType='RECEIVE' AND status='DONE')에서
       // 제외되어 LOT의 잔여 입고수량이 정상 복구된다(미변경 시 취소해도 재입고가 막힘).
-      await queryRunner.manager.update(StockTransaction, { transNo: originalTransaction.transNo, ...txTenantWhere }, {
-        cancelRefId: savedCancelTrans.transNo,
-        status: 'CANCELED',
-      });
+      // 취소 참조가 비어 있는 행만 갱신하고 행수를 확인한다(잠금과 별개로 이중 취소 방어).
+      const marked = await queryRunner.manager.createQueryBuilder()
+        .update(StockTransaction)
+        .set({ cancelRefId: savedCancelTrans.transNo, status: 'CANCELED' })
+        .where({ transNo: originalTransaction.transNo, ...txTenantWhere })
+        .andWhere('"CANCEL_REF_ID" IS NULL')
+        .execute();
+      if ((marked.affected ?? 0) !== 1) {
+        throw new BadRequestException('이미 취소된 트랜잭션입니다.');
+      }
       await this.markReceivingCanceled(queryRunner, originalTransaction, txTenantWhere);
 
       return {

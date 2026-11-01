@@ -23,6 +23,7 @@ describe('AdjustmentService', () => {
   let dataSource: DeepMocked<DataSource>;
   let queryRunner: DeepMocked<QueryRunner>;
   let tx: DeepMocked<TransactionService>;
+  let qb: any;
 
   beforeEach(async () => {
     invAdjLogRepo = createMock<Repository<InvAdjLog>>();
@@ -33,6 +34,12 @@ describe('AdjustmentService', () => {
     dataSource = createMock<DataSource>();
     queryRunner = createMock<QueryRunner>();
     tx = createMock<TransactionService>();
+    qb = {
+      update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(), where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(), setParameters: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    };
+    queryRunner.manager.createQueryBuilder.mockReturnValue(qb);
+    invAdjLogRepo.createQueryBuilder.mockReturnValue(qb);
 
     dataSource.createQueryRunner.mockReturnValue(queryRunner);
     tx.run.mockImplementation(async (callback: any) => callback(queryRunner));
@@ -261,14 +268,49 @@ describe('AdjustmentService', () => {
       expect(result.adjustStatus).toBe('APPROVED');
       expect(tx.run).toHaveBeenCalledTimes(1);
       expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
+      // PENDING 인 요청만 선점(APPROVED 로 바꿈)
+      expect(qb.update).toHaveBeenCalledWith(InvAdjLog);
+      expect(qb.set).toHaveBeenCalledWith(expect.objectContaining({ adjustStatus: 'APPROVED' }));
+      expect(qb.andWhere).toHaveBeenCalledWith('"ADJUST_STATUS" = :pendingStatus', { pendingStatus: 'PENDING' });
+      // 재고는 읽은 값 대입이 아니라 차이(15-10=5)만큼 상대 갱신
+      expect(qb.setParameters).toHaveBeenCalledWith({ adjustDelta: 5 });
       expect(queryRunner.manager.update).toHaveBeenCalledWith(InvAdjLog, {
         adjDate: new Date('2026-04-11'),
         seq: 1,
         company: 'HANES',
         plant: 'P01',
-      }, expect.objectContaining({
-        adjustStatus: 'APPROVED',
-      }));
+      }, { beforeQty: 10, diffQty: 5 });
+    });
+
+    it('승인 시점 재고가 요청 때와 달라졌으면 승인 시점 재고 기준 차이로 반영한다', async () => {
+      invAdjLogRepo.findOne.mockResolvedValue({
+        adjDate: new Date('2026-04-11'), seq: 1, warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: null,
+        beforeQty: 10, afterQty: 15, diffQty: 5, reason: '보정', adjustStatus: 'PENDING', company: 'HANES', plant: 'P01',
+      } as InvAdjLog);
+      // 요청 이후 다른 입고로 재고가 12 가 됨
+      queryRunner.manager.findOne.mockResolvedValue({
+        warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: null, qty: 12, reservedQty: 0,
+      } as MatStock);
+      (queryRunner.manager.create as jest.Mock).mockReturnValue({ transNo: 'ADJ2026041100001' } as StockTransaction);
+      (queryRunner.manager.save as jest.Mock).mockResolvedValue({ transNo: 'ADJ2026041100001' } as StockTransaction);
+
+      await service.approve('2026-04-11', 1, 'admin');
+
+      expect(qb.setParameters).toHaveBeenCalledWith({ adjustDelta: 3 });
+      expect(queryRunner.manager.create).toHaveBeenCalledWith(StockTransaction, expect.objectContaining({ transType: 'ADJUST_IN', qty: 3 }));
+      expect(queryRunner.manager.update).toHaveBeenCalledWith(InvAdjLog, expect.anything(), { beforeQty: 12, diffQty: 3 });
+    });
+
+    it('같은 요청을 동시에 두 번 승인하면 PENDING 선점에 실패한 쪽은 재고를 건드리지 않고 거절된다', async () => {
+      invAdjLogRepo.findOne.mockResolvedValue({
+        adjDate: new Date('2026-04-11'), seq: 1, warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: null,
+        afterQty: 15, diffQty: 5, reason: '보정', adjustStatus: 'PENDING', company: 'HANES', plant: 'P01',
+      } as InvAdjLog);
+      qb.execute.mockResolvedValueOnce({ affected: 0 });
+
+      await expect(service.approve('2026-04-11', 1, 'admin')).rejects.toThrow('이미 처리된 보정 요청입니다');
+      expect(queryRunner.query).not.toHaveBeenCalled();
+      expect(queryRunner.manager.save).not.toHaveBeenCalled();
     });
 
     it('승인 반영은 보정 이력 회사/공장 범위에서 재고와 LOT 상태를 갱신한다', async () => {
@@ -320,8 +362,9 @@ describe('AdjustmentService', () => {
       expect(queryRunner.manager.update).toHaveBeenCalledWith(
         InvAdjLog,
         { adjDate: new Date('2026-04-11'), seq: 1, company: 'HANES', plant: 'P01' },
-        expect.objectContaining({ adjustStatus: 'APPROVED' }),
+        { beforeQty: 10, diffQty: -10 },
       );
+      expect(qb.set).toHaveBeenCalledWith(expect.objectContaining({ adjustStatus: 'APPROVED' }));
     });
 
     it('예약수량보다 적게 승인 반영하면 차단한다', async () => {
@@ -386,6 +429,33 @@ describe('AdjustmentService', () => {
       expect(tx.run).toHaveBeenCalledTimes(1);
       expect(dataSource.createQueryRunner).not.toHaveBeenCalled();
       expect(queryRunner.manager.save).toHaveBeenCalledWith(invAdjLog);
+      // 재고 행을 먼저 잠근 뒤 읽고(lock → 재고 findOne), 12-10=2 를 상대 갱신한다
+      expect(queryRunner.query).toHaveBeenCalledWith(
+        expect.stringMatching(/^SELECT 1 FROM MAT_STOCKS WHERE .* FOR UPDATE$/),
+        ['WH-01', 'ITEM-001', 'HANES', 'P01'],
+      );
+      const lockOrder = (queryRunner.query as jest.Mock).mock.invocationCallOrder[0];
+      const stockReadOrder = (queryRunner.manager.findOne as jest.Mock).mock.invocationCallOrder[1];
+      expect(lockOrder).toBeLessThan(stockReadOrder);
+      expect(qb.setParameters).toHaveBeenCalledWith({ adjustDelta: 2 });
+      expect(qb.set).toHaveBeenCalledWith({
+        qty: expect.any(Function),
+        availableQty: expect.any(Function),
+      });
+    });
+
+    it('상대 갱신 행수가 1이 아니면 거절한다', async () => {
+      queryRunner.manager.findOne
+        .mockResolvedValueOnce({ itemCode: 'ITEM-001', itemName: 'PART', unit: 'EA' } as ItemMaster)
+        .mockResolvedValueOnce({
+          warehouseCode: 'WH-01', itemCode: 'ITEM-001', matUid: null, qty: 10, reservedQty: 0, company: 'HANES', plant: 'P01',
+        } as MatStock);
+      qb.execute.mockResolvedValueOnce({ affected: 0 });
+
+      await expect(
+        service.create({ warehouseCode: 'WH-01', itemCode: 'ITEM-001', afterQty: 12, reason: '보정' } as any, 'HANES', 'P01'),
+      ).rejects.toThrow(BadRequestException);
+      expect(queryRunner.manager.save).not.toHaveBeenCalled();
     });
 
     it('즉시승인 보정은 품목과 LOT를 요청 테넌트 범위에서 확인한다', async () => {
