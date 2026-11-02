@@ -684,6 +684,49 @@ export class ShipOrderService {
     }
 
     await this.tx.run(async (qr) => {
+      // 잠금 순서: 팔레트 → 박스(번호 순) → 출하지시 라인. 검사 뒤 갱신 사이에 다른 요청이 팔레트·박스·잔량을 바꾸지 못하게
+      // 잠그고, 잠근 뒤 최신 상태로 다시 확인한다.
+      await lockRowsForUpdate(qr, 'PALLET_MASTERS', { PALLET_NO: palletNo, COMPANY: company, PLANT_CD: plant });
+      const lockedPallet = await qr.manager.findOne(PalletMaster, {
+        where: { palletNo, ...this.tenantWhere(company, plant) },
+      });
+      if (!lockedPallet || lockedPallet.status !== 'OPEN' || lockedPallet.shipOrderNo !== shipOrderNo) {
+        throw new BadRequestException('동시 처리로 팔레트 상태가 변경되었습니다. 다시 조회해 주세요.');
+      }
+      for (const boxNo of [...new Set(dto.boxIds)].sort()) {
+        await lockRowsForUpdate(qr, 'BOX_MASTERS', { BOX_NO: boxNo, COMPANY: company, PLANT_CD: plant });
+      }
+      const lockedBoxes = await qr.manager.find(BoxMaster, {
+        where: { boxNo: In(dto.boxIds), ...this.tenantWhere(company, plant) },
+      });
+      if (
+        lockedBoxes.length !== new Set(dto.boxIds).size
+        || lockedBoxes.some((box) => box.status !== 'CLOSED' || (box.palletNo && box.palletNo !== palletNo))
+      ) {
+        throw new BadRequestException('동시 처리로 박스 상태가 변경되었습니다. 다시 조회해 주세요.');
+      }
+      await lockRowsForUpdate(qr, 'SHIPMENT_ORDER_ITEMS', { SHIP_ORDER_ID: shipOrderNo, COMPANY: company, PLANT_CD: plant });
+      const lockedLines = await qr.manager.find(ShipmentOrderItem, {
+        where: { shipOrderNo, ...this.tenantWhere(company, plant) },
+      });
+      const lockedLineByItem = new Map<string, ShipmentOrderItem>();
+      for (const line of lockedLines) if (!lockedLineByItem.has(line.itemCode)) lockedLineByItem.set(line.itemCode, line);
+      const lockedAllocated = await this.getAllocatedQtyByItem(shipOrderNo, company, plant);
+      const lockedNewQty = new Map<string, number>();
+      for (const box of lockedBoxes) {
+        if (box.palletNo === palletNo) continue;
+        lockedNewQty.set(box.itemCode, (lockedNewQty.get(box.itemCode) ?? 0) + box.qty);
+      }
+      for (const [itemCode, newQty] of lockedNewQty) {
+        const line = lockedLineByItem.get(itemCode);
+        if (!line) throw new BadRequestException(`출하지시에 없는 품목입니다: ${itemCode}`);
+        const remaining = line.orderQty - line.shippedQty;
+        const afterAllocated = (lockedAllocated.get(itemCode) ?? 0) + newQty;
+        if (afterAllocated > remaining) {
+          throw new BadRequestException(`출하지시 잔량을 초과합니다: ${itemCode} 잔량 ${remaining}, 구성 후 ${afterAllocated}`);
+        }
+      }
+
       await qr.manager.update(
         BoxMaster,
         { boxNo: In(dto.boxIds), ...this.tenantWhere(company, plant) },
@@ -729,6 +772,18 @@ export class ShipOrderService {
     }
 
     await this.tx.run(async (qr) => {
+      // 잠금 순서: 팔레트 → 박스. 잠근 뒤 팔레트가 아직 OPEN 인지 다시 확인한다.
+      await lockRowsForUpdate(qr, 'PALLET_MASTERS', { PALLET_NO: palletNo, COMPANY: company, PLANT_CD: plant });
+      const lockedPallet = await qr.manager.findOne(PalletMaster, {
+        where: { palletNo, shipOrderNo, ...this.tenantWhere(company, plant) },
+      });
+      if (!lockedPallet || lockedPallet.status !== 'OPEN') {
+        throw new BadRequestException('동시 처리로 팔레트 상태가 변경되었습니다. 다시 조회해 주세요.');
+      }
+      for (const boxNo of [...new Set(dto.boxIds)].sort()) {
+        await lockRowsForUpdate(qr, 'BOX_MASTERS', { BOX_NO: boxNo, COMPANY: company, PLANT_CD: plant });
+      }
+
       await qr.manager.update(
         BoxMaster,
         { boxNo: In(dto.boxIds), palletNo, ...this.tenantWhere(company, plant) },
@@ -764,10 +819,20 @@ export class ShipOrderService {
     }
     if (pallet.boxCount <= 0) throw new BadRequestException('빈 팔레트는 라벨 발행 완료 처리할 수 없습니다.');
 
-    await this.palletRepository.update(
-      { palletNo, shipOrderNo, ...this.tenantWhere(company, plant) },
-      { status: 'CLOSED', closeAt: new Date() },
-    );
+    await this.tx.run(async (qr) => {
+      await lockRowsForUpdate(qr, 'PALLET_MASTERS', { PALLET_NO: palletNo, COMPANY: company, PLANT_CD: plant });
+      const locked = await qr.manager.findOne(PalletMaster, {
+        where: { palletNo, shipOrderNo, ...this.tenantWhere(company, plant) },
+      });
+      if (!locked || locked.status !== 'OPEN' || locked.boxCount <= 0) {
+        throw new BadRequestException('동시 처리로 팔레트 상태가 변경되었습니다. 다시 조회해 주세요.');
+      }
+      await qr.manager.update(
+        PalletMaster,
+        { palletNo, shipOrderNo, ...this.tenantWhere(company, plant) },
+        { status: 'CLOSED', closeAt: new Date() },
+      );
+    });
     return this.getFulfillment(shipOrderNo, company, plant);
   }
 
@@ -823,6 +888,44 @@ export class ShipOrderService {
 
     let shipNo!: string;
     await this.tx.run(async (qr) => {
+      // 잠금 순서: 팔레트(번호 순) → 박스(번호 순) → 출하지시 라인. 같은 팔레트의 동시 출하·출하 할당을 직렬화하고,
+      // 잠근 뒤 최신 상태로 다시 확인해 검사 뒤 갱신 사이에 바뀐 상태를 걸러낸다.
+      for (const palletNo of [...new Set(dto.palletNos)].sort()) {
+        await lockRowsForUpdate(qr, 'PALLET_MASTERS', { PALLET_NO: palletNo, COMPANY: company, PLANT_CD: plant });
+      }
+      const lockedPallets = await qr.manager.find(PalletMaster, {
+        where: { palletNo: In(dto.palletNos), shipOrderNo, ...this.tenantWhere(company, plant) },
+      });
+      if (
+        lockedPallets.length !== new Set(dto.palletNos).size
+        || lockedPallets.some((pallet) => pallet.status !== 'CLOSED' || pallet.shipmentId)
+      ) {
+        throw new BadRequestException('동시 처리로 팔레트 상태가 변경되었습니다. 다시 조회해 주세요.');
+      }
+      for (const box of [...boxes].sort((a, b) => a.boxNo.localeCompare(b.boxNo))) {
+        await lockRowsForUpdate(qr, 'BOX_MASTERS', { BOX_NO: box.boxNo, COMPANY: company, PLANT_CD: plant });
+      }
+      const lockedBoxes = await qr.manager.find(BoxMaster, {
+        where: { palletNo: In(dto.palletNos), ...this.tenantWhere(company, plant) },
+      });
+      if (lockedBoxes.length !== boxes.length || lockedBoxes.some((box) => box.status !== 'CLOSED')) {
+        throw new BadRequestException('동시 처리로 박스 상태가 변경되었습니다. 다시 조회해 주세요.');
+      }
+      await lockRowsForUpdate(qr, 'SHIPMENT_ORDER_ITEMS', { SHIP_ORDER_ID: shipOrderNo, COMPANY: company, PLANT_CD: plant });
+      const lockedLines = await qr.manager.find(ShipmentOrderItem, {
+        where: { shipOrderNo, ...this.tenantWhere(company, plant) },
+      });
+      const lockedLineByItem = new Map<string, ShipmentOrderItem>();
+      for (const line of lockedLines) if (!lockedLineByItem.has(line.itemCode)) lockedLineByItem.set(line.itemCode, line);
+      for (const [itemCode, qty] of itemQtyMap) {
+        const line = lockedLineByItem.get(itemCode);
+        if (!line || line.shippedQty + qty > line.orderQty) {
+          throw new BadRequestException(
+            `출하수량 초과: ${itemCode} 지시 ${line?.orderQty ?? 0}, 기출하 ${line?.shippedQty ?? 0}, 요청 ${qty}`,
+          );
+        }
+      }
+
       for (const box of boxes) {
         await this.assertBoxProductReceived(qr.manager, box.boxNo, company, plant);
       }
@@ -882,18 +985,19 @@ export class ShipOrderService {
           plant,
         });
 
-        const line = lineByItem.get(itemCode)!;
+        // 잠근 라인에 상대값으로 더한다(읽은 값 대입 금지)
+        const line = lockedLineByItem.get(itemCode)!;
         await qr.manager.update(
           ShipmentOrderItem,
           { shipOrderNo, seq: line.seq, ...this.tenantWhere(company, plant) },
-          { shippedQty: line.shippedQty + qty },
+          { shippedQty: () => `NVL(SHIPPED_QTY, 0) + ${Number(qty)}` },
         );
       }
 
       const orderStatus = deriveShipOrderStatusFromLines(
-        order.items.map((line) => ({
+        lockedLines.map((line) => ({
           orderQty: line.orderQty,
-          shippedQty: line.shippedQty + (itemQtyMap.get(line.itemCode) ?? 0),
+          shippedQty: line.shippedQty + (lockedLineByItem.get(line.itemCode) === line ? (itemQtyMap.get(line.itemCode) ?? 0) : 0),
         })),
       );
       await qr.manager.update(ShipmentOrder, { shipOrderNo, ...this.tenantWhere(company, plant) }, { status: orderStatus });
@@ -926,6 +1030,10 @@ export class ShipOrderService {
       if (order.status !== 'CONFIRMED') {
         throw new BadRequestException(`확정(CONFIRMED) 상태의 출하지시만 출하할 수 있습니다. 현재: ${order.status}`);
       }
+
+      // 잠금 순서: 박스 → 출하지시 라인(팔레트 출하와 같다). 잠근 뒤에 읽어 동시 출하의 이중 차감과 수량 덮어쓰기를 막는다.
+      await lockRowsForUpdate(qr, 'BOX_MASTERS', { BOX_NO: dto.boxNo, COMPANY: company, PLANT_CD: plant });
+      await lockRowsForUpdate(qr, 'SHIPMENT_ORDER_ITEMS', { SHIP_ORDER_ID: shipOrderNo, COMPANY: company, PLANT_CD: plant });
 
       const box = await qr.manager.findOne(BoxMaster, { where: { boxNo: dto.boxNo, ...where } });
       if (!box) throw new NotFoundException(`박스를 찾을 수 없습니다: ${dto.boxNo}`);
@@ -978,7 +1086,11 @@ export class ShipOrderService {
       }
 
       const newShipped = line.shippedQty + box.qty;
-      await qr.manager.update(ShipmentOrderItem, { shipOrderNo, seq: line.seq, ...where }, { shippedQty: newShipped });
+      await qr.manager.update(
+        ShipmentOrderItem,
+        { shipOrderNo, seq: line.seq, ...where },
+        { shippedQty: () => `NVL(SHIPPED_QTY, 0) + ${Number(box.qty)}` },
+      );
 
       const allLines = await qr.manager.find(ShipmentOrderItem, { where: { shipOrderNo, ...where } });
       const orderStatus = deriveShipOrderStatusFromLines(
@@ -1019,6 +1131,10 @@ export class ShipOrderService {
     if (!['CONFIRMED', 'CLOSED'].includes(order.status)) {
       throw new BadRequestException(`출하 취소는 CONFIRMED/CLOSED 지시만 가능합니다. 현재: ${order.status}`);
     }
+
+    // 잠금 순서: 박스 → 출하지시 라인. 같은 박스의 동시 출하 취소(이중 복원)와 수량 덮어쓰기를 막는다.
+    await lockRowsForUpdate(qr, 'BOX_MASTERS', { BOX_NO: boxNo, COMPANY: company, PLANT_CD: plant });
+    await lockRowsForUpdate(qr, 'SHIPMENT_ORDER_ITEMS', { SHIP_ORDER_ID: shipOrderNo, COMPANY: company, PLANT_CD: plant });
 
     const box = await qr.manager.findOne(BoxMaster, { where: { boxNo, ...where } });
     if (!box) throw new NotFoundException(`박스를 찾을 수 없습니다: ${boxNo}`);
@@ -1072,7 +1188,11 @@ export class ShipOrderService {
     }
 
     const newShipped = line.shippedQty - box.qty;
-    await qr.manager.update(ShipmentOrderItem, { shipOrderNo, seq: line.seq, ...where }, { shippedQty: newShipped });
+    await qr.manager.update(
+      ShipmentOrderItem,
+      { shipOrderNo, seq: line.seq, ...where },
+      { shippedQty: () => `GREATEST(0, NVL(SHIPPED_QTY, 0) - ${Number(box.qty)})` },
+    );
     // 출하가 되돌아왔으니 출하지시 상태도 같은 규칙으로 다시 판정한다(전량 출하 아님 → CONFIRMED)
     const allLines = await qr.manager.find(ShipmentOrderItem, { where: { shipOrderNo, ...where } });
     const orderStatus = deriveShipOrderStatusFromLines(

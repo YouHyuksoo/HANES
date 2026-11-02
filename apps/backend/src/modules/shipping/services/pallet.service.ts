@@ -22,7 +22,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, ILike, In, Between, FindOptionsWhere } from 'typeorm';
+import { Repository, QueryRunner, IsNull, ILike, In, Between, FindOptionsWhere } from 'typeorm';
 import { parseDateStart, parseDateEnd } from '../../../shared/date.util';
 import { PalletMaster } from '../../../entities/pallet-master.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
@@ -38,6 +38,7 @@ import {
   PalletStatus,
 } from '../dto/pallet.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 
@@ -69,6 +70,26 @@ export class PalletService {
   /**
    * 팔레트 목록 조회
    */
+  /**
+   * 팔레트 행을 잠그고 최신 상태로 다시 읽어 기대 상태인지 확인한다.
+   * 비잠금 사전 검사와 갱신 사이에 다른 요청이 상태를 바꾸는 경합(이중 마감·이중 출하 확정 등)을 막는다.
+   */
+  private async lockPalletInTx(
+    qr: QueryRunner,
+    palletNo: string,
+    allowedStatuses: string[],
+    company?: string,
+    plant?: string,
+  ): Promise<PalletMaster> {
+    await lockRowsForUpdate(qr, 'PALLET_MASTERS', { PALLET_NO: palletNo, COMPANY: company, PLANT_CD: plant });
+    const locked = await qr.manager.findOne(PalletMaster, { where: { palletNo, ...this.tenantWhere(company, plant) } });
+    if (!locked) throw new NotFoundException(`팔레트를 찾을 수 없습니다: ${palletNo}`);
+    if (!allowedStatuses.includes(locked.status)) {
+      throw new BadRequestException(`동시 처리로 팔레트 상태가 변경되었습니다. 현재: ${locked.status}. 다시 조회해 주세요.`);
+    }
+    return locked;
+  }
+
   async findAll(query: PalletQueryDto, company?: string, plant?: string) {
     const {
       page = 1,
@@ -375,6 +396,18 @@ export class PalletService {
 
     // 트랜잭션으로 박스 제거 및 팔레트 집계 업데이트
     await this.tx.run(async (queryRunner) => {
+      // 잠금 순서: 팔레트 → 박스(번호 순). 잠근 뒤 박스가 아직 이 팔레트에 있는지 다시 확인한다.
+      await this.lockPalletInTx(queryRunner, id, ['OPEN'], company, plant);
+      for (const boxNo of [...new Set(dto.boxIds)].sort()) {
+        await lockRowsForUpdate(queryRunner, 'BOX_MASTERS', { BOX_NO: boxNo, COMPANY: company, PLANT_CD: plant });
+      }
+      const stillOnPallet = await queryRunner.manager.count(BoxMaster, {
+        where: { boxNo: In(dto.boxIds), palletNo: id, ...this.tenantWhere(company, plant) },
+      });
+      if (stillOnPallet !== new Set(dto.boxIds).size) {
+        throw new BadRequestException('동시 처리로 박스의 팔레트가 변경되었습니다. 다시 조회해 주세요.');
+      }
+
       // 박스 업데이트
       await queryRunner.manager.update(
         BoxMaster,
@@ -446,6 +479,8 @@ export class PalletService {
     }
 
     await this.tx.run(async (queryRunner) => {
+      const locked = await this.lockPalletInTx(queryRunner, id, ['OPEN'], company, plant);
+      if (locked.boxCount <= 0) throw new BadRequestException('빈 팔레트는 닫을 수 없습니다.');
       await queryRunner.manager.update(
         PalletMaster,
         { palletNo: id, ...this.tenantWhere(company, plant) },
@@ -474,13 +509,18 @@ export class PalletService {
       throw new BadRequestException('출하에 할당된 팔레트는 다시 열 수 없습니다.');
     }
 
-    await this.palletRepository.update(
-      { palletNo: id, ...this.tenantWhere(company, plant) },
-      {
-        status: 'OPEN',
-        closeAt: null,
-      }
-    );
+    await this.tx.run(async (queryRunner) => {
+      const locked = await this.lockPalletInTx(queryRunner, id, ['CLOSED'], company, plant);
+      if (locked.shipmentId) throw new BadRequestException('출하에 할당된 팔레트는 다시 열 수 없습니다.');
+      await queryRunner.manager.update(
+        PalletMaster,
+        { palletNo: id, ...this.tenantWhere(company, plant) },
+        {
+          status: 'OPEN',
+          closeAt: null,
+        }
+      );
+    });
 
     return this.findById(id, company, plant);
   }
@@ -530,6 +570,10 @@ export class PalletService {
 
     // 트랜잭션으로 팔레트 할당 및 출하 집계 업데이트
     await this.tx.run(async (queryRunner) => {
+      const locked = await this.lockPalletInTx(queryRunner, id, ['CLOSED'], company, plant);
+      if (locked.shipmentId && locked.shipmentId !== dto.shipmentId) {
+        throw new BadRequestException('이미 다른 출하에 할당된 팔레트입니다.');
+      }
       // 팔레트 업데이트
       await queryRunner.manager.update(
         PalletMaster,
@@ -592,6 +636,10 @@ export class PalletService {
 
     // 트랜잭션으로 팔레트 제거 및 출하 집계 업데이트
     await this.tx.run(async (queryRunner) => {
+      const locked = await this.lockPalletInTx(queryRunner, id, ['LOADED', 'CLOSED'], company, plant);
+      if (locked.shipmentId !== shipmentId) {
+        throw new BadRequestException('동시 처리로 팔레트의 출하가 변경되었습니다. 다시 조회해 주세요.');
+      }
       // 팔레트 업데이트
       await queryRunner.manager.update(
         PalletMaster,
@@ -640,6 +688,7 @@ export class PalletService {
     }
 
     await this.tx.run(async (queryRunner) => {
+      await this.lockPalletInTx(queryRunner, id, ['LOADED'], company, plant);
       await queryRunner.manager.update(
         PalletMaster,
         { palletNo: id, ...this.tenantWhere(company, plant) },

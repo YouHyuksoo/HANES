@@ -17,6 +17,18 @@ import { ConsumableUsageMap } from '../../../entities/consumable-usage-map.entit
 import { ConsumableStock } from '../../../entities/consumable-stock.entity';
 import { ConsumableMaster } from '../../../entities/consumable-master.entity';
 import { ConsumableMountLog } from '../../../entities/consumable-mount-log.entity';
+import { TransactionService } from '../../../shared/transaction.service';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
+
+interface MountLogRow {
+  conUid: string;
+  consumableCode: string;
+  equipCode: string;
+  action: 'MOUNT' | 'UNMOUNT';
+  remark?: string | null;
+  company: string;
+  plant: string;
+}
 
 export interface KioskConsumableRow {
   consumableCode: string;
@@ -42,21 +54,14 @@ export class KioskConsumableService {
     private readonly stockRepo: Repository<ConsumableStock>,
     @InjectRepository(ConsumableMaster)
     private readonly masterRepo: Repository<ConsumableMaster>,
+    private readonly tx: TransactionService,
   ) {}
 
   /**
    * 장착/해제 이력 1건 기록 (CONSUMABLE_MOUNT_LOGS, 복합키 MOUNT_DATE + SEQ)
    * 이력 기록 실패가 장착 자체를 막지 않도록 오류는 삼키고 로그만 남긴다.
    */
-  private async writeMountLog(row: {
-    conUid: string;
-    consumableCode: string;
-    equipCode: string;
-    action: 'MOUNT' | 'UNMOUNT';
-    remark?: string | null;
-    company: string;
-    plant: string;
-  }): Promise<void> {
+  private async writeMountLog(row: MountLogRow): Promise<void> {
     try {
       const manager = this.stockRepo.manager;
       const mountDate = new Date();
@@ -173,76 +178,101 @@ export class KioskConsumableService {
       throw new BadRequestException('장착 대상 공정이 지정되지 않았습니다. 작업지시 공정을 확인하세요.');
     }
 
-    const stock = await this.stockRepo.findOne({
-      where: { conUid, ...(company ? { company } : {}), ...(plant ? { plantCd: plant } : {}) },
-    });
-    if (!stock) {
-      throw new NotFoundException(`소모품 롯트를 찾을 수 없습니다: ${conUid}`);
-    }
-    if (stock.status !== 'PROC_WAIT') {
-      throw new BadRequestException(`소모품은 공정대기 상태만 장착할 수 있습니다. (${stock.status})`);
-    }
-    if (stock.processCode !== jobOrder.processCode) {
-      throw new BadRequestException(
-        `소모품 출고 공정과 장착 공정이 다릅니다. (출고=${stock.processCode ?? '-'}, 장착=${jobOrder.processCode})`,
-      );
-    }
+    const lotWhere = { conUid, ...(company ? { company } : {}), ...(plant ? { plantCd: plant } : {}) };
+    const logs: MountLogRow[] = [];
 
-    const map = await this.mapRepo.findOne({
-      where: {
-        ...(company ? { company } : {}),
-        ...(plant ? { plant } : {}),
-        productItemCode: jobOrder.itemCode,
-        equipCode: effectiveEquip,
-        consumableCode: stock.consumableCode,
-        useYn: 'Y',
-      },
-    });
-    if (!map) {
-      throw new BadRequestException(`오장착: 이 모델/설비에 사용하지 않는 소모품입니다 (${stock.consumableCode})`);
-    }
-
-    // 같은 설비에 이미 장착된 동일 소모품의 다른 롯트는 해제(교체) — 설비당 1롯트 불변식
-    const prevMounted = await this.stockRepo.find({
-      where: {
-        consumableCode: stock.consumableCode,
-        mountedEquipCode: effectiveEquip,
-        status: 'MOUNTED',
-        ...(company ? { company } : {}),
-        ...(plant ? { plantCd: plant } : {}),
-      },
-    });
-    for (const prev of prevMounted) {
-      if (prev.conUid !== stock.conUid) {
-        prev.status = 'PROC_WAIT';
-        prev.processCode = jobOrder.processCode;
-        prev.mountedEquipCode = null;
-        await this.stockRepo.save(prev);
-        await this.writeMountLog({
-          conUid: prev.conUid,
-          consumableCode: prev.consumableCode,
-          equipCode: effectiveEquip,
-          action: 'UNMOUNT',
-          remark: `교체 해제 (신규 장착 ${stock.conUid})`,
-          company: prev.company,
-          plant: prev.plantCd,
-        });
+    // 설비당 1롯트 불변식을 지키려고 같은 소모품의 장착을 소모품 마스터 행으로 직렬화한다(마스터 → 롯트 순서).
+    // 롯트의 소모품 코드를 먼저 잠금 없이 읽어 마스터를 잠근 뒤, 롯트를 잠그고 최신 상태로 다시 읽어 검사한다.
+    const saved = await this.tx.run(async (qr) => {
+      const pre = await qr.manager.findOne(ConsumableStock, { where: lotWhere });
+      if (!pre) {
+        throw new NotFoundException(`소모품 롯트를 찾을 수 없습니다: ${conUid}`);
       }
-    }
+      await lockRowsForUpdate(qr, 'CONSUMABLE_MASTERS', {
+        CONSUMABLE_CODE: pre.consumableCode,
+        COMPANY: pre.company,
+        PLANT_CD: pre.plantCd,
+      });
+      await lockRowsForUpdate(qr, 'CONSUMABLE_STOCKS', {
+        CON_UID: conUid,
+        COMPANY: company,
+        PLANT_CD: plant,
+      });
 
-    stock.mountedEquipCode = effectiveEquip;
-    stock.status = 'MOUNTED';
-    const saved = await this.stockRepo.save(stock);
+      const stock = await qr.manager.findOne(ConsumableStock, { where: lotWhere });
+      if (!stock) {
+        throw new NotFoundException(`소모품 롯트를 찾을 수 없습니다: ${conUid}`);
+      }
+      if (stock.status !== 'PROC_WAIT') {
+        throw new BadRequestException(`소모품은 공정대기 상태만 장착할 수 있습니다. (${stock.status})`);
+      }
+      if (stock.processCode !== jobOrder.processCode) {
+        throw new BadRequestException(
+          `소모품 출고 공정과 장착 공정이 다릅니다. (출고=${stock.processCode ?? '-'}, 장착=${jobOrder.processCode})`,
+        );
+      }
 
-    await this.writeMountLog({
-      conUid: saved.conUid,
-      consumableCode: saved.consumableCode,
-      equipCode: effectiveEquip,
-      action: 'MOUNT',
-      remark: `키오스크 스캔 장착 (지시 ${orderNo})`,
-      company: saved.company,
-      plant: saved.plantCd,
+      const map = await this.mapRepo.findOne({
+        where: {
+          ...(company ? { company } : {}),
+          ...(plant ? { plant } : {}),
+          productItemCode: jobOrder.itemCode,
+          equipCode: effectiveEquip,
+          consumableCode: stock.consumableCode,
+          useYn: 'Y',
+        },
+      });
+      if (!map) {
+        throw new BadRequestException(`오장착: 이 모델/설비에 사용하지 않는 소모품입니다 (${stock.consumableCode})`);
+      }
+
+      // 같은 설비에 이미 장착된 동일 소모품의 다른 롯트는 해제(교체) — 설비당 1롯트 불변식
+      const prevMounted = await qr.manager.find(ConsumableStock, {
+        where: {
+          consumableCode: stock.consumableCode,
+          mountedEquipCode: effectiveEquip,
+          status: 'MOUNTED',
+          ...(company ? { company } : {}),
+          ...(plant ? { plantCd: plant } : {}),
+        },
+      });
+      for (const prev of prevMounted) {
+        if (prev.conUid !== stock.conUid) {
+          prev.status = 'PROC_WAIT';
+          prev.processCode = jobOrder.processCode;
+          prev.mountedEquipCode = null;
+          await qr.manager.save(prev);
+          logs.push({
+            conUid: prev.conUid,
+            consumableCode: prev.consumableCode,
+            equipCode: effectiveEquip,
+            action: 'UNMOUNT',
+            remark: `교체 해제 (신규 장착 ${stock.conUid})`,
+            company: prev.company,
+            plant: prev.plantCd,
+          });
+        }
+      }
+
+      stock.mountedEquipCode = effectiveEquip;
+      stock.status = 'MOUNTED';
+      const mounted = await qr.manager.save(stock);
+      logs.push({
+        conUid: mounted.conUid,
+        consumableCode: mounted.consumableCode,
+        equipCode: effectiveEquip,
+        action: 'MOUNT',
+        remark: `키오스크 스캔 장착 (지시 ${orderNo})`,
+        company: mounted.company,
+        plant: mounted.plantCd,
+      });
+      return mounted;
     });
+
+    // 이력은 커밋 뒤에 남긴다(기록 실패가 장착을 막지 않는다)
+    for (const log of logs) {
+      await this.writeMountLog(log);
+    }
 
     return {
       conUid: saved.conUid,

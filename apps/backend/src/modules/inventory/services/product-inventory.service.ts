@@ -18,6 +18,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { BoxMaster } from '../../../entities/box-master.entity';
 import { TransactionService } from '../../../shared/transaction.service';
 import { NumberingService } from '../../../shared/numbering.service';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 import {
   PRODUCT_STOCK_HOLD_STATUS,
   PRODUCT_TRANSACTION_STATUS,
@@ -673,6 +674,7 @@ export class ProductInventoryService {
     this.assertSameTenant('원본 제품거래', { company, plant }, originalTrans);
     this.assertNotRepairTransaction(originalTrans);
 
+    // 사전 확인(빠른 거절) — 잠근 뒤 트랜잭션 안에서 같은 검사를 최신 상태로 다시 한다
     if (originalTrans.refType === 'BOX' && originalTrans.refId) {
       const box = await this.boxRepository.findOne({
         where: {
@@ -689,7 +691,46 @@ export class ProductInventoryService {
     }
 
     return this.tx.run(async (queryRunner) => {
-      return this.cancelTransactionInTx(queryRunner, originalTrans, dto);
+      // 박스를 먼저 잠그고(입고·출하와 같은 순서) 거래 행을 잠근 뒤 최신 상태로 다시 읽는다.
+      // 잠그지 않으면 같은 거래의 동시 취소나 취소와 출하의 동시 처리가 서로를 보지 못한다.
+      if (originalTrans.refType === 'BOX' && originalTrans.refId) {
+        await lockRowsForUpdate(queryRunner, 'BOX_MASTERS', {
+          BOX_NO: originalTrans.refId,
+          COMPANY: originalTrans.company,
+          PLANT_CD: originalTrans.plant,
+        });
+      }
+      await lockRowsForUpdate(queryRunner, 'PRODUCT_TRANSACTIONS', {
+        TRANS_NO: originalTrans.transNo,
+        COMPANY: originalTrans.company,
+        PLANT_CD: originalTrans.plant,
+      });
+      const lockedTrans = await queryRunner.manager.findOne(ProductTransaction, {
+        where: { transNo: originalTrans.transNo, ...this.tenantWhere(originalTrans.company, originalTrans.plant) },
+      });
+      if (!lockedTrans) {
+        throw new NotFoundException('원본 트랜잭션을 찾을 수 없습니다.');
+      }
+      if (isProductTransactionCanceled(lockedTrans.status)) {
+        throw new BadRequestException('이미 취소된 트랜잭션입니다.');
+      }
+
+      if (lockedTrans.refType === 'BOX' && lockedTrans.refId) {
+        const box = await queryRunner.manager.findOne(BoxMaster, {
+          where: {
+            boxNo: lockedTrans.refId,
+            ...(lockedTrans.company ? { company: lockedTrans.company } : {}),
+            ...(lockedTrans.plant ? { plant: lockedTrans.plant } : {}),
+          },
+        });
+        if (box && (box.status === 'SHIPPED' || box.status === 'LOADED')) {
+          throw new BadRequestException(
+            `박스 ${box.boxNo} 가 이미 ${box.status} 상태라 입고취소할 수 없습니다. 출하취소 후 다시 시도하세요.`,
+          );
+        }
+      }
+
+      return this.cancelTransactionInTx(queryRunner, lockedTrans, dto);
     });
   }
 
@@ -708,8 +749,34 @@ export class ProductInventoryService {
     const tenantWhere = this.tenantWhere(originalTrans.company, originalTrans.plant);
     const qualityStatus = this.normalizeQualityStatus(originalTrans.qualityStatus);
 
-    // 1. 원본 트랜잭션 상태 변경
-    await qr.manager.update(ProductTransaction, { transNo: originalTrans.transNo, ...tenantWhere }, { status: PRODUCT_TRANSACTION_STATUS.CANCELED });
+    // 입고분이 이미 출하·이동되어 도착 창고 재고 행이 없으면 취소 수불만 남고 재고가 어긋나므로 거절한다.
+    if (originalTrans.toWarehouseId) {
+      const arrivalStock = await qr.manager.count(ProductStock, {
+        where: {
+          warehouseCode: originalTrans.toWarehouseId,
+          itemCode: originalTrans.itemCode,
+          qualityStatus,
+          ...tenantWhere,
+        },
+      });
+      if (arrivalStock === 0) {
+        throw new BadRequestException(
+          `입고한 재고가 도착 창고(${originalTrans.toWarehouseId})에 남아 있지 않아 취소할 수 없습니다. 이미 출하·이동되었는지 확인하세요.`,
+        );
+      }
+    }
+
+    // 1. 원본 트랜잭션 상태 변경 — 이미 취소된 거래면 0행이므로 거절한다(동시 이중 취소 방지)
+    const statusUpdate = await qr.manager
+      .createQueryBuilder()
+      .update(ProductTransaction)
+      .set({ status: PRODUCT_TRANSACTION_STATUS.CANCELED })
+      .where({ transNo: originalTrans.transNo, ...tenantWhere })
+      .andWhere('"STATUS" <> :canceledStatus', { canceledStatus: PRODUCT_TRANSACTION_STATUS.CANCELED })
+      .execute();
+    if ((statusUpdate.affected ?? 0) !== 1) {
+      throw new BadRequestException('이미 취소된 트랜잭션입니다.');
+    }
 
     // 2. 취소 트랜잭션 생성 (반대 수량)
     const cancelTrans = qr.manager.create(ProductTransaction, {

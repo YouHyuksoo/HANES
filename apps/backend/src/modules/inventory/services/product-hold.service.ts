@@ -5,6 +5,7 @@ import { ProductStock } from '../../../entities/product-stock.entity';
 import { ItemMaster } from '../../../entities/item-master.entity';
 import { ProductHoldActionDto, ProductReleaseHoldDto, ProductHoldQueryDto } from '../dto/product-hold.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 import { PRODUCT_STOCK_HOLD_STATUS, isProductStockOnHold } from '@harness/shared';
 
 @Injectable()
@@ -79,6 +80,13 @@ export class ProductHoldService {
     };
 
     await this.tx.run(async (queryRunner) => {
+      // 대상 재고 행을 먼저 잠근 뒤 상태·수량을 읽는다 — 동시 HOLD/해제·출고가 읽은 값을 바꾸지 못하게
+      await lockRowsForUpdate(queryRunner, 'PRODUCT_STOCKS', {
+        WAREHOUSE_CODE: scopedKey.warehouseCode,
+        ITEM_CODE: scopedKey.itemCode,
+        COMPANY: company,
+        PLANT_CD: plant,
+      });
       const stock = await queryRunner.manager.findOne(ProductStock, {
         where: scopedKey,
       });
@@ -123,6 +131,13 @@ export class ProductHoldService {
     };
 
     await this.tx.run(async (queryRunner) => {
+      // 대상 재고 행을 먼저 잠근 뒤 상태·수량을 읽는다 — 동시 HOLD/해제·출고가 읽은 값을 바꾸지 못하게
+      await lockRowsForUpdate(queryRunner, 'PRODUCT_STOCKS', {
+        WAREHOUSE_CODE: scopedKey.warehouseCode,
+        ITEM_CODE: scopedKey.itemCode,
+        COMPANY: company,
+        PLANT_CD: plant,
+      });
       const stock = await queryRunner.manager.findOne(ProductStock, {
         where: scopedKey,
       });

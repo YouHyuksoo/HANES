@@ -26,6 +26,7 @@ import {
   BoxStatus,
 } from '../dto/box.dto';
 import { TransactionService } from '../../../shared/transaction.service';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 import { NumberingService } from '../../../shared/numbering.service';
 import { SysConfigService } from '../../system/services/sys-config.service';
 import { CarrierFlowService } from '../../production/services/carrier-flow.service';
@@ -917,6 +918,24 @@ export class BoxService {
     }
 
     await this.tx.run(async (queryRunner) => {
+      // 잠금 순서: 팔레트 → 박스 (출하지시 팔레트 적재·팔레트 출하와 같다. 반대 순서면 교착이 난다).
+      // 검사 뒤 갱신 사이에 다른 요청이 팔레트·박스 상태를 바꾸지 못하게 잠그고 최신 상태로 다시 확인한다.
+      await lockRowsForUpdate(queryRunner, 'PALLET_MASTERS', { PALLET_NO: dto.palletId, COMPANY: company, PLANT_CD: plant });
+      await lockRowsForUpdate(queryRunner, 'BOX_MASTERS', { BOX_NO: id, COMPANY: company, PLANT_CD: plant });
+      const lockedPallet = await queryRunner.manager.findOne(PalletMaster, {
+        where: { palletNo: dto.palletId, ...this.tenantWhere(company, plant) },
+      });
+      if (!lockedPallet) throw new NotFoundException(`팔레트를 찾을 수 없습니다: ${dto.palletId}`);
+      if (lockedPallet.status !== 'OPEN') {
+        throw new BadRequestException(`팔레트 상태(${lockedPallet.status})가 OPEN이 아닙니다.`);
+      }
+      const lockedBox = await queryRunner.manager.findOne(BoxMaster, {
+        where: { boxNo: id, ...this.tenantWhere(company, plant) },
+      });
+      if (!lockedBox || lockedBox.status !== 'CLOSED' || (lockedBox.palletNo && lockedBox.palletNo !== dto.palletId)) {
+        throw new BadRequestException('동시 처리로 박스 상태가 변경되었습니다. 다시 조회해 주세요.');
+      }
+
       await queryRunner.manager.update(
         BoxMaster,
         { boxNo: id, ...this.tenantWhere(company, plant) },
@@ -960,6 +979,23 @@ export class BoxService {
 
     const palletNo = box.palletNo;
     await this.tx.run(async (queryRunner) => {
+      // 잠금 순서: 팔레트 → 박스. 박스가 속한 팔레트를 잠근 뒤 박스를 잠그고 다시 확인한다.
+      await lockRowsForUpdate(queryRunner, 'PALLET_MASTERS', { PALLET_NO: palletNo, COMPANY: company, PLANT_CD: plant });
+      await lockRowsForUpdate(queryRunner, 'BOX_MASTERS', { BOX_NO: id, COMPANY: company, PLANT_CD: plant });
+      const lockedPallet = await queryRunner.manager.findOne(PalletMaster, {
+        where: { palletNo, ...this.tenantWhere(company, plant) },
+      });
+      if (!lockedPallet) throw new NotFoundException('팔레트를 찾을 수 없습니다.');
+      if (lockedPallet.status !== 'OPEN') {
+        throw new BadRequestException(`팔레트 상태(${lockedPallet.status})가 OPEN이 아닙니다.`);
+      }
+      const lockedBox = await queryRunner.manager.findOne(BoxMaster, {
+        where: { boxNo: id, ...this.tenantWhere(company, plant) },
+      });
+      if (!lockedBox || lockedBox.palletNo !== palletNo) {
+        throw new BadRequestException('박스의 팔레트가 동시에 바뀌었습니다. 다시 조회해 주세요.');
+      }
+
       await queryRunner.manager.update(
         BoxMaster,
         { boxNo: id, ...this.tenantWhere(company, plant) },

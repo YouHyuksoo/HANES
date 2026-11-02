@@ -763,6 +763,11 @@ describe('BoxService', () => {
       getRawOne: jest.fn().mockResolvedValue({ count: '1', totalQty: '2' }),
     };
     (mockQueryRunner.manager.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+    mockQueryRunner.query.mockResolvedValue([]);
+    (mockQueryRunner.manager.findOne as jest.Mock).mockImplementation(async (entity: unknown) =>
+      entity === PalletMaster
+        ? { palletNo: 'P-001', status: 'OPEN' }
+        : { boxNo: 'BOX-001', status: 'CLOSED', palletNo: null });
 
     await target.assignToPallet('BOX-001', { palletId: 'P-001' } as any);
 
@@ -801,6 +806,11 @@ describe('BoxService', () => {
       getRawOne: jest.fn().mockResolvedValue({ count: '0', totalQty: '0' }),
     };
     (mockQueryRunner.manager.createQueryBuilder as jest.Mock).mockReturnValue(qb);
+    mockQueryRunner.query.mockResolvedValue([]);
+    (mockQueryRunner.manager.findOne as jest.Mock).mockImplementation(async (entity: unknown) =>
+      entity === PalletMaster
+        ? { palletNo: 'P-001', status: 'OPEN' }
+        : { boxNo: 'BOX-001', status: 'CLOSED', palletNo: 'P-001' });
 
     await target.removeFromPallet('BOX-001');
 

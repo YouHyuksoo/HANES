@@ -641,7 +641,8 @@ describe('InventoryService', () => {
       mockStockTransRepo.findOne.mockResolvedValue(null);
       mockStockTransRepo.create.mockReturnValue(cancelTrans);
       mockQueryRunner.manager.save.mockResolvedValue(cancelTrans);
-      mockQueryRunner.manager.findOne.mockResolvedValue({
+      mockQueryRunner.query.mockResolvedValue([]);
+      mockQueryRunner.manager.findOne.mockImplementation(async (entity: any) => entity === StockTransaction ? originalTrans : {
         warehouseCode: 'WH-RM',
         itemCode: 'PART-001',
         matUid: 'RM202603180001',
@@ -649,15 +650,20 @@ describe('InventoryService', () => {
         availableQty: 20,
         company: 'TESTV',
         plant: 'WAREHOUSES',
-      } as any);
+      });
+      const statusQb: any = {
+        update: jest.fn().mockReturnThis(), set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected: 1 }),
+      };
+      (mockQueryRunner.manager.createQueryBuilder as jest.Mock).mockImplementationOnce(() => statusQb);
 
       await target.cancelTransaction({ transactionId: 'TRX202603180001' } as any, 'TESTV', 'WAREHOUSES');
 
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        StockTransaction,
-        { transNo: 'TRX202603180001', company: 'TESTV', plant: 'WAREHOUSES' },
-        { status: 'CANCELED' },
-      );
+      // 거래 행을 잠근 뒤, 취소되지 않은 행만 CANCELED 로 바꾼다(이중 취소 방지)
+      expect(mockQueryRunner.query).toHaveBeenCalledWith(expect.stringContaining('FROM STOCK_TRANSACTIONS'), expect.anything());
+      expect(statusQb.set).toHaveBeenCalledWith({ status: 'CANCELED' });
+      expect(statusQb.where).toHaveBeenCalledWith({ transNo: 'TRX202603180001', company: 'TESTV', plant: 'WAREHOUSES' });
     });
 
     it('rejects cancellation when requested tenant differs from original transaction tenant', async () => {

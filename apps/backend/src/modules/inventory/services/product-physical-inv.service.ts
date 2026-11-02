@@ -11,6 +11,7 @@ import { FgLabel } from '../../../entities/fg-label.entity';
 import { PhysicalInvSession } from '../../../entities/physical-inv-session.entity';
 import { PhysicalInvCountDetail } from '../../../entities/physical-inv-count-detail.entity';
 import { TransactionService } from '../../../shared/transaction.service';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 import {
   CreateProductPhysicalInvDto,
   ProductPhysicalInvQueryDto,
@@ -187,6 +188,13 @@ export class ProductPhysicalInvService {
           ...(plant && { plant }),
         };
 
+        // 같은 행을 다른 실사·예약·출고가 동시에 바꾸지 못하게 먼저 잠그고 수량과 예약수량을 읽는다
+        await lockRowsForUpdate(queryRunner, 'PRODUCT_STOCKS', {
+          WAREHOUSE_CODE: warehouseCode,
+          ITEM_CODE: itemCode,
+          COMPANY: company,
+          PLANT_CD: plant,
+        });
         const stockRows = await queryRunner.manager.find(ProductStock, {
           where: scopedKey,
         });

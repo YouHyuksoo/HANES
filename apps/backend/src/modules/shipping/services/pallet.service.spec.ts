@@ -125,6 +125,8 @@ describe('PalletService', () => {
     it('should close OPEN pallet with boxes', async () => {
       mockPalletRepo.findOne.mockResolvedValue({ palletNo: 'P-001', status: 'OPEN', boxCount: 3, shipOrderNo: 'SO-001' } as any);
       mockBoxRepo.find.mockResolvedValue([] as any);
+      mockQr.query.mockResolvedValue([]);
+      (mockQr.manager.findOne as jest.Mock).mockResolvedValue({ palletNo: 'P-001', status: 'OPEN', boxCount: 3 });
       await target.closePallet('P-001');
       expect(mockTx.run).toHaveBeenCalledTimes(1);
       expect(mockQr.manager.update).toHaveBeenCalledWith(
@@ -184,6 +186,9 @@ describe('PalletService', () => {
         .mockResolvedValueOnce({ palletNo: 'P-001', status: 'OPEN' } as any);
       mockBoxRepo.find.mockResolvedValue([{ boxNo: 'BOX-001', status: 'CLOSED', palletNo: 'P-001' }] as any);
       mockSummaryQb({ count: '0', totalQty: '0' });
+      mockQr.query.mockResolvedValue([]);
+      (mockQr.manager.findOne as jest.Mock).mockResolvedValue({ palletNo: 'P-001', status: 'OPEN' });
+      (mockQr.manager.count as jest.Mock).mockResolvedValue(1);
 
       await target.removeBox('P-001', { boxIds: ['BOX-001'] } as any);
 
@@ -199,6 +204,8 @@ describe('PalletService', () => {
         .mockResolvedValueOnce({ palletNo: 'P-001', status: 'LOADED', shipmentId: 'SHIP-001' } as any);
       mockShipmentRepo.findOne.mockResolvedValue({ shipNo: 'SHIP-001', status: 'PREPARING', shipOrderNo: null } as any);
       mockSummaryQb({ count: '1', boxCount: '1', totalQty: '2' });
+      mockQr.query.mockResolvedValue([]);
+      (mockQr.manager.findOne as jest.Mock).mockResolvedValue({ palletNo: 'P-001', status: 'CLOSED', shipmentId: null });
 
       await target.assignToShipment('P-001', { shipmentId: 'SHIP-001' } as any);
 
@@ -230,6 +237,8 @@ describe('PalletService', () => {
         .mockResolvedValueOnce({ palletNo: 'P-001', status: 'CLOSED', shipmentId: null } as any);
       mockShipmentRepo.findOne.mockResolvedValue({ shipNo: 'SHIP-001', status: 'PREPARING' } as any);
       mockSummaryQb({ count: '0', boxCount: '0', totalQty: '0' });
+      mockQr.query.mockResolvedValue([]);
+      (mockQr.manager.findOne as jest.Mock).mockResolvedValue({ palletNo: 'P-001', status: 'LOADED', shipmentId: 'SHIP-001' });
 
       await target.removeFromShipment('P-001');
 

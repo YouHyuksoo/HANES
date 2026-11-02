@@ -325,7 +325,12 @@ describe('ProductInventoryService', () => {
       } as any);
       mockTransRepo.create.mockReturnValue({ transNo: 'PTX002' } as any);
       mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'PTX002' } as any);
-      mockQueryRunner.manager.findOne.mockResolvedValue({
+      mockQueryRunner.query.mockResolvedValue([]);
+      const originalFgOut = {
+        transNo: 'PTX001', transType: 'FG_OUT', status: 'DONE', fromWarehouseId: 'WH', itemCode: 'FG',
+        itemType: 'FINISHED', prdUid: 'LOT1', qty: -10, company: 'C1', plant: 'P1',
+      };
+      mockQueryRunner.manager.findOne.mockImplementation(async (entity: any) => entity === ProductTransaction ? originalFgOut : {
         warehouseCode: 'WH',
         itemCode: 'FG',
         prdUid: 'LOT1',
@@ -333,15 +338,13 @@ describe('ProductInventoryService', () => {
         availableQty: 20,
         company: 'C1',
         plant: 'P1',
-      } as any);
+      });
 
       await target.cancelTransaction({ transactionId: 'PTX001' } as any, 'C1', 'P1');
 
-      expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
-        ProductTransaction,
-        { transNo: 'PTX001', company: 'C1', plant: 'P1' },
-        { status: 'CANCELED' },
-      );
+      // 원본 거래 행을 잠그고, 상태 변경은 취소되지 않은 행만 갱신한다(이중 취소 방지)
+      expect(mockQueryRunner.query).toHaveBeenCalledWith(expect.stringContaining('FROM PRODUCT_TRANSACTIONS'), expect.anything());
+      expect(mockStockQb.set).toHaveBeenCalledWith({ status: 'CANCELED' });
       expect(mockStockQb.where).toHaveBeenCalledWith({
         warehouseCode: 'WH', itemCode: 'FG', qualityStatus: 'GOOD', company: 'C1', plant: 'P1',
       });
@@ -349,6 +352,37 @@ describe('ProductInventoryService', () => {
       expect(mockQueryRunner.manager.findOne).toHaveBeenCalledWith(ProductStock, {
         where: { warehouseCode: 'WH', itemCode: 'FG', qualityStatus: 'GOOD', company: 'C1', plant: 'P1' },
       });
+    });
+
+    it('rejects when the transaction was canceled by a concurrent request after the pre-check', async () => {
+      mockTransRepo.findOne.mockResolvedValue({
+        transNo: 'PTX001', transType: 'FG_OUT', status: 'DONE', fromWarehouseId: 'WH', itemCode: 'FG',
+        qty: -10, company: 'C1', plant: 'P1',
+      } as any);
+      mockQueryRunner.query.mockResolvedValue([]);
+      // 잠근 뒤 다시 읽은 거래는 이미 CANCELED
+      mockQueryRunner.manager.findOne.mockResolvedValue({ transNo: 'PTX001', status: 'CANCELED', company: 'C1', plant: 'P1' } as any);
+
+      await expect(
+        target.cancelTransaction({ transactionId: 'PTX001' } as any, 'C1', 'P1'),
+      ).rejects.toThrow('이미 취소된 트랜잭션입니다');
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects canceling a receipt whose arrival stock row no longer exists', async () => {
+      const original = {
+        transNo: 'PTX-IN', transType: 'FG_IN', status: 'DONE', toWarehouseId: 'FG_MAIN', itemCode: 'FG-001',
+        itemType: 'FINISHED', qty: 5, company: 'C1', plant: 'P1',
+      };
+      mockTransRepo.findOne.mockResolvedValue(original as any);
+      mockQueryRunner.query.mockResolvedValue([]);
+      mockQueryRunner.manager.findOne.mockResolvedValue(original as any);
+      mockQueryRunner.manager.count.mockResolvedValue(0);
+
+      await expect(
+        target.cancelTransaction({ transactionId: 'PTX-IN' } as any, 'C1', 'P1'),
+      ).rejects.toThrow('도착 창고');
+      expect(mockQueryRunner.manager.save).not.toHaveBeenCalled();
     });
 
     it('keeps FG label boxNo when canceling a box warehouse receipt', async () => {
@@ -371,15 +405,26 @@ describe('ProductInventoryService', () => {
       } as any);
       mockTransRepo.create.mockReturnValue({ transNo: 'PTX-BOX-CANCEL' } as any);
       mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'PTX-BOX-CANCEL' } as any);
-      mockQueryRunner.manager.findOne.mockResolvedValue({
-        warehouseCode: 'FG_MAIN',
-        itemCode: 'FG-001',
-        qty: 5,
-        reservedQty: 0,
-        availableQty: 5,
-        company: 'C1',
-        plant: 'P1',
-      } as any);
+      mockQueryRunner.query.mockResolvedValue([]);
+      mockQueryRunner.manager.count.mockResolvedValue(1);
+      const originalBoxIn = {
+        transNo: 'PTX-BOX-IN', transType: 'FG_IN', status: 'DONE', fromWarehouseId: null, toWarehouseId: 'FG_MAIN',
+        itemCode: 'FG-001', itemType: 'FINISHED', prdUid: null, qty: 5, refType: 'BOX', refId: 'BOX-001',
+        company: 'C1', plant: 'P1',
+      };
+      mockQueryRunner.manager.findOne.mockImplementation(async (entity: any) => {
+        if (entity === ProductTransaction) return originalBoxIn;
+        if (entity === BoxMaster) return { boxNo: 'BOX-001', status: 'CLOSED' };
+        return {
+          warehouseCode: 'FG_MAIN',
+          itemCode: 'FG-001',
+          qty: 5,
+          reservedQty: 0,
+          availableQty: 5,
+          company: 'C1',
+          plant: 'P1',
+        };
+      });
 
       await target.cancelTransaction({ transactionId: 'PTX-BOX-IN' } as any, 'C1', 'P1');
 
@@ -434,7 +479,12 @@ describe('ProductInventoryService', () => {
       } as any);
       mockTransRepo.create.mockReturnValue({ transNo: 'PTX002' } as any);
       mockQueryRunner.manager.save.mockResolvedValue({ transNo: 'PTX002' } as any);
-      mockQueryRunner.manager.findOne.mockResolvedValue({
+      mockQueryRunner.query.mockResolvedValue([]);
+      const originalFgOut = {
+        transNo: 'PTX001', transType: 'FG_OUT', status: 'DONE', fromWarehouseId: 'WH', itemCode: 'FG',
+        itemType: 'FINISHED', prdUid: 'LOT1', qty: -10, company: 'C1', plant: 'P1',
+      };
+      mockQueryRunner.manager.findOne.mockImplementation(async (entity: any) => entity === ProductTransaction ? originalFgOut : {
         warehouseCode: 'WH',
         itemCode: 'FG',
         prdUid: 'LOT1',
@@ -442,7 +492,7 @@ describe('ProductInventoryService', () => {
         availableQty: 20,
         company: 'OTHER',
         plant: 'P1',
-      } as any);
+      });
 
       await expect(
         target.cancelTransaction({ transactionId: 'PTX001' } as any, 'C1', 'P1'),

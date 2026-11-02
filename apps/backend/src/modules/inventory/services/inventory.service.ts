@@ -14,6 +14,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, QueryRunner } from 'typeorm';
 import { StockTransaction } from '../../../entities/stock-transaction.entity';
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 import { MatStock } from '../../../entities/mat-stock.entity';
 import { MatLot } from '../../../entities/mat-lot.entity';
 import { Warehouse } from '../../../entities/warehouse.entity';
@@ -391,10 +392,33 @@ export class InventoryService {
     };
 
     return this.tx.run(async (queryRunner) => {
+      // 같은 거래의 동시 취소를 직렬화하려고 거래 행을 먼저 잠근 뒤 최신 상태를 읽는다
+      await lockRowsForUpdate(queryRunner, 'STOCK_TRANSACTIONS', {
+        TRANS_NO: originalTrans.transNo,
+        COMPANY: originalTrans.company,
+        PLANT_CD: originalTrans.plant,
+      });
+      const lockedTrans = await queryRunner.manager.findOne(StockTransaction, {
+        where: { transNo: originalTrans.transNo, ...txTenantWhere },
+      });
+      if (!lockedTrans) throw new NotFoundException('원본 트랜잭션을 찾을 수 없습니다.');
+      if (lockedTrans.status === 'CANCELED') {
+        throw new BadRequestException('이미 취소된 트랜잭션입니다.');
+      }
+
       const transNo = await this.generateTransNo(queryRunner);
 
-      // 1. 원본 트랜잭션 상태 변경
-      await queryRunner.manager.update(StockTransaction, { transNo: originalTrans.transNo, ...txTenantWhere }, { status: 'CANCELED' });
+      // 1. 원본 상태 변경 — 이미 취소된 거래면 0행이므로 거절한다
+      const statusUpdate = await queryRunner.manager
+        .createQueryBuilder()
+        .update(StockTransaction)
+        .set({ status: 'CANCELED' })
+        .where({ transNo: originalTrans.transNo, ...txTenantWhere })
+        .andWhere(`"STATUS" <> 'CANCELED'`)
+        .execute();
+      if ((statusUpdate.affected ?? 0) !== 1) {
+        throw new BadRequestException('이미 취소된 트랜잭션입니다.');
+      }
 
       // 2. 취소 트랜잭션 생성 (반대 수량)
       const cancelTrans = this.stockTransactionRepository.create({
@@ -432,7 +456,13 @@ export class InventoryService {
           },
         });
 
-        if (stock) {
+        // 입고분이 이미 사용·이동되어 재고 행이 없으면 원장만 취소되어 재고와 어긋나므로 거절한다
+        if (!stock) {
+          throw new BadRequestException(
+            `입고한 재고가 도착 창고(${originalTrans.toWarehouseId})에 남아 있지 않아 취소할 수 없습니다. LOT: ${originalTrans.matUid ?? '-'}`,
+          );
+        }
+        {
           this.assertSameTenant('취소 대상 재고', { company: originalTrans.company ?? company, plant: originalTrans.plant ?? plant }, stock);
           await this.decrementStockAtomically(
             queryRunner,

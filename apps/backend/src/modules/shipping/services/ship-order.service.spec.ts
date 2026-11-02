@@ -63,6 +63,7 @@ describe('ShipOrderService', () => {
     mockQr.commitTransaction.mockResolvedValue(undefined);
     mockQr.rollbackTransaction.mockResolvedValue(undefined);
     mockQr.release.mockResolvedValue(undefined);
+    mockQr.query.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -377,6 +378,15 @@ describe('ShipOrderService', () => {
       ] as any);
       mockPartRepo.findOne.mockResolvedValue({ itemCode: 'ITEM-A', itemName: '제품A' } as any);
       mockPartnerRepo.findOne.mockResolvedValue(null);
+      // 잠근 뒤 다시 읽는 최신 상태(팔레트 출하 경로)
+      mockQr.manager.find.mockImplementation(async (entity: any) => {
+        if (entity === PalletMaster) {
+          return [{ palletNo: 'PLT-001', shipOrderNo: 'SO-001', status: 'CLOSED', shipmentId: null }];
+        }
+        if (entity === BoxMaster) return [{ boxNo: 'BX-001', itemCode: 'ITEM-A', qty: 10, status: 'CLOSED', palletNo: 'PLT-001' }];
+        if (entity === ShipmentOrderItem) return [{ seq: 1, itemCode: 'ITEM-A', orderQty: 10, shippedQty: 0 }];
+        return [];
+      });
     });
 
     it('출하지시에 귀속된 팔레트를 생성한다', async () => {
@@ -468,8 +478,18 @@ describe('ShipOrderService', () => {
         .mockResolvedValueOnce([] as any);
       mockPalletRepo.find
         .mockResolvedValueOnce([{ palletNo: 'PLT-001', status: 'OPEN' }] as any)
+        .mockResolvedValueOnce([] as any)
         .mockResolvedValueOnce([] as any);
       mockShipmentRepo.find.mockResolvedValue([] as any);
+      // 잠근 뒤 다시 읽는 최신 상태(팔레트·박스·출하지시 라인)
+      mockQr.manager.findOne.mockResolvedValue({ palletNo: 'PLT-001', shipOrderNo: 'SO-001', status: 'OPEN', boxCount: 0 } as any);
+      mockQr.manager.find.mockImplementation(async (entity: any) => {
+        if (entity === BoxMaster) {
+          return [{ boxNo: 'BX-001', itemCode: 'ITEM-A', qty: 10, status: 'CLOSED', oqcStatus: 'PENDING', palletNo: null }];
+        }
+        if (entity === ShipmentOrderItem) return [{ seq: 1, itemCode: 'ITEM-A', orderQty: 100, shippedQty: 0 }];
+        return [];
+      });
       const qb = {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -601,7 +621,7 @@ describe('ShipOrderService.shipBox', () => {
         { provide: getRepositoryToken(BoxMaster), useValue: repos.box ?? {} },
         { provide: getRepositoryToken(PalletMaster), useValue: {} },
         { provide: getRepositoryToken(ShipmentLog), useValue: repos.shipment ?? {} },
-        { provide: TransactionService, useValue: { run: (cb: any) => cb({ manager: managed }) } },
+        { provide: TransactionService, useValue: { run: (cb: any) => cb({ manager: managed, query: jest.fn().mockResolvedValue([]) }) } },
         { provide: ProductInventoryService, useValue: { issueStockByItemFifoInTx: issueStockInTx, receiveStockInTx, cancelTransactionInTx } },
         { provide: SysConfigService, useValue: { isEnabled: jest.fn().mockResolvedValue(true) } },
         { provide: NumberingService, useValue: { nextShipmentNo: jest.fn().mockResolvedValue('SO-TEST'), nextReturnNo: jest.fn().mockResolvedValue('RT-TEST') } },
@@ -741,7 +761,7 @@ describe('ShipOrderService.shipBox', () => {
     );
     expect(managed.update).toHaveBeenCalledWith(BoxMaster, expect.objectContaining({ boxNo: 'BX1' }), expect.objectContaining({ status: 'CLOSED', shippedAt: null }));
     expect(managed.update).toHaveBeenCalledWith(FgLabel, expect.objectContaining({ fgBarcode: expect.anything() }), { status: 'PACKED' });
-    expect(managed.update).toHaveBeenCalledWith(ShipmentOrderItem, expect.objectContaining({ shipOrderNo: 'SO1', seq: 1 }), { shippedQty: 0 });
+    expect(managed.update).toHaveBeenCalledWith(ShipmentOrderItem, expect.objectContaining({ shipOrderNo: 'SO1', seq: 1 }), { shippedQty: expect.any(Function) });
     expect(managed.update).toHaveBeenCalledWith(ShipmentOrder, expect.objectContaining({ shipOrderNo: 'SO1' }), { status: 'CONFIRMED' });
     expect(res.lineShippedQty).toBe(0);
     expect(res.orderStatus).toBe('CONFIRMED');
