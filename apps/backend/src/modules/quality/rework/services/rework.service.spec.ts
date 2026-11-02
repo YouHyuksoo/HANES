@@ -411,6 +411,23 @@ describe('ReworkService', () => {
       )).rejects.toThrow(BadRequestException);
     });
 
+    it('같은 불량을 다른 요청이 먼저 선점했으면(WAIT 조건 갱신 0건) 400 이고 지시를 만들지 않는다', async () => {
+      mockDefectLogRepo.findOne.mockResolvedValue({ occurAt: new Date(), seq: 1, status: 'WAIT', qty: 5 } as any);
+      mockReworkRepo.findOne.mockResolvedValue(null);
+      const mockItemMasterRepo = (target as any).itemMasterRepo as DeepMocked<Repository<ItemMaster>>;
+      mockItemMasterRepo.findOne.mockResolvedValue({ itemCode: 'IT-1' } as any);
+      mockDefectLogRepo.update.mockResolvedValue({ affected: 0 } as any);
+
+      await expect(target.create(
+        { defectLogId: '2026-04-08T00:00:00.000Z|1', itemCode: 'IT-1', reworkQty: 2, reworkMethod: 'X' } as any,
+        'CO',
+        'P01',
+        'user',
+      )).rejects.toThrow(BadRequestException);
+      expect(mockReworkRepo.save).not.toHaveBeenCalled();
+      expect(mockDefectLogRepo.update.mock.calls[0][0]).toMatchObject({ status: 'WAIT' });
+    });
+
     it('이미 재작업이 연결된 불량은 400', async () => {
       mockDefectLogRepo.findOne.mockResolvedValue({ occurAt: new Date(), seq: 1, status: 'WAIT', qty: 5 } as any);
       // 중복 연결 확인에서 기존 연결 발견

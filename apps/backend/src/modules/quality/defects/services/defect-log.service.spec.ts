@@ -9,7 +9,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { DefectLogService } from './defect-log.service';
 import { DefectLog } from '../../../../entities/defect-log.entity';
@@ -37,6 +37,8 @@ describe('DefectLogService', () => {
    * → create/update/delete 트랜잭션 리팩토링 후에도 기존 mockDefectLogRepo/mockProdResultRepo 단언이 그대로 유효하다.
    */
   const makeFakeQueryRunner = () => ({
+    // 실적 행 잠금(SELECT ... FOR UPDATE)은 단위 테스트에서 아무 일도 하지 않는다
+    query: jest.fn().mockResolvedValue([]),
     manager: {
       create: (entity: unknown, data: unknown) =>
         entity === DefectLog ? mockDefectLogRepo.create(data as any) : mockProdResultRepo.create(data as any),
@@ -299,7 +301,7 @@ describe('DefectLogService', () => {
       expect(result.defectCode).toBe('DEF002');
       expect(mockProdResultRepo.update).toHaveBeenCalledWith(
         { resultNo: 'PR260318-00001', company: 'HANES', plant: 'P01' },
-        { defectQty: 5 }, // 3 + 2
+        { defectQty: expect.any(Function) }, // 읽은 값 + 2 를 대입하지 않고 DEFECT_QTY 를 상대 증가시킨다
       );
     });
 
@@ -519,12 +521,23 @@ describe('DefectLogService', () => {
   });
 
   describe('update', () => {
+    it('rejects when the defect qty changed while waiting for the result lock', async () => {
+      const defect = createDefectLog({ qty: 2 });
+      mockDefectLogRepo.findOne
+        .mockResolvedValueOnce(defect)
+        .mockResolvedValueOnce(createDefectLog({ qty: 4 }));
+
+      await expect(target.update('1', { qty: 5 } as any, 'HANES', 'P01')).rejects.toThrow(ConflictException);
+      expect(mockProdResultRepo.update).not.toHaveBeenCalled();
+    });
+
     it('should apply the qty delta back to the linked prodResult', async () => {
       const defect = createDefectLog({ qty: 2 });
       const updated = createDefectLog({ qty: 5 });
 
       mockDefectLogRepo.findOne
         .mockResolvedValueOnce(defect)
+        .mockResolvedValueOnce(defect) // 실적 행 잠금 뒤 최신 불량 재조회
         .mockResolvedValueOnce(updated);
       mockDefectLogRepo.update.mockResolvedValue({ affected: 1 } as any);
       mockProdResultRepo.update.mockResolvedValue({ affected: 1 } as any);
@@ -551,6 +564,7 @@ describe('DefectLogService', () => {
 
       mockDefectLogRepo.findOne
         .mockResolvedValueOnce(defect)
+        .mockResolvedValueOnce(defect) // 실적 행 잠금 뒤 최신 불량 재조회
         .mockResolvedValueOnce(updated);
       mockDefectLogRepo.update.mockResolvedValue({ affected: 1 } as any);
       mockProdResultRepo.update.mockResolvedValue({ affected: 1 } as any);
@@ -599,7 +613,7 @@ describe('DefectLogService', () => {
 
       // Assert
       expect(mockDefectLogRepo.update).toHaveBeenCalledWith(
-        { occurAt: expect.anything(), seq: defect.seq, company: 'HANES', plant: 'P01' },
+        { occurAt: expect.anything(), seq: defect.seq, company: 'HANES', plant: 'P01', status: 'WAIT' },
         { status: 'REPAIR' },
       );
       expect(mockReworkOrderRepo.findOne).toHaveBeenCalledWith({
@@ -609,6 +623,13 @@ describe('DefectLogService', () => {
           plant: 'P01',
         },
       });
+    });
+
+    it('rejects when another request already changed the status (0 rows updated)', async () => {
+      mockDefectLogRepo.findOne.mockResolvedValue(createDefectLog({ status: 'WAIT' }));
+      mockDefectLogRepo.update.mockResolvedValue({ affected: 0 } as any);
+
+      await expect(target.changeStatus('1', { status: 'REPAIR' } as any, 'HANES', 'P01')).rejects.toThrow(ConflictException);
     });
 
     it('should allow WAIT → REWORK', async () => {

@@ -36,6 +36,13 @@ import { EquipInspectService } from '../../equipment/services/equip-inspect.serv
 import { EquipInspectGateService } from '../../equipment/services/equip-inspect-gate.service';
 import { CarrierFlowService } from './carrier-flow.service';
 
+/** 실적 행 잠금 쿼리에는 row 를, 그 밖의 쿼리에는 빈 배열을 돌려주는 query 목 */
+const lockQuery = (row: Partial<{ status: string; orderNo: string; prdUid: string | null; goodQty: number; defectQty: number }>) =>
+  (async (sql: string) =>
+    /SELECT STATUS AS "status"/.test(sql)
+      ? [{ status: 'DONE', orderNo: 'JO-1', prdUid: null, goodQty: 0, defectQty: 0, company: 'C1', plant: 'P1', ...row }]
+      : []) as never;
+
 describe('ProdResultService', () => {
   let service: ProdResultService;
   let prodResultRepo: DeepMocked<Repository<ProdResult>>;
@@ -84,6 +91,8 @@ describe('ProdResultService', () => {
     equipInspectItemPoolRepo.find.mockResolvedValue([]);
     equipInspectService = createMock<EquipInspectService>();
     queryRunner = createMock<QueryRunner>();
+    // 실적 행 잠금(SELECT ... FOR UPDATE)은 최신 상태 한 줄을 돌려주고, 나머지 잠금·집계 쿼리는 빈 결과. 필요한 테스트가 덮어쓴다
+    queryRunner.query.mockImplementation(lockQuery({ status: 'DONE' }));
     stockUpdateQb = {
       update: jest.fn().mockReturnThis(),
       set: jest.fn().mockReturnThis(),
@@ -984,6 +993,8 @@ describe('ProdResultService', () => {
     sysConfigService.getValue.mockResolvedValue('OFF');
     autoIssueService.execute.mockResolvedValue({ issued: [], warnings: [], skipped: false } as any);
     prodResultRepo.findOne.mockResolvedValue({ resultNo: 'PR-2' } as any);
+    // 작업지시 동기화가 읽는 합계: 방금 저장한 실적 1건
+    queryRunner.query.mockResolvedValue([{ resultCount: '1', totalGoodQty: '1', totalDefectQty: '0' }] as never);
 
     await service.create({ orderNo: 'JO-2', goodQty: 1, defectQty: 0 } as any, 'C1', 'P1');
 
@@ -1007,6 +1018,7 @@ describe('ProdResultService', () => {
       } as any)
       .mockResolvedValueOnce({ resultNo: 'PR-1', remark: 'updated' } as any);
     matIssueRepo.find.mockResolvedValue([] as any);
+    queryRunner.query.mockImplementation(lockQuery({ status: 'RUNNING', goodQty: 1, defectQty: 0 }));
     queryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
 
     const result = await service.update('PR-1', { remark: 'updated' } as any, 'C1', 'P1');
@@ -1037,6 +1049,7 @@ describe('ProdResultService', () => {
       } as any)
       .mockResolvedValueOnce({ resultNo: 'PR-1', goodQty: 3, defectQty: 0 } as any);
     matIssueRepo.find.mockResolvedValue([] as any);
+    queryRunner.query.mockImplementation(lockQuery({ status: 'DONE', goodQty: 1, defectQty: 0 }));
     queryRunner.manager.find.mockResolvedValue([] as any);
     queryRunner.manager.findOne
       .mockResolvedValueOnce(null as any)
@@ -1069,8 +1082,86 @@ describe('ProdResultService', () => {
       defectLogs: [],
     } as any);
     matIssueRepo.find.mockResolvedValue([] as any);
+    queryRunner.query.mockImplementation(lockQuery({ status: 'RUNNING', goodQty: 1, defectQty: 0 }));
 
     await expect(service.update('PR-1', { status: 'DONE' } as any, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+  });
+
+  it('update rejects when the row was canceled while waiting for the result lock', async () => {
+    prodResultRepo.findOne.mockResolvedValue({
+      resultNo: 'PR-1', status: 'DONE', goodQty: 1, defectQty: 0, orderNo: 'JO-1', inspectResults: [], defectLogs: [],
+    } as any);
+    matIssueRepo.find.mockResolvedValue([] as any);
+    queryRunner.query.mockImplementation(lockQuery({ status: 'CANCELED', goodQty: 1, defectQty: 0 }));
+
+    await expect(service.update('PR-1', { goodQty: 3 } as any, 'C1', 'P1')).rejects.toThrow('취소된 실적은 수정할 수 없습니다');
+    expect(autoIssueService.execute).not.toHaveBeenCalled();
+  });
+
+  it('update rejects a defectQty below the registered defect log total', async () => {
+    prodResultRepo.findOne.mockResolvedValue({
+      resultNo: 'PR-1', status: 'DONE', goodQty: 1, defectQty: 5, orderNo: 'JO-1', company: 'C1', plant: 'P1', inspectResults: [], defectLogs: [],
+    } as any);
+    matIssueRepo.find.mockResolvedValue([] as any);
+    queryRunner.manager.find.mockResolvedValue([] as any);
+    queryRunner.manager.findOne.mockResolvedValue(null as any);
+    queryRunner.query.mockImplementation((async (sql: string) =>
+      /SELECT STATUS AS "status"/.test(sql)
+        ? [{ status: 'DONE', orderNo: 'JO-1', prdUid: null, goodQty: 1, defectQty: 5, company: 'C1', plant: 'P1' }]
+        : /FROM DEFECT_LOGS/.test(sql)
+          ? [{ total: '4' }]
+          : []) as never);
+
+    await expect(service.update('PR-1', { defectQty: 3 } as any, 'C1', 'P1')).rejects.toThrow('불량 로그 합계(4)');
+  });
+
+  it('update re-syncs the job order aggregate when the quantity changes (invariant: job order = result total)', async () => {
+    prodResultRepo.findOne
+      .mockResolvedValueOnce({
+        resultNo: 'PR-1', status: 'DONE', goodQty: 1, defectQty: 0, orderNo: 'JO-1', processCode: 'PROC-1', company: 'C1', plant: 'P1',
+        inspectResults: [], defectLogs: [],
+      } as any)
+      .mockResolvedValueOnce({ resultNo: 'PR-1', goodQty: 3, defectQty: 0 } as any);
+    matIssueRepo.find.mockResolvedValue([] as any);
+    queryRunner.query.mockImplementation(lockQuery({ status: 'DONE', goodQty: 1, defectQty: 0 }));
+    queryRunner.manager.find.mockResolvedValue([] as any);
+    queryRunner.manager.findOne.mockResolvedValue(null as any);
+    queryRunner.manager.update.mockResolvedValue({ affected: 1 } as any);
+    autoIssueService.execute.mockResolvedValue({ issued: [], warnings: [], skipped: false } as any);
+    const syncSpy = jest.spyOn(service, 'syncJobOrderFromResultsInTx').mockResolvedValue(undefined);
+
+    await service.update('PR-1', { goodQty: 3 } as any, 'C1', 'P1');
+
+    expect(syncSpy).toHaveBeenCalledWith(expect.anything(), 'JO-1', 'C1', 'P1');
+  });
+
+  it('cancel rejects when the result was already canceled by a concurrent request', async () => {
+    prodResultRepo.findOne.mockResolvedValue({
+      resultNo: 'PR-1', orderNo: 'JO-1', status: 'DONE', equipCode: null, inspectResults: [], defectLogs: [], company: 'C1', plant: 'P1',
+    } as any);
+    matIssueRepo.find.mockResolvedValue([] as any);
+    dataSource.getRepository.mockReturnValue({ find: jest.fn().mockResolvedValue([]), findOne: jest.fn().mockResolvedValue(null) } as any);
+    queryRunner.query.mockImplementation(lockQuery({ status: 'CANCELED' }));
+
+    await expect(service.cancel('PR-1', 'x', 'C1', 'P1')).rejects.toThrow('이미 취소된 실적입니다');
+    expect(wipMatStockService.restoreInTx).not.toHaveBeenCalled();
+  });
+
+  it('reverseAutoIssue does not restore stock when another request already canceled the issue (0 rows claimed)', async () => {
+    queryRunner.manager.find.mockResolvedValueOnce([
+      { issueNo: 'ISS-1', seq: 1, matUid: 'MAT-1', issueQty: 3, company: 'C1', plant: 'P1' },
+    ] as any);
+    queryRunner.manager.update.mockResolvedValue({ affected: 0 } as any);
+    wipMatStockService.restoreInTx.mockResolvedValue([] as any);
+
+    await (service as any).reverseAutoIssue(queryRunner, 'PR-1', 'C1', 'P1');
+
+    expect(queryRunner.manager.update).toHaveBeenCalledWith(
+      MatIssue,
+      { issueNo: 'ISS-1', seq: 1, status: 'DONE', company: 'C1', plant: 'P1' },
+      { status: 'CANCELED' },
+    );
+    expect(stockUpdateQb.execute).not.toHaveBeenCalled();
   });
 
   it('delete reverses linked movements and removes a completed result row', async () => {
@@ -1337,7 +1428,8 @@ describe('ProdResultService', () => {
     expect(queryRunner.manager.update).toHaveBeenCalledWith(
       SgLabel,
       expect.objectContaining({ sgBarcode: 'SG-IN-1' }),
-      expect.objectContaining({ remainQty: 1, status: 'IN_STOCK' }),
+      // 읽은 값에 더해 대입하지 않고 DB 값 기준 상대 갱신(동시에 소비/복원한 수량이 사라지지 않게)
+      expect.objectContaining({ remainQty: expect.any(Function), status: expect.any(Function) }),
     );
   });
 

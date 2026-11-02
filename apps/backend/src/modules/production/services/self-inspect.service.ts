@@ -129,11 +129,23 @@ export class SelfInspectService {
       },
     });
     if (!result) throw new NotFoundException(`SelfInspectResult ${id} not found`);
-    result.status = status;
-    if (remark !== undefined) result.remark = remark;
-    if (measureValue !== undefined) result.measureValue = measureValue;
-    if (status !== 'PENDING') result.inspectedAt = new Date();
-    return this.resultRepo.save(result);
+    // 허용 전이: PENDING → PENDING|PASS|FAIL. 판정(PASS/FAIL)이 난 결과는 다시 바꿀 수 없다(화면은 PENDING 만 판정한다)
+    if (result.status !== 'PENDING') {
+      throw new BadRequestException(`이미 판정된 검사 결과(${result.status})는 상태를 바꿀 수 없습니다.`);
+    }
+    const patch: Partial<SelfInspectResult> = { status };
+    if (remark !== undefined) patch.remark = remark;
+    if (measureValue !== undefined) patch.measureValue = measureValue;
+    if (status !== 'PENDING') patch.inspectedAt = new Date();
+    // 읽은 상태(PENDING) 조건으로 갱신한다 — 동시에 다른 판정이 먼저 끝났다면 0건이라 덮어쓰지 않는다
+    const changed = await this.resultRepo.update(
+      { id, ...(company ? { company } : {}), ...(plant ? { plant } : {}), status: 'PENDING' },
+      patch,
+    );
+    if (!changed.affected) {
+      throw new BadRequestException('이미 다른 요청이 판정한 검사 결과입니다.');
+    }
+    return { ...result, ...patch };
   }
 
   /** 특정 작업지시의 의뢰검사 대기 여부 확인 */

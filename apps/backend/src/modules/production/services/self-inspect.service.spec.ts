@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { createMock, DeepMocked } from '@golevelup/ts-jest';
@@ -57,14 +57,34 @@ describe('SelfInspectService', () => {
   it('updates result status within tenant only', async () => {
     const row = { id: 'R1', status: 'PENDING', company: 'C1', plant: 'P1' } as SelfInspectResult;
     resultRepo.findOne.mockResolvedValue(row);
-    resultRepo.save.mockImplementation(async (value) => value as SelfInspectResult);
+    resultRepo.update.mockResolvedValue({ affected: 1 } as never);
 
-    await service.updateResultStatus('R1', 'PASS', 'ok', 12, 'C1', 'P1');
+    const updated = await service.updateResultStatus('R1', 'PASS', 'ok', 12, 'C1', 'P1');
 
     expect(resultRepo.findOne).toHaveBeenCalledWith({
       where: { id: 'R1', company: 'C1', plant: 'P1' },
     });
-    expect(row.status).toBe('PASS');
+    expect(resultRepo.update).toHaveBeenCalledWith(
+      { id: 'R1', company: 'C1', plant: 'P1', status: 'PENDING' },
+      expect.objectContaining({ status: 'PASS', remark: 'ok', measureValue: 12 }),
+    );
+    expect(updated.status).toBe('PASS');
+  });
+
+  it('rejects status change of an already judged result', async () => {
+    resultRepo.findOne.mockResolvedValue({ id: 'R1', status: 'PASS', company: 'C1', plant: 'P1' } as SelfInspectResult);
+
+    await expect(service.updateResultStatus('R1', 'FAIL', undefined, undefined, 'C1', 'P1'))
+      .rejects.toThrow(BadRequestException);
+    expect(resultRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects when another request judged the result first (0 rows updated)', async () => {
+    resultRepo.findOne.mockResolvedValue({ id: 'R1', status: 'PENDING', company: 'C1', plant: 'P1' } as SelfInspectResult);
+    resultRepo.update.mockResolvedValue({ affected: 0 } as never);
+
+    await expect(service.updateResultStatus('R1', 'PASS', undefined, undefined, 'C1', 'P1'))
+      .rejects.toThrow(BadRequestException);
   });
 
   it('throws when result status target is missing in tenant', async () => {

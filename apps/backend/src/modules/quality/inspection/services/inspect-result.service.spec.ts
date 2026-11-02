@@ -12,6 +12,7 @@ import { InspectResult } from '../../../../entities/inspect-result.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { TraceLog } from '../../../../entities/trace-log.entity';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
+import { TransactionService } from '../../../../shared/transaction.service';
 import { MockLoggerService } from '@test/mock-logger.service';
 
 describe('InspectResultService', () => {
@@ -33,6 +34,24 @@ describe('InspectResultService', () => {
         { provide: getRepositoryToken(ProdResult), useValue: mockProdResultRepo },
         { provide: getRepositoryToken(TraceLog), useValue: mockTraceLogRepo },
         { provide: SeqGeneratorService, useValue: mockSeqGen },
+        {
+          provide: TransactionService,
+          useValue: {
+            // 잠금 쿼리는 무시하고, 트랜잭션 안의 조회·저장은 기존 목 저장소로 위임한다
+            run: async (cb: (qr: unknown) => Promise<unknown>) =>
+              cb({
+                query: jest.fn().mockResolvedValue([]),
+                manager: {
+                  findOne: (...a: unknown[]) => (mockProdResultRepo.findOne as jest.Mock)(...a),
+                  // 배열 저장은 배열을 돌려준다(TypeORM 과 동일). 목 저장소가 단건을 돌려주면 배열로 감싼다
+                  save: async (_t: unknown, v: unknown) => {
+                    const r = await (mockInspectRepo.save as jest.Mock)(v);
+                    return Array.isArray(v) && !Array.isArray(r) ? [r] : r;
+                  },
+                },
+              }),
+          },
+        },
       ],
     }).setLogger(new MockLoggerService()).compile();
     target = module.get<InspectResultService>(InspectResultService);
@@ -111,6 +130,15 @@ describe('InspectResultService', () => {
     it('should throw when prodResult not found', async () => {
       mockProdResultRepo.findOne.mockResolvedValue(null);
       await expect(target.create({ prodResultNo: '999' } as any)).rejects.toThrow(NotFoundException);
+    });
+    it('rejects when the production result was canceled while waiting for the row lock', async () => {
+      mockProdResultRepo.findOne
+        .mockResolvedValueOnce({ resultNo: 'PR-001', status: 'DONE' } as any) // 사전 확인
+        .mockResolvedValueOnce({ resultNo: 'PR-001', status: 'CANCELED' } as any); // 잠금 뒤 최신 상태
+      mockInspectRepo.create.mockReturnValue({ resultNo: 'IR-001' } as any);
+
+      await expect(target.create({ prodResultNo: 'PR-001', passYn: 'Y' } as any, 'C1', 'P1')).rejects.toThrow(BadRequestException);
+      expect(mockInspectRepo.save).not.toHaveBeenCalled();
     });
   });
 

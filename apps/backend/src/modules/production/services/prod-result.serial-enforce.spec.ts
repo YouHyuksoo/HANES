@@ -71,7 +71,7 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
   describe('generateProductSerial', () => {
     it('starts at -001 when the order has no existing serials', async () => {
       const manager = { find: jest.fn().mockResolvedValue([]) };
-      const qr = { manager } as any;
+      const qr = { manager, query: jest.fn().mockResolvedValue([]) } as any;
 
       const serial = await (target as any).generateProductSerial(qr, 'WO-100', 'C1', 'P1');
 
@@ -92,7 +92,7 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
           { prdUid: null },
         ]),
       };
-      const qr = { manager } as any;
+      const qr = { manager, query: jest.fn().mockResolvedValue([]) } as any;
 
       const serial = await (target as any).generateProductSerial(qr, 'WO-100', 'C1', 'P1');
 
@@ -196,7 +196,7 @@ describe('ProdResultService serial enforce & empty-stock cleanup', () => {
         find: jest.fn().mockResolvedValue([]), // generateProductSerial 조회
         update: jest.fn().mockResolvedValue(undefined),
       };
-      return { qr: { manager } as any, manager };
+      return { qr: { manager, query: jest.fn().mockResolvedValue([]) } as any, manager };
     }
 
     it('skips re-adsorption when the result already has a WIP_IN transaction (idempotent)', async () => {

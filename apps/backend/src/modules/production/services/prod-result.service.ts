@@ -79,6 +79,17 @@ const SELF_INSPECT_BATCH_WINDOW_MS = 10_000;
 /** 설비점검 인터록 판정은 EquipInspectGateService 단일 출처를 쓴다(sys-config 키·매핑 규칙 포함). */
 type ProductionInspectScope = Extract<InspectGateScope, 'ASSEMBLY' | 'SUBASSEMBLY'>;
 
+/** lockResultInTx 가 돌려주는 잠근 실적 행 */
+interface LockedResult {
+  status: string;
+  orderNo: string;
+  prdUid: string | null;
+  goodQty: number;
+  defectQty: number;
+  company: string | null;
+  plant: string | null;
+}
+
 @Injectable()
 export class ProdResultService {
   private readonly logger = new Logger(ProdResultService.name);
@@ -1086,19 +1097,57 @@ export class ProdResultService {
       }
     }
 
-    // 수량 변경 여부 판단
-    const oldTotalQty = prodResult.goodQty + prodResult.defectQty;
-    const newGoodQty = dto.goodQty ?? prodResult.goodQty;
-    const newDefectQty = dto.defectQty ?? prodResult.defectQty;
-    const newTotalQty = newGoodQty + newDefectQty;
-    const qtyChanged = (dto.goodQty !== undefined || dto.defectQty !== undefined) && oldTotalQty !== newTotalQty;
-
-    if (qtyChanged) {
-      // 이미 포장/출하까지 진행된 실적은 수량을 바꾸면 재고 역분개가 꼬인다 — delete()/cancel()과 동일 가드.
-      await this.ensureNoDownstreamProgress(prodResult, company, plant);
+    // 수량 변경 여부 판단 — 양품·불량 각각이 바뀌면 변경이다(합계가 같아도 재고·불량재고 분배가 달라진다)
+    const dtoGood = dto.goodQty ?? undefined;
+    const dtoDefect = dto.defectQty ?? undefined;
+    if (dtoGood !== undefined || dtoDefect !== undefined) {
+      const preChanged =
+        (dtoGood !== undefined && dtoGood !== (prodResult.goodQty ?? 0)) ||
+        (dtoDefect !== undefined && dtoDefect !== (prodResult.defectQty ?? 0));
+      if (preChanged) {
+        // 이미 포장/출하까지 진행된 실적은 수량을 바꾸면 재고 역분개가 꼬인다 — delete()/cancel()과 동일 가드.
+        await this.ensureNoDownstreamProgress(prodResult, company, plant);
+      }
     }
 
     await this.tx.run(async (queryRunner) => {
+      // 실적 행을 먼저 잠그고 최신 수량·상태로 다시 판단한다(잠금 순서: 실적 행 → 불량 행 → 지시 행).
+      // 잠금 대기 중 다른 처리(취소·불량 등록)가 끝났다면 그 결과를 덮어쓰지 않는다.
+      const locked = await this.lockResultInTx(queryRunner, resultNo, company, plant);
+      if (!locked) {
+        throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${resultNo}`);
+      }
+      if (locked.status === 'CANCELED') {
+        throw new BadRequestException('취소된 실적은 수정할 수 없습니다.');
+      }
+      const curGood = locked.goodQty ?? 0;
+      const curDefect = locked.defectQty ?? 0;
+      const oldTotalQty = curGood + curDefect;
+      const newGoodQty = dtoGood ?? curGood;
+      const newDefectQty = dtoDefect ?? curDefect;
+      const newTotalQty = newGoodQty + newDefectQty;
+      const qtyChanged = newGoodQty !== curGood || newDefectQty !== curDefect;
+
+      if (qtyChanged && newDefectQty !== curDefect) {
+        // 불량 수량은 불량 상세 로그 합계보다 작아질 수 없다(로그가 올린 증가분을 요청값이 덮어써 지우지 않도록)
+        const logRows: Array<{ total?: string | number }> = await queryRunner.query(
+          `SELECT NVL(SUM(QTY), 0) AS "total" FROM DEFECT_LOGS WHERE PROD_RESULT_ID = :1 AND COMPANY = :2 AND PLANT_CD = :3`,
+          [resultNo, locked.company, locked.plant],
+        );
+        const logSum = Number(logRows?.[0]?.total ?? 0);
+        if (newDefectQty < logSum) {
+          throw new BadRequestException(
+            `불량 수량(${newDefectQty})이 등록된 불량 로그 합계(${logSum})보다 작을 수 없습니다. 불량 로그를 먼저 정리해 주세요.`,
+          );
+        }
+      }
+      if (qtyChanged) {
+        // 잠금 뒤 값이 바뀌었을 수 있어 하류 진행 가드를 최신 값 기준으로 한 번 더 확인한다
+        await this.ensureNoDownstreamProgress(Object.assign(prodResult, { prdUid: locked.prdUid, goodQty: curGood, defectQty: curDefect }), company, plant);
+        // 시리얼 채번·집계 갱신을 같은 지시의 다른 실적과 직렬화
+        await this.lockJobOrderInTx(queryRunner, locked.orderNo, locked.company, locked.plant);
+      }
+
       if (dto.status !== undefined) {
         throw new BadRequestException(
           '상태(status)는 이 API로 직접 수정할 수 없습니다. 완료/취소는 별도 API를 사용하세요.',
@@ -1156,6 +1205,8 @@ export class ProdResultService {
           company: company ?? prodResult.company ?? undefined,
           plant: plant ?? prodResult.plant ?? undefined,
         });
+        // 작업지시 집계·상태 동기화(불변식: 지시 집계 = 실적 합계)
+        await this.syncJobOrderFromResultsInTx(queryRunner, prodResult.orderNo, company ?? prodResult.company, plant ?? prodResult.plant);
         this.logger.log(
           `실적 수량 변경 재계산(자재+제품재고+불량재고): ${resultNo} (${oldTotalQty} → ${newTotalQty})`,
         );
@@ -1195,6 +1246,7 @@ export class ProdResultService {
     await this.ensureNoDownstreamProgress(prodResult, company, plant);
 
     await this.tx.run(async (queryRunner) => {
+      await this.assertResultReversibleInTx(queryRunner, prodResult, company, plant);
       await this.reverseResultInTx(queryRunner, prodResult, company, plant);
 
       await queryRunner.manager.delete(ProdResult, {
@@ -1207,6 +1259,25 @@ export class ProdResultService {
     });
 
     return { resultNo };
+  }
+
+  /** delete()/cancel() 공통: 실적 행을 잠그고 이미 취소/삭제되지 않았는지 최신 상태로 확인한다. 잠금 순서는 실적 행 → 불량 행 → 지시 행 */
+  private async assertResultReversibleInTx(
+    queryRunner: import('typeorm').QueryRunner,
+    prodResult: ProdResult,
+    company?: string,
+    plant?: string,
+  ): Promise<void> {
+    const locked = await this.lockResultInTx(queryRunner, prodResult.resultNo, company, plant);
+    if (!locked) {
+      throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${prodResult.resultNo}`);
+    }
+    if (locked.status === 'CANCELED') {
+      throw new BadRequestException('이미 취소된 실적입니다.');
+    }
+    // 잠금 대기 중 불량 등록 등으로 수량이 바뀌었을 수 있어 역분개 기준 수량을 최신으로 맞춘다
+    Object.assign(prodResult, { goodQty: locked.goodQty, defectQty: locked.defectQty, prdUid: locked.prdUid });
+    await this.lockJobOrderInTx(queryRunner, locked.orderNo, locked.company, locked.plant);
   }
 
   /**
@@ -1403,6 +1474,20 @@ export class ProdResultService {
     }
 
     await this.tx.run(async (queryRunner) => {
+      // 0. 실적 행을 잠그고 상태를 다시 본다(동시에 두 번 완료되면 타수·자동차감·재고가 이중 반영된다). 잠금 순서: 실적 행 → 지시 행
+      const locked = await this.lockResultInTx(queryRunner, resultNo, company, plant);
+      if (!locked) {
+        throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${resultNo}`);
+      }
+      if (locked.status !== 'RUNNING') {
+        throw new BadRequestException(
+          `현재 상태(${locked.status})에서는 완료할 수 없습니다. RUNNING 상태여야 합니다.`,
+        );
+      }
+      Object.assign(prodResult, { goodQty: locked.goodQty, defectQty: locked.defectQty });
+      // 시리얼 채번(제품재고 적재)을 같은 지시의 다른 실적과 직렬화
+      await this.lockJobOrderInTx(queryRunner, locked.orderNo, locked.company, locked.plant);
+
       // 1. 실적 상태 → DONE
       const updateData: Partial<Pick<ProdResult, 'status' | 'endAt' | 'goodQty' | 'defectQty' | 'remark'>> = {
         status: 'DONE',
@@ -1518,6 +1603,8 @@ export class ProdResultService {
     await this.ensureNoDownstreamProgress(prodResult, company, plant);
 
     await this.tx.run(async (queryRunner) => {
+      // 실적 행을 먼저 잠그고 상태를 다시 본다(동시에 두 번 취소되면 역분개가 이중으로 돌고, 불량 등록과는 교착이 난다)
+      await this.assertResultReversibleInTx(queryRunner, prodResult, company, plant);
       await this.reverseResultInTx(queryRunner, prodResult, company, plant);
 
       await queryRunner.manager.update(
@@ -1686,6 +1773,44 @@ export class ProdResultService {
     );
   }
 
+  /** 작업지시 행 잠금 — 시리얼 채번·집계 갱신을 같은 지시의 다른 실적과 직렬화한다(잠금 순서: 실적 행 → 지시 행) */
+  private async lockJobOrderInTx(
+    qr: import('typeorm').QueryRunner,
+    orderNo: string,
+    company?: string | null,
+    plant?: string | null,
+  ): Promise<void> {
+    await lockRowsForUpdate(qr, 'JOB_ORDERS', { ORDER_NO: orderNo, COMPANY: company, PLANT_CD: plant });
+  }
+
+  /** 실적 행을 잠그고 최신 상태·수량을 돌려준다. 없으면 null (잠금 대기 중 삭제된 경우) */
+  private async lockResultInTx(
+    qr: import('typeorm').QueryRunner,
+    resultNo: string,
+    company?: string,
+    plant?: string,
+  ): Promise<LockedResult | null> {
+    const params: unknown[] = [resultNo];
+    let sql = `SELECT STATUS AS "status", ORDER_NO AS "orderNo", PRD_UID AS "prdUid", GOOD_QTY AS "goodQty", DEFECT_QTY AS "defectQty",
+                      COMPANY AS "company", PLANT_CD AS "plant"
+                 FROM PROD_RESULTS WHERE RESULT_NO = :1`;
+    if (company) { params.push(company); sql += ` AND COMPANY = :${params.length}`; }
+    if (plant) { params.push(plant); sql += ` AND PLANT_CD = :${params.length}`; }
+    sql += ' FOR UPDATE';
+    const rows: Array<Record<string, unknown>> | undefined = await qr.query(sql, params);
+    const row = Array.isArray(rows) ? rows[0] : undefined;
+    if (!row) return null;
+    return {
+      status: String(row.status ?? ''),
+      orderNo: String(row.orderNo ?? ''),
+      prdUid: (row.prdUid as string | null) ?? null,
+      goodQty: Number(row.goodQty ?? 0),
+      defectQty: Number(row.defectQty ?? 0),
+      company: (row.company as string | null) ?? null,
+      plant: (row.plant as string | null) ?? null,
+    };
+  }
+
   /** 작업지시 GOOD_QTY/DEFECT_QTY를 취소 제외 실적 합계로 갱신 (상태는 변경하지 않음) */
   /**
    * 작업지시를 실적 합계로 동기화한다 — 실적 저장/취소/완료 경로가 모두 이 한 곳을 거친다.
@@ -1702,6 +1827,9 @@ export class ProdResultService {
     plant?: string,
   ): Promise<void> {
     const tenantWhere = { ...(company ? { company } : {}), ...(plant ? { plant } : {}) };
+    // 같은 지시의 다른 실적 처리와 직렬화 — 지시 행을 먼저 잠그고 합계를 읽어야 먼저 끝난 쪽의 커밋분이 합계에 들어온다
+    // (잠금 순서는 항상 실적 행 → 지시 행)
+    await this.lockJobOrderInTx(qr, orderNo, company, plant);
     const jobOrder = await qr.manager.findOne(JobOrder, { where: { orderNo, ...tenantWhere } });
     if (!jobOrder) return;
 
@@ -1785,11 +1913,15 @@ export class ProdResultService {
     if (issues.length === 0) return;
 
     for (const issue of issues) {
-      await qr.manager.update(
+      // 현재 상태(DONE) 조건으로 먼저 선점한다. 0건이면 다른 처리가 이미 취소한 것이라 복원도 하지 않는다
+      const claimed = await qr.manager.update(
         MatIssue,
-        { issueNo: issue.issueNo, seq: issue.seq, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+        { issueNo: issue.issueNo, seq: issue.seq, status: 'DONE', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
         { status: 'CANCELED' },
       );
+      if (!claimed.affected) {
+        continue;
+      }
 
       if (!issue.matUid || issue.issueQty <= 0) {
         continue;
@@ -1822,6 +1954,14 @@ export class ProdResultService {
             ],
           });
 
+          // 원본 수불을 먼저 선점한다(0건이면 이미 복원된 것이라 건너뛴다)
+          const claimedTx = await qr.manager.update(
+            StockTransaction,
+            { transNo: originalTx.transNo, status: 'DONE', ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
+            { status: 'CANCELED' },
+          );
+          if (!claimedTx.affected) continue;
+
           const stock = await qr.manager.findOne(MatStock, {
             where: {
               warehouseCode: originalTx.fromWarehouseId,
@@ -1838,12 +1978,6 @@ export class ProdResultService {
             );
           }
           await this.restoreMatStockInTx(qr, stock, restoreQty, company, plant);
-
-          await qr.manager.update(
-            StockTransaction,
-            { transNo: originalTx.transNo, ...(company ? { company } : {}), ...(plant ? { plant } : {}) },
-            { status: 'CANCELED' },
-          );
 
           /* 이 루프는 refType='MAT_ISSUE'인 StockTransaction만 역분개 대상으로 조회한다(위 find).
            * 그 transType은 자재출고 경로상 MAT_OUT/WIP_IN 뿐이므로 역분개는 항상 MAT_IN(원본 소비창고 복원)이다.
@@ -2269,6 +2403,8 @@ export class ProdResultService {
     company?: string | null,
     plant?: string | null,
   ): Promise<string> {
+    // MAX+1 은 같은 지시의 다른 채번과 겹칠 수 있어 지시 행을 잠가 직렬화한다(커밋 뒤 최신 실적을 읽는다)
+    await this.lockJobOrderInTx(qr, orderNo, company, plant);
     const rows = await qr.manager.find(ProdResult, {
       where: {
         orderNo,
@@ -2310,26 +2446,24 @@ export class ProdResultService {
       },
     });
     for (const gene of genes) {
-      const child = await qr.manager.findOne(SgLabel, {
-        where: {
+      // 행을 잠그고 수량은 상대 갱신한다(읽은 값 + 수량을 절대 대입하면 동시에 소비/복원한 수량이 사라진다)
+      await lockRowsForUpdate(qr, 'SG_LABELS', {
+        SG_BARCODE: gene.childKey,
+        COMPANY: company,
+        PLANT_CD: plant,
+      });
+      const restoreQty = Number(gene.qty) || 1;
+      await qr.manager.update(
+        SgLabel,
+        {
           sgBarcode: gene.childKey,
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         },
-      });
-      if (!child) {
-        continue;
-      }
-      const remainQty = (Number(child.remainQty) || 0) + (Number(gene.qty) || 1);
-      const status = remainQty > 0 && child.status === 'CONSUMED' ? 'IN_STOCK' : child.status;
-      await qr.manager.update(
-        SgLabel,
         {
-          sgBarcode: child.sgBarcode,
-          ...(company ? { company } : {}),
-          ...(plant ? { plant } : {}),
+          remainQty: () => `NVL(REMAIN_QTY, 0) + ${restoreQty}`,
+          status: () => `CASE WHEN NVL(REMAIN_QTY, 0) + ${restoreQty} > 0 AND STATUS = 'CONSUMED' THEN 'IN_STOCK' ELSE STATUS END`,
         },
-        { remainQty, status },
       );
     }
   }

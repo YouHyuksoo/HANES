@@ -55,6 +55,12 @@ describe('ProdResultService cancel flow', () => {
     mockQueryRunner.commitTransaction.mockResolvedValue(undefined);
     mockQueryRunner.rollbackTransaction.mockResolvedValue(undefined);
     mockQueryRunner.release.mockResolvedValue(undefined);
+    // 실적 행 잠금(SELECT ... FOR UPDATE)은 최신 상태 한 줄을 돌려주고, 나머지 잠금·집계 쿼리는 빈 결과
+    mockQueryRunner.query.mockImplementation(async (sql: string) =>
+      /SELECT STATUS AS "status"/.test(sql)
+        ? [{ status: 'DONE', orderNo: 'JO-001', prdUid: null, goodQty: 0, defectQty: 0, company: 'HANES', plant: 'P01' }]
+        : [],
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -106,7 +112,7 @@ describe('ProdResultService cancel flow', () => {
     };
     const manager = {
       createQueryBuilder: jest.fn().mockReturnValue(stockUpdateQb),
-      update: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
       delete: jest.fn().mockResolvedValue({ affected: 1 }),
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
       create: jest.fn((entity, payload) => ({ ...payload })),
@@ -146,12 +152,12 @@ describe('ProdResultService cancel flow', () => {
     expect(stockUpdateQb.setParameters).toHaveBeenNthCalledWith(2, { restoreQty: 1 });
     expect(manager.update).toHaveBeenCalledWith(
       StockTransaction,
-      { transNo: 'TX-001', company: 'HANES', plant: 'P01' },
+      { transNo: 'TX-001', status: 'DONE', company: 'HANES', plant: 'P01' },
       { status: 'CANCELED' },
     );
     expect(manager.update).toHaveBeenCalledWith(
       StockTransaction,
-      { transNo: 'TX-002', company: 'HANES', plant: 'P01' },
+      { transNo: 'TX-002', status: 'DONE', company: 'HANES', plant: 'P01' },
       { status: 'CANCELED' },
     );
     expect(mockTx.run).toHaveBeenCalledTimes(1);
@@ -164,7 +170,7 @@ describe('ProdResultService cancel flow', () => {
     mockMatIssueRepo.find.mockResolvedValue([]);
 
     const manager = {
-      update: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
       delete: jest.fn().mockResolvedValue({ affected: 1 }),
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
       create: jest.fn((entity, payload) => ({ ...payload })),
@@ -190,7 +196,7 @@ describe('ProdResultService cancel flow', () => {
     mockMatIssueRepo.find.mockResolvedValue([]);
 
     const manager = {
-      update: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
       delete: jest.fn().mockResolvedValue({ affected: 1 }),
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
       create: jest.fn((entity, payload) => ({ ...payload })),
@@ -236,7 +242,7 @@ describe('ProdResultService cancel flow', () => {
     mockMatIssueRepo.find.mockResolvedValue([]);
 
     const manager = {
-      update: jest.fn().mockResolvedValue(undefined),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
       delete: jest.fn().mockResolvedValue({ affected: 1 }),
       save: jest.fn().mockImplementation(async (_entity, payload) => payload ?? _entity),
       create: jest.fn((entity, payload) => ({ ...payload })),

@@ -17,6 +17,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -42,6 +43,7 @@ import {
   canTransitionDefectLogStatus,
 } from '@harness/shared';
 import { TransactionService } from '../../../../shared/transaction.service';
+import { lockRowsForUpdate } from '../../../../common/utils/row-lock.util';
 import { ProdResultService } from '../../../production/services/prod-result.service';
 
 @Injectable()
@@ -352,6 +354,22 @@ export class DefectLogService {
 
     // 불량 등록 + 생산실적 불량수량 증가 + 작업지시 집계 동기화를 한 트랜잭션으로 처리
     return this.tx.run(async (qr) => {
+      // 잠금 순서는 실적 행 → 불량 행이다(실적 취소·삭제가 같은 순서로 잠근다. 반대로 잠그면 교착이 난다)
+      await lockRowsForUpdate(qr, 'PROD_RESULTS', {
+        RESULT_NO: prodResultNo,
+        COMPANY: company,
+        PLANT_CD: plant,
+      });
+      const lockedResult = await qr.manager.findOne(ProdResult, {
+        where: { resultNo: prodResultNo, ...this.tenantWhere(company, plant) },
+      });
+      if (!lockedResult) {
+        throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${prodResultNo}`);
+      }
+      if (lockedResult.status === 'CANCELED') {
+        throw new BadRequestException(`취소된 생산실적에는 불량을 등록할 수 없습니다: ${prodResultNo}`);
+      }
+
       const defectLog = qr.manager.create(DefectLog, {
         prodResultNo,
         defectCode: defectCodeMaster.defectCode,
@@ -367,11 +385,12 @@ export class DefectLogService {
 
       const savedDefectLog = await qr.manager.save(DefectLog, defectLog);
 
-      // 생산실적의 불량수량 증가
+      // 생산실적의 불량수량 증가 — 읽은 값 + 수량을 대입하면 동시에 처리된 증감이 사라지므로 상대 갱신한다
+      const addQty = Number(dto.qty ?? 1);
       await qr.manager.update(
         ProdResult,
         { resultNo: prodResultNo, ...this.tenantWhere(company, plant) },
-        { defectQty: prodResult.defectQty + (dto.qty ?? 1) },
+        { defectQty: () => `NVL(DEFECT_QTY, 0) + ${addQty}` },
       );
 
       // 작업지시 GOOD_QTY/DEFECT_QTY 집계를 실적 합계로 재동기화(TXN-PROD-001 불변식 유지)
@@ -406,6 +425,19 @@ export class DefectLogService {
     if (qtyDiff !== 0) {
       // 불량로그 수량 변경 + 생산실적 불량수량 반영 + 작업지시 집계 동기화를 한 트랜잭션으로 처리
       await this.tx.run(async (qr) => {
+        // 실적 행 → 불량 행 순서로 잠그고, 잠금 대기 중 상태·수량이 바뀌었으면 거부한다
+        await lockRowsForUpdate(qr, 'PROD_RESULTS', {
+          RESULT_NO: existing.prodResultNo,
+          COMPANY: company,
+          PLANT_CD: plant,
+        });
+        const fresh = await qr.manager.findOne(DefectLog, { where: pk });
+        if (!fresh) {
+          throw new NotFoundException(`불량로그를 찾을 수 없습니다: ${id}`);
+        }
+        if (fresh.qty !== existing.qty || fresh.status !== existing.status) {
+          throw new ConflictException('다른 사용자가 먼저 불량을 수정했습니다. 새로 고친 뒤 다시 시도해 주세요.');
+        }
         await qr.manager.update(
           DefectLog,
           pk,
@@ -420,7 +452,7 @@ export class DefectLogService {
         await qr.manager.update(
           ProdResult,
           { resultNo: existing.prodResultNo, ...this.tenantWhere(company, plant) },
-          { defectQty: () => `DEFECT_QTY + ${qtyDiff}` },
+          { defectQty: () => `NVL(DEFECT_QTY, 0) + ${Number(qtyDiff)}` },
         );
 
         const prodResult = await qr.manager.findOne(ProdResult, {
@@ -453,6 +485,16 @@ export class DefectLogService {
 
     // 불량 삭제 + 생산실적 불량수량 감소 + 작업지시 집계 동기화를 한 트랜잭션으로 처리
     await this.tx.run(async (qr) => {
+      // 실적 행 → 불량 행 순서로 잠그고, 이미 지워졌으면(다른 요청·실적 취소) 수량을 두 번 빼지 않도록 거부한다
+      await lockRowsForUpdate(qr, 'PROD_RESULTS', {
+        RESULT_NO: existing.prodResultNo,
+        COMPANY: company,
+        PLANT_CD: plant,
+      });
+      const fresh = await qr.manager.findOne(DefectLog, { where: this.defectPkWhere(existing, company, plant) });
+      if (!fresh) {
+        throw new NotFoundException(`불량로그를 찾을 수 없습니다: ${id}`);
+      }
       // 수리 이력은 불량 식별자(복합 id 또는 레거시 seq)로 연결돼 있어 불량만 지우면 고아로 남는다
       await qr.manager.delete(RepairLog, {
         defectLogId: In([this.buildDefectLogId(existing), id, String(existing.seq)]),
@@ -463,7 +505,7 @@ export class DefectLogService {
       await qr.manager.update(
         ProdResult,
         { resultNo: existing.prodResultNo, ...this.tenantWhere(company, plant) },
-        { defectQty: () => `DEFECT_QTY - ${existing.qty}` },
+        { defectQty: () => `GREATEST(0, NVL(DEFECT_QTY, 0) - ${Number(fresh.qty)})` },
       );
 
       const prodResult = await qr.manager.findOne(ProdResult, {
@@ -496,10 +538,14 @@ export class DefectLogService {
     await this.ensureNoLinkedRework(existing);
     this.validateStatusChange(existing.status, dto.status);
 
-    await this.defectLogRepository.update(
-      this.defectPkWhere(existing, company, plant),
+    // 읽은 현재 상태 조건으로 바꾼다(동시에 다른 전이가 끝났다면 0건 → 거부)
+    const changed = await this.defectLogRepository.update(
+      { ...this.defectPkWhere(existing, company, plant), status: existing.status },
       { status: dto.status }
     );
+    if (!changed.affected) {
+      throw new ConflictException('다른 사용자가 먼저 불량 상태를 바꿨습니다. 새로 고친 뒤 다시 시도해 주세요.');
+    }
 
     return this.findById(id, company, plant);
   }

@@ -37,7 +37,11 @@ describe('ProdResultService update policy', () => {
     mockProdResultRepo = createMock<Repository<ProdResult>>();
     mockMatIssueRepo = createMock<Repository<MatIssue>>();
     mockTx = createMock<TransactionService>();
-    mockTx.run.mockImplementation(async (callback: any) => callback({ manager: createMock<any>() }));
+    mockTx.run.mockImplementation(async (callback: any) => callback({
+      manager: createMock<any>(),
+      // 실적 행 잠금(SELECT ... FOR UPDATE)이 돌려주는 최신 행
+      query: jest.fn().mockResolvedValue([{ status: 'RUNNING', orderNo: 'JO-001', prdUid: null, goodQty: 5, defectQty: 0, company: null, plant: null }]),
+    }));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

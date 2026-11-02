@@ -25,6 +25,8 @@ import { InspectResult } from '../../../../entities/inspect-result.entity';
 import { ProdResult } from '../../../../entities/prod-result.entity';
 import { TraceLog } from '../../../../entities/trace-log.entity';
 import { SeqGeneratorService } from '../../../../shared/seq-generator.service';
+import { TransactionService } from '../../../../shared/transaction.service';
+import { lockRowsForUpdate } from '../../../../common/utils/row-lock.util';
 import {
   CreateInspectResultDto,
   UpdateInspectResultDto,
@@ -47,6 +49,7 @@ export class InspectResultService {
     @InjectRepository(TraceLog)
     private readonly traceLogRepository: Repository<TraceLog>,
     private readonly seqGenerator: SeqGeneratorService,
+    private readonly tx: TransactionService,
   ) {}
 
   private buildInspectResultUpdate(
@@ -224,6 +227,29 @@ export class InspectResultService {
   }
 
   /**
+   * 대상 생산실적 행을 번호 순으로 잠그고 취소 여부를 최신 상태로 다시 본 뒤 검사실적을 저장한다.
+   * 실적 취소와 같은 행을 잠그므로 취소된 실적에 검사실적이 생기지 않고, 두 일괄 요청이 반대 순서로 잠그는 교착도 막는다.
+   */
+  private async saveLockingResults(
+    entities: InspectResult[],
+    prodResultNos: string[],
+    company?: string,
+    plant?: string,
+  ): Promise<InspectResult[]> {
+    return this.tx.run(async (qr) => {
+      for (const no of [...new Set(prodResultNos)].sort()) {
+        await lockRowsForUpdate(qr, 'PROD_RESULTS', { RESULT_NO: no, COMPANY: company, PLANT_CD: plant });
+        const fresh = await qr.manager.findOne(ProdResult, {
+          where: { resultNo: no, ...this.tenantWhere(company, plant) },
+        });
+        if (!fresh) throw new NotFoundException(`생산실적을 찾을 수 없습니다: ${no}`);
+        this.assertNotCanceled(fresh, no);
+      }
+      return qr.manager.save(InspectResult, entities);
+    });
+  }
+
+  /**
    * 검사실적 생성
    */
   async create(dto: CreateInspectResultDto, company?: string, plant?: string) {
@@ -256,7 +282,8 @@ export class InspectResultService {
       plant,
     });
 
-    return this.inspectResultRepository.save(inspectResult);
+    const [saved] = await this.saveLockingResults([inspectResult], [dto.prodResultNo], company, plant);
+    return saved;
   }
 
   /**
@@ -334,7 +361,7 @@ export class InspectResultService {
       plant,
     });
 
-    const saved = await this.inspectResultRepository.save(inspectResult);
+    const [saved] = await this.saveLockingResults([inspectResult], [prodResultNo], company, plant);
 
     return {
       inspectResultId: saved.resultNo,
@@ -466,7 +493,7 @@ export class InspectResultService {
         throw error;
       }
     }
-    const results = await this.inspectResultRepository.save(entities);
+    const results = await this.saveLockingResults(entities, entities.map((e) => e.prodResultNo), company, plant);
 
     return { count: results.length, results };
   }

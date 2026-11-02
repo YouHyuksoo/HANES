@@ -38,6 +38,7 @@ import { NumberingService } from '../../../../shared/numbering.service';
 import { TransactionService } from '../../../../shared/transaction.service';
 import { DEFECT_LOG_STATUS, deriveDefectLogStatusFromReworkInspect } from '@harness/shared';
 import { parseDefectLogId } from '../../defects/defect-log-key';
+import { lockRowsForUpdate } from '../../../../common/utils/row-lock.util';
 import {
   CreateReworkOrderDto,
   UpdateReworkOrderDto,
@@ -225,6 +226,17 @@ export class ReworkService {
       }
     }
 
+    // 불량을 현재 상태(WAIT) 조건으로 먼저 선점한다 — 같은 불량에 대한 동시 지시 중 하나만 통과한다(0건이면 다른 요청이 먼저 가져간 것)
+    if (defect) {
+      const claimed = await this.defectLogRepo.update(
+        { occurAt: this.occurAtRange(defect.occurAt), seq: defect.seq, ...this.tenantWhere(company, plant), status: DEFECT_LOG_STATUS.WAIT },
+        { status: DEFECT_LOG_STATUS.REWORK },
+      );
+      if (!claimed.affected) {
+        throw new BadRequestException('다른 요청이 먼저 이 불량의 재작업을 지시했습니다.');
+      }
+    }
+
     const reworkNo = await this.generateReworkNo();
     const entity = this.reworkRepo.create({
       reworkNo,
@@ -246,8 +258,20 @@ export class ReworkService {
       createdBy: userId,
       updatedBy: userId,
     });
-    await this.reworkRepo.save(entity);
-    const saved = await this.reworkRepo.findOne({ where: { reworkNo, company, plant } });
+    let saved: ReworkOrder | null;
+    try {
+      await this.reworkRepo.save(entity);
+      saved = await this.reworkRepo.findOne({ where: { reworkNo, company, plant } });
+    } catch (error: unknown) {
+      // 선점한 불량을 되돌려 놓는다(지시가 만들어지지 않았는데 불량만 재작업 중으로 남지 않도록)
+      if (defect) {
+        await this.defectLogRepo.update(
+          { occurAt: this.occurAtRange(defect.occurAt), seq: defect.seq, ...this.tenantWhere(company, plant), status: DEFECT_LOG_STATUS.REWORK },
+          { status: DEFECT_LOG_STATUS.WAIT },
+        );
+      }
+      throw error;
+    }
 
     // 공정 목록 생성
     if (dto.processItems && dto.processItems.length > 0) {
@@ -269,14 +293,6 @@ export class ReworkService {
         }),
       );
       await this.processRepo.save(processEntities);
-    }
-
-    // 불량 이력 상태 연동 (밀리초 범위)
-    if (defect) {
-      await this.defectLogRepo.update(
-        { occurAt: this.occurAtRange(defect.occurAt), seq: defect.seq, ...this.tenantWhere(company, plant) },
-        { status: DEFECT_LOG_STATUS.REWORK },
-      );
     }
 
     this.logger.log(
@@ -617,9 +633,10 @@ export class ReworkService {
 
     return this.tx.run(async (qr) => {
     // 같은 지시에 대한 동시 재검사 등록을 막기 위해 지시 행을 잠그고 상태를 다시 확인한다
+    // (TypeORM findOne({ lock }) 는 Oracle 에서 ORA-02014 라 raw FOR UPDATE 로 먼저 잠근다)
+    await lockRowsForUpdate(qr, 'REWORK_ORDERS', { REWORK_NO: dto.reworkNo, COMPANY: company, PLANT_CD: plant });
     const lockedOrder = await qr.manager.findOne(ReworkOrder, {
       where: { reworkNo: dto.reworkNo, company, plant },
-      lock: { mode: 'pessimistic_write' },
     });
     if (!lockedOrder || lockedOrder.status !== 'INSPECT_PENDING') {
       throw new BadRequestException('재검사대기 상태가 아닙니다.');
@@ -665,7 +682,8 @@ export class ReworkService {
         const defectStatus = deriveDefectLogStatusFromReworkInspect(dto.inspectResult);
         await qr.manager.update(
           DefectLog,
-          { occurAt: this.occurAtRange(occurAt), seq, ...this.tenantWhere(company, plant) },
+          // 재작업 중(REWORK)인 불량만 바꾼다
+          { occurAt: this.occurAtRange(occurAt), seq, ...this.tenantWhere(company, plant), status: DEFECT_LOG_STATUS.REWORK },
           { status: defectStatus },
         );
       }
