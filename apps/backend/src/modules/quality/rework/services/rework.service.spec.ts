@@ -268,7 +268,8 @@ describe('ReworkService', () => {
       await target.delete('RW-001');
 
       expect(mockDefectLogRepo.update).toHaveBeenCalledTimes(1);
-      const [where, patch] = mockDefectLogRepo.update.mock.calls[0];
+      const [rawWhere, patch] = mockDefectLogRepo.update.mock.calls[0];
+    const where = rawWhere as Record<string, unknown>;
       expect(where.seq).toBe(1);
       expect(where.company).toBeUndefined();
       expect(where.plant).toBeUndefined();
@@ -293,7 +294,8 @@ describe('ReworkService', () => {
       await target.delete('RW-001', 'CO', 'P01');
 
       expect(mockDefectLogRepo.update).toHaveBeenCalledTimes(1);
-      const [where, patch] = mockDefectLogRepo.update.mock.calls[0];
+      const [rawWhere, patch] = mockDefectLogRepo.update.mock.calls[0];
+    const where = rawWhere as Record<string, unknown>;
       expect(where.seq).toBe(1);
       expect(where.company).toBe('CO');
       expect(where.plant).toBe('P01');
@@ -364,7 +366,8 @@ describe('ReworkService', () => {
       );
 
       expect(mockItemMasterRepo.findOne).toHaveBeenCalledTimes(1);
-      const [where, patch] = mockDefectLogRepo.update.mock.calls[0];
+      const [rawWhere, patch] = mockDefectLogRepo.update.mock.calls[0];
+    const where = rawWhere as Record<string, unknown>;
       expect(where.seq).toBe(1);
       expect(where.company).toBe('CO');
       expect(where.plant).toBe('P01');

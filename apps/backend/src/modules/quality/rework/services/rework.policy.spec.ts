@@ -84,7 +84,8 @@ describe('ReworkService policy', () => {
     await target.delete('RW-001');
 
     expect(mockDefectLogRepo.update).toHaveBeenCalledTimes(1);
-    const [where, patch] = mockDefectLogRepo.update.mock.calls[0];
+    const [rawWhere, patch] = mockDefectLogRepo.update.mock.calls[0];
+    const where = rawWhere as Record<string, unknown>;
     expect(where.seq).toBe(1);
     expect(where.status).toBe('REWORK');
     expect(patch).toEqual({ status: 'WAIT' });
