@@ -14,6 +14,7 @@
  * - REPLACE: 교체 필요 (expectedLife 도달)
  */
 
+import { lockRowsForUpdate } from '../../../common/utils/row-lock.util';
 import {
   Injectable,
   NotFoundException,
@@ -537,13 +538,14 @@ ${tenantSql}
   async createLog(dto: CreateConsumableLogDto, company?: string, plant?: string) {
     return this.tx.run(async (queryRunner) => {
       // 소모품 존재 확인
+      // TypeORM findOne({ lock }) 은 Oracle 에서 ORA-02014 — raw FOR UPDATE 로 잠근 뒤 잠금 없이 읽는다
+      await lockRowsForUpdate(queryRunner, 'CONSUMABLE_MASTERS', { CONSUMABLE_CODE: dto.consumableId, COMPANY: company, PLANT_CD: plant });
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
         where: {
           consumableCode: dto.consumableId,
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         },
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (!consumable) {
@@ -642,13 +644,14 @@ ${tenantSql}
    */
   async updateShotCount(dto: UpdateShotCountDto, company?: string, plant?: string) {
     return this.tx.run(async (queryRunner) => {
+      // TypeORM findOne({ lock }) 은 Oracle 에서 ORA-02014 — raw FOR UPDATE 로 잠근 뒤 잠금 없이 읽는다
+      await lockRowsForUpdate(queryRunner, 'CONSUMABLE_MASTERS', { CONSUMABLE_CODE: dto.consumableId, COMPANY: company, PLANT_CD: plant });
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
         where: {
           consumableCode: dto.consumableId,
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         },
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (!consumable) {
@@ -708,13 +711,14 @@ ${tenantSql}
    */
   async resetShotCount(dto: ResetShotCountDto, company?: string, plant?: string) {
     return this.tx.run(async (queryRunner) => {
+      // TypeORM findOne({ lock }) 은 Oracle 에서 ORA-02014 — raw FOR UPDATE 로 잠근 뒤 잠금 없이 읽는다
+      await lockRowsForUpdate(queryRunner, 'CONSUMABLE_MASTERS', { CONSUMABLE_CODE: dto.consumableId, COMPANY: company, PLANT_CD: plant });
       const consumable = await queryRunner.manager.findOne(ConsumableMaster, {
         where: {
           consumableCode: dto.consumableId,
           ...(company ? { company } : {}),
           ...(plant ? { plant } : {}),
         },
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (!consumable) {

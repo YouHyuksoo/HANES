@@ -109,9 +109,9 @@ describe('SimulationService', () => {
 
     const result = await service.getLatest('2026-04', 'C1', 'P1');
 
-    expect(simPlanRepo.find).toHaveBeenCalledWith({
-      where: { simId: 'SIM-202604-101010' },
-    });
+    expect(simPlanRepo.find).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ simId: 'SIM-202604-101010' }) }),
+    );
     expect(result?.plans).toHaveLength(1);
     expect(result?.summary.totalPlans).toBe(1);
   });

@@ -245,6 +245,7 @@ describe('ConsumablesService', () => {
         commitTransaction: jest.fn(),
         rollbackTransaction: jest.fn(),
         release: jest.fn(),
+        query: jest.fn().mockResolvedValue([]),
         manager: {
           findOne: jest.fn().mockResolvedValue({ consumableCode: 'C001', stockQty: 10 } as ConsumableMaster),
           create: jest.fn().mockReturnValue({ consumableCode: 'C001', logType: 'IN', qty: 5 } as any),
@@ -266,6 +267,7 @@ describe('ConsumablesService', () => {
 
     it('should allocate CONSUMABLE_LOGS seq from Oracle sequence', async () => {
       const mockQr = {
+        query: jest.fn().mockResolvedValue([]),
         manager: {
           findOne: jest.fn().mockResolvedValue({ consumableCode: 'C001', stockQty: 10 } as ConsumableMaster),
           create: jest.fn().mockReturnValue({ consumableCode: 'C001', logType: 'IN', qty: 5 } as any),
@@ -291,6 +293,7 @@ describe('ConsumablesService', () => {
         commitTransaction: jest.fn(),
         rollbackTransaction: jest.fn(),
         release: jest.fn(),
+        query: jest.fn().mockResolvedValue([]),
         manager: {
           findOne: jest.fn().mockResolvedValue({ consumableCode: 'C001', stockQty: 0 } as ConsumableMaster),
           query: jest.fn().mockResolvedValue([{ nextSeq: 1 }]),
@@ -315,6 +318,7 @@ describe('ConsumablesService', () => {
         commitTransaction: jest.fn(),
         rollbackTransaction: jest.fn(),
         release: jest.fn(),
+        query: jest.fn().mockResolvedValue([]),
         manager: {
           findOne: jest.fn().mockResolvedValue(null),
         },
@@ -341,6 +345,7 @@ describe('ConsumablesService', () => {
         commitTransaction: jest.fn(),
         rollbackTransaction: jest.fn(),
         release: jest.fn(),
+        query: jest.fn().mockResolvedValue([]),
         manager: {
           findOne: jest.fn().mockResolvedValue({
             consumableCode: 'C001',
@@ -378,6 +383,7 @@ describe('ConsumablesService', () => {
         commitTransaction: jest.fn(),
         rollbackTransaction: jest.fn(),
         release: jest.fn(),
+        query: jest.fn().mockResolvedValue([]),
         manager: {
           findOne: jest.fn().mockResolvedValue({
             consumableCode: 'C001',
@@ -413,6 +419,7 @@ describe('ConsumablesService', () => {
     it('should return status to NORMAL when count falls below warningCount', async () => {
       // Arrange
       const mockQr = {
+        query: jest.fn().mockResolvedValue([]),
         manager: {
           findOne: jest.fn().mockResolvedValue({
             consumableCode: 'C001',
@@ -453,6 +460,7 @@ describe('ConsumablesService', () => {
         commitTransaction: jest.fn(),
         rollbackTransaction: jest.fn(),
         release: jest.fn(),
+        query: jest.fn().mockResolvedValue([]),
         manager: {
           findOne: jest.fn().mockResolvedValue({
             consumableCode: 'C001',
