@@ -370,7 +370,10 @@ export class DefectLogService {
         throw new BadRequestException(`취소된 생산실적에는 불량을 등록할 수 없습니다: ${prodResultNo}`);
       }
 
+      // 순번은 시퀀스로 채번한다(엔티티 기본값 1 이면 같은 시각 등록에서 복합 PK 가 충돌한다)
+      const seqRows: Array<{ NEXT_SEQ: number }> = await qr.query('SELECT SEQ_DEFECT_LOGS.NEXTVAL AS "NEXT_SEQ" FROM DUAL');
       const defectLog = qr.manager.create(DefectLog, {
+        seq: Number(seqRows[0].NEXT_SEQ),
         prodResultNo,
         defectCode: defectCodeMaster.defectCode,
         defectName: defectCodeMaster.defectName,

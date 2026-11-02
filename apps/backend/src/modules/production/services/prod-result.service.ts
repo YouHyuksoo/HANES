@@ -972,9 +972,10 @@ export class ProdResultService {
         const occurAt = new Date();
         for (let i = 0; i < defectDetails.length; i++) {
           const d = defectDetails[i];
+          const seqRows: Array<{ NEXT_SEQ: number }> = await queryRunner.query('SELECT SEQ_DEFECT_LOGS.NEXTVAL AS "NEXT_SEQ" FROM DUAL');
           await queryRunner.manager.save(DefectLog, {
             occurAt,
-            seq: i + 1,
+            seq: Number(seqRows[0].NEXT_SEQ),
             prodResultNo: savedResultNo,
             defectCode: d.defectCode,
             defectName: d.defectName ?? null,

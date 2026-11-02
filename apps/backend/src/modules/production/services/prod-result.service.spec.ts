@@ -37,11 +37,14 @@ import { EquipInspectGateService } from '../../equipment/services/equip-inspect-
 import { CarrierFlowService } from './carrier-flow.service';
 
 /** 실적 행 잠금 쿼리에는 row 를, 그 밖의 쿼리에는 빈 배열을 돌려주는 query 목 */
+let defectSeqCounter = 0;
 const lockQuery = (row: Partial<{ status: string; orderNo: string; prdUid: string | null; goodQty: number; defectQty: number }>) =>
   (async (sql: string) =>
     /SELECT STATUS AS "status"/.test(sql)
       ? [{ status: 'DONE', orderNo: 'JO-1', prdUid: null, goodQty: 0, defectQty: 0, company: 'C1', plant: 'P1', ...row }]
-      : []) as never;
+      : /SEQ_DEFECT_LOGS\.NEXTVAL/.test(sql)
+        ? [{ NEXT_SEQ: ++defectSeqCounter }]
+        : []) as never;
 
 describe('ProdResultService', () => {
   let service: ProdResultService;
@@ -92,6 +95,7 @@ describe('ProdResultService', () => {
     equipInspectService = createMock<EquipInspectService>();
     queryRunner = createMock<QueryRunner>();
     // 실적 행 잠금(SELECT ... FOR UPDATE)은 최신 상태 한 줄을 돌려주고, 나머지 잠금·집계 쿼리는 빈 결과. 필요한 테스트가 덮어쓴다
+    defectSeqCounter = 0;
     queryRunner.query.mockImplementation(lockQuery({ status: 'DONE' }));
     stockUpdateQb = {
       update: jest.fn().mockReturnThis(),

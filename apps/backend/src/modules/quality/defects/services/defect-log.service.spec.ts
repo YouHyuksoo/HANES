@@ -38,7 +38,7 @@ describe('DefectLogService', () => {
    */
   const makeFakeQueryRunner = () => ({
     // 실적 행 잠금(SELECT ... FOR UPDATE)은 단위 테스트에서 아무 일도 하지 않는다
-    query: jest.fn().mockResolvedValue([]),
+    query: jest.fn().mockResolvedValue([{ NEXT_SEQ: 1 }]),
     manager: {
       create: (entity: unknown, data: unknown) =>
         entity === DefectLog ? mockDefectLogRepo.create(data as any) : mockProdResultRepo.create(data as any),
